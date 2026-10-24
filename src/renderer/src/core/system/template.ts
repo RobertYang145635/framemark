@@ -1,0 +1,49 @@
+import type { TemplateDef, TemplateRenderEnv } from '../../types'
+import type { StockEnv } from './ir'
+import { prepareStockStyle } from './assets'
+import { solveStockLayout } from './layout'
+import { paintStockLayout } from './paint'
+import { getStockStyle, STOCK_STYLE_LIST } from './styles'
+
+export const systemCamera: TemplateDef = {
+  id: 'systemCamera',
+  name: '系统相机',
+  en: 'SYSTEM CAMERA',
+  category: '系统相机',
+  description: '按厂商相机/相册的原始水印配置渲染，保留真实版式与素材。',
+  defaults: {
+    systemStyle: STOCK_STYLE_LIST[0]?.id ?? ''
+  },
+  controls: [],
+  async prepare(env) {
+    const style = getStockStyle(String(env.params.systemStyle ?? ''))
+    if (!style) return {}
+    return { images: await prepareStockStyle(style) }
+  },
+  layout(env) {
+    const style = getStockStyle(String(env.params.systemStyle ?? ''))
+    if (!style) return { W: env.pw, H: env.ph }
+    const layout = solveStockLayout(style, env as StockEnv)
+    const k = env.pw / style.referenceWidth
+    return { W: layout.W * k, H: layout.H * k }
+  },
+  render(env) {
+    const style = getStockStyle(String(env.params.systemStyle ?? ''))
+    if (!style) {
+      return { x: 0, y: 0, w: env.pw, h: env.ph }
+    }
+    const layout = solveStockLayout(style, env)
+    const k = env.pw / style.referenceWidth
+    return paintStockLayout(env, style, layout, k)
+  }
+}
+
+export function systemCameraStyleIds(): string[] {
+  return STOCK_STYLE_LIST.map((s) => s.id)
+}
+
+export function getSystemStyle(id: string | undefined) {
+  return getStockStyle(id)
+}
+
+export type { TemplateRenderEnv }

@@ -1,0 +1,554 @@
+import type { CropInfo, TemplateRenderEnv } from '../types'
+import { exifLine, cameraLine, formatDateOnly, modelWithoutMake } from './exif'
+
+export { modelWithoutMake }
+
+export const FONT_UI = '"Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
+export const FONT_DISPLAY = '"Bebas Neue", "Inter", "Microsoft YaHei", sans-serif'
+export const FONT_MONO = '"JetBrains Mono", "SFMono-Regular", "Consolas", monospace'
+export const FONT_HAND = '"Caveat", "Segoe Script", "KaiTi", cursive'
+export const FONT_CN = '"YouShe", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
+export const FONT_ZEISS = '"Zeiss", "Inter", "Microsoft YaHei", sans-serif'
+export const FONT_VENDOR = '"OplusSans", "Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
+export const FONT_TECH = '"Chakra Petch", "OplusSans", "Inter", sans-serif'
+
+export interface Theme {
+  bg: string
+  fg: string
+  sub: string
+  line: string
+  accent: string
+  paper: string
+  shadow: string
+}
+
+export const THEMES: Record<string, Theme> = {
+  paper: { bg: '#f6f3ec', fg: '#151515', sub: '#6f6a61', line: 'rgba(21,21,21,0.16)', accent: '#a9824c', paper: '#fbf9f4', shadow: 'rgba(20,18,15,0.22)' },
+  white: { bg: '#ffffff', fg: '#0c0c0d', sub: '#74747a', line: 'rgba(0,0,0,0.12)', accent: '#c3a06a', paper: '#ffffff', shadow: 'rgba(0,0,0,0.18)' },
+  cream: { bg: '#eee6d7', fg: '#1d1811', sub: '#746958', line: 'rgba(29,24,17,0.18)', accent: '#9b6d3d', paper: '#f8f2e6', shadow: 'rgba(40,32,22,0.24)' },
+  ink: { bg: '#111214', fg: '#f5f2ea', sub: '#aaa49a', line: 'rgba(245,242,234,0.18)', accent: '#d0ac72', paper: '#1a1b1e', shadow: 'rgba(0,0,0,0.5)' },
+  black: { bg: '#08090a', fg: '#f4f0e6', sub: '#9e988d', line: 'rgba(244,240,230,0.16)', accent: '#d8b477', paper: '#101113', shadow: 'rgba(0,0,0,0.6)' },
+  stone: { bg: '#d9d4c9', fg: '#191714', sub: '#665f54', line: 'rgba(25,23,20,0.2)', accent: '#7a644b', paper: '#ece7dc', shadow: 'rgba(30,26,20,0.26)' }
+}
+
+export function themeOf(params: Record<string, unknown>): Theme {
+  return THEMES[String(params.theme ?? 'paper')] ?? THEMES.paper
+}
+
+export function pct(value: unknown, fallback = 0): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+export function shortSide(env: Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): number {
+  return Math.min(env.pw, env.ph)
+}
+
+export function marginOf(env: Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): number {
+  return shortSide(env) * (pct(env.params.marginPct, 6) / 100)
+}
+
+export function radiusOf(env: Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): number {
+  return shortSide(env) * (pct(env.params.radiusPct, 0) / 100)
+}
+
+export function scaleFont(env: Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>, base: number): number {
+  return base * (pct(env.text.fontScale, 1) || 1)
+}
+
+export function setFont(ctx: CanvasRenderingContext2D, size: number, family = FONT_UI, weight: string | number = 400, style = 'normal'): void {
+  ctx.font = `${style} ${weight} ${Math.max(1, size)}px ${family}`
+}
+
+export function setTracking(ctx: CanvasRenderingContext2D, px: number): void {
+  try {
+    ;(ctx as unknown as { letterSpacing: string }).letterSpacing = `${px}px`
+  } catch {
+    // older canvas implementations ignore tracking
+  }
+}
+
+export function resetTracking(ctx: CanvasRenderingContext2D): void {
+  setTracking(ctx, 0)
+}
+
+export function roundRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
+}
+
+export function fillRoundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, color: string): void {
+  roundRectPath(ctx, x, y, w, h, r)
+  ctx.fillStyle = color
+  ctx.fill()
+}
+
+export function line(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, color: string, width = 1, dash?: number[]): void {
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = width
+  if (dash) ctx.setLineDash(dash)
+  ctx.beginPath()
+  ctx.moveTo(x1, y1)
+  ctx.lineTo(x2, y2)
+  ctx.stroke()
+  ctx.restore()
+}
+
+export function drawPhoto(
+  env: TemplateRenderEnv,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius = 0,
+  shadow = 0
+): void {
+  const ctx = env.ctx
+  const c: CropInfo = env.crop
+  if (shadow > 0) {
+    ctx.save()
+    ctx.shadowColor = env.params.theme === 'ink' || env.params.theme === 'black' ? 'rgba(0,0,0,0.65)' : 'rgba(25,21,16,0.25)'
+    ctx.shadowBlur = shortSide(env) * 0.03 * shadow
+    ctx.shadowOffsetY = shortSide(env) * 0.012 * shadow
+    ctx.fillStyle = '#000'
+    roundRectPath(ctx, x, y, w, h, radius)
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.save()
+  roundRectPath(ctx, x, y, w, h, radius)
+  ctx.clip()
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(env.photo, c.sx, c.sy, c.sw, c.sh, x, y, w, h)
+  ctx.restore()
+}
+
+export function drawPhotoCover(
+  env: TemplateRenderEnv,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius = 0,
+  shadow = 0
+): void {
+  const ctx = env.ctx
+  const c = env.crop
+  const scale = Math.max(w / c.sw, h / c.sh)
+  const sw = w / scale
+  const sh = h / scale
+  const sx = c.sx + (c.sw - sw) / 2
+  const sy = c.sy + (c.sh - sh) / 2
+  if (shadow > 0) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'
+    ctx.shadowBlur = shortSide(env) * 0.03 * shadow
+    ctx.fillStyle = '#000'
+    roundRectPath(ctx, x, y, w, h, radius)
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.save()
+  roundRectPath(ctx, x, y, w, h, radius)
+  ctx.clip()
+  ctx.drawImage(env.photo, sx, sy, sw, sh, x, y, w, h)
+  ctx.restore()
+}
+
+export function drawBlurredBackdrop(
+  env: TemplateRenderEnv,
+  W: number,
+  H: number,
+  tint: Theme,
+  tintAlpha: number
+): void {
+  const smallW = Math.min(420, Math.max(160, Math.round(W / 7)))
+  const smallH = Math.max(80, Math.round(smallW * (H / W)))
+  const c = env.crop
+  const scale = Math.max(smallW / c.sw, smallH / c.sh)
+  const sw = smallW / scale
+  const sh = smallH / scale
+  const sx = c.sx + (c.sw - sw) / 2
+  const sy = c.sy + (c.sh - sh) / 2
+  const tmp = document.createElement('canvas')
+  tmp.width = smallW
+  tmp.height = smallH
+  const tctx = tmp.getContext('2d')!
+  tctx.drawImage(env.photo, sx, sy, sw, sh, 0, 0, smallW, smallH)
+  const ctx = env.ctx
+  const blur = shortSide(env) * 0.0015 * Math.max(0, pct(env.params.blur, 26))
+  ctx.save()
+  ctx.imageSmoothingQuality = 'high'
+  ctx.filter = `blur(${Math.max(1, blur)}px)`
+  const over = 1.12
+  ctx.drawImage(tmp, -W * (over - 1) / 2, -H * (over - 1) / 2, W * over, H * over)
+  ctx.filter = 'none'
+  ctx.globalAlpha = tintAlpha
+  ctx.fillStyle = tint.bg
+  ctx.fillRect(0, 0, W, H)
+  ctx.globalAlpha = 1
+  ctx.restore()
+}
+
+export function drawContain(
+  ctx: CanvasRenderingContext2D,
+  img: CanvasImageSource,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): { x: number; y: number; w: number; h: number } {
+  const iw = (img as HTMLImageElement).naturalWidth || (img as HTMLImageElement).width || w
+  const ih = (img as HTMLImageElement).naturalHeight || (img as HTMLImageElement).height || h
+  const s = Math.min(w / iw, h / ih)
+  const dw = iw * s
+  const dh = ih * s
+  const dx = x + (w - dw) / 2
+  const dy = y + (h - dh) / 2
+  ctx.drawImage(img, dx, dy, dw, dh)
+  return { x: dx, y: dy, w: dw, h: dh }
+}
+
+export function drawBrandLogo(
+  env: TemplateRenderEnv,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string
+): boolean {
+  if (!env.text.showLogo) return false
+  const logo = env.images?.logo
+  if (logo) {
+    drawContain(env.ctx, logo, x, y, w, h)
+    return true
+  }
+  const text = (env.exif.make || env.exif.model || '').toUpperCase()
+  if (!text) return false
+  const ctx = env.ctx
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'center'
+  const size = Math.min(h, w / Math.max(4, text.length * 0.58))
+  setFont(ctx, size, FONT_UI, 800)
+  ctx.fillText(text, x + w / 2, y + h / 2)
+  ctx.restore()
+  return true
+}
+
+export function pickTitle(env: TemplateRenderEnv, fallback = true): string {
+  const t = env.text.title.trim()
+  if (t) return t
+  if (!fallback) return ''
+  const make = env.exif.make.trim()
+  const model = modelWithoutMake(make, env.exif.model)
+  return [make, model].filter(Boolean).join(' ') || 'FRAME'
+}
+
+export function fitSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  start: number,
+  min: number,
+  family: string,
+  weight: string | number,
+  tracking = 0
+): number {
+  let size = start
+  setTracking(ctx, tracking * size)
+  while (size > min) {
+    setFont(ctx, size, family, weight)
+    if (ctx.measureText(text).width <= maxWidth) break
+    size *= 0.96
+  }
+  setFont(ctx, size, family, weight)
+  return size
+}
+
+export function drawFitted(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  size: number,
+  color: string,
+  opts: { family?: string; weight?: string | number; align?: CanvasTextAlign; baseline?: CanvasTextBaseline; tracking?: number; min?: number; shadow?: boolean } = {}
+): number {
+  if (!text) return 0
+  const family = opts.family ?? FONT_UI
+  const weight = opts.weight ?? 400
+  const tracking = opts.tracking ?? 0
+  const finalSize = fitSize(ctx, text, maxWidth, size, opts.min ?? size * 0.45, family, weight, tracking)
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.textAlign = opts.align ?? 'left'
+  ctx.textBaseline = opts.baseline ?? 'alphabetic'
+  if (opts.shadow) {
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'
+    ctx.shadowBlur = finalSize * 0.35
+    ctx.shadowOffsetY = finalSize * 0.08
+  }
+  setTracking(ctx, tracking * finalSize)
+  setFont(ctx, finalSize, family, weight)
+  ctx.fillText(text, x, y)
+  resetTracking(ctx)
+  ctx.restore()
+  return finalSize
+}
+
+export function drawMeta(
+  env: TemplateRenderEnv,
+  x: number,
+  y: number,
+  maxWidth: number,
+  theme: Theme,
+  opts: {
+    align?: 'left' | 'center' | 'right'
+    size?: number
+    color?: string
+    sub?: string
+    date?: boolean
+    exif?: boolean
+    gap?: number
+    tracking?: number
+    family?: string
+  } = {}
+): number {
+  const ctx = env.ctx
+  const align = opts.align ?? 'left'
+  const anchorX = align === 'center' ? x + maxWidth / 2 : align === 'right' ? x + maxWidth : x
+  const textAlign: CanvasTextAlign = align
+  const base = opts.size ?? shortSide(env) * 0.022
+  const gap = opts.gap ?? base * 0.55
+  const color = opts.color ?? theme.fg
+  const sub = opts.sub ?? theme.sub
+  let cy = y
+  const cam = cameraLine(env.exif, pickTitle(env, false) || 'FRAMEMARK')
+  const camSize = drawFitted(ctx, cam.toUpperCase(), anchorX, cy, maxWidth, base, color, {
+    family: opts.family ?? FONT_UI,
+    weight: 600,
+    align: textAlign,
+    tracking: opts.tracking ?? 0.08,
+    min: base * 0.5
+  })
+  cy += camSize * 0.55
+  if (opts.exif !== false) {
+    const line = exifLine(env.exif)
+    if (line) {
+      cy += gap
+      cy += drawFitted(ctx, line, anchorX, cy, maxWidth, base * 0.78, sub, {
+        family: FONT_MONO,
+        weight: 400,
+        align: textAlign,
+        min: base * 0.4
+      })
+    }
+  }
+  if (opts.date !== false && env.text.showDate && env.exif.dateTime) {
+    cy += gap * 0.8
+    cy += drawFitted(ctx, formatDateOnly(env.exif.dateTime), anchorX, cy, maxWidth, base * 0.66, sub, {
+      family: FONT_MONO,
+      weight: 400,
+      align: textAlign,
+      min: base * 0.35
+    })
+  }
+  return cy - y
+}
+
+export function drawSwatches(
+  env: TemplateRenderEnv,
+  colors: string[],
+  x: number,
+  y: number,
+  maxWidth: number,
+  size: number,
+  labelColor: string
+): void {
+  const ctx = env.ctx
+  const gap = size * 0.34
+  const n = colors.length
+  const total = n * size + (n - 1) * gap
+  const start = x + Math.max(0, (maxWidth - total) / 2)
+  for (let i = 0; i < n; i++) {
+    const cx = start + i * (size + gap) + size / 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(cx, y + size / 2, size / 2, 0, Math.PI * 2)
+    ctx.fillStyle = colors[i]
+    ctx.fill()
+    ctx.restore()
+    ctx.save()
+    ctx.fillStyle = labelColor
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    setFont(ctx, size * 0.3, FONT_MONO, 400)
+    ctx.fillText(colors[i].replace('#', '').toUpperCase(), cx, y + size + size * 0.22)
+    ctx.restore()
+  }
+}
+
+export function extractPalette(env: TemplateRenderEnv, count = 5): string[] {
+  try {
+    const w = 48
+    const h = Math.max(24, Math.round(w * (env.ph / env.pw)))
+    const tmp = document.createElement('canvas')
+    tmp.width = w
+    tmp.height = h
+    const tctx = tmp.getContext('2d', { willReadFrequently: true })!
+    const c = env.crop
+    tctx.drawImage(env.photo, c.sx, c.sy, c.sw, c.sh, 0, 0, w, h)
+    const data = tctx.getImageData(0, 0, w, h).data
+    const buckets: { r: number; g: number; b: number; n: number }[] = []
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      const a = data[i + 3]
+      if (a < 200) continue
+      const max = Math.max(r, g, b)
+      const min = Math.min(r, g, b)
+      const l = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+      if (l > 0.96 || l < 0.035) continue
+      if (max - min < 6 && l > 0.9) continue
+      const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4)
+      const found = buckets.find((x) => (((x.r >> 4) << 8) | ((x.g >> 4) << 4) | (x.b >> 4)) === key)
+      if (found) {
+        found.r += r
+        found.g += g
+        found.b += b
+        found.n++
+      } else buckets.push({ r, g, b, n: 1 })
+    }
+    buckets.sort((a, b) => b.n - a.n)
+    const picked: string[] = []
+    for (const b of buckets) {
+      const c = { r: b.r / b.n, g: b.g / b.n, b: b.b / b.n }
+      const l = (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255
+      if (picked.length && picked.some((hex) => {
+        const rr = parseInt(hex.slice(1, 3), 16)
+        const gg = parseInt(hex.slice(3, 5), 16)
+        const bb = parseInt(hex.slice(5, 7), 16)
+        return Math.hypot(rr - c.r, gg - c.g, bb - c.b) < 45
+      })) continue
+      picked.push(`#${[c.r, c.g, c.b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`)
+      if (picked.length >= count) break
+    }
+    while (picked.length < count) {
+      const light = picked.length % 2 === 0 ? '#d8d3c8' : '#8f887c'
+      picked.push(light)
+    }
+    return picked
+  } catch {
+    return ['#2b2b2b', '#6f6a61', '#a99f8c', '#d6cfc1', '#f2eee6']
+  }
+}
+
+export function drawGrain(env: TemplateRenderEnv, W: number, H: number, opacity: number): void {
+  if (opacity <= 0) return
+  const s = 128
+  const tmp = document.createElement('canvas')
+  tmp.width = s
+  tmp.height = s
+  const tctx = tmp.getContext('2d')!
+  const img = tctx.createImageData(s, s)
+  let seed = 1337
+  for (let i = 0; i < img.data.length; i += 4) {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    const v = seed & 255
+    img.data[i] = v
+    img.data[i + 1] = v
+    img.data[i + 2] = v
+    img.data[i + 3] = 255
+  }
+  tctx.putImageData(img, 0, 0)
+  const ctx = env.ctx
+  ctx.save()
+  ctx.globalAlpha = opacity
+  ctx.globalCompositeOperation = 'overlay'
+  ctx.fillStyle = ctx.createPattern(tmp, 'repeat')!
+  ctx.fillRect(0, 0, W, H)
+  ctx.restore()
+}
+
+export function drawBarcode(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string,
+  seedText = 'FRAMEMARK'
+): void {
+  let seed = 0
+  for (let i = 0; i < seedText.length; i++) seed = (seed * 31 + seedText.charCodeAt(i)) >>> 0
+  ctx.save()
+  ctx.fillStyle = color
+  let cx = x
+  while (cx < x + w) {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    const bw = 1 + (seed % 4)
+    if ((seed & 7) > 2) ctx.fillRect(cx, y, Math.min(bw, x + w - cx), h)
+    cx += bw + 1 + ((seed >> 4) % 3)
+  }
+  ctx.restore()
+}
+
+export function drawSprockets(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  count: number,
+  color: string
+): void {
+  const gap = w / count
+  const holeW = gap * 0.42
+  const holeH = h * 0.42
+  for (let i = 0; i < count; i++) {
+    const cx = x + i * gap + gap / 2
+    fillRoundRect(ctx, cx - holeW / 2, y + (h - holeH) / 2, holeW, holeH, holeH * 0.22, color)
+  }
+}
+
+export function drawVerticalText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  opts: { family?: string; weight?: string | number; tracking?: number } = {}
+): void {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(-Math.PI / 2)
+  ctx.fillStyle = color
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  setTracking(ctx, (opts.tracking ?? 0.06) * size)
+  setFont(ctx, size, opts.family ?? FONT_UI, opts.weight ?? 600)
+  ctx.fillText(text, 0, 0)
+  resetTracking(ctx)
+  ctx.restore()
+}
+
+export function luminance(hex: string): number {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+}

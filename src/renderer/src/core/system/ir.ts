@@ -1,0 +1,182 @@
+import type { ExifData, Params, TextSettings } from '../../types'
+
+export type StockEnv = {
+  pw: number
+  ph: number
+  exif: ExifData
+  params: Params
+  text: TextSettings
+}
+
+export type StockVendor = 'oppo' | 'xiaomi' | 'vivo'
+
+export type StockGravity =
+  | 'leftTop'
+  | 'leftVerticalCenter'
+  | 'leftBottom'
+  | 'topHorCenter'
+  | 'horCenter'
+  | 'center'
+  | 'verticalCenter'
+  | 'rightTop'
+  | 'rightVerticalCenter'
+  | 'rightBottom'
+  | 'centerBottom'
+
+export interface StockMargins {
+  left?: number
+  top?: number
+  right?: number
+  bottom?: number
+}
+
+export type StockTokenKind =
+  | 'model'
+  | 'imageParams'
+  | 'time'
+  | 'timeLocation'
+  | 'location'
+  | 'greeting'
+  | 'custom'
+  | 'filter'
+  | 'literal'
+  | 'template'
+
+export interface StockToken {
+  kind: StockTokenKind
+  value?: string
+}
+
+export interface StockTextOutline {
+  paddingX?: number
+  paddingY?: number
+  width?: number
+  height?: number
+  radius?: number
+  strokeWidth: number
+  strokeColor?: string
+  strokeColorIndex?: number
+}
+
+export interface StockTextNode {
+  kind: 'text'
+  token: StockToken
+  font: string
+  size: number
+  weight: number
+  color?: string
+  colorIndex?: number
+  alpha?: number
+  tracking?: number
+  lineHeight?: number
+  align?: 'left' | 'center' | 'right'
+  gravity?: StockGravity
+  margins?: StockMargins
+  width?: number
+  optional?: boolean
+  shadow?: { color: string; blur: number; x: number; y: number }
+  outline?: StockTextOutline
+}
+
+export interface StockImageNode {
+  kind: 'image'
+  asset: string
+  themeAssets?: Record<string, string>
+  colorIndex?: number
+  width: number
+  height: number
+  scale: 'contain' | 'cover' | 'fill'
+  gravity?: StockGravity
+  margins?: StockMargins
+  tint?: string
+  alpha?: number
+  isBrandLogo?: boolean
+}
+
+export interface StockShapeNode {
+  kind: 'shape'
+  shape: 'circle' | 'rect' | 'line'
+  width: number
+  height: number
+  color: string
+  gravity?: StockGravity
+  margins?: StockMargins
+  alpha?: number
+  radius?: number
+}
+
+export interface StockSpaceNode {
+  kind: 'space'
+  weight?: number
+  width?: number
+  height?: number
+}
+
+export interface StockGroupNode {
+  kind: 'group'
+  orientation: 'row' | 'column'
+  width?: number
+  height?: number
+  matchWidth?: boolean
+  matchHeight?: boolean
+  gravity?: StockGravity
+  margins?: StockMargins
+  gap?: number
+  background?: string
+  children: StockNode[]
+}
+
+export type StockNode =
+  | StockTextNode
+  | StockImageNode
+  | StockShapeNode
+  | StockSpaceNode
+  | StockGroupNode
+
+export interface StockBand {
+  direction: 'top' | 'bottom' | 'left' | 'right' | 'overlay'
+  thickness?: number
+  width?: number
+  radius?: number
+  offset?: { x?: number; y?: number }
+  gravity?: StockGravity
+  background?: string
+  drawFirst?: boolean
+  children: StockNode[]
+}
+
+export interface StockTheme {
+  id: string
+  label: string
+  swatch: string
+  background: string
+  foreground: string[]
+}
+
+export interface StockAsset {
+  file: string
+  width: number
+  height: number
+}
+
+export interface StockStyle {
+  id: string
+  vendor: StockVendor
+  family: string
+  name: string
+  nameEn: string
+  placement: 'out' | 'in' | 'with' | 'overlay'
+  referenceWidth: number
+  margins: { left: number; top: number; right: number; bottom: number }
+  background: string
+  transparentBackground?: boolean
+  themes?: StockTheme[]
+  defaultTheme?: string
+  bands: StockBand[]
+  assets: Record<string, StockAsset>
+  audit: {
+    status: 'verified' | 'approx' | 'blocked'
+    notes?: string
+    unsupported?: string[]
+  }
+}

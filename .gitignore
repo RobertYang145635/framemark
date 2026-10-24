@@ -1,0 +1,29 @@
+# FrameMark baseline ignore list (W0a)
+# Build outputs / installed dependencies
+node_modules/
+out/
+release/
+android/.gradle/
+android/build/
+android/app/build/
+
+# Local machine config
+android/local.properties
+android/keystore.properties
+
+# Signing material (never commit)
+android/keystore/
+*.jks
+*.keystore
+
+# Generated web assets copied into the Android project
+android/app/src/main/assets/public/
+
+# Packaged artifacts
+*.zip
+*.apk
+*.aab
+
+# Logs / OS cruft
+*.log
+.DS_Store

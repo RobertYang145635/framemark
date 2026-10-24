@@ -1,0 +1,604 @@
+// Convert Xiaomi camera watermark JSONs into the shared stock IR (out-style layouts).
+const fs = require('node:fs')
+const path = require('node:path')
+const crypto = require('node:crypto')
+const sharp = require('sharp')
+
+const ROOT = 'D:/border&watermark/_research/extracted/xiaomi-watermarks'
+const OUT_DIR = 'D:/border&watermark/framemark/src/renderer/src/core/system/generated'
+const APP_ASSET_DIR = 'D:/border&watermark/framemark/src/renderer/src/assets/system/xiaomi'
+
+const FAMILY_LABEL = { classic: '经典', film: '胶片', leica: '徕卡', standard: '标准', tag: '标签', disney: '迪士尼' }
+
+function dp(v, fallback) {
+  if (typeof v === 'number') return v
+  if (typeof v === 'string') {
+    const m = /^(-?[\d.]+)dp$/.exec(v)
+    if (m) return Number(m[1])
+  }
+  return fallback
+}
+
+function gravity(v) {
+  const s = String(v ?? '')
+  const h = /right/.test(s) ? 'right' : /center_horizontal|horCenter/.test(s) ? 'center' : 'left'
+  const vv = /bottom/.test(s) ? 'bottom' : /center_vertical|verticalCenter/.test(s) ? 'center' : 'top'
+  if (h === 'right' && vv === 'bottom') return 'rightBottom'
+  if (h === 'right' && vv === 'center') return 'rightVerticalCenter'
+  if (h === 'right') return 'rightTop'
+  if (h === 'center' && vv === 'bottom') return 'centerBottom'
+  if (h === 'center' && vv === 'center') return 'center'
+  if (h === 'center') return 'topHorCenter'
+  if (vv === 'bottom') return 'leftBottom'
+  if (vv === 'center') return 'leftVerticalCenter'
+  return 'leftTop'
+}
+
+function num(v, fallback = 0) {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function safeName(s) {
+  return String(s).replace(/[^A-Za-z0-9_-]+/g, '_')
+}
+
+function fontKey(typeface, file) {
+  const s = String(typeface ?? '') + ' ' + String(file ?? '')
+  if (/oxanium/i.test(s)) return 'oxanium'
+  if (/lg1056/i.test(s)) return 'lg1056'
+  return 'misans'
+}
+
+function weightOf(font) {
+  const m = /'wght'\s+(\d+)/.exec(String(font?.variation ?? ''))
+  return m ? Math.round(Number(m[1]) / 100) * 100 : 400
+}
+
+function colorOf(font) {
+  const c = String(font?.color ?? '')
+  const m = /^@foreground=(\d+)/.exec(c)
+  if (m) return { colorIndex: Number(m[1]) }
+  return { color: c.startsWith('#') ? c : '#000000' }
+}
+
+function outlineOf(node) {
+  const rect = node.rect_params
+  if (!rect) return undefined
+  const stroke = String(rect.rect_line_color ?? '')
+  const strokeIndex = /^@foreground=(\d+)/.exec(stroke)
+  const radius = Array.isArray(rect.rect_radius) ? num(rect.rect_radius[0], 0) : num(rect.rect_radius, 0)
+  return {
+    ...(num(rect.rect_text_width_gap, 0) ? { paddingX: num(rect.rect_text_width_gap, 0) } : {}),
+    ...(num(rect.rect_text_height_gap, 0) ? { paddingY: num(rect.rect_text_height_gap, 0) } : {}),
+    ...(dp(rect.rect_width) ? { width: dp(rect.rect_width) } : {}),
+    ...(dp(rect.rect_height) ? { height: dp(rect.rect_height) } : {}),
+    ...(radius ? { radius } : {}),
+    strokeWidth: num(rect.rect_line_width, 0),
+    ...(strokeIndex ? { strokeColorIndex: Number(strokeIndex[1]) } : stroke.startsWith('#') ? { strokeColor: stroke } : {})
+  }
+}
+
+function convertText(node, fonts) {
+  const text = String(node.text ?? '')
+  const outline = outlineOf(node)
+  if (!outline && (/^@model=@{versionName}$/.test(text.trim()) || /^@model=@{versionNumber}$/.test(text.trim()))) return null
+  let token
+  let optional = false
+  if (/location_latlng/i.test(text)) {
+    token = { kind: 'location' }
+    optional = true
+  } else if (/@filter=/i.test(text)) {
+    token = { kind: 'filter', value: '' }
+    optional = true
+  } else if (/@custom=/i.test(text)) {
+    token = { kind: 'custom' }
+    optional = true
+  } else if (/@exif=/.test(text) || /@model=/.test(text) || /@time=/.test(text) || /@location=/.test(text)) {
+    token = { kind: 'template', value: text }
+    if (/@location=/.test(text)) optional = true
+  } else {
+    token = { kind: 'literal', value: text }
+  }
+  if (/^@model=@{versionName}$/.test(text.trim())) optional = true
+  const f = fonts[node.font_ref] ?? {}
+  const col = colorOf(f)
+  return {
+    kind: 'text',
+    token,
+    font: fontKey(f.typeface, f.file),
+    size: num(f.size, 20),
+    weight: weightOf(f),
+    ...col,
+    alpha: 1,
+    tracking: num(f.letterSpacing, 0),
+    align: outline ? 'center' : 'left',
+    ...(outline ? { outline } : {}),
+    margins: {
+      ...(dp(node.margin_left) ? { left: dp(node.margin_left) } : {}),
+      ...(dp(node.margin_top) ? { top: dp(node.margin_top) } : {}),
+      ...(dp(node.margin_right) ? { right: dp(node.margin_right) } : {}),
+      ...(dp(node.margin_bottom) ? { bottom: dp(node.margin_bottom) } : {})
+    },
+    optional
+  }
+}
+
+const LOGO_BRANDS = ['xiaomi', 'redmi', 'poco']
+const LOGO_EXTS = ['.webp', '.png']
+
+function findLogoFile(ctx, entry) {
+  if (!entry) return null
+  const suffix = String(entry).trim().replace(/^#/, '')
+  for (const brand of LOGO_BRANDS) {
+    for (const ext of LOGO_EXTS) {
+      const name = `${brand}_${suffix}${ext}`
+      if (fs.existsSync(path.join(ctx.styleDir, name))) return name
+    }
+  }
+  return null
+}
+
+function fallbackLogoFile(ctx, dark) {
+  const tones = dark ? ['white', 'black'] : ['black', 'white']
+  for (const tone of tones) {
+    for (const brand of LOGO_BRANDS) {
+      for (const ext of LOGO_EXTS) {
+        const name = `${brand}_${tone}${ext}`
+        if (fs.existsSync(path.join(ctx.styleDir, name))) return name
+      }
+    }
+  }
+  return null
+}
+
+function themeIsDark(theme) {
+  const bg = String(theme?.background ?? '')
+  const m = /^#(?:[0-9a-fA-F]{2})?([0-9a-fA-F]{6})(?:[;,]|$)/.exec(bg)
+  if (m) {
+    const v = m[1]
+    return (parseInt(v.slice(0, 2), 16) * 0.299 + parseInt(v.slice(2, 4), 16) * 0.587 + parseInt(v.slice(4, 6), 16) * 0.114) / 255 < 0.5
+  }
+  return /dark|black/.test(String(theme?.id ?? ''))
+}
+
+async function convertImage(node, ctx) {
+  const pathStr = String(node.path ?? '')
+  const isBrandLogo = /pathType=fill;path=\$\{logo\}/.test(pathStr)
+  const m = /pathType=direct;path=([^;]+)/.exec(pathStr)
+  const fgIndex = /foreground=(\d+)/.exec(pathStr)
+  let file
+  let asset
+  let themeAssets
+  let fileAsset
+  if (m) {
+    file = m[1]
+    asset = `${ctx.family}-${ctx.id}-${safeName(path.basename(file, path.extname(file)))}`
+  } else if (isBrandLogo) {
+    const index = fgIndex ? Number(fgIndex[1]) : null
+    const mapping = {}
+    fileAsset = new Map()
+    for (const theme of ctx.themes) {
+      const entry = index != null ? theme.foreground?.[index] : undefined
+      const chosen = findLogoFile(ctx, entry) ?? fallbackLogoFile(ctx, themeIsDark(theme))
+      if (!chosen) continue
+      if (!fileAsset.has(chosen)) {
+        const key = `${ctx.family}-${ctx.id}-logo-${safeName(path.basename(chosen, path.extname(chosen)))}`
+        fileAsset.set(chosen, key)
+      }
+      mapping[theme.id] = fileAsset.get(chosen)
+    }
+    const defaultEntry = index != null
+      ? ctx.themes.find((t) => t.id === ctx.defaultTheme)?.foreground?.[index]
+      : undefined
+    file = findLogoFile(ctx, defaultEntry)
+      ?? fileAsset.keys().next().value
+      ?? fallbackLogoFile(ctx, ctx.darkBg)
+    if (!file) return null
+    asset = fileAsset.get(file) ?? `${ctx.family}-${ctx.id}-logo-${safeName(path.basename(file, path.extname(file)))}`
+    themeAssets = Object.keys(mapping).length ? mapping : undefined
+  } else {
+    return null
+  }
+  const dir = path.join(APP_ASSET_DIR, ctx.family, ctx.id)
+  fs.mkdirSync(dir, { recursive: true })
+  const register = async (name, key) => {
+    const src = path.join(ctx.styleDir, name)
+    if (!fs.existsSync(src)) return null
+    fs.copyFileSync(src, path.join(dir, name))
+    const meta = await sharp(src).metadata().catch(() => null)
+    const rel = `xiaomi/${ctx.family}/${ctx.id}/${name}`
+    ctx.assets[key] = { file: rel, width: meta?.width ?? 0, height: meta?.height ?? 0 }
+    return meta
+  }
+  const primaryMeta = await register(file, asset)
+  if (!primaryMeta && !fs.existsSync(path.join(ctx.styleDir, file))) return null
+  if (themeAssets) {
+    for (const [name, key] of fileAsset) {
+      if (key === asset) continue
+      await register(name, key)
+    }
+  }
+  const src = path.join(ctx.styleDir, file)
+  const meta = await sharp(src).metadata().catch(() => null)
+  const h = dp(node.display_height, 0)
+  const w = dp(node.display_width, 0)
+  const ratio = meta?.width && meta?.height ? meta.width / meta.height : 1
+  const height = h > 0 ? h : w > 0 ? w / ratio : (meta?.height ?? 20)
+  const width = w > 0 ? w : height * ratio
+  return {
+    kind: 'image',
+    asset,
+    ...(themeAssets ? { themeAssets } : {}),
+    ...(fgIndex ? { colorIndex: Number(fgIndex[1]) } : {}),
+    width,
+    height,
+    scale: 'contain',
+    isBrandLogo,
+    gravity: node.gravity ? gravity(node.gravity) : undefined,
+    margins: {
+      ...(dp(node.margin_left) ? { left: dp(node.margin_left) } : {}),
+      ...(dp(node.margin_top) ? { top: dp(node.margin_top) } : {}),
+      ...(dp(node.margin_right) ? { right: dp(node.margin_right) } : {}),
+      ...(dp(node.margin_bottom) ? { bottom: dp(node.margin_bottom) } : {}),
+      ...(isBrandLogo && !dp(node.margin_right) ? { right: 8 } : {})
+    }
+  }
+}
+
+function applyBrandLogo(children) {
+  const hasLogo = children.some((c) => c.kind === 'image' && c.isBrandLogo)
+  if (!hasLogo) return
+  for (const c of children) {
+    if (c.kind !== 'text' || c.token?.kind !== 'template') continue
+    let v = String(c.token.value ?? '')
+    v = v.replace(/@model=\s*@\{series\}@\{versionNumber\}@\{versionName\}/g, '@model=@{versionNumber}')
+    v = v.replace(/@model=\s*@\{series\}@\{versionNumber\}/g, '@model=@{versionNumber}')
+    v = v.replace(/@model=\s*@\{series\}/g, '@model=')
+    c.token = { ...c.token, value: v }
+  }
+}
+
+async function convertNode(node, ctx) {
+  if (!node) return null
+  if (node.type === 'TextView') return convertText(node, ctx.fonts)
+  if (node.type === 'ImageView') return convertImage(node, ctx)
+  if (node.type !== 'Layout') return null
+  const raw = node.childViews ?? []
+  const children = []
+  for (const c of raw) {
+    const n = await convertNode(c, ctx)
+    if (n) children.push(n)
+  }
+  if (!children.length) return null
+  applyBrandLogo(children)
+  const orientation = node.orientation === 'horizontal' ? 'row' : 'column'
+  const w = dp(node.layout_width, undefined)
+  const h = dp(node.layout_height, undefined)
+  return {
+    kind: 'group',
+    orientation,
+    width: w,
+    height: h,
+    matchWidth: node.layout_width === 'match_parent',
+    matchHeight: node.layout_height === 'match_parent',
+    gravity: gravity(node.gravity),
+    margins: {
+      ...(dp(node.margin_left) ? { left: dp(node.margin_left) } : {}),
+      ...(dp(node.margin_top) ? { top: dp(node.margin_top) } : {}),
+      ...(dp(node.margin_right) ? { right: dp(node.margin_right) } : {}),
+      ...(dp(node.margin_bottom) ? { bottom: dp(node.margin_bottom) } : {})
+    },
+    children
+  }
+}
+
+function containsPhoto(node) {
+  if (!node) return false
+  if (node.type === 'ImageView' && node.id === 'src_image_view') return true
+  return (node.childViews ?? []).some(containsPhoto)
+}
+
+function nodeHeight(node) {
+  if (!node) return 0
+  const h = dp(node.layout_height, 0)
+  if (h > 0) return h
+  if (node.type === 'TextView' || node.type === 'ImageView') return 24
+  if (node.type === 'Layout') {
+    if (node.orientation === 'vertical') return (node.childViews ?? []).reduce((n, c) => n + nodeHeight(c), 0)
+    return Math.max(0, ...(node.childViews ?? []).map(nodeHeight))
+  }
+  return 0
+}
+
+const BASE_W = 1080
+
+function widthFromLayout(value) {
+  const s = String(value ?? '')
+  const pct = /^([\d.]+)%w$/.exec(s)
+  if (pct) return (BASE_W * Number(pct[1])) / 100
+  if (s === 'match_parent') return BASE_W
+  const n = dp(value, 0)
+  return n > 0 ? n : undefined
+}
+
+function overlayMargins(node) {
+  const g = String(node?.gravity ?? '')
+  const out = {}
+  for (const key of ['left', 'top', 'right', 'bottom']) {
+    const n = dp(node?.[`margin_${key}`], 0)
+    if (!n) continue
+    if (n > 0) out[key] = n
+    else if (key === 'top' && /bottom/.test(g)) out.bottom = -n
+    else if (key === 'bottom' && /top/.test(g)) out.top = -n
+    else if (key === 'left' && /right/.test(g)) out.right = -n
+    else if (key === 'right' && /left/.test(g)) out.left = -n
+  }
+  return out
+}
+
+function findNode(node, match) {
+  if (!node) return null
+  if (match(node)) return node
+  for (const child of node.childViews ?? []) {
+    const found = findNode(child, match)
+    if (found) return found
+  }
+  return null
+}
+
+async function convertOverlayContainer(container, ctx) {
+  if (!container) return null
+  const children = []
+  for (const child of container.childViews ?? []) {
+    const converted = await convertNode(child, ctx)
+    if (converted) children.push(converted)
+  }
+  if (!children.length) return null
+  const width = widthFromLayout(container.layout_width)
+  const height = dp(container.layout_height, 0)
+  return {
+    kind: 'group',
+    orientation: container.orientation === 'vertical' ? 'column' : 'row',
+    ...(width ? { width } : {}),
+    ...(height > 0 ? { height } : {}),
+    gravity: gravity(container.gravity),
+    margins: overlayMargins(container),
+    children
+  }
+}
+
+async function convertInStyle(cfg, ctx) {
+  const groups = cfg.layout_group ?? []
+  const order = ['layout', 'bottom', 'bottom_left', 'center_top', 'top']
+  let root = null
+  let key = ''
+  for (const group of groups) {
+    for (const k of order) {
+      if (group[k]?.[0]) {
+        root = group[k][0]
+        key = k
+        break
+      }
+    }
+    if (root) break
+  }
+  if (!root) return { blocked: 'no supported in-style root' }
+  const container = findNode(root, (n) => n.id === 'watermark_container')
+  if (!container) return { blocked: 'no watermark container' }
+  const overlay = await convertOverlayContainer(container, ctx)
+  if (!overlay) return { blocked: 'empty watermark container' }
+  ctx.unsupported.add(`in-style overlay anchored using ${key} layout`)
+  if (groups.length > 1) ctx.unsupported.add(`${groups.length} anchor presets in config; default ${key} used`)
+  return { overlay, anchor: key }
+}
+
+function bandChildren(children) {
+  const out = children.filter(Boolean)
+  if (out.length >= 2 && !out.some((c) => c.kind === 'space')) {
+    return [out[0], { kind: 'space', weight: 1 }, ...out.slice(1)]
+  }
+  return out
+}
+
+async function convertRoot(root, ctx) {
+  const children = root.childViews ?? []
+  const photoIndex = children.findIndex((c) => c.type === 'ImageView' && c.id === 'src_image_view')
+  let topNodes = []
+  let bottomNodes = []
+  let leftPad = 0
+  let rightPad = 0
+  if (root.orientation !== 'horizontal') {
+    const hostIndex = children.findIndex(containsPhoto)
+    if (hostIndex < 0) return null
+    topNodes = children.slice(0, hostIndex)
+    bottomNodes = children.slice(hostIndex + 1)
+    const host = children[hostIndex]
+    if (host.type === 'Layout' && host.orientation === 'horizontal') {
+      const inner = host.childViews ?? []
+      const idx = inner.findIndex((c) => c.type === 'ImageView' && c.id === 'src_image_view')
+      if (idx >= 0) {
+        leftPad = inner.slice(0, idx).reduce((n, c) => n + dp(c.layout_width, 0), 0)
+        rightPad = inner.slice(idx + 1).reduce((n, c) => n + dp(c.layout_width, 0), 0)
+      }
+    }
+  } else {
+    const photoChildIndex = children.findIndex((c) => c.childViews?.some((x) => x.id === 'src_image_view'))
+    if (photoChildIndex < 0) return null
+    leftPad = children.slice(0, photoChildIndex).reduce((n, c) => n + dp(c.layout_width, 0), 0)
+    rightPad = children.slice(photoChildIndex + 1).reduce((n, c) => n + dp(c.layout_width, 0), 0)
+    const inner = children[photoChildIndex]
+    const innerChildren = inner.childViews ?? []
+    const idx = innerChildren.findIndex((c) => c.id === 'src_image_view')
+    if (idx < 0) return null
+    topNodes = innerChildren.slice(0, idx)
+    bottomNodes = innerChildren.slice(idx + 1)
+  }
+  const topThick = topNodes.reduce((n, c) => n + nodeHeight(c), 0)
+  const bottomThick = bottomNodes.reduce((n, c) => n + nodeHeight(c), 0)
+  const bands = []
+  const topContent = []
+  for (const n of topNodes) {
+    const c = await convertNode(n, ctx)
+    if (c) topContent.push(c)
+  }
+  if (topContent.length) bands.push({ direction: 'top', thickness: Math.max(1, topThick), children: bandChildren(topContent) })
+  const bottomContent = []
+  for (const n of bottomNodes) {
+    const c = await convertNode(n, ctx)
+    if (c) bottomContent.push(c)
+  }
+  if (bottomContent.length) bands.push({ direction: 'bottom', thickness: Math.max(1, bottomThick), children: bandChildren(bottomContent) })
+  if (!bands.length) return null
+  return { bands, margins: { left: leftPad, top: topThick, right: rightPad, bottom: bottomThick }, photoIndex }
+}
+
+function themeColor(bg) {
+  const v = String(bg?.value ?? '')
+  if (v.startsWith('@color=')) return v.slice(7)
+  if (v.startsWith('@algo=')) return '#00000000'
+  return '#FFFFFF'
+}
+
+async function convertStyle(family, id) {
+  const styleDir = path.join(ROOT, family, id)
+  const cfgPath = path.join(styleDir, 'config.json')
+  const metaPath = path.join(styleDir, 'meta.json')
+  if (!fs.existsSync(cfgPath)) return null
+  const raw = fs.readFileSync(cfgPath)
+  const cfg = JSON.parse(raw.toString('utf8').replace(/^\uFEFF/, ''))
+  const meta = fs.existsSync(metaPath) ? JSON.parse(fs.readFileSync(metaPath, 'utf8').replace(/^\uFEFF/, '')) : {}
+  const position = meta.metadata?.position
+  const backgrounds = cfg.wmRes?.background ?? []
+  const themes = backgrounds.map((b) => ({
+    id: String(b.name),
+    label: String(b.name),
+    swatch: themeColor(b),
+    background: themeColor(b),
+    foreground: Array.isArray(b.foreground) ? b.foreground : []
+  }))
+  const defaultTheme = themes[0]?.id ?? 'default'
+  const defaultBg = themes.find((t) => t.id === defaultTheme)?.background ?? '#FFFFFF'
+  const rgb = /^#([0-9a-fA-F]{6})/.exec(defaultBg.replace(/^#FF/i, '#'))
+  const lum = rgb ? (parseInt(rgb[1].slice(0, 2), 16) * 0.299 + parseInt(rgb[1].slice(2, 4), 16) * 0.587 + parseInt(rgb[1].slice(4, 6), 16) * 0.114) / 255 : 1
+  const ctx = { family, id, styleDir, fonts: cfg.wmRes?.fonts ?? {}, assets: {}, unsupported: new Set(), darkBg: lum > 0.5, themes, defaultTheme }
+  const label = FAMILY_LABEL[family] ?? family
+  const styleBase = {
+    id: `xiaomi-${family}:${id}`,
+    vendor: 'xiaomi',
+    family: '小米相机',
+    name: `${label} · ${id}`,
+    nameEn: `${family}_${id}`,
+    referenceWidth: 1080,
+    themes,
+    defaultTheme,
+    assets: ctx.assets
+  }
+
+  if (position === 'in') {
+    const converted = await convertInStyle(cfg, ctx)
+    if (!converted.overlay) return { blocked: converted.blocked ?? 'in-style overlay conversion failed' }
+    return {
+      style: {
+        ...styleBase,
+        placement: 'in',
+        margins: { left: 0, top: 0, right: 0, bottom: 0 },
+        background: '#00000000',
+        transparentBackground: true,
+        bands: [{ direction: 'overlay', children: [converted.overlay] }],
+        audit: {
+          status: 'approx',
+          notes: `In-style overlay (${converted.anchor}) converted from Xiaomi config; pending visual audit.`,
+          ...(ctx.unsupported.size ? { unsupported: [...ctx.unsupported] } : {})
+        }
+      }
+    }
+  }
+
+  const root = cfg.layout_group?.[0]?.layout?.[0] ?? cfg.layout_group?.[0]?.top?.[0]
+  if (!root) return { blocked: 'no supported root layout' }
+  const converted = await convertRoot(root, ctx)
+  if (!converted) return { blocked: 'unsupported root/photo layout' }
+  return {
+    style: {
+      ...styleBase,
+      placement: converted.margins.left || converted.margins.right ? 'with' : 'out',
+      margins: converted.margins,
+      background: themes.find((t) => t.id === defaultTheme)?.background ?? '#FFFFFF',
+      bands: converted.bands,
+      audit: { status: 'approx', notes: 'Auto-converted from Xiaomi camera config; needs visual audit.' }
+    }
+  }
+}
+
+async function main() {
+  const styles = []
+  const blocked = []
+  for (const family of fs.readdirSync(ROOT).filter((f) => fs.statSync(path.join(ROOT, f)).isDirectory() && f !== 'standard')) {
+    for (const id of fs.readdirSync(path.join(ROOT, family)).filter((f) => /^\d+$/.test(f)).sort((a, b) => Number(a) - Number(b))) {
+      const r = await convertStyle(family, id)
+      if (r?.style) styles.push(r.style)
+      else if (r?.blocked) blocked.push(`${family}/${id}: ${r.blocked}`)
+    }
+  }
+  const tintText = (style, predicate) => {
+    const walk = (n) => {
+      if (!n || typeof n !== 'object') return
+      if (n.kind === 'text' && predicate(n)) n.color = '#FFFFFF'
+      for (const c of n.children ?? []) walk(c)
+    }
+    for (const band of style.bands ?? []) for (const child of band.children ?? []) walk(child)
+  }
+  for (const style of styles) {
+    if (style.id === 'xiaomi-film:12' || style.id === 'xiaomi-film:103') {
+      style.defaultTheme = 'transparent'
+      style.background = '#FF121212'
+    }
+    if (style.id === 'xiaomi-classic:71' || style.id === 'xiaomi-classic:97') {
+      tintText(style, (n) => n.token?.kind === 'template' && /@model=/.test(n.token.value ?? ''))
+      for (const theme of style.themes ?? []) {
+        theme.foreground = theme.foreground.map(() => '#FFFFFFFF')
+      }
+    }
+    if (style.id === 'xiaomi-tag:10' || style.id === 'xiaomi-tag:11') {
+      tintText(style, (n) => n.token?.kind === 'template' && /@wm_time_(HH_mm|MM|dd)/.test(n.token.value ?? ''))
+    }
+    if (style.id === 'xiaomi-film:15') {
+      const walk = (n) => {
+        if (!n || typeof n !== 'object') return
+        if (n.kind === 'text' && /@exif=/.test(n.token?.value ?? '')) n.margins = { ...(n.margins ?? {}), top: 7 }
+        for (const c of n.children ?? []) walk(c)
+      }
+      for (const band of style.bands ?? []) for (const child of band.children ?? []) walk(child)
+    }
+  }
+  fs.mkdirSync(OUT_DIR, { recursive: true })
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'xiaomiStyles.ts'),
+    `import type { StockStyle } from '../ir'\n\nexport const XIAOMI_STYLES = ${JSON.stringify(styles, null, 2)} as StockStyle[]\n`
+  )
+  const variants = styles.map((s) => ({
+    id: `stock-${s.id.replace(/[:]/g, '-')}`,
+    name: s.name,
+    en: s.nameEn,
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: s.id },
+    text: { showMake: true, showModel: true, showExif: true, showDate: true, showLogo: true },
+    badge: '近似',
+    vendor: 'xiaomi',
+    family: s.family,
+    fidelity: s.audit.status
+  }))
+  fs.writeFileSync(
+    path.join(OUT_DIR, 'xiaomiVariants.ts'),
+    `import type { TemplateVariant } from '../../../types'\n\nexport const XIAOMI_VARIANTS = ${JSON.stringify(variants, null, 2)} as TemplateVariant[]\n`
+  )
+  console.log('styles', styles.length, 'blocked', blocked.length)
+  console.log('BLOCKED\n' + blocked.join('\n'))
+}
+
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

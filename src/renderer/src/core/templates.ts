@@ -1,0 +1,3307 @@
+import type { Rect, TemplateDef, TemplateRenderEnv } from '../types'
+import { systemCamera } from './system/template'
+import {
+  FONT_UI,
+  FONT_DISPLAY,
+  FONT_MONO,
+  FONT_HAND,
+  FONT_CN,
+  FONT_VENDOR,
+  FONT_TECH,
+  THEMES,
+  themeOf,
+  shortSide,
+  marginOf,
+  radiusOf,
+  pct,
+  setFont,
+  setTracking,
+  resetTracking,
+  roundRectPath,
+  fillRoundRect,
+  line,
+  drawPhoto,
+  drawPhotoCover,
+  drawBlurredBackdrop,
+  drawBrandLogo,
+  modelWithoutMake,
+  pickTitle,
+  fitSize,
+  drawFitted,
+  drawMeta,
+  drawSwatches,
+  extractPalette,
+  drawGrain,
+  drawBarcode,
+  drawSprockets,
+  drawVerticalText
+} from './draw'
+import { cameraLine, exifLine, formatDate, formatDateOnly, formatAperture, formatShutter } from './exif'
+import { loadImage } from './images'
+import { simpleFooterMetrics } from './watermark-layout'
+
+const POLAROID_URLS = import.meta.glob('../assets/system/oppo/camerapro/polaroid/*.webp', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+}) as Record<string, string>
+
+const POLAROID_META = [
+  { file: 'pld_frame_1_1_landscape.webp', w: 960, h: 1256, win: [42, 87, 876, 875], aspect: 876 / 875, orient: 'landscape' },
+  { file: 'pld_frame_4_3_landscape.webp', w: 1248, h: 1256, win: [42, 87, 1164, 875], aspect: 1164 / 875, orient: 'landscape' },
+  { file: 'pld_frame_16_9_landscape.webp', w: 1224, h: 942, win: [30, 64, 1164, 659], aspect: 1164 / 659, orient: 'landscape' },
+  { file: 'pld_frame_wide_landscape.webp', w: 1200, h: 616, win: [17, 40, 1166, 435], aspect: 1166 / 435, orient: 'landscape' },
+  { file: 'pld_frame_4_3_portrait.webp', w: 960, h: 1544, win: [42, 87, 876, 1163], aspect: 876 / 1163, orient: 'portrait' },
+  { file: 'pld_frame_16_9_portrait.webp', w: 720, h: 1446, win: [30, 64, 660, 1163], aspect: 660 / 1163, orient: 'portrait' },
+  { file: 'pld_frame_wide_portrait.webp', w: 472, h: 1344, win: [18, 38, 436, 1170], aspect: 436 / 1170, orient: 'portrait' }
+]
+
+function choosePolaroidFrame(pw: number, ph: number) {
+  const target = pw / ph
+  if (Math.abs(target - 1) < 0.06) return POLAROID_META[0]
+  const orient = target > 1 ? 'landscape' : 'portrait'
+  const candidates = POLAROID_META.filter((m) => m.orient === orient)
+  return candidates.reduce((best, m) =>
+    Math.abs(Math.log(m.aspect / target)) < Math.abs(Math.log(best.aspect / target)) ? m : best
+  )
+}
+
+const lightThemes = [
+  { id: 'white', label: '纯白', swatch: THEMES.white.bg },
+  { id: 'paper', label: '纸白', swatch: THEMES.paper.bg },
+  { id: 'cream', label: '米色', swatch: THEMES.cream.bg },
+  { id: 'stone', label: '灰米', swatch: THEMES.stone.bg },
+  { id: 'ink', label: '墨黑', swatch: THEMES.ink.bg },
+  { id: 'black', label: '纯黑', swatch: THEMES.black.bg }
+]
+const darkThemes = [
+  { id: 'ink', label: '墨黑', swatch: THEMES.ink.bg },
+  { id: 'black', label: '纯黑', swatch: THEMES.black.bg },
+  { id: 'paper', label: '纸白', swatch: THEMES.paper.bg },
+  { id: 'cream', label: '米色', swatch: THEMES.cream.bg }
+]
+
+function titleOf(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): string {
+  const t = env.text.title.trim()
+  if (t) return t
+  const cam = [
+    env.text.showMake ? env.exif.make : '',
+    env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return cam || cameraLine(env.exif, 'FRAME')
+}
+
+function subLine(env: TemplateRenderEnv): string {
+  return env.text.subtitle.trim()
+}
+
+function exifText(env: TemplateRenderEnv): string {
+  return env.text.showExif ? exifLine(env.exif) : ''
+}
+
+function dateText(env: TemplateRenderEnv): string {
+  return env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
+}
+
+function logoScale(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): number {
+  return 0.68 + pct(env.params.logoScale, 5) * 0.064
+}
+
+function metaColor(theme: { fg: string; sub: string }, _env: TemplateRenderEnv): { fg: string; sub: string } {
+  return { fg: theme.fg, sub: theme.sub }
+}
+
+const minimal: TemplateDef = {
+  id: 'minimal',
+  name: '留白 · 极简',
+  en: 'MARGIN',
+  category: '留白',
+  description: '细画框与底部参数区，干净、克制，适合街拍与日常。',
+  defaults: {
+    marginPct: 6.5,
+    radiusPct: 1.2,
+    shadow: 3,
+    footerPct: 12,
+    theme: 'white',
+    logoScale: 5,
+    footerAlign: 'center',
+    logoPos: 'none',
+    borderStyle: 'none'
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 6.5)) / 100
+    const hasLogo = String(env.params.logoPos ?? 'none') !== 'none'
+    const bottom = Math.max((S * pct(env.params.footerPct, 12)) / 100, S * (hasLogo ? 0.21 : 0.16))
+    return { W: env.pw + 2 * m, H: env.ph + m + bottom }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = marginOf(env)
+    const bottom = H - ph - m
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 3))
+    if (String(env.params.borderStyle ?? 'none') === 'thin') {
+      ctx.save()
+      ctx.strokeStyle = theme.line
+      ctx.lineWidth = Math.max(1, S * 0.0008)
+      roundRectPath(ctx, m, m, pw, ph, radiusOf(env))
+      ctx.stroke()
+      ctx.restore()
+    }
+    const align = (String(env.params.footerAlign ?? 'center') as 'left' | 'center' | 'right') || 'center'
+    const logoPos = String(env.params.logoPos ?? 'none')
+    const hasLogo = logoPos !== 'none' && env.text.showLogo
+    const anchorX = align === 'left' ? m : align === 'right' ? W - m : W / 2
+    if (hasLogo) {
+      const lw = S * 0.2 * logoScale(env)
+      const lh = bottom * 0.24
+      const lx = logoPos === 'footer-left' ? m : logoPos === 'footer-right' ? W - m - lw : W / 2 - lw / 2
+      drawBrandLogo(env, lx, m + ph + bottom * 0.10, lw, lh, theme.fg)
+    }
+    let y = m + ph + bottom * (hasLogo ? 0.46 : 0.30)
+    if (align === 'center') {
+      line(ctx, anchorX - S * 0.026, y - S * 0.11, anchorX + S * 0.026, y - S * 0.11, theme.accent, Math.max(1, S * 0.0013))
+    }
+    y += drawFitted(ctx, titleOf(env).toUpperCase(), anchorX, y, W - 2 * m, S * 0.026, theme.fg, {
+      align,
+      weight: 600,
+      tracking: 0.08,
+      family: FONT_UI,
+      min: S * 0.014
+    })
+    const ex = exifText(env)
+    if (ex) {
+      y += bottom * 0.18
+      y += drawFitted(ctx, ex, anchorX, y, W - 2 * m, S * 0.018, theme.sub, {
+        align,
+        family: FONT_MONO,
+        min: S * 0.01
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      y += bottom * 0.15
+      drawFitted(ctx, dt, anchorX, y, W - 2 * m, S * 0.015, theme.sub, {
+        align,
+        family: FONT_MONO,
+        min: S * 0.009
+      })
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const sideCard: TemplateDef = {
+  id: 'sideCard',
+  name: '侧栏卡片',
+  en: 'SIDE CARD',
+  category: '液态玻璃',
+  description: '固定 3:2 白卡：照片保比例，品牌与 F/MM/S 参数在侧栏。',
+  defaults: {
+    theme: 'white',
+    sideLayout: 'text-right',
+    marginPct: 4,
+    radiusPct: 2,
+    shadow: 0.8
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    return { W: S * 1.5, H: S }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const S = Math.min(pw, ph)
+    const theme = themeOf(env.params)
+    const m = (S * pct(env.params.marginPct, 4)) / 100
+    const radius = (S * pct(env.params.radiusPct, 2)) / 100
+    const shadow = pct(env.params.shadow, 0.8)
+    const layout = String(env.params.sideLayout ?? 'text-right')
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+
+    const maxW = W * (layout === 'split' ? 0.52 : 0.58)
+    let phH = H - 2 * m
+    let phW = (phH * pw) / ph
+    if (phW > maxW) {
+      phW = maxW
+      phH = (phW * ph) / pw
+    }
+    const photoX = layout === 'text-right' ? m : layout === 'text-left' ? W - m - phW : (W - phW) / 2
+    const photoY = (H - phH) / 2
+    drawPhoto(env, photoX, photoY, phW, phH, radius, shadow)
+
+    const gap = S * 0.045
+    const labelSize = S * 0.021
+    const boxW = S * 0.055
+    const boxH = S * 0.038
+    const rowGap = S * 0.035
+    const valueSize = S * 0.029
+    const brandH = S * 0.055
+    const rows = [
+      ['F', formatAperture(env.exif.aperture).replace(/^F/, '')],
+      ['MM', env.exif.focal ? String(Math.round(env.exif.focal)) : ''],
+      ['S', formatShutter(env.exif.shutter).replace(/s$/, '')]
+    ]
+    const drawRows = (x: number, width: number, top: number) => {
+      const rowH = boxH + rowGap
+      for (let i = 0; i < rows.length; i++) {
+        const [label, value] = rows[i]
+        const y = top + i * rowH
+        ctx.save()
+        ctx.strokeStyle = theme.line
+        ctx.lineWidth = Math.max(1, S * 0.0014)
+        roundRectPath(ctx, x, y, boxW, boxH, boxH * 0.22)
+        ctx.stroke()
+        ctx.restore()
+        drawFitted(ctx, label, x + boxW / 2, y + boxH / 2, boxW * 0.7, labelSize, theme.sub, {
+          family: FONT_MONO,
+          align: 'center',
+          baseline: 'middle'
+        })
+        drawFitted(ctx, value, x + boxW + S * 0.022, y + boxH / 2, width - boxW - S * 0.022, valueSize, theme.fg, {
+          family: FONT_MONO,
+          baseline: 'middle'
+        })
+      }
+    }
+    const drawBrand = (cx: number, width: number, cy: number) => {
+      const bw = Math.min(width * 0.72, S * 0.3)
+      drawBrandLogo(env, cx - bw / 2, cy - brandH / 2, bw, brandH, theme.fg)
+    }
+
+    if (layout === 'split') {
+      const leftW = photoX - gap - m
+      const rightX = photoX + phW + gap
+      const rightW = W - m - rightX
+      drawBrand(m + leftW / 2, leftW, H * 0.5)
+      drawRows(rightX, rightW, H * 0.29)
+    } else {
+      const panelX = layout === 'text-left' ? m : photoX + phW + gap
+      const panelW = layout === 'text-left' ? photoX - gap - m : W - m - panelX
+      drawBrand(panelX + panelW / 2, panelW, H * 0.27)
+      drawRows(panelX, panelW, H * 0.41)
+    }
+    return { x: photoX, y: photoY, w: phW, h: phH }
+  }
+}
+
+const specFooter: TemplateDef = {
+  id: 'specFooter',
+  name: '参数页脚卡',
+  en: 'SPEC FOOTER',
+  category: '液态玻璃',
+  description: '照片 + 白底参数页脚：机型/品牌与 F/MM/S 三框。',
+  defaults: {
+    theme: 'white',
+    marginPct: 3,
+    footerPct: 22,
+    radiusPct: 1.5,
+    shadow: 0.5
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 3)) / 100
+    const footerH = (S * pct(env.params.footerPct, 22)) / 100
+    return { W: env.pw + 2 * m, H: env.ph + 2 * m + footerH }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const S = Math.min(pw, ph)
+    const theme = themeOf(env.params)
+    const m = (W - pw) / 2
+    const footerH = H - ph - 2 * m
+    const radius = (S * pct(env.params.radiusPct, 1.5)) / 100
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, radius, pct(env.params.shadow, 0.5))
+
+    const contentW = W * 0.82
+    const footerTop = m + ph + m
+    const brandY = footerTop + footerH * 0.25
+    const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+    const sepX = W / 2
+    drawFitted(ctx, model, sepX - S * 0.035, brandY, W * 0.24, S * 0.022, theme.fg, {
+      family: FONT_UI,
+      weight: 600,
+      align: 'right',
+      baseline: 'middle'
+    })
+    ctx.save()
+    ctx.strokeStyle = theme.line
+    ctx.lineWidth = Math.max(1, S * 0.0012)
+    ctx.beginPath()
+    ctx.moveTo(sepX, brandY - S * 0.028)
+    ctx.lineTo(sepX, brandY + S * 0.028)
+    ctx.stroke()
+    ctx.restore()
+    const logoW = S * 0.14
+    const logoH = S * 0.035
+    drawBrandLogo(env, sepX + S * 0.035, brandY - logoH / 2, logoW, logoH, theme.fg)
+
+    const values = [
+      ['F', formatAperture(env.exif.aperture).replace(/^F/, '')],
+      ['MM', env.exif.focal ? String(Math.round(env.exif.focal)) : ''],
+      ['S', formatShutter(env.exif.shutter).replace(/s$/, '')]
+    ]
+    const rowW = contentW
+    const cellW = rowW / 3
+    const boxW = S * 0.075
+    const boxH = S * 0.04
+    const boxY = footerTop + footerH * 0.50
+    for (let i = 0; i < values.length; i++) {
+      const [label, value] = values[i]
+      const cx = (W - rowW) / 2 + cellW * (i + 0.5)
+      const bx = cx - boxW / 2
+      ctx.save()
+      ctx.strokeStyle = theme.line
+      ctx.lineWidth = Math.max(1, S * 0.0014)
+      roundRectPath(ctx, bx, boxY, boxW, boxH, boxH * 0.25)
+      ctx.stroke()
+      ctx.restore()
+      drawFitted(ctx, label, cx, boxY + boxH / 2, boxW * 0.7, S * 0.018, theme.sub, {
+        family: FONT_MONO,
+        align: 'center',
+        baseline: 'middle'
+      })
+      drawFitted(ctx, value, cx, footerTop + footerH * 0.80, cellW * 0.8, S * 0.026, theme.fg, {
+        family: FONT_MONO,
+        align: 'center',
+        baseline: 'middle'
+      })
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const splitReveal: TemplateDef = {
+  id: 'splitReveal',
+  name: '色彩显现',
+  en: 'SPLIT REVEAL',
+  category: '色卡',
+  description: '左半灰阶、右半彩色，中间竖线与三色点。',
+  defaults: { theme: 'paper' },
+  themes: lightThemes,
+  controls: [],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const split = W / 2
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(0, 0, split, H)
+    ctx.clip()
+    ctx.filter = 'grayscale(1)'
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    ctx.filter = 'none'
+    ctx.restore()
+    ctx.save()
+    ctx.strokeStyle = 'rgba(255,255,255,0.78)'
+    ctx.lineWidth = Math.max(1, S * 0.0016)
+    ctx.beginPath()
+    ctx.moveTo(split, 0)
+    ctx.lineTo(split, H)
+    ctx.stroke()
+    ctx.restore()
+    const palette = extractPalette(env, 5)
+    const r = S * 0.0105
+    const gap = r * 2.9
+    const cy = H * 0.62
+    for (let i = 0; i < 3; i++) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(split + (i - 1) * gap, cy, r, 0, Math.PI * 2)
+      ctx.fillStyle = palette[i + 1] ?? palette[i] ?? '#ffffff'
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(255,255,255,0.82)'
+      ctx.lineWidth = Math.max(1, S * 0.0012)
+      ctx.stroke()
+      ctx.restore()
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+const sideTicket: TemplateDef = {
+  id: 'sideTicket',
+  name: '票据 · 侧存根',
+  en: 'SIDE TICKET',
+  category: '票据',
+  description: '竖版背景中一张横票，照片在左、城市存根在右。',
+  defaults: {
+    theme: 'ink',
+    ticketBg: '#244231',
+    ticketPanel: '#31533f',
+    stubTitle: 'HANG ZHOU',
+    stubLabel: 'GUANGYING 100'
+  },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    return { W: S * 1.5, H: S * 2 }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(env.pw, env.ph)
+    const bg = String(env.params.ticketBg ?? '#244231')
+    const panel = String(env.params.ticketPanel ?? '#31533f')
+    const fg = '#f7f2e7'
+    const sub = 'rgba(247,242,231,0.72)'
+    const cardW = W * 0.86
+    const cardH = cardW * 0.4
+    const cardX = (W - cardW) / 2
+    const cardY = (H - cardH) / 2
+    const stubW = cardW * 0.27
+    const photoW = cardW - stubW
+    const boundary = cardX + photoW
+    const radius = S * 0.022
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'
+    ctx.shadowBlur = S * 0.04
+    ctx.shadowOffsetY = S * 0.015
+    fillRoundRect(ctx, cardX, cardY, cardW, cardH, radius, panel)
+    ctx.restore()
+    ctx.save()
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, radius)
+    ctx.clip()
+    drawPhotoCover(env, cardX, cardY, photoW, cardH, 0, 0)
+    ctx.fillStyle = panel
+    ctx.fillRect(boundary, cardY, stubW, cardH)
+    ctx.restore()
+
+    const notch = cardH * 0.035
+    for (const y of [cardY, cardY + cardH]) {
+      ctx.save()
+      ctx.fillStyle = bg
+      ctx.beginPath()
+      ctx.arc(boundary, y, notch, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+    ctx.save()
+    ctx.strokeStyle = 'rgba(247,242,231,0.35)'
+    ctx.lineWidth = Math.max(1, S * 0.0012)
+    ctx.setLineDash([S * 0.012, S * 0.01])
+    ctx.beginPath()
+    ctx.moveTo(boundary, cardY + notch * 1.3)
+    ctx.lineTo(boundary, cardY + cardH - notch * 1.3)
+    ctx.stroke()
+    ctx.restore()
+
+    const sx = boundary + S * 0.04
+    const sw = stubW - S * 0.075
+    const lines = String(env.params.stubTitle ?? 'HANG ZHOU').toUpperCase().split(/\s+/).slice(0, 2)
+    for (let i = 0; i < lines.length; i++) {
+      drawFitted(ctx, lines[i], sx, cardY + cardH * 0.16 + i * cardH * 0.16, sw, cardH * 0.15, fg, {
+        family: FONT_UI,
+        weight: 800,
+        baseline: 'middle'
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, sx, cardY + cardH * 0.52, sw, cardH * 0.095, fg, {
+        family: FONT_MONO,
+        weight: 600,
+        baseline: 'middle'
+      })
+    }
+    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), sx, cardY + cardH * 0.66, sw, cardH * 0.06, sub, {
+      family: FONT_MONO,
+      weight: 500,
+      tracking: 0.08,
+      baseline: 'middle'
+    })
+    drawBarcode(ctx, sx, cardY + cardH * 0.76, sw * 0.9, cardH * 0.13, fg, env.exif.model || 'FRAMEMARK')
+    return { x: cardX, y: cardY, w: photoW, h: cardH }
+  }
+}
+
+const poetryCard: TemplateDef = {
+  id: 'poetryCard',
+  name: '自然诗篇',
+  en: 'POETRY CARD',
+  category: '留白',
+  description: '标题/日期 + 圆角照片 + 色板与机型参数页脚。',
+  defaults: {
+    theme: 'white',
+    marginPct: 6,
+    radiusPct: 2,
+    headerPct: 18,
+    footerPct: 14,
+    shadow: 0.3
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 6)) / 100
+    const header = (S * pct(env.params.headerPct, 18)) / 100
+    const footer = (S * pct(env.params.footerPct, 14)) / 100
+    return { W: env.pw + 2 * m, H: header + env.ph + footer + 2 * m }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const S = Math.min(pw, ph)
+    const theme = themeOf(env.params)
+    const m = (W - pw) / 2
+    const header = (S * pct(env.params.headerPct, 18)) / 100
+    const footer = H - header - ph - 2 * m
+    const radius = (S * pct(env.params.radiusPct, 2)) / 100
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawFitted(ctx, titleOf(env), m, m + header * 0.38, W - 2 * m, S * 0.045, theme.fg, {
+      family: FONT_UI,
+      weight: 600,
+      min: S * 0.022
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, `PHOTOGRAPHED IN: ${dt}`, m, m + header * 0.66, W - 2 * m, S * 0.016, theme.sub, {
+        family: FONT_MONO,
+        tracking: 0.08,
+        min: S * 0.009
+      })
+    }
+    drawPhoto(env, m, m + header, pw, ph, radius, pct(env.params.shadow, 0.3))
+    const footerTop = m + header + ph
+    const paletteW = W * 0.34
+    drawSwatches(env, extractPalette(env, 5), m, footerTop + footer * 0.36, paletteW, S * 0.032, theme.sub)
+    const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+    drawFitted(ctx, model, W - m, footerTop + footer * 0.38, W * 0.42, S * 0.032, theme.fg, {
+      family: FONT_UI,
+      weight: 500,
+      align: 'right',
+      min: S * 0.016
+    })
+    const ex = techExifLine(env).replace(/\s+/g, ' ')
+    if (ex) {
+      drawFitted(ctx, ex, W - m, footerTop + footer * 0.70, W * 0.5, S * 0.017, theme.sub, {
+        family: FONT_MONO,
+        align: 'right',
+        min: S * 0.009
+      })
+    }
+    return { x: m, y: m + header, w: pw, h: ph }
+  }
+}
+
+const gallery: TemplateDef = {
+  id: 'gallery',
+  name: '留白 · 画廊',
+  en: 'GALLERY',
+  category: '留白',
+  description: '宽卡纸与标题层，像一张展览作品卡。',
+  defaults: { marginPct: 9, radiusPct: 0.5, shadow: 2, footerPct: 20, theme: 'cream', logoScale: 5 },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 9)) / 100
+    const bottom = Math.max((S * pct(env.params.footerPct, 20)) / 100, S * 0.20)
+    return { W: env.pw + 2 * m, H: env.ph + m + bottom }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = marginOf(env)
+    const bottom = H - ph - m
+    const baseY = m + ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 2))
+    ctx.save()
+    ctx.strokeStyle = theme.line
+    ctx.lineWidth = Math.max(1, S * 0.0008)
+    roundRectPath(ctx, m, m, pw, ph, radiusOf(env))
+    ctx.stroke()
+    ctx.restore()
+    line(ctx, m, baseY + bottom * 0.10, W - m, baseY + bottom * 0.10, theme.line, Math.max(1, S * 0.0008))
+    const title = titleOf(env)
+    const titleY = baseY + bottom * 0.37
+    drawFitted(ctx, title, m, titleY, W - 2 * m, S * 0.052, theme.fg, {
+      family: FONT_CN,
+      weight: 400,
+      min: S * 0.025
+    })
+    let metaY = titleY + S * 0.036
+    const sub = subLine(env)
+    if (sub) {
+      metaY += drawFitted(ctx, sub, m, metaY, W * 0.58, S * 0.017, theme.sub, {
+        family: FONT_UI,
+        min: S * 0.01
+      })
+      metaY += S * 0.006
+    }
+    const cam = env.text.showMake || env.text.showModel ? cameraLine(env.exif, '') : ''
+    if (cam) {
+      metaY += drawFitted(ctx, cam.toUpperCase(), m, metaY + S * 0.01, W * 0.55, S * 0.014, theme.sub, {
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.12,
+        min: S * 0.009
+      })
+    }
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, W - m, baseY + bottom * 0.37, W * 0.38, S * 0.017, theme.sub, {
+        align: 'right',
+        family: FONT_MONO,
+        min: S * 0.01
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, W - m, baseY + bottom * 0.52, W * 0.38, S * 0.014, theme.sub, {
+        align: 'right',
+        family: FONT_MONO,
+        min: S * 0.009
+      })
+    }
+    if (env.text.signature.trim()) {
+      drawFitted(ctx, env.text.signature, W - m, baseY + bottom * 0.76, W * 0.42, S * 0.035, theme.fg, {
+        align: 'right',
+        family: FONT_HAND,
+        min: S * 0.02
+      })
+    }
+    line(ctx, m, baseY + bottom * 0.82, W * 0.28, baseY + bottom * 0.82, theme.accent, Math.max(1, S * 0.0012))
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+function drawSimpleBrandFooter(env: TemplateRenderEnv): Rect {
+  const { ctx, W, H, pw, ph } = env
+  const theme = themeOf(env.params)
+  const m = simpleFooterMetrics(pw, ph, env.params)
+  ctx.fillStyle = theme.bg
+  ctx.fillRect(0, 0, W, H)
+  drawPhoto(env, 0, 0, pw, ph, 0, 0)
+  const cy = ph + m.footerH / 2
+  const logoPos = String(env.params.logoPos ?? 'center')
+  const make = env.exif.make.trim()
+  const model = modelWithoutMake(env.exif.make, env.exif.model)
+  const leftText = model || make || titleOf(env)
+  const rightLines = [
+    env.text.showExif ? exifLine(env.exif, { separator: ' ' }) : '',
+    env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
+  ].filter(Boolean)
+  const hasLogo = env.text.showLogo && Boolean(env.images?.logo)
+  let logoBox: { x: number; y: number; w: number; h: number } | null = null
+  if (hasLogo) {
+    let lx = W / 2 - m.logoW / 2
+    if (logoPos === 'left') lx = m.pad
+    else if (logoPos === 'right') lx = W - m.pad - m.logoW
+    logoBox = { x: lx, y: cy - m.logoH / 2, w: m.logoW, h: m.logoH }
+  }
+  const centerLeft = logoBox ? logoBox.x - m.gap : W / 2
+  const centerRight = logoBox ? logoBox.x + logoBox.w + m.gap : W / 2
+  if (logoPos === 'left' && logoBox) {
+    const tx = logoBox.x + logoBox.w + m.gap
+    drawFitted(ctx, leftText, tx, cy, Math.max(40, W / 2 - tx), m.fontLeft, theme.fg, {
+      family: FONT_VENDOR,
+      weight: 500,
+      baseline: 'middle',
+      min: m.fontLeft * 0.5
+    })
+  } else {
+    drawFitted(ctx, leftText, m.pad, cy, Math.max(40, centerLeft - m.pad), m.fontLeft, theme.fg, {
+      family: FONT_VENDOR,
+      weight: 500,
+      baseline: 'middle',
+      min: m.fontLeft * 0.5
+    })
+  }
+  if (logoBox) {
+    drawBrandLogo(env, logoBox.x, logoBox.y, logoBox.w, logoBox.h, theme.fg)
+  } else {
+    drawFitted(ctx, (make || leftText).toUpperCase(), W / 2, cy, W - 2 * m.pad, m.fontCenter, theme.fg, {
+      family: FONT_VENDOR,
+      weight: 700,
+      align: 'center',
+      baseline: 'middle',
+      min: m.fontCenter * 0.5
+    })
+  }
+  if (rightLines.length) {
+    const rightX = logoPos === 'right' && logoBox ? logoBox.x - m.gap : W - m.pad
+    const maxW = Math.max(60, logoPos === 'right' && logoBox ? rightX - centerRight : rightX - centerRight)
+    const lineGap = m.fontRight * 0.95
+    const blockH = m.fontRight + (rightLines.length - 1) * lineGap
+    let y = cy - blockH / 2 + m.fontRight * 0.52
+    rightLines.forEach((text, i) => {
+      drawFitted(ctx, text, rightX, y, maxW, i === 0 ? m.fontRight : m.fontRight * 0.78, i === 0 ? theme.fg : theme.sub, {
+        family: FONT_VENDOR,
+        weight: i === 0 ? 700 : 400,
+        align: 'right',
+        baseline: 'middle',
+        min: (i === 0 ? m.fontRight : m.fontRight * 0.78) * 0.5
+      })
+      y += lineGap
+    })
+  }
+  return { x: 0, y: 0, w: pw, h: ph }
+}
+
+const brandFooter: TemplateDef = {
+  id: 'brandFooter',
+  name: '品牌 · 页脚',
+  en: 'BRAND FOOTER',
+  category: '品牌',
+  description: '白/黑页脚、相机 Logo 与左右参数栏，最接近相机原厂水印。',
+  defaults: {
+    marginPct: 0,
+    radiusPct: 0,
+    shadow: 0,
+    footerPct: 7.5,
+    theme: 'white',
+    logoScale: 5,
+    logoPos: 'center',
+    footerMode: 'classic',
+    footerAuto: false,
+    footerTextScale: 1
+  },
+  themes: lightThemes,
+  controls: ['footer'],
+  layout(env) {
+    if (env.params.footerMode === 'simple' && env.params.footerAuto !== false) {
+      return { W: env.pw, H: env.ph + simpleFooterMetrics(env.pw, env.ph, env.params).footerH }
+    }
+    const S = Math.min(env.pw, env.ph)
+    const footer = Math.max((env.pw * pct(env.params.footerPct, 7.5)) / 100, S * 0.085)
+    return { W: env.pw, H: env.ph + footer }
+  },
+  render(env) {
+    if (env.params.footerMode === 'simple') return drawSimpleBrandFooter(env)
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const footer = H - ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, 0, 0, pw, ph, 0, 0)
+    line(ctx, 0, ph, W, ph, theme.line, Math.max(1, S * 0.0009))
+    const leftX = W * 0.04
+    const leftW = W * 0.28
+    const logoPos = String(env.params.logoPos ?? 'center')
+    const make = env.text.showMake ? env.exif.make : ''
+    const model = env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
+    const title = titleOf(env)
+    const makeText = (make || title).toUpperCase()
+    const modelText = model || (env.text.showLens ? env.exif.lens : '')
+    const showLeftText = !(logoPos === 'left' && env.text.showLogo)
+    if (showLeftText) {
+      drawFitted(ctx, makeText, leftX, ph + footer * 0.42, leftW, S * 0.027, theme.fg, {
+        family: FONT_UI,
+        weight: 700,
+        tracking: 0.03,
+        min: S * 0.013
+      })
+      if (modelText) {
+        drawFitted(ctx, modelText, leftX, ph + footer * 0.70, leftW, S * 0.02, theme.sub, {
+          family: FONT_UI,
+          weight: 400,
+          min: S * 0.01
+        })
+      }
+    }
+    if (env.text.showLogo) {
+      const lw = W * 0.17 * logoScale(env)
+      const lh = footer * 0.36 * logoScale(env)
+      let lx = W * 0.53 - lw / 2
+      if (logoPos === 'left') lx = leftX
+      else if (logoPos === 'right') lx = W * 0.96 - lw
+      drawBrandLogo(env, lx, ph + footer / 2 - lh / 2, lw, lh, theme.fg)
+    }
+    const ruleX = logoPos === 'right' ? W * 0.42 : W * 0.70
+    line(ctx, ruleX, ph + footer * 0.22, ruleX, ph + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
+    const rightX = logoPos === 'right' ? W * 0.44 : W * 0.72
+    const rightW = logoPos === 'right' ? W * 0.34 : W * 0.25
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, rightX, ph + footer * 0.42, rightW, S * 0.027, theme.fg, {
+        family: FONT_MONO,
+        weight: 400,
+        min: S * 0.012
+      })
+    }
+    const dt = env.text.showDate ? formatDate(env.exif.dateTime) : ''
+    if (dt) {
+      drawFitted(ctx, dt, rightX, ph + footer * 0.70, rightW, S * 0.021, theme.sub, {
+        family: FONT_MONO,
+        weight: 400,
+        min: S * 0.01
+      })
+    }
+    if (env.text.customLine.trim()) {
+      drawFitted(ctx, env.text.customLine, rightX, ph + footer * 0.88, rightW, S * 0.016, theme.accent, {
+        family: FONT_MONO,
+        weight: 400,
+        min: S * 0.009
+      })
+    }
+    return { x: 0, y: 0, w: pw, h: ph }
+  }
+}
+
+const personalBorder: TemplateDef = {
+  id: 'personalBorder',
+  name: '个人 · 签名边框',
+  en: 'PERSONAL BORDER',
+  category: '个人',
+  description: '原版个人边框：照片满幅、四周细白边 + 底部签名栏，照片按模板画幅裁切。',
+  defaults: {
+    marginPct: 2,
+    radiusPct: 0,
+    shadow: 0,
+    footerPct: 9.5,
+    borderPct: 2,
+    theme: 'white',
+    logoScale: 5,
+    logoPos: 'center',
+    signature: 'FrameMark'
+  },
+  themes: lightThemes,
+  controls: ['footer'],
+  layout(env) {
+    const b = (env.pw * pct(env.params.borderPct, 2)) / 100
+    return { W: env.pw + 2 * b, H: env.ph + 2 * b }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const b = (pw * pct(env.params.borderPct, 2)) / 100
+    const footerH = W * (pct(env.params.footerPct, 9.5) / 100)
+    const photoH = Math.max(ph * 0.4, H - b - footerH)
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhotoCover(env, b, b, pw, photoH, 0, 0)
+    const footerTop = H - footerH
+    const cy = footerTop + footerH / 2
+    const signature = String(env.params.signature ?? '').trim() || env.text.customLine.trim() || env.text.title.trim() || 'FrameMark'
+    const avatarSize = W * 0.036
+    const avatarX = b * 2
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(avatarX + avatarSize / 2, cy, avatarSize / 2, 0, Math.PI * 2)
+    ctx.fillStyle = '#c8a96b'
+    ctx.fill()
+    ctx.fillStyle = '#fff'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    setFont(ctx, avatarSize * 0.42, FONT_VENDOR, 700)
+    ctx.fillText(signature.slice(0, 1).toUpperCase(), avatarX + avatarSize / 2, cy)
+    ctx.restore()
+    const signatureX = avatarX + avatarSize + W * 0.016
+    drawFitted(ctx, signature, signatureX, cy, W * 0.245, Math.max(W * 0.021, 58), theme.fg, {
+      family: FONT_VENDOR,
+      weight: 600,
+      baseline: 'middle',
+      min: Math.max(W * 0.014, 34)
+    })
+    const dividerX = W * 0.663
+    const logoW = W * 0.097
+    const logoH = W * 0.0165
+    const gap = W * 0.03
+    const logoLeft = dividerX - gap - logoW
+    const modelRight = logoLeft - gap
+    const model = modelWithoutMake(env.exif.make, env.exif.model) || env.exif.make || pickTitle(env, false)
+    if (model) {
+      drawFitted(ctx, model, modelRight, cy, W * 0.17, W * 0.0205, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 400,
+        align: 'right',
+        baseline: 'middle',
+        min: W * 0.013
+      })
+    }
+    if (env.text.showLogo) {
+      drawBrandLogo(env, logoLeft, cy - logoH / 2, logoW, logoH, theme.fg)
+    }
+    line(ctx, dividerX, cy - footerH * 0.28, dividerX, cy + footerH * 0.28, theme.line, Math.max(1, W * 0.0006))
+    const rightX = W * 0.966
+    const right = env.text.showExif ? exifLine(env.exif, { separator: ' ' }) : ''
+    if (right) {
+      drawFitted(ctx, right, rightX, cy, W * 0.27, W * 0.018, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 400,
+        align: 'right',
+        baseline: 'middle',
+        min: W * 0.013
+      })
+    }
+    const dt = env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
+    if (dt) {
+      drawFitted(ctx, dt, rightX, cy + footerH * 0.24, W * 0.27, W * 0.018, theme.sub, {
+        family: FONT_VENDOR,
+        weight: 400,
+        align: 'right',
+        baseline: 'middle',
+        min: W * 0.011
+      })
+    }
+    return { x: b, y: b, w: pw, h: photoH }
+  }
+}
+
+const vendorFooter: TemplateDef = {
+  id: 'vendorFooter',
+  name: '厂商 · 水印',
+  en: 'VENDOR WATERMARK',
+  category: '厂商',
+  description: '哈苏/蔡司/徕卡厂商水印，哈苏按 OPPO 相册 JSON 规格，蔡司/徕卡按系统包提取的字体与字标。',
+  defaults: {
+    theme: 'white',
+    vendor: 'hasselblad',
+    footerPct: 16.67,
+    logoScale: 5,
+    logoPos: 'right',
+    shadow: 0,
+    radiusPct: 0
+  },
+  themes: lightThemes,
+  controls: ['footer'],
+  layout(env) {
+    const vendor = String(env.params.vendor ?? 'hasselblad')
+    const style = String(env.params.vendorStyle ?? (vendor === 'lumo' ? 'l1' : 'h1'))
+    const S = Math.min(env.pw, env.ph)
+    if (style === 'h3' || style === 'l2') {
+      const side = (S * pct(env.params.sidePadPct, 2.78)) / 100
+      const bottom = (S * pct(env.params.footerPct, 30.83)) / 100
+      return { W: env.pw + 2 * side, H: env.ph + side + bottom }
+    }
+    if (style === 'h4' || style === 'l3') {
+      const side = (S * pct(env.params.sidePadPct, 2.78)) / 100
+      const top = (S * pct(env.params.topPadPct, 21.94)) / 100
+      const bottom = (S * pct(env.params.footerPct, 21.94)) / 100
+      return { W: env.pw + 2 * side, H: env.ph + top + bottom }
+    }
+    const defaults = vendor === 'hasselblad' ? (style === 'h2' ? 18.89 : 16.67) : vendor === 'lumo' ? 16.67 : 12
+    const footerH =
+      vendor === 'hasselblad' || vendor === 'lumo'
+        ? (S * pct(env.params.footerPct, defaults)) / 100
+        : (env.pw * pct(env.params.footerPct, 12)) / 100
+    return { W: env.pw, H: env.ph + footerH }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const vendor = String(env.params.vendor ?? 'hasselblad')
+    const style = String(env.params.vendorStyle ?? (vendor === 'lumo' ? 'l1' : 'h1'))
+    const S = Math.min(pw, ph)
+    const u = S / 360
+    const device = [env.exif.make, modelWithoutMake(env.exif.make, env.exif.model)].filter(Boolean).join(' ') || titleOf(env)
+    const model = modelWithoutMake(env.exif.make, env.exif.model)
+    const full = cameraLine(env.exif) || model || titleOf(env)
+    const subText = dateText(env) || env.text.subtitle.trim()
+    const exifTextLine = exifText(env)
+    const matte = style === 'h3' || style === 'l2' || style === 'h4' || style === 'l3'
+    const side = matte ? (S * pct(env.params.sidePadPct, 2.78)) / 100 : 0
+    const topPad = style === 'h4' || style === 'l3' ? (S * pct(env.params.topPadPct, 21.94)) / 100 : side
+    const footerH = H - ph - topPad
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, side, topPad, pw, ph, 0, 0)
+    const photoBottom = topPad + ph
+    if (style === 'h2') {
+      const cy = ph + footerH / 2
+      const pad = 19 * u
+      const lineH = 15.03 * u
+      const blockH = lineH * 2 + 1 * u
+      drawFitted(ctx, device, pad, cy - blockH / 2 + lineH / 2, 230 * u, 11 * u, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 500,
+        baseline: 'middle',
+        min: 8 * u
+      })
+      if (subText) {
+        ctx.save()
+        ctx.globalAlpha = 0.65
+        drawFitted(ctx, subText, pad, cy + 1 * u + lineH / 2, 230 * u, 11 * u, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 400,
+          baseline: 'middle',
+          min: 8 * u
+        })
+        ctx.restore()
+      }
+      drawBrandLogo(env, W - pad - 36 * u, cy - 18 * u, 36 * u, 36 * u, theme.fg)
+      return { x: side, y: topPad, w: pw, h: ph }
+    }
+    if (style === 'h3' || style === 'l2') {
+      const cy = photoBottom + footerH / 2
+      const logoW = (style === 'h3' ? 36 : 65) * u
+      const logoH = (style === 'h3' ? 36 : 40) * u
+      const modelSize = (style === 'h3' ? 11.6 : 10.5) * u
+      const modelLh = (style === 'h3' ? 15.85 : 12) * u
+      const subSize = (style === 'h3' ? 10 : 8) * u
+      const subLh = (style === 'h3' ? 13.66 : 9) * u
+      const gapA = (style === 'h3' ? 4 : 2.5) * u
+      const gapB = (style === 'h3' ? 1 : 2) * u
+      const blockH = logoH + gapA + modelLh + gapB + subLh
+      const y0 = cy - blockH / 2
+      drawBrandLogo(env, (W - logoW) / 2, y0, logoW, logoH, theme.fg)
+      drawFitted(ctx, device, W / 2, y0 + logoH + gapA + modelLh / 2, 340 * u, modelSize, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 500,
+        align: 'center',
+        baseline: 'middle',
+        tracking: style === 'l2' ? 0.02 : 0,
+        min: modelSize * 0.55
+      })
+      if (subText) {
+        ctx.save()
+        ctx.globalAlpha = 0.65
+        drawFitted(ctx, subText, W / 2, y0 + logoH + gapA + modelLh + gapB + subLh / 2, 340 * u, subSize, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 400,
+          align: 'center',
+          baseline: 'middle',
+          tracking: style === 'l2' ? 0.06 : 0,
+          min: subSize * 0.55
+        })
+        ctx.restore()
+      }
+      return { x: side, y: topPad, w: pw, h: ph }
+    }
+    if (style === 'h4' || style === 'l3') {
+      const topArea = topPad
+      if (style === 'h4') {
+        drawBrandLogo(env, (W - 116 * u) / 2, (topArea - 9 * u) / 2, 116 * u, 9 * u, theme.fg)
+      } else {
+        drawBrandLogo(env, (W - 65 * u) / 2, (topArea - 40 * u) / 2, 65 * u, 40 * u, theme.fg)
+      }
+      const areaTop = photoBottom
+      const areaH = footerH
+      if (style === 'h4') {
+        const modelLh = 16.39 * u
+        const paramLh = 11.54 * u
+        const blockH = modelLh + 3 * u + paramLh
+        const y0 = areaTop + (areaH - blockH) / 2
+        drawFitted(ctx, device, W / 2, y0 + modelLh / 2, 340 * u, 12 * u, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 500,
+          align: 'center',
+          baseline: 'middle',
+          tracking: 0.03,
+          min: 8 * u
+        })
+        if (exifTextLine) {
+          ctx.save()
+          ctx.globalAlpha = 0.8
+          drawFitted(ctx, exifTextLine, W / 2, y0 + modelLh + 3 * u + paramLh / 2, 340 * u, 8.45 * u, theme.fg, {
+            family: FONT_VENDOR,
+            weight: 500,
+            align: 'center',
+            baseline: 'middle',
+            tracking: 0.03,
+            min: 6 * u
+          })
+          ctx.restore()
+        }
+      } else {
+        const modelLh = 14 * u
+        const subLh = 9 * u
+        const blockH = modelLh + 3 * u + subLh
+        const y0 = areaTop + (areaH - blockH) / 2
+        drawFitted(ctx, device, W / 2, y0 + modelLh / 2, 340 * u, 12 * u, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 600,
+          align: 'center',
+          baseline: 'middle',
+          tracking: 0.04,
+          min: 8 * u
+        })
+        if (subText) {
+          drawFitted(ctx, subText, W / 2, y0 + modelLh + 3 * u + subLh / 2, 340 * u, 8 * u, theme.fg, {
+            family: FONT_VENDOR,
+            weight: 400,
+            align: 'center',
+            baseline: 'middle',
+            tracking: 0.08,
+            min: 6 * u
+          })
+        }
+      }
+      return { x: side, y: topPad, w: pw, h: ph }
+    }
+    if (style === 'l1') {
+      const cy = ph + footerH / 2
+      const pad = 20 * u
+      const modelLh = 14 * u
+      const subLh = 8 * u
+      const gap = 1 * u
+      const blockH = modelLh + gap + subLh
+      drawFitted(ctx, device, pad, cy - blockH / 2 + modelLh / 2, W * 0.6, 12 * u, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 600,
+        baseline: 'middle',
+        tracking: 0.04,
+        min: 8 * u
+      })
+      if (subText) {
+        drawFitted(ctx, subText, pad, cy - blockH / 2 + modelLh + gap + subLh / 2, W * 0.6, 7 * u, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 400,
+          baseline: 'middle',
+          tracking: 0.08,
+          min: 5 * u
+        })
+      }
+      drawBrandLogo(env, W - 16 * u - 52 * u, cy - 16 * u, 52 * u, 32 * u, theme.fg)
+      return { x: 0, y: 0, w: pw, h: ph }
+    }
+    const cy = ph + footerH / 2
+    if (vendor === 'hasselblad') {
+      const S = Math.min(pw, ph)
+      const pad = (S * 24) / 360
+      const date = env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
+      const left = date || model || full
+      drawFitted(ctx, left, pad, cy, W * 0.5 - pad, (S * 13) / 360, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 500,
+        baseline: 'middle',
+        min: S * 0.018
+      })
+      if (env.text.showLogo && env.images?.logo) {
+        const lw = (S * 112.8) / 360
+        const lh = (S * 8.96) / 360
+        const rp = (S * 24) / 360
+        const dot = (S * 7.2) / 360
+        const gap = (S * 8.94) / 360
+        const textSize = (S * 7.2) / 360
+        const total = lh + gap + textSize
+        const x = W - rp - lw
+        const y0 = cy - total / 2
+        drawBrandLogo(env, x, y0, lw, lh, theme.fg)
+        const rowY = y0 + lh + gap + textSize / 2
+        ctx.save()
+        ctx.fillStyle = '#FF8933'
+        ctx.beginPath()
+        ctx.arc(x + dot / 2, rowY, dot / 2, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+        ctx.save()
+        ctx.globalAlpha = 0.7
+        drawFitted(ctx, model || full, x + dot + (S * 6.6) / 360, rowY, lw - dot, textSize, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 700,
+          baseline: 'middle',
+          min: textSize * 0.5
+        })
+        ctx.restore()
+      } else {
+        drawFitted(ctx, 'HASSELBLAD', W - pad, cy, W * 0.42, S * 0.03, theme.fg, {
+          family: FONT_VENDOR,
+          weight: 700,
+          align: 'right',
+          baseline: 'middle',
+          min: S * 0.015
+        })
+      }
+      return { x: 0, y: 0, w: pw, h: ph }
+    }
+    const pad = W * 0.04
+    const square = vendor === 'zeiss'
+    const logoH = square ? footerH * 0.55 : footerH * 0.32
+    const logoW = square ? logoH : Math.min(W * 0.15, footerH * 1.2)
+    const logoX = W - pad - logoW
+    const textMax = Math.max(W * 0.2, logoX - pad - W * 0.03)
+    const exif = env.text.showExif ? exifLine(env.exif, { separator: ' ' }) : ''
+    const date = env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
+    const titleSize = W * 0.024
+    const subSize = W * 0.016
+    const lines = [full || model || titleOf(env), exif, date].filter(Boolean)
+    const lineGap = subSize * 0.55
+    const blockH = lines.reduce((n, _, i) => n + (i === 0 ? titleSize : subSize) + (i ? lineGap : 0), 0)
+    let y = cy - blockH / 2 + titleSize * 0.52
+    lines.forEach((text, i) => {
+      const size = i === 0 ? titleSize : subSize
+      drawFitted(ctx, text, pad, y, textMax, size, i === 0 ? theme.fg : theme.sub, {
+        family: FONT_VENDOR,
+        weight: i === 0 ? 600 : 400,
+        baseline: 'middle',
+        min: size * 0.5
+      })
+      y += size + lineGap
+    })
+    if (env.text.showLogo && env.images?.logo) {
+      drawBrandLogo(env, logoX, cy - logoH / 2, logoW, logoH, theme.fg)
+    }
+    return { x: 0, y: 0, w: pw, h: ph }
+  }
+}
+
+const xiaomiLeica: TemplateDef = {
+  id: 'xiaomiLeica',
+  name: '小米 · 徕卡',
+  en: 'XIAOMI LEICA',
+  category: '厂商',
+  description: '按小米相机 Leica 水印类反编译参数实现：短边 /1080 的 168/138 设计高度、左品牌右参数、分隔线、徕卡红标。',
+  defaults: { theme: 'white', shadow: 0, radiusPct: 0, logoScale: 5, logoPos: 'right' },
+  themes: lightThemes,
+  controls: ['footer'],
+  layout(env) {
+    const ratio = Math.min(env.pw, env.ph) / 1080
+    const designH = env.text.showDate ? 168 : 138
+    const raw = designH * ratio
+    return { W: env.pw, H: env.ph + Math.floor(raw / 8) * 8 }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const ratio = Math.min(pw, ph) / 1080
+    const multi = env.text.showDate
+    const footerH = H - ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, 0, 0, pw, ph, 0, 0)
+    const pad = 50 * ratio
+    const brand = [env.exif.make, modelWithoutMake(env.exif.make, env.exif.model)].filter(Boolean).join(' ') || titleOf(env)
+    const exif = env.text.showExif ? exifLine(env.exif, { separator: '  ' }) : ''
+    const brandSize = 30 * ratio
+    const smallSize = 22 * ratio
+    const topLineH = brandSize * 1.2
+    const bottomLineH = smallSize * 1.2
+    const gap = 20 * ratio
+    const blockH = topLineH + (multi ? bottomLineH + gap : 0)
+    const topCenter = ph + (footerH - blockH) / 2 + topLineH / 2
+    const bottomCenter = ph + footerH - (footerH - blockH) / 2 - bottomLineH / 2
+    drawFitted(ctx, brand, pad, topCenter, Math.max(W * 0.2, W * 0.55 - pad), brandSize, theme.fg, {
+      family: FONT_VENDOR,
+      weight: 500,
+      baseline: 'middle',
+      min: brandSize * 0.45
+    })
+    if (exif) {
+      drawFitted(ctx, exif, W - pad, topCenter, W * 0.46, brandSize, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 500,
+        align: 'right',
+        baseline: 'middle',
+        min: brandSize * 0.45
+      })
+    }
+    let exifW = 0
+    if (exif) {
+      ctx.save()
+      setFont(ctx, brandSize, FONT_VENDOR, 500)
+      exifW = ctx.measureText(exif).width
+      ctx.restore()
+    }
+    if (multi) {
+      const dt = formatDate(env.exif.dateTime).replace(/-/g, '.')
+      if (dt) {
+        drawFitted(ctx, dt, W - pad - exifW, bottomCenter, Math.max(W * 0.2, exifW), smallSize, 'rgba(0,0,0,0.55)', {
+          family: FONT_VENDOR,
+          weight: 400,
+          baseline: 'middle',
+          tracking: 0.05,
+          min: smallSize * 0.5
+        })
+      }
+    }
+    if (exifW > 0) {
+      const dividerX = W - pad - exifW - 22 * ratio
+      const dividerTop = ph + (multi ? 52 : 44) * ratio
+      ctx.save()
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'
+      ctx.fillRect(dividerX, dividerTop, Math.max(2 * ratio, 1), H - dividerTop)
+      ctx.restore()
+      if (env.text.showLogo && env.images?.logo) {
+        const logoH = (multi ? 64 : 58) * ratio
+        const logoW = logoH
+        const logoX = dividerX - 22 * ratio - logoW
+        const logoY = ph + (footerH - logoH) / 2 + (multi ? 0 : 1)
+        drawBrandLogo(env, logoX, logoY, logoW, logoH, theme.fg)
+      }
+    }
+    return { x: 0, y: 0, w: pw, h: ph }
+  }
+}
+
+const paramStack: TemplateDef = {
+  id: 'paramStack',
+  name: '四角 · 参数',
+  en: 'PARAM STACK',
+  category: '参数',
+  description: '满幅照片，四行相机参数压在画面一角，原版「极简 01–04」。字体 Bebas Neue，带斜切。',
+  defaults: {
+    theme: 'ink',
+    corner: 'tl',
+    paramPadPct: 3,
+    paramSizePct: 5.4,
+    paramGapPct: 20,
+    shadow: 0,
+    radiusPct: 0,
+    logoScale: 5,
+    logoPos: 'none'
+  },
+  themes: darkThemes,
+  controls: ['footer'],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    drawPhoto(env, 0, 0, pw, ph, 0, 0)
+    const corner = String(env.params.corner ?? 'tl')
+    const right = corner.endsWith('r')
+    const bottom = corner.startsWith('b')
+    const S = Math.min(pw, ph)
+    const size = (S * pct(env.params.paramSizePct, 5.4)) / 100
+    const gap = (size * pct(env.params.paramGapPct, 20)) / 100
+    const padX = (W * pct(env.params.paramPadPct, 3)) / 100
+    const padY = (S * pct(env.params.paramPadPct, 3)) / 100
+    const focal = env.exif.focal ? `${Math.round(env.exif.focal)}mm` : ''
+    const aperture = formatAperture(env.exif.aperture)
+    const shutter = formatShutter(env.exif.shutter).replace(/s$/, '')
+    const iso = env.exif.iso ? `ISO ${env.exif.iso}` : ''
+    const fallback = env.isPreview ? ['28mm', 'F2.8', '1/125', 'ISO 100'] : []
+    const lines = [focal, aperture, shutter, iso].map((t, i) => t || fallback[i] || '').filter(Boolean)
+    if (!lines.length) return { x: 0, y: 0, w: pw, h: ph }
+    const blockH = lines.length * size + (lines.length - 1) * gap
+    const x = right ? W - padX : padX
+    let y = bottom ? ph - padY - blockH + size / 2 : padY + size / 2
+    ctx.save()
+    ctx.fillStyle = '#ffffff'
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = right ? 'right' : 'left'
+    for (const text of lines) {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.transform(1, 0, -0.2, 1, 0, 0)
+      drawFitted(ctx, text, 0, 0, W * 0.6, size, '#ffffff', {
+        family: '"Bebas Neue", "Inter", sans-serif',
+        weight: 400,
+        align: right ? 'right' : 'left',
+        baseline: 'middle',
+        tracking: 0.02,
+        min: size * 0.6,
+        shadow: true
+      })
+      ctx.restore()
+      y += size + gap
+    }
+    ctx.restore()
+    return { x: 0, y: 0, w: pw, h: ph }
+  }
+}
+
+function profileName(env: TemplateRenderEnv): string {
+  return String(env.params.profileName || env.text.title || env.text.subtitle || 'FrameMark').trim() || 'FrameMark'
+}
+
+function avatarRadius(env: TemplateRenderEnv, fallbackPct = 4.3): number {
+  const S = Math.min(env.pw, env.ph)
+  return (S * pct(env.params.avatarPct, fallbackPct)) / 200
+}
+
+function avatarNameSize(env: TemplateRenderEnv, fallbackPct = 2.6): number {
+  const S = Math.min(env.pw, env.ph)
+  return (S * pct(env.params.nameSizePct, fallbackPct)) / 100
+}
+
+function measureProfileName(env: TemplateRenderEnv, size: number): number {
+  const ctx = env.ctx
+  ctx.save()
+  setFont(ctx, size, FONT_UI, 500)
+  const w = ctx.measureText(profileName(env)).width
+  ctx.restore()
+  return w
+}
+
+function avatarChipWidth(env: TemplateRenderEnv, r: number, nameSize: number): number {
+  return r * 2 + r * 0.9 + measureProfileName(env, nameSize)
+}
+
+function drawAvatarChip(
+  env: TemplateRenderEnv,
+  left: number,
+  cy: number,
+  r: number,
+  color: string,
+  nameSize: number,
+  alpha = 1
+): void {
+  const { ctx } = env
+  const theme = themeOf(env.params)
+  const name = profileName(env)
+  const cx = left + r
+  const light = color === '#ffffff'
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.clip()
+  const avatar = env.images?.avatar
+  if (avatar) {
+    const iw = avatar.naturalWidth || avatar.width
+    const ih = avatar.naturalHeight || avatar.height
+    const scale = Math.max((r * 2) / iw, (r * 2) / ih)
+    ctx.drawImage(avatar, cx - (iw * scale) / 2, cy - (ih * scale) / 2, iw * scale, ih * scale)
+  } else {
+    if (light) {
+      const grad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r)
+      grad.addColorStop(0, 'rgba(58,58,64,0.92)')
+      grad.addColorStop(1, 'rgba(12,12,14,0.94)')
+      ctx.fillStyle = grad
+    } else {
+      ctx.fillStyle = theme.fg
+    }
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
+    ctx.fillStyle = light ? '#ffffff' : theme.bg
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    setFont(ctx, r * 0.96, FONT_UI, 600)
+    ctx.fillText(name.slice(0, 1), cx, cy + r * 0.02)
+  }
+  ctx.restore()
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.strokeStyle = light ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.9)'
+  ctx.lineWidth = Math.max(1, r * 0.09)
+  ctx.stroke()
+  ctx.restore()
+  ctx.save()
+  ctx.globalAlpha = alpha
+  drawFitted(ctx, name, left + r * 2.9, cy, nameSize * 12, nameSize, color, {
+    family: FONT_UI,
+    weight: 500,
+    baseline: 'middle',
+    min: nameSize * 0.8,
+    shadow: light
+  })
+  ctx.restore()
+}
+
+function techExifLine(env: TemplateRenderEnv): string {
+  const e = env.exif
+  const parts: string[] = []
+  if (e.focal) parts.push(`${Math.round(e.focal)}mm`)
+  if (e.shutter) parts.push(formatShutter(e.shutter))
+  if (e.aperture) parts.push(formatAperture(e.aperture))
+  if (e.iso) parts.push(`ISO ${e.iso}`)
+  return parts.join('   ')
+}
+
+function classicExifLine(env: TemplateRenderEnv): string {
+  const e = env.exif
+  const parts: string[] = []
+  if (e.focal) parts.push(`${Math.round(e.focal)}mm`)
+  if (e.aperture) parts.push(formatAperture(e.aperture))
+  if (e.iso) parts.push(`ISO${e.iso}`)
+  if (e.shutter) parts.push(formatShutter(e.shutter))
+  return parts.join('  ')
+}
+
+function drawTechText(
+  env: TemplateRenderEnv,
+  text: string,
+  cx: number,
+  cy: number,
+  color: string,
+  size: number,
+  targetW: number,
+  align: 'left' | 'center' | 'right' = 'center',
+  alpha = 1
+): void {
+  if (!text) return
+  const ctx = env.ctx
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate(cx, cy)
+  drawFitted(ctx, text, 0, 0, targetW, size, color, {
+    family: FONT_TECH,
+    weight: 600,
+    align,
+    baseline: 'middle',
+    tracking: 0.03,
+    min: size * 0.7,
+    shadow: color === '#ffffff'
+  })
+  ctx.restore()
+}
+
+function drawTechExif(
+  env: TemplateRenderEnv,
+  cx: number,
+  cy: number,
+  color: string,
+  size: number,
+  targetW: number,
+  align: 'left' | 'center' | 'right' = 'center',
+  alpha = 1
+): void {
+  drawTechText(env, techExifLine(env), cx, cy, color, size, targetW, align, alpha)
+}
+
+const matteOverlay: TemplateDef = {
+  id: 'matteOverlay',
+  name: '留白 · 叠字',
+  en: 'MATTE OVERLAY',
+  category: '留白',
+  description: '原版「白边 01–04」：照片外包一圈白边，品牌与参数压在照片内，白字带阴影。',
+  defaults: {
+    theme: 'white',
+    marginPct: 4.5,
+    radiusPct: 1.8,
+    overlayMode: 'brand',
+    overlayBrand: 'HASSELBLAD',
+    exifAlign: 'center',
+    brandWidthPct: 26.8,
+    brandOffsetPct: 4.5,
+    exifWidthPct: 42,
+    exifSizePct: 1.55,
+    exifOffsetPct: 5,
+    avatarPct: 4,
+    nameSizePct: 2.3,
+    footerTextScale: 100,
+    shadow: 0,
+    logoScale: 5,
+    logoPos: 'none'
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 4.5)) / 100
+    const mt = (S * pct(env.params.marginTopPct, pct(env.params.marginPct, 4.5))) / 100
+    const mb = (S * pct(env.params.marginBottomPct, pct(env.params.marginPct, 4.5))) / 100
+    return { W: env.pw + 2 * m, H: env.ph + mt + mb }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = (W - pw) / 2
+    const mt = (S * pct(env.params.marginTopPct, pct(env.params.marginPct, 4.5))) / 100
+    const radius = (S * pct(env.params.radiusPct, 1.8)) / 100
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, mt, pw, ph, radius, 0)
+    const mode = String(env.params.overlayMode ?? 'brand')
+    if (mode === 'none') return { x: m, y: mt, w: pw, h: ph }
+    const brandW = (S * pct(env.params.brandWidthPct, 26.8)) / 100
+    const brandH = brandW / 14.63
+    const brandCy = mt + ph - (S * pct(env.params.brandOffsetPct, 4.5)) / 100
+    const exifSize = (S * pct(env.params.exifSizePct, 1.55)) / 100
+    const exifW = (S * pct(env.params.exifWidthPct, 42)) / 100
+    const exifCy = mt + ph - (S * pct(env.params.exifOffsetPct, 5)) / 100
+    const drawBrand = (cy: number) => {
+      if (env.text.showLogo && env.images?.logo) {
+        drawBrandLogo(env, W / 2 - brandW / 2, cy - brandH / 2, brandW, brandH, '#ffffff')
+        return
+      }
+      const text = String(env.params.overlayBrand ?? '').trim()
+      if (!text) return
+      drawFitted(ctx, text, W / 2, cy, W * 0.8, brandH, '#ffffff', {
+        family: FONT_VENDOR,
+        weight: 600,
+        align: 'center',
+        baseline: 'middle',
+        tracking: 0.18,
+        min: brandH * 0.6,
+        shadow: true
+      })
+    }
+    if (mode === 'profile-chip') {
+      const r = avatarRadius(env, 4)
+      const nameSize = avatarNameSize(env, 2.3)
+      const cw = avatarChipWidth(env, r, nameSize)
+      drawAvatarChip(env, W / 2 - cw / 2, mt + S * 0.055, r, '#ffffff', nameSize)
+      if (env.text.showExif) drawTechExif(env, W / 2, exifCy, '#ffffff', exifSize, exifW)
+      return { x: m, y: mt, w: pw, h: ph }
+    }
+    if (mode === 'brand' || mode === 'brand-exif') drawBrand(brandCy)
+    if ((mode === 'exif' || mode === 'brand-exif') && env.text.showExif) {
+      const align = String(env.params.exifAlign ?? 'center') as 'left' | 'center' | 'right'
+      const x = align === 'left' ? m + S * 0.04 : align === 'right' ? m + pw - S * 0.04 : W / 2
+      drawTechText(env, classicExifLine(env), x, exifCy, '#ffffff', exifSize, exifW, align)
+    }
+    return { x: m, y: mt, w: pw, h: ph }
+  }
+}
+
+const logoFooter: TemplateDef = {
+  id: 'logoFooter',
+  name: '图标 · 页脚',
+  en: 'LOGO FOOTER',
+  category: '卡片',
+  description: '原版「卡片 01/02」：照片满宽，白色页脚居中放品牌图标，可选参数行。',
+  defaults: {
+    theme: 'white',
+    insetPct: 0,
+    footerPct: 14.8,
+    radiusPct: 0,
+    shadow: 0,
+    logoPct: 5.5,
+    exifSizePct: 2.3,
+    exifWidthPct: 29.5,
+    logoScale: 5,
+    logoPos: 'center'
+  },
+  themes: lightThemes,
+  controls: ['footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const inset = (S * pct(env.params.insetPct, 0)) / 100
+    const footerH = (S * pct(env.params.footerPct, 14.8)) / 100
+    return { W: env.pw + 2 * inset, H: inset + env.ph + footerH }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const inset = (W - pw) / 2
+    const footerH = H - inset - ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, inset, inset, pw, ph, 0, 0)
+    const showExif = env.text.showExif && Boolean(classicExifLine(env))
+    const logoH = (S * pct(env.params.logoPct, 5.5)) / 100
+    const logoW = logoH
+    const logoCy = inset + ph + footerH * (showExif ? 0.32 : 0.5)
+    if (env.text.showLogo) drawBrandLogo(env, W / 2 - logoW / 2, logoCy - logoH / 2, logoW, logoH, theme.fg)
+    if (showExif) {
+      drawTechText(
+        env,
+        classicExifLine(env),
+        W / 2,
+        inset + ph + footerH * 0.72,
+        theme.fg,
+        (S * pct(env.params.exifSizePct, 2.3)) / 100,
+        (S * pct(env.params.exifWidthPct, 29.5)) / 100
+      )
+    }
+    return { x: inset, y: inset, w: pw, h: ph }
+  }
+}
+
+const matteFooter: TemplateDef = {
+  id: 'matteFooter',
+  name: '留白 · 页脚',
+  en: 'MATTE FOOTER',
+  category: '卡片',
+  description: '原版「卡片 03/04」：四周细白边，照片下方留白放参数或图标字标。',
+  defaults: {
+    theme: 'white',
+    marginPct: 1.15,
+    footerPct: 9.5,
+    footerOffsetPct: 0,
+    radiusPct: 0,
+    shadow: 0,
+    logoPct: 5,
+    brandTextSizePct: 2.6,
+    exifSizePct: 1.9,
+    exifWidthPct: 28.3,
+    logoScale: 5,
+    logoPos: 'center'
+  },
+  themes: lightThemes,
+  controls: ['margin', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 1.15)) / 100
+    const footerH = (S * pct(env.params.footerPct, 9.5)) / 100
+    return { W: env.pw + 2 * m, H: env.ph + m + footerH }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = (W - pw) / 2
+    const footerH = H - ph - m
+    const cy = m + ph + footerH / 2 + (S * pct(env.params.footerOffsetPct, 0)) / 100
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, 0, 0)
+    const showExif = env.text.showExif && Boolean(classicExifLine(env))
+    const brandText = String(env.params.overlayBrand ?? '').trim()
+    if (env.text.showLogo && env.images?.logo && brandText) {
+      const logoH = (S * pct(env.params.logoPct, 5)) / 100
+      const textSize = (S * pct(env.params.brandTextSizePct, 2.6)) / 100
+      ctx.save()
+      setFont(ctx, textSize, FONT_VENDOR, 600)
+      const textW = ctx.measureText(brandText).width
+      ctx.restore()
+      const gap = textSize * 1.3
+      const total = logoH + gap + textW
+      const x0 = W / 2 - total / 2
+      drawBrandLogo(env, x0, cy - logoH / 2, logoH, logoH, theme.fg)
+      drawFitted(ctx, brandText, x0 + logoH + gap, cy, textW + 2, textSize, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 600,
+        baseline: 'middle',
+        tracking: 0.03,
+        min: textSize * 0.6
+      })
+    } else if (env.text.showLogo && !brandText) {
+      const logoH = showExif ? footerH * 0.45 : footerH * 0.55
+      drawBrandLogo(env, W / 2 - logoH / 2, cy - logoH / 2, logoH, logoH, theme.fg)
+    } else if (brandText) {
+      drawFitted(ctx, brandText, W / 2, cy, W * 0.6, (S * pct(env.params.brandTextSizePct, 2.6)) / 100, theme.fg, {
+        family: FONT_VENDOR,
+        weight: 600,
+        align: 'center',
+        baseline: 'middle',
+        tracking: 0.02,
+        min: S * 0.015
+      })
+    }
+    if (showExif) {
+      drawTechText(
+        env,
+        classicExifLine(env),
+        W / 2,
+        cy,
+        theme.fg,
+        (S * pct(env.params.exifSizePct, 1.9)) / 100,
+        (S * pct(env.params.exifWidthPct, 28.3)) / 100
+      )
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const profileFrame: TemplateDef = {
+  id: 'profileFrame',
+  name: '个人 · 主页',
+  en: 'PROFILE FRAME',
+  category: '人物',
+  description: '原版「人物 01–05」：头像/昵称与照片卡片组合，含页眉、浮层与页脚三种排布。',
+  defaults: {
+    theme: 'white',
+    profileMode: 'header',
+    profileName: '',
+    marginPct: 4.2,
+    headerPct: 11.7,
+    footerPct: 11.3,
+    radiusPct: 1.4,
+    shadow: 0.8,
+    brandPlacement: 'footer',
+    brandOffsetPct: 8.2,
+    brandCenterPct: 0,
+    chipTopPct: 4.5,
+    exifAlign: 'center',
+    avatarPct: 4.3,
+    nameSizePct: 2.6,
+    brandWidthPct: 33.7,
+    exifWidthPct: 40,
+    exifSizePct: 1.55,
+    exifOffsetPct: 3.9,
+    modelSizePct: 2.6,
+    footerLogoPct: 13.7,
+    overlayBrand: 'HASSELBLAD',
+    logoScale: 5,
+    logoPos: 'center'
+  },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const mode = String(env.params.profileMode ?? 'header')
+    const m = (S * pct(env.params.marginPct, 4.2)) / 100
+    if (mode === 'header') {
+      const headerH = (S * pct(env.params.headerPct, 11.7)) / 100
+      const footerH = (S * pct(env.params.footerPct, 11.3)) / 100
+      return { W: env.pw + 2 * m, H: headerH + env.ph + footerH }
+    }
+    if (mode === 'chip') {
+      const inside = String(env.params.brandPlacement ?? 'inside') !== 'footer'
+      const footerH = inside ? 0 : (S * pct(env.params.footerPct, 8.4)) / 100
+      return { W: env.pw + 2 * m, H: env.ph + 2 * m + footerH }
+    }
+    const footerH = (S * pct(env.params.footerPct, 9.8)) / 100
+    return { W: env.pw + 2 * m, H: m + env.ph + footerH }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const mode = String(env.params.profileMode ?? 'header')
+    const m = (S * pct(env.params.marginPct, 4.2)) / 100
+    const radius = (S * pct(env.params.radiusPct, 1.4)) / 100
+    const shadow = pct(env.params.shadow, 0.8)
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    const brandText = String(env.params.overlayBrand ?? 'HASSELBLAD')
+    const brandW = (S * pct(env.params.brandWidthPct, 33.7)) / 100
+    const brandH = brandW / 14.63
+    const exifSize = (S * pct(env.params.exifSizePct, 1.55)) / 100
+    const exifW = (S * pct(env.params.exifWidthPct, 40)) / 100
+    const exifOffset = (S * pct(env.params.exifOffsetPct, 3.9)) / 100
+    const brandCenter = pct(env.params.brandCenterPct, 0)
+    const footerBrandCy = (photoBottom: number, footerH: number): number =>
+      brandCenter > 0 ? photoBottom + (S * brandCenter) / 100 : photoBottom + footerH / 2
+    const drawBrand = (cx: number, cy: number, color: string) => {
+      if (env.text.showLogo && env.images?.logo) {
+        drawBrandLogo(env, cx - brandW / 2, cy - brandH / 2, brandW, brandH, color)
+      } else {
+        drawFitted(ctx, brandText, cx, cy, brandW * 1.1, brandH * 1.35, color, {
+          family: FONT_VENDOR,
+          weight: 600,
+          align: 'center',
+          baseline: 'middle',
+          tracking: 0.18,
+          min: brandH * 0.6,
+          shadow: color === '#ffffff'
+        })
+      }
+    }
+    const r = avatarRadius(env, 4.3)
+    const nameSize = avatarNameSize(env, 2.6)
+    const chipW = avatarChipWidth(env, r, nameSize)
+    if (mode === 'header') {
+      const headerH = (S * pct(env.params.headerPct, 11.7)) / 100
+      const footerH = (S * pct(env.params.footerPct, 11.3)) / 100
+      drawPhoto(env, m, headerH, pw, ph, radius, shadow)
+      drawAvatarChip(env, W / 2 - chipW / 2, headerH * 0.5, r, theme.fg, nameSize)
+      if (env.text.showExif) drawTechExif(env, W / 2, headerH + ph - exifOffset, '#ffffff', exifSize, exifW)
+      drawBrand(W / 2, footerBrandCy(headerH + ph, footerH), theme.fg)
+      return { x: m, y: headerH, w: pw, h: ph }
+    }
+    if (mode === 'chip') {
+      const inside = String(env.params.brandPlacement ?? 'inside') !== 'footer'
+      const footerH = inside ? 0 : (S * pct(env.params.footerPct, 8.4)) / 100
+      drawPhoto(env, m, m, pw, ph, radius, shadow)
+      drawAvatarChip(env, W / 2 - chipW / 2, m + (S * pct(env.params.chipTopPct, 4.5)) / 100, r, '#ffffff', nameSize)
+      if (inside) {
+        drawBrand(W / 2, m + ph - (S * pct(env.params.brandOffsetPct, 8.2)) / 100, '#ffffff')
+        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW)
+      } else {
+        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW)
+        drawBrand(W / 2, footerBrandCy(m + ph, footerH), theme.fg)
+      }
+      return { x: m, y: m, w: pw, h: ph }
+    }
+    const footerH = (S * pct(env.params.footerPct, 9.8)) / 100
+    drawPhoto(env, m, m, pw, ph, radius, shadow)
+    const cy = m + ph + footerH / 2
+    drawAvatarChip(env, m + S * 0.027, cy, r, theme.fg, nameSize)
+    if (env.text.showExif) {
+      const right = m + pw - S * 0.004
+      drawTechExif(env, right, cy, theme.fg, exifSize, exifW, 'right')
+      let cursor = right - exifW - S * 0.026
+      ctx.save()
+      ctx.strokeStyle = theme.line
+      ctx.lineWidth = Math.max(1, S * 0.0015)
+      ctx.beginPath()
+      ctx.moveTo(cursor, cy - S * 0.014)
+      ctx.lineTo(cursor, cy + S * 0.014)
+      ctx.stroke()
+      ctx.restore()
+      cursor -= S * 0.03
+      const logoW = (S * pct(env.params.footerLogoPct, 13.7)) / 100
+      const logoH = logoW / 5.92
+      if (env.text.showLogo && env.images?.logo) {
+        drawBrandLogo(env, cursor - logoW, cy - logoH / 2, logoW, logoH, theme.fg)
+        cursor -= logoW + S * 0.03
+      }
+      const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+      const modelSize = (S * pct(env.params.modelSizePct, 2.6)) / 100
+      if (model) {
+        drawFitted(ctx, model, cursor, cy, W * 0.3, modelSize, theme.fg, {
+          family: FONT_UI,
+          weight: 500,
+          align: 'right',
+          baseline: 'middle',
+          min: modelSize * 0.7
+        })
+      }
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const overlay: TemplateDef = {
+  id: 'overlay',
+  name: '浮层 · 参数',
+  en: 'OVERLAY',
+  category: '浮层',
+  description: '满幅照片，底部渐变浮层，电影字幕式参数。',
+  defaults: { marginPct: 0, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'ink', logoScale: 5 },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const theme = themeOf(env.params)
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    const grad = ctx.createLinearGradient(0, H * 0.48, 0, H)
+    grad.addColorStop(0, 'rgba(0,0,0,0)')
+    grad.addColorStop(0.55, 'rgba(0,0,0,0.28)')
+    grad.addColorStop(1, 'rgba(0,0,0,0.82)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, W, H)
+    const x = W * 0.06
+    const maxW = W * 0.84
+    let y = H * 0.885
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, x, y, maxW, S * 0.015, 'rgba(255,255,255,0.68)', {
+        family: FONT_MONO,
+        min: S * 0.009,
+        shadow: true
+      })
+      y -= S * 0.035
+    }
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, x, y, maxW, S * 0.019, 'rgba(255,255,255,0.82)', {
+        family: FONT_MONO,
+        min: S * 0.01,
+        shadow: true
+      })
+      y -= S * 0.06
+    }
+    const title = titleOf(env)
+    drawFitted(ctx, title, x, y, maxW, S * 0.058, '#ffffff', {
+      family: FONT_CN,
+      weight: 400,
+      min: S * 0.025,
+      shadow: true
+    })
+    line(ctx, x, y - S * 0.10, x + S * 0.08, y - S * 0.10, theme.accent, Math.max(1, S * 0.0016))
+    const cam = env.text.showMake || env.text.showModel ? cameraLine(env.exif, '') : ''
+    if (cam) {
+      drawFitted(ctx, cam.toUpperCase(), x, y - S * 0.075, maxW, S * 0.015, 'rgba(255,255,255,0.72)', {
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.16,
+        min: S * 0.008,
+        shadow: true
+      })
+    }
+    if (env.text.signature.trim()) {
+      drawFitted(ctx, env.text.signature, W - x, H * 0.885, W * 0.35, S * 0.032, 'rgba(255,255,255,0.85)', {
+        align: 'right',
+        family: FONT_HAND,
+        min: S * 0.016,
+        shadow: true
+      })
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+const vertical: TemplateDef = {
+  id: 'vertical',
+  name: '浮层 · 竖排',
+  en: 'VERTICAL',
+  category: '浮层',
+  description: '左侧竖向大字与参数，像杂志封面的一行题。',
+  defaults: { marginPct: 0, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'ink', logoScale: 5 },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const theme = themeOf(env.params)
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    const grad = ctx.createLinearGradient(0, 0, W * 0.48, 0)
+    grad.addColorStop(0, 'rgba(0,0,0,0.72)')
+    grad.addColorStop(0.55, 'rgba(0,0,0,0.28)')
+    grad.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, W, H)
+    const x = W * 0.095
+    const y = H * 0.88
+    const maxLen = H * 0.64
+    const title = titleOf(env)
+    setTracking(ctx, S * 0.004)
+    const titleSize = fitSize(ctx, title, maxLen, S * 0.05, S * 0.02, FONT_CN, 400, 0.04)
+    setTracking(ctx, 0)
+    drawVerticalText(ctx, title, x, y, titleSize, '#ffffff', { family: FONT_CN, weight: 400, tracking: 0.04 })
+    const ex = exifText(env)
+    if (ex) {
+      const exSize = fitSize(ctx, ex, maxLen * 0.8, S * 0.016, S * 0.009, FONT_MONO, 400, 0.03)
+      drawVerticalText(ctx, ex, x + titleSize * 1.9, y, exSize, 'rgba(255,255,255,0.7)', {
+        family: FONT_MONO,
+        weight: 400,
+        tracking: 0.03
+      })
+    }
+    line(ctx, x - S * 0.03, y, x - S * 0.03, y - maxLen, theme.accent, Math.max(1, S * 0.0015))
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, W - W * 0.06, H * 0.93, W * 0.32, S * 0.014, 'rgba(255,255,255,0.68)', {
+        align: 'right',
+        family: FONT_MONO,
+        min: S * 0.008,
+        shadow: true
+      })
+    }
+    if (env.text.showLogo) {
+      drawBrandLogo(env, W - W * 0.2, H * 0.055, W * 0.14, H * 0.035, '#ffffff')
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+const blur: TemplateDef = {
+  id: 'blur',
+  name: '虚化 · 背景',
+  en: 'BLUR BACKDROP',
+  category: '氛围',
+  description: '照片本身虚化成底，前景卡片带圆角与阴影，参数居中。',
+  defaults: { marginPct: 3.5, radiusPct: 2, shadow: 6, footerPct: 11, blur: 26, theme: 'paper', logoScale: 5, minimalFooter: false },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer', 'blur'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 3.5)) / 100
+    const footer = Math.max((S * pct(env.params.footerPct, 11)) / 100, S * 0.12)
+    return { W: env.pw + 2 * m, H: env.ph + 2 * m + footer }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = marginOf(env)
+    const footer = H - ph - 2 * m
+    const isDark = theme === THEMES.ink || theme === THEMES.black
+    drawBlurredBackdrop(env, W, H, theme, isDark ? 0.42 : 0.34)
+    drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 6))
+    const cx = W / 2
+    if (env.params.minimalFooter === true) {
+      const dt = dateText(env) || formatDateOnly(new Date())
+      drawFitted(ctx, titleOf(env).toUpperCase(), cx, m + ph + m + footer * 0.42, W - 2 * m, S * 0.019, theme.sub, {
+        align: 'center',
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.14,
+        min: S * 0.01
+      })
+      drawFitted(ctx, dt, cx, m + ph + m + footer * 0.68, W - 2 * m, S * 0.024, theme.fg, {
+        align: 'center',
+        family: FONT_MONO,
+        min: S * 0.012
+      })
+      return { x: m, y: m, w: pw, h: ph }
+    }
+    let y = m + ph + m + footer * 0.34
+    drawFitted(ctx, titleOf(env).toUpperCase(), cx, y, W - 2 * m, S * 0.024, theme.fg, {
+      align: 'center',
+      weight: 600,
+      tracking: 0.12,
+      family: FONT_UI,
+      min: S * 0.013
+    })
+    const ex = exifText(env)
+    if (ex) {
+      y += footer * 0.26
+      y += drawFitted(ctx, ex, cx, y, W - 2 * m, S * 0.017, theme.sub, {
+        align: 'center',
+        family: FONT_MONO,
+        min: S * 0.009
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      y += footer * 0.2
+      drawFitted(ctx, dt, cx, y, W - 2 * m, S * 0.014, theme.sub, {
+        align: 'center',
+        family: FONT_MONO,
+        min: S * 0.008
+      })
+    }
+    if (env.text.showLogo) {
+      drawBrandLogo(env, cx - S * 0.09, m + ph + m + footer * 0.08, S * 0.18, footer * 0.18, theme.fg)
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const palette: TemplateDef = {
+  id: 'palette',
+  name: '色卡 · 留白',
+  en: 'PALETTE',
+  category: '留白',
+  description: '从照片自动提取五色，连同参数一起排版。',
+  defaults: { marginPct: 6.5, radiusPct: 1, shadow: 2, footerPct: 19, theme: 'paper', logoScale: 5, paletteOverlay: false },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer'],
+  layout(env) {
+    if (env.params.paletteOverlay === true) return { W: env.pw, H: env.ph }
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 6.5)) / 100
+    const bottom = Math.max((S * pct(env.params.footerPct, 19)) / 100, S * 0.22)
+    return { W: env.pw + 2 * m, H: env.ph + m + bottom }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    if (env.params.paletteOverlay === true) {
+      drawPhoto(env, 0, 0, W, H, 0, 0)
+      const grad = ctx.createLinearGradient(0, H * 0.55, 0, H)
+      grad.addColorStop(0, 'rgba(0,0,0,0)')
+      grad.addColorStop(1, 'rgba(0,0,0,0.7)')
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, W, H)
+      drawFitted(ctx, titleOf(env), W * 0.06, H * 0.80, W * 0.6, S * 0.032, '#ffffff', {
+        family: FONT_UI,
+        weight: 600,
+        min: S * 0.016,
+        shadow: true
+      })
+      const ex = exifText(env)
+      if (ex) {
+        drawFitted(ctx, ex, W * 0.06, H * 0.85, W * 0.6, S * 0.016, 'rgba(255,255,255,0.75)', {
+          family: FONT_MONO,
+          min: S * 0.009,
+          shadow: true
+        })
+      }
+      const colors = extractPalette(env, 5)
+      drawSwatches(env, colors, W * 0.06, H * 0.885, W * 0.55, S * 0.035, 'rgba(255,255,255,0.64)')
+      return { x: 0, y: 0, w: W, h: H }
+    }
+    const m = marginOf(env)
+    const bottom = H - ph - m
+    const baseY = m + ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 2))
+    line(ctx, m, baseY + bottom * 0.09, W - m, baseY + bottom * 0.09, theme.line, Math.max(1, S * 0.0008))
+    const portrait = ph >= pw
+    const titleY = baseY + bottom * 0.29
+    drawFitted(ctx, titleOf(env), m, titleY, portrait ? W - 2 * m : W * 0.46, S * 0.029, theme.fg, {
+      family: FONT_UI,
+      weight: 600,
+      tracking: 0.02,
+      min: S * 0.014
+    })
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, m, titleY + S * 0.03, portrait ? W - 2 * m : W * 0.46, S * 0.016, theme.sub, {
+        family: FONT_MONO,
+        min: S * 0.009
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, m, baseY + bottom * 0.85, W * 0.36, S * 0.014, theme.sub, {
+        family: FONT_MONO,
+        min: S * 0.008
+      })
+    }
+    const colors = extractPalette(env, 5)
+    const sw = S * (portrait ? 0.046 : 0.038)
+    const swatchY = portrait ? baseY + bottom * 0.48 : baseY + bottom * 0.38
+    drawSwatches(env, colors, portrait ? m : W * 0.51, swatchY, portrait ? W - 2 * m : W * 0.45, sw, theme.sub)
+    if (env.text.showLogo) {
+      drawBrandLogo(env, W - m - S * 0.16, baseY + bottom * 0.66, S * 0.16, S * 0.028, theme.fg)
+    }
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const film: TemplateDef = {
+  id: 'film',
+  name: '胶片 · 齿孔',
+  en: 'FILM',
+  category: '胶片',
+  description: '上下齿孔与胶片边码，带一点颗粒和曝光标记。',
+  defaults: { marginPct: 2.5, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'black', grain: 0.16, logoScale: 5 },
+  themes: darkThemes,
+  controls: ['grain'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const side = S * 0.025
+    const band = S * 0.075
+    return { W: env.pw + 2 * side, H: env.ph + 2 * band }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const S = Math.min(pw, ph)
+    const side = S * 0.025
+    const band = (H - ph) / 2
+    const theme = themeOf(env.params)
+    ctx.fillStyle = theme === THEMES.paper ? '#e8e1d2' : '#0b0a09'
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, side, band, pw, ph, 0, 0)
+    ctx.save()
+    ctx.strokeStyle = theme === THEMES.paper ? 'rgba(20,20,20,0.35)' : 'rgba(230,222,204,0.28)'
+    ctx.lineWidth = Math.max(1, S * 0.0008)
+    ctx.strokeRect(side, band, pw, ph)
+    ctx.restore()
+    const holeColor = theme === THEMES.paper ? 'rgba(20,20,20,0.55)' : '#ded5c2'
+    drawSprockets(ctx, 0, 0, W, band, Math.max(6, Math.round(W / (S * 0.075))), holeColor)
+    drawSprockets(ctx, 0, H - band, W, band, Math.max(6, Math.round(W / (S * 0.075))), holeColor)
+    const ink = theme === THEMES.paper ? '#141414' : '#f0eadc'
+    const sub = theme === THEMES.paper ? 'rgba(20,20,20,0.62)' : 'rgba(240,234,220,0.66)'
+    const x0 = side + S * 0.018
+    const x1 = W - side - S * 0.018
+    drawFitted(ctx, 'FRAMEMARK 400', x0, band + S * 0.042, W * 0.38, S * 0.013, ink, {
+      family: FONT_MONO,
+      weight: 500,
+      tracking: 0.1,
+      min: S * 0.008,
+      shadow: true
+    })
+    drawFitted(ctx, '36 EXP', x1, band + S * 0.042, W * 0.22, S * 0.013, sub, {
+      align: 'right',
+      family: FONT_MONO,
+      tracking: 0.08,
+      min: S * 0.008,
+      shadow: true
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, x0, H - band - S * 0.018, W * 0.4, S * 0.012, sub, {
+        family: FONT_MONO,
+        min: S * 0.008,
+        shadow: true
+      })
+    }
+    const frameNo = String(Math.abs((env.exif.dateTime || env.exif.model || 'FRAME').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % 99).padStart(2, '0')
+    drawFitted(ctx, `NO. ${frameNo}`, x1, H - band - S * 0.018, W * 0.3, S * 0.012, sub, {
+      align: 'right',
+      family: FONT_MONO,
+      min: S * 0.008,
+      shadow: true
+    })
+    const cam = env.text.showMake || env.text.showModel ? cameraLine(env.exif, '') : ''
+    if (cam) {
+      drawFitted(ctx, cam.toUpperCase(), x0, H - band - S * 0.042, W * 0.55, S * 0.01, sub, {
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.14,
+        min: S * 0.007,
+        shadow: true
+      })
+    }
+    drawGrain(env, W, H, pct(env.params.grain, 0.16) * 0.55)
+    return { x: side, y: band, w: pw, h: ph }
+  }
+}
+
+const polaroid: TemplateDef = {
+  id: 'polaroid',
+  name: '拍立得',
+  en: 'POLAROID',
+  category: '胶片',
+  description: '粗白边、手写标题与日期，像一张刚显影的相纸。',
+  defaults: { marginPct: 5.5, radiusPct: 0.5, shadow: 3, footerPct: 22, theme: 'paper', grain: 0.06, logoScale: 5 },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow', 'footer', 'grain'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 5.5)) / 100
+    const bottom = Math.max((S * pct(env.params.footerPct, 22)) / 100, S * 0.22)
+    return { W: env.pw + 2 * m, H: env.ph + m + bottom }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = marginOf(env)
+    const bottom = H - ph - m
+    const baseY = m + ph
+    ctx.fillStyle = theme === THEMES.paper ? '#fbf8f0' : theme.bg
+    ctx.fillRect(0, 0, W, H)
+    ctx.save()
+    ctx.globalAlpha = 0.55
+    ctx.translate(W / 2, m * 0.45)
+    ctx.rotate(-0.018)
+    ctx.fillStyle = 'rgba(255,250,236,0.7)'
+    ctx.fillRect(-W * 0.1, -S * 0.018, W * 0.2, S * 0.036)
+    ctx.strokeStyle = 'rgba(120,110,90,0.12)'
+    ctx.strokeRect(-W * 0.1, -S * 0.018, W * 0.2, S * 0.036)
+    ctx.restore()
+    drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 3))
+    ctx.save()
+    ctx.strokeStyle = 'rgba(80,72,60,0.22)'
+    ctx.lineWidth = Math.max(1, S * 0.0008)
+    ctx.strokeRect(m, m, pw, ph)
+    ctx.restore()
+    const title = titleOf(env)
+    drawFitted(ctx, title, m, baseY + bottom * 0.38, W - 2 * m - S * 0.16, S * 0.062, '#2a241e', {
+      family: FONT_HAND,
+      weight: 600,
+      min: S * 0.026
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, W - m, baseY + bottom * 0.38, S * 0.26, S * 0.03, '#6d6254', {
+        align: 'right',
+        family: FONT_HAND,
+        min: S * 0.016
+      })
+    }
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, m, baseY + bottom * 0.53, W - 2 * m, S * 0.014, '#7b7264', {
+        family: FONT_MONO,
+        min: S * 0.008
+      })
+    }
+    if (env.text.signature.trim()) {
+      drawFitted(ctx, env.text.signature, m, baseY + bottom * 0.70, W - 2 * m, S * 0.039, '#3a332b', {
+        family: FONT_HAND,
+        min: S * 0.02
+      })
+    }
+    drawGrain(env, W, H, pct(env.params.grain, 0.06) * 0.55)
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const editorial: TemplateDef = {
+  id: 'editorial',
+  name: '杂志 · 编辑',
+  en: 'EDITORIAL',
+  category: '编辑',
+  description: '米白底、大标题、细分隔线与三栏参数，像一页摄影杂志。',
+  defaults: { marginPct: 8.5, radiusPct: 0, shadow: 0, footerPct: 14, theme: 'cream', logoScale: 5 },
+  themes: lightThemes,
+  controls: ['margin'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 8.5)) / 100
+    const header = Math.max(S * 0.18, S * 0.15)
+    const footer = Math.max((S * pct(env.params.footerPct, 14)) / 100, S * 0.13)
+    return { W: env.pw + 2 * m, H: env.ph + header + footer }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const m = marginOf(env)
+    const footerH = Math.max((S * pct(env.params.footerPct, 14)) / 100, S * 0.13)
+    const top = H - ph - footerH
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    const issue = `NO. ${String(Math.abs((env.exif.dateTime || '01').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 3)) % 99).padStart(2, '0')}`
+    drawFitted(ctx, 'FRAMEMARK / PHOTO ANNUAL', m, top * 0.30, W * 0.6, S * 0.013, theme.sub, {
+      family: FONT_MONO,
+      weight: 500,
+      tracking: 0.1,
+      min: S * 0.008
+    })
+    drawFitted(ctx, issue, W - m, top * 0.30, W * 0.22, S * 0.013, theme.sub, {
+      align: 'right',
+      family: FONT_MONO,
+      tracking: 0.06,
+      min: S * 0.008
+    })
+    drawFitted(ctx, titleOf(env), m, top * 0.62, W - 2 * m, S * 0.072, theme.fg, {
+      family: FONT_CN,
+      weight: 400,
+      min: S * 0.028
+    })
+    const sub = subLine(env)
+    if (sub) {
+      drawFitted(ctx, sub, W - m, top * 0.54, W * 0.45, S * 0.016, theme.sub, {
+        align: 'right',
+        family: FONT_UI,
+        min: S * 0.009
+      })
+    }
+    line(ctx, m, top * 0.86, W - m, top * 0.86, theme.line, Math.max(1, S * 0.0009))
+    drawPhoto(env, m, top, pw, ph, 0, 0)
+    ctx.save()
+    ctx.strokeStyle = theme.line
+    ctx.lineWidth = Math.max(1, S * 0.0007)
+    ctx.strokeRect(m, top, pw, ph)
+    ctx.restore()
+    const footY = top + ph + S * 0.035
+    line(ctx, m, footY, W - m, footY, theme.line, Math.max(1, S * 0.0009))
+    const colW = (W - 2 * m) / 3
+    const labels = ['CAMERA', 'OPTICS', 'DATE']
+    const values = [
+      cameraLine(env.exif, 'FRAMEMARK'),
+      [env.exif.lens, exifLine(env.exif)].filter(Boolean).join('  ') || '—',
+      formatDateOnly(env.exif.dateTime) || '—'
+    ]
+    for (let i = 0; i < 3; i++) {
+      const x = m + i * colW
+      drawFitted(ctx, labels[i], x, footY + S * 0.03, colW - S * 0.02, S * 0.011, theme.sub, {
+        family: FONT_MONO,
+        weight: 500,
+        tracking: 0.12,
+        min: S * 0.007
+      })
+      drawFitted(ctx, values[i], x, footY + S * 0.06, colW - S * 0.02, S * 0.016, theme.fg, {
+        family: i === 2 ? FONT_MONO : FONT_UI,
+        weight: 500,
+        min: S * 0.009
+      })
+    }
+    if (env.text.signature.trim()) {
+      drawFitted(ctx, env.text.signature, W - m, H - S * 0.02, W * 0.35, S * 0.028, theme.fg, {
+        align: 'right',
+        family: FONT_HAND,
+        min: S * 0.015
+      })
+    }
+    return { x: m, y: top, w: pw, h: ph }
+  }
+}
+
+const glass: TemplateDef = {
+  id: 'glass',
+  name: '液态玻璃',
+  en: 'LIQUID GLASS',
+  category: '氛围',
+  description: '满幅照片上的磨砂玻璃信息卡，带高光与细边。',
+  defaults: {
+    marginPct: 0,
+    radiusPct: 0,
+    shadow: 0,
+    footerPct: 0,
+    blur: 24,
+    theme: 'ink',
+    logoScale: 5,
+    glassAlign: 'left',
+    glassLayout: 'card',
+    glassPalette: false
+  },
+  themes: darkThemes,
+  controls: ['blur'],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const theme = themeOf(env.params)
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    const portrait = H > W
+    const align = String(env.params.glassAlign ?? 'left')
+    const layoutMode = String(env.params.glassLayout ?? 'card')
+    let cardW = W * (portrait ? 0.78 : 0.62)
+    let cardH = Math.max(S * 0.20, H * 0.17)
+    let cardX = align === 'right' ? W - cardW - W * 0.055 : align === 'center' ? (W - cardW) / 2 : W * 0.055
+    let cardY = H - cardH - H * 0.065
+    let r = Math.min(cardH * 0.18, S * 0.028)
+    if (layoutMode === 'pill') {
+      cardW = W * 0.88
+      cardH = Math.max(S * 0.13, H * 0.12)
+      cardX = (W - cardW) / 2
+      cardY = H - cardH - H * 0.06
+      r = cardH / 2
+    } else if (layoutMode === 'palette') {
+      cardW = W * (portrait ? 0.82 : 0.66)
+      cardH = Math.max(S * 0.27, H * 0.25)
+      cardX = align === 'right' ? W - cardW - W * 0.055 : align === 'center' ? (W - cardW) / 2 : W * 0.055
+      cardY = H - cardH - H * 0.055
+      r = Math.min(cardH * 0.13, S * 0.03)
+    }
+    const tmpW = 360
+    const tmpH = Math.max(80, Math.round(tmpW * (H / W)))
+    const tmp = document.createElement('canvas')
+    tmp.width = tmpW
+    tmp.height = tmpH
+    const tctx = tmp.getContext('2d')!
+    drawPhotoCover(
+      { ...env, ctx: tctx, W: tmpW, H: tmpH } as TemplateRenderEnv,
+      0,
+      0,
+      tmpW,
+      tmpH,
+      0,
+      0
+    )
+    ctx.save()
+    const grad = ctx.createLinearGradient(0, cardY, 0, cardY + cardH)
+    grad.addColorStop(0, 'rgba(0,0,0,0.22)')
+    grad.addColorStop(1, 'rgba(0,0,0,0.4)')
+    ctx.fillStyle = grad
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, r)
+    ctx.fill()
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, r)
+    ctx.clip()
+    ctx.filter = `blur(${Math.max(1, S * 0.012)}px)`
+    ctx.drawImage(
+      tmp,
+      (cardX / W) * tmpW,
+      (cardY / H) * tmpH,
+      (cardW / W) * tmpW,
+      (cardH / H) * tmpH,
+      cardX,
+      cardY,
+      cardW,
+      cardH
+    )
+    ctx.filter = 'none'
+    ctx.fillStyle = 'rgba(255,255,255,0.13)'
+    ctx.fillRect(cardX, cardY, cardW, cardH)
+    const sheen = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH)
+    sheen.addColorStop(0, 'rgba(255,255,255,0.22)')
+    sheen.addColorStop(0.35, 'rgba(255,255,255,0.04)')
+    sheen.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = sheen
+    ctx.fillRect(cardX, cardY, cardW, cardH)
+    ctx.restore()
+    ctx.save()
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, r)
+    ctx.strokeStyle = 'rgba(255,255,255,0.42)'
+    ctx.lineWidth = Math.max(1, S * 0.0009)
+    ctx.stroke()
+    ctx.restore()
+    line(ctx, cardX + r, cardY + 1, cardX + cardW - r, cardY + 1, 'rgba(255,255,255,0.5)', Math.max(1, S * 0.001))
+    const innerX = cardX + cardW * (layoutMode === 'pill' ? 0.04 : 0.055)
+    if (layoutMode === 'pill') {
+      drawFitted(ctx, titleOf(env), innerX, cardY + cardH * 0.58, cardW * 0.30, S * 0.023, '#ffffff', {
+        family: FONT_UI,
+        weight: 600,
+        min: S * 0.012,
+        shadow: true
+      })
+      const ex = exifText(env)
+      if (ex) {
+        drawFitted(ctx, ex, cardX + cardW * 0.40, cardY + cardH * 0.58, cardW * 0.27, S * 0.014, 'rgba(255,255,255,0.8)', {
+          family: FONT_MONO,
+          min: S * 0.008,
+          shadow: true
+        })
+      }
+      const dt = dateText(env)
+      if (dt) {
+        drawFitted(ctx, dt, cardX + cardW * 0.70, cardY + cardH * 0.58, cardW * 0.16, S * 0.012, 'rgba(255,255,255,0.65)', {
+          family: FONT_MONO,
+          min: S * 0.007,
+          shadow: true
+        })
+      }
+      if (env.text.showLogo) {
+        const lw = cardW * 0.075
+        const lh = cardH * 0.3
+        drawBrandLogo(env, cardX + cardW * 0.91 - lw / 2, cardY + cardH / 2 - lh / 2, lw, lh, '#ffffff')
+      }
+      line(ctx, cardX + cardW * 0.86, cardY + cardH * 0.38, cardX + cardW * 0.86, cardY + cardH * 0.62, theme.accent, Math.max(1, S * 0.0014))
+    } else if (layoutMode === 'palette') {
+      drawFitted(ctx, 'FRAMEMARK / PALETTE', innerX, cardY + cardH * 0.20, cardW * 0.55, S * 0.011, 'rgba(255,255,255,0.66)', {
+        family: FONT_MONO,
+        weight: 500,
+        tracking: 0.12,
+        min: S * 0.007,
+        shadow: true
+      })
+      drawFitted(ctx, titleOf(env), innerX, cardY + cardH * 0.38, cardW * 0.62, S * 0.028, '#ffffff', {
+        family: FONT_UI,
+        weight: 600,
+        min: S * 0.014,
+        shadow: true
+      })
+      const ex = exifText(env)
+      if (ex) {
+        drawFitted(ctx, ex, innerX, cardY + cardH * 0.51, cardW * 0.62, S * 0.015, 'rgba(255,255,255,0.78)', {
+          family: FONT_MONO,
+          min: S * 0.008,
+          shadow: true
+        })
+      }
+      const dt = dateText(env)
+      if (dt) {
+        drawFitted(ctx, dt, cardX + cardW - cardW * 0.055, cardY + cardH * 0.51, cardW * 0.25, S * 0.012, 'rgba(255,255,255,0.64)', {
+          align: 'right',
+          family: FONT_MONO,
+          min: S * 0.007,
+          shadow: true
+        })
+      }
+      const colors = extractPalette(env, 5)
+      drawSwatches(env, colors, cardX + cardW * 0.05, cardY + cardH * 0.62, cardW * 0.9, S * 0.03, 'rgba(255,255,255,0.62)')
+      if (env.text.showLogo) {
+        const lw = cardW * 0.16
+        const lh = cardH * 0.15
+        drawBrandLogo(env, cardX + cardW - lw - cardW * 0.05, cardY + cardH * 0.12, lw, lh, '#ffffff')
+      }
+    } else {
+      drawFitted(ctx, 'FRAMEMARK / LIQUID GLASS', innerX, cardY + cardH * 0.24, cardW * 0.55, S * 0.011, 'rgba(255,255,255,0.66)', {
+        family: FONT_MONO,
+        weight: 500,
+        tracking: 0.12,
+        min: S * 0.007,
+        shadow: true
+      })
+      drawFitted(ctx, titleOf(env), innerX, cardY + cardH * 0.48, cardW * 0.62, S * 0.029, '#ffffff', {
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.01,
+        min: S * 0.014,
+        shadow: true
+      })
+      const ex = exifText(env)
+      if (ex) {
+        drawFitted(ctx, ex, innerX, cardY + cardH * 0.64, cardW * 0.62, S * 0.016, 'rgba(255,255,255,0.78)', {
+          family: FONT_MONO,
+          min: S * 0.009,
+          shadow: true
+        })
+      }
+      const dt = dateText(env)
+      if (dt) {
+        drawFitted(ctx, dt, innerX, cardY + cardH * 0.79, cardW * 0.55, S * 0.013, 'rgba(255,255,255,0.64)', {
+          family: FONT_MONO,
+          min: S * 0.008,
+          shadow: true
+        })
+      }
+      if (env.text.showLogo) {
+        const lw = cardW * 0.22 * logoScale(env)
+        const lh = cardH * 0.26 * logoScale(env)
+        drawBrandLogo(env, cardX + cardW - lw - cardW * 0.055, cardY + cardH * 0.42, lw, lh, '#ffffff')
+      }
+      line(ctx, cardX + cardW - cardW * 0.055 - S * 0.02, cardY + cardH * 0.82, cardX + cardW - cardW * 0.055, cardY + cardH * 0.82, theme.accent, Math.max(1, S * 0.0018))
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+const ticket: TemplateDef = {
+  id: 'ticket',
+  name: '票据 · 旅行',
+  en: 'TICKET',
+  category: '票据',
+  description: '圆角票卡、撕线与条码存根，把照片做成一张纪念票。',
+  defaults: { marginPct: 6, radiusPct: 2, shadow: 5, footerPct: 16, theme: 'ink', logoScale: 5 },
+  themes: darkThemes,
+  controls: ['margin', 'shadow', 'footer'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const outer = (S * pct(env.params.marginPct, 6)) / 100
+    const header = Math.max(S * 0.10, S * 0.08)
+    const stub = Math.max((S * pct(env.params.footerPct, 16)) / 100, S * 0.16)
+    return { W: env.pw + 2 * outer, H: env.ph + header + stub + 2 * outer }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const outer = marginOf(env)
+    const header = Math.max(S * 0.10, S * 0.08)
+    const stub = H - ph - header - 2 * outer
+    const cardX = outer
+    const cardY = outer
+    const cardW = pw
+    const cardH = header + ph + stub
+    const radius = radiusOf(env)
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.44)'
+    ctx.shadowBlur = S * 0.03
+    ctx.shadowOffsetY = S * 0.012
+    fillRoundRect(ctx, cardX, cardY, cardW, cardH, radius, '#f7f0e1')
+    ctx.restore()
+    drawPhoto(env, cardX, cardY + header, pw, ph, 0, 0)
+    const ink = '#221d16'
+    const sub = 'rgba(34,29,22,0.6)'
+    drawFitted(ctx, 'FRAMEMARK / ADMIT ONE', cardX + S * 0.035, cardY + header * 0.62, cardW * 0.62, S * 0.014, ink, {
+      family: FONT_MONO,
+      weight: 600,
+      tracking: 0.12,
+      min: S * 0.008
+    })
+    const booking = String(Math.abs((env.exif.dateTime || env.exif.model || 'TICKET').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 11)) % 99999).padStart(5, '0')
+    drawFitted(ctx, `NO. ${booking}`, cardX + cardW - S * 0.035, cardY + header * 0.62, cardW * 0.26, S * 0.013, sub, {
+      align: 'right',
+      family: FONT_MONO,
+      min: S * 0.008
+    })
+    line(ctx, cardX + S * 0.035, cardY + header * 0.84, cardX + cardW - S * 0.035, cardY + header * 0.84, 'rgba(34,29,22,0.18)', Math.max(1, S * 0.0008))
+    const perfY = cardY + header + ph
+    ctx.save()
+    ctx.strokeStyle = 'rgba(34,29,22,0.35)'
+    ctx.lineWidth = Math.max(1, S * 0.001)
+    ctx.setLineDash([S * 0.012, S * 0.01])
+    ctx.beginPath()
+    ctx.moveTo(cardX + S * 0.02, perfY)
+    ctx.lineTo(cardX + cardW - S * 0.02, perfY)
+    ctx.stroke()
+    ctx.restore()
+    ctx.save()
+    ctx.fillStyle = theme.bg
+    for (const nx of [cardX, cardX + cardW]) {
+      ctx.beginPath()
+      ctx.arc(nx, perfY, S * 0.018, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.restore()
+    const stubY = perfY
+    const title = titleOf(env)
+    drawFitted(ctx, title, cardX + S * 0.035, stubY + stub * 0.38, cardW * 0.48, S * 0.028, ink, {
+      family: FONT_UI,
+      weight: 600,
+      min: S * 0.014
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, cardX + S * 0.035, stubY + stub * 0.62, cardW * 0.46, S * 0.015, sub, {
+        family: FONT_MONO,
+        min: S * 0.008
+      })
+    }
+    const ex = exifText(env)
+    if (ex) {
+      drawFitted(ctx, ex, cardX + S * 0.035, stubY + stub * 0.79, cardW * 0.5, S * 0.012, sub, {
+        family: FONT_MONO,
+        min: S * 0.007
+      })
+    }
+    const bcW = cardW * 0.26
+    const bcH = stub * 0.26
+    drawBarcode(ctx, cardX + cardW - bcW - S * 0.035, stubY + stub * 0.28, bcW, bcH, ink, booking)
+    drawFitted(ctx, `NO. ${booking}`, cardX + cardW - bcW - S * 0.035, stubY + stub * 0.28 + bcH + S * 0.016, bcW, S * 0.009, sub, {
+      family: FONT_MONO,
+      tracking: 0.08,
+      min: S * 0.006
+    })
+    if (env.text.showLogo) {
+      drawBrandLogo(env, cardX + cardW * 0.58, cardY + header * 0.22, cardW * 0.16, header * 0.42, ink)
+    }
+    drawGrain(env, W, H, 0.05)
+    return { x: cardX, y: cardY + header, w: pw, h: ph }
+  }
+}
+
+const portraitTicket: TemplateDef = {
+  id: 'portraitTicket',
+  name: '票据 · 竖卡',
+  en: 'PORTRAIT TICKET',
+  category: '票据',
+  description: '浅色背景中的竖票卡：照片在上，白存根在下。',
+  defaults: {
+    theme: 'stone',
+    ticketBg: '#c7dfe6',
+    ticketCard: '#ffffff',
+    ticketInk: '#2d6f7c',
+    stubTitle: 'QING DAO',
+    stubLabel: 'GUANGYING 100'
+  },
+  themes: lightThemes,
+  controls: [],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    return { W: S * 1.5, H: S * 2 }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(env.pw, env.ph)
+    const bg = String(env.params.ticketBg ?? '#c7dfe6')
+    const cardBg = String(env.params.ticketCard ?? '#ffffff')
+    const ink = String(env.params.ticketInk ?? '#2d6f7c')
+    const sub = 'rgba(45,111,124,0.62)'
+    const cardW = W * 0.78
+    const cardH = H * 0.78
+    const cardX = (W - cardW) / 2
+    const cardY = (H - cardH) / 2
+    const photoH = cardH * 0.78
+    const stubH = cardH - photoH
+    const seam = cardY + photoH
+    const radius = S * 0.025
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, H)
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.15)'
+    ctx.shadowBlur = S * 0.035
+    ctx.shadowOffsetY = S * 0.012
+    fillRoundRect(ctx, cardX, cardY, cardW, cardH, radius, cardBg)
+    ctx.restore()
+    ctx.save()
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, radius)
+    ctx.clip()
+    drawPhotoCover(env, cardX, cardY, cardW, photoH, 0, 0)
+    ctx.fillStyle = cardBg
+    ctx.fillRect(cardX, seam, cardW, stubH)
+    ctx.restore()
+
+    const notch = stubH * 0.13
+    for (const x of [cardX, cardX + cardW]) {
+      ctx.save()
+      ctx.fillStyle = bg
+      ctx.beginPath()
+      ctx.arc(x, seam, notch, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+    }
+    ctx.save()
+    ctx.strokeStyle = 'rgba(45,111,124,0.35)'
+    ctx.lineWidth = Math.max(1, S * 0.001)
+    ctx.setLineDash([S * 0.012, S * 0.01])
+    ctx.beginPath()
+    ctx.moveTo(cardX + notch * 1.4, seam)
+    ctx.lineTo(cardX + cardW - notch * 1.4, seam)
+    ctx.stroke()
+    ctx.restore()
+
+    const left = cardX + cardW * 0.09
+    const title = String(env.params.stubTitle ?? 'QING DAO').toUpperCase()
+    drawFitted(ctx, title, left, seam + stubH * 0.24, cardW * 0.58, stubH * 0.30, ink, {
+      family: FONT_UI,
+      weight: 800,
+      baseline: 'middle',
+      min: stubH * 0.16
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, left, seam + stubH * 0.52, cardW * 0.30, stubH * 0.16, ink, {
+        family: FONT_MONO,
+        weight: 500,
+        baseline: 'middle',
+        min: stubH * 0.09
+      })
+    }
+    const no = `NO.${String(Math.abs((env.exif.dateTime || env.exif.model || 'TICKET').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % 99999).padStart(5, '0')}`
+    drawFitted(ctx, no, left, seam + stubH * 0.84, cardW * 0.4, stubH * 0.12, sub, {
+      family: FONT_MONO,
+      baseline: 'middle',
+      min: stubH * 0.07
+    })
+    const rightX = cardX + cardW * 0.58
+    const rightW = cardW * 0.33
+    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), rightX, seam + stubH * 0.68, rightW, stubH * 0.11, ink, {
+      family: FONT_MONO,
+      align: 'right',
+      weight: 500,
+      tracking: 0.06,
+      baseline: 'middle',
+      min: stubH * 0.06
+    })
+    drawBarcode(ctx, rightX, seam + stubH * 0.79, rightW, stubH * 0.13, ink, env.exif.model || 'FRAMEMARK')
+    return { x: cardX, y: cardY, w: cardW, h: photoH }
+  }
+}
+
+const locationCard: TemplateDef = {
+  id: 'locationCard',
+  name: '坐标卡',
+  en: 'LOCATION CARD',
+  category: '色卡',
+  description: '顶部地点/时间色块，下方满幅照片。',
+  defaults: {
+    theme: 'paper',
+    locationBg: '#405c66',
+    locationFg: '#f5f2ea',
+    locationTitle: '中国',
+    locationTime: '08:00 AM',
+    headerPct: 45
+  },
+  themes: lightThemes,
+  controls: [],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    return { W: S * 1.5, H: S * 2 }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(env.pw, env.ph)
+    const fg = String(env.params.locationFg ?? '#f5f2ea')
+    const bg = String(env.params.locationBg ?? '#405c66')
+    const header = (H * pct(env.params.headerPct, 45)) / 100
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, W, header)
+    drawFitted(ctx, String(env.params.locationTitle ?? '中国'), W / 2, header * 0.48, W * 0.5, S * 0.042, fg, {
+      family: FONT_CN,
+      weight: 500,
+      align: 'center',
+      baseline: 'middle',
+      tracking: 0.12,
+      min: S * 0.024
+    })
+    drawFitted(ctx, String(env.params.locationTime ?? '08:00 AM'), W / 2, header * 0.66, W * 0.4, S * 0.018, fg, {
+      family: FONT_MONO,
+      weight: 400,
+      align: 'center',
+      baseline: 'middle',
+      tracking: 0.18,
+      min: S * 0.01
+    })
+    drawPhotoCover(env, 0, header, W, H - header, 0, 0)
+    return { x: 0, y: header, w: W, h: H - header }
+  }
+}
+
+const paletteCard: TemplateDef = {
+  id: 'paletteCard',
+  name: '色卡大样',
+  en: 'PALETTE CARD',
+  category: '色卡',
+  description: '圆角照片 + 下方大色板与十六进制标注。',
+  defaults: { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22 },
+  themes: lightThemes,
+  controls: ['margin', 'radius', 'shadow'],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const m = (S * pct(env.params.marginPct, 2)) / 100
+    const palette = (S * pct(env.params.palettePct, 22)) / 100
+    return { W: env.pw + 2 * m, H: env.ph + 2 * m + palette }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const S = Math.min(pw, ph)
+    const theme = themeOf(env.params)
+    const m = (W - pw) / 2
+    const palette = H - ph - 2 * m
+    const radius = (S * pct(env.params.radiusPct, 2)) / 100
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, m, m, pw, ph, radius, pct(env.params.shadow, 0.4))
+    const size = S * 0.082
+    const colors = extractPalette(env, 5)
+    const y = m + ph + m + Math.max(0, (palette - size * 1.35) / 2)
+    drawSwatches(env, colors, m, y, W - 2 * m, size, theme.sub)
+    return { x: m, y: m, w: pw, h: ph }
+  }
+}
+
+const polaroidFrame: TemplateDef = {
+  id: 'polaroidFrame',
+  name: 'Polaroid 整幅相框',
+  en: 'POLAROID FRAME',
+  category: '系统相机',
+  description: '按画幅选择 Polaroid frame，照片填入透明窗口，底部写机型/参数。',
+  defaults: {},
+  themes: lightThemes,
+  controls: [],
+  async prepare(env) {
+    const meta = choosePolaroidFrame(env.pw, env.ph)
+    const url = POLAROID_URLS[`../assets/system/oppo/camerapro/polaroid/${meta.file}`]
+    const images: Record<string, HTMLImageElement> = {}
+    if (url) images.frame = await loadImage(url)
+    return { images }
+  },
+  layout(env) {
+    const meta = choosePolaroidFrame(env.pw, env.ph)
+    const scale = env.crop.sw / meta.win[2]
+    return { W: meta.w * scale, H: meta.h * scale }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const meta = choosePolaroidFrame(env.pw, env.ph)
+    const frame = env.images?.frame
+    if (!frame) return { x: 0, y: 0, w: W, h: H }
+    const k = W / meta.w
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, W, H)
+    ctx.drawImage(frame, 0, 0, W, H)
+    const [wx, wy, ww, wh] = meta.win
+    drawPhotoCover(env, wx * k, wy * k, ww * k, wh * k, 0, 0)
+    const bottom = (meta.h - wy - wh) * k
+    const S = Math.min(W, H)
+    const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+    const size = S * 0.022
+    drawFitted(ctx, model, wx * k, wy * k + wh * k + bottom * 0.42, ww * k * 0.45, size, '#222222', {
+      family: FONT_UI,
+      weight: 600,
+      baseline: 'middle'
+    })
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, wx * k, wy * k + wh * k + bottom * 0.68, ww * k * 0.4, size * 0.8, '#77736c', {
+        family: FONT_MONO,
+        baseline: 'middle'
+      })
+    }
+    const ex = classicExifLine(env)
+    if (ex) {
+      drawFitted(ctx, ex, (wx + ww) * k, wy * k + wh * k + bottom * 0.52, ww * k * 0.48, size * 0.8, '#77736c', {
+        family: FONT_MONO,
+        align: 'right',
+        baseline: 'middle'
+      })
+    }
+    return { x: wx * k, y: wy * k, w: ww * k, h: wh * k }
+  }
+}
+
+const xiaomiStandard: TemplateDef = {
+  id: 'xiaomiStandard',
+  name: '小米标准水印',
+  en: 'XIAOMI STANDARD',
+  category: '系统相机',
+  description: '照片内标准水印：左下品牌/机型，右侧日期，可选自定义行。',
+  defaults: {
+    theme: 'ink',
+    standardPosition: 'bottom',
+    standardLayout: 'row',
+    showStandardExif: false,
+    insetPct: 4.44,
+    offsetPct: 3.43,
+    shadow: 0.6
+  },
+  themes: [],
+  controls: [],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    const inset = (S * pct(env.params.insetPct, 4.44)) / 100
+    const offset = (S * pct(env.params.offsetPct, 3.43)) / 100
+    const pos = String(env.params.standardPosition ?? 'bottom')
+    const custom = env.text.customLine.trim()
+    const rowH = S * 0.05
+    if (env.params.standardLayout === 'stack') {
+      const logoH = S * 0.03
+      const logoW = S * 0.13
+      const modelSize = S * 0.025
+      const lineSize = S * 0.019
+      const lineGap = S * 0.022
+      const exif = classicExifLine(env)
+      const location = env.text.location?.trim() ?? ''
+      const dt = dateText(env)
+      const lines = [
+        ...(custom ? [custom] : []),
+        ...(env.params.showStandardExif && exif ? [exif] : []),
+        ...(env.params.showStandardExif && location ? [location] : []),
+        ...(dt ? [dt] : [])
+      ]
+      const rowHeight = logoH
+      const blockH = rowHeight + lines.length * (lineSize + lineGap)
+      let y = H - offset - blockH
+      const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+      ctx.save()
+      ctx.font = `600 ${Math.max(1, modelSize)}px ${FONT_UI}`
+      const modelW = ctx.measureText(model).width
+      ctx.restore()
+      const showLogo = env.text.showLogo && env.images?.logo
+      const groupW = (showLogo ? logoW + S * 0.018 : 0) + modelW
+      let x = W / 2 - groupW / 2
+      if (showLogo) {
+        drawBrandLogo(env, x, y + rowHeight / 2 - logoH / 2, logoW, logoH, '#ffffff')
+        x += logoW + S * 0.018
+      }
+      drawFitted(ctx, model, x, y + rowHeight / 2, W * 0.4, modelSize, '#ffffff', {
+        family: FONT_UI,
+        weight: 600,
+        baseline: 'middle',
+        shadow: true
+      })
+      y += rowHeight + lineGap
+      for (const line of lines) {
+        drawFitted(ctx, line, W / 2, y, W * 0.7, lineSize, 'rgba(255,255,255,0.92)', {
+          family: FONT_UI,
+          align: 'center',
+          baseline: 'middle',
+          shadow: true
+        })
+        y += lineSize + lineGap
+      }
+      return { x: 0, y: 0, w: W, h: H }
+    }
+    const bottomCy = custom ? H - offset - S * 0.035 : H - offset - rowH / 2
+    const cy = pos === 'top' ? offset + rowH / 2 : pos === 'center' ? H / 2 : bottomCy
+    let x = inset
+    const logoH = S * 0.03
+    const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
+    if (env.text.showLogo && env.images?.logo) {
+      const logoW = S * 0.13
+      drawBrandLogo(env, x, cy - logoH / 2, logoW, logoH, '#ffffff')
+      x += logoW + S * 0.018
+    }
+    drawFitted(ctx, model, x, cy, W * 0.4, S * 0.025, '#ffffff', {
+      family: FONT_UI,
+      weight: 600,
+      baseline: 'middle',
+      shadow: true
+    })
+    if (custom) {
+      drawFitted(ctx, custom, inset, H - offset, W * 0.45, S * 0.021, 'rgba(255,255,255,0.9)', {
+        family: FONT_UI,
+        baseline: 'middle',
+        shadow: true
+      })
+    }
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, W - inset, cy, W * 0.35, S * 0.022, 'rgba(255,255,255,0.9)', {
+        family: FONT_MONO,
+        align: 'right',
+        baseline: 'middle',
+        shadow: true
+      })
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+const movie: TemplateDef = {
+  id: 'movie',
+  name: '电影 · 宽银幕',
+  en: 'CINEMA',
+  category: '电影',
+  description: '上下黑边与片头字幕，带电影画幅的仪式感。',
+  defaults: { marginPct: 0, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'black', logoScale: 5, barPct: 6.5, logoPos: 'right' },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    const S = Math.min(env.pw, env.ph)
+    const bar = Math.max((S * pct(env.params.barPct, 8)) / 100, S * 0.05)
+    return { W: env.pw, H: env.ph + 2 * bar }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const bar = (H - ph) / 2
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, 0, bar, pw, ph, 0, 0)
+    const title = titleOf(env)
+    const sub = subLine(env)
+    const hasSub = Boolean(sub)
+    const bottomTop = bar + ph
+    const titleY = bottomTop + bar * (hasSub ? 0.38 : 0.62)
+    drawFitted(ctx, title, W / 2, titleY, W * 0.82, S * 0.036, theme.fg, {
+      align: 'center',
+      family: FONT_CN,
+      weight: 400,
+      min: S * 0.018
+    })
+    if (hasSub) {
+      drawFitted(ctx, sub, W / 2, bottomTop + bar * 0.76, W * 0.82, S * 0.023, theme.sub, {
+        align: 'center',
+        family: FONT_UI,
+        weight: 400,
+        min: S * 0.012
+      })
+    }
+    return { x: 0, y: bar, w: pw, h: ph }
+  }
+}
+
+const ratioBlock: TemplateDef = {
+  id: 'ratio',
+  name: '比例 · 角标',
+  en: 'RATIO BLOCK',
+  category: '比例',
+  description: '满幅照片，四角参数块，适合社交平台直出。',
+  defaults: { marginPct: 0, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'ink', logoScale: 5, corner: 3 },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const theme = themeOf(env.params)
+    drawPhoto(env, 0, 0, W, H, 0, 0)
+    const corner = Math.max(0, Math.min(3, Math.round(pct(env.params.corner, 3))))
+    const left = corner % 2 === 0
+    const top = corner < 2
+    const x = left ? W * 0.06 : W * 0.94
+    let y = top ? H * 0.11 : H * 0.70
+    const align: CanvasTextAlign = left ? 'left' : 'right'
+    line(ctx, x - (left ? 0 : S * 0.06), y - S * 0.035, x + (left ? S * 0.06 : 0), y - S * 0.035, theme.accent, Math.max(1, S * 0.0014))
+    const cam = env.text.showMake || env.text.showModel ? cameraLine(env.exif, '') : ''
+    if (cam) {
+      y += drawFitted(ctx, cam.toUpperCase(), x, y, W * 0.45, S * 0.017, '#ffffff', {
+        align,
+        family: FONT_UI,
+        weight: 600,
+        tracking: 0.14,
+        min: S * 0.009,
+        shadow: true
+      })
+      y += S * 0.022
+    }
+    const ex = exifText(env)
+    if (ex) {
+      y += drawFitted(ctx, ex, x, y, W * 0.5, S * 0.014, 'rgba(255,255,255,0.78)', {
+        align,
+        family: FONT_MONO,
+        min: S * 0.008,
+        shadow: true
+      })
+      y += S * 0.018
+    }
+    const dt = dateText(env)
+    if (dt) {
+      drawFitted(ctx, dt, x, top ? y : H * 0.88, W * 0.36, S * 0.012, 'rgba(255,255,255,0.62)', {
+        align,
+        family: FONT_MONO,
+        min: S * 0.007,
+        shadow: true
+      })
+    }
+    if (env.text.showLogo) {
+      const lw = S * 0.16
+      const lh = S * 0.04
+      const lx = left ? W - W * 0.06 - lw : W * 0.06
+      const ly = top ? H * 0.085 : H * 0.88
+      drawBrandLogo(env, lx, ly, lw, lh, '#ffffff')
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+export const TEMPLATES: TemplateDef[] = [
+  minimal,
+  gallery,
+  sideCard,
+  specFooter,
+  splitReveal,
+  sideTicket,
+  portraitTicket,
+  poetryCard,
+  locationCard,
+  paletteCard,
+  polaroidFrame,
+  xiaomiStandard,
+  brandFooter,
+  personalBorder,
+  vendorFooter,
+  xiaomiLeica,
+  paramStack,
+  matteOverlay,
+  logoFooter,
+  matteFooter,
+  profileFrame,
+  overlay,
+  vertical,
+  blur,
+  palette,
+  film,
+  polaroid,
+  editorial,
+  glass,
+  ticket,
+  movie,
+  ratioBlock,
+  systemCamera
+]
+
+export const TEMPLATE_MAP: Record<string, TemplateDef> = Object.fromEntries(TEMPLATES.map((t) => [t.id, t]))
+
+export function getTemplate(id: string): TemplateDef {
+  return TEMPLATE_MAP[id] ?? minimal
+}
+
+export { THEMES }

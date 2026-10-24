@@ -1,0 +1,214 @@
+const fs = require('node:fs')
+const path = require('node:path')
+const crypto = require('node:crypto')
+const sharp = require('sharp')
+const {
+  Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell,
+  WidthType, ShadingType, BorderStyle, ImageRun, Footer, PageNumber, PageBreak
+} = require('docx')
+
+const root = path.resolve(__dirname, '..')
+const out = 'D:/border&watermark/交付/FrameMark-使用与验收说明.docx'
+const docs = 'D:/border&watermark/_research/docs'
+const apk = path.join(root, 'android/app/build/outputs/apk/release/app-release.apk')
+const zip = path.join(root, 'release/FrameMark-Windows-x64.zip')
+const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')
+const fmt = (n) => (n / 1048576).toFixed(1) + ' MB'
+const FONT = 'Microsoft YaHei'
+const GOLD = 'B08D57'
+const CREAM = 'F7F3EA'
+const DARK = '242320'
+
+function text(t, opts = {}) {
+  return new TextRun({ text: t, font: FONT, size: opts.size ?? 21, bold: opts.bold, color: opts.color, italics: opts.italics })
+}
+function p(t, opts = {}) {
+  return new Paragraph({ spacing: { after: opts.after ?? 110, before: opts.before ?? 0 }, alignment: opts.align, children: Array.isArray(t) ? t : [text(t, opts)] })
+}
+function heading(t, level = 1) {
+  return new Paragraph({ heading: level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3, spacing: { before: level === 1 ? 280 : 180, after: 100 }, children: [text(t, { size: level === 1 ? 30 : level === 2 ? 25 : 22, bold: true, color: DARK })] })
+}
+function bullet(t) {
+  return new Paragraph({ bullet: { level: 0 }, spacing: { after: 60 }, children: [text(t, { size: 20 })] })
+}
+function cell(t, header = false, width) {
+  return new TableCell({
+    width: width ? { size: width, type: WidthType.DXA } : undefined,
+    shading: header ? { type: ShadingType.CLEAR, fill: 'E8DFCF' } : undefined,
+    margins: { top: 80, bottom: 80, left: 90, right: 90 },
+    children: String(t).split(String.fromCharCode(10)).map((line) => new Paragraph({ spacing: { after: 0 }, children: [text(line, { bold: header, size: 18, color: header ? '4A3B2A' : undefined })] }))
+  })
+}
+function table(headers, rows, widths) {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 4, color: 'D8CDBA' }, bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D8CDBA' },
+      left: { style: BorderStyle.SINGLE, size: 4, color: 'D8CDBA' }, right: { style: BorderStyle.SINGLE, size: 4, color: 'D8CDBA' },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 2, color: 'E6DDCF' }, insideVertical: { style: BorderStyle.SINGLE, size: 2, color: 'E6DDCF' }
+    },
+    rows: [
+      new TableRow({ tableHeader: true, children: headers.map((h, i) => cell(h, true, widths?.[i])) }),
+      ...rows.map((r) => new TableRow({ children: r.map((c, i) => cell(c, false, widths?.[i])) }))
+    ]
+  })
+}
+function note(t) {
+  return new Paragraph({
+    spacing: { before: 80, after: 140 },
+    shading: { type: ShadingType.CLEAR, fill: CREAM },
+    border: { left: { style: BorderStyle.SINGLE, size: 12, color: GOLD } },
+    indent: { left: 160, right: 160 },
+    children: [text(t, { size: 19, color: '5B5144' })]
+  })
+}
+async function image(pimg, width) {
+  const meta = await sharp(pimg).metadata()
+  const height = Math.round((width * meta.height) / meta.width)
+  return new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 80, after: 40 }, children: [new ImageRun({ data: fs.readFileSync(pimg), type: 'jpg', transformation: { width, height } })] })
+}
+function caption(t) { return new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 160 }, children: [text(t, { size: 17, color: '7A7166' })] }) }
+function spacer() { return new Paragraph({ spacing: { after: 60 }, children: [] }) }
+
+async function main() {
+  const apkBytes = fs.statSync(apk).size
+  const zipBytes = fs.statSync(zip).size
+  const apkSha = sha(apk)
+  const zipSha = sha(zip)
+  const children = []
+  children.push(new Paragraph({ spacing: { before: 500, after: 80 }, alignment: AlignmentType.CENTER, children: [text('框 印  F r a m e M a r k', { size: 44, bold: true, color: DARK })] }))
+  children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [text('边框 · 透明 PNG 水印 · 预设 · 批量', { size: 24, color: GOLD })] }))
+  children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 320 }, children: [text('Windows 桌面版 + Android 版 交付与验收说明', { size: 22, color: '5C554A' })] }))
+  children.push(table(['项目', '内容'], [
+    ['版本', 'FrameMark 1.0.0'],
+    ['交付日期', '2026-10-25'],
+    ['桌面平台', 'Windows 10/11 x64 便携版（未签名）'],
+    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；签名包冷读 160 卡/系统 92/blocked 4，选图、原比例/3:2/Polaroid 导出与系统分享均通过'],
+    ['渲染方式', 'Canvas 2D 本地渲染；桌面 sharp 编码与 EXIF 回写；Android MediaStore 相册写入'],
+    ['离线', '不接入云服务，不上传照片、水印或预设']
+  ], [1800, 7200]))
+  children.push(spacer())
+  children.push(note('版权提醒：内置相机品牌 Logo、参考图与部分模板风格来自个人研究和原版 App 素材；商标与原始素材版权归各权利人所有。请仅用于个人照片处理，不要将内置品牌素材用于商业分发。'))
+  children.push(new Paragraph({ children: [new PageBreak()] }))
+
+  children.push(heading('一、交付结论', 1))
+  children.push(p('本版本已经把「加边框」和「加自定义水印」合并进同一个本地工作流：可以从照片自动读取 EXIF，套用 68 个手写模板或 92 套系统相机水印（共 160 卡），叠加任意透明 PNG/WebP 水印，保存为预设，并对多张照片批量导出。Windows 与 Android 共享同一套模板、水印和预设数据，桌面端负责写文件夹与完整格式编码，Android 端负责系统照片选择、相册写入与系统分享。'))
+  children.push(p('调研结论是没有找到同时覆盖全部需求的开源项目：最接近的 time-letter 与 Qing-Fram-Shadow-web 都是 Windows Electron 项目且偏文字/Logo 水印；iOS 的 PICA、Reframe、Stamio、MatteFrame 不覆盖 Windows/Android 双端；PolarGrid 偏白边与拼贴；其余水印项目是 CLI 或脚本。详细对比见交付目录中的《FrameMark-同类开源项目调研.md》。'))
+  children.push(p('需要明确的边界：JPG 叠加水印后不可能做到数学意义上的无损；本版本采用最高质量重编码并回写 EXIF/ICC。真正的无损导出使用 PNG / 桌面 TIFF / 桌面 WebP。'))
+
+  children.push(heading('二、功能清单', 1))
+  children.push(table(['能力', '实现情况'], [
+    ['边框模板', '68 个手写版式，覆盖背景模糊、水印边框、留白、卡片、玻璃、色卡、电影字幕、胶片齿孔、拍立得等；与 92 套系统相机合计 160 卡'],
+    ['系统相机', '92 套：OPPO 49（Gallery 39 + CameraPro 10）、小米 40、vivo 3；另有 4 组 blocked 在目录内标注原因，不导出'],
+    ['EXIF', '自动读取品牌、机型、镜头、焦距、光圈、快门、ISO、日期；支持手动覆盖；桌面/Android JPG 回写'],
+    ['品牌 Logo', '62 个有可靠字标的品牌，可自动匹配或手动选；可调节大小、位置和显隐；停产老牌字标取自官方历史资料或说明书扫描件，无可靠字标者不列出'],
+    ['透明水印', '支持 PNG/WebP；照片内 / 整张画布；九宫格锚点；水平/垂直偏移；宽度、透明度、旋转；平铺与间距'],
+    ['预设', '保存当前模板、参数、Logo、水印和导出设置；保存到本地；跨设备 JSON 导出/导入（含水印 data URL）'],
+    ['批量', '多张照片逐个导出、逐张进度、取消；文件名变量 {name} {template} {preset} {date} {time} {index} {make} {model}'],
+    ['桌面导出', 'JPG（质量 100、4:4:4、原 EXIF、默认移除 GPS）、PNG、WebP（无损）、TIFF（LZW 无损）'],
+    ['Android 导出', 'JPG、PNG、WebP；写入系统相册 Pictures/FrameMark；JPG 回写 EXIF，PNG/WebP 不写 EXIF'],
+    ['Android 分享', '单张导出完成后可直接打开系统分享面板，分享 MediaStore 中的成片'],
+    ['移动端适配', '竖屏 411×905 CSS px 实测；状态栏/底部手势区安全区；单列参数区；横向模板与照片条']
+  ], [1800, 7200]))
+
+  children.push(heading('二·附：系统相机水印目录', 2))
+  children.push(p('系统相机分类现包含 92 套：OPPO 49（Gallery 39 + CameraPro 10）、小米 40、vivo 3（Zeiss 上框/上下框/内嵌）。另有 4 组 blocked：小米 3 套侧栏（Leica 5/88/89）与 vivo 39 套（合并为一组），均在目录底部显示原因，不可导出。GR5 右侧参数边栏已接入，滤镜值不在 EXIF 时以“—”占位；全部 92 套仍标记 approx。'))
+  children.push(note('blocked 不是“已完成”：它们缺宿主布局、滤镜元数据或可靠参考帧。vivo 的 PAG 已能渲染，但当前只能确认照片层与占位页脚，尚不足以生成可信参考。'))
+
+  children.push(heading('三、格式与“无损”边界', 1))
+  children.push(table(['格式', 'Windows 桌面', 'Android', '说明'], [
+    ['JPG / JPEG', '质量 100 + 4:4:4 + sRGB ICC；原 EXIF 回写，方向归正，GPS 默认移除', '质量 100；EXIF + ICC 回写', '叠加边框/水印后必然发生像素改动；这里的“无损”指最大程度保留画质和元数据，不是数学无损'],
+    ['PNG', '真无损，sRGB ICC', '真无损，不写 EXIF', '适合透明/图形/需要二次编辑的成片'],
+    ['TIFF', 'LZW 压缩真无损，sRGB ICC，不写 EXIF', '不支持', '桌面归档用；文件较大'],
+    ['WebP', '真无损（sharp lossless）', '最高质量有损（Canvas 编码限制）', 'Android 端不宣称无损；UI 已明确提示'],
+    ['HEIC/HEIF', '可读，依赖 sharp/libvips 解码', '可读，依赖系统 WebView 解码', '不是导出格式；不同机型兼容性可能不同']
+  ], [1250, 2900, 2000, 2850]))
+  children.push(note('元数据策略：桌面 JPG 从原文件读取 EXIF，保留相机、镜头、曝光、时间等字段，把尺寸和方向更新为成片值；默认清空 GPS。Android JPG 使用 piexifjs 在前端写回 EXIF；Android 的 PNG/WebP 编码器不提供 EXIF 写入通道。'))
+
+  children.push(heading('四、实测与验收', 1))
+  children.push(heading('4.1 Windows 桌面版', 2))
+  children.push(table(['验收项', '环境', '结果'], [
+    ['模板库与冷启动', 'Windows 打包版', '160 卡（手写 68 + 系统相机 92）、blocked 4；0 页面错误'],
+    ['全库目检（4:3）', 'Windows 打包版 / 高分辨率主画布', '92 套系统相机 + 68 套原版逐张出图；已修 OPPO EXIF 部件重复、侧栏裁切、文字重叠、7 处图片 fill 拉伸与卡片 canvas 拉伸'],
+    ['多比例全量目检', 'Windows 打包版 / 7 种比例', '158 套（新增 2 套待补）× 3:2 / 2:3 / 16:9 / 1:1 / 4:5 / 3:4 / 9:16 共 1106 张，0 页面错误；无拉伸、裁切、重叠；固定版式按设计比例出图'],
+    ['透明水印（单张 + 平铺）', 'Windows 打包版', '白色 PNG 叠加成功；平铺、透明度、宽度、九宫格位置均生效'],
+    ['预设闭环', 'Windows 打包版', '保存 → 导出 JSON → 删除 → 导入 → 应用，水印与模板均恢复'],
+    ['批量 JPG', 'Windows 打包版', '21MP+24MP+19MP 共 3 张，7.3 秒完成，全部写入 Pictures/FrameMark'],
+    ['TIFF 无损', 'Windows 打包版', '24MP 单张 2.1 秒，LZW 压缩，尺寸 6000×4666，ICC 588 B'],
+    ['桌面安装包冒烟', '解压后的 FrameMark.exe', '窗口、预加载、导出、批量均正常；页面错误 0']
+  ], [2100, 2300, 4600]))
+  children.push(await image(path.join(docs, 'windows-app.jpg'), 620))
+  children.push(caption('Windows 打包版运行截图：经典双行模板 + 自动品牌 Logo + EXIF 参数'))
+  children.push(await image(path.join(docs, 'desktop-wm.jpg'), 620))
+  children.push(caption('桌面版透明 PNG 水印：右下角叠加，宽度 18%，不透明度 0.88'))
+  children.push(heading('4.2 Android 真机', 2))
+  children.push(p('测试设备：OPPO Find X6 Pro（PGEM10），Android 16 / SDK 36，WebView 155.0.8059.43，屏幕 1440×3168，DPR 3.5。所有时间均为点击“导出”到界面显示“导出完成”的墙钟时间，受温度、后台负载影响。'))
+  children.push(table(['场景', '尺寸 / 输出', '耗时', '结果'], [
+    ['单张 JPG', '5784×4297 / 21.07 MB', '17.4 s', '成功，EXIF 完整，方向 1，ICC 456 B'],
+    ['单张 JPG', '6000×4666 / 11.61 MB', '15.7 s', '成功，EXIF 完整（含 100-400mm 镜头）'],
+    ['单张 PNG', '6000×4666 / 22.54 MB', '16.8 s', '成功，无损，无 EXIF'],
+    ['单张 WebP', '6000×4666 / 15.20 MB', '8.8 s', '成功，最高质量有损，ICC 456 B'],
+    ['批量 JPG（3 张）', '21MP + 24MP + 19MP', '43.6 s', '成功 3 张，逐张进度正确'],
+    ['批量取消', '3 张 JPG', '取消后当前张完成即停止', '取消标志生效；已修复完成页把总张数误显示为成功张数的问题'],
+    ['发版包', '签名 APK / 系统选择器', '—', '安装、启动、选图、导出到相册均成功；Debug 测试素材未进入 Release'],
+    ['冷启动界面', '签名 APK / PGEM10', '—', '160 卡/系统 92/blocked 4（本包，已通过）'],
+    ['移动端弹窗与快捷条', 'Android 发版包', '—', '已修复模板库全屏弹窗标题/关闭按钮被状态栏压住；当前模板会自动补入快捷条并居中']
+  ], [2000, 2500, 1800, 2700]))
+  children.push(await image(path.join(docs, 'android-wm.jpg'), 260))
+  children.push(caption('Android 发版界面：白色透明 PNG 水印叠加在照片右下角；竖屏/安全区适配正常'))
+  children.push(await image(path.join(docs, 'android-release.jpg'), 260))
+  children.push(caption('Android 签名版：模板库全屏弹窗已适配状态栏安全区，标题与关闭按钮不再被遮挡'))
+
+  children.push(new Paragraph({ children: [new PageBreak()] }))
+  children.push(heading('五、已知限制', 1))
+  children.push(bullet('JPG 无法数学无损：边框/水印是像素合成，必须重新编码；本版本用质量 100、4:4:4、ICC 与 EXIF 回写把损失压到最低。'))
+  children.push(bullet('Android 的 PNG/WebP 不写 EXIF；WebP 来自 Canvas 有损编码，UI 已提示，不标“无损”。Android 暂不支持 TIFF。'))
+  children.push(bullet('批量取消在当前照片完成后生效：编码/写入过程没有中断 API，取消不会立即掐断正在进行的单张；不会继续后续照片。'))
+  children.push(bullet('24MP 以上照片导出会占用较多内存；建议单张处理或分批处理。真机 24MP 已验证，但低内存设备可能出现 WebView 被系统回收。'))
+  children.push(bullet('Windows 便携包未做代码签名，SmartScreen 会提示；选择“更多信息 → 仍要运行”。'))
+  children.push(bullet('内置品牌 Logo 与部分模板审美来源受第三方版权约束，仅供个人使用；商业分发请替换为自有素材。'))
+  children.push(bullet('HEIC/HEIF 与 TIFF 的读取依赖平台解码器，极端编码可能无法预览。'))
+  children.push(bullet('预设 JSON 包含水印图片的 data URL；水印过大时文件会变大，这是跨设备复现的代价。'))
+
+  children.push(heading('六、安装与使用', 1))
+  children.push(heading('Windows', 2))
+  children.push(p('解压 FrameMark-Windows-x64.zip，运行 FrameMark.exe。首次启动后添加照片：可点“添加/文件夹”，也可以直接把图片拖进窗口。选模板 → 在右侧“水印”选择透明 PNG → 调整位置/宽度/透明度 → “导出”。导出目录默认是“图片\\FrameMark”，可在“导出”页更改。'))
+  children.push(heading('Android', 2))
+  children.push(p('安装 FrameMark-Android-v1.0.0.apk（允许安装未知来源应用）。点“添加照片”会打开系统照片选择器；选图后调整模板/水印，点击右上角导出按钮或“导出”页。成片保存到系统相册的 Pictures/FrameMark，可在相册的 FrameMark 相簿查看。'))
+  children.push(heading('预设跨设备', 2))
+  children.push(p('在预设对话框点“导出预设”，Windows 保存到 Downloads\\FrameMark，Android 保存到 Download/FrameMark。把 JSON 传到另一台设备后，打开预设对话框点“导入预设”，选择该 JSON；水印图片与 Logo 会随预设一起迁移。'))
+
+  children.push(heading('七、文件清单、签名与校验', 1))
+  children.push(table(['文件', '大小', 'SHA-256'], [
+    ['FrameMark-Windows-x64.zip', fmt(zipBytes), zipSha.slice(0, 32) + String.fromCharCode(10) + zipSha.slice(32)],
+    ['FrameMark-Android-v1.0.0.apk', fmt(apkBytes), apkSha.slice(0, 32) + String.fromCharCode(10) + apkSha.slice(32)]
+  ], [3000, 1400, 4600]))
+  children.push(p('Windows 便携包解压后主程序：FrameMark-win32-x64\\FrameMark.exe。Android APK 已用项目内 release keystore 签名；证书 DN 为 CN=FrameMark, OU=Personal, O=FrameMark, L=Chengdu, ST=Sichuan, C=CN，证书 SHA-256：a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f。'))
+  children.push(p('签名文件：android/keystore/framemark-release.jks；口令与别名：android/keystore.properties。后续升级必须继续使用同一把钥匙，否则 Android 会拒绝覆盖安装。该文件只在本机保存，不要上传或公开。'))
+  children.push(note('更新 Android 版本时，修改 android/app/build.gradle 的 versionCode/versionName 后重新运行 Gradle assembleRelease；保留 keystore 与 properties。'))
+
+  children.push(new Paragraph({ children: [new PageBreak()] }))
+  children.push(heading('附录 A：160 个模板总览', 1))
+  children.push(p('当前模板库共 160 卡：68 个原版/手写变体加 92 个系统相机 IR 变体。下图直接由各卡片使用的静态/渲染预览资源生成，用于总览版式分布；单套细节仍以模板库和预览文件为准。'))
+  children.push(await image(path.join(docs, 'all-templates-160.jpg'), 500))
+  children.push(caption('160 个模板预览联系表（渲染预览 73 张 + 系统静态预览 87 张，合计 160）'))
+  children.push(p('水印测试覆盖：白色水印、九宫格右下、宽度 18%、不透明度 0.88；平铺模式宽度 9%、间距 5%、不透明度 0.30。桌面与 Android 均生成成片；桌面平铺成片已保存到 _research/exports/desktop-watermark-tile.jpg。'))
+
+  const doc = new Document({
+    styles: {
+      default: { document: { run: { font: FONT, size: 21, color: '2B2824' }, paragraph: { spacing: { line: 320 } } } },
+      heading1: { run: { font: FONT, size: 30, bold: true, color: DARK }, paragraph: { spacing: { before: 280, after: 100 } } },
+      heading2: { run: { font: FONT, size: 25, bold: true, color: DARK } },
+      heading3: { run: { font: FONT, size: 22, bold: true, color: DARK } }
+    },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } } },
+      footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [text('框印 FrameMark 1.0.0 · 交付说明 · ', { size: 16, color: '8A8175' }), new TextRun({ children: [PageNumber.CURRENT], font: FONT, size: 16, color: '8A8175' })] })] }) },
+      children
+    }]
+  })
+  fs.mkdirSync(path.dirname(out), { recursive: true })
+  fs.writeFileSync(out, await Packer.toBuffer(doc))
+  console.log(out, fs.statSync(out).size)
+}
+main().catch((e) => { console.error(e); process.exit(1) })
