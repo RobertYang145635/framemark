@@ -3869,42 +3869,111 @@ const movie: TemplateDef = {
   en: 'CINEMA',
   category: '电影',
   description: '上下黑边与片头字幕，带电影画幅的仪式感。',
-  defaults: { marginPct: 0, radiusPct: 0, shadow: 0, footerPct: 0, theme: 'black', logoScale: 5, barPct: 6.5, logoPos: 'right' },
+  // photoAspect > 0 switches to the 2.34:1 cinema crop: the photo is cover-cropped
+  // to that aspect inside the frame, barPct then means the bar height as a % of the
+  // canvas height (movie-1 11.7 / movie-2 7.9). subtitleMode 'in-photo' burns the
+  // two caption lines into the still (movie-2); 'bar' keeps them in the bottom bar.
+  defaults: {
+    marginPct: 0,
+    radiusPct: 0,
+    shadow: 0,
+    footerPct: 0,
+    theme: 'black',
+    logoScale: 5,
+    barPct: 6.5,
+    logoPos: 'right',
+    photoAspect: 0,
+    subtitleMode: 'bar'
+  },
   themes: darkThemes,
   controls: [],
   layout(env) {
+    const aspect = pct(env.params.photoAspect, 0)
+    if (aspect > 0) {
+      const photoH = env.pw / aspect
+      const bp = Math.max(0, Math.min(30, pct(env.params.barPct, 11.7)))
+      const bar = (photoH * bp) / (100 - 2 * bp)
+      return { W: env.pw, H: photoH + 2 * bar }
+    }
     const S = Math.min(env.pw, env.ph)
     const bar = Math.max((S * pct(env.params.barPct, 8)) / 100, S * 0.05)
     return { W: env.pw, H: env.ph + 2 * bar }
   },
   render(env) {
-    const { ctx, W, H, pw, ph } = env
+    const { ctx, W, H } = env
     const theme = themeOf(env.params)
-    const S = Math.min(pw, ph)
-    const bar = (H - ph) / 2
+    const aspect = pct(env.params.photoAspect, 0)
+    const wide = aspect > 0
+    const photoW = wide ? W : env.pw
+    const photoH = wide ? W / aspect : env.ph
+    const S = Math.min(photoW, photoH)
+    const bar = (H - photoH) / 2
+    const bottomTop = bar + photoH
+    const inPhoto = wide && String(env.params.subtitleMode ?? 'bar') === 'in-photo'
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
-    drawPhoto(env, 0, bar, pw, ph, 0, 0)
+    if (wide) drawPhotoCover(env, 0, bar, photoW, photoH, 0, 0)
+    else drawPhoto(env, 0, bar, photoW, photoH, 0, 0)
     const title = titleOf(env)
     const sub = subLine(env)
     const hasSub = Boolean(sub)
-    const bottomTop = bar + ph
-    const titleY = bottomTop + bar * (hasSub ? 0.38 : 0.62)
-    drawFitted(ctx, title, W / 2, titleY, W * 0.82, S * 0.036, theme.fg, {
-      align: 'center',
-      family: FONT_CN,
-      weight: 400,
-      min: S * 0.018
-    })
-    if (hasSub) {
-      drawFitted(ctx, sub, W / 2, bottomTop + bar * 0.76, W * 0.82, S * 0.023, theme.sub, {
+    const sizeTitle = wide ? S * 0.042 : S * 0.036
+    const sizeSub = wide ? S * 0.036 : S * 0.023
+    if (inPhoto) {
+      // subtitle over the still, lifted off the photo bottom edge
+      drawFitted(ctx, title, W / 2, bottomTop - S * (hasSub ? 0.122 : 0.06), W * 0.82, sizeTitle, theme.fg, {
         align: 'center',
-        family: FONT_UI,
+        family: FONT_CN,
         weight: 400,
-        min: S * 0.012
+        baseline: 'middle',
+        shadow: true,
+        min: S * 0.018
       })
+      if (hasSub) {
+        drawFitted(ctx, sub, W / 2, bottomTop - S * 0.066, W * 0.82, sizeSub, theme.fg, {
+          align: 'center',
+          family: FONT_UI,
+          weight: 400,
+          baseline: 'middle',
+          shadow: true,
+          min: S * 0.012
+        })
+      }
+    } else if (wide) {
+      drawFitted(ctx, title, W / 2, bottomTop + bar * (hasSub ? 0.265 : 0.5), W * 0.82, sizeTitle, theme.fg, {
+        align: 'center',
+        family: FONT_CN,
+        weight: 400,
+        baseline: 'middle',
+        min: S * 0.018
+      })
+      if (hasSub) {
+        drawFitted(ctx, sub, W / 2, bottomTop + bar * 0.634, W * 0.82, sizeSub, theme.fg, {
+          align: 'center',
+          family: FONT_UI,
+          weight: 400,
+          baseline: 'middle',
+          min: S * 0.012
+        })
+      }
+    } else {
+      // legacy movie (photoAspect 0): unchanged placement and colours
+      drawFitted(ctx, title, W / 2, bottomTop + bar * (hasSub ? 0.38 : 0.62), W * 0.82, S * 0.036, theme.fg, {
+        align: 'center',
+        family: FONT_CN,
+        weight: 400,
+        min: S * 0.018
+      })
+      if (hasSub) {
+        drawFitted(ctx, sub, W / 2, bottomTop + bar * 0.76, W * 0.82, S * 0.023, theme.sub, {
+          align: 'center',
+          family: FONT_UI,
+          weight: 400,
+          min: S * 0.012
+        })
+      }
     }
-    return { x: 0, y: bar, w: pw, h: ph }
+    return { x: 0, y: bar, w: photoW, h: photoH }
   }
 }
 
@@ -3974,6 +4043,135 @@ const ratioBlock: TemplateDef = {
   }
 }
 
+// ratio-1 / ratio-2 reference frames are a 3:2 canvas (1024x682) holding a matte
+// inset photo at the reference aspect with a centred caption underneath.
+// Canvas H follows the reference aspect instead of the input crop; the photo
+// window is a centre-crop of the input, so no engine/crop change is needed.
+const ratioMatte: TemplateDef = {
+  id: 'ratioMatte',
+  name: '比例 · 衬边',
+  en: 'RATIO MATTE',
+  category: '比例',
+  description: '模糊底衬边，内嵌照片，品牌与参数居中。',
+  defaults: {
+    theme: 'ink',
+    canvasAspect: 1.5015,
+    photoAspect: 1.485,
+    sideMarginPct: 9.03,
+    topMarginPct: 5.72,
+    radiusPct: 0,
+    blur: 24,
+    tintAlpha: 0.9,
+    vignette: 0.28,
+    brandSizePct: 3.43,
+    brandGapPct: 4.62,
+    brandTracking: 0.14,
+    metaSizePct: 1.8,
+    metaGapPct: 8.5,
+    metaAlphaPct: 80
+  },
+  themes: lightThemes,
+  controls: [],
+  layout(env) {
+    const aspect = Math.max(0.5, pct(env.params.canvasAspect, 1.5015))
+    return { W: env.pw, H: Math.max(2, Math.round(env.pw / aspect)) }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const theme = themeOf(env.params)
+    drawBlurredBackdrop(env, W, H, theme, Math.max(0, Math.min(1, pct(env.params.tintAlpha, 0.9))))
+    const vig = Math.max(0, Math.min(1, pct(env.params.vignette, 0)))
+    if (vig > 0) {
+      const g = ctx.createRadialGradient(W / 2, H * 0.42, Math.min(W, H) * 0.12, W / 2, H / 2, Math.max(W, H) * 0.68)
+      g.addColorStop(0, 'rgba(0,0,0,0)')
+      g.addColorStop(1, `rgba(0,0,0,${vig})`)
+      ctx.save()
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, W, H)
+      ctx.restore()
+    }
+    const photoY = H * (pct(env.params.topMarginPct, 5.72) / 100)
+    let photoW = Math.max(1, W - 2 * W * (pct(env.params.sideMarginPct, 9.03) / 100))
+    let photoH = photoW / Math.max(0.2, pct(env.params.photoAspect, 1.485))
+    const maxBottom = H * 0.96
+    if (photoY + photoH > maxBottom) {
+      photoH = Math.max(1, maxBottom - photoY)
+      photoW = photoH * Math.max(0.2, pct(env.params.photoAspect, 1.485))
+    }
+    const photoX = (W - photoW) / 2
+    const radius = Math.min(photoW, photoH) * (pct(env.params.radiusPct, 0) / 100)
+    drawPhotoCover(env, photoX, photoY, photoW, photoH, radius)
+    const photoBottom = photoY + photoH
+    const cam = [
+      env.text.showMake ? env.exif.make : '',
+      env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
+    ]
+      .filter(Boolean)
+      .join('  ')
+    const ex = exifText(env)
+    const dt = dateText(env)
+    const meta = ex || dt
+    const maxW = photoW * 0.92
+    if (cam) {
+      drawFitted(ctx, cam.toUpperCase(), W / 2, photoBottom + H * (pct(env.params.brandGapPct, 4.62) / 100), maxW, H * (pct(env.params.brandSizePct, 3.43) / 100), '#ffffff', {
+        align: 'center',
+        baseline: 'middle',
+        family: FONT_UI,
+        weight: 600,
+        tracking: pct(env.params.brandTracking, 0.14),
+        min: H * 0.012
+      })
+    }
+    if (meta) {
+      const alpha = Math.max(0, Math.min(100, pct(env.params.metaAlphaPct, 80))) / 100
+      drawFitted(ctx, meta, W / 2, photoBottom + H * (pct(env.params.metaGapPct, 8.5) / 100), maxW, H * (pct(env.params.metaSizePct, 2.4) / 100), `rgba(255,255,255,${alpha})`, {
+        align: 'center',
+        baseline: 'middle',
+        family: FONT_MONO,
+        weight: 400,
+        tracking: 0.02,
+        min: H * 0.009
+      })
+    }
+    return { x: photoX, y: photoY, w: photoW, h: photoH }
+  }
+}
+
+// ratio-3 reference: full-bleed blurred copy of the photo as the backdrop with a
+// centred 1:1 inset (88.27% of the short side, rounded corners) and no text.
+const ratioBlurSquare: TemplateDef = {
+  id: 'ratioBlurSquare',
+  name: '比例 · 模糊方图',
+  en: 'RATIO BLUR SQUARE',
+  category: '比例',
+  description: '模糊底 + 居中方形照片，无文字。',
+  defaults: {
+    theme: 'ink',
+    canvasAspect: 1.5015,
+    blur: 30,
+    tintAlpha: 0.18,
+    squarePct: 88.27,
+    radiusPct: 2.6
+  },
+  themes: lightThemes,
+  controls: [],
+  layout(env) {
+    const aspect = Math.max(0.5, pct(env.params.canvasAspect, 1.5015))
+    return { W: env.pw, H: Math.max(2, Math.round(env.pw / aspect)) }
+  },
+  render(env) {
+    const { W, H } = env
+    const theme = themeOf(env.params)
+    drawBlurredBackdrop(env, W, H, theme, Math.max(0, Math.min(1, pct(env.params.tintAlpha, 0.18))))
+    const side = Math.min(W, H) * (pct(env.params.squarePct, 88.27) / 100)
+    const x = (W - side) / 2
+    const y = (H - side) / 2
+    const radius = side * (pct(env.params.radiusPct, 2.6) / 100)
+    drawPhotoCover(env, x, y, side, side, radius)
+    return { x, y, w: side, h: side }
+  }
+}
+
 export const TEMPLATES: TemplateDef[] = [
   minimal,
   gallery,
@@ -4011,6 +4209,8 @@ export const TEMPLATES: TemplateDef[] = [
   ticket,
   movie,
   ratioBlock,
+  ratioMatte,
+  ratioBlurSquare,
   systemCamera
 ]
 

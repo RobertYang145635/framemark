@@ -35,6 +35,8 @@ export type TemplateId =
   | 'ticket'
   | 'movie'
   | 'ratio'
+  | 'ratioMatte'
+  | 'ratioBlurSquare'
   | 'systemCamera'
 
 export type Ratio = 'original' | '1:1' | '4:5' | '16:9' | '3:2'

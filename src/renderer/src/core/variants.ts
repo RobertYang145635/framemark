@@ -442,14 +442,26 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('color-walk', '色卡漫步', '色卡', 'locationCard', 'color-walk.webp', { theme: 'paper', locationBg: '#405c66', locationFg: '#f5f2ea', locationTitle: '中国', locationTime: '08:00 AM', headerPct: 45 }),
 
   // 电影
-  V('movie-1', '电影 01', '电影', 'movie', 'movie1.webp', { theme: 'black', barPct: 10 }, '原版', {
-    title: '人生是旷野不是轨道',
-    subtitle: 'Life is a wilderness, not a track'
-  }),
-  V('movie-2', '电影 02', '电影', 'movie', 'movie2.webp', { theme: 'black', barPct: 10 }, '原版', {
-    title: '人生是旷野不是轨道',
-    subtitle: 'Life is a wilderness, not a track'
-  }),
+  V(
+    'movie-1',
+    '电影 01',
+    '电影',
+    'movie',
+    'movie1.webp',
+    { theme: 'black', photoAspect: 2.34, barPct: 11.7, subtitleMode: 'bar' },
+    '原版',
+    { title: '人生是旷野不是轨道', subtitle: 'Life is a wilderness,not a track' }
+  ),
+  V(
+    'movie-2',
+    '电影 02',
+    '电影',
+    'movie',
+    'movie2.webp',
+    { theme: 'black', photoAspect: 2.34, barPct: 7.9, subtitleMode: 'in-photo' },
+    '原版',
+    { title: '人生是旷野不是轨道', subtitle: 'Life is a wilderness,not a track' }
+  ),
 
   // 票据
   V('ticket-1', '票据 01', '票据', 'sideTicket', 'ticket.webp', { theme: 'ink', ticketBg: '#244231', ticketPanel: '#31533f', stubTitle: 'HANG ZHOU', stubLabel: 'GUANGYING 100' }),
@@ -478,9 +490,63 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   ),
 
   // 比例
-  V('ratio-1', '比例 01', '比例', 'ratio', 'ratio.webp', { theme: 'ink', corner: 3 }),
-  V('ratio-2', '比例 02', '比例', 'ratio', 'ratio2.webp', { theme: 'ink', corner: 2 }),
-  V('ratio-3', '比例 03', '比例', 'ratio', 'ratio3.webp', { theme: 'ink', corner: 1 }),
+  V(
+    'ratio-1',
+    '比例 01',
+    '比例',
+    'ratioMatte',
+    'ratio.webp',
+    {
+      theme: 'ink',
+      photoAspect: 1.485,
+      sideMarginPct: 9.03,
+      topMarginPct: 5.72,
+      blur: 22,
+      tintAlpha: 0.9,
+      vignette: 0.32,
+      brandSizePct: 3.43,
+      brandGapPct: 4.62,
+      metaSizePct: 1.8,
+      metaGapPct: 8.5,
+      metaAlphaPct: 80
+    },
+    undefined,
+    { showLogo: false, showDate: false }
+  ),
+  V(
+    'ratio-2',
+    '比例 02',
+    '比例',
+    'ratioMatte',
+    'ratio2.webp',
+    {
+      theme: 'cream',
+      photoAspect: 1.7485,
+      sideMarginPct: 6.54,
+      topMarginPct: 7.04,
+      blur: 26,
+      tintAlpha: 0.06,
+      vignette: 0.1,
+      brandSizePct: 5.25,
+      brandGapPct: 5.72,
+      brandTracking: 0.06,
+      metaSizePct: 3.2,
+      metaGapPct: 12.17,
+      metaAlphaPct: 92
+    },
+    undefined,
+    { showLogo: false, showExif: false }
+  ),
+  V(
+    'ratio-3',
+    '比例 03',
+    '比例',
+    'ratioBlurSquare',
+    'ratio3.webp',
+    { theme: 'ink', blur: 30, tintAlpha: 0.18, squarePct: 88.27, radiusPct: 2.6 },
+    undefined,
+    { showMake: false, showModel: false, showExif: false, showDate: false, showLogo: false }
+  ),
 
   // 其他原版
   V('new-color-2', '自然诗篇', '留白', 'poetryCard', 'new-color2.webp', { theme: 'white', marginPct: 6, radiusPct: 2, headerPct: 18, footerPct: 14, shadow: 0.3 }, undefined, { title: "Nature's poetry" }),
