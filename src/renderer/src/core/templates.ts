@@ -480,46 +480,70 @@ const splitReveal: TemplateDef = {
   name: '色彩显现',
   en: 'SPLIT REVEAL',
   category: '色卡',
-  description: '左半灰阶、右半彩色，中间竖线与三色点。',
-  defaults: { theme: 'paper' },
+  description: '整幅彩色照片与纵向三色点取色器。',
+  // color-reveal reference is a single 360x202 (16:9) colour still with a
+  // vertical 3-dot picker near the horizontal centre. canvasAspect forces the
+  // 16:9 canvas; frameMode 'single' drops the legacy grayscale split; the dot
+  // params switch the row to a vertical stack. They are opt-in, so no other
+  // template (none uses this def) changes behaviour.
+  defaults: {
+    theme: 'paper',
+    canvasAspect: 16 / 9,
+    frameMode: 'single',
+    dotOrientation: 'vertical',
+    dotCount: 3,
+    dotXPct: 50,
+    dotTopPct: 46.3,
+    dotGapPct: 7.7,
+    dotSizePct: 2.45
+  },
   themes: lightThemes,
   controls: [],
   layout(env) {
-    return { W: env.pw, H: env.ph }
+    const aspect = Math.max(0.5, pct(env.params.canvasAspect, 16 / 9))
+    return { W: env.pw, H: Math.max(2, Math.round(env.pw / aspect)) }
   },
   render(env) {
     const { ctx, W, H } = env
     const S = Math.min(W, H)
     const split = W / 2
-    drawPhoto(env, 0, 0, W, H, 0, 0)
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(0, 0, split, H)
-    ctx.clip()
-    ctx.filter = 'grayscale(1)'
-    drawPhoto(env, 0, 0, W, H, 0, 0)
-    ctx.filter = 'none'
-    ctx.restore()
-    ctx.save()
-    ctx.strokeStyle = 'rgba(255,255,255,0.78)'
-    ctx.lineWidth = Math.max(1, S * 0.0016)
-    ctx.beginPath()
-    ctx.moveTo(split, 0)
-    ctx.lineTo(split, H)
-    ctx.stroke()
-    ctx.restore()
-    const palette = extractPalette(env, 5)
-    const r = S * 0.0105
-    const gap = r * 2.9
-    const cy = H * 0.62
-    for (let i = 0; i < 3; i++) {
+    const single = String(env.params.frameMode ?? 'single') === 'single'
+    if (single) {
+      drawPhotoCover(env, 0, 0, W, H, 0, 0)
+    } else {
+      drawPhoto(env, 0, 0, W, H, 0, 0)
       ctx.save()
       ctx.beginPath()
-      ctx.arc(split + (i - 1) * gap, cy, r, 0, Math.PI * 2)
+      ctx.rect(0, 0, split, H)
+      ctx.clip()
+      ctx.filter = 'grayscale(1)'
+      drawPhoto(env, 0, 0, W, H, 0, 0)
+      ctx.filter = 'none'
+      ctx.restore()
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255,255,255,0.78)'
+      ctx.lineWidth = Math.max(1, S * 0.0016)
+      ctx.beginPath()
+      ctx.moveTo(split, 0)
+      ctx.lineTo(split, H)
+      ctx.stroke()
+      ctx.restore()
+    }
+    const palette = extractPalette(env, 5)
+    const vertical = String(env.params.dotOrientation ?? 'vertical') === 'vertical'
+    const count = Math.max(1, Math.min(6, Math.round(Number(env.params.dotCount)) || 3))
+    const r = vertical ? S * (pct(env.params.dotSizePct, 2.45) / 100) : S * 0.0105
+    const gap = vertical ? H * (pct(env.params.dotGapPct, 7.7) / 100) : r * 2.9
+    const cx = vertical ? W * (pct(env.params.dotXPct, 50) / 100) : split
+    const cy = vertical ? H * (pct(env.params.dotTopPct, 46.3) / 100) : H * 0.62
+    for (let i = 0; i < count; i++) {
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(vertical ? cx : split + (i - (count - 1) / 2) * gap, vertical ? cy + i * gap : cy, r, 0, Math.PI * 2)
       ctx.fillStyle = palette[i + 1] ?? palette[i] ?? '#ffffff'
       ctx.fill()
       ctx.strokeStyle = 'rgba(255,255,255,0.82)'
-      ctx.lineWidth = Math.max(1, S * 0.0012)
+      ctx.lineWidth = Math.max(1, S * (vertical ? 0.0025 : 0.0012))
       ctx.stroke()
       ctx.restore()
     }
@@ -3644,7 +3668,9 @@ const locationCard: TemplateDef = {
       tracking: 0.12,
       min: S * 0.024
     })
-    drawFitted(ctx, String(env.params.locationTime ?? '08:00 AM'), W / 2, header * 0.66, W * 0.4, S * 0.018, fg, {
+    // The colour-walk reference puts the time centre at 53.6% of the header
+    // (ink top 52.6%); 0.66 was 10.9 %S too low. 0.535 keeps the title at 0.48.
+    drawFitted(ctx, String(env.params.locationTime ?? '08:00 AM'), W / 2, header * 0.535, W * 0.4, S * 0.018, fg, {
       family: FONT_MONO,
       weight: 400,
       align: 'center',
@@ -3684,8 +3710,19 @@ const paletteCard: TemplateDef = {
     drawPhoto(env, m, m, pw, ph, radius, pct(env.params.shadow, 0.4))
     const size = S * 0.082
     const colors = extractPalette(env, 5)
-    const y = m + ph + m + Math.max(0, (palette - size * 1.35) / 2)
-    drawSwatches(env, colors, m, y, W - 2 * m, size, theme.sub)
+    // paletteGapPct: anchor the swatch block just below the photo (0 = flush).
+    // paletteRowPct: spread the swatches across S*rowPct instead of the
+    // packed, centred group; both are opt-in and leave other users unchanged.
+    const gapPct = Number(env.params.paletteGapPct)
+    const rowPct = Number(env.params.paletteRowPct)
+    const block = size * 1.52
+    const y = Number.isFinite(gapPct)
+      ? m + ph + (S * gapPct) / 100
+      : m + ph + m + Math.max(0, (palette - block) / 2)
+    const spread = Number.isFinite(rowPct) && rowPct > 0
+    const rowW = spread ? Math.min(W, (S * rowPct) / 100) : W - 2 * m
+    const rowX = spread ? (W - rowW) / 2 : m
+    drawSwatches(env, colors, rowX, y, rowW, size, theme.sub, spread ? { spread } : undefined)
     return { x: m, y: m, w: pw, h: ph }
   }
 }

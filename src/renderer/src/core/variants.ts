@@ -435,10 +435,18 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('glass-card', '玻璃卡片', '液态玻璃', 'glassSideCard', 'glass.webp', { theme: 'ink', cardAspect: 1.3333, cardSide: 'right', contentSide: 'left', cardWidthPct: 56.25, cardHeightPct: 0, cardInsetPct: 6.35, cardRadiusPct: 1.6, blur: 26, tintAlpha: 0.2, rowSet: 'fiso', rowValueGapPct: 6.0, rowValuePct: 5.6 }),
 
   // 色卡
-  V('color-1', '色卡 01', '色卡', 'paletteCard', 'color1.webp', { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22 }, '热门'),
-  V('color-2', '色卡 02', '色卡', 'paletteCard', 'color2.webp', { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22 }),
-  V('color-3', '色卡 03', '色卡', 'paletteCard', 'color3.webp', { theme: 'paper', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22 }),
-  V('color-reveal', '颜色显现', '色卡', 'splitReveal', 'color_reveal.png', { theme: 'paper' }),
+  V('color-1', '色卡 01', '色卡', 'paletteCard', 'color1.webp', { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22, paletteRowPct: 120.5, paletteGapPct: 3.6 }, '热门'),
+  V('color-2', '色卡 02', '色卡', 'paletteCard', 'color2.webp', { theme: 'white', marginPct: 2, radiusPct: 0, shadow: 0.4, palettePct: 22, paletteRowPct: 120.4, paletteGapPct: 4.1 }),
+  V('color-3', '色卡 03', '色卡', 'paletteCard', 'color3.webp', { theme: 'paper', marginPct: 0, radiusPct: 0, shadow: 0, palettePct: 16.1, paletteRowPct: 115.4, paletteGapPct: 0 }),
+  // color_reveal ref is a single 360x202 (16:9) colour still with a vertical
+  // 3-dot picker, not the legacy grayscale split / horizontal dots.
+  V('color-reveal', '颜色显现', '色卡', 'splitReveal', 'color_reveal.png', {
+    theme: 'paper',
+    canvasAspect: 16 / 9,
+    frameMode: 'single',
+    dotOrientation: 'vertical',
+    dotCount: 3
+  }),
   V('color-walk', '色卡漫步', '色卡', 'locationCard', 'color-walk.webp', { theme: 'paper', locationBg: '#405c66', locationFg: '#f5f2ea', locationTitle: '中国', locationTime: '08:00 AM', headerPct: 45 }),
 
   // 电影

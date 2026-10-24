@@ -374,15 +374,20 @@ export function drawSwatches(
   y: number,
   maxWidth: number,
   size: number,
-  labelColor: string
+  labelColor: string,
+  opts?: { spread?: boolean }
 ): void {
   const ctx = env.ctx
   const gap = size * 0.34
   const n = colors.length
   const total = n * size + (n - 1) * gap
-  const start = x + Math.max(0, (maxWidth - total) / 2)
+  // spread: first/last swatch centres sit on the row edges so the row fills
+  // `maxWidth`; the default keeps the packed, centred group.
+  const spread = Boolean(opts?.spread) && n > 1
+  const start = spread ? x + size / 2 : x + Math.max(0, (maxWidth - total) / 2)
+  const step = spread ? (maxWidth - size) / (n - 1) : size + gap
   for (let i = 0; i < n; i++) {
-    const cx = start + i * (size + gap) + size / 2
+    const cx = spread ? start + i * step : start + i * (size + gap) + size / 2
     ctx.save()
     ctx.beginPath()
     ctx.arc(cx, y + size / 2, size / 2, 0, Math.PI * 2)
