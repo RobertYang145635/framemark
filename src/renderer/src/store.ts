@@ -15,7 +15,7 @@ import { getTemplate } from './core/templates'
 import { getVariant } from './core/variants'
 import { autoLogo, logoAsset } from './core/brands'
 import { photoFromFile, photoFromPath, photoFromUrl, revokePhoto, imageAssetFromFile } from './core/photos'
-import { cloneDesign, defaultDesign, hydrateDesign, isValidDesign, makeDesignFromVariant } from './core/presets'
+import { defaultDesign, hydrateDesign, isValidDesign, makeDesignFromVariant, portablePresetDesign } from './core/presets'
 import { getAllPresets, putPreset, removePreset, loadLastDesign, saveLastDesign, downloadJson, readJsonFile } from './core/storage'
 import { exportBatch } from './core/exporter'
 import { saveTextDocument } from './core/gallery'
@@ -358,7 +358,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const preset: Preset = {
       id: `preset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: name.trim() || '未命名预设',
-      design: cloneDesign(get().design),
+      design: portablePresetDesign(get().design),
       createdAt: Date.now(),
       updatedAt: Date.now()
     }
@@ -371,7 +371,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   applyPreset: (id) => {
     const preset = get().presets.find((p) => p.id === id)
     if (!preset) return
-    set({ design: hydrateDesign(preset.design), activePresetId: preset.id, tab: 'template' })
+    const liveOutputDir = get().design.export.outputDir
+    const design = hydrateDesign(preset.design)
+    // Presets are portable: keep the user's current export folder and ignore any
+    // machine-specific outputDir saved by legacy presets.
+    design.export = { ...design.export, outputDir: liveOutputDir }
+    set({ design, activePresetId: preset.id, tab: 'template' })
     get().showToast(`已应用「${preset.name}」`, 'success')
   },
 
@@ -392,7 +397,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const preset: Preset = {
           id: `import-${Date.now()}-${count}-${Math.random().toString(36).slice(2, 6)}`,
           name: String(item.name).slice(0, 60),
-          design: hydrateDesign(item.design),
+          design: portablePresetDesign(hydrateDesign(item.design)),
           createdAt: Number(item.createdAt) || Date.now(),
           updatedAt: Date.now()
         }
@@ -412,8 +417,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       app: 'FrameMark',
       version: 1,
       exportedAt: new Date().toISOString(),
-      presets: get().presets,
-      currentDesign: get().design
+      presets: get().presets.map((preset) => ({ ...preset, design: portablePresetDesign(preset.design) })),
+      currentDesign: portablePresetDesign(get().design)
     }
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')

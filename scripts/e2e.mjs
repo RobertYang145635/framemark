@@ -19,7 +19,7 @@ page.on('pageerror', (e) => errors.push(e.message))
 await page.waitForSelector('.app-shell.ready', { timeout: 30000 })
 
 const total = await page.locator('.tpl-card').count()
-assert(total >= 158, `expected >=158 cards, got ${total}`)
+assert.equal(total, 160, `expected ===160 cards, got ${total}`)
 assert.equal(await page.locator('.tpl-card canvas').count(), 0, 'cards must use static previews')
 
 await page.locator('.gallery-chips button', { hasText: '系统相机' }).click()

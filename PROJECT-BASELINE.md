@@ -17,10 +17,18 @@
 | W0c | 审计工具修复 | 完成 | `_research/cleanup/`、`scripts/audit-original47.cjs` |
 | W0d | 47 套清单（TemplateSpec 骨架） | 完成 | `_research/original-47/manifest.json`（已接入本页 §2.1） |
 | G0 | 主管验收 | 待 W0a/W0b/W0c/W0d（均已收口） | — |
-| W1 | 47 套像素审计与修复 | 进行中（W0 收尾后启动） | 本页 §2.1、§5 缺口 1 |
-| W2–W5 | 核心 E2E、最新厂商边框、Android 真机、打包终验 | 未开始 | 本页 §3 |
+| W1 | 47 套像素审计与修复 | 审计完成；修复启动（未完成） | `_research/original-47/specs/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md) |
+| **W2** | **核心工作流 E2E** | **完成（PASS 106/106）** | `scripts/e2e-workflow.mjs`；[`w2-fix-report.md`](../_research/cleanup/w2-fix-report.md) |
+| W3 | 最新厂商边框对齐 | 审计完成；目录未更新 | `_research/vendor-latest/`；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
+| W4–W5 | Android 真机、打包终验 | 未开始 | 本页 §3 |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
+
+**W1**：47/47 套 TemplateSpec 已生成；审计判定 **5 pass / 39 fail / 3 provisional**；修复批次 **A=8 / B=30 / C=4**，修复刚开始，尚无套别完成修复或复验（0 套 `verified`）。
+
+**W2**：核心工作流 E2E **PASS 106/106 断言，failed 0，pageerror 0**；覆盖双图批量、预设保存/重载/套用、自定义 PNG 水印、全部参数、文件名 token、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 往返；预设 `outputDir` 可移植性缺陷已修复。
+
+**W3**：OPPO Gallery **17.10.7** 已从 Find X9 Ultra 包提取；43 个最新 Gallery 样式为 **25 same / 14 outdated / 5 missing**（14 outdated = 13 changed + 1 不再随包），另有 **10** 个相机包样式 `unverifiable`；小米 **7 套 outdated**；vivo **39 套仍 blocked**。目录与变体尚未按最新包更新。
 
 ---
 
@@ -51,10 +59,10 @@
 ### 2.1 原版 47 套（手写原版复刻）
 
 - 47 张原版参考图 **1:1 映射到 68 套手写变体中的 47 套**（`variants.ts` 中带原版 `preview` 的那一批）；其余 21 套为自研/精选，不在 L2 范围。
-- 只有 **13 套**有已知照片矩形：纯白 1–4、卡片 1–4、人物 1–5。这 13 条来自 manifest 的 `handoff-6.2`（即 [HANDOFF](../HANDOFF.md) §6.2；早期硬编码在 `scripts/_geometry-diff.cjs`）。
-- 其余 **34 套未测量**；**完整 TemplateSpec 尚不存在**。
-- 因此 47 套**都不能称为 `verified`**。当前准确表述是：“结构已收口，逐模板像素规格待补”。
-- 当前几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行：13 已知 / 34 未测量）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
+- 早期只有 **13 套**有 manifest 矩形：纯白 1–4、卡片 1–4、人物 1–5（来自 [HANDOFF](../HANDOFF.md) §6.2）；W1 已对 47 套逐套重新测量。
+- **47/47 套 TemplateSpec 已生成**（`_research/original-47/specs/`）；审计判定 **5 pass / 39 fail / 3 provisional**，修复批次 A=8 / B=30 / C=4 启动中。
+- 因此 47 套**仍都不能称为 `verified`**：5 pass 只表示该轮测量项达标，尚需逐套修复与复验。
+- 几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行；早期 13 已知 / 34 未测量，W1 已用 47 套 TemplateSpec 补测）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
 
 ### 2.2 系统相机 92 套
 
@@ -81,7 +89,8 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
 | `typecheck` / `build` | 通过 | 02:05 批次 |
-| `npm run test:e2e` | 通过 | 160 卡 / 系统 92 / blocked 4；0 pageerror |
+| `npm run test:e2e` | 通过 | legacy：160 卡 / 系统 92 / blocked 4；errors 0 |
+| `npm run test:workflow` | 通过 | 106/106 断言 / failed 0 / pageerror 0（W2 核心工作流） |
 | `npm run validate:ir` | 通过 | 82 生成样式 / 82 生成变体 / 87 预览；0 error；37 条主题近似 warning |
 | Windows 桌面 | 通过 | 打包版冷启动正常；品牌库 62 卡、套用正常、0 pageerror |
 | Android | **冷启动通过，细项目检欠 1 项** | 02:05 APK 已安装并冷启动；底栏（bottom-tab）移动端界面已建；选图/导出/系统分享已验；**品牌选择弹窗尚未目视** |
@@ -98,13 +107,13 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 | `交付/FrameMark-使用与验收说明.docx` | **878,978** | `38cb66252432f7ee060a73cc6bddbeea2c54b956b3daf7263fd002d9ca5a8f4b` | OK |
 | `交付/FrameMark-使用与验收说明.pdf` | **1,116,992** | `446017b511e91a00e6dce64d4217f63a12a3fb16abe5cfa4a5de5f030d983489` | OK |
 
-`交付/SHA256.txt` 四文件校验 **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
+`交付/SHA256.txt` 四文件校验 **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。W2 已改 `presets.ts` / `store.ts`，交付包需在 W5 重新打包并重算。
 
 ---
 
 ## 5. 已知缺口
 
-1. **原版 47 套 TemplateSpec 未完成**：13 套有实测几何，34 套未测量，0 套达到完整像素级验收。
+1. **原版 47 套未验收**：47/47 TemplateSpec 已生成，审计 5 pass / 39 fail / 3 provisional；修复 A=8 / B=30 / C=4 刚启动，0 套达到像素级验收。
 2. **系统相机全部 `approx`**：82 个生成 stock 样式 0 `verified`；5 套无厂商原版预览；字体/纹理/渐变仍为近似。
 3. **4 组 blocked / 42 个样式**：小米 Leica 5/88/89 + vivo 39；需要旋转文字、重叠布局或宿主参考帧支持。
 4. **Android 品牌选择弹窗未目视**：02:05 包冷启动通过，但弹窗级 UI 只做了代码/入口确认，未完成真机目检。

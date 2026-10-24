@@ -80,6 +80,16 @@ export function cloneDesign(design: Design): Design {
   return JSON.parse(JSON.stringify(design)) as Design
 }
 
+/**
+ * Presets are portable across machines/users: never persist a machine-specific
+ * export directory. All other export settings (format/quality/...) are kept.
+ */
+export function portablePresetDesign(design: Design): Design {
+  const next = cloneDesign(design)
+  next.export.outputDir = ''
+  return next
+}
+
 export function isValidDesign(value: unknown): value is Design {
   if (!value || typeof value !== 'object') return false
   const d = value as Partial<Design>

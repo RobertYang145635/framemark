@@ -14,6 +14,7 @@
     "start": "node ./node_modules/electron/cli.js .",
     "package:win": "npm run build && node scripts/package-win.mjs",
     "test:e2e": "node scripts/e2e.mjs",
+    "test:workflow": "node scripts/e2e-workflow.mjs",
     "validate:ir": "node scripts/system-camera/validate-ir.cjs",
     "previews:stock": "node scripts/system-camera/build-previews.cjs"
   },
