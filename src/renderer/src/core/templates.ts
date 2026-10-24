@@ -768,6 +768,125 @@ const gallery: TemplateDef = {
   }
 }
 
+/**
+ * Local geometry overrides for the brandFooter family. Stored as one JSON string
+ * in params.frame so each variant can nudge the centre logo / right block /
+ * overlay insets without cloning the template or changing the family defaults.
+ */
+function footerFrame(env: Pick<TemplateRenderEnv, 'params'>): Record<string, number> {
+  const raw = env.params.frame
+  if (typeof raw !== 'string' || !raw.trim().startsWith('{')) return {}
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const out: Record<string, number> = {}
+    for (const [key, value] of Object.entries(parsed)) {
+      const n = Number(value)
+      if (Number.isFinite(n)) out[key] = n
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+/** Reference slot whitelist ('' = every slot the classic footer used to draw). */
+function footerSlots(env: Pick<TemplateRenderEnv, 'params'>): Set<string> {
+  const raw = String(env.params.slots ?? '').trim()
+  if (!raw) return new Set()
+  return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean))
+}
+
+/**
+ * Overlay variant of the brand footer: full-bleed photo with no reserved band.
+ * Left column: title above brand, brand logo badge at the left edge.
+ * Right column: exif / camera spec / date, centred like the reference.
+ * All ink uses theme fg/sub plus a soft shadow so it stays legible on photos.
+ */
+function drawBrandOverlay(env: TemplateRenderEnv): Rect {
+  const { ctx, W, H, pw, ph } = env
+  const theme = themeOf(env.params)
+  const S = Math.min(pw, ph)
+  const f = footerFrame(env)
+  const slots = footerSlots(env)
+  const on = (key: string) => slots.size === 0 || slots.has(key)
+  ctx.fillStyle = theme.bg
+  ctx.fillRect(0, 0, W, H)
+  drawPhoto(env, 0, 0, pw, ph, 0, 0)
+  const leftX = W * (f.ovLeftX ?? 0.0913)
+  const textX = W * (f.ovTextX ?? 0.1293)
+  const rightX = W * (f.ovRightCenterX ?? 0.749)
+  const logoW = W * (f.ovLogoW ?? 0.0323)
+  const logoH = H * (f.ovLogoH ?? 0.0519)
+  const logoCy = H * (f.ovLogoCenterY ?? 0.7839)
+  const make = env.exif.make.trim()
+  const model = modelWithoutMake(env.exif.make, env.exif.model)
+  const title = titleOf(env)
+  const brand = ((env.text.showMake ? make : '') || model || '').trim()
+  const exifLineText = exifText(env)
+  const dateLine = dateText(env)
+  const spec = [
+    model,
+    env.exif.focal ? `${Math.round(env.exif.focal)}mm` : '',
+    formatAperture(env.exif.aperture)
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toUpperCase()
+  if (on('logo') && env.text.showLogo) {
+    drawBrandLogo(env, leftX, logoCy - logoH / 2, logoW, logoH, theme.fg)
+  }
+  if (on('title') && title) {
+    drawFitted(ctx, title, textX, H * (f.ovTitleY ?? 0.7637), W * 0.32, S * 0.019, theme.fg, {
+      family: FONT_UI,
+      weight: 500,
+      baseline: 'middle',
+      min: S * 0.011,
+      shadow: true
+    })
+  }
+  if (on('brand') && brand) {
+    drawFitted(ctx, brand.toUpperCase(), textX, H * (f.ovBrandY ?? 0.7968), W * 0.3, S * 0.019, theme.fg, {
+      family: FONT_UI,
+      weight: 600,
+      tracking: 0.04,
+      baseline: 'middle',
+      min: S * 0.011,
+      shadow: true
+    })
+  }
+  if (on('exif') && exifLineText) {
+    drawFitted(ctx, exifLineText, rightX, H * (f.ovExifY ?? 0.7507), W * 0.3, S * 0.02, theme.fg, {
+      family: FONT_MONO,
+      weight: 400,
+      align: 'center',
+      baseline: 'middle',
+      min: S * 0.012,
+      shadow: true
+    })
+  }
+  if (on('lens') && spec) {
+    drawFitted(ctx, spec, rightX, H * (f.ovLensY ?? 0.7925), W * 0.26, S * 0.0175, theme.fg, {
+      family: FONT_MONO,
+      weight: 400,
+      align: 'center',
+      baseline: 'middle',
+      min: S * 0.01,
+      shadow: true
+    })
+  }
+  if (on('date') && dateLine) {
+    drawFitted(ctx, dateLine, rightX, H * (f.ovDateY ?? 0.8285), W * 0.2, S * 0.018, theme.fg, {
+      family: FONT_MONO,
+      weight: 400,
+      align: 'center',
+      baseline: 'middle',
+      min: S * 0.01,
+      shadow: true
+    })
+  }
+  return { x: 0, y: 0, w: pw, h: ph }
+}
+
 function drawSimpleBrandFooter(env: TemplateRenderEnv): Rect {
   const { ctx, W, H, pw, ph } = env
   const theme = themeOf(env.params)
@@ -857,7 +976,10 @@ const brandFooter: TemplateDef = {
     logoPos: 'center',
     footerMode: 'classic',
     footerAuto: false,
-    footerTextScale: 1
+    footerTextScale: 1,
+    slots: '',
+    logoCenterX: 0.53,
+    frame: ''
   },
   themes: lightThemes,
   controls: ['footer'],
@@ -865,80 +987,106 @@ const brandFooter: TemplateDef = {
     if (env.params.footerMode === 'simple' && env.params.footerAuto !== false) {
       return { W: env.pw, H: env.ph + simpleFooterMetrics(env.pw, env.ph, env.params).footerH }
     }
+    if (env.params.footerMode === 'overlay') return { W: env.pw, H: env.ph }
     const S = Math.min(env.pw, env.ph)
     const footer = Math.max((env.pw * pct(env.params.footerPct, 7.5)) / 100, S * 0.085)
-    return { W: env.pw, H: env.ph + footer }
+    // Opt-in outer frame: photo inset on all sides except the footer, which stays full-bleed.
+    const f = footerFrame(env)
+    const border = (env.pw * pct(f.borderPct, 0)) / 100
+    const topInset = (env.pw * pct(f.borderTopPct, f.borderPct ?? 0)) / 100
+    return { W: env.pw + 2 * border, H: env.ph + topInset + footer }
   },
   render(env) {
     if (env.params.footerMode === 'simple') return drawSimpleBrandFooter(env)
+    if (env.params.footerMode === 'overlay') return drawBrandOverlay(env)
     const { ctx, W, H, pw, ph } = env
     const theme = themeOf(env.params)
     const S = Math.min(pw, ph)
-    const footer = H - ph
+    const f = footerFrame(env)
+    const slots = footerSlots(env)
+    const on = (key: string) => slots.size === 0 || slots.has(key)
+    const border = (pw * pct(f.borderPct, 0)) / 100
+    const topInset = (pw * pct(f.borderTopPct, f.borderPct ?? 0)) / 100
+    const footerTop = topInset + ph
+    const footer = H - footerTop
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
-    drawPhoto(env, 0, 0, pw, ph, 0, 0)
-    line(ctx, 0, ph, W, ph, theme.line, Math.max(1, S * 0.0009))
-    const leftX = W * 0.04
-    const leftW = W * 0.28
+    drawPhoto(env, border, topInset, pw, ph, 0, 0)
+    if (f.bandRule !== 0) {
+      line(ctx, border, footerTop, border + pw, footerTop, theme.line, Math.max(1, S * 0.0009))
+    }
+    const leftX = W * (f.leftX ?? 0.04)
+    const leftW = W * (f.leftW ?? 0.28)
+    const brandY = f.brandY ?? 0.42
+    const modelY = f.modelY ?? 0.70
     const logoPos = String(env.params.logoPos ?? 'center')
     const make = env.text.showMake ? env.exif.make : ''
     const model = env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
     const title = titleOf(env)
     const makeText = (make || title).toUpperCase()
     const modelText = model || (env.text.showLens ? env.exif.lens : '')
-    const showLeftText = !(logoPos === 'left' && env.text.showLogo)
+    const showBrand = on('brand')
+    const showModel = on('model') && Boolean(modelText)
+    const showLeftText = !(logoPos === 'left' && env.text.showLogo) && (showBrand || showModel)
     if (showLeftText) {
-      drawFitted(ctx, makeText, leftX, ph + footer * 0.42, leftW, S * 0.027, theme.fg, {
-        family: FONT_UI,
-        weight: 700,
-        tracking: 0.03,
-        min: S * 0.013
-      })
-      if (modelText) {
-        drawFitted(ctx, modelText, leftX, ph + footer * 0.70, leftW, S * 0.02, theme.sub, {
+      if (showBrand) {
+        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.027, theme.fg, {
+          family: FONT_UI,
+          weight: 700,
+          tracking: 0.03,
+          min: S * 0.013
+        })
+      }
+      if (showModel) {
+        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.02, theme.sub, {
           family: FONT_UI,
           weight: 400,
           min: S * 0.01
         })
       }
     }
-    if (env.text.showLogo) {
-      const lw = W * 0.17 * logoScale(env)
-      const lh = footer * 0.36 * logoScale(env)
-      let lx = W * 0.53 - lw / 2
+    if (on('logo') && env.text.showLogo) {
+      const lw = W * (f.logoW ?? 0.17) * logoScale(env)
+      const lh = footer * (f.logoH ?? 0.36) * logoScale(env)
+      const centerX = W * pct(env.params.logoCenterX, 0.53)
+      let lx = centerX - lw / 2
       if (logoPos === 'left') lx = leftX
       else if (logoPos === 'right') lx = W * 0.96 - lw
-      drawBrandLogo(env, lx, ph + footer / 2 - lh / 2, lw, lh, theme.fg)
+      if (f.logoCx !== undefined) lx = W * f.logoCx - lw / 2
+      drawBrandLogo(env, lx, footerTop + footer / 2 - lh / 2, lw, lh, theme.fg)
     }
-    const ruleX = logoPos === 'right' ? W * 0.42 : W * 0.70
-    line(ctx, ruleX, ph + footer * 0.22, ruleX, ph + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
-    const rightX = logoPos === 'right' ? W * 0.44 : W * 0.72
-    const rightW = logoPos === 'right' ? W * 0.34 : W * 0.25
+    const ruleX = W * (f.ruleX ?? (logoPos === 'right' ? 0.42 : 0.7))
+    if (f.rule !== 0) {
+      line(ctx, ruleX, footerTop + footer * 0.22, ruleX, footerTop + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
+    }
+    const rightX = W * (f.rightX ?? (logoPos === 'right' ? 0.44 : 0.72))
+    const rightW = W * (f.rightW ?? (logoPos === 'right' ? 0.34 : 0.25))
+    const exifY = f.exifY ?? 0.42
+    const dateY = f.dateY ?? 0.70
     const ex = exifText(env)
-    if (ex) {
-      drawFitted(ctx, ex, rightX, ph + footer * 0.42, rightW, S * 0.027, theme.fg, {
+    if (on('exif') && ex) {
+      drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027, theme.fg, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.012
       })
     }
     const dt = env.text.showDate ? formatDate(env.exif.dateTime) : ''
-    if (dt) {
-      drawFitted(ctx, dt, rightX, ph + footer * 0.70, rightW, S * 0.021, theme.sub, {
+    if (on('date') && dt) {
+      drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021, theme.sub, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.01
       })
     }
-    if (env.text.customLine.trim()) {
-      drawFitted(ctx, env.text.customLine, rightX, ph + footer * 0.88, rightW, S * 0.016, theme.accent, {
+    if (on('custom') && env.text.customLine.trim()) {
+      drawFitted(ctx, env.text.customLine, rightX, footerTop + footer * 0.88, rightW, S * 0.016, theme.accent, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.009
       })
     }
-    return { x: 0, y: 0, w: pw, h: ph }
+    return { x: border, y: topInset, w: pw, h: ph }
   }
 }
 

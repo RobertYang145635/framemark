@@ -295,7 +295,25 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   ),
 
   // 水印边框
-  V('wm-classic', '经典双行', '水印边框', 'brandFooter', 'new_watermark1.webp', { theme: 'white', logoPos: 'center', footerPct: 11.1 }, '热门'),
+  V(
+    'wm-classic',
+    '经典双行',
+    '水印边框',
+    'brandFooter',
+    'new_watermark1.webp',
+    {
+      theme: 'white',
+      logoPos: 'center',
+      footerPct: 11.1,
+      logoCenterX: 0.594,
+      slots: 'brand,model,logo,exif,date',
+      frame: '{"logoW":0.12,"ruleX":0.659,"rightX":0.677,"rightW":0.282}'
+    },
+    '热门',
+    undefined,
+    undefined,
+    true
+  ),
   V(
     'wm-simple',
     '简约单行',
@@ -306,11 +324,69 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     '实测',
     { showDate: false }
   ),
-  V('wm-black', '黑底日期', '水印边框', 'brandFooter', 'new-watermark2.webp', { theme: 'black', logoPos: 'center', footerPct: 8 }),
-  V('wm-canon', '经典单行', '水印边框', 'brandFooter', 'watermark1.webp', { theme: 'white', logoPos: 'left', footerPct: 7.5 }),
-  V('wm-left', '左标双行', '水印边框', 'brandFooter', 'watermark2.webp', { theme: 'white', logoPos: 'left', footerPct: 8 }),
-  V('wm-wide', '白边双行', '水印边框', 'brandFooter', 'watermark3.webp', { theme: 'white', logoPos: 'center', footerPct: 7.5 }),
-  V('wm-right', '右标双行', '水印边框', 'brandFooter', 'watermark4.webp', { theme: 'white', logoPos: 'right', footerPct: 7.5 }),
+  V(
+    'wm-black',
+    '黑底日期',
+    '水印边框',
+    'brandFooter',
+    'new-watermark2.webp',
+    {
+      theme: 'black',
+      logoPos: 'center',
+      footerPct: 0,
+      footerMode: 'overlay',
+      slots: 'title,logo,brand,exif,lens,date',
+      frame:
+        '{"ovLeftX":0.0913,"ovTextX":0.1293,"ovLogoW":0.0323,"ovLogoH":0.0519,"ovLogoCenterY":0.7839,"ovTitleY":0.7637,"ovBrandY":0.7968,"ovRightCenterX":0.749,"ovExifY":0.7507,"ovLensY":0.7925,"ovDateY":0.8285}'
+    },
+    undefined,
+    undefined,
+    undefined,
+    true
+  ),
+  V(
+    'wm-canon',
+    '经典单行',
+    '水印边框',
+    'brandFooter',
+    'watermark1.webp',
+    {
+      theme: 'white',
+      logoPos: 'center',
+      footerPct: 11.1,
+      logoCenterX: 0.594,
+      slots: 'brand,model,logo,exif,date',
+      frame: '{"logoW":0.12,"ruleX":0.659,"rightX":0.677,"rightW":0.282}'
+    },
+    undefined,
+    undefined,
+    undefined,
+    true
+  ),
+  V('wm-left', '左标双行', '水印边框', 'brandFooter', 'watermark2.webp', {
+    theme: 'white',
+    logoPos: 'center',
+    footerPct: 11.13,
+    logoCenterX: 0.5,
+    slots: 'model,logo,exif',
+    frame: '{"logoW":0.11,"rule":0,"bandRule":0,"rightX":0.7383,"rightW":0.25,"modelY":0.48,"exifY":0.48}'
+  }),
+  V('wm-wide', '白边双行', '水印边框', 'brandFooter', 'watermark3.webp', {
+    theme: 'white',
+    logoPos: 'center',
+    footerPct: 11.13,
+    logoCenterX: 0.5,
+    slots: 'logo',
+    frame: '{"logoW":0.11,"rule":0,"bandRule":0}'
+  }),
+  V('wm-right', '右标双行', '水印边框', 'brandFooter', 'watermark4.webp', {
+    theme: 'white',
+    logoPos: 'right',
+    footerPct: 8.6,
+    slots: 'brand,logo,exif',
+    frame:
+      '{"borderPct":1.32,"borderTopPct":0.88,"logoW":0.068,"logoCx":0.6304,"leftX":0.0596,"ruleX":0.6738,"rightX":0.6924,"rightW":0.30,"brandY":0.58,"exifY":0.58,"bandRule":0}'
+  }),
 
   // 留白
   V('white-1', '纯白 01', '留白', 'matteOverlay', 'whiteborder1.webp', { theme: 'white', marginPct: 4.3, marginTopPct: 3.47, marginBottomPct: 4.44, radiusPct: 2.0, overlayMode: 'brand', brandWidthPct: 26.4, brandOffsetPct: 5.6, overlayBrand: 'HASSELBLAD' }, '热门', { showLogo: true, showExif: false, showDate: false }, 'hasu_long_white'),
