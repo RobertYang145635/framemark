@@ -2850,6 +2850,293 @@ const glass: TemplateDef = {
   }
 }
 
+// glass-palette reference (glass_palette.webp, 1500x2000): a 3:4 portrait canvas
+// - not the audit's forced 4:3 - with a full-bleed photo and one glass panel at
+// x 81..1419 (89.2%W), y 1276..1870 (29.7%H, 6.5%H bottom margin). The panel holds
+// six 165px (11.0%W) discs on a 3-col x 2-row grid, centres x 334/749/1167 and
+// y 1400/1668 (panel-relative 18.9/49.9/81.2%W, 20.9/66.0%H), each with a centred
+// hex label 29.5px (1.48%H) below the disc. The portrait canvas and the 2x3
+// spread live in this def only, so no other template's geometry can move; the
+// panel has no brand/exif/date slot because the reference has none.
+const glassPalettePortrait: TemplateDef = {
+  id: 'glassPalettePortrait',
+  name: '玻璃色卡',
+  en: 'GLASS PALETTE',
+  category: '液态玻璃',
+  description: '3:4 竖幅满幅照片，底部玻璃面板内 3×2 大色卡与十六进制色值。',
+  defaults: {
+    theme: 'ink',
+    blur: 24,
+    panelWidthPct: 89.2,
+    panelHeightPct: 29.7,
+    panelBottomPct: 6.5,
+    panelRadiusPct: 16,
+    swatchCols: 3,
+    swatchRows: 2,
+    swatchPct: 12.3,
+    gridFirstXPct: 18.9,
+    gridPitchXPct: 31.1,
+    gridFirstYPct: 20.9,
+    gridPitchYPct: 45.1,
+    labelPct: 2.2,
+    tintAlpha: 0.3
+  },
+  controls: ['blur'],
+  layout(env) {
+    const H = Math.round(Math.max(env.pw, env.ph))
+    return { W: Math.round(H * (3 / 4)), H }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const S = Math.min(W, H)
+    const cols = Math.max(1, Math.round(pct(env.params.swatchCols, 3)))
+    const rows = Math.max(1, Math.round(pct(env.params.swatchRows, 2)))
+    const panelW = W * (pct(env.params.panelWidthPct, 89.2) / 100)
+    const panelH = H * (pct(env.params.panelHeightPct, 29.7) / 100)
+    const panelX = (W - panelW) / 2
+    const panelY = H - H * (pct(env.params.panelBottomPct, 6.5) / 100) - panelH
+    const radius = Math.min(panelH * (pct(env.params.panelRadiusPct, 16) / 100), W * 0.09)
+    drawPhotoCover(env, 0, 0, W, H, 0, 0)
+    const tmpW = 360
+    const tmpH = Math.max(80, Math.round(tmpW * (H / W)))
+    const tmp = document.createElement('canvas')
+    tmp.width = tmpW
+    tmp.height = tmpH
+    const tctx = tmp.getContext('2d')!
+    drawPhotoCover({ ...env, ctx: tctx, W: tmpW, H: tmpH } as TemplateRenderEnv, 0, 0, tmpW, tmpH, 0, 0)
+    ctx.save()
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, radius)
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(0.6, Math.max(0, pct(env.params.tintAlpha, 0.3)))})`
+    ctx.fill()
+    ctx.clip()
+    ctx.filter = `blur(${Math.max(1, S * 0.012)}px)`
+    ctx.drawImage(
+      tmp,
+      (panelX / W) * tmpW,
+      (panelY / H) * tmpH,
+      (panelW / W) * tmpW,
+      (panelH / H) * tmpH,
+      panelX,
+      panelY,
+      panelW,
+      panelH
+    )
+    ctx.filter = 'none'
+    ctx.fillStyle = 'rgba(255,255,255,0.10)'
+    ctx.fillRect(panelX, panelY, panelW, panelH)
+    const sheen = ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelH)
+    sheen.addColorStop(0, 'rgba(255,255,255,0.2)')
+    sheen.addColorStop(0.35, 'rgba(255,255,255,0.04)')
+    sheen.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = sheen
+    ctx.fillRect(panelX, panelY, panelW, panelH)
+    ctx.restore()
+    ctx.save()
+    roundRectPath(ctx, panelX, panelY, panelW, panelH, radius)
+    ctx.strokeStyle = 'rgba(255,255,255,0.42)'
+    ctx.lineWidth = Math.max(1, S * 0.001)
+    ctx.stroke()
+    ctx.restore()
+    line(ctx, panelX + radius, panelY + 1, panelX + panelW - radius, panelY + 1, 'rgba(255,255,255,0.5)', Math.max(1, S * 0.001))
+    const colors = extractPalette(env, cols * rows)
+    const d = panelW * (pct(env.params.swatchPct, 12.3) / 100)
+    const firstX = panelX + panelW * (pct(env.params.gridFirstXPct, 18.9) / 100)
+    const pitchX = panelW * (pct(env.params.gridPitchXPct, 31.1) / 100)
+    const firstY = panelY + panelH * (pct(env.params.gridFirstYPct, 20.9) / 100)
+    const pitchY = panelH * (pct(env.params.gridPitchYPct, 45.1) / 100)
+    const labelSize = H * (pct(env.params.labelPct, 2.2) / 100)
+    const labelTop = d / 2 + H * 0.0148
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const hex = colors[r * cols + c] ?? '#000000'
+        const cx = firstX + c * pitchX
+        const cy = firstY + r * pitchY
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(cx, cy, d / 2, 0, Math.PI * 2)
+        ctx.fillStyle = hex
+        ctx.fill()
+        ctx.restore()
+        ctx.save()
+        ctx.fillStyle = 'rgba(255,255,255,0.94)'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+        setFont(ctx, labelSize, FONT_MONO, 500)
+        ctx.fillText(hex.toUpperCase(), cx, cy + labelTop)
+        ctx.restore()
+      }
+    }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+// glass-card / glass-pill-5 reference structure: the photo is a sharp inset
+// card floating on a blurred full-bleed copy of itself, and the brand plus the
+// F / ISO / S chip column sit on the opposite side of the canvas. The card
+// rects come from the references (glass.webp 576x432 at (383,76) of 1024x584,
+// glass5.webp 419x607 at (470,38) of 1024x684); every text metric is expressed
+// relative to the card so the layout survives a different canvas aspect.
+// Local to these two variants only - no other template uses this def.
+const glassSideCard: TemplateDef = {
+  id: 'glassSideCard',
+  name: '玻璃侧卡',
+  en: 'GLASS SIDE CARD',
+  category: '液态玻璃',
+  description: '虚化底图上的内嵌玻璃照片卡，另一侧为品牌与 F/ISO/S 参数。',
+  defaults: {
+    theme: 'ink',
+    blur: 26,
+    tintAlpha: 0.2,
+    cardAspect: 4 / 3,
+    cardSide: 'right',
+    contentSide: 'left',
+    cardWidthPct: 56.25,
+    cardHeightPct: 0,
+    cardInsetPct: 6.35,
+    cardRadiusPct: 1.6,
+    cardMattePct: 1.8,
+    rowSet: 'fiso',
+    textInsetPct: 30.5,
+    brandInsetPct: 36.8,
+    brandWidthPct: 28.7,
+    brandHeightPct: 17.8,
+    brandTopPct: 12.27,
+    rowsTopPct: 43.75,
+    rowBoxWPct: 19.2,
+    rowBoxHPct: 9.95,
+    rowPitchPct: 16.67,
+    rowValueGapPct: 6.48,
+    rowLabelPct: 4.4,
+    rowValuePct: 5.8
+  },
+  themes: darkThemes,
+  controls: ['blur'],
+  layout(env) {
+    return { W: env.pw, H: env.ph }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    const theme = themeOf(env.params)
+    drawBlurredBackdrop(env, W, H, theme, pct(env.params.tintAlpha, 0.2))
+    const side = String(env.params.cardSide ?? 'right') === 'left' ? 'left' : 'right'
+    const contentSide = String(env.params.contentSide ?? (side === 'right' ? 'left' : 'right'))
+    const aspect = Math.max(0.2, pct(env.params.cardAspect, 4 / 3))
+    const inset = (W * pct(env.params.cardInsetPct, 6.35)) / 100
+    const availW = Math.max(1, W - 2 * inset)
+    const availH = Math.max(1, H - 2 * inset)
+    let cardW: number
+    let cardH: number
+    const heightPct = pct(env.params.cardHeightPct, 0)
+    if (heightPct > 0) {
+      // Height-driven cards (glass-pill-5): the reference portrait card fills
+      // 88.7%H, which matters more than its width share on a narrower canvas.
+      cardH = (H * heightPct) / 100
+      cardW = cardH * aspect
+      if (cardW > availW) {
+        cardW = availW
+        cardH = cardW / aspect
+      }
+    } else {
+      cardW = Math.min(availW, (W * pct(env.params.cardWidthPct, 56.25)) / 100)
+      cardH = cardW / aspect
+      if (cardH > availH) {
+        cardH = availH
+        cardW = cardH * aspect
+      }
+    }
+    const cardX = side === 'right' ? W - inset - cardW : inset
+    const cardY = (H - cardH) / 2
+    const S = Math.min(cardW, cardH)
+    const radius = (S * pct(env.params.cardRadiusPct, 1.6)) / 100
+    // Frosted matte: the reference card floats on a soft light rim.
+    const matte = (S * pct(env.params.cardMattePct, 1.8)) / 100
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.32)'
+    ctx.shadowBlur = S * 0.07
+    ctx.shadowOffsetY = S * 0.015
+    ctx.fillStyle = 'rgba(255,255,255,0.09)'
+    roundRectPath(ctx, cardX - matte, cardY - matte, cardW + 2 * matte, cardH + 2 * matte, radius + matte)
+    ctx.fill()
+    ctx.restore()
+    drawPhotoCover(env, cardX, cardY, cardW, cardH, radius, 1)
+    ctx.save()
+    roundRectPath(ctx, cardX, cardY, cardW, cardH, radius)
+    ctx.strokeStyle = 'rgba(255,255,255,0.34)'
+    ctx.lineWidth = Math.max(1, S * 0.0022)
+    ctx.stroke()
+    ctx.restore()
+
+    // Text column: horizontal anchors are panel-relative (the panel is the
+    // canvas strip beside the card), vertical anchors are card-relative.
+    const panelLeft = side === 'right' ? 0 : cardX + cardW
+    const panelW = side === 'right' ? cardX : W - (cardX + cardW)
+    const fromStart = contentSide === 'left'
+    const anchorX = (insetPct: number, width: number) =>
+      fromStart ? panelLeft + (panelW * insetPct) / 100 : panelLeft + panelW - (panelW * insetPct) / 100 - width
+    const aperture = formatAperture(env.exif.aperture).replace(/^F/, '')
+    const shutter = formatShutter(env.exif.shutter).replace(/s$/, '')
+    const iso = env.exif.iso != null && Number.isFinite(Number(env.exif.iso)) ? String(Math.round(Number(env.exif.iso))) : ''
+    const focal = env.exif.focal ? String(Math.round(env.exif.focal)) : ''
+    const rows: [string, string][] =
+      String(env.params.rowSet ?? 'fiso') === 'fmm'
+        ? [
+            ['F', aperture],
+            ['MM', focal],
+            ['S', shutter]
+          ]
+        : [
+            ['F', aperture],
+            ['ISO', iso],
+            ['S', shutter]
+          ]
+    const boxW = (cardH * pct(env.params.rowBoxWPct, 19.2)) / 100
+    const boxH = (cardH * pct(env.params.rowBoxHPct, 9.95)) / 100
+    const pitch = (cardH * pct(env.params.rowPitchPct, 16.67)) / 100
+    const valueGap = (cardH * pct(env.params.rowValueGapPct, 6.48)) / 100
+    const labelSize = (cardH * pct(env.params.rowLabelPct, 4.4)) / 100
+    const valueSize = (cardH * pct(env.params.rowValuePct, 5.8)) / 100
+    ctx.save()
+    setFont(ctx, valueSize, FONT_MONO, 400)
+    let valueW = 0
+    for (const [, value] of rows) valueW = Math.max(valueW, ctx.measureText(value).width)
+    ctx.restore()
+    const blockW = boxW + valueGap + valueW
+    const blockX = anchorX(pct(env.params.textInsetPct, 30.5), blockW)
+    const brandW = (panelW * pct(env.params.brandWidthPct, 28.7)) / 100
+    const brandH = (cardH * pct(env.params.brandHeightPct, 17.8)) / 100
+    const brandX = anchorX(pct(env.params.brandInsetPct, 36.8), brandW)
+    const brandY = cardY + (cardH * pct(env.params.brandTopPct, 12.27)) / 100
+    if (env.text.showLogo) drawBrandLogo(env, brandX, brandY, brandW, brandH, '#ffffff')
+    const rowsTop = cardY + (cardH * pct(env.params.rowsTopPct, 43.75)) / 100
+    for (let i = 0; i < rows.length; i++) {
+      const [label, value] = rows[i]
+      const y = rowsTop + i * pitch
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255,255,255,0.62)'
+      ctx.lineWidth = Math.max(1, S * 0.0028)
+      roundRectPath(ctx, blockX, y, boxW, boxH, boxH * 0.2)
+      ctx.stroke()
+      ctx.restore()
+      drawFitted(ctx, label, blockX + boxW / 2, y + boxH / 2, boxW * 0.72, labelSize, 'rgba(255,255,255,0.92)', {
+        family: FONT_MONO,
+        align: 'center',
+        baseline: 'middle',
+        min: labelSize * 0.5,
+        shadow: true
+      })
+      if (value) {
+        drawFitted(ctx, value, blockX + boxW + valueGap, y + boxH / 2, valueW * 1.02, valueSize, '#ffffff', {
+          family: FONT_MONO,
+          baseline: 'middle',
+          min: valueSize * 0.45,
+          shadow: true
+        })
+      }
+    }
+    return { x: cardX, y: cardY, w: cardW, h: cardH }
+  }
+}
+
 const ticket: TemplateDef = {
   id: 'ticket',
   name: '票据 · 旅行',
@@ -3461,6 +3748,8 @@ export const TEMPLATES: TemplateDef[] = [
   polaroid,
   editorial,
   glass,
+  glassSideCard,
+  glassPalettePortrait,
   ticket,
   movie,
   ratioBlock,

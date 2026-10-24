@@ -28,6 +28,8 @@ export type TemplateId =
   | 'polaroid'
   | 'editorial'
   | 'glass'
+  | 'glassSideCard'
+  | 'glassPalettePortrait'
   | 'ticket'
   | 'movie'
   | 'ratio'

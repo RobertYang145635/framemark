@@ -349,10 +349,14 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   // divider at 601/1200 = 50.08%W (the audit's 44.83%W read the word "z30" as the
   // divider; pixel run 538..584 is text, x=601 is the 1px rule), divider->logo 1.83%S.
   V('glass-card-4', '玻璃 04', '液态玻璃', 'specFooter', 'glass4.webp', { theme: 'white', marginPct: 3, footerPct: 22, radiusPct: 1.5, shadow: 0.5, contentW: 32.43, sepX: 50, logoGap: 1.83 }, '热门', undefined, undefined, true),
-  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glass', 'glass5.webp', { theme: 'ink', glassLayout: 'pill' }),
+  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glassSideCard', 'glass5.webp', { theme: 'ink', cardAspect: 0.6903, cardSide: 'right', contentSide: 'left', cardHeightPct: 88.7, cardWidthPct: 0, cardInsetPct: 6.35, cardRadiusPct: 2.4, cardMattePct: 1.1, blur: 30, tintAlpha: 0.24, rowSet: 'fmm', textInsetPct: 31.1, brandInsetPct: 31.1, brandWidthPct: 26.0, brandHeightPct: 4.6, brandTopPct: 28.5, rowsTopPct: 44.3, rowBoxWPct: 9.1, rowBoxHPct: 7.4, rowPitchPct: 13.0, rowValueGapPct: 10.4, rowLabelPct: 3.0, rowValuePct: 4.0 }),
   V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill', pillOrder: 'stack' }),
-  V('glass-palette', '玻璃色卡', '液态玻璃', 'glass', 'glass_palette.webp', { theme: 'ink', glassLayout: 'palette', glassAlign: 'center' }),
-  V('glass-card', '玻璃卡片', '液态玻璃', 'glass', 'glass.webp', { theme: 'ink', glassLayout: 'card', glassAlign: 'left' }),
+  // glass-palette ref is a 3:4 portrait canvas (1500x2000) with one glass panel at
+  // 89.2%W x 29.7%H (6.5%H bottom) holding a 3-col x 2-row grid of 11%W discs with
+  // hex labels. It uses its own local def so the portrait canvas and the wide
+  // panel do not leak into `glass` (glass-liquid stays a landscape pill).
+  V('glass-palette', '玻璃色卡', '液态玻璃', 'glassPalettePortrait', 'glass_palette.webp', { theme: 'ink', panelWidthPct: 89.2, panelHeightPct: 29.7, panelBottomPct: 6.5, swatchCols: 3, swatchRows: 2, swatchPct: 12.3 }),
+  V('glass-card', '玻璃卡片', '液态玻璃', 'glassSideCard', 'glass.webp', { theme: 'ink', cardAspect: 1.3333, cardSide: 'right', contentSide: 'left', cardWidthPct: 56.25, cardHeightPct: 0, cardInsetPct: 6.35, cardRadiusPct: 1.6, blur: 26, tintAlpha: 0.2, rowSet: 'fiso', rowValueGapPct: 6.0, rowValuePct: 5.6 }),
 
   // 色卡
   V('color-1', '色卡 01', '色卡', 'paletteCard', 'color1.webp', { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22 }, '热门'),

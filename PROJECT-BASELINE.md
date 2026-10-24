@@ -3,7 +3,7 @@
 > **本页是唯一的“当前状态”页面（single source of truth）。**
 > 其他文档只保留方法、分类、门槛与历史；凡涉及当前计数、平台状态、交付哈希、已知缺口或范围，一律链接本页，不再各自抄写数字。
 >
-> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 02:08**（本机时区）；最近更新：2026-10-26（Batch B1a 收口）。
+> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 02:08**（本机时区）；最近更新：2026-10-26（Batch B1b 收口）。
 > 工作日志与历史证据：[../HANDOFF.md](../HANDOFF.md) §7（§7.5 起为按时间顺序的历史记录，数字是当时值）。
 
 ---
@@ -17,14 +17,14 @@
 | W0c | 审计工具修复 | 完成 | `_research/cleanup/`、`scripts/audit-original47.cjs` |
 | W0d | 47 套清单（TemplateSpec 骨架） | 完成 | `_research/original-47/manifest.json`（已接入本页 §2.1） |
 | G0 | 主管验收 | 待 W0a/W0b/W0c/W0d（均已收口） | — |
-| W1 | 47 套像素审计与修复 | 审计完成；**W1b A1 PASS 5/5、A2 PASS 3/3**（Batch A 8/8）、**B1a PASS 5/5**；B1b + B2/B3 + C 待启动 | `_research/original-47/specs/`、`specs-after/`、`sheets-after/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md)、[`w1b-a1-report.md`](../_research/cleanup/w1b-a1-report.md)、[`w1b-a2-report.md`](../_research/cleanup/w1b-a2-report.md)、[`b1a-verify-report.md`](../_research/cleanup/b1a-verify-report.md) |
+| W1 | 47 套像素审计与修复 | 审计完成；**W1b A1 PASS 5/5、A2 PASS 3/3**（Batch A 8/8）、**B1a PASS 5/5**、**B1b glass-card PASS + glass-palette PASS + glass-pill-5 PROVISIONAL**；B2/B3 + C 待启动 | `_research/original-47/specs/`、`specs-after/`、`sheets-after/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md)、[`w1b-a1-report.md`](../_research/cleanup/w1b-a1-report.md)、[`w1b-a2-report.md`](../_research/cleanup/w1b-a2-report.md)、[`b1a-verify-report.md`](../_research/cleanup/b1a-verify-report.md)、[`w1b-b1b1-report.md`](../_research/cleanup/w1b-b1b1-report.md)、[`w1b-b1b2-report.md`](../_research/cleanup/w1b-b1b2-report.md) |
 | **W2** | **核心工作流 E2E** | **完成（PASS 106/106）** | `scripts/e2e-workflow.mjs`；[`w2-fix-report.md`](../_research/cleanup/w2-fix-report.md) |
 | W3 | 最新厂商边框对齐 | 审计完成；目录未更新 | `_research/vendor-latest/`；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
 | W4–W5 | Android 真机、打包终验 | 未开始 | 本页 §3 |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
 
-**W1**：47/47 套 TemplateSpec 已生成；审计基线 **5 pass / 39 fail / 3 provisional**（基线冻结，用于批次划分，不随修复回写）。修复批次 **A=8 / B=30 / C=4**；**Batch A 已完成 8/8**：A1 复测 PASS 5/5（white-2、white-3、person-2、person-3、person-4，EXIF 宽度偏差 ≤0.23pp），A2 复测 PASS 3/3（card-2/3/4，照片窗口宽高比 1.2832/1.2686/1.2846，偏差 ≤0.003%；画布比例偏差 ≤0.16%；边距/页脚/logo ≤2pp），A 修复 39 个 fail 中的 8 个。A2 说明：4:3 输入下卡片画布宽度按设计收窄（保留裁切高度、采用参考图宽高比），长边仍 ≤ maxEdge。**Batch B1a 已完成 5/5**（glass-white-1/2/3、glass-card-4、glass-liquid）：从当前工作区独立重渲后逐像素复测，5/5 模板全过，各套门槛指标 19/19、19/19、19/19、17/17、8/8（合计 82 项、0 失败，无 gated 未过项），重新导出与工作区重渲逐张 SHA-256 一致。头条值：白卡画布比 0.6926（目标 0.692，偏差 ≤0.21 %rel）；行距 11.679 / 11.679 / 11.726 %S（旧 7.317）；card-4 参数行 27.102 %W、分隔线 50.000 %W（参考实际规则 50.083 %W）；液态玻璃 logo 中心 48.911 %W、日期左 8.292 %W、EXIF 左 57.414 %W。证据 `_research/original-47/specs-after/*-verified.json`、`exports/4x3-b1a-verify/`、`sheets-after/*-ref-ours-verify.png`。**当前累计 18 pass / 26 fail / 3 provisional（共 47）= 原有 5 + Batch A 8 + B1a 5**；**剩余 29 套**：B1b 3（glass-pill-5、glass-palette、glass-card）、B2 9、B3 13、C 4（含 3 provisional）。B 与 C 尚未跑完，**47 套仍不代表整体通过，0 套 `verified`。**
+**W1**：47/47 套 TemplateSpec 已生成；审计基线 **5 pass / 39 fail / 3 provisional**（基线冻结，用于批次划分，不随修复回写）。修复批次 **A=8 / B=30 / C=4**；**Batch A 已完成 8/8**：A1 复测 PASS 5/5（white-2、white-3、person-2、person-3、person-4，EXIF 宽度偏差 ≤0.23pp），A2 复测 PASS 3/3（card-2/3/4，照片窗口宽高比 1.2832/1.2686/1.2846，偏差 ≤0.003%；画布比例偏差 ≤0.16%；边距/页脚/logo ≤2pp），A 修复 39 个 fail 中的 8 个。A2 说明：4:3 输入下卡片画布宽度按设计收窄（保留裁切高度、采用参考图宽高比），长边仍 ≤ maxEdge。**Batch B1a 已完成 5/5**（glass-white-1/2/3、glass-card-4、glass-liquid）：从当前工作区独立重渲后逐像素复测，5/5 模板全过，各套门槛指标 19/19、19/19、19/19、17/17、8/8（合计 82 项、0 失败，无 gated 未过项），重新导出与工作区重渲逐张 SHA-256 一致。头条值：白卡画布比 0.6926（目标 0.692，偏差 ≤0.21 %rel）；行距 11.679 / 11.679 / 11.726 %S（旧 7.317）；card-4 参数行 27.102 %W、分隔线 50.000 %W（参考实际规则 50.083 %W）；液态玻璃 logo 中心 48.911 %W、日期左 8.292 %W、EXIF 左 57.414 %W。证据 `_research/original-47/specs-after/*-verified.json`、`exports/4x3-b1a-verify/`、`sheets-after/*-ref-ours-verify.png`。**Batch B1b 已完成 3/3**：glass-card PASS（卡片比 1.3333、宽 56.25 %W、右距 6.35 %W，纵向差为 4:3 画布下的几何强制）、glass-palette PASS（画布比 0.7498、面板 89.22 %W × 29.66 %H、2 行 × 3 列六色卡、直径 10.94 %W）、glass-pill-5 **PROVISIONAL**（结构已对齐卡片比 0.6903 / 88.70 %H，参考图置信度低，字标与等宽字宽为字体替换）。**当前累计 20 pass / 23 fail / 4 provisional（共 47）= 原有 5 + Batch A 8 + B1a 5 + glass-card + glass-palette；glass-pill-5 由 fail 转为 provisional**。**剩余 27 套未 pass**：B2 9（wm-* 6 + grad-1/2 + video-cover）、B3 13、C 4（含 3 provisional），以及 B1b 的 glass-pill-5（provisional）。B 与 C 尚未跑完，**47 套仍不代表整体通过，0 套 `verified`。**
 
 **W2**：核心工作流 E2E **PASS 106/106 断言，failed 0，pageerror 0**；覆盖双图批量、预设保存/重载/套用、自定义 PNG 水印、全部参数、文件名 token、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 往返；预设 `outputDir` 可移植性缺陷已修复。
 
@@ -60,8 +60,8 @@
 
 - 47 张原版参考图 **1:1 映射到 68 套手写变体中的 47 套**（`variants.ts` 中带原版 `preview` 的那一批）；其余 21 套为自研/精选，不在 L2 范围。
 - 早期只有 **13 套**有 manifest 矩形：纯白 1–4、卡片 1–4、人物 1–5（来自 [HANDOFF](../HANDOFF.md) §6.2）；W1 已对 47 套逐套重新测量。
-- **47/47 套 TemplateSpec 已生成**（`_research/original-47/specs/`）；审计基线判定 **5 pass / 39 fail / 3 provisional**，修复批次 A=8 / B=30 / C=4。Batch A 已完成 8/8：A1 修复 white-2/3、person-2/3/4，A2 修复 card-2/3/4（照片窗口宽高比 1.2832/1.2686/1.2846，均复测 PASS，证据 `_research/original-47/specs-after/`）；Batch B1a 已完成 5/5：glass-white-1/2/3、glass-card-4、glass-liquid 独立复渲复测全部 PASS（各套门槛 19/19、19/19、19/19、17/17、8/8，合计 82 项 0 失败，导出与重渲 SHA-256 一致）。**18 个已测量模板现在全部通过各自规格**（基线已 pass 的 white-1/4、card-1、person-1/5 ＋ A1/A2 修复的 8 套 ＋ B1a 修复的 5 套），累计 **18 pass / 26 fail / 3 provisional**；剩余 29 套（B1b 3、B2 9、B3 13、C 4）由 B1b–B3 与 C 继续。
-- 因此 47 套**仍都不能称为 `verified`**：审计的 5 pass 只表示该轮测量项达标；Batch A 的 8 套与 B1a 的 5 套已完成修复复测，仍需主管复核，其余套别尚未修复与复验。
+- **47/47 套 TemplateSpec 已生成**（`_research/original-47/specs/`）；审计基线判定 **5 pass / 39 fail / 3 provisional**，修复批次 A=8 / B=30 / C=4。Batch A 已完成 8/8：A1 修复 white-2/3、person-2/3/4，A2 修复 card-2/3/4（照片窗口宽高比 1.2832/1.2686/1.2846，均复测 PASS，证据 `_research/original-47/specs-after/`）；Batch B1a 已完成 5/5：glass-white-1/2/3、glass-card-4、glass-liquid 独立复渲复测全部 PASS（各套门槛 19/19、19/19、19/19、17/17、8/8，合计 82 项 0 失败，导出与重渲 SHA-256 一致）。Batch B1b 已完成 3/3：glass-card 与 glass-palette 复测 PASS（glass-palette 画布比 0.7498、面板 89.22 %W × 29.66 %H、2×3 色卡），glass-pill-5 结构对齐但参考置信度低，判 PROVISIONAL。**20 个已测量模板现在全部通过各自规格**（基线已 pass 的 white-1/4、card-1、person-1/5 ＋ A1/A2 修复的 8 套 ＋ B1a 修复的 5 套 ＋ B1b 的 glass-card、glass-palette），累计 **20 pass / 23 fail / 4 provisional**；剩余 27 套未 pass（B2 9、B3 13、C 4 共 26 套 ＋ glass-pill-5 provisional），由 B2/B3 与 C 继续。
+- 因此 47 套**仍都不能称为 `verified`**：审计的 5 pass 只表示该轮测量项达标；Batch A 的 8 套、B1a 的 5 套与 B1b 的 2 套（glass-card、glass-palette）已完成修复复测，仍需主管复核；glass-pill-5 保持 provisional，其余套别尚未修复与复验。
 - **字体残余**：EXIF 字形仍以 Chakra Petch 水平缩放近似（`exifScaleX` 1.09–1.49），不是原版的真实扩展字面（跨批次残余，未修复）；`FONT_TECH` 未预加载导致冷启动首渲回退 OplusSans 的问题已由 A2 修复（`ensureFonts()` 预加载 Chakra Petch 600 常规 + 斜体）。
 - 几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行；早期 13 已知 / 34 未测量，W1 已用 47 套 TemplateSpec 补测）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
 
@@ -89,7 +89,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
-| `typecheck` / `build` | 通过 | 02:05 批次；A1、A2 模板改动后各自复跑通过（按两份报告）；B1a 独立复渲前 `npm run build` + `npm run typecheck`（exit 0）通过 |
+| `typecheck` / `build` | 通过 | 02:05 批次；A1、A2 模板改动后各自复跑通过（按两份报告）；B1a 独立复渲前 `npm run build` + `npm run typecheck`（exit 0）通过；B1b 两份报告记录 `npm run typecheck` + `npm run build` PASS（本页按报告核对，未复跑） |
 | `npm run test:e2e` | 通过 | legacy：160 卡 / 系统 92 / blocked 4；errors 0 |
 | `npm run test:workflow` | 通过 | 106/106 断言 / failed 0 / pageerror 0（W2 核心工作流） |
 | `npm run validate:ir` | 通过 | 82 生成样式 / 82 生成变体 / 87 预览；0 error；37 条主题近似 warning |
@@ -114,7 +114,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 ## 5. 已知缺口
 
-1. **原版 47 套未验收**：47/47 TemplateSpec 已生成，审计基线 5 pass / 39 fail / 3 provisional；修复批次 A=8 / B=30 / C=4，Batch A 已完成 8/8（A1 5/5 + A2 3/3）、Batch B1a 已完成 5/5，均复测 PASS；累计 18 pass / 26 fail / 3 provisional，剩余 29 套（B1b 3、B2 9、B3 13、C 4），0 套达到整体像素级验收。
+1. **原版 47 套未验收**：47/47 TemplateSpec 已生成，审计基线 5 pass / 39 fail / 3 provisional；修复批次 A=8 / B=30 / C=4，Batch A 已完成 8/8（A1 5/5 + A2 3/3）、Batch B1a 已完成 5/5、Batch B1b 已完成 3/3（glass-card PASS、glass-palette PASS、glass-pill-5 PROVISIONAL）；累计 20 pass / 23 fail / 4 provisional，剩余 27 套未 pass（B2 9、B3 13、C 4 ＋ glass-pill-5），0 套达到整体像素级验收。
 2. **系统相机全部 `approx`**：82 个生成 stock 样式 0 `verified`；5 套无厂商原版预览；字体/纹理/渐变仍为近似。
 3. **4 组 blocked / 42 个样式**：小米 Leica 5/88/89 + vivo 39；需要旋转文字、重叠布局或宿主参考帧支持。
 4. **Android 品牌选择弹窗未目视**：02:05 包冷启动通过，但弹窗级 UI 只做了代码/入口确认，未完成真机目检。
