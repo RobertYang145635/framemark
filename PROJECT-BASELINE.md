@@ -17,14 +17,14 @@
 | W0c | 审计工具修复 | 完成 | `_research/cleanup/`、`scripts/audit-original47.cjs` |
 | W0d | 47 套清单（TemplateSpec 骨架） | 完成 | `_research/original-47/manifest.json`（已接入本页 §2.1） |
 | G0 | 主管验收 | 待 W0a/W0b/W0c/W0d（均已收口） | — |
-| W1 | 47 套像素审计与修复 | 审计完成；**W1b A1 PASS 5/5**；A2 待启动 | `_research/original-47/specs/`、`specs-after/`、`sheets-after/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md)、[`w1b-a1-report.md`](../_research/cleanup/w1b-a1-report.md) |
+| W1 | 47 套像素审计与修复 | 审计完成；**W1b A1 PASS 5/5、A2 PASS 3/3**（Batch A 8/8 完成）；B1–B3 + C 待启动 | `_research/original-47/specs/`、`specs-after/`、`sheets-after/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md)、[`w1b-a1-report.md`](../_research/cleanup/w1b-a1-report.md)、[`w1b-a2-report.md`](../_research/cleanup/w1b-a2-report.md) |
 | **W2** | **核心工作流 E2E** | **完成（PASS 106/106）** | `scripts/e2e-workflow.mjs`；[`w2-fix-report.md`](../_research/cleanup/w2-fix-report.md) |
 | W3 | 最新厂商边框对齐 | 审计完成；目录未更新 | `_research/vendor-latest/`；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
 | W4–W5 | Android 真机、打包终验 | 未开始 | 本页 §3 |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
 
-**W1**：47/47 套 TemplateSpec 已生成；审计基线 **5 pass / 39 fail / 3 provisional**（基线冻结，用于批次划分，不随修复回写）。修复批次 **A=8 / B=30 / C=4**；**W1b Batch A1 复测 PASS 5/5**（white-2、white-3、person-2、person-3、person-4），EXIF 宽度偏差 **≤0.23pp**（门限 2pp），证据 `_research/original-47/specs-after/` + `sheets-after/`。A1 修复的是 39 个 fail 中的 5 个（剩余 34 fail + 3 provisional），**不代表 47 套整体通过**，仍 0 套 `verified`。**下一批：A2（card-2/3/4 照片窗口宽高比），随后 B1–B3 结构性修复。**
+**W1**：47/47 套 TemplateSpec 已生成；审计基线 **5 pass / 39 fail / 3 provisional**（基线冻结，用于批次划分，不随修复回写）。修复批次 **A=8 / B=30 / C=4**；**Batch A 已完成 8/8**：A1 复测 PASS 5/5（white-2、white-3、person-2、person-3、person-4，EXIF 宽度偏差 ≤0.23pp），A2 复测 PASS 3/3（card-2/3/4，照片窗口宽高比 1.2832/1.2686/1.2846，偏差 ≤0.003%；画布比例偏差 ≤0.16%；边距/页脚/logo ≤2pp），证据 `_research/original-47/specs-after/` + `sheets-after/`。**13 个已测量模板现在全部通过各自规格**（基线已 pass 的 white-1/4、card-1、person-1/5 + A1/A2 修复的 8 套）。A2 说明：4:3 输入下卡片画布宽度按设计收窄（保留裁切高度、采用参考图宽高比），长边仍 ≤ maxEdge。A 修复的是 39 个 fail 中的 8 个，**剩余 31 fail + 3 provisional，仍不代表 47 套整体通过**，0 套 `verified`。**下一批：B1–B3 结构性修复（30 套）+ C（4 套，含 3 provisional）。**
 
 **W2**：核心工作流 E2E **PASS 106/106 断言，failed 0，pageerror 0**；覆盖双图批量、预设保存/重载/套用、自定义 PNG 水印、全部参数、文件名 token、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 往返；预设 `outputDir` 可移植性缺陷已修复。
 
@@ -60,9 +60,9 @@
 
 - 47 张原版参考图 **1:1 映射到 68 套手写变体中的 47 套**（`variants.ts` 中带原版 `preview` 的那一批）；其余 21 套为自研/精选，不在 L2 范围。
 - 早期只有 **13 套**有 manifest 矩形：纯白 1–4、卡片 1–4、人物 1–5（来自 [HANDOFF](../HANDOFF.md) §6.2）；W1 已对 47 套逐套重新测量。
-- **47/47 套 TemplateSpec 已生成**（`_research/original-47/specs/`）；审计基线判定 **5 pass / 39 fail / 3 provisional**，修复批次 A=8 / B=30 / C=4。A1 已修复其中 5 套（white-2/3、person-2/3/4，复测 PASS，证据 `_research/original-47/specs-after/`），剩余 34 fail + 3 provisional 由 A2/B/C 继续。
-- 因此 47 套**仍都不能称为 `verified`**：审计的 5 pass 只表示该轮测量项达标；A1 的 5 套已完成修复复测，仍需主管复核，其余套别尚未修复与复验。
-- **A1 残余**：EXIF 字形以 Chakra Petch 水平缩放近似（`exifScaleX` 1.09–1.49），不是原版的真实扩展字面；`FONT_TECH` 未被 `ensureFonts()` 预加载（冷启动首渲可能回退 OplusSans）为既有问题，超出 A1 归属。
+- **47/47 套 TemplateSpec 已生成**（`_research/original-47/specs/`）；审计基线判定 **5 pass / 39 fail / 3 provisional**，修复批次 A=8 / B=30 / C=4。Batch A 已完成 8/8：A1 修复 white-2/3、person-2/3/4，A2 修复 card-2/3/4（照片窗口宽高比 1.2832/1.2686/1.2846，均复测 PASS，证据 `_research/original-47/specs-after/`），**13 个已测量模板全部通过各自规格**；剩余 31 fail + 3 provisional 由 B1–B3 与 C 继续。
+- 因此 47 套**仍都不能称为 `verified`**：审计的 5 pass 只表示该轮测量项达标；Batch A 的 8 套已完成修复复测，仍需主管复核，其余套别尚未修复与复验。
+- **字体残余**：EXIF 字形仍以 Chakra Petch 水平缩放近似（`exifScaleX` 1.09–1.49），不是原版的真实扩展字面（跨批次残余，未修复）；`FONT_TECH` 未预加载导致冷启动首渲回退 OplusSans 的问题已由 A2 修复（`ensureFonts()` 预加载 Chakra Petch 600 常规 + 斜体）。
 - 几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行；早期 13 已知 / 34 未测量，W1 已用 47 套 TemplateSpec 补测）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
 
 ### 2.2 系统相机 92 套
@@ -89,7 +89,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
-| `typecheck` / `build` | 通过 | 02:05 批次；A1 模板参数改动后复跑通过（按 A1 报告） |
+| `typecheck` / `build` | 通过 | 02:05 批次；A1、A2 模板改动后各自复跑通过（按两份报告） |
 | `npm run test:e2e` | 通过 | legacy：160 卡 / 系统 92 / blocked 4；errors 0 |
 | `npm run test:workflow` | 通过 | 106/106 断言 / failed 0 / pageerror 0（W2 核心工作流） |
 | `npm run validate:ir` | 通过 | 82 生成样式 / 82 生成变体 / 87 预览；0 error；37 条主题近似 warning |
@@ -114,7 +114,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 ## 5. 已知缺口
 
-1. **原版 47 套未验收**：47/47 TemplateSpec 已生成，审计基线 5 pass / 39 fail / 3 provisional；修复 A=8 / B=30 / C=4 进行中（A1 完成 5/8：white-2/3、person-2/3/4 复测 PASS），剩余 34 fail + 3 provisional，0 套达到像素级验收。
+1. **原版 47 套未验收**：47/47 TemplateSpec 已生成，审计基线 5 pass / 39 fail / 3 provisional；修复批次 A=8 / B=30 / C=4，Batch A 已完成 8/8（A1 5/5 + A2 3/3，均复测 PASS；13 个已测量模板全部通过各自规格），剩余 31 fail + 3 provisional（B1–B3 + C），0 套达到整体像素级验收。
 2. **系统相机全部 `approx`**：82 个生成 stock 样式 0 `verified`；5 套无厂商原版预览；字体/纹理/渐变仍为近似。
 3. **4 组 blocked / 42 个样式**：小米 Leica 5/88/89 + vivo 39；需要旋转文字、重叠布局或宿主参考帧支持。
 4. **Android 品牌选择弹窗未目视**：02:05 包冷启动通过，但弹窗级 UI 只做了代码/入口确认，未完成真机目检。

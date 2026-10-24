@@ -326,9 +326,10 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
 
   // 卡片
   V('card-1', '卡片 01', '卡片', 'logoFooter', 'card1.webp', { theme: 'white', insetPct: 1.13, footerPct: 14.79, logoPct: 5.64, exifSizePct: 2.3, exifWidthPct: 29.0 }, '原版', { showLogo: true, showExif: true, showDate: false }, 'laika'),
-  V('card-2', '卡片 02', '卡片', 'logoFooter', 'card2.webp', { theme: 'white', insetPct: 1.1, footerPct: 10.84, logoPct: 5.36 }, '原版', { showLogo: true, showExif: false, showDate: false }, 'laika'),
-  V('card-3', '卡片 03', '卡片', 'matteFooter', 'card3.webp', { theme: 'white', marginPct: 1.13, footerPct: 9.58, exifSizePct: 2.15, exifWidthPct: 28.3, overlayBrand: '' }, '原版', { showLogo: false, showExif: true, showDate: false }),
-  V('card-4', '卡片 04', '卡片', 'matteFooter', 'card4.webp', { theme: 'white', marginPct: 1.41, footerPct: 10.9, footerOffsetPct: -0.15, logoPct: 5.5, brandTextSizePct: 2.95, overlayBrand: 'Leica' }, '原版', { showLogo: true, showExif: false, showDate: false }, 'laika'),
+  // card-2/3/4 reference photo windows are 1006x784 (1.2832), 1006x793 (1.2686) and 1002x780 (1.2846), not 4:3.
+  V('card-2', '卡片 02', '卡片', 'logoFooter', 'card2.webp', { theme: 'white', insetPct: 1.1, footerPct: 10.84, logoPct: 5.36, photoAspect: 1.2832 }, '原版', { showLogo: true, showExif: false, showDate: false }, 'laika'),
+  V('card-3', '卡片 03', '卡片', 'matteFooter', 'card3.webp', { theme: 'white', marginPct: 1.13, footerPct: 9.58, exifSizePct: 2.15, exifWidthPct: 28.3, overlayBrand: '', photoAspect: 1.2686 }, '原版', { showLogo: false, showExif: true, showDate: false }),
+  V('card-4', '卡片 04', '卡片', 'matteFooter', 'card4.webp', { theme: 'white', marginPct: 1.41, footerPct: 10.9, footerOffsetPct: -0.15, logoPct: 5.5, brandTextSizePct: 2.95, overlayBrand: 'Leica', photoAspect: 1.2846 }, '原版', { showLogo: true, showExif: false, showDate: false }, 'laika'),
 
   // 人物
   V('person-1', '人物 01', '人物', 'profileFrame', 'person1.webp', { theme: 'white', profileMode: 'header', profileName: '鹤羽轻风', marginPct: 4.13, headerPct: 11.57, footerPct: 11.29, radiusPct: 1.4, shadow: 0.8, avatarPct: 5.6, nameSizePct: 2.44, brandCenterPct: 4.75, brandWidthPct: 33.6, overlayBrand: 'HASSELBLAD' }, '原版', { showLogo: true, showExif: false, showDate: false }, 'hasu_long_black'),

@@ -1652,6 +1652,21 @@ const matteOverlay: TemplateDef = {
   }
 }
 
+// Optional fixed photo-window aspect (e.g. a reference card whose photo window
+// is not the exported photo ratio). When `params.photoAspect` is absent the
+// window equals the crop and behavior is unchanged. The window is inscribed in
+// the current crop, so the photo is cover-cropped into it without upscaling.
+function photoWindowOf(env: Pick<TemplateRenderEnv, 'pw' | 'ph' | 'params'>): {
+  w: number
+  h: number
+  cover: boolean
+} {
+  const aspect = pct(env.params.photoAspect, 0)
+  if (!(aspect > 0.05)) return { w: env.pw, h: env.ph, cover: false }
+  if (aspect >= env.pw / env.ph) return { w: env.pw, h: env.pw / aspect, cover: true }
+  return { w: env.ph * aspect, h: env.ph, cover: true }
+}
+
 const logoFooter: TemplateDef = {
   id: 'logoFooter',
   name: '图标 · 页脚',
@@ -1673,20 +1688,23 @@ const logoFooter: TemplateDef = {
   themes: lightThemes,
   controls: ['footer'],
   layout(env) {
-    const S = Math.min(env.pw, env.ph)
+    const { w: pw, h: ph } = photoWindowOf(env)
+    const S = Math.min(pw, ph)
     const inset = (S * pct(env.params.insetPct, 0)) / 100
     const footerH = (S * pct(env.params.footerPct, 14.8)) / 100
-    return { W: env.pw + 2 * inset, H: inset + env.ph + footerH }
+    return { W: pw + 2 * inset, H: inset + ph + footerH }
   },
   render(env) {
-    const { ctx, W, H, pw, ph } = env
+    const { ctx, W, H } = env
+    const { w: pw, h: ph, cover } = photoWindowOf(env)
     const theme = themeOf(env.params)
     const S = Math.min(pw, ph)
     const inset = (W - pw) / 2
     const footerH = H - inset - ph
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
-    drawPhoto(env, inset, inset, pw, ph, 0, 0)
+    if (cover) drawPhotoCover(env, inset, inset, pw, ph, 0, 0)
+    else drawPhoto(env, inset, inset, pw, ph, 0, 0)
     const showExif = env.text.showExif && Boolean(classicExifLine(env))
     const logoH = (S * pct(env.params.logoPct, 5.5)) / 100
     const logoW = logoH
@@ -1730,13 +1748,15 @@ const matteFooter: TemplateDef = {
   themes: lightThemes,
   controls: ['margin', 'footer'],
   layout(env) {
-    const S = Math.min(env.pw, env.ph)
+    const { w: pw, h: ph } = photoWindowOf(env)
+    const S = Math.min(pw, ph)
     const m = (S * pct(env.params.marginPct, 1.15)) / 100
     const footerH = (S * pct(env.params.footerPct, 9.5)) / 100
-    return { W: env.pw + 2 * m, H: env.ph + m + footerH }
+    return { W: pw + 2 * m, H: ph + m + footerH }
   },
   render(env) {
-    const { ctx, W, H, pw, ph } = env
+    const { ctx, W, H } = env
+    const { w: pw, h: ph, cover } = photoWindowOf(env)
     const theme = themeOf(env.params)
     const S = Math.min(pw, ph)
     const m = (W - pw) / 2
@@ -1744,7 +1764,8 @@ const matteFooter: TemplateDef = {
     const cy = m + ph + footerH / 2 + (S * pct(env.params.footerOffsetPct, 0)) / 100
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
-    drawPhoto(env, m, m, pw, ph, 0, 0)
+    if (cover) drawPhotoCover(env, m, m, pw, ph, 0, 0)
+    else drawPhoto(env, m, m, pw, ph, 0, 0)
     const showExif = env.text.showExif && Boolean(classicExifLine(env))
     const brandText = String(env.params.overlayBrand ?? '').trim()
     if (env.text.showLogo && env.images?.logo && brandText) {
