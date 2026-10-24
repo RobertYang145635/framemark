@@ -339,12 +339,18 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('person-5', '人物 05', '人物', 'profileFrame', 'person5.webp', { theme: 'white', profileMode: 'footer', profileName: '鹤羽轻风', marginPct: 2.99, footerPct: 9.9, radiusPct: 1.35, shadow: 0, avatarPct: 5.4, nameSizePct: 2.25, exifWidthPct: 34.5, exifSizePct: 1.9, modelSizePct: 2.1, footerLogoPct: 10 }, '原版', { showLogo: true, showExif: true, showDate: false }, undefined, true),
 
   // 液态玻璃
-  V('glass-white-1', '玻璃 01', '液态玻璃', 'sideCard', 'glass1.webp', { theme: 'white', sideLayout: 'text-left', marginPct: 4, radiusPct: 2, shadow: 0.8 }, '热门', undefined, undefined, true),
-  V('glass-white-2', '玻璃 02', '液态玻璃', 'sideCard', 'glass2.webp', { theme: 'white', sideLayout: 'text-right', marginPct: 4, radiusPct: 2, shadow: 0.8 }, undefined, undefined, undefined, true),
-  V('glass-white-3', '玻璃 03', '液态玻璃', 'sideCard', 'glass3.webp', { theme: 'white', sideLayout: 'split', marginPct: 4, radiusPct: 2, shadow: 0.8 }, undefined, undefined, undefined, true),
-  V('glass-card-4', '玻璃 04', '液态玻璃', 'specFooter', 'glass4.webp', { theme: 'white', marginPct: 3, footerPct: 22, radiusPct: 1.5, shadow: 0.5 }, '热门', undefined, undefined, true),
+  // glass-white-1/2/3 reference previews are a 0.692 (2:3) portrait photo card,
+  // 5.56%S inset, with 11.70%S text-row pitch and the row block anchored at
+  // 14.16 / 67.48 / 77.93%W (text-left / text-right / split).
+  V('glass-white-1', '玻璃 01', '液态玻璃', 'sideCard', 'glass1.webp', { theme: 'white', sideLayout: 'text-left', marginPct: 5.56, radiusPct: 2, shadow: 0.8, cardAspect: 0.692, rowGap: 6.5, rowsX: 14.16 }, '热门', undefined, undefined, true),
+  V('glass-white-2', '玻璃 02', '液态玻璃', 'sideCard', 'glass2.webp', { theme: 'white', sideLayout: 'text-right', marginPct: 5.56, radiusPct: 2, shadow: 0.8, cardAspect: 0.692, rowGap: 6.5, rowsX: 67.48 }, undefined, undefined, undefined, true),
+  V('glass-white-3', '玻璃 03', '液态玻璃', 'sideCard', 'glass3.webp', { theme: 'white', sideLayout: 'split', marginPct: 5.56, radiusPct: 2, shadow: 0.8, cardAspect: 0.692, rowGap: 6.5, rowsX: 77.93 }, undefined, undefined, undefined, true),
+  // glass-card-4 ref footer: chip-row ink span 27.0%W (3 cells => contentW 32.43),
+  // divider at 601/1200 = 50.08%W (the audit's 44.83%W read the word "z30" as the
+  // divider; pixel run 538..584 is text, x=601 is the 1px rule), divider->logo 1.83%S.
+  V('glass-card-4', '玻璃 04', '液态玻璃', 'specFooter', 'glass4.webp', { theme: 'white', marginPct: 3, footerPct: 22, radiusPct: 1.5, shadow: 0.5, contentW: 32.43, sepX: 50, logoGap: 1.83 }, '热门', undefined, undefined, true),
   V('glass-pill-5', '玻璃 05', '液态玻璃', 'glass', 'glass5.webp', { theme: 'ink', glassLayout: 'pill' }),
-  V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill' }),
+  V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill', pillOrder: 'stack' }),
   V('glass-palette', '玻璃色卡', '液态玻璃', 'glass', 'glass_palette.webp', { theme: 'ink', glassLayout: 'palette', glassAlign: 'center' }),
   V('glass-card', '玻璃卡片', '液态玻璃', 'glass', 'glass.webp', { theme: 'ink', glassLayout: 'card', glassAlign: 'left' }),
 

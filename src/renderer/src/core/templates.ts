@@ -229,16 +229,99 @@ const sideCard: TemplateDef = {
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
 
-    const maxW = W * (layout === 'split' ? 0.52 : 0.58)
-    let phH = H - 2 * m
-    let phW = (phH * pw) / ph
-    if (phW > maxW) {
-      phW = maxW
-      phH = (phW * ph) / pw
+    // Portrait card mode (glass-white-1/2/3): the reference card *is* the photo,
+    // a 2:3 (0.692) portrait card inset 5.56%S and centred on 1/3, 1/2 or 2/3 W.
+    // cardAspect 0 keeps the legacy landscape card for every other user.
+    const cardAspect = pct(env.params.cardAspect, 0)
+    const portraitCard = cardAspect > 0
+    let phH: number
+    let phW: number
+    let photoX: number
+    if (portraitCard) {
+      // marginPct doubles as the card inset, so the margin control stays live.
+      phH = H - 2 * m
+      phW = phH * cardAspect
+      const autoCx = layout === 'text-left' ? 2 / 3 : layout === 'text-right' ? 1 / 3 : 0.5
+      const cxPct = pct(env.params.cardCx, 0)
+      photoX = W * (cxPct > 0 ? cxPct / 100 : autoCx) - phW / 2
+    } else {
+      const maxW = W * (layout === 'split' ? 0.52 : 0.58)
+      phH = H - 2 * m
+      phW = (phH * pw) / ph
+      if (phW > maxW) {
+        phW = maxW
+        phH = (phW * ph) / pw
+      }
+      photoX = layout === 'text-right' ? m : layout === 'text-left' ? W - m - phW : (W - phW) / 2
     }
-    const photoX = layout === 'text-right' ? m : layout === 'text-left' ? W - m - phW : (W - phW) / 2
     const photoY = (H - phH) / 2
-    drawPhoto(env, photoX, photoY, phW, phH, radius, shadow)
+    if (portraitCard) drawPhotoCover(env, photoX, photoY, phW, phH, radius, shadow)
+    else drawPhoto(env, photoX, photoY, phW, phH, radius, shadow)
+
+    const rows = [
+      ['F', formatAperture(env.exif.aperture).replace(/^F/, '')],
+      ['MM', env.exif.focal ? String(Math.round(env.exif.focal)) : ''],
+      ['S', formatShutter(env.exif.shutter).replace(/s$/, '')]
+    ]
+
+    if (portraitCard) {
+      // Reference text block: label box 8.6%S x 5.2%S, 11.70%S row pitch
+      // (boxH + rowGap), value column centred 20.32%S right of the row left,
+      // brand left-aligned with the rows (text layouts) or centred (split).
+      const boxW = S * 0.086
+      const boxH = S * 0.052
+      const rowGap = (S * pct(env.params.rowGap, 6.5)) / 100
+      const rowPitch = boxH + rowGap
+      const labelSize = S * 0.023
+      const valueSize = S * 0.035
+      const valueCt = S * 0.2032
+      const split = layout === 'split'
+      ctx.save()
+      setFont(ctx, valueSize, FONT_MONO, 400)
+      let valueW = 0
+      for (const [, value] of rows) valueW = Math.max(valueW, ctx.measureText(value).width)
+      ctx.restore()
+      const blockW = valueCt + valueW / 2
+      const rowsTop = (H * pct(env.params.rowsTop, split ? 39.4 : 43.13)) / 100
+      const brandCY = (H * pct(env.params.brandCY, split ? 49.9 : 30.55)) / 100
+      const panelL = photoX
+      const panelR = W - (photoX + phW)
+      const explicitX = pct(env.params.rowsX, 0)
+      let blockLeft =
+        explicitX > 0
+          ? (W * explicitX) / 100
+          : split
+            ? photoX + phW + (panelR - blockW) / 2
+            : layout === 'text-left'
+              ? (panelL - blockW) / 2
+              : photoX + phW + (panelR - blockW) / 2
+      blockLeft = Math.max(S * 0.02, Math.min(blockLeft, W - blockW - S * 0.02))
+      const valueCx = blockLeft + valueCt
+      for (let i = 0; i < rows.length; i++) {
+        const [label, value] = rows[i]
+        const y = rowsTop + i * rowPitch
+        ctx.save()
+        ctx.strokeStyle = theme.line
+        ctx.lineWidth = Math.max(1, S * 0.0014)
+        roundRectPath(ctx, blockLeft, y, boxW, boxH, boxH * 0.22)
+        ctx.stroke()
+        ctx.restore()
+        drawFitted(ctx, label, blockLeft + boxW / 2, y + boxH / 2, boxW * 0.7, labelSize, theme.sub, {
+          family: FONT_MONO,
+          align: 'center',
+          baseline: 'middle'
+        })
+        drawFitted(ctx, value, valueCx, y + boxH / 2, valueW * 1.02, valueSize, theme.fg, {
+          family: FONT_MONO,
+          align: 'center',
+          baseline: 'middle'
+        })
+      }
+      const bw = S * (split ? 0.178 : 0.256)
+      const bh = S * (split ? 0.03 : 0.044)
+      drawBrandLogo(env, split ? (photoX - bw) / 2 : blockLeft, brandCY - bh / 2, bw, bh, theme.fg)
+      return { x: photoX, y: photoY, w: phW, h: phH }
+    }
 
     const gap = S * 0.045
     const labelSize = S * 0.021
@@ -247,11 +330,6 @@ const sideCard: TemplateDef = {
     const rowGap = S * 0.035
     const valueSize = S * 0.029
     const brandH = S * 0.055
-    const rows = [
-      ['F', formatAperture(env.exif.aperture).replace(/^F/, '')],
-      ['MM', env.exif.focal ? String(Math.round(env.exif.focal)) : ''],
-      ['S', formatShutter(env.exif.shutter).replace(/s$/, '')]
-    ]
     const drawRows = (x: number, width: number, top: number) => {
       const rowH = boxH + rowGap
       for (let i = 0; i < rows.length; i++) {
@@ -327,11 +405,11 @@ const specFooter: TemplateDef = {
     ctx.fillRect(0, 0, W, H)
     drawPhoto(env, m, m, pw, ph, radius, pct(env.params.shadow, 0.5))
 
-    const contentW = W * 0.82
+    const contentW = (W * pct(env.params.contentW, 82)) / 100
     const footerTop = m + ph + m
     const brandY = footerTop + footerH * 0.25
     const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
-    const sepX = W / 2
+    const sepX = (W * pct(env.params.sepX, 50)) / 100
     drawFitted(ctx, model, sepX - S * 0.035, brandY, W * 0.24, S * 0.022, theme.fg, {
       family: FONT_UI,
       weight: 600,
@@ -348,7 +426,8 @@ const specFooter: TemplateDef = {
     ctx.restore()
     const logoW = S * 0.14
     const logoH = S * 0.035
-    drawBrandLogo(env, sepX + S * 0.035, brandY - logoH / 2, logoW, logoH, theme.fg)
+    const logoGap = (S * pct(env.params.logoGap, 3.5)) / 100
+    drawBrandLogo(env, sepX + logoGap, brandY - logoH / 2, logoW, logoH, theme.fg)
 
     const values = [
       ['F', formatAperture(env.exif.aperture).replace(/^F/, '')],
@@ -2538,10 +2617,11 @@ const glass: TemplateDef = {
     let cardY = H - cardH - H * 0.065
     let r = Math.min(cardH * 0.18, S * 0.028)
     if (layoutMode === 'pill') {
-      cardW = W * 0.88
-      cardH = Math.max(S * 0.13, H * 0.12)
+      const stack = String(env.params.pillOrder ?? '') === 'stack'
+      cardW = W * (stack ? 0.94 : 0.88)
+      cardH = Math.max(S * (stack ? 0.148 : 0.13), H * (stack ? 0.148 : 0.12))
       cardX = (W - cardW) / 2
-      cardY = H - cardH - H * 0.06
+      cardY = H - cardH - H * (stack ? 0.019 : 0.06)
       r = cardH / 2
     } else if (layoutMode === 'palette') {
       cardW = W * (portrait ? 0.82 : 0.66)
@@ -2605,6 +2685,63 @@ const glass: TemplateDef = {
     line(ctx, cardX + r, cardY + 1, cardX + cardW - r, cardY + 1, 'rgba(255,255,255,0.5)', Math.max(1, S * 0.001))
     const innerX = cardX + cardW * (layoutMode === 'pill' ? 0.04 : 0.055)
     if (layoutMode === 'pill') {
+      // pillOrder 'stack' (glass-liquid): ref pill is brand/date left, round mark
+      // centred, exif/GPS right of a thin divider - not title|exif|date|logo right.
+      if (String(env.params.pillOrder ?? '') === 'stack') {
+        const padX = cardX + cardW * 0.055
+        const topCY = cardY + cardH * 0.16
+        const botCY = cardY + cardH * 0.47
+        const exifX = cardX + cardW * 0.577
+        drawFitted(ctx, titleOf(env), padX, topCY, cardW * 0.4, S * 0.03, '#ffffff', {
+          family: FONT_UI,
+          weight: 600,
+          baseline: 'middle',
+          min: S * 0.014,
+          shadow: true
+        })
+        const dt = env.text.showDate ? formatDate(env.exif.dateTime, 'dot') : ''
+        if (dt) {
+          drawFitted(ctx, dt, padX, botCY, cardW * 0.4, S * 0.022, 'rgba(255,255,255,0.85)', {
+            family: FONT_MONO,
+            baseline: 'middle',
+            min: S * 0.01,
+            shadow: true
+          })
+        }
+        if (env.text.showLogo) {
+          const lw = cardW * 0.075
+          const lh = cardH * 0.3
+          drawBrandLogo(env, cardX + cardW * 0.488 - lw / 2, cardY + cardH * 0.3 - lh / 2, lw, lh, '#ffffff')
+        }
+        line(
+          ctx,
+          cardX + cardW * 0.545,
+          cardY + cardH * 0.06,
+          cardX + cardW * 0.545,
+          cardY + cardH * 0.53,
+          'rgba(255,255,255,0.55)',
+          Math.max(1, S * 0.0012)
+        )
+        const ex = exifText(env)
+        if (ex) {
+          drawFitted(ctx, ex, exifX, topCY, cardW * 0.38, S * 0.026, 'rgba(255,255,255,0.9)', {
+            family: FONT_MONO,
+            baseline: 'middle',
+            min: S * 0.01,
+            shadow: true
+          })
+        }
+        const loc = String(env.text.location ?? '').trim()
+        if (loc) {
+          drawFitted(ctx, loc, exifX, botCY, cardW * 0.38, S * 0.022, 'rgba(255,255,255,0.8)', {
+            family: FONT_MONO,
+            baseline: 'middle',
+            min: S * 0.01,
+            shadow: true
+          })
+        }
+        return { x: 0, y: 0, w: W, h: H }
+      }
       drawFitted(ctx, titleOf(env), innerX, cardY + cardH * 0.58, cardW * 0.30, S * 0.023, '#ffffff', {
         family: FONT_UI,
         weight: 600,
