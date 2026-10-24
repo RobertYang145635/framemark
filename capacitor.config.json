@@ -1,0 +1,8 @@
+{
+  "appId": "com.framemark.app",
+  "appName": "框印",
+  "webDir": "out/renderer",
+  "android": {
+    "backgroundColor": "#0c0c0d"
+  }
+}

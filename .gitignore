@@ -24,6 +24,9 @@ android/app/src/main/assets/public/
 *.apk
 *.aab
 
+# Local scratch scripts (one-off diagnostics, not part of build)
+/_font-check.cjs
+
 # Logs / OS cruft
 *.log
 .DS_Store
