@@ -1,14 +1,12 @@
 # FrameMark 模板总览
 
-更新：2026-10-24
+更新：2026-10-25（W0b 文档收口）
+
+> 本页只讲**分类与两条渲染路线**，不维护计数。当前卡片数、stock 分解、blocked 明细与保真度状态一律见 [PROJECT-BASELINE.md](PROJECT-BASELINE.md) §1–§2。
 
 ## 计数
 
-- 模板库总计 **158** 张卡片：原版/自研 **68** + 系统相机 **90**。
-- 原版参考预览 **47** 张；手写变体 **68** 个；系统相机 90（OPPO 49 / 小米 38 / vivo 3）。
-- 系统相机：OPPO **49**（Gallery 39 + CameraPro 10）、小米 **38**、vivo **3**。
-- blocked **6 组**：小米 5 套侧栏（classic 22/99、Leica 5/88/89）、vivo 39 套（合并显示）；GR5 与 10 套小米 overlay 已接入。
-- 品牌 Logo 库 **48** 个品牌；无可靠矢量源的 15 个停产品牌不列出。
+本页不再单独维护数字。当前口径：**160 卡 = 手写 68 + 系统相机 92**（OPPO 49 / 小米 40 / vivo 3），blocked **4 组 / 42 个样式**（小米 Leica 5/88/89 + vivo 39），品牌 **62 可见 / 63 定义**（Samyang 隐藏）；分解、预览张数与证据链接见 [PROJECT-BASELINE](PROJECT-BASELINE.md) §1、§2.3。
 
 ## 原版 / 自研模板
 
@@ -38,17 +36,17 @@
 - `oppo-gallery:*`，含哈苏、LUMO、品牌/胶片/签名/复古相机等家族。
 - 白/黑纯色主题可用；非纯色主题仍隐藏。
 
-### OPPO CameraPro 10
+### OPPO CameraPro 9 + Polaroid PLD 1
 
-- 理光 GR 1–5（上框/页脚/下框/叠加/参数边栏）、Tone 上框/页脚、Leica Live Moment、液态玻璃、Polaroid PLD。
+- 理光 GR 1–5（上框/页脚/下框/叠加/参数边栏）、Tone 上框/页脚、Leica Live Moment、液态玻璃；Polaroid PLD 单列 1 套。
 - Polaroid 按 1:1/4:3/16:9/wide 与横竖自动选 8 张 frame。
 - GR5：右侧 120dp 参数边栏；滤镜值不在 EXIF，数值位显示“—”并在全部参数里保留可调空间。
 
-### 小米 38
+### 小米 40
 
-- v36 精选：classic/film/leica/standard/tag 等可转换样式；34 套生成 + 4 套手写 standard（6/7/8/107）。
-- 新增 10 套 in-style overlay：classic 19/71/97、Disney 31/32/33、Leica 91、标签 9/10/11；背景透明、按宿主 anchor 贴照片。
-- 5 套侧栏仍 blocked：classic 22/99、Leica 5/88/89，需宿主总宽度与照片内缩值。
+- v36 精选：classic/film/leica/standard/tag 等可转换样式；34 套生成 + 4 套手写 standard（6/7/8/107）+ 2 套侧栏 classic 22/99。
+- 10 套 in-style overlay：classic 19/71/97、Disney 31/32/33、Leica 91、标签 9/10/11；背景透明、按宿主 anchor 贴照片。
+- classic 22/99 按小米 17 Ultra（NeoHyper）config 接入右侧栏；Leica 5/88/89 仍 blocked，需旋转文字或照片内叠加支持。
 
 ### vivo 3 / 39 blocked
 
@@ -59,12 +57,15 @@
 ## 状态说明
 
 - `verified`：与参考几何/素材对齐并通过人工验收；当前系统相机 **0 套**。
-- `approx`：可导出，但存在字体替换、纹理/渐变近似或未逐套验收；当前系统相机 **90 套全部 approx**。
+- `approx`：可导出，但存在字体替换、纹理/渐变近似或未逐套验收；当前系统相机 **92 套全部 approx**（生成样式 82 + 手写接入 10）。
 - `blocked`：缺布局/素材/元数据，不可导出；目录内明示原因。
+- 逐套明细、生成/预览张数与证据索引见 [PROJECT-BASELINE.md](PROJECT-BASELINE.md) §2。
 
 ## 相关
 
+- 当前状态与计数：`PROJECT-BASELINE.md`
+- 需求分层与验收规则：`REQUIREMENTS.md`
 - 品牌与素材来源：`_research/extracted/WATERMARK-CATALOG.md`
 - 品牌字标来源：`_research/logos-real/manifest.json`
 - 参考/渲染并排：`_research/pair-sheet/`
-- 多比例回归：`_research/ratio-matrix/`
+- 多比例回归：`_research/ratio-matrix/`（历史）、`_research/ratio-audit/`（全量）

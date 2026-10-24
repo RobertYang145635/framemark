@@ -4,13 +4,13 @@
 
 ## 功能
 
-- 68 个手写边框 / 卡片 / 电影字幕模板，自动读取 EXIF，62 个有可靠字标的相机/手机品牌（停产老牌使用官方历史资料或说明书扫描件复原；Samyang 暂无可靠字标不列出）
-- 系统相机分类 90 套：OPPO 49（Gallery 39 + CameraPro 10）、小米 38、vivo 3（Zeiss 测试接入）；6 组 blocked 在目录内标注原因，不导出
+- 68 个手写边框 / 卡片 / 电影字幕模板，自动读取 EXIF；62 个有可靠字标的相机/手机品牌（停产老牌使用官方历史资料或说明书扫描件复原；Samyang 暂无可靠字标不列出）
+- 系统相机分类 92 套（OPPO 49 / 小米 40 / vivo 3）；4 组 blocked 在目录内标注原因、不可导出。当前计数、分解与 blocked 明细见 **[PROJECT-BASELINE](PROJECT-BASELINE.md) §1–§2**
 - 自定义透明 PNG / WebP 水印：九宫格定位、照片内或整张画布、宽度、透明度、旋转、平铺与间距
 - 预设保存整个设计（含水印图片、Logo、导出设置），支持 JSON 导出 / 导入
 - 批量导出，逐张进度、取消、文件命名变量
 - 桌面：JPG（质量 100 / 4:4:4）、PNG、无损 WebP、LZW TIFF，JPG 回写原 EXIF 并默认移除 GPS
-- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。最新 158 卡 APK 已安装，界面复测待补
+- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。签名 APK 已安装并冷启动通过，**品牌选择弹窗尚未目视**（状态见 PROJECT-BASELINE §3）
 
 ## 目录
 
@@ -31,7 +31,7 @@ npm run validate:ir
 npm run previews:stock
 ```
 
-工程文档：[QUALITY.md](QUALITY.md) · [TEMPLATES.md](TEMPLATES.md) · [TEST-REPORT.md](TEST-REPORT.md)
+工程文档：[PROJECT-BASELINE.md](PROJECT-BASELINE.md)（当前状态唯一入口） · [REQUIREMENTS.md](REQUIREMENTS.md) · [QUALITY.md](QUALITY.md) · [TEMPLATES.md](TEMPLATES.md) · [TEST-REPORT.md](TEST-REPORT.md)
 
 ## Windows 打包
 
