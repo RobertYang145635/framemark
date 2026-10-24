@@ -456,8 +456,26 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('ticket-2', '票据 02', '票据', 'portraitTicket', 'ticket2.webp', { theme: 'stone', ticketBg: '#c7dfe6', ticketCard: '#ffffff', ticketInk: '#2d6f7c', stubTitle: 'QING DAO', stubLabel: 'GUANGYING 100' }),
 
   // 毕业
-  V('grad-1', '毕业 01', '毕业', 'minimal', 'graduation1.webp', { theme: 'white', marginPct: 3, footerPct: 10, logoPos: 'footer-center' }),
-  V('grad-2', '毕业 02', '毕业', 'brandFooter', 'graduation2.webp', { theme: 'white', logoPos: 'center', footerPct: 8 }),
+  V(
+    'grad-1',
+    '毕业 01',
+    '毕业',
+    'gradFooter',
+    'graduation1.webp',
+    { theme: 'white', footerPct: 12, sticker: 'graduation1' },
+    undefined,
+    { showLogo: false, showDate: false, showExif: true, showMake: true, showModel: true }
+  ),
+  V(
+    'grad-2',
+    '毕业 02',
+    '毕业',
+    'gradFooter',
+    'graduation2.webp',
+    { theme: 'white', footerPct: 12, sticker: 'graduation2' },
+    undefined,
+    { showLogo: false, showDate: false, showExif: true, showMake: true, showModel: true }
+  ),
 
   // 比例
   V('ratio-1', '比例 01', '比例', 'ratio', 'ratio.webp', { theme: 'ink', corner: 3 }),
@@ -466,7 +484,16 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
 
   // 其他原版
   V('new-color-2', '自然诗篇', '留白', 'poetryCard', 'new-color2.webp', { theme: 'white', marginPct: 6, radiusPct: 2, headerPct: 18, footerPct: 14, shadow: 0.3 }, undefined, { title: "Nature's poetry" }),
-  V('video-cover', '视频封面', 'FrameMark 精选', 'overlay', 'watermark_video_cover.jpg', { theme: 'ink' }, '视频'),
+  V(
+    'video-cover',
+    '视频封面',
+    'FrameMark 精选',
+    'bareCover',
+    'watermark_video_cover.jpg',
+    { theme: 'ink' },
+    '视频',
+    { showLogo: false, showExif: false, showDate: false }
+  ),
 
   // FrameMark 精选（自研补充）
   V('fm-editorial', '杂志编辑', 'FrameMark 精选', 'editorial', null, { theme: 'cream', marginPct: 8.5, footerPct: 14 }),

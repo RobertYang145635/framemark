@@ -46,6 +46,17 @@ const POLAROID_URLS = import.meta.glob('../assets/system/oppo/camerapro/polaroid
   import: 'default'
 }) as Record<string, string>
 
+// Real graduation stickers shipped in the original APK (260x90 each).
+const GRAD_STICKER_URLS = import.meta.glob('../assets/graduation/*.webp', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+}) as Record<string, string>
+const GRAD_STICKER_FILES: Record<string, string> = {
+  graduation1: 'graduation1.webp',
+  graduation2: 'graduation2.webp'
+}
+
 const POLAROID_META = [
   { file: 'pld_frame_1_1_landscape.webp', w: 960, h: 1256, win: [42, 87, 876, 875], aspect: 876 / 875, orient: 'landscape' },
   { file: 'pld_frame_4_3_landscape.webp', w: 1248, h: 1256, win: [42, 87, 1164, 875], aspect: 1164 / 875, orient: 'landscape' },
@@ -1087,6 +1098,80 @@ const brandFooter: TemplateDef = {
       })
     }
     return { x: border, y: topInset, w: pw, h: ph }
+  }
+}
+
+// Graduation footer: edge-to-edge photo + white footer with EXIF brand/exif on
+// the left and the APK's real graduation sticker on the right. No matte, no
+// centred logo. Footer height is 12% of photo width (ref 180/1500).
+const gradFooter: TemplateDef = {
+  id: 'gradFooter',
+  name: '毕业 · 页脚',
+  en: 'GRAD FOOTER',
+  category: '毕业',
+  description: '满幅照片 + 纯白页脚：左侧 EXIF 品牌/参数，右侧毕业贴纸。',
+  defaults: {
+    theme: 'white',
+    footerPct: 12,
+    stickerScalePct: 100,
+    stickerRightPct: 0,
+    brandXPct: 3.9,
+    brandY: 0.46,
+    brandSizePct: 3.7,
+    exifY: 0.772,
+    exifSizePct: 2.85
+  },
+  themes: lightThemes,
+  controls: ['footer'],
+  async prepare(env) {
+    const key = String(env.params.sticker ?? '')
+    const file = GRAD_STICKER_FILES[key]
+    const url = file ? GRAD_STICKER_URLS[`../assets/graduation/${file}`] : undefined
+    if (!url) return {}
+    return { images: { sticker: await loadImage(url) } }
+  },
+  layout(env) {
+    const footer = (env.pw * pct(env.params.footerPct, 12)) / 100
+    return { W: env.pw, H: env.ph + footer }
+  },
+  render(env) {
+    const { ctx, W, H, pw, ph } = env
+    const theme = themeOf(env.params)
+    const S = Math.min(pw, ph)
+    const footer = H - ph
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(0, 0, W, H)
+    drawPhoto(env, 0, 0, pw, ph, 0, 0)
+    const sticker = env.images?.sticker
+    if (sticker) {
+      const sh = (footer * pct(env.params.stickerScalePct, 100)) / 100
+      const aspect = (sticker.naturalWidth || 260) / (sticker.naturalHeight || 90)
+      const sw = sh * aspect
+      const sx = W - sw - (W * pct(env.params.stickerRightPct, 0)) / 100
+      ctx.drawImage(sticker, sx, ph, sw, sh)
+    }
+    const leftX = (W * pct(env.params.brandXPct, 3.9)) / 100
+    const leftW = W * (sticker ? 0.45 : 0.9)
+    const make = env.text.showMake ? env.exif.make : ''
+    const model = env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
+    const brand = [make, model].filter(Boolean).join(' ').toUpperCase()
+    if (brand) {
+      drawFitted(ctx, brand, leftX, ph + footer * pct(env.params.brandY, 0.46), leftW, (S * pct(env.params.brandSizePct, 3.7)) / 100, theme.fg, {
+        family: FONT_UI,
+        weight: 700,
+        tracking: 0.02,
+        min: S * 0.018
+      })
+    }
+    const ex = env.text.showExif ? exifLine(env.exif) : ''
+    if (ex) {
+      drawFitted(ctx, ex, leftX, ph + footer * pct(env.params.exifY, 0.772), leftW, (S * pct(env.params.exifSizePct, 2.85)) / 100, theme.sub, {
+        family: FONT_UI,
+        weight: 400,
+        min: S * 0.014
+      })
+    }
+    return { x: 0, y: 0, w: pw, h: ph }
   }
 }
 
@@ -2265,6 +2350,29 @@ const overlay: TemplateDef = {
         shadow: true
       })
     }
+    return { x: 0, y: 0, w: W, h: H }
+  }
+}
+
+// Bare cover: forced 16:9 full-bleed photo, no overlay text or logo.
+const bareCover: TemplateDef = {
+  id: 'bareCover',
+  name: '纯封面',
+  en: 'BARE COVER',
+  category: '精选',
+  description: '满幅 16:9 纯封面，无叠加文字或图标。',
+  defaults: { theme: 'ink', photoAspect: 16 / 9 },
+  themes: darkThemes,
+  controls: [],
+  layout(env) {
+    const { w, h } = photoWindowOf(env)
+    return { W: w, H: h }
+  },
+  render(env) {
+    const { ctx, W, H } = env
+    ctx.fillStyle = '#000000'
+    ctx.fillRect(0, 0, W, H)
+    drawPhotoCover(env, 0, 0, W, H, 0, 0)
     return { x: 0, y: 0, w: W, h: H }
   }
 }
@@ -3880,6 +3988,7 @@ export const TEMPLATES: TemplateDef[] = [
   polaroidFrame,
   xiaomiStandard,
   brandFooter,
+  gradFooter,
   personalBorder,
   vendorFooter,
   xiaomiLeica,
@@ -3889,6 +3998,7 @@ export const TEMPLATES: TemplateDef[] = [
   matteFooter,
   profileFrame,
   overlay,
+  bareCover,
   vertical,
   blur,
   palette,
