@@ -1526,13 +1526,18 @@ function drawTechText(
   size: number,
   targetW: number,
   align: 'left' | 'center' | 'right' = 'center',
-  alpha = 1
+  alpha = 1,
+  scaleX = 1
 ): void {
   if (!text) return
   const ctx = env.ctx
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.translate(cx, cy)
+  // Local per-template horizontal glyph scale (default 1 = unchanged). The
+  // width clamp still applies to the un-scaled run, so scaling never shrinks
+  // the font; it only widens the rendered line.
+  if (scaleX !== 1) ctx.scale(scaleX, 1)
   drawFitted(ctx, text, 0, 0, targetW, size, color, {
     family: FONT_TECH,
     weight: 600,
@@ -1553,9 +1558,10 @@ function drawTechExif(
   size: number,
   targetW: number,
   align: 'left' | 'center' | 'right' = 'center',
-  alpha = 1
+  alpha = 1,
+  scaleX = 1
 ): void {
-  drawTechText(env, techExifLine(env), cx, cy, color, size, targetW, align, alpha)
+  drawTechText(env, techExifLine(env), cx, cy, color, size, targetW, align, alpha, scaleX)
 }
 
 const matteOverlay: TemplateDef = {
@@ -1609,6 +1615,7 @@ const matteOverlay: TemplateDef = {
     const brandCy = mt + ph - (S * pct(env.params.brandOffsetPct, 4.5)) / 100
     const exifSize = (S * pct(env.params.exifSizePct, 1.55)) / 100
     const exifW = (S * pct(env.params.exifWidthPct, 42)) / 100
+    const exifScaleX = pct(env.params.exifScaleX, 1)
     const exifCy = mt + ph - (S * pct(env.params.exifOffsetPct, 5)) / 100
     const drawBrand = (cy: number) => {
       if (env.text.showLogo && env.images?.logo) {
@@ -1632,14 +1639,14 @@ const matteOverlay: TemplateDef = {
       const nameSize = avatarNameSize(env, 2.3)
       const cw = avatarChipWidth(env, r, nameSize)
       drawAvatarChip(env, W / 2 - cw / 2, mt + S * 0.055, r, '#ffffff', nameSize)
-      if (env.text.showExif) drawTechExif(env, W / 2, exifCy, '#ffffff', exifSize, exifW)
+      if (env.text.showExif) drawTechExif(env, W / 2, exifCy, '#ffffff', exifSize, exifW, 'center', 1, exifScaleX)
       return { x: m, y: mt, w: pw, h: ph }
     }
     if (mode === 'brand' || mode === 'brand-exif') drawBrand(brandCy)
     if ((mode === 'exif' || mode === 'brand-exif') && env.text.showExif) {
       const align = String(env.params.exifAlign ?? 'center') as 'left' | 'center' | 'right'
       const x = align === 'left' ? m + S * 0.04 : align === 'right' ? m + pw - S * 0.04 : W / 2
-      drawTechText(env, classicExifLine(env), x, exifCy, '#ffffff', exifSize, exifW, align)
+      drawTechText(env, classicExifLine(env), x, exifCy, '#ffffff', exifSize, exifW, align, 1, exifScaleX)
     }
     return { x: m, y: mt, w: pw, h: ph }
   }
@@ -1832,7 +1839,10 @@ const profileFrame: TemplateDef = {
     if (mode === 'chip') {
       const inside = String(env.params.brandPlacement ?? 'inside') !== 'footer'
       const footerH = inside ? 0 : (S * pct(env.params.footerPct, 8.4)) / 100
-      return { W: env.pw + 2 * m, H: env.ph + 2 * m + footerH }
+      // Bottom matte defaults to the uniform margin; person-3 needs 0 so the
+      // ref photo sits directly on its footer band.
+      const mb = (S * pct(env.params.marginBottomPct, pct(env.params.marginPct, 4.2))) / 100
+      return { W: env.pw + 2 * m, H: env.ph + m + mb + footerH }
     }
     const footerH = (S * pct(env.params.footerPct, 9.8)) / 100
     return { W: env.pw + 2 * m, H: m + env.ph + footerH }
@@ -1852,6 +1862,7 @@ const profileFrame: TemplateDef = {
     const brandH = brandW / 14.63
     const exifSize = (S * pct(env.params.exifSizePct, 1.55)) / 100
     const exifW = (S * pct(env.params.exifWidthPct, 40)) / 100
+    const exifScaleX = pct(env.params.exifScaleX, 1)
     const exifOffset = (S * pct(env.params.exifOffsetPct, 3.9)) / 100
     const brandCenter = pct(env.params.brandCenterPct, 0)
     const footerBrandCy = (photoBottom: number, footerH: number): number =>
@@ -1879,7 +1890,7 @@ const profileFrame: TemplateDef = {
       const footerH = (S * pct(env.params.footerPct, 11.3)) / 100
       drawPhoto(env, m, headerH, pw, ph, radius, shadow)
       drawAvatarChip(env, W / 2 - chipW / 2, headerH * 0.5, r, theme.fg, nameSize)
-      if (env.text.showExif) drawTechExif(env, W / 2, headerH + ph - exifOffset, '#ffffff', exifSize, exifW)
+      if (env.text.showExif) drawTechExif(env, W / 2, headerH + ph - exifOffset, '#ffffff', exifSize, exifW, 'center', 1, exifScaleX)
       drawBrand(W / 2, footerBrandCy(headerH + ph, footerH), theme.fg)
       return { x: m, y: headerH, w: pw, h: ph }
     }
@@ -1890,9 +1901,9 @@ const profileFrame: TemplateDef = {
       drawAvatarChip(env, W / 2 - chipW / 2, m + (S * pct(env.params.chipTopPct, 4.5)) / 100, r, '#ffffff', nameSize)
       if (inside) {
         drawBrand(W / 2, m + ph - (S * pct(env.params.brandOffsetPct, 8.2)) / 100, '#ffffff')
-        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW)
+        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW, 'center', 1, exifScaleX)
       } else {
-        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW)
+        if (env.text.showExif) drawTechExif(env, W / 2, m + ph - exifOffset, '#ffffff', exifSize, exifW, 'center', 1, exifScaleX)
         drawBrand(W / 2, footerBrandCy(m + ph, footerH), theme.fg)
       }
       return { x: m, y: m, w: pw, h: ph }
@@ -1903,7 +1914,7 @@ const profileFrame: TemplateDef = {
     drawAvatarChip(env, m + S * 0.027, cy, r, theme.fg, nameSize)
     if (env.text.showExif) {
       const right = m + pw - S * 0.004
-      drawTechExif(env, right, cy, theme.fg, exifSize, exifW, 'right')
+      drawTechExif(env, right, cy, theme.fg, exifSize, exifW, 'right', 1, exifScaleX)
       let cursor = right - exifW - S * 0.026
       ctx.save()
       ctx.strokeStyle = theme.line
