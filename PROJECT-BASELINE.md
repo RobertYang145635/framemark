@@ -28,6 +28,7 @@
 | **CLOSE-OUT** | **品牌字标 + 厂商版式修复后重打包（本轮）** | **完成**：`394ebe1`+`549a653`+`652807f`+`ddd9dec` 落库后 typecheck/build 0；zip **281,408,593 B** / APK **30,051,126 B**（见 §4）；打包版 exe 复测 **164/96/4/62、0 pageerror**（`win-packaged-counts-brandswap.json`）；打包版品牌字标抽检 PASS：DC-S1 样张（`_research/test-assets/ratio-study/4x3.jpg`）下 `stock-xiaomi-leica-91` / `stock-xiaomi-leica-111` 字标均为 **Panasonic**（非 xiaomi），leica-111 版式无散落（`_research/packaging/brandswap-check/`）；真机覆盖安装冷启动 **365 ms / LaunchState COLD**、数据保留（`fm-brandswap-cold.png`）；交付集（docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；leica-92 焦距行重力修复后绘制级文字对文字命中 4→1（余 1 为 xpan_1 厂商负行距，保真保留），95 套 stock 0 新增命中、仅 leica-92 的 rect 移动 | `_research/cleanup/lastoverlap/fix-report.md`、`_research/cleanup/close-out-report.md`、`_research/packaging/win-packaged-counts-brandswap.json`、`_research/packaging/brandswap-check/`、`_research/android-verify/fm-brandswap-cold.png` |
 | **ROTATION** | **OPPO 侧边条带旋转** | **完成（已提交 `ff32b4b`）**：全库仅有的 3 套 band 级 `rotation:90` 样式（`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3`）渲染修复并走真实导出路径复核（`_research/cleanup/rotation/verify/`，逐字节基线即本轮锚点默认导出的对照基线）；三套仍为 `approx`，**升级 `verified` 待真机样张** | `_research/cleanup/rotation/impl-report.md`、`rotation/verify/exports/` |
 | **ANCHOR-PACKAGE** | **系统相机九宫格锚点（本轮）** | **完成（已提交 `3b48e89`）**：stock 卡片「版式参数」新增水印位置九宫格锚点（复用自定义水印面板同一 `AnchorGrid` 控件与标签）+ 第 10 项「厂商原版」为默认，整组可动条带（含旋转条带，无轴交换）刚性平移并限幅在画布内，X/Y 降级为水平/垂直微调；**真实 UI 证明**：哈苏文字·1 上 居中/右上/下中 三处锚点画布哈希均变化且文字组确实移动、无出界无重叠，切回厂商原版画布哈希与初始一致（`3442034355998acd…`）；胶片·2 旋转条带锚点抽检 PASS；真实导出路径 6 张（3 锚点 + 3 旋转默认），**4 张默认导出与 rotation-verify 基线逐字节一致**；门全绿：e2e 164/96/4、workflow 106/106、validate-ir 90/0、watermark-e2e `.anchor-grid button[title="右下"]` 选择器未破坏；打包版 exe 复测 164/96/4/62、0 pageerror、锚点功能实测（`anchor-packaged.json` verdict PASS）；zip **281,415,003 B** / APK **30,055,822 B**（见 §4）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**、数据保留（`fm-anchor-cold.png`）；交付集全量重签发 `sha256sum -c` **4/4 OK** | `_research/cleanup/anchor-package/`（`report.md`、`ui/`、`exports/`、`tools/`）、`_research/packaging/anchor-packaged.json`、`_research/android-verify/fm-anchor-cold.png` |
+| **VIVO-BATCH-1 / VIVO-BATCH-2 / VIVO-VECTOR / VIVO-CLOSE** | **vivo 扩充 + VectorDrawable 转换 + 交付重打包（本轮）** | **完成（已提交 `3b0555e` + `f796854`）**：vivo 由 3 套扩到 **14 套**（blocked 42→28，vivo 总盘 42 不变）。**batch-1（`3b0555e`，5 套）** 拍立得/邮票/色调/地理/明信片，按 PAG 定态帧几何 + 厂商 PAG 栅格美术；**batch-2（`f796854`，6 套）** 国风·地点/文字/水墨印章 + 艺术签名 + 个性边框 + 功能边框，无 PAG 组，按 vivo 官方社区设置页预览卡 + `edit.apk` `temp.json` 文字顺序；**新增能力（VIVO-VECTOR）**：`scripts/system-camera/adapters/vivo-vector.cjs` 直接读 ZIP + 解码二进制 AXML（字符串池/资源映射/元素属性遍历）+ 解析 `resources.arsc` 颜色引用，把厂商 **Android VectorDrawable** 路径数据原样转成 `assets/system/vivo/vectorArt.generated.ts`（`VIVO_VECTOR_ART`，逐键记录来源 APK#entry），`ir.ts` 仅新增 `StockShapeNode.vectorKey?`（`layout.ts` 未改），`paint.ts` 的 `paintVectorNode()` 支持 Path2D 填充/描边、Android group 变换与同级 clip-path 语义，**无 vectorKey 的节点渲染逐字节不变**；**去重证据**：国风三套此前导出**逐字节相同**（`0e0a2ecd…`），转换后 4:3 导出为三个不同 md5（loc `b79cfbd9…` / signet `2655526c…` / ink `75b57dbe…`，本轮已独立复算确认）；地点印改用厂商 `wm_province_hebei` webp 原件、明信片邮戳由 `res/ZS.xml` 矢量恢复、艺术签名带改为紧盒（900×230 + 内边距）后按官方卡左下锚定（原为居中）。门全绿：typecheck/build 0、validate-ir **90/90/106 0 error**、e2e **175/107/4 errors 0**、workflow **106/106 pageErrors 0**、drawn-spacing 违例 **0**、drawn-collision **0 新增**（唯一文字对文字命中仍是 `hassel_style_xpan_1` 厂商负行距，保真保留）。交付集 zip/APK/docx/PDF 全量重签发、`sha256sum -c` **4/4 OK**；打包版 exe 复测 **175/107/4/62、0 pageerror、vivo 筛选 14 卡**；真机覆盖安装冷启动 **322 ms / Status ok**、数据未清（`fm-vivo-cold.png`）；评审页 `index-real.html` 刷新至 **v4 全量集** | `_research/cleanup/vivo-batch1/impl-report.md`、`vivo-batch2/impl-report.md`、`vivo-vector/impl-report.md`、[`vivo-close-report.md`](../_research/cleanup/vivo-close-report.md)、`_research/packaging/vivo-packaged.json`、`_research/review-164/exports-real-v4/` |
 | **BRAND-ALIGN / ALIGN-PACKAGE** | **品牌字标对齐修复 + 交付重打包（本轮）** | **完成（已提交 `e256965`）**：用户上报的 37 个含品牌槽系统样式「Panasonic/DC-S1 粘连偏高」缺陷修复——**对齐规则**：① 品牌字标按**墨迹高度**（非画布高度）缩放并计入厂商位图内边距（ink-height matching，vendor inkH/canvasH≈0.716 vs 替身≈0.983）；② 与相邻文字共享厂商位图的**光学中心线**（厂商内边距对称＝居中，与 `textBaseline:'middle'` 同线）；③ 与文字的间距由**厂商位图自身推导**（vendor-derived gap = IR 节点该侧 margin + 位图该侧 ink padding×box.w，下限 2px），增长在**墨迹边缘**限幅，不重叠保证与内在宽高比均不破坏。spacing 违例 **37/37→0**、墨迹中心偏差 **0.00px**、8 项目视全 PASS；门全绿：e2e 164/96/4、workflow 106/106、validate-ir 0 error；zip **281,417,923 B** / APK **30,057,358 B**（见 §4）；打包版 exe 复测 **164/96/4/62、0 pageerror** 且 `经典 · 19` 字标间距/对齐实测 PASS（`brandalign-packaged.png`）；真机覆盖安装冷启动 **381 ms / LaunchState COLD**、数据保留（`fm-brandalign-cold.png`）；评审页 `index-real.html` 刷新至 **v3 集**：40 卡指向 `exports-real-v3/`（37 张 CHANGED 徽标 + 3 对照），其余 124 卡沿用像素一致的 `exports-real-v2/`，v2 页备份为 `index-real.pre-v3.bak.html`；交付集全量重签发 `sha256sum -c` **4/4 OK** | `_research/cleanup/brandalign/fix-report.md`、`_research/cleanup/align-package-report.md`、`_research/packaging/brandalign-counts.json`、`_research/android-verify/fm-brandalign-cold.png`、`_research/review-164/exports-real-v3/` |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
@@ -48,25 +49,25 @@
 
 | 项目 | 当前值 | 说明 |
 |---|---:|---|
-| 模板库卡片 | **164** | 手写 **68** + 系统相机 **96** |
+| 模板库卡片 | **175** | 手写 **68** + 系统相机 **107**（VIVO-CLOSE 轮实测；打包版 exe 复测同值） |
 | 手写变体 | **68** | `V(...)`；其中 47 个为原版复刻，其余为自研/精选 |
-| 系统相机 stock | **96** | 分解见下 |
+| 系统相机 stock | **107** | 分解见下 |
 | 原版参考图 | **47** | `src/renderer/src/assets/previews/` 根目录（45 webp + 1 png + 1 jpg） |
 | 手写渲染预览 | **69** | `assets/previews/rendered/*.webp`；= `build-variant-previews.cjs` 的 `expectedVariants` 69（68 手写 + 1 `oppo-polaroid`）。W3 迁移后 4 张孤立 `xiaomi-standard-*.webp` 已清理 |
-| 系统相机预览 | **95** | `assets/previews/system/*.webp`；5 套无厂商原版预览（见 §2.2） |
-| stock 样式（运行时 `__fmStock.list`） | **95** | OPPO 52 + 小米 40 + vivo 3；全部 `approx`，**0 `verified`** |
+| 系统相机预览 | **106** | `assets/previews/system/*.webp`；5 套无厂商原版预览（见 §2.2） |
+| stock 样式（运行时 `__fmStock.list`） | **106** | OPPO 52 + 小米 40 + vivo 14；全部 `approx`，**0 `verified`** |
 | 生成 stock 样式 | **90** | 43 OPPO Gallery + 9 CameraPro + 38 小米 |
 | 生成 stock 变体 | **90** | 与生成样式一一对应 |
 | 品牌字标 | **62 可见 / 63 定义** | Samyang 无可靠独立字标，隐藏不列出 |
-| blocked | **4 组 / 42 个样式** | 小米 Leica 5/88/89 + vivo 全部（39 套），见 §2.3 |
+| blocked | **4 组 / 31 个样式** | 小米 Leica 5/88/89 + vivo 剩余 28 套（vivo 总盘 42 = 已接 14 + blocked 28），见 §2.3 |
 
-**系统相机 96 套分解**
+**系统相机 107 套分解**
 
 - **OPPO 53** = Gallery 43 + CameraPro 9 + Polaroid PLD 1（其中 52 个为 stock 样式条目，Polaroid 为独立变体，预览走 `previews/rendered/oppo-polaroid.webp`）
 - **小米 40** = 生成 38（含已迁入 IR 的标准 6/7/8/107）+ 侧栏 classic 22/99 手工 2
-- **vivo 3** = Zeiss 上框 / 上下框 / 内嵌
+- **vivo 14** = Zeiss 上框 / 上下框 / 内嵌（3） + 拍立得·签名框 / 邮票·齿孔框 / 色调·右侧栏 / 地理·信息叠加 / 明信片·邮戳框（batch-1，5） + 国风·地点印章 / 国风·文字印章 / 国风·水墨印章 / 艺术·手写签名 / 个性·色卡边框 / 功能·参数边框（batch-2，6）
 
-（53 + 40 + 3 = 96；stock 样式 52 + 40 + 3 = 95，差额是 Polaroid 只有变体没有独立 stock 样式。）
+（53 + 40 + 14 = 107；stock 样式 52 + 40 + 14 = 106，差额是 Polaroid 只有变体没有独立 stock 样式。vivo 的 14 套全部为手工 `StockStyle`（`vivoManual.ts`），不进生成 IR，故 validate-ir 的生成样式/变体计数仍为 90/90。）
 
 ---
 
@@ -82,21 +83,21 @@
 - **其余残余**：simple-1/2/4 的参考字为宽斜体科技字面（现用 Bebas Neue 近似，大写高 2.17 vs 3.75 %H）；品牌字标为审计 fixture 驱动（EXIF 为 Panasonic DC-S1，自动渲染 LUMIX/Panasonic，参考图为 Canon/Leica/SONY/Nikon），属素材残余而非模板缺陷；glass-pill-5 为 SONY serif 字标 vs LUMIX autoLogo，仅槽位锚点可比，品牌 ink 宽不可比、参考置信度低；`canvasAspect` 是按各参考图取值的**变体级**参数（1.3045 / 1.4971），4:3 审计导出与参考原生比例的差异属画布/比例取值残余，不是全局画布策略，其它模板与多比例导出行为未变。
 - 几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行；早期 13 已知 / 34 未测量，W1 已用 47 套 TemplateSpec 补测）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
 
-### 2.2 系统相机 96 套
+### 2.2 系统相机 107 套
 
 - 较早一批完成过 4:3 结构级核对（其中 85 套有厂商原版预览、5 套 config-only）；小米 classic 22/99 按小米 17 Ultra config 接入；W3 已把 OPPO 17.10.7 与小米 NeoHyper 17U 的最新包重导进 IR，**新迁入的 4 套小米标准与 3 套刷新样式尚未重跑同等级 4:3 结构核对**。
-- **90 个生成 stock 样式（+ 手工覆盖样式，运行时共 95 套）全部为 `approx`，0 `verified`。**
+- **90 个生成 stock 样式（+ 手工覆盖样式，运行时共 106 套）全部为 `approx`，0 `verified`。**
 - 已知近似来源：字体替换、图标细节、透明/纹理/渐变的纯色兜底、精确 dp→px 边距；GR5 参数边栏字号/行距偏大。`validate-ir` 的 37 条 warning 全部属这类既有主题近似（`transparent theme uses fallback` / `texture theme not painted as texture`），0 error。
 - **5 套无厂商原版预览**（Polaroid PLD、小米标准 6/7/8/107），只能按宿主 config 与素材核对，不能升级 `verified`。
 
-### 2.3 blocked（4 组 / 42 个样式）
+### 2.3 blocked（4 组 / 31 个样式）
 
 | 组 | 原因 | 可导出 |
 |---|---|---|
 | 小米 Leica 5 | outer-border 侧栏为绝对布局，缺可用总宽度 | 否 |
 | 小米 Leica 88 | 底部 218dp 容器 + 照片内叠加，根结构不匹配 | 否 |
 | 小米 Leica 89 | 侧栏与照片内叠加混合，缺可用总宽度 | 否 |
-| vivo 全部（39 套） | 已接 3 套 Zeiss；其余缺宿主布局/可信参考帧 | 否 |
+| vivo 剩余（28 套） | 已接 14 套（3 Zeiss + batch-1 的 5 套 PAG + batch-2 的 6 套官方预览卡）；其余 28 套无厂商成片预览——PAG 仅提供 band 几何与装饰图（`numTexts=0`，文字宿主动态绘制），其中 15 套还需设备截图确认样式归属、**11 套完全没有任何公开参考** | 否 |
 
 blocked 卡片在目录内可见、写明原因、不可点击导出；没有依据时不伪造布局、滤镜数值或字标。
 
@@ -109,25 +110,25 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
 | `typecheck` / `build` | 通过 | ANCHOR-PACKAGE 轮（HEAD `3b48e89`）：`npm run typecheck` 与 `npm run build` exit 0；e2e **164/96/4、0 error**、workflow **106/106**、validate-ir **90 样式 / 0 error / 37 既有 warning**、watermark-e2e（含 `.anchor-grid button[title="右下"]` 断言）exit 0；日志 `_research/cleanup/anchor-package/tools/{e2e,workflow,package-win}.log` |
-| `npm run test:e2e` | 通过 | W3 收口轮复跑：total **164** / system **96** / blocked **4** / errors 0，1 张导出成功 |
-| `npm run test:workflow` | 通过 | **106/106 断言 / failed 0 / pageError 0 / consoleError 0**（W2 核心工作流；W3 审收轮 ASSESS-W3 复跑仍 106/106；W1 终审轮 FINAL-VERIFY-B 复跑仍 106/106） |
-| `npm run validate:ir` | 通过 | W3 收口轮复跑：**90** 生成样式 / **90** 生成变体 / **95** 系统预览；0 error；37 条既有主题近似 warning |
-| Windows 桌面（W5 打包版） | 通过 | `release/FrameMark-win32-x64/FrameMark.exe` 冷启动实测 `.tpl-card` **164**、系统相机 **96**、blocked **4**、品牌卡 **62**、静态 canvas **0**、**pageerror 0**；证据 `_research/packaging/win-packaged-counts.json`；**REPACKAGE 轮对最终交付包复测同口径全过**：证据 `_research/packaging/win-packaged-counts-fixed.json`（verdict PASS） |
+| `npm run test:e2e` | 通过 | **VIVO-CLOSE 轮（HEAD `f796854`）复跑：total 175 / system 107 / blocked 4 / errors 0**，1 张导出成功；W3 收口轮曾为 164/96/4 |
+| `npm run test:workflow` | 通过 | **106/106 断言 / failed 0 / pageError 0 / consoleError 0**（W2 核心工作流；**VIVO-CLOSE 轮 HEAD `f796854` 复跑仍 106/106、pageErrors 空**；W3 审收轮与 W1 终审轮亦 106/106） |
+| `npm run validate:ir` | 通过 | **VIVO-CLOSE 轮复跑：90 生成样式 / 90 生成变体 / 106 系统预览；0 error**；37 条既有主题近似 warning（vivo 为手工样式，不进生成计数，故 90/90 不变） |
+| Windows 桌面（W5 打包版） | 通过 | `release/FrameMark-win32-x64/FrameMark.exe` 冷启动实测 `.tpl-card` **175**、系统相机 **107**、blocked **4**、品牌卡 **62**、静态 canvas **0**、**pageerror 0**；**VIVO-CLOSE 轮另加厂商筛选实测**：系统相机 → vivo 子筛选 = **14 卡 / 14 个互不相同的显示名**，batch-2 的 6 套（国风·地点印章 / 文字印章 / 水墨印章、艺术·手写签名、个性·色卡边框、功能·参数边框）全部在位（`verify-packaged-vivo.mjs` verdict **PASS**，`vivo-packaged.json`）；证据 `_research/packaging/win-packaged-counts.json`；**REPACKAGE 轮对最终交付包复测同口径全过**：证据 `_research/packaging/win-packaged-counts-fixed.json`（verdict PASS） |
 | Android 真机（W4 走查） | **通过（走查四项全 PASS）** | PGEM10 / Android 16，交付 APK（sha256 与 §4 一致）；冷启动 **300 ms**；2 张批量导出、自定义水印上画布、新 W3 样式 `近似` 渲染、单张导出 → 分享 → 系统选择器均 PASS；上报的 4 项缺陷裁定为脚本产物/设计行为（P0 0 / P1 0）；证据 `_research/android-walkthrough/`。**欠项**：品牌库**弹窗本体**（点开后的 62 卡网格）仍未真机目视，本轮只确认入口与「从 62 个品牌中选择」文案在设备 DOM 中呈现。**REPACKAGE 轮**：最终 APK `adb install -r` 覆盖安装（未清数据）→ force-stop → `am start -W` **TotalTime 416 ms / LaunchState COLD / Status ok**，截图编辑器正常渲染、用户水印「Robert 阳」仍在＝数据保留；证据 `_research/android-verify/fm-fixed-cold.png`。**ANCHOR-PACKAGE 轮**：同法复装新 APK，冷启动 **764 ms / LaunchState COLD**，截图为编辑器正常渲染（哈苏·4 卡片 + 参数面板）、数据保留；证据 `_research/android-verify/fm-anchor-cold.png` |
 | 多比例 | 历史全量目检通过 | 上一轮 4:3 + 3:2/2:3/16:9/1:1/4:5/3:4/9:16 未见拉伸/裁切/重叠；后续新增模式未重跑同等全量 |
 
 ---
 
-## 4. 交付基线（ALIGN-PACKAGE 重打包：**2026-10-25 23:22**，源码 = HEAD `e256965`）
+## 4. 交付基线（VIVO-CLOSE 重打包：**2026-10-26 00:53**，源码 = HEAD `f796854`）
 
 | 文件 | 字节数 | SHA-256 | 校验 |
 |---|---:|---|---|
-| `交付/FrameMark-Windows-x64.zip` | **281,417,923** | `67797acbb9d8ecc7eb922e0bd298bc4d0612cf70e39c1a1f6fcd2de55ebedc48` | OK（ALIGN-PACKAGE 新包，打包版 exe 复测 164/96/4/62、0 pageerror，`经典 · 19` 品牌字标间距/对齐实测 PASS：`_research/packaging/brandalign-packaged.png`、`brandalign-counts.json`） |
-| `交付/FrameMark-Android-v1.0.0.apk` | **30,057,358** | `43515a503b9204751dd10823380e15fb7211fc79cac0ec09bd1d373f3b4cd26a` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；capacitor copy + `assembleRelease` 全量重跑（6 executed，含 mergeReleaseAssets/packageRelease，APK 内 `index-BxPGv9Ed.js` 与本轮 build 一致），gradle 内置签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 381 ms COLD PASS） |
-| `交付/FrameMark-使用与验收说明.docx` | **882,222** | `79f197645f0d8c02e5b662b3737d03f8145e0eb53c8e48e71d4bde23481cd9a7` | ALIGN-PACKAGE 重签发（`scripts/make-delivery-docx.cjs`，运行时内嵌上表新哈希） |
-| `交付/FrameMark-使用与验收说明.pdf` | **1,168,079** | `63a1cf04de922c802951d15ac9e14928ce5664d688a3a9037055b18bbda7ee0f` | ALIGN-PACKAGE 重签发（Word COM `SaveAs` 格式 17，先移走旧 PDF 再导出，`%PDF-1.7` 头校验通过） |
+| `交付/FrameMark-Windows-x64.zip` | **281,578,322** | `1b5119f49417f3a467de25073fb49e1edc2e416e21714521206836a9286c26a0` | OK（VIVO-CLOSE 新包，打包版 exe 复测 **175/107/4/62、0 pageerror、vivo 筛选 14 卡**：`_research/packaging/vivo-packaged.json`、`win-packaged-vivo-*.png`） |
+| `交付/FrameMark-Android-v1.0.0.apk` | **30,254,864** | `610d63f62eb1474d861ef72494057560ba137d75ed9de46685c38322b3d598a4` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；capacitor copy + `assembleRelease` 全量重跑（`:app:packageRelease` / `:app:assembleRelease` 实际执行，APK 内 `assets/public/assets/index-DgAlEFGd.js` 与本轮 build 一致，且 `assets/public/assets/chinoiserie-hebei-DVFrJTOT.webp` 等国风素材已随包），gradle 内置签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 381 ms COLD PASS） |
+| `交付/FrameMark-使用与验收说明.docx` | **882,695** | `96c568c28e7367dc2ade41c45c296a374ca988b3d851e979da0725833730bf9e` | VIVO-CLOSE 重签发（`scripts/make-delivery-docx.cjs` 已按 vivo 扩充改口径：175 卡 / 系统相机 107 / 106 套 stock 全 approx / vivo 14 已接 · 28 blocked · 美术由厂商 VectorDrawable 转换，运行时内嵌上表新哈希） |
+| `交付/FrameMark-使用与验收说明.pdf` | **1,180,113** | `d0641f8997ca1b975c3aea64bb864f00bec5366125096ccd9d2aca5f3a7d44ed` | VIVO-CLOSE 重签发（Word COM `SaveAs` 格式 17，先移走旧 PDF → `_research/packaging/_old-delivery-vivo.pdf.bak`，`%PDF-1.7` 头校验通过） |
 
-被取代的上一代哈希：zip `49e9a2eb…`、APK `1d6c5709…`、docx `43a0c49f…`、PDF `e5542ccd…`（ANCHOR-PACKAGE 22:08 基线）；更早：zip `39b1918e…`、APK `6a660041…`、docx `f52ae514…`、PDF `402d8b3b…`（CLOSE-OUT 基线）、zip `d10b60ee…`、APK `3ac92363…`、docx `fa11ef20…`、PDF `ed81743a…`（REPACKAGE 17:24 基线）、zip `164ff8ee…`、APK `4fa4c260…`（W5 11:54 基线）。
+被取代的上一代哈希：zip `67797acb…`、APK `43515a50…`、docx `79f19764…`、PDF `63a1cf04…`（ALIGN-PACKAGE 23:22 基线）；更早：zip `49e9a2eb…`、APK `1d6c5709…`、docx `43a0c49f…`、PDF `e5542ccd…`（ANCHOR-PACKAGE 22:08 基线）；更早：zip `39b1918e…`、APK `6a660041…`、docx `f52ae514…`、PDF `402d8b3b…`（CLOSE-OUT 基线）、zip `d10b60ee…`、APK `3ac92363…`、docx `fa11ef20…`、PDF `ed81743a…`（REPACKAGE 17:24 基线）、zip `164ff8ee…`、APK `4fa4c260…`（W5 11:54 基线）。
 
 **`交付/SHA256.txt` 已随本轮重签发**（同格式四行：zip/APK/docx/PDF），`cd 交付 && sha256sum -c SHA256.txt` → **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
 
@@ -140,7 +141,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 ### 5.1 待用户签字（唯一未闭合项）
 
 1. **原版 47 套目视签字**：终审 47/47 PASS 只是模板级几何/结构结论（13 套独立重测 + 34 套与批次逐字节一致，0 provisional / 0 fail，门槛 ≤2 %S / ≤2 pp；ticket-2 终审标题 295 px、19/19 门槛通过）。**用户目视签收尚未执行**。
-2. **厂商线目视签字**：95 套 stock 样式（OPPO 52 + 小米 40 + vivo 3）全为 `approx`、**0 `verified`**；升级 `verified` 需要原版参考帧 + 逐项目检，W4 真机走查不构成升级依据。
+2. **厂商线目视签字**：106 套 stock 样式（OPPO 52 + 小米 40 + vivo 14）全为 `approx`、**0 `verified`**；**新增的 11 套 vivo 样式尤其需要目视签字**——batch-1 依据 PAG 定态帧几何、batch-2 依据 vivo 官方社区**设置页预览卡**（不是相机成片），band 几何由 picker 卡推算；升级 `verified` 需要原版成片参考帧 + 逐项目检，W4 真机走查不构成升级依据。
 
 ### 5.2 保真度残余（已知、已量、未修）
 
@@ -148,13 +149,14 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 4. **品牌字标素材差异**：审计 EXIF 夹具是 **Panasonic DC-S1**，`autoLogo` 因此渲染 LUMIX/Panasonic，而参考图是 Canon / Leica / SONY / Nikon / FUJIFILM；受影响 wm-classic/black/canon/left/wide/right、white-2、glass-white-1..3、glass-card-4、glass-pill-5、glass-liquid、grad-1/2、person-5、ratio-1/2、new-color-2、card-1..4。属**测试夹具内容**而非模板缺陷，品牌墨宽对比因此不具意义。**CLOSE-OUT 起字标随照片品牌/Inspector 手选切换（`549a653`），本条差异在参考图与样张品牌一致时才会消失**。
 5. **画布/比例取值**：审计统一用 4:3 输入，参考图是各自原生比例；固定比例原版（movie 2.34:1、ratio 3:2、glass-card、color-3、wm 族等）的画布比因此有 -23.94 %…+4.7 % 的差，门槛改用 %canvas / %S 保证横向几何可比，纵向差已逐套标注为不可比。`canvasAspect` 是**变体级**参数（simple-1/2/4 = 1.3045、glass-pill-5 = 1.4971），不是全局画布策略。
 6. **glass-pill-5 参考置信度低**：参考品牌是 SONY 衬线字标、我方是 LUMIX autoLogo，品牌墨宽（8.60 vs 16.99 %W）本质不可比，只有槽位锚点可比；品牌 x 偏 +1.74 pp、门槛余量 0.26 pp。几何置信度高、字标置信度低。
-7. **4 组 blocked / 42 个样式**：小米 Leica 5 / 88 / 89（侧栏绝对布局、底部 218dp 容器 + 照片内叠加、混合叠加）+ **vivo 全部 39 套**（缺宿主布局与可信参考帧）。卡片在目录内可见、写明原因、不可导出；**不伪造**布局、滤镜值或字标。
+7. **4 组 blocked / 31 个样式**：小米 Leica 5 / 88 / 89（侧栏绝对布局、底部 218dp 容器 + 照片内叠加、混合叠加）+ **vivo 剩余 28 套**（无厂商成片预览；15 套还需设备截图确认样式归属、**11 套完全无公开参考**）。卡片在目录内可见、写明原因、不可导出；**不伪造**布局、滤镜值或字标。vivo 总盘 42 套 = 已接 14 + blocked 28，与本轮之前一致。
 8. **10 个 OPPO CameraPro 样式 `unverifiable`**：属第三方包 `com.tlsu.opluscamerapro`，不在 Find X9 Ultra ROM 内，本轮无从校验（保持现状、`approx`）。
 9. **5 套无厂商原版预览**（Polaroid PLD、小米标准 6/7/8/107）只能按宿主 config 与素材核对，结构级已核，**不能升级 `verified`**。
 9a. **`hassel_style_xpan_1` 负行距保真项**：绘制级文字对文字全库唯一残余命中（px=338.09），源自厂商配置 `topMargin:-3` 的紧凑行距；字形墨迹不碰撞、文字可读，**按保真原则设计性保留**，不再"修复"成失真版式（证据 `_research/cleanup/lastoverlap/fix-report.md`）。
 9b. **品牌字标 letterbox 约 32%**：字标槽位向右生长直至撞上模型文字，字标可见墨宽通常只占槽位约 68%（约 32% 为留白），属槽位策略残余，非渲染缺陷。
 9c. **samyang 无字标文件**：品牌库 62 卡中 samyang 缺可靠字标素材文件，画布上保持隐藏（不伪造字标）。
-9d. **3 套旋转条带样式仍 `approx`**：`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3` 的 `rotation:90` 侧边条带已由 `ff32b4b` 修复渲染并经真实导出路径 + 几何/绘制矩形双重复核（无轴交换、锚点平移为同一刚性 delta），但**升级 `verified` 仍待真机样张对照**；`xpan_1` 厂商负行距按保真原则设计性保留（见 9a）；其余 95 套 stock 全 `approx`、**0 `verified`**；vivo 39 套 blocked 不变。
+9e. **vivo batch-2 的近似来源（本轮新增残余）**：6 套 batch-2 样式**无 PAG 组**，几何取自官方社区设置页 **picker 预览卡**而非相机成片；农历时间（癸卯年…）以公历日期近似；BORDER 的照片取色色卡条与镜头图标为动态/矢量元素、SIGNATURE 的手写签名行为用户内容（`pref_camera_watermark_signature_type`），三者均按规则**省略并记录**、未伪造，因此 BORDER 卡比官方更空、SIGNATURE 无固定字形；BORDER/SIGNATURE 的「Photographer」行同理。系统字体（非 vivo Sans）与文字度量差异普遍存在，非 4:3 画布不纵向拉伸美术。
+9d. **3 套旋转条带样式仍 `approx`**：`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3` 的 `rotation:90` 侧边条带已由 `ff32b4b` 修复渲染并经真实导出路径 + 几何/绘制矩形双重复核（无轴交换、锚点平移为同一刚性 delta），但**升级 `verified` 仍待真机样张对照**；`xpan_1` 厂商负行距按保真原则设计性保留（见 9a）；其余 106 套 stock 全 `approx`、**0 `verified`**；vivo 已接 14 套亦全为 `approx`，剩余 28 套 blocked 不变。
 
 ### 5.3 代码/证据卫生（已记录，本轮不动源码）
 
@@ -204,7 +206,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 - **W4 真机**：`_research/android-walkthrough/`（`walkthrough-report.md` + `walk_*.png` + `s2_*`/`s3_*` 分享证据 + `*.xml` uiautomator 转储）、`_research/cleanup/mobile-triage.md`
 - **W5 打包**：`_research/cleanup/packaging-report.md`、`_research/packaging/`（`typecheck.log`、`build.log`、`package-win.log`、`cap-copy.log`、`gradle-assembleRelease.log`、`win-packaged-counts.json`、打包版截图）
 - **REPACKAGE 重打包**：`_research/cleanup/repackage-report.md`、`_research/packaging/`（`package-win-fixed.log`、`cap-copy-fixed.log`、`gradle-assembleRelease-fixed.log`、`win-packaged-counts-fixed.json`、`verify-packaged-fixed.mjs`、`win-packaged-fixed-*.png`）、`_research/android-verify/fm-fixed-cold.png`、`_research/cleanup/_repackage_build.log`
-- **保真重导出评审集（当前）**：`_research/review-164/exports-real/`（164 卡走真实导出路径，配 `manifest-real.json`/`index-real.html`/`DELTA.md`；本轮修复复核以该集为准，取代旧 `exports/` 预览口径集）。**BRAND-ALIGN 轮起 `index-real.html` 已刷新至 v3 代际**：40 卡（37 品牌槽样式 + 3 对照）指向 `exports-real-v3/`（37 张右上角 CHANGED 徽标，逐像素比对 v2→v3 非零），其余 124 卡沿用像素一致的 `exports-real-v2/`，`manifest-real.json` buildHead=`e256965`；旧集 `exports-real/`、`exports-real-v2/` 与备份页 `index-real.pre-v3.bak.html` 均保留在盘上供对照；生成器 `tools-real/build-page-v3.cjs`，比对明细 `tools-real/_diff-v3.json`
+- **保真重导出评审集（当前）**：`_research/review-164/exports-real/`（164 卡走真实导出路径，配 `manifest-real.json`/`index-real.html`/`DELTA.md`；本轮修复复核以该集为准，取代旧 `exports/` 预览口径集）。**BRAND-ALIGN 轮起 `index-real.html` 已刷新至 v3 代际**：40 卡（37 品牌槽样式 + 3 对照）指向 `exports-real-v3/`（37 张右上角 CHANGED 徽标，逐像素比对 v2→v3 非零），其余 124 卡沿用像素一致的 `exports-real-v2/`，`manifest-real.json` buildHead=`e256965`；旧集 `exports-real/`、`exports-real-v2/` 与备份页 `index-real.pre-v3.bak.html` 均保留在盘上供对照；生成器 `tools-real/build-page-v3.cjs`，比对明细 `tools-real/_diff-v3.json`。**VIVO-CLOSE 轮 `index-real.html` 已整体刷新至 v4 全量集**：175 卡**全部**由真实导出管线重导到 `exports-real-v4/`（不再混合引用 v2/v3），11 张新 vivo 样式带 CHANGED 徽标，`manifest-real.json` buildHead=`f796854` / counts 175·107·4·62，旧页备份为 `index-real.pre-v4.bak.html`；生成器 `tools-real/export-all-v4.cjs` + `tools-real/build-page-v4.cjs`，引用审计与逐字节比对明细 `tools-real/_page-audit-v4.json`
 - **总验收**：`_research/cleanup/FINAL-ACCEPTANCE.md`
 - 系统相机结构核对：`_research/stock-fidelity/report.md`、`_research/stock-fidelity-vendor/sheet-01..18.jpg`
 - 4:3 全量目检：`_research/pc-audit-4x3/`、`_research/pc-audit-originals/`
