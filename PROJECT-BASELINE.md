@@ -97,6 +97,8 @@
 
 blocked 卡片在目录内可见、写明原因、不可点击导出；没有依据时不伪造布局、滤镜数值或字标。
 
+> **更正说明（2026-10-31，DOC-CORRECT）**：上表 Leica 5/88/89 的原因为准。早期 HANDOFF/QUALITY 曾把这三套写成「需旋转文字」，经 `_research/cleanup/orient-audit.md` 核证，三套小米 config 均无任何 `rotation`/角度字段，「竖排」只是 LinearLayout 垂直堆叠（IR 的 `column` 已支持），真实障碍是绝对侧栏带宽与照片内叠加布局超出 IR 表达。全库真正使用 band 级 `rotation:90` 的仅 3 套 OPPO 样式（`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3`），它们未被 blocked，旋转渲染作为独立特性单独推进。
+
 ---
 
 ## 3. 平台与验证状态

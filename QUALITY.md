@@ -39,7 +39,7 @@
 ## 已知限制
 
 - 系统相机 92 套全部 `approx`；小米 film 12/103 的 band 背景、texture/gradient 未按原素材实现。
-- blocked 4 组：小米 Leica 5/88/89（需旋转文字/照片内叠加/宿主总宽度）+ vivo 39 套（已接 3 套 Zeiss，其余缺宿主布局或可信参考帧）。
+- blocked 4 组：小米 Leica 5/88/89（侧栏绝对布局缺可用总宽度 / 底部 218dp 容器 + 照片内叠加 / 侧栏与叠加混合，真实障碍是绝对带宽与叠加布局超出 IR 表达，**非旋转文字**——三套小米 config 无任何 `rotation` 字段）+ vivo 39 套（已接 3 套 Zeiss，其余缺宿主布局或可信参考帧）。真正使用 band 级 `rotation:90` 的仅 3 套 OPPO 样式（`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3`），均未被 blocked，旋转渲染另作独立特性推进。
 - 5 套无厂商原版预览（Polaroid PLD、小米标准 6/7/8/107），只能按宿主 config 与素材核对，不能升级 `verified`。
 - Android 分享仅覆盖单张导出成片；批量导出结果需在相册中自行分享。
 - GR5 滤镜值未存 EXIF，侧栏值以“—”占位。
