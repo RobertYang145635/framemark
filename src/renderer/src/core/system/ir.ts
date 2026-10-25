@@ -122,6 +122,15 @@ export interface StockShapeNode {
   margins?: StockMargins
   alpha?: number
   radius?: number
+  /**
+   * Additive vector node: key into the generated VectorDrawable art
+   * (`assets/system/vivo/vectorArt.generated.ts`, produced by
+   * `scripts/system-camera/adapters/vivo-vector.cjs` from the vendor APKs).
+   * When set, `paint.ts` fills/strokes the vendor's own path data inside this
+   * node's box instead of the primitive — the box keeps normal layout/gravity
+   * behaviour. Nodes without it render byte-identically to before.
+   */
+  vectorKey?: string
 }
 
 export interface StockSpaceNode {

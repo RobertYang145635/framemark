@@ -126,6 +126,84 @@ const VIVO_VARIANTS: TemplateVariant[] = [
     vendor: 'vivo',
     family: 'vivo 相机',
     fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-chinoiserie-loc-frame',
+    name: '国风 · 地点印章',
+    en: 'CHINOISERIES LOC',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-chinoiserie-loc:frame' },
+    text: { showMake: false, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-chinoiserie-signet-frame',
+    name: '国风 · 文字印章',
+    en: 'CHINOISERIES SIGNET',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-chinoiserie-signet:frame' },
+    text: { showMake: false, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-chinoiserie-ink-frame',
+    name: '国风 · 水墨印章',
+    en: 'CHINOISERIES INK',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-chinoiserie-ink:frame' },
+    text: { showMake: false, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-signature-overlay',
+    name: '艺术 · 手写签名',
+    en: 'SIGNATURE',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-signature:overlay' },
+    text: { showMake: false, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-border-photo-frame',
+    name: '个性 · 色卡边框',
+    en: 'BORDER PHOTO',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-border-photo:frame' },
+    text: { showMake: false, showModel: false, showExif: true, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-feature-photo-frame',
+    name: '功能 · 参数边框',
+    en: 'FEATURE PHOTO',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-feature-photo:frame' },
+    text: { showMake: false, showModel: true, showExif: true, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
   }
 ]
 const XIAOMI_SIDEBAR_VARIANTS: TemplateVariant[] = [

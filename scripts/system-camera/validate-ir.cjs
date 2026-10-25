@@ -71,9 +71,9 @@ for (const id of variantIds) {
   if (blocked.includes(`id: '${id}'`)) errors.push(`blocked id also shipped as variant: ${id}`)
 }
 const previewCount = fs.readdirSync(previews).filter((f) => f.endsWith('.webp')).length
-if (styles.length !== 90) warnings.push(`generated stock styles ${styles.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss + vivo batch-1 are separate)`)
-if (variants.length !== 90) warnings.push(`generated stock variants ${variants.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss + vivo batch-1 are separate)`)
-if (previewCount !== 100) warnings.push(`stock previews ${previewCount} (expected 100; includes 2 manual Xiaomi sidebar previews + 3 vivo Zeiss + 5 vivo batch-1)`)
+if (styles.length !== 90) warnings.push(`generated stock styles ${styles.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss + vivo batch-1 + vivo batch-2 are separate)`)
+if (variants.length !== 90) warnings.push(`generated stock variants ${variants.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss + vivo batch-1 + vivo batch-2 are separate)`)
+if (previewCount !== 106) warnings.push(`stock previews ${previewCount} (expected 106; includes 2 manual Xiaomi sidebar previews + 3 vivo Zeiss + 5 vivo batch-1 + 6 vivo batch-2)`)
 if (!fs.existsSync(path.join(previews, 'stock-xiaomi-standard-6.webp'))) errors.push('missing preview: stock-xiaomi-standard-6.webp')
 if (!fs.existsSync(path.join(previews, 'stock-xiaomi-standard-107.webp'))) errors.push('missing preview: stock-xiaomi-standard-107.webp')
 for (const id of [
@@ -84,7 +84,13 @@ for (const id of [
   'stock-vivo-stamp-frame',
   'stock-vivo-tone-frame',
   'stock-vivo-geographic-overlay',
-  'stock-vivo-postcard-frame'
+  'stock-vivo-postcard-frame',
+  'stock-vivo-chinoiserie-loc-frame',
+  'stock-vivo-chinoiserie-signet-frame',
+  'stock-vivo-chinoiserie-ink-frame',
+  'stock-vivo-signature-overlay',
+  'stock-vivo-border-photo-frame',
+  'stock-vivo-feature-photo-frame'
 ]) {
   if (!fs.existsSync(path.join(previews, `${id}.webp`))) errors.push(`missing preview: ${id}.webp`)
 }

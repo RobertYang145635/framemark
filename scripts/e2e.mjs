@@ -19,12 +19,12 @@ page.on('pageerror', (e) => errors.push(e.message))
 await page.waitForSelector('.app-shell.ready', { timeout: 30000 })
 
 const total = await page.locator('.tpl-card').count()
-assert.equal(total, 169, `expected ===169 cards, got ${total}`)
+assert.equal(total, 175, `expected ===175 cards, got ${total}`)
 assert.equal(await page.locator('.tpl-card canvas').count(), 0, 'cards must use static previews')
 
 await page.locator('.gallery-chips button', { hasText: '系统相机' }).click()
 await page.waitForTimeout(400)
-assert.equal(await page.locator('.tpl-card').count(), 101, 'system camera card count')
+assert.equal(await page.locator('.tpl-card').count(), 107, 'system camera card count')
 assert.equal(await page.locator('.blocked-card').count(), 4, 'blocked group count')
 
 await page.locator('.tpl-card', { hasText: '经典 · 17' }).first().click()
@@ -74,5 +74,5 @@ await page.locator('.export-card button', { hasText: '完成' }).first().click()
 await page.waitForTimeout(300)
 
 assert.equal(errors.length, 0, `page errors: ${errors.join(' | ')}`)
-console.log(JSON.stringify({ total, system: 101, blocked: 4, exported: files, status, errors: [] }, null, 2))
+console.log(JSON.stringify({ total, system: 107, blocked: 4, exported: files, status, errors: [] }, null, 2))
 await app.close()

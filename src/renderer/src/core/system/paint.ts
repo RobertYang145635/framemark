@@ -2,6 +2,8 @@ import type { TemplateRenderEnv } from '../../types'
 import { drawContain, drawPhoto, roundRectPath, setFont, setTracking } from '../draw'
 import { brandSlotKey, inkBoxOf, resolveBrandSlot } from './assets'
 import type { InkBox } from './assets'
+import { VIVO_VECTOR_ART } from '../../assets/system/vivo/vectorArt.generated'
+import type { VdGroupNode, VdNode } from '../../assets/system/vivo/vectorArt.generated'
 import type { StockImageNode, StockStyle } from './ir'
 import type { BrandFree, PlacedItem, StockLayout, StockRect } from './layout'
 
@@ -313,6 +315,65 @@ export function brandSlotRect(
   return { x, y, w, h }
 }
 
+/**
+ * Paint a vendor VectorDrawable (generated art, see vivo-vector.cjs) into the
+ * node's box: viewport units are scaled to the box, group transforms and
+ * clip-path siblings follow Android semantics, and every path is filled /
+ * stroked with the vendor's own colour and alpha. Path data is used verbatim.
+ */
+function paintVectorNode(ctx: CanvasRenderingContext2D, key: string, box: StockRect): void {
+  const art = VIVO_VECTOR_ART[key]
+  if (!art) return
+  ctx.save()
+  ctx.translate(box.x, box.y)
+  ctx.scale(box.w / art.vw, box.h / art.vh)
+  const walk = (nodes: VdNode[]): void => {
+    let clips = 0
+    for (const n of nodes) {
+      if ('clip' in n) {
+        ctx.save()
+        clips++
+        ctx.clip(new Path2D(n.clip))
+      } else if ('c' in n) {
+        ctx.save()
+        const g = n as VdGroupNode
+        if (g.tx || g.ty) ctx.translate(g.tx ?? 0, g.ty ?? 0)
+        if (g.rot) {
+          ctx.translate(g.px ?? 0, g.py ?? 0)
+          ctx.rotate((g.rot * Math.PI) / 180)
+          ctx.translate(-(g.px ?? 0), -(g.py ?? 0))
+        }
+        if (g.sx != null || g.sy != null) {
+          ctx.translate(g.px ?? 0, g.py ?? 0)
+          ctx.scale(g.sx ?? 1, g.sy ?? 1)
+          ctx.translate(-(g.px ?? 0), -(g.py ?? 0))
+        }
+        walk(g.c)
+        ctx.restore()
+      } else if (n.d) {
+        if (n.fill) {
+          ctx.save()
+          ctx.globalAlpha *= n.fa ?? 1
+          ctx.fillStyle = cssColor(n.fill)
+          ctx.fill(new Path2D(n.d), n.rule === 'evenodd' ? 'evenodd' : 'nonzero')
+          ctx.restore()
+        }
+        if (n.stroke) {
+          ctx.save()
+          ctx.globalAlpha *= n.sa ?? 1
+          ctx.strokeStyle = cssColor(n.stroke)
+          ctx.lineWidth = n.sw ?? 1
+          ctx.stroke(new Path2D(n.d))
+          ctx.restore()
+        }
+      }
+    }
+    for (let i = 0; i < clips; i++) ctx.restore()
+  }
+  walk(art.tree)
+  ctx.restore()
+}
+
 function paintItem(
   env: TemplateRenderEnv,
   item: PlacedItem,
@@ -343,6 +404,11 @@ function paintItem(
   if (item.kind === 'shape') {
     ctx.save()
     ctx.globalAlpha = item.node.alpha ?? 1
+    if (item.node.vectorKey) {
+      paintVectorNode(ctx, item.node.vectorKey, box)
+      ctx.restore()
+      return
+    }
     ctx.fillStyle = cssColor(item.node.color)
     if (item.node.shape === 'circle') {
       ctx.beginPath()
