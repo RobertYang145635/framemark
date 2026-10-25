@@ -83,7 +83,7 @@ async function main() {
     ['版本', 'FrameMark 1.0.0'],
     ['交付日期', '2026-10-25'],
     ['桌面平台', 'Windows 10/11 x64 便携版（未签名）'],
-    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；签名包冷读 160 卡/系统 92/blocked 4，选图、原比例/3:2/Polaroid 导出与系统分享均通过'],
+    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；签名包冷读 164 卡/系统 96/blocked 4（冷启动约 300 ms），选图、2 张批量导出、原比例/3:2/Polaroid 导出、新建厂商样式“近似”徽章与系统分享均通过'],
     ['渲染方式', 'Canvas 2D 本地渲染；桌面 sharp 编码与 EXIF 回写；Android MediaStore 相册写入'],
     ['离线', '不接入云服务，不上传照片、水印或预设']
   ], [1800, 7200]))
@@ -92,14 +92,14 @@ async function main() {
   children.push(new Paragraph({ children: [new PageBreak()] }))
 
   children.push(heading('一、交付结论', 1))
-  children.push(p('本版本已经把「加边框」和「加自定义水印」合并进同一个本地工作流：可以从照片自动读取 EXIF，套用 68 个手写模板或 92 套系统相机水印（共 160 卡），叠加任意透明 PNG/WebP 水印，保存为预设，并对多张照片批量导出。Windows 与 Android 共享同一套模板、水印和预设数据，桌面端负责写文件夹与完整格式编码，Android 端负责系统照片选择、相册写入与系统分享。'))
+  children.push(p('本版本已经把「加边框」和「加自定义水印」合并进同一个本地工作流：可以从照片自动读取 EXIF，套用 68 个手写模板或 96 套系统相机水印（共 164 卡），叠加任意透明 PNG/WebP 水印，保存为预设，并对多张照片批量导出。Windows 与 Android 共享同一套模板、水印和预设数据，桌面端负责写文件夹与完整格式编码，Android 端负责系统照片选择、相册写入与系统分享。'))
   children.push(p('调研结论是没有找到同时覆盖全部需求的开源项目：最接近的 time-letter 与 Qing-Fram-Shadow-web 都是 Windows Electron 项目且偏文字/Logo 水印；iOS 的 PICA、Reframe、Stamio、MatteFrame 不覆盖 Windows/Android 双端；PolarGrid 偏白边与拼贴；其余水印项目是 CLI 或脚本。详细对比见交付目录中的《FrameMark-同类开源项目调研.md》。'))
   children.push(p('需要明确的边界：JPG 叠加水印后不可能做到数学意义上的无损；本版本采用最高质量重编码并回写 EXIF/ICC。真正的无损导出使用 PNG / 桌面 TIFF / 桌面 WebP。'))
 
   children.push(heading('二、功能清单', 1))
   children.push(table(['能力', '实现情况'], [
-    ['边框模板', '68 个手写版式，覆盖背景模糊、水印边框、留白、卡片、玻璃、色卡、电影字幕、胶片齿孔、拍立得等；与 92 套系统相机合计 160 卡'],
-    ['系统相机', '92 套：OPPO 49（Gallery 39 + CameraPro 10）、小米 40、vivo 3；另有 4 组 blocked 在目录内标注原因，不导出'],
+    ['边框模板', '68 个手写版式，覆盖背景模糊、水印边框、留白、卡片、玻璃、色卡、电影字幕、胶片齿孔、拍立得等；与 96 套系统相机合计 164 卡'],
+    ['系统相机', '96 套：OPPO 53（Gallery 43 + CameraPro 9 + Polaroid 1）、小米 40、vivo 3；另有 4 组 blocked 在目录内标注原因，不导出'],
     ['EXIF', '自动读取品牌、机型、镜头、焦距、光圈、快门、ISO、日期；支持手动覆盖；桌面/Android JPG 回写'],
     ['品牌 Logo', '62 个有可靠字标的品牌，可自动匹配或手动选；可调节大小、位置和显隐；停产老牌字标取自官方历史资料或说明书扫描件，无可靠字标者不列出'],
     ['透明水印', '支持 PNG/WebP；照片内 / 整张画布；九宫格锚点；水平/垂直偏移；宽度、透明度、旋转；平铺与间距'],
@@ -112,7 +112,8 @@ async function main() {
   ], [1800, 7200]))
 
   children.push(heading('二·附：系统相机水印目录', 2))
-  children.push(p('系统相机分类现包含 92 套：OPPO 49（Gallery 39 + CameraPro 10）、小米 40、vivo 3（Zeiss 上框/上下框/内嵌）。另有 4 组 blocked：小米 3 套侧栏（Leica 5/88/89）与 vivo 39 套（合并为一组），均在目录底部显示原因，不可导出。GR5 右侧参数边栏已接入，滤镜值不在 EXIF 时以“—”占位；全部 92 套仍标记 approx。'))
+  children.push(p('系统相机分类现包含 96 套：OPPO 53（Gallery 43 + CameraPro 9 + Polaroid 拍立得 1）、小米 40、vivo 3（Zeiss 上框/上下框/内嵌）。另有 4 组 blocked：小米 3 套侧栏（Leica 5/88/89）与 vivo 39 套（合并为一组），均在目录底部显示原因，不可导出。GR5 右侧参数边栏已接入，滤镜值不在 EXIF 时以“—”占位；目录内 95 套库存（stock）样式全部标记 approx，verified 为 0。'))
+  children.push(p('本轮厂商对齐（W3）：OPPO Gallery 同步至 ColorOS 17.10.7，修正 13 处过时配置、新增 5 套 realme 样式、下线 1 套已退役样式（personalize_brand_3）；小米同步至 17 Ultra，film 15 与 Leica 2/91 更新，standard 6/7/8/107 迁移入生成管线。'))
   children.push(note('blocked 不是“已完成”：它们缺宿主布局、滤镜元数据或可靠参考帧。vivo 的 PAG 已能渲染，但当前只能确认照片层与占位页脚，尚不足以生成可信参考。'))
 
   children.push(heading('三、格式与“无损”边界', 1))
@@ -128,9 +129,11 @@ async function main() {
   children.push(heading('四、实测与验收', 1))
   children.push(heading('4.1 Windows 桌面版', 2))
   children.push(table(['验收项', '环境', '结果'], [
-    ['模板库与冷启动', 'Windows 打包版', '160 卡（手写 68 + 系统相机 92）、blocked 4；0 页面错误'],
-    ['全库目检（4:3）', 'Windows 打包版 / 高分辨率主画布', '92 套系统相机 + 68 套原版逐张出图；已修 OPPO EXIF 部件重复、侧栏裁切、文字重叠、7 处图片 fill 拉伸与卡片 canvas 拉伸'],
+    ['模板库与冷启动', 'Windows 打包版', '164 卡（手写 68 + 系统相机 96）、blocked 4；0 页面错误'],
+    ['全库目检（4:3）', 'Windows 打包版 / 高分辨率主画布', '96 套系统相机 + 68 套原版逐张出图；已修 OPPO EXIF 部件重复、侧栏裁切、文字重叠、7 处图片 fill 拉伸与卡片 canvas 拉伸'],
     ['多比例全量目检', 'Windows 打包版 / 7 种比例', '158 套（新增 2 套待补）× 3:2 / 2:3 / 16:9 / 1:1 / 4:5 / 3:4 / 9:16 共 1106 张，0 页面错误；无拉伸、裁切、重叠；固定版式按设计比例出图'],
+    ['原版模板 parity 审计（W1）', 'Node + sharp 像素级测量', '47/47 原版模板通过 ≤2% 结构差 / ≤2 百分点 像素差门禁：13 套本轮独立复测，34 套与已审计批次字节级一致'],
+    ['核心工作流回归（W2）', '打包版 Electron + Playwright', 'npm run test:workflow：106/106 断言通过、0 pageerror（2 张批量、预设保存/重载/应用、自定义 PNG 水印、高级参数、文件名变量、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 导入导出）；已修复预设内 outputDir 跨机不互通问题'],
     ['透明水印（单张 + 平铺）', 'Windows 打包版', '白色 PNG 叠加成功；平铺、透明度、宽度、九宫格位置均生效'],
     ['预设闭环', 'Windows 打包版', '保存 → 导出 JSON → 删除 → 导入 → 应用，水印与模板均恢复'],
     ['批量 JPG', 'Windows 打包版', '21MP+24MP+19MP 共 3 张，7.3 秒完成，全部写入 Pictures/FrameMark'],
@@ -148,12 +151,17 @@ async function main() {
     ['单张 JPG', '6000×4666 / 11.61 MB', '15.7 s', '成功，EXIF 完整（含 100-400mm 镜头）'],
     ['单张 PNG', '6000×4666 / 22.54 MB', '16.8 s', '成功，无损，无 EXIF'],
     ['单张 WebP', '6000×4666 / 15.20 MB', '8.8 s', '成功，最高质量有损，ICC 456 B'],
-    ['批量 JPG（3 张）', '21MP + 24MP + 19MP', '43.6 s', '成功 3 张，逐张进度正确'],
+    ['批量 JPG（3 张）', '21MP + 24MP + 19MP', '43.6 s', '历史实测（上一构建）；最终包按 2 张批量复验通过，见下行'],
     ['批量取消', '3 张 JPG', '取消后当前张完成即停止', '取消标志生效；已修复完成页把总张数误显示为成功张数的问题'],
     ['发版包', '签名 APK / 系统选择器', '—', '安装、启动、选图、导出到相册均成功；Debug 测试素材未进入 Release'],
-    ['冷启动界面', '签名 APK / PGEM10', '—', '160 卡/系统 92/blocked 4（本包，已通过）'],
+    ['冷启动与图库（W4 复验）', '签名 APK / PGEM10', '约 300 ms', '164 卡/系统 96/blocked 4；0 页面错误'],
+    ['2 张批量导出（W4 复验）', '签名 APK / PGEM10', '—', '逐张进度与完成页正确，成片写入 Pictures/FrameMark'],
+    ['自定义水印（W4 复验）', '签名 APK / 透明 PNG', '—', '自定义 PNG 水印直接绘制到画布并随成片写入相册'],
+    ['新厂商样式（W4 复验）', 'realme / 小米 standard 新样式', '—', '新样式正常渲染，卡片带“近似”徽章'],
+    ['导出→分享（W4 复验）', '签名 APK / 系统分享面板', '—', '单张导出完成后点“分享”拉起 Android 系统选择器成功'],
     ['移动端弹窗与快捷条', 'Android 发版包', '—', '已修复模板库全屏弹窗标题/关闭按钮被状态栏压住；当前模板会自动补入快捷条并居中']
   ], [2000, 2500, 1800, 2700]))
+  children.push(p('注：表内单张/批量的尺寸与耗时为上一构建的历史实测，仅作量级参考；最终发版包的真机复验（W4）覆盖冷启动、2 张批量导出、自定义水印、新厂商样式渲染与导出后系统分享，全部通过。', { size: 19, color: '5B5144' }))
   children.push(await image(path.join(docs, 'android-wm.jpg'), 260))
   children.push(caption('Android 发版界面：白色透明 PNG 水印叠加在照片右下角；竖屏/安全区适配正常'))
   children.push(await image(path.join(docs, 'android-release.jpg'), 260))
@@ -169,6 +177,10 @@ async function main() {
   children.push(bullet('内置品牌 Logo 与部分模板审美来源受第三方版权约束，仅供个人使用；商业分发请替换为自有素材。'))
   children.push(bullet('HEIC/HEIF 与 TIFF 的读取依赖平台解码器，极端编码可能无法预览。'))
   children.push(bullet('预设 JSON 包含水印图片的 data URL；水印过大时文件会变大，这是跨设备复现的代价。'))
+  children.push(bullet('字体回退：部分模板因本机字体缺失发生替换（如 Chakra Petch 以横向缩放近似呈现；个别模板使用 Bebas/YouShe 替代原字体），字距与字重与原版存在可见差异。'))
+  children.push(bullet('品牌字标视觉差异：parity 审计 fixture 为松下 DC-S1 样张，而参考截图多来自 Canon/Leica/SONY 机型，品牌区 artwork 无法逐像素对齐，属参考源限制而非渲染缺陷。'))
+  children.push(bullet('95 套系统相机库存样式全部标记 approx，verified 为 0；vivo 39 套因拿不到可信参考帧保持 blocked，未纳入导出。'))
+  children.push(bullet('本项目为个人使用交付：未做任何公开发布、许可证选型或商用授权工作。'))
 
   children.push(heading('六、安装与使用', 1))
   children.push(heading('Windows', 2))
@@ -188,10 +200,10 @@ async function main() {
   children.push(note('更新 Android 版本时，修改 android/app/build.gradle 的 versionCode/versionName 后重新运行 Gradle assembleRelease；保留 keystore 与 properties。'))
 
   children.push(new Paragraph({ children: [new PageBreak()] }))
-  children.push(heading('附录 A：160 个模板总览', 1))
-  children.push(p('当前模板库共 160 卡：68 个原版/手写变体加 92 个系统相机 IR 变体。下图直接由各卡片使用的静态/渲染预览资源生成，用于总览版式分布；单套细节仍以模板库和预览文件为准。'))
+  children.push(heading('附录 A：164 个模板总览', 1))
+  children.push(p('当前模板库共 164 卡：68 个原版/手写变体加 96 个系统相机 IR 变体（含 95 套库存样式，全部 approx）。下图为上一轮 160 卡构建渲染的联系表（渲染预览 73 张 + 系统静态预览 87 张），用于总览版式分布；本轮新增/更新的 realme、小米 standard 等厂商样式与 blocked 标注以应用内模板库及其当前预览资源为准，联系表未包含的 4 套新增样式均已在模板库中随构建生成预览。'))
   children.push(await image(path.join(docs, 'all-templates-160.jpg'), 500))
-  children.push(caption('160 个模板预览联系表（渲染预览 73 张 + 系统静态预览 87 张，合计 160）'))
+  children.push(caption('模板预览联系表（上一轮 160 卡渲染：预览 73 张 + 系统静态 87 张；当前构建为 164 卡，新增样式见应用内预览）'))
   children.push(p('水印测试覆盖：白色水印、九宫格右下、宽度 18%、不透明度 0.88；平铺模式宽度 9%、间距 5%、不透明度 0.30。桌面与 Android 均生成成片；桌面平铺成片已保存到 _research/exports/desktop-watermark-tile.jpg。'))
 
   const doc = new Document({
