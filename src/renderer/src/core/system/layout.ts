@@ -39,6 +39,26 @@ export interface PlacedImage {
   kind: 'image'
   node: StockImageNode
   box: StockRect
+  /**
+   * Brand slots only: how much empty space the solved band actually leaves
+   * around the declared box, per side. `paint.ts` grows a swapped wordmark into
+   * this slack (`grow to fit`) and scales it back the moment the slack runs out
+   * (`never overlap`) — the declared box alone is what made the aspect-fit
+   * wordmark paint straight over the model text.
+   */
+  brandFree?: BrandFree
+}
+
+/**
+ * Empty distance from the declared box edge to the nearest sibling box edge
+ * (or to the band's inner edge), never negative. Measured on the FINAL boxes,
+ * after `fitBandItems()` has rescaled the band.
+ */
+export interface BrandFree {
+  left: number
+  right: number
+  top: number
+  bottom: number
 }
 
 export interface PlacedShape {
@@ -399,6 +419,67 @@ function fitBandItems(box: StockRect, items: PlacedItem[]): void {
   }
 }
 
+/** Band inner edge, the same 2.5% / 4% inset `fitBandItems()` keeps text to. */
+function bandInnerBox(box: StockRect): StockRect {
+  const padX = box.w * 0.025
+  const padY = box.h * 0.04
+  return { x: box.x + padX, y: box.y + padY, w: Math.max(1, box.w - padX * 2), h: Math.max(1, box.h - padY * 2) }
+}
+
+function sharesCrossAxis(a: StockRect, b: StockRect, axis: 'x' | 'y'): boolean {
+  const lo = axis === 'x'
+    ? Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+    : Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  return lo > 0.5
+}
+
+/**
+ * "Grow to fit, never overlap": measure the empty room a brand slot has before
+ * `paint.ts` decides how wide the swapped wordmark may be. Siblings that
+ * already intersect the slot's own box block both directions, so a slot can
+ * never be blamed for slack it does not have. Background `group` rects and
+ * decorative `shape` nodes are not obstacles — the wordmark is meant to sit on
+ * top of them.
+ */
+function annotateBrandFree(bandBox: StockRect, items: PlacedItem[]): void {
+  const inner = bandInnerBox(bandBox)
+  for (const item of items) {
+    if (item.kind !== 'image' || !item.node.isBrandLogo) continue
+    const b = item.box
+    let right = inner.x + inner.w - (b.x + b.w)
+    let left = b.x - inner.x
+    let bottom = inner.y + inner.h - (b.y + b.h)
+    let top = b.y - inner.y
+    for (const other of items) {
+      if (other === item) continue
+      if (other.kind !== 'text' && other.kind !== 'image') continue
+      const o = other.box
+      if (o.w <= 0 || o.h <= 0) continue
+      if (sharesCrossAxis(b, o, 'y')) {
+        if (o.x >= b.x + b.w - 0.5) right = Math.min(right, o.x - (b.x + b.w))
+        else if (o.x + o.w <= b.x + 0.5) left = Math.min(left, b.x - (o.x + o.w))
+        else { right = Math.min(right, 0); left = Math.min(left, 0) }
+      }
+      if (sharesCrossAxis(b, o, 'x')) {
+        if (o.y >= b.y + b.h - 0.5) bottom = Math.min(bottom, o.y - (b.y + b.h))
+        else if (o.y + o.h <= b.y + 0.5) top = Math.min(top, b.y - (o.y + o.h))
+        else { bottom = Math.min(bottom, 0); top = Math.min(top, 0) }
+      }
+    }
+    item.brandFree = {
+      left: Math.max(0, left),
+      right: Math.max(0, right),
+      top: Math.max(0, top),
+      bottom: Math.max(0, bottom)
+    }
+  }
+}
+
+function finishBand(box: StockRect, items: PlacedItem[]): void {
+  fitBandItems(box, items)
+  annotateBrandFree(box, items)
+}
+
 function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv): PlacedBand {
   const out: PlacedItem[] = []
   if (band.children.length === 1) {
@@ -416,7 +497,7 @@ function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv): PlacedBa
       const y = box.y + (m?.top ?? 0) + (parts.v === 'bottom' ? contentH - size.h : parts.v === 'center' ? (contentH - size.h) / 2 : 0)
       placeNode(child, { x, y, w: size.w, h: size.h }, env, out)
     }
-    fitBandItems(box, out)
+    finishBand(box, out)
     return { band, box, items: out }
   }
   // OPPO bands with multiple children are effectively a row; a single child group supplies its own orientation.
@@ -429,7 +510,7 @@ function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv): PlacedBa
     children: band.children
   }
   layoutChildren(root, box, env, out)
-  fitBandItems(box, out)
+  finishBand(box, out)
   return { band, box, items: out }
 }
 

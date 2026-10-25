@@ -18,7 +18,16 @@ export const systemCamera: TemplateDef = {
   async prepare(env) {
     const style = getStockStyle(String(env.params.systemStyle ?? ''))
     if (!style) return {}
-    return { images: await prepareStockStyle(style) }
+    // EXIF and the Inspector's brand pick (params.brandLogoFile, written by
+    // store.ts) are only available here, so the brand slots (isBrandLogo) are
+    // preloaded during prepare and painted from the resolved bitmaps.
+    const picked = env.params.brandLogoFile
+    return {
+      images: await prepareStockStyle(style, {
+        exif: env.exif,
+        brandLogoFile: typeof picked === 'string' && picked ? picked : undefined
+      })
+    }
   },
   layout(env) {
     const style = getStockStyle(String(env.params.systemStyle ?? ''))

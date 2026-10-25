@@ -322,11 +322,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   setRatio: (ratio) => set((s) => ({ design: { ...s.design, ratio }, activePresetId: null })),
 
   setLogoFromBrand: async (file) => {
+    // `params.brandLogoFile` mirrors the Inspector pick into params so the
+    // stock templates' prepare() (which has no `design`) can preload that
+    // brand's wordmark for the isBrandLogo slots. It is recorded even when the
+    // bitmap load fails: the pick then means "brand chosen, no asset" and the
+    // stock slots render empty instead of the vendor's baked mark.
     try {
       const asset = await logoAsset(file)
-      set((s) => ({ design: { ...s.design, logo: asset, text: { ...s.design.text, showLogo: true } }, activePresetId: null }))
+      set((s) => ({
+        design: {
+          ...s.design,
+          logo: asset,
+          text: { ...s.design.text, showLogo: true },
+          params: { ...s.design.params, brandLogoFile: file }
+        },
+        activePresetId: null
+      }))
       get().showToast('Logo 已应用', 'success')
     } catch {
+      set((s) => ({ design: { ...s.design, params: { ...s.design.params, brandLogoFile: file } } }))
       get().showToast('Logo 载入失败', 'error')
     }
   },
@@ -348,7 +362,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().showToast('已按 EXIF 匹配品牌 Logo', 'success')
   },
 
-  clearLogo: () => set((s) => ({ design: { ...s.design, logo: null }, activePresetId: null })),
+  clearLogo: () =>
+    set((s) => {
+      const { brandLogoFile: _drop, ...restParams } = s.design.params
+      return { design: { ...s.design, logo: null, params: restParams }, activePresetId: null }
+    }),
 
   setAvatarFile: async (file) => {
     try {

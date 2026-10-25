@@ -8,6 +8,18 @@ export type StockEnv = {
   text: TextSettings
 }
 
+/**
+ * What a brand slot needs from the render environment: the photo's EXIF
+ * make/model, which `core/brands.ts` turns into a brand key, plus the optional
+ * Inspector pick (`brandLogoFile`, a logo-registry file name written into
+ * `design.params` by `store.ts`). `prepare()` gets this subset (it has no
+ * canvas), `paint.ts` gets the full env.
+ */
+export type StockBrandEnv = Pick<StockEnv, 'exif'> & {
+  /** logo registry file the user picked in the Inspector, e.g. `leica_white` */
+  brandLogoFile?: string
+}
+
 export type StockVendor = 'oppo' | 'xiaomi' | 'vivo'
 
 export type StockGravity =
@@ -90,6 +102,13 @@ export interface StockImageNode {
   margins?: StockMargins
   tint?: string
   alpha?: number
+  /**
+   * This node is a phone-brand *slot*, not fixed art: the vendor fills it at
+   * runtime, so `assets.ts` swaps in the photo's own brand wordmark (or a
+   * brand picked in the Inspector) and `paint.ts` drops the node when the
+   * photo's brand has no usable wordmark. Co-brand marks (Leica roundel,
+   * Hasselblad, Zeiss, "Camera powered by RICOH GR") must stay `false`.
+   */
   isBrandLogo?: boolean
 }
 

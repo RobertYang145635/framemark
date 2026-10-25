@@ -553,7 +553,9 @@ const XIAOMI_FILM_15: StockStyle = {
                   width: 109.4,
                   height: 26,
                   scale: 'contain',
-                  margins: { right: 8 }
+                  margins: { right: 8 },
+                  // brand slot (FEAT-BRANDSWAP2): this house wordmark follows the photo's brand
+                  isBrandLogo: true
                 },
                 {
                   kind: 'text',

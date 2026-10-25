@@ -1,10 +1,17 @@
 import type { TemplateRenderEnv } from '../../types'
 import { drawContain, drawPhoto, roundRectPath, setFont, setTracking } from '../draw'
+import { brandSlotKey, resolveBrandSlot } from './assets'
 import type { StockStyle } from './ir'
-import type { PlacedItem, StockLayout, StockRect } from './layout'
+import type { BrandFree, PlacedItem, StockLayout, StockRect } from './layout'
 
 function scaleRect(r: StockRect, k: number): StockRect {
   return { x: r.x * k, y: r.y * k, w: r.w * k, h: r.h * k }
+}
+
+/** `layout.ts` measures brand-slot slack in unsolved layout units — same scale as the box. */
+function scaleFree(f: BrandFree | undefined, k: number): BrandFree | undefined {
+  if (!f) return undefined
+  return { left: f.left * k, right: f.right * k, top: f.top * k, bottom: f.bottom * k }
 }
 
 const tintCache = new Map<string, HTMLCanvasElement>()
@@ -26,6 +33,16 @@ function tinted(img: HTMLImageElement, color: string, key: string): CanvasImageS
   ctx.fillRect(0, 0, w, h)
   tintCache.set(cacheKey, canvas)
   return canvas
+}
+
+/**
+ * Vendor `foreground` arrays sometimes carry bare hex (`E6A54F`), which canvas
+ * silently rejects — the fill then keeps whatever colour was set last. Only used
+ * on the brand-slot tint path so no existing render changes behind this.
+ */
+function slotTintColour(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  return /^[0-9a-fA-F]{6,8}$/.test(value) ? `#${value}` : value
 }
 
 function cssColor(value: string | undefined, alpha = 1): string {
@@ -91,13 +108,96 @@ function themeBackground(id: string | undefined, raw: string | undefined): strin
   return THEME_FALLBACK[id ?? ''] ?? '#1c1d1f'
 }
 
+/** Intrinsic pixel size of a decoded image or the tinted offscreen canvas. */
+function imageSize(img: CanvasImageSource): { w: number; h: number } {
+  const el = img as HTMLImageElement & HTMLCanvasElement & ImageBitmap
+  const w = el.naturalWidth ?? (el as HTMLCanvasElement).width ?? 0
+  const h = el.naturalHeight ?? (el as HTMLCanvasElement).height ?? 0
+  return { w, h }
+}
+
+/**
+ * Same decomposition `layout.ts/gravityParts` uses for the node box, kept local
+ * so the drawn rect can hug the edge the vendor anchored the mark to
+ * (left/centre/right gravity must not drift when the width changes).
+ */
+function gravityAnchor(gravity: string | undefined): { h: 'left' | 'center' | 'right'; v: 'top' | 'center' | 'bottom' } {
+  const s = gravity ?? 'leftTop'
+  const h = /right/i.test(s) ? 'right' : /hor|center/i.test(s) && !/left/i.test(s) ? 'center' : 'left'
+  const v = /bottom/i.test(s) ? 'bottom' : /verticalCenter|center/i.test(s) && !/top/i.test(s) ? 'center' : 'top'
+  return { h, v }
+}
+
+/**
+ * Breathing room a grown wordmark keeps from the nearest sibling. There is no
+ * slot-specific safe margin in the project, so this is the same 2% the layout
+ * solver insets bands by (`fitBandItems`), floored at 2px so the small vendor
+ * slots (h ≈ 22) still keep a visible gap instead of touching glyphs.
+ */
+function slotSafeGap(box: StockRect): number {
+  return Math.max(2, box.h * 0.02)
+}
+
+/**
+ * Aspect-aware fitting for brand slots, under one hard rule: **grow to fit,
+ * never overlap**.
+ *
+ * `contain` in a 4.206 box leaves ~35% letterbox for a 6.52 wordmark, so a
+ * swapped brand renders visibly smaller than the vendor's own mark — the node
+ * **height** is the design anchor and the desired drawn width comes from the
+ * asset's intrinsic aspect (drawn width = h × aspect); when the asset is
+ * *taller* than the box (asset aspect < box aspect) the inverse holds and the
+ * width is the anchor. But the layout solver positions siblings off the
+ * DECLARED box, so a mark that simply grew +55% painted straight over the model
+ * text (`DC-S1`) in 37/37 slot styles.
+ *
+ * `free` (from `layout.ts/annotateBrandFree`) is the empty room the band really
+ * leaves on the side the gravity anchor grows into. The mark takes all of it
+ * when the desired width fits; when it does not, the whole rect scales down
+ * proportionally (height follows width, aspect preserved exactly) so the mark
+ * stops short of the sibling by `slotSafeGap()` (2% of the node height, the
+ * same proportion the band inset uses, floored at 2px). Width is never clamped
+ * on its own and the mark is never stretched; the gravity edge stays put.
+ */
+export function brandSlotRect(
+  img: CanvasImageSource,
+  box: StockRect,
+  gravity: string | undefined,
+  free?: BrandFree
+): StockRect {
+  const { w: iw, h: ih } = imageSize(img)
+  if (!iw || !ih || !box.w || !box.h) return box
+  const assetAspect = iw / ih
+  const boxAspect = box.w / box.h
+  const wantW = assetAspect >= boxAspect ? box.h * assetAspect : box.w
+  const wantH = assetAspect >= boxAspect ? box.h : box.w / assetAspect
+  const { h: ha, v: va } = gravityAnchor(gravity)
+  let w = wantW
+  let h = wantH
+  if (free) {
+    const gap = slotSafeGap(box)
+    const slackX = ha === 'left' ? free.right : ha === 'right' ? free.left : Math.min(free.left, free.right) * 2
+    const slackY = va === 'top' ? free.bottom : va === 'bottom' ? free.top : Math.min(free.top, free.bottom) * 2
+    // never below the declared box: the fit may only grow into real slack
+    const maxW = box.w + Math.max(0, slackX - gap)
+    const maxH = box.h + Math.max(0, slackY - gap)
+    const k = Math.min(1, maxW / wantW, maxH / wantH)
+    w = wantW * k
+    h = wantH * k
+  }
+  const x = ha === 'right' ? box.x + box.w - w : ha === 'center' ? box.x + (box.w - w) / 2 : box.x
+  const y = va === 'bottom' ? box.y + box.h - h : va === 'center' ? box.y + (box.h - h) / 2 : box.y
+  return { x, y, w, h }
+}
+
 function paintItem(
   env: TemplateRenderEnv,
   item: PlacedItem,
   k: number,
   foreground: string[],
   themeId: string | undefined,
-  onLightSurface = false
+  onLightSurface = false,
+  brandDark = false
 ): void {
   const ctx = env.ctx
   let box = scaleRect(item.box, k)
@@ -129,13 +229,30 @@ function paintItem(
 
   if (item.kind === 'image') {
     const themedAsset = themeId ? item.node.themeAssets?.[themeId] : undefined
-    const raw = env.images[themedAsset ?? item.node.asset]
+    const bakedKey = themedAsset ?? item.node.asset
+    // A brand slot follows the photo, never the vendor folder: resolveBrandSlot()
+    // returns the wordmark of the EXIF brand (or the brand picked in the
+    // Inspector). No usable wordmark means the slot stays empty — drawing the
+    // vendor's own mark is exactly the "xiaomi DC-S1" defect.
+    const slot = item.node.isBrandLogo ? resolveBrandSlot(env, brandDark) : null
+    if (item.node.isBrandLogo && !slot) return
+    const raw = slot?.img ?? env.images[bakedKey]
     if (!raw) return
-    const tint = item.node.tint ?? (!themedAsset && item.node.isBrandLogo ? foreground[item.node.colorIndex ?? 0] : undefined)
-    const img = tint ? tinted(raw, cssColor(tint), themedAsset ?? item.node.asset) : raw
+    // The vendor fills `${logo}` with a theme colour whenever the node declares a
+    // colourIndex, so a substituted bitmap is tinted under the same condition.
+    const tint = slot
+      ? slotTintColour(item.node.tint ?? (item.node.colorIndex != null ? foreground[item.node.colorIndex] : undefined))
+      : item.node.tint ?? (!themedAsset && item.node.isBrandLogo ? foreground[item.node.colorIndex ?? 0] : undefined)
+    const img = tint ? tinted(raw, cssColor(tint), slot ? brandSlotKey(slot.file) : bakedKey) : raw
     ctx.save()
     ctx.globalAlpha = item.node.alpha ?? 1
-    if (item.node.scale === 'contain') {
+    if (slot) {
+      // aspect-aware fit driven by the resolved wordmark's intrinsic aspect:
+      // keeps the design height, grows the width into the band's real slack,
+      // scales back before it would touch a sibling, anchors on the gravity edge.
+      const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k))
+      ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
+    } else if (item.node.scale === 'contain') {
       drawContain(ctx, img, box.x, box.y, box.w, box.h)
     } else if (item.node.scale === 'cover') {
       const iw = (img as HTMLImageElement).naturalWidth || (img as HTMLImageElement).width
@@ -222,6 +339,8 @@ export function paintStockLayout(
   const ctx = env.ctx
   const theme = style.themes?.find((t) => t.id === String(env.params.theme ?? style.defaultTheme))
   const fg = theme?.foreground ?? []
+  // brand wordmarks come in a light and a dark cut; pick the one that reads on this card
+  const brandDark = !lightSurface(theme?.background ?? style.background)
   if (!style.transparentBackground) {
     ctx.fillStyle = themeBackground(theme?.id, theme?.background ?? style.background)
     ctx.fillRect(0, 0, layout.W * scale, layout.H * scale)
@@ -242,7 +361,7 @@ export function paintStockLayout(
       ctx.restore()
     }
     const onLightSurface = false
-    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface)
+    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface, brandDark)
   }
 
   for (const band of layout.bands) if (band.band.drawFirst) drawBand(band)
