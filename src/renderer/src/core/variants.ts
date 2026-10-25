@@ -397,7 +397,9 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   // 参数
   V('simple-1', '极简 01', '参数', 'paramStack', 'simple1.webp', { theme: 'ink', corner: 'tl' }, '热门', { showLogo: false, showExif: false, showDate: false }),
   V('simple-2', '极简 02', '参数', 'paramStack', 'simple2.webp', { theme: 'ink', corner: 'bl' }, '原版', { showLogo: false, showExif: false, showDate: false }),
-  V('simple-3', '极简 03', '参数', 'paramStack', 'simple3.webp', { theme: 'ink', corner: 'tr' }, '原版', { showLogo: false, showExif: false, showDate: false }),
+  // simple-3: the reference block sits 5.18 %W from the right edge and 4.8 %H
+  // from the top; the shared 3 % pad landed at 2.95 %W / 3.28 %H.
+  V('simple-3', '极简 03', '参数', 'paramStack', 'simple3.webp', { theme: 'ink', corner: 'tr', paramPadXPct: 5.2, paramPadYPct: 4.45 }, '原版', { showLogo: false, showExif: false, showDate: false }),
   V('simple-4', '极简 04', '参数', 'paramStack', 'simple4.webp', { theme: 'ink', corner: 'br' }, '原版', { showLogo: false, showExif: false, showDate: false }),
 
   // 卡片
@@ -557,7 +559,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   ),
 
   // 其他原版
-  V('new-color-2', '自然诗篇', '留白', 'poetryCard', 'new-color2.webp', { theme: 'white', marginPct: 6, radiusPct: 2, headerPct: 18, footerPct: 14, shadow: 0.3 }, undefined, { title: "Nature's poetry" }),
+  V('new-color-2', '自然诗篇', '留白', 'poetryCard', 'new-color2.webp', { theme: 'white', marginPct: 6.5, radiusPct: 2, headerPct: 15.5, footerPct: 15.9, shadow: 0.3, photoAspect: 1.0811 }, undefined, { title: "Nature's poetry" }),
   V(
     'video-cover',
     '视频封面',

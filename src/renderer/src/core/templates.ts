@@ -30,6 +30,7 @@ import {
   drawFitted,
   drawMeta,
   drawSwatches,
+  drawPaletteTiles,
   extractPalette,
   drawGrain,
   drawBarcode,
@@ -577,20 +578,22 @@ const sideTicket: TemplateDef = {
     const panel = String(env.params.ticketPanel ?? '#31533f')
     const fg = '#f7f2e7'
     const sub = 'rgba(247,242,231,0.72)'
-    const cardW = W * 0.86
-    const cardH = cardW * 0.4
+    // Reference card: 1317x534 at (92,736) of 1500x2000, photo cell 950
+    // (72.1 % of the card), stub 27.9 %.
+    const cardW = W * 0.878
+    const cardH = cardW * 0.401
     const cardX = (W - cardW) / 2
     const cardY = (H - cardH) / 2
-    const stubW = cardW * 0.27
-    const photoW = cardW - stubW
+    const stubW = cardW * 0.2787
+    const photoW = cardW * 0.7213
     const boundary = cardX + photoW
     const radius = S * 0.022
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
     ctx.save()
-    ctx.shadowColor = 'rgba(0,0,0,0.45)'
-    ctx.shadowBlur = S * 0.04
-    ctx.shadowOffsetY = S * 0.015
+    ctx.shadowColor = 'rgba(0,0,0,0.38)'
+    ctx.shadowBlur = S * 0.018
+    ctx.shadowOffsetY = S * 0.006
     fillRoundRect(ctx, cardX, cardY, cardW, cardH, radius, panel)
     ctx.restore()
     ctx.save()
@@ -601,7 +604,7 @@ const sideTicket: TemplateDef = {
     ctx.fillRect(boundary, cardY, stubW, cardH)
     ctx.restore()
 
-    const notch = cardH * 0.035
+    const notch = cardH * 0.024
     for (const y of [cardY, cardY + cardH]) {
       ctx.save()
       ctx.fillStyle = bg
@@ -620,31 +623,38 @@ const sideTicket: TemplateDef = {
     ctx.stroke()
     ctx.restore()
 
-    const sx = boundary + S * 0.04
-    const sw = stubW - S * 0.075
+    // Stub geometry from the reference: text inset 45/1317 of cardW, text
+    // column 274/1317; title line centres 0.240 / 0.361 cardH, date 0.592,
+    // label 0.693, barcode 0.817 top with 0.106 cardH height.
+    const sx = boundary + cardW * 0.0342
+    const sw = cardW * 0.208
     const lines = String(env.params.stubTitle ?? 'HANG ZHOU').toUpperCase().split(/\s+/).slice(0, 2)
     for (let i = 0; i < lines.length; i++) {
-      drawFitted(ctx, lines[i], sx, cardY + cardH * 0.16 + i * cardH * 0.16, sw, cardH * 0.15, fg, {
+      drawFitted(ctx, lines[i], sx, cardY + cardH * (0.2395 + i * 0.1208), sw, cardH * 0.123, fg, {
         family: FONT_UI,
         weight: 800,
-        baseline: 'middle'
+        baseline: 'middle',
+        min: cardH * 0.06
       })
     }
     const dt = dateText(env)
-    if (dt) {
-      drawFitted(ctx, dt, sx, cardY + cardH * 0.52, sw, cardH * 0.095, fg, {
+    const stubDate = /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(0, 7) : dt
+    if (stubDate) {
+      drawFitted(ctx, stubDate, sx, cardY + cardH * 0.5915, sw, cardH * 0.0698, fg, {
         family: FONT_MONO,
         weight: 600,
-        baseline: 'middle'
+        baseline: 'middle',
+        min: cardH * 0.04
       })
     }
-    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), sx, cardY + cardH * 0.66, sw, cardH * 0.06, sub, {
+    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), sx, cardY + cardH * 0.693, sw, cardH * 0.0621, sub, {
       family: FONT_MONO,
       weight: 500,
       tracking: 0.08,
-      baseline: 'middle'
+      baseline: 'middle',
+      min: cardH * 0.035
     })
-    drawBarcode(ctx, sx, cardY + cardH * 0.76, sw * 0.9, cardH * 0.13, fg, env.exif.model || 'FRAMEMARK')
+    drawBarcode(ctx, sx, cardY + cardH * 0.817, sw * 0.96, cardH * 0.106, fg, env.exif.model || 'FRAMEMARK')
     return { x: cardX, y: cardY, w: photoW, h: cardH }
   }
 }
@@ -657,64 +667,75 @@ const poetryCard: TemplateDef = {
   description: '标题/日期 + 圆角照片 + 色板与机型参数页脚。',
   defaults: {
     theme: 'white',
-    marginPct: 6,
+    marginPct: 6.5,
     radiusPct: 2,
-    headerPct: 18,
-    footerPct: 14,
-    shadow: 0.3
+    headerPct: 15.5,
+    footerPct: 15.9,
+    shadow: 0.3,
+    photoAspect: 0
   },
   themes: lightThemes,
   controls: ['margin', 'radius', 'shadow', 'footer'],
   layout(env) {
     const S = Math.min(env.pw, env.ph)
-    const m = (S * pct(env.params.marginPct, 6)) / 100
-    const header = (S * pct(env.params.headerPct, 18)) / 100
-    const footer = (S * pct(env.params.footerPct, 14)) / 100
-    return { W: env.pw + 2 * m, H: header + env.ph + footer + 2 * m }
+    const m = (S * pct(env.params.marginPct, 6.5)) / 100
+    const header = (S * pct(env.params.headerPct, 15.5)) / 100
+    const footer = (S * pct(env.params.footerPct, 15.9)) / 100
+    const photoAspect = pct(env.params.photoAspect, 0)
+    const windowH = photoAspect > 0 ? env.pw / photoAspect : env.ph
+    return { W: env.pw + 2 * m, H: header + windowH + footer + 2 * m }
   },
   render(env) {
     const { ctx, W, H, pw, ph } = env
     const S = Math.min(pw, ph)
     const theme = themeOf(env.params)
     const m = (W - pw) / 2
-    const header = (S * pct(env.params.headerPct, 18)) / 100
-    const footer = H - header - ph - 2 * m
+    const header = (S * pct(env.params.headerPct, 15.5)) / 100
+    // photoAspect > 0 opens a fixed portrait window (reference 1067x987 =
+    // 1.081) inside the crop; the canvas follows the window height.
+    const photoAspect = pct(env.params.photoAspect, 0)
+    const windowH = photoAspect > 0 ? pw / photoAspect : ph
+    const footer = H - header - windowH - 2 * m
     const radius = (S * pct(env.params.radiusPct, 2)) / 100
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
-    drawFitted(ctx, titleOf(env), m, m + header * 0.38, W - 2 * m, S * 0.045, theme.fg, {
+    // Type sizes are tied to the photo window height (reference: title
+    // 38.1 %S, date 2.1, model 2.9, exif 1.9 of the window height).
+    drawFitted(ctx, titleOf(env), m, m + header * 0.305, pw, windowH * 0.0492, theme.fg, {
       family: FONT_UI,
       weight: 600,
-      min: S * 0.022
+      min: windowH * 0.024
     })
     const dt = dateText(env)
     if (dt) {
-      drawFitted(ctx, `PHOTOGRAPHED IN: ${dt}`, m, m + header * 0.66, W - 2 * m, S * 0.016, theme.sub, {
+      drawFitted(ctx, `PHOTOGRAPHED IN: ${dt}`, m, m + header * 0.72, pw, windowH * 0.023, theme.sub, {
         family: FONT_MONO,
-        tracking: 0.08,
-        min: S * 0.009
+        tracking: 0.02,
+        min: windowH * 0.012
       })
     }
-    drawPhoto(env, m, m + header, pw, ph, radius, pct(env.params.shadow, 0.3))
-    const footerTop = m + header + ph
-    const paletteW = W * 0.34
-    drawSwatches(env, extractPalette(env, 5), m, footerTop + footer * 0.36, paletteW, S * 0.032, theme.sub)
+    if (photoAspect > 0) drawPhotoCover(env, m, m + header, pw, windowH, radius, pct(env.params.shadow, 0.3))
+    else drawPhoto(env, m, m + header, pw, ph, radius, pct(env.params.shadow, 0.3))
+    const footerTop = m + header + windowH
+    const below = footer + m
+    const rightX = W - m - W * 0.018
+    drawPaletteTiles(env, extractPalette(env, 5), m, footerTop + below * 0.464, W * 0.317, windowH * 0.0253)
     const model = modelWithoutMake(env.exif.make, env.exif.model) || cameraLine(env.exif, '')
-    drawFitted(ctx, model, W - m, footerTop + footer * 0.38, W * 0.42, S * 0.032, theme.fg, {
+    drawFitted(ctx, model, rightX, footerTop + below * 0.537, W * 0.42, windowH * 0.038, theme.fg, {
       family: FONT_UI,
       weight: 500,
       align: 'right',
-      min: S * 0.016
+      min: windowH * 0.018
     })
     const ex = techExifLine(env).replace(/\s+/g, ' ')
     if (ex) {
-      drawFitted(ctx, ex, W - m, footerTop + footer * 0.70, W * 0.5, S * 0.017, theme.sub, {
+      drawFitted(ctx, ex, rightX, footerTop + below * 0.757, W * 0.5, windowH * 0.0185, theme.sub, {
         family: FONT_MONO,
         align: 'right',
-        min: S * 0.009
+        min: windowH * 0.01
       })
     }
-    return { x: m, y: m + header, w: pw, h: ph }
+    return { x: m, y: m + header, w: pw, h: windowH }
   }
 }
 
@@ -1707,8 +1728,13 @@ const paramStack: TemplateDef = {
     const S = Math.min(pw, ph)
     const size = (S * pct(env.params.paramSizePct, 5.4)) / 100
     const gap = (size * pct(env.params.paramGapPct, 20)) / 100
-    const padX = (W * pct(env.params.paramPadPct, 3)) / 100
-    const padY = (S * pct(env.params.paramPadPct, 3)) / 100
+    // padX is % of W and padY % of the short side; the reference block sits at
+    // 5.2 %W from the right edge but only 4.5 % of the short side from the top,
+    // so each axis can be overridden independently (falls back to paramPadPct).
+    const padXPct = pct(env.params.paramPadXPct, pct(env.params.paramPadPct, 3))
+    const padYPct = pct(env.params.paramPadYPct, pct(env.params.paramPadPct, 3))
+    const padX = (W * padXPct) / 100
+    const padY = (S * padYPct) / 100
     const focal = env.exif.focal ? `${Math.round(env.exif.focal)}mm` : ''
     const aperture = formatAperture(env.exif.aperture)
     const shutter = formatShutter(env.exif.shutter).replace(/s$/, '')
@@ -3551,11 +3577,14 @@ const portraitTicket: TemplateDef = {
     const cardBg = String(env.params.ticketCard ?? '#ffffff')
     const ink = String(env.params.ticketInk ?? '#2d6f7c')
     const sub = 'rgba(45,111,124,0.62)'
-    const cardW = W * 0.78
-    const cardH = H * 0.78
+    // Reference 1144x1552 card on 1500x2000 (76.27 %W / 77.6 %H); the photo is
+    // 1059 px = 68.23 % cardH and the stub 493 px = 31.77 % cardH. 0.78/0.78
+    // + photo 0.78 left a 216 px-wide aspect gap (1.081 vs 0.962).
+    const cardW = W * 0.7627
+    const cardH = H * 0.776
     const cardX = (W - cardW) / 2
     const cardY = (H - cardH) / 2
-    const photoH = cardH * 0.78
+    const photoH = cardH * 0.6823
     const stubH = cardH - photoH
     const seam = cardY + photoH
     const radius = S * 0.025
@@ -3575,7 +3604,7 @@ const portraitTicket: TemplateDef = {
     ctx.fillRect(cardX, seam, cardW, stubH)
     ctx.restore()
 
-    const notch = stubH * 0.13
+    const notch = S * 0.016
     for (const x of [cardX, cardX + cardW]) {
       ctx.save()
       ctx.fillStyle = bg
@@ -3594,40 +3623,43 @@ const portraitTicket: TemplateDef = {
     ctx.stroke()
     ctx.restore()
 
-    const left = cardX + cardW * 0.09
+    // Stub anchors are fractions of the (now 31.77 %) stub, taken from the
+    // reference ink bboxes: title centre 23.7 %, date 42.2 %, label 62.4 %,
+    // barcode top 69.2 % (h 14.6 %), serial 79.4 %.
+    const left = cardX + cardW * 0.0908
     const title = String(env.params.stubTitle ?? 'QING DAO').toUpperCase()
-    drawFitted(ctx, title, left, seam + stubH * 0.24, cardW * 0.58, stubH * 0.30, ink, {
+    drawFitted(ctx, title, left, seam + stubH * 0.2373, cardW * 0.58, cardW * 0.0635, ink, {
       family: FONT_UI,
       weight: 800,
       baseline: 'middle',
-      min: stubH * 0.16
+      min: cardW * 0.045
     })
     const dt = dateText(env)
-    if (dt) {
-      drawFitted(ctx, dt, left, seam + stubH * 0.52, cardW * 0.30, stubH * 0.16, ink, {
+    const stubDate = /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(0, 7) : dt
+    if (stubDate) {
+      drawFitted(ctx, stubDate, left, seam + stubH * 0.4219, cardW * 0.30, cardW * 0.0374, ink, {
         family: FONT_MONO,
         weight: 500,
         baseline: 'middle',
-        min: stubH * 0.09
+        min: cardW * 0.024
       })
     }
     const no = `NO.${String(Math.abs((env.exif.dateTime || env.exif.model || 'TICKET').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7)) % 99999).padStart(5, '0')}`
-    drawFitted(ctx, no, left, seam + stubH * 0.84, cardW * 0.4, stubH * 0.12, sub, {
+    drawFitted(ctx, no, left, seam + stubH * 0.7941, cardW * 0.4, cardW * 0.0297, sub, {
       family: FONT_MONO,
       baseline: 'middle',
-      min: stubH * 0.07
+      min: cardW * 0.018
     })
-    const rightX = cardX + cardW * 0.58
-    const rightW = cardW * 0.33
-    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), rightX, seam + stubH * 0.68, rightW, stubH * 0.11, ink, {
+    const rightX = cardX + cardW * 0.847
+    drawFitted(ctx, String(env.params.stubLabel ?? 'GUANGYING 100'), rightX, seam + stubH * 0.6237, cardW * 0.33, cardW * 0.0295, ink, {
       family: FONT_MONO,
       align: 'right',
       weight: 500,
       tracking: 0.06,
       baseline: 'middle',
-      min: stubH * 0.06
+      min: cardW * 0.018
     })
-    drawBarcode(ctx, rightX, seam + stubH * 0.79, rightW, stubH * 0.13, ink, env.exif.model || 'FRAMEMARK')
+    drawBarcode(ctx, cardX + cardW * 0.6114, seam + stubH * 0.6917, cardW * 0.3019, stubH * 0.1461, ink, env.exif.model || 'FRAMEMARK')
     return { x: cardX, y: cardY, w: cardW, h: photoH }
   }
 }

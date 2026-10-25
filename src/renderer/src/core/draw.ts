@@ -404,6 +404,25 @@ export function drawSwatches(
   }
 }
 
+// Flat contiguous tile strip (reference palette style for poetryCard).
+// Five equal cells spanning `width`, no gaps, no hex labels.
+export function drawPaletteTiles(
+  env: TemplateRenderEnv,
+  colors: string[],
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): void {
+  const ctx = env.ctx
+  if (!colors.length || width <= 0 || height <= 0) return
+  const tw = width / colors.length
+  const radius = Math.min(height * 0.12, tw * 0.06)
+  for (let i = 0; i < colors.length; i++) {
+    fillRoundRect(ctx, x + i * tw, y, tw + 0.5, height, radius, colors[i])
+  }
+}
+
 export function extractPalette(env: TemplateRenderEnv, count = 5): string[] {
   try {
     const w = 48
