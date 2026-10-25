@@ -7925,7 +7925,7 @@ export const XIAOMI_STYLES = [
             "height": 302,
             "matchWidth": true,
             "matchHeight": false,
-            "gravity": "leftTop",
+            "gravity": "center",
             "margins": {},
             "children": [
               {
@@ -7935,6 +7935,7 @@ export const XIAOMI_STYLES = [
                 "height": 74,
                 "scale": "contain",
                 "isBrandLogo": false,
+                "gravity": "topHorCenter",
                 "margins": {
                   "top": 50
                 }
@@ -7946,7 +7947,7 @@ export const XIAOMI_STYLES = [
                 "matchHeight": false,
                 "gravity": "topHorCenter",
                 "margins": {
-                  "top": 157.5
+                  "top": 33.5
                 },
                 "children": [
                   {
@@ -8019,9 +8020,10 @@ export const XIAOMI_STYLES = [
                 "tracking": 0.2,
                 "align": "left",
                 "margins": {
-                  "top": 197
+                  "top": 9.5
                 },
-                "optional": false
+                "optional": false,
+                "gravity": "topHorCenter"
               }
             ]
           }

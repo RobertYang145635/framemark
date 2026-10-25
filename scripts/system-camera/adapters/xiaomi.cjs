@@ -35,6 +35,20 @@ function gravity(v) {
   return 'leftTop'
 }
 
+// Android spells a whole-axis gravity as the bare token "center" (both axes). The legacy
+// gravity() above has no branch for it — it falls through the horizontal/vertical token tests
+// (none of "center_horizontal" / "horCenter" / "center_vertical" / "verticalCenter" match the
+// lone word "center") and silently becomes "leftTop", de-centring content. frameGravity() fixes
+// that root cause (#3) and is applied ONLY to the FrameLayout (orientation:"none") stack path
+// below. We keep gravity() itself byte-for-byte legacy so the 17 sibling styles that currently
+// render with a "leftTop" container are provably untouched — flipping them to centred in the
+// same pass re-centred leica/2, leica/4, film/12 and film/103 by up to 233 reference units.
+function frameGravity(v) {
+  const s = String(v ?? '').trim()
+  if (s === 'center') return 'center'
+  return gravity(s)
+}
+
 function num(v, fallback = 0) {
   const n = Number(v)
   return Number.isFinite(n) ? n : fallback
@@ -260,16 +274,45 @@ function applyBrandLogo(children) {
   }
 }
 
+// Mirror of layout.ts intrinsic().h for the subset of IR nodes the Xiaomi adapter emits, so the
+// adapter can translate a vendor FrameLayout's absolute offsets into flow gaps that the real solver
+// will land back on the same y. Uses single-line text height (size*1.2, or an outline's fixed
+// height), image/shape node.height, and the row=max / column=sum rule with child margins — the
+// same accumulation layout.ts:174-196 performs.
+function intrinsicHeight(n) {
+  if (!n) return 0
+  if (n.kind === 'image' || n.kind === 'shape') return n.height || 20
+  if (n.kind === 'space') return n.height || 0
+  if (n.kind === 'text') return n.outline?.height ?? n.size * 1.2
+  if (n.kind === 'group') {
+    if (n.height) return n.height
+    const ch = n.children || []
+    const my = (c) => dp(c.margins?.top, 0) + dp(c.margins?.bottom, 0)
+    if (n.orientation === 'row') return Math.max(0, ...ch.map((c) => intrinsicHeight(c) + my(c)))
+    return ch.reduce((a, c) => a + intrinsicHeight(c) + my(c), 0) + Math.max(0, ch.length - 1) * (n.gap || 0)
+  }
+  return 0
+}
+
+// Absolute-offset presence: "0dp" is a valid offset, so we key off the attribute existing, not truthy.
+function hasAbsTop(child) {
+  return child && child.margin_top !== undefined && child.margin_top !== null && dp(child.margin_top, NaN) === dp(child.margin_top, 0)
+}
+
 async function convertNode(node, ctx) {
   if (!node) return null
   if (node.type === 'TextView') return convertText(node, ctx.fonts)
   if (node.type === 'ImageView') return convertImage(node, ctx)
   if (node.type !== 'Layout') return null
   const raw = node.childViews ?? []
+  const pairs = []
   const children = []
   for (const c of raw) {
     const n = await convertNode(c, ctx)
-    if (n) children.push(n)
+    if (n) {
+      children.push(n)
+      pairs.push({ raw: c, node: n })
+    }
   }
   if (!children.length) {
     // Vendor spacer: an empty wrap_content Layout that only carries a horizontal margin is a
@@ -282,6 +325,55 @@ async function convertNode(node, ctx) {
     return null
   }
   applyBrandLogo(children)
+
+  // --- FrameLayout vertical-rhythm stack (orientation:"none") -------------------------------
+  // Android's FrameLayout puts every child at the PARENT origin and lets its own margin + gravity
+  // position it; a child with margin_top:157.5 sits 157.5 dp from the top, NOT below its sibling.
+  // Mis-parsing this as a column makes layout.ts:354-357 ACCUMULATE those absolute offsets
+  // (50 -> 281.5 -> 508.5), which overflows the 302 dp band and trips fitBandItems() into rescaling
+  // the whole thing to ~0.58 (leica/111). When — and only when — the children form a genuinely
+  // stacked, non-overlapping, top-to-bottom rhythm we keep the column but convert each child's
+  // absolute margin_top into the inter-child gap the column flow needs:
+  //     gap_i = offset_i - (offset_{i-1} + height_{i-1})    (gap_0 = offset_0)
+  // so the solver lands each child back on its true absolute y. We also honour the child's own
+  // layout_gravity (dropped for the whole family before) so the roundel/exif centre as intended.
+  // Overlapping frames (leica/92's left/right split, whose children share the same y) and every
+  // non-none container fall through to the untouched legacy path below, protecting the 17 siblings.
+  if (node.orientation === 'none' && pairs.length >= 2 && pairs.every((p) => hasAbsTop(p.raw))) {
+    const offs = pairs.map((p) => dp(p.raw.margin_top, 0))
+    const stack = offs.every((o, i) => i === 0 || (o > offs[i - 1] && o >= offs[i - 1] + intrinsicHeight(pairs[i - 1].node)))
+    if (stack) {
+      const placed = pairs.map((p, i) => {
+        const top = i === 0 ? offs[i] : offs[i] - offs[i - 1] - intrinsicHeight(pairs[i - 1].node)
+        const childMargins = { ...(p.node.margins || {}) }
+        if (top > 0) childMargins.top = top
+        else delete childMargins.top
+        const childGravity = p.raw.layout_gravity ? frameGravity(p.raw.layout_gravity) : p.node.gravity
+        return { ...p.node, margins: childMargins, ...(childGravity ? { gravity: childGravity } : {}) }
+      })
+      const w = dp(node.layout_width, undefined)
+      const h = dp(node.layout_height, undefined)
+      ctx.unsupported.add(`${ctx.family}/${ctx.id}: FrameLayout (orientation:none) vertical-rhythm stack translated to inter-child gaps`)
+      return {
+        kind: 'group',
+        orientation: 'column',
+        width: w,
+        height: h,
+        matchWidth: node.layout_width === 'match_parent',
+        matchHeight: node.layout_height === 'match_parent',
+        gravity: frameGravity(node.gravity),
+        margins: {
+          ...(dp(node.margin_left) ? { left: dp(node.margin_left) } : {}),
+          ...(dp(node.margin_top) ? { top: dp(node.margin_top) } : {}),
+          ...(dp(node.margin_right) ? { right: dp(node.margin_right) } : {}),
+          ...(dp(node.margin_bottom) ? { bottom: dp(node.margin_bottom) } : {})
+        },
+        children: placed
+      }
+    }
+  }
+
+  // --- legacy path (unchanged for all non-stack containers, incl. overlapping none frames) ---
   const orientation = node.orientation === 'horizontal' ? 'row' : 'column'
   const w = dp(node.layout_width, undefined)
   const h = dp(node.layout_height, undefined)
