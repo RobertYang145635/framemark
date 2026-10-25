@@ -61,6 +61,71 @@ const VIVO_VARIANTS: TemplateVariant[] = [
     vendor: 'vivo',
     family: 'vivo 相机',
     fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-polaroid-frame',
+    name: '拍立得 · 签名框',
+    en: 'POLAROID',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-polaroid:frame' },
+    text: { showMake: true, showModel: true, showExif: false, showDate: true, showLogo: true },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-stamp-frame',
+    name: '邮票 · 齿孔框',
+    en: 'STAMP',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-stamp:frame' },
+    text: { showMake: true, showModel: true, showExif: false, showDate: true, showLogo: true },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-tone-frame',
+    name: '色调 · 右侧栏',
+    en: 'TONE',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-tone:frame' },
+    text: { showMake: true, showModel: true, showExif: false, showDate: false, showLogo: true },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-geographic-overlay',
+    name: '地理 · 信息叠加',
+    en: 'GEOGRAPHIC',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-geographic:overlay' },
+    text: { showMake: true, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
+  },
+  {
+    id: 'stock-vivo-postcard-frame',
+    name: '明信片 · 邮戳框',
+    en: 'POST CARD',
+    category: '系统相机',
+    base: 'systemCamera',
+    params: { systemStyle: 'vivo-postcard:frame' },
+    text: { showMake: true, showModel: true, showExif: false, showDate: true, showLogo: false },
+    badge: '近似',
+    vendor: 'vivo',
+    family: 'vivo 相机',
+    fidelity: 'approx'
   }
 ]
 const XIAOMI_SIDEBAR_VARIANTS: TemplateVariant[] = [

@@ -278,4 +278,280 @@ const ZEISS_INSIDE: StockStyle = {
   }
 }
 
-export const VIVO_STYLES: StockStyle[] = [ZEISS_TOP, ZEISS_UP_DOWN, ZEISS_INSIDE]
+/* ------------------------------------------------------------------ */
+/* VIVO-BATCH-1: five non-Zeiss vivo X500 Pro Max styles.              */
+/* Band geometry + card artwork measured from settled (p=0.98) PAG     */
+/* frames rendered with libpag from roms/vivo-x500promax; the card     */
+/* art PNGs are vendor artwork rasterized by the vendor's own PAG file */
+/* (photo layer punched out), never redrawn. Text lines and their      */
+/* order come from each edit.apk's assets/temp.json `mappings`.        */
+/* Reference canvas is the PAG canvas: 1497 x 1356 px at 4:3.          */
+/* ------------------------------------------------------------------ */
+
+const cardArt = (
+  file: string,
+  asset: string,
+  w: number,
+  h: number,
+  offX: number,
+  offY: number
+): StockStyle['bands'][number] => ({
+  direction: 'overlay',
+  width: w,
+  thickness: h,
+  offset: { x: offX, y: offY },
+  drawFirst: true,
+  children: [
+    { kind: 'image', asset, width: w, height: h, scale: 'fill', gravity: 'leftTop' }
+  ]
+})
+
+const TXT = (
+  token: StockTextNode['token'],
+  size: number,
+  color: string,
+  weight = 400,
+  align: 'left' | 'right' | 'center' = 'left'
+): StockTextNode => ({
+  kind: 'text',
+  token,
+  font: 'sys',
+  size,
+  weight,
+  color,
+  tracking: 0.06,
+  lineHeight: size * 1.35,
+  align
+})
+
+const bandRow = (width: number, children: StockNode[]) => ({
+  kind: 'group' as const,
+  orientation: 'row' as const,
+  width,
+  matchHeight: true,
+  gravity: 'center' as const,
+  children
+})
+
+/** 拍立得：black film card + wide white signature band (polaroid/4_3_540_q PAG). */
+const POLAROID: StockStyle = {
+  id: 'vivo-polaroid:frame',
+  vendor: 'vivo',
+  family: 'vivo 相机',
+  name: '拍立得 · 签名框',
+  nameEn: 'POLAROID',
+  placement: 'out',
+  referenceWidth: 1497,
+  margins: { left: 39, top: 39, right: 39, bottom: 271 },
+  background: '#000000',
+  bands: [
+    cardArt('vivo/batch1/polaroid-card.png', 'vivo-polaroid-card', 1497, 1356, -39, -39),
+    {
+      direction: 'bottom',
+      thickness: 231,
+      children: [
+        bandRow(1419, [
+          { ...TXT({ kind: 'model' }, 30, '#111111', 500) },
+          { kind: 'space', weight: 1 },
+          { ...TXT({ kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' }, 26, '#555555', 400, 'right') },
+          { ...TXT({ kind: 'location' }, 26, '#555555', 400, 'right'), margins: { left: 26 }, optional: true }
+        ])
+      ]
+    }
+  ],
+  assets: { 'vivo-polaroid-card': { file: 'vivo/batch1/polaroid-card.png', width: 1497, height: 1356 } },
+  audit: {
+    status: 'approx',
+    notes:
+      'Polaroid film card; 39/39/39/271 bands and white 231 band measured from settled polaroid/4_3_540_q PAG frame (canvas 1497x1356). Card art is the vendor PAG raster with the photo layer punched out. Text order (model left, time+location right) from edit.apk temp.json mappings 1/4/12.',
+    unsupported: ['bottom-centre mini-photo seen mid-animation is not present in the settled PAG frame; omitted', 'signature (user handwriting) omitted']
+  }
+}
+
+/** 邮票框：grey card, perforated white stamp frame around the photo. */
+const STAMP_PHOTO: StockStyle = {
+  id: 'vivo-stamp:frame',
+  vendor: 'vivo',
+  family: 'vivo 相机',
+  name: '邮票 · 齿孔框',
+  nameEn: 'STAMP',
+  placement: 'out',
+  referenceWidth: 1497,
+  margins: { left: 119, top: 175, right: 119, bottom: 237 },
+  background: '#D9D9D9',
+  bands: [
+    cardArt('vivo/batch1/stamp-card.png', 'vivo-stamp-card', 1497, 1356, -119, -175),
+    {
+      direction: 'top',
+      thickness: 175,
+      children: [
+        bandRow(1497, [
+          { ...TXT({ kind: 'time' }, 30, '#333333', 500), margins: { left: 40 } },
+          { kind: 'space', weight: 1 },
+          { ...TXT({ kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' }, 26, '#555555', 400, 'right'), margins: { right: 40 } }
+        ])
+      ]
+    },
+    {
+      direction: 'bottom',
+      thickness: 237,
+      children: [
+        bandRow(1497, [
+          { ...TXT({ kind: 'model' }, 30, '#333333', 500), margins: { left: 40 } },
+          { kind: 'space', weight: 1 },
+          { ...TXT({ kind: 'location' }, 26, '#555555', 400, 'right'), margins: { right: 40 }, optional: true }
+        ])
+      ]
+    }
+  ],
+  assets: { 'vivo-stamp-card': { file: 'vivo/batch1/stamp-card.png', width: 1497, height: 1356 } },
+  audit: {
+    status: 'approx',
+    notes:
+      'Stamp frame; photo hole 119/175/119/237 measured from settled stamp_photo/4_3_540_q PAG frame. Perforated stamp border and mini-stamp are the vendor PAG raster (no redraw). Text slots (time top-left, model bottom-left, time text top-right, location bottom-right) from temp.json mappings 1-4; exact host text metrics unknown.',
+    unsupported: ['DAY/WEEK special time format approximated by the plain date token']
+  }
+}
+
+/** 色调框：full-bleed photo with a white info rail on the right. */
+const TONE: StockStyle = {
+  id: 'vivo-tone:frame',
+  vendor: 'vivo',
+  family: 'vivo 相机',
+  name: '色调 · 右侧栏',
+  nameEn: 'TONE',
+  placement: 'out',
+  referenceWidth: 1497,
+  margins: { left: 0, top: 0, right: 226, bottom: 0 },
+  background: '#FFFFFF',
+  bands: [
+    cardArt('vivo/batch1/tone-card.png', 'vivo-tone-card', 1497, 968, 0, 0),
+    {
+      direction: 'right',
+      thickness: 226,
+      children: [
+        {
+          kind: 'group',
+          orientation: 'column',
+          gravity: 'center',
+          children: [
+            TXT({ kind: 'literal', value: 'vivo' }, 40, '#111111', 600, 'center'),
+            { ...TXT({ kind: 'model' }, 24, '#555555', 400, 'center'), optional: true }
+          ]
+        }
+      ]
+    }
+  ],
+  assets: { 'vivo-tone-card': { file: 'vivo/batch1/tone-card.png', width: 1497, height: 968 } },
+  audit: {
+    status: 'approx',
+    notes:
+      'Tone frame; 226-wide white right rail measured from settled tone/4_3_540_q PAG frame (photo x0..1270, rail x1272..1496). Rail text "vivo" per temp.json mapping 1 (右侧中部：vivo). QR code subCard is opt-in in the host and omitted.',
+    unsupported: ['optional QR code omitted (host-rendered, default off)']
+  }
+}
+
+/** 地理：text-only overlay on the photo (geographic PAG carries no decoration). */
+const GEOGRAPHIC: StockStyle = {
+  id: 'vivo-geographic:overlay',
+  vendor: 'vivo',
+  family: 'vivo 相机',
+  name: '地理 · 信息叠加',
+  nameEn: 'GEOGRAPHIC',
+  placement: 'in',
+  referenceWidth: 1497,
+  margins: { left: 0, top: 0, right: 0, bottom: 0 },
+  background: '#00000000',
+  transparentBackground: true,
+  bands: [
+    {
+      direction: 'overlay',
+      gravity: 'leftBottom',
+      offset: { x: 72, y: -72 },
+      children: [
+        {
+          kind: 'group',
+          orientation: 'column',
+          gravity: 'leftBottom',
+          children: [
+            { ...TXT({ kind: 'model' }, 40, '#FFFFFF', 600) },
+            { ...TXT({ kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' }, 28, '#F2F2F2') },
+            { ...TXT({ kind: 'custom' }, 28, '#F2F2F2'), optional: true },
+            { ...TXT({ kind: 'location' }, 28, '#F2F2F2'), optional: true }
+          ]
+        }
+      ]
+    }
+  ],
+  assets: {},
+  audit: {
+    status: 'approx',
+    notes:
+      'Geographic overlay; settled geographic_photo/4_3_540_q PAG frame is fully transparent (numImages=1, the photo) so there is no vendor decoration to copy and none was invented. Line order model / time / custom text / latitude-longitude from temp.json mappings 1-4; anchored bottom-left over the photo, host metrics unknown.',
+    unsupported: ['latitude/longitude formatting approximated by the location token', 'text opacity slider (10-100%) not modelled']
+  }
+}
+
+/** 明信片：white card, photo inset, postcard text row on top of the card. */
+const POST_CARD: StockStyle = {
+  id: 'vivo-postcard:frame',
+  vendor: 'vivo',
+  family: 'vivo 相机',
+  name: '明信片 · 邮戳框',
+  nameEn: 'POST CARD',
+  placement: 'out',
+  referenceWidth: 1497,
+  margins: { left: 92, top: 92, right: 92, bottom: 281 },
+  background: '#FFFFFF',
+  bands: [
+    cardArt('vivo/batch1/postcard-card.png', 'vivo-postcard-card', 1405, 1356, -46, -92),
+    {
+      direction: 'top',
+      thickness: 92,
+      children: [
+        bandRow(1311, [
+          { ...TXT({ kind: 'model' }, 28, '#333333', 500) },
+          { kind: 'space', weight: 1 },
+          { ...TXT({ kind: 'literal', value: 'POST CARD' }, 26, '#777777', 600, 'right') }
+        ])
+      ]
+    },
+    {
+      direction: 'bottom',
+      thickness: 281,
+      children: [
+        bandRow(1311, [
+          {
+            kind: 'group',
+            orientation: 'column',
+            gravity: 'leftVerticalCenter',
+            children: [
+              { ...TXT({ kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' }, 26, '#555555') },
+              { ...TXT({ kind: 'location' }, 26, '#555555'), optional: true }
+            ]
+          },
+          { kind: 'space', weight: 1 },
+          { ...TXT({ kind: 'custom' }, 28, '#333333', 500, 'right'), optional: true }
+        ])
+      ]
+    }
+  ],
+  assets: { 'vivo-postcard-card': { file: 'vivo/batch1/postcard-card.png', width: 1405, height: 1356 } },
+  audit: {
+    status: 'approx',
+    notes:
+      'Postcard frame; card x46..1450, photo hole x92..1404 y92..1075 measured from settled post_card/4_3_540_q PAG frame. "POST CARD" literal from mapping 2 (右侧上方：POST CARD TEXT); model top-left per mapping 1. The rotating postmark graphics in the host are user-selected personal_graphic vectors (res/*.xml in edit.apk) and are omitted here.',
+    unsupported: ['postmark personal-graphic artwork (Android VectorDrawable in edit.apk) not converted; element omitted', 'dynamic background (live) option omitted']
+  }
+}
+
+export const VIVO_STYLES: StockStyle[] = [
+  ZEISS_TOP,
+  ZEISS_UP_DOWN,
+  ZEISS_INSIDE,
+  POLAROID,
+  STAMP_PHOTO,
+  TONE,
+  GEOGRAPHIC,
+  POST_CARD
+]
