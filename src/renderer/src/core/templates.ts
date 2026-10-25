@@ -1696,6 +1696,17 @@ const xiaomiLeica: TemplateDef = {
   }
 }
 
+// Template-local canvas aspect override. Fits the target aspect inside the
+// cropped photo so the photo stays full-bleed at native resolution (the short
+// side is never upscaled); canvasAspect <= 0 keeps the legacy crop-sized canvas.
+function aspectCanvas(pw: number, ph: number, aspect: number): { W: number; H: number } {
+  if (!(aspect > 0.05)) return { W: Math.max(2, Math.round(pw)), H: Math.max(2, Math.round(ph)) }
+  if (pw / ph >= aspect) {
+    return { W: Math.max(2, Math.round(ph * aspect)), H: Math.max(2, Math.round(ph)) }
+  }
+  return { W: Math.max(2, Math.round(pw)), H: Math.max(2, Math.round(pw / aspect)) }
+}
+
 const paramStack: TemplateDef = {
   id: 'paramStack',
   name: '四角 · 参数',
@@ -1705,6 +1716,7 @@ const paramStack: TemplateDef = {
   defaults: {
     theme: 'ink',
     corner: 'tl',
+    canvasAspect: 0,
     paramPadPct: 3,
     paramSizePct: 5.4,
     paramGapPct: 20,
@@ -1715,17 +1727,19 @@ const paramStack: TemplateDef = {
   },
   themes: darkThemes,
   controls: ['footer'],
+  // simple-1/2/4 references are 1024x785 (1.3045), not the 4:3 audit baseline;
+  // variant-scoped canvasAspect crops the export to the reference proportion.
   layout(env) {
-    return { W: env.pw, H: env.ph }
+    return aspectCanvas(env.pw, env.ph, pct(env.params.canvasAspect, 0))
   },
   render(env) {
-    const { ctx, W, H, pw, ph } = env
+    const { ctx, W, H } = env
     const theme = themeOf(env.params)
-    drawPhoto(env, 0, 0, pw, ph, 0, 0)
+    drawPhotoCover(env, 0, 0, W, H, 0, 0)
     const corner = String(env.params.corner ?? 'tl')
     const right = corner.endsWith('r')
     const bottom = corner.startsWith('b')
-    const S = Math.min(pw, ph)
+    const S = Math.min(W, H)
     const size = (S * pct(env.params.paramSizePct, 5.4)) / 100
     const gap = (size * pct(env.params.paramGapPct, 20)) / 100
     // padX is % of W and padY % of the short side; the reference block sits at
@@ -1741,10 +1755,10 @@ const paramStack: TemplateDef = {
     const iso = env.exif.iso ? `ISO ${env.exif.iso}` : ''
     const fallback = env.isPreview ? ['28mm', 'F2.8', '1/125', 'ISO 100'] : []
     const lines = [focal, aperture, shutter, iso].map((t, i) => t || fallback[i] || '').filter(Boolean)
-    if (!lines.length) return { x: 0, y: 0, w: pw, h: ph }
+    if (!lines.length) return { x: 0, y: 0, w: W, h: H }
     const blockH = lines.length * size + (lines.length - 1) * gap
     const x = right ? W - padX : padX
-    let y = bottom ? ph - padY - blockH + size / 2 : padY + size / 2
+    let y = bottom ? H - padY - blockH + size / 2 : padY + size / 2
     ctx.save()
     ctx.fillStyle = '#ffffff'
     ctx.textBaseline = 'middle'
@@ -1766,7 +1780,7 @@ const paramStack: TemplateDef = {
       y += size + gap
     }
     ctx.restore()
-    return { x: 0, y: 0, w: pw, h: ph }
+    return { x: 0, y: 0, w: W, h: H }
   }
 }
 
@@ -3293,6 +3307,7 @@ const glassSideCard: TemplateDef = {
     theme: 'ink',
     blur: 26,
     tintAlpha: 0.2,
+    canvasAspect: 0,
     cardAspect: 4 / 3,
     cardSide: 'right',
     contentSide: 'left',
@@ -3317,8 +3332,10 @@ const glassSideCard: TemplateDef = {
   },
   themes: darkThemes,
   controls: ['blur'],
+  // glass-pill-5 reference canvas is 1024x684 (1.497), wider than the 4:3
+  // audit crop; variant-scoped canvasAspect keeps the portrait card exact.
   layout(env) {
-    return { W: env.pw, H: env.ph }
+    return aspectCanvas(env.pw, env.ph, pct(env.params.canvasAspect, 0))
   },
   render(env) {
     const { ctx, W, H } = env

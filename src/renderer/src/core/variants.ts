@@ -395,12 +395,12 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('white-4', '米白 04', '留白', 'matteOverlay', 'whiteborder4.webp', { theme: 'white', marginPct: 2.14, marginTopPct: 1.74, marginBottomPct: 2.55, radiusPct: 1.3, overlayMode: 'none' }, '原版', { showLogo: false, showExif: false, showDate: false }),
 
   // 参数
-  V('simple-1', '极简 01', '参数', 'paramStack', 'simple1.webp', { theme: 'ink', corner: 'tl' }, '热门', { showLogo: false, showExif: false, showDate: false }),
-  V('simple-2', '极简 02', '参数', 'paramStack', 'simple2.webp', { theme: 'ink', corner: 'bl' }, '原版', { showLogo: false, showExif: false, showDate: false }),
+  V('simple-1', '极简 01', '参数', 'paramStack', 'simple1.webp', { theme: 'ink', corner: 'tl', canvasAspect: 1.3045 }, '热门', { showLogo: false, showExif: false, showDate: false }),
+  V('simple-2', '极简 02', '参数', 'paramStack', 'simple2.webp', { theme: 'ink', corner: 'bl', canvasAspect: 1.3045 }, '原版', { showLogo: false, showExif: false, showDate: false }),
   // simple-3: the reference block sits 5.18 %W from the right edge and 4.8 %H
   // from the top; the shared 3 % pad landed at 2.95 %W / 3.28 %H.
   V('simple-3', '极简 03', '参数', 'paramStack', 'simple3.webp', { theme: 'ink', corner: 'tr', paramPadXPct: 5.2, paramPadYPct: 4.45 }, '原版', { showLogo: false, showExif: false, showDate: false }),
-  V('simple-4', '极简 04', '参数', 'paramStack', 'simple4.webp', { theme: 'ink', corner: 'br' }, '原版', { showLogo: false, showExif: false, showDate: false }),
+  V('simple-4', '极简 04', '参数', 'paramStack', 'simple4.webp', { theme: 'ink', corner: 'br', canvasAspect: 1.3045 }, '原版', { showLogo: false, showExif: false, showDate: false }),
 
   // 卡片
   V('card-1', '卡片 01', '卡片', 'logoFooter', 'card1.webp', { theme: 'white', insetPct: 1.13, footerPct: 14.79, logoPct: 5.64, exifSizePct: 2.3, exifWidthPct: 29.0 }, '原版', { showLogo: true, showExif: true, showDate: false }, 'laika'),
@@ -427,7 +427,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   // divider at 601/1200 = 50.08%W (the audit's 44.83%W read the word "z30" as the
   // divider; pixel run 538..584 is text, x=601 is the 1px rule), divider->logo 1.83%S.
   V('glass-card-4', '玻璃 04', '液态玻璃', 'specFooter', 'glass4.webp', { theme: 'white', marginPct: 3, footerPct: 22, radiusPct: 1.5, shadow: 0.5, contentW: 32.43, sepX: 50, logoGap: 1.83 }, '热门', undefined, undefined, true),
-  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glassSideCard', 'glass5.webp', { theme: 'ink', cardAspect: 0.6903, cardSide: 'right', contentSide: 'left', cardHeightPct: 88.7, cardWidthPct: 0, cardInsetPct: 6.35, cardRadiusPct: 2.4, cardMattePct: 1.1, blur: 30, tintAlpha: 0.24, rowSet: 'fmm', textInsetPct: 31.1, brandInsetPct: 31.1, brandWidthPct: 26.0, brandHeightPct: 4.6, brandTopPct: 28.5, rowsTopPct: 44.3, rowBoxWPct: 9.1, rowBoxHPct: 7.4, rowPitchPct: 13.0, rowValueGapPct: 10.4, rowLabelPct: 3.0, rowValuePct: 4.0 }),
+  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glassSideCard', 'glass5.webp', { theme: 'ink', canvasAspect: 1.4971, cardAspect: 0.6903, cardSide: 'right', contentSide: 'left', cardHeightPct: 88.7, cardWidthPct: 0, cardInsetPct: 13.18, cardRadiusPct: 2.4, cardMattePct: 1.1, blur: 30, tintAlpha: 0.24, rowSet: 'fmm', textInsetPct: 31.1, brandInsetPct: 31.1, brandWidthPct: 26.0, brandHeightPct: 4.6, brandTopPct: 28.5, rowsTopPct: 44.3, rowBoxWPct: 9.1, rowBoxHPct: 7.4, rowPitchPct: 13.0, rowValueGapPct: 10.4, rowLabelPct: 3.0, rowValuePct: 4.0 }),
   V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill', pillOrder: 'stack' }),
   // glass-palette ref is a 3:4 portrait canvas (1500x2000) with one glass panel at
   // 89.2%W x 29.7%H (6.5%H bottom) holding a 3-col x 2-row grid of 11%W discs with
