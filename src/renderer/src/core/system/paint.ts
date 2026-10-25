@@ -1,7 +1,8 @@
 import type { TemplateRenderEnv } from '../../types'
 import { drawContain, drawPhoto, roundRectPath, setFont, setTracking } from '../draw'
-import { brandSlotKey, resolveBrandSlot } from './assets'
-import type { StockStyle } from './ir'
+import { brandSlotKey, inkBoxOf, resolveBrandSlot } from './assets'
+import type { InkBox } from './assets'
+import type { StockImageNode, StockStyle } from './ir'
 import type { BrandFree, PlacedItem, StockLayout, StockRect } from './layout'
 
 function scaleRect(r: StockRect, k: number): StockRect {
@@ -129,64 +130,186 @@ function gravityAnchor(gravity: string | undefined): { h: 'left' | 'center' | 'r
 }
 
 /**
- * Breathing room a grown wordmark keeps from the nearest sibling. There is no
- * slot-specific safe margin in the project, so this is the same 2% the layout
- * solver insets bands by (`fitBandItems`), floored at 2px so the small vendor
- * slots (h ≈ 22) still keep a visible gap instead of touching glyphs.
+ * Absolute floor on the wordmark→sibling gap, so a slot can never paint
+ * touching glyphs even when a style declares no margin at all. The real gap
+ * comes from the vendor (`brandSlotGapPx`), not from here.
  */
-function slotSafeGap(box: StockRect): number {
-  return Math.max(2, box.h * 0.02)
+const SLOT_GAP_FLOOR = 2
+
+/**
+ * Vendor slot→sibling margin used by both Xiaomi adapters when the vendor
+ * config declares none (`adapters/xiaomi.cjs` writes `margins.right = 8`), and
+ * the value the hand-written slot styles use. Only a fallback: the node's own
+ * declared margin always wins.
+ */
+const SLOT_MARGIN_FALLBACK_UNITS = 8
+
+/**
+ * The gap the VENDOR leaves between this slot's visible mark and the next
+ * element, in output pixels. Two vendor-authored components, no invented
+ * constant:
+ *   1. the IR node's own margin on the side the mark grows into — the row
+ *      spacing the vendor config declared (`margins.right`, or `left` for a
+ *      right-anchored slot), and
+ *   2. the transparent padding the vendor's own wordmark bitmap carries on that
+ *      side, which `contain` renders *inside* the box, so the vendor's mark
+ *      visually ends short of its box edge.
+ * Component 2 is what makes the pair read as spaced rather than merely
+ * non-intersecting: for `classic 19` it is 8 + 1.7 = 9.7 layout units, while
+ * the pre-fix code kept `max(2, h * 0.02)` = 2px — the same distance as the
+ * intra-letter spacing inside "Panasonic", which is why the pair read as one
+ * run.
+ */
+function brandSlotGapPx(
+  node: StockImageNode,
+  box: StockRect,
+  k: number,
+  vendorInk: InkBox | null
+): number {
+  const m = node.margins
+  const preferRight = !/right/i.test(String(node.gravity ?? ''))
+  const declared =
+    (preferRight ? m?.right ?? m?.left : m?.left ?? m?.right) ?? SLOT_MARGIN_FALLBACK_UNITS
+  let padSide = 0
+  if (vendorInk && vendorInk.cw > 0) {
+    const pad = preferRight ? vendorInk.cw - vendorInk.x - vendorInk.w : vendorInk.x
+    padSide = (pad / vendorInk.cw) * box.w
+  }
+  return Math.max(SLOT_GAP_FLOOR, (declared + padSide) * k)
+}
+
+/** Ink padding fractions of a bitmap (0 when unmeasured → canvas == ink). */
+function inkPads(ink: InkBox | null): { l: number; r: number; t: number; h: number } {
+  if (!ink || !ink.cw || !ink.ch) return { l: 0, r: 0, t: 0, h: 1 }
+  return {
+    l: ink.x / ink.cw,
+    r: (ink.cw - ink.x - ink.w) / ink.cw,
+    t: ink.y / ink.ch,
+    h: ink.h / ink.ch
+  }
 }
 
 /**
- * Aspect-aware fitting for brand slots, under one hard rule: **grow to fit,
- * never overlap**.
+ * Per-asset ink geometry a slot needs to be fitted like the vendor would.
+ * Computed by `paintItem` (the pixel reads live there), passed in so the fit
+ * itself stays a pure function the spacing detector can drive with real values.
+ */
+export interface BrandSlotMetrics {
+  /** alpha bbox of the substituted bitmap, in its own canvas px */
+  sub?: InkBox | null
+  /** alpha bbox of the vendor bitmap this slot replaces, in its own canvas px */
+  vendor?: InkBox | null
+  /** vendor-derived minimum gap from the substituted INK to the nearest sibling, output px */
+  gapPx?: number
+}
+
+/**
+ * Breathing room a grown wordmark keeps from the nearest sibling. Kept for the
+ * no-metrics fallback path only; real slot renders use the vendor-derived
+ * `brandSlotGapPx()`.
+ */
+function slotSafeGap(box: StockRect): number {
+  return Math.max(SLOT_GAP_FLOOR, box.h * 0.02)
+}
+
+/**
+ * Aspect-aware fitting for brand slots, under three hard rules: **match the
+ * vendor's visible ink, grow to fit, never overlap**.
  *
- * `contain` in a 4.206 box leaves ~35% letterbox for a 6.52 wordmark, so a
- * swapped brand renders visibly smaller than the vendor's own mark — the node
- * **height** is the design anchor and the desired drawn width comes from the
- * asset's intrinsic aspect (drawn width = h × aspect); when the asset is
- * *taller* than the box (asset aspect < box aspect) the inverse holds and the
- * width is the anchor. But the layout solver positions siblings off the
- * DECLARED box, so a mark that simply grew +55% painted straight over the model
- * text (`DC-S1`) in 37/37 slot styles.
+ * The node **box** is sized from the vendor's own bitmap (`adapters/xiaomi.cjs`
+ * derives `width = height × canvasAspect`) and the vendor paints its wordmark
+ * `contain` into it — so what the vendor actually *shows* is its canvas shrunk
+ * to its ink: `box.h × (vendorInkH / vendorCanvasH)` tall, sitting where its
+ * padding puts it. Xiaomi's wordmarks show 0.70-0.76 of the box height; the
+ * `assets/logos/**` substitutes are trimmed to 1.00. Sizing the drawn rect from
+ * the CANVAS (the pre-fix rule) therefore let a swapped mark paint up to 43%
+ * taller than the vendor's, with its optical centre several px off the model
+ * text.
+ *
+ * So:
+ *  1. **scale by ink height** — the target is the vendor's ink height in this
+ *     box, converted back to the substitute's canvas height through the
+ *     substitute's own ink fraction;
+ *  2. **share the vendor's optical centre** — the ink is placed where the
+ *     vendor's ink sits inside the box. The vendor's padding is symmetric
+ *     (padTop == padBottom), so that is the box's vertical centre, which is also
+ *     where `textBaseline: 'middle'` puts the model text beside it;
+ *  3. **keep the vendor's gap** — growth is clamped on the INK edge, not the
+ *     canvas edge, and stops short of the sibling by `brandSlotGapPx()`.
  *
  * `free` (from `layout.ts/annotateBrandFree`) is the empty room the band really
- * leaves on the side the gravity anchor grows into. The mark takes all of it
- * when the desired width fits; when it does not, the whole rect scales down
- * proportionally (height follows width, aspect preserved exactly) so the mark
- * stops short of the sibling by `slotSafeGap()` (2% of the node height, the
- * same proportion the band inset uses, floored at 2px). Width is never clamped
- * on its own and the mark is never stretched; the gravity edge stays put.
+ * leaves on the growth side. When the ink-height target does not fit, the whole
+ * rect scales down proportionally — height follows width, the intrinsic aspect
+ * is preserved exactly, nothing is stretched or letterboxed, and the gravity
+ * edge stays put. Width is never clamped on its own, so the no-overlap guarantee
+ * still holds for a long wordmark ("Panasonic" is 9 glyphs against the vendor's
+ * 6, and is allowed to be that much wider).
  */
 export function brandSlotRect(
   img: CanvasImageSource,
   box: StockRect,
   gravity: string | undefined,
-  free?: BrandFree
+  free?: BrandFree,
+  metrics?: BrandSlotMetrics
 ): StockRect {
   const { w: iw, h: ih } = imageSize(img)
   if (!iw || !ih || !box.w || !box.h) return box
   const assetAspect = iw / ih
   const boxAspect = box.w / box.h
-  const wantW = assetAspect >= boxAspect ? box.h * assetAspect : box.w
-  const wantH = assetAspect >= boxAspect ? box.h : box.w / assetAspect
   const { h: ha, v: va } = gravityAnchor(gravity)
-  let w = wantW
-  let h = wantH
+  const sub = inkPads(metrics?.sub ?? null)
+  const ven = inkPads(metrics?.vendor ?? null)
+  const hasInk = !!metrics?.sub && !!metrics?.vendor
+
+  // 1. the size the vendor's own mark would have shown in this box
+  let wantW: number
+  let wantH: number
+  if (assetAspect >= boxAspect) {
+    wantH = hasInk ? (box.h * ven.h) / sub.h : box.h
+    wantW = wantH * assetAspect
+  } else {
+    wantW = box.w
+    wantH = box.w / assetAspect
+  }
+
+  // 2. clamp on the INK edge so the mark stops short of the sibling
+  const gap = hasInk ? Math.max(metrics?.gapPx ?? 0, SLOT_GAP_FLOOR) : slotSafeGap(box)
   if (free) {
-    const gap = slotSafeGap(box)
-    const slackX = ha === 'left' ? free.right : ha === 'right' ? free.left : Math.min(free.left, free.right) * 2
+    // How wide the INK may be: from the edge the vendor's own mark started on to
+    // the sibling limit (`slack - gap`) on the growth side. Note the gap is
+    // *subtracted*, not floored at zero slack — the vendor's declared margin can
+    // be smaller than the required gap, and a grow-only clamp (`max(0, slack -
+    // gap)`) then let the mark eat the whole box and leave only `slack`, which
+    // is exactly how the pre-fix render collapsed 9.7 units of spacing to 2px.
+    const slackX =
+      ha === 'center' ? Math.min(free.left, free.right) * 2 : ha === 'left' ? free.right : free.left
+    const maxInkW =
+      ha === 'right'
+        ? box.w * (1 - ven.r) + slackX - gap
+        : box.w * (1 - ven.l) + slackX - (ha === 'center' ? gap * 2 : gap)
+    const maxW = Math.max(box.w * 0.2, maxInkW) / Math.max(0.05, 1 - sub.l - sub.r)
     const slackY = va === 'top' ? free.bottom : va === 'bottom' ? free.top : Math.min(free.top, free.bottom) * 2
-    // never below the declared box: the fit may only grow into real slack
-    const maxW = box.w + Math.max(0, slackX - gap)
     const maxH = box.h + Math.max(0, slackY - gap)
     const k = Math.min(1, maxW / wantW, maxH / wantH)
-    w = wantW * k
-    h = wantH * k
+    wantW *= k
+    wantH *= k
   }
-  const x = ha === 'right' ? box.x + box.w - w : ha === 'center' ? box.x + (box.w - w) / 2 : box.x
-  const y = va === 'bottom' ? box.y + box.h - h : va === 'center' ? box.y + (box.h - h) / 2 : box.y
+  const w = wantW
+  const h = wantH
+
+  // 3. place the INK on the vendor's ink edges and optical centre
+  let x: number
+  if (ha === 'right') x = box.x + box.w * (1 - ven.r) - w * (1 - sub.r)
+  else if (ha === 'center') x = box.x + box.w / 2 - w / 2
+  else x = box.x + box.w * ven.l - w * sub.l
+  let y: number
+  if (!hasInk && va !== 'center') {
+    y = va === 'bottom' ? box.y + box.h - h : box.y
+  } else {
+    y = box.y + box.h * (ven.t + ven.h / 2) - h * (sub.t + sub.h / 2)
+    if (va === 'top') y = Math.max(y, box.y)
+    else if (va === 'bottom') y = Math.min(y, box.y + box.h - h)
+  }
   return { x, y, w, h }
 }
 
@@ -252,10 +375,18 @@ function paintItem(
     ctx.save()
     ctx.globalAlpha = item.node.alpha ?? 1
     if (slot) {
-      // aspect-aware fit driven by the resolved wordmark's intrinsic aspect:
-      // keeps the design height, grows the width into the band's real slack,
-      // scales back before it would touch a sibling, anchors on the gravity edge.
-      const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k))
+      // ink-aware fit: match the vendor's *visible* mark height and optical
+      // centre, grow into the band's real slack, stop short of the sibling by
+      // the vendor's own declared gap. The vendor bitmap is still loaded for
+      // every slot (it is the baked asset the slot replaces), which is what
+      // makes the vendor's ink metrics available here.
+      const vendorImg = env.images[bakedKey]
+      const metrics: BrandSlotMetrics = {
+        sub: inkBoxOf(raw),
+        vendor: vendorImg && vendorImg !== raw ? inkBoxOf(vendorImg) : null,
+        gapPx: brandSlotGapPx(item.node, box, k, vendorImg ? inkBoxOf(vendorImg) : null)
+      }
+      const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k), metrics)
       ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
     } else if (item.node.scale === 'contain') {
       drawContain(ctx, img, box.x, box.y, box.w, box.h)

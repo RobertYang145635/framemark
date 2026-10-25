@@ -1,7 +1,7 @@
 import type { StockBrandEnv, StockImageNode, StockNode, StockStyle } from './ir'
 import type { TemplateRenderEnv } from '../../types'
 import { BRANDS, LOGO_FILES, matchBrand } from '../brands'
-import { loadImage } from '../images'
+import { createCanvas, loadImage } from '../images'
 import { ensureSystemFonts } from './fonts'
 
 const ASSET_URLS = import.meta.glob('../../assets/system/**/*.{webp,png}', {
@@ -118,6 +118,83 @@ function imageAspect(img: HTMLImageElement): number {
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
   return h > 0 ? w / h : 0
+}
+
+/* ------------------------------------------------------------------ *
+ * Visible-ink metrics (FIX-BRAND-ALIGN)
+ *
+ * A wordmark bitmap's CANVAS is not its mark. The vendor's Xiaomi wordmarks
+ * (`assets/system/xiaomi/<family>/<id>/xiaomi_{black,white}.webp`, 673x160)
+ * carry ~24px of transparent padding top and bottom, so only 70-76% of the
+ * canvas height is ink. The `assets/logos` substitutes are trimmed tight
+ * (`panasionic_white.webp` 1024x157, inkH/canvasH = 1.000). Sizing the drawn
+ * rect from the canvas therefore paints a swapped wordmark ~43% taller than the
+ * vendor's own mark would have been, and puts its optical centre in the wrong
+ * place — the "PanasonicDC-S1" defect in `stock-xiaomi-classic-19`.
+ *
+ * `inkBoxOf()` measures the real alpha bounding box once per decoded image and
+ * caches it, so `paint.ts` can scale and align by INK instead of by canvas.
+ * ------------------------------------------------------------------ */
+
+/** Tight alpha box of a bitmap, in that bitmap's own canvas pixels. */
+export interface InkBox {
+  x: number
+  y: number
+  w: number
+  h: number
+  /** canvas size the ink box was measured against */
+  cw: number
+  ch: number
+}
+
+/** Alpha above this counts as visible; at these sizes <=8/255 is invisible. */
+const INK_ALPHA_THRESHOLD = 8
+
+const inkCache = new WeakMap<HTMLImageElement, InkBox | null>()
+
+/**
+ * Tight alpha bbox of a decoded image, or null when it cannot be read (a
+ * cross-origin/tainted canvas). Callers must fall back to canvas metrics —
+ * a failed measurement may never make a slot disappear.
+ */
+export function inkBoxOf(img: HTMLImageElement | undefined | null): InkBox | null {
+  if (!img) return null
+  const hit = inkCache.get(img)
+  if (hit !== undefined) return hit
+  let out: InkBox | null = null
+  try {
+    const cw = img.naturalWidth || img.width
+    const ch = img.naturalHeight || img.height
+    if (cw && ch) {
+      const canvas = createCanvas(cw, ch)
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (ctx) {
+        ctx.clearRect(0, 0, cw, ch)
+        ctx.drawImage(img, 0, 0)
+        const data = ctx.getImageData(0, 0, cw, ch).data
+        let minX = cw
+        let minY = ch
+        let maxX = -1
+        let maxY = -1
+        for (let y = 0; y < ch; y++) {
+          const row = y * cw * 4
+          for (let x = 0; x < cw; x++) {
+            if (data[row + x * 4 + 3] > INK_ALPHA_THRESHOLD) {
+              if (x < minX) minX = x
+              if (x > maxX) maxX = x
+              if (y < minY) minY = y
+              if (y > maxY) maxY = y
+            }
+          }
+        }
+        if (maxX >= 0) out = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1, cw, ch }
+      }
+    }
+  } catch {
+    out = null
+  }
+  inkCache.set(img, out)
+  return out
 }
 
 function toneRank(file: string, dark: boolean): number {
