@@ -7403,7 +7403,8 @@ export const XIAOMI_STYLES = [
                             "tracking": 0.15,
                             "align": "left",
                             "margins": {},
-                            "optional": false
+                            "optional": false,
+                            "gravity": "leftVerticalCenter"
                           }
                         ]
                       },

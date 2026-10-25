@@ -689,6 +689,25 @@ async function main() {
       }
       for (const band of style.bands ?? []) for (const child of band.children ?? []) walk(child)
     }
+    if (style.id === 'xiaomi-leica:92') {
+      // leica/92's EXIF block is a vertical stack of two fixed-height (16dp) FrameLayout rows:
+      // `exif_mm_layout` (the `@{focal}mm` line) over `exif_layout` (the F/S/ISO line). Android
+      // centres each line in its frame via layout_gravity=center_vertical, so the 20dp `366mm`
+      // (24dp box) overflows its 16dp frame symmetrically (top -4) and clears the row below.
+      // convertText drops layout_gravity, so our column pinned `366mm` to the frame top and its
+      // `mm` descender collided with the `F 6.3 S 1/400 ISO 125` row (drawn-rect overlap 4dp).
+      // Re-attach the vertical centre on that one focal line so it lands where the vendor puts
+      // it; the sibling F/S/ISO row already carries its own leftVerticalCenter gravity. Scoped to
+      // this style so the 17 fixed-height-frame siblings keep their byte-identical solved rects.
+      const walk = (n) => {
+        if (!n || typeof n !== 'object') return
+        if (n.kind === 'text' && n.token?.kind === 'template' && /@\{focal\}mm/.test(n.token.value ?? '')) {
+          n.gravity = 'leftVerticalCenter'
+        }
+        for (const c of n.children ?? []) walk(c)
+      }
+      for (const band of style.bands ?? []) for (const child of band.children ?? []) walk(child)
+    }
   }
   fs.mkdirSync(OUT_DIR, { recursive: true })
   fs.writeFileSync(
