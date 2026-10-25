@@ -339,12 +339,14 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
       logoPos: 'center',
       footerPct: 0,
       footerMode: 'overlay',
-      // 'lens' dropped: it re-stated focal length + aperture that the 'exif'
-      // slot already prints one line above ("366mm F6.3 1/400s ISO125" plus
-      // "DC-S1 366MM F6.3"), so EXIF rendered twice. Every overlay slot is
-      // positioned by an absolute ov*Y frame param, so removing it moves
-      // nothing else in the stack.
-      slots: 'title,logo,brand,exif,date',
+      // 'lens' stays in the stack: the reference (new-watermark2.webp) right block
+      // is 3 separate rows — EXIF 74.06%H, lens line 'LEICA + 24MM F1.8' 78.39%H,
+      // date 81.84%H — so dropping the slot deleted a real reference row.
+      // The duplicate is removed at content level instead: lensRowMode 'reference'
+      // makes that row the optics designation (brand/lens name + focal + aperture)
+      // instead of restating the camera model + the EXIF run.
+      slots: 'title,logo,brand,exif,lens,date',
+      lensRowMode: 'reference',
       frame:
         '{"ovLeftX":0.0913,"ovTextX":0.1293,"ovLogoW":0.0323,"ovLogoH":0.0519,"ovLogoCenterY":0.7839,"ovTitleY":0.7637,"ovBrandY":0.7968,"ovRightCenterX":0.749,"ovExifY":0.7507,"ovLensY":0.7925,"ovDateY":0.8285}'
     },

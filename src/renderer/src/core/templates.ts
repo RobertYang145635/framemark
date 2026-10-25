@@ -853,6 +853,22 @@ function footerSlots(env: Pick<TemplateRenderEnv, 'params'>): Set<string> {
 }
 
 /**
+ * Overlay lens row in 'reference' mode (wm-black only).
+ * The reference (new-watermark2.webp) second right-stack row is the optics
+ * designation — 'LEICA + 24MM F1.8' — not a second copy of the EXIF run: no
+ * shutter, no ISO and no camera model (the left title/brand block already prints
+ * the model). Falls back to the lens name when the EXIF carries a short one, and
+ * never repeats a token the designation already spells out after the '+'.
+ */
+function overlayLensLine(exif: TemplateRenderEnv['exif'], optics: string[]): string {
+  const raw = String(exif.lens || '').trim()
+  const name = raw.length > 0 && raw.length <= 24 ? raw.split('|')[0].trim() : ''
+  const designation = name || String(exif.make || '').trim() || modelWithoutMake(exif.make, exif.model)
+  const rest = optics.filter((t) => t && !designation.toLowerCase().includes(t.toLowerCase())).join(' ')
+  return [designation, rest].filter(Boolean).join(' + ').toUpperCase()
+}
+
+/**
  * Overlay variant of the brand footer: full-bleed photo with no reserved band.
  * Left column: title above brand, brand logo badge at the left edge.
  * Right column: exif / camera spec / date, centred like the reference.
@@ -880,14 +896,13 @@ function drawBrandOverlay(env: TemplateRenderEnv): Rect {
   const brand = ((env.text.showMake ? make : '') || model || '').trim()
   const exifLineText = exifText(env)
   const dateLine = dateText(env)
-  const spec = [
-    model,
-    env.exif.focal ? `${Math.round(env.exif.focal)}mm` : '',
-    formatAperture(env.exif.aperture)
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toUpperCase()
+  const optics = [env.exif.focal ? `${Math.round(env.exif.focal)}mm` : '', formatAperture(env.exif.aperture)]
+  // Default ('model') is the historic overlay line — model + focal + aperture — so
+  // every other brandFooter variant keeps rendering exactly what it did before.
+  const spec =
+    String(env.params.lensRowMode ?? 'model') === 'reference'
+      ? overlayLensLine(env.exif, optics)
+      : [model, ...optics].filter(Boolean).join(' ').toUpperCase()
   if (on('logo') && env.text.showLogo) {
     drawBrandLogo(env, leftX, logoCy - logoH / 2, logoW, logoH, theme.fg)
   }
