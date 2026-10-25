@@ -28,7 +28,7 @@ export const OPPO_GALLERY_STYLES = [
           {
             "kind": "group",
             "orientation": "column",
-            "width": 160,
+            "width": 190,
             "gravity": "leftVerticalCenter",
             "margins": {},
             "children": [
@@ -1260,7 +1260,7 @@ export const OPPO_GALLERY_STYLES = [
     ],
     "assets": {
       "hassel_watermark_h_logo_text_style": {
-        "file": "hassel_watermark_h_logo_text_style.png",
+        "file": "hassel_watermark_h_logo_text_style.webp",
         "width": 526,
         "height": 397
       }
@@ -2560,95 +2560,6 @@ export const OPPO_GALLERY_STYLES = [
     }
   },
   {
-    "id": "oppo-gallery:personalize_brand_3",
-    "vendor": "oppo",
-    "family": "OPPO 相册",
-    "name": "品牌 · 3",
-    "nameEn": "personalize_brand_3",
-    "placement": "with",
-    "referenceWidth": 360,
-    "margins": {
-      "left": 0,
-      "top": 0,
-      "right": 50,
-      "bottom": 0
-    },
-    "background": "#FFFFFF",
-    "bands": [
-      {
-        "direction": "right",
-        "thickness": 50,
-        "offset": {
-          "x": 0,
-          "y": 0
-        },
-        "children": [
-          {
-            "kind": "text",
-            "token": {
-              "kind": "model"
-            },
-            "font": "sys",
-            "size": 8,
-            "weight": 600,
-            "color": "#000000",
-            "alpha": 0.54,
-            "tracking": 0.04,
-            "lineHeight": 9.38,
-            "align": "left",
-            "gravity": "leftVerticalCenter",
-            "margins": {
-              "left": 20
-            },
-            "optional": false
-          },
-          {
-            "kind": "text",
-            "token": {
-              "kind": "timeLocation"
-            },
-            "font": "sys",
-            "size": 8,
-            "weight": 500,
-            "color": "#000000",
-            "alpha": 0.54,
-            "tracking": 0.03,
-            "lineHeight": 9.38,
-            "align": "left",
-            "gravity": "verticalCenter",
-            "margins": {
-              "left": 12
-            },
-            "optional": false
-          },
-          {
-            "kind": "image",
-            "asset": "brand_imagine_dark",
-            "width": 97,
-            "height": 34,
-            "scale": "contain",
-            "gravity": "rightVerticalCenter",
-            "margins": {
-              "right": 20
-            },
-            "alpha": 1
-          }
-        ]
-      }
-    ],
-    "assets": {
-      "brand_imagine_dark": {
-        "file": "brand_imagine_dark.webp",
-        "width": 528,
-        "height": 272
-      }
-    },
-    "audit": {
-      "status": "approx",
-      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
-    }
-  },
-  {
     "id": "oppo-gallery:personalize_brand_5",
     "vendor": "oppo",
     "family": "OPPO 相册",
@@ -3030,6 +2941,209 @@ export const OPPO_GALLERY_STYLES = [
         "file": "film_daylight_vertical_dark.webp",
         "width": 400,
         "height": 272
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
+    "id": "oppo-gallery:personalize_film_realme_1",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "realme 胶片 · 1",
+    "nameEn": "personalize_film_realme_1",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "width": 230,
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 12,
+                "weight": 600,
+                "color": "#000000",
+                "alpha": 0.9,
+                "tracking": 0.04,
+                "lineHeight": 14.06,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "imageParams"
+                },
+                "font": "sys",
+                "size": 7,
+                "weight": 400,
+                "color": "#000000",
+                "alpha": 0.54,
+                "tracking": 0.08,
+                "lineHeight": 8.2,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {
+                  "top": 2.81
+                },
+                "optional": false
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "realme_film_street_sweeping",
+            "width": 74,
+            "height": 32,
+            "scale": "contain",
+            "gravity": "rightVerticalCenter",
+            "margins": {
+              "right": 16
+            },
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "realme_film_street_sweeping": {
+        "file": "realme_film_street_sweeping.webp",
+        "width": 460,
+        "height": 320
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
+    "id": "oppo-gallery:personalize_film_realme_2",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "realme 胶片 · 2",
+    "nameEn": "personalize_film_realme_2",
+    "placement": "with",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 50,
+      "bottom": 0
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "right",
+        "thickness": 50,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "row",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 600,
+                "color": "#000000",
+                "alpha": 0.54,
+                "tracking": 0.04,
+                "lineHeight": 9.38,
+                "align": "left",
+                "gravity": "leftVerticalCenter",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "timeLocation"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 500,
+                "color": "#000000",
+                "alpha": 0.54,
+                "tracking": 0.03,
+                "lineHeight": 9.38,
+                "align": "left",
+                "gravity": "verticalCenter",
+                "margins": {
+                  "left": 12
+                },
+                "optional": false
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "realme_film_daylight",
+            "width": 97,
+            "height": 34,
+            "scale": "contain",
+            "gravity": "rightVerticalCenter",
+            "margins": {
+              "right": 20
+            },
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "realme_film_daylight": {
+        "file": "realme_film_daylight.webp",
+        "width": 368,
+        "height": 256
       }
     },
     "audit": {
@@ -4292,6 +4406,319 @@ export const OPPO_GALLERY_STYLES = [
     }
   },
   {
+    "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_1",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "realme 品牌印记 · 1",
+    "nameEn": "realme_brand_imprint_inspirationPhoto_1",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "width": 185,
+            "gravity": "rightVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 12,
+                "weight": 600,
+                "color": "#000000",
+                "alpha": 0.9,
+                "tracking": 0.04,
+                "lineHeight": 14.06,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "group",
+            "orientation": "column",
+            "gravity": "rightVerticalCenter",
+            "margins": {
+              "right": 20
+            },
+            "children": [
+              {
+                "kind": "image",
+                "asset": "color_card_inspiration",
+                "width": 72,
+                "height": 14,
+                "scale": "contain",
+                "gravity": "rightTop",
+                "margins": {
+                  "top": 2.81
+                },
+                "alpha": 1
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "imageParams"
+                },
+                "font": "sys",
+                "size": 7.2,
+                "weight": 400,
+                "color": "#000000",
+                "alpha": 1,
+                "tracking": 0,
+                "align": "left",
+                "gravity": "rightTop",
+                "margins": {
+                  "top": 4.76
+                },
+                "optional": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "color_card_inspiration": {
+        "file": "color_card_inspiration.webp",
+        "width": 240,
+        "height": 240
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
+    "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_2",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "realme 品牌印记 · 2",
+    "nameEn": "realme_brand_imprint_inspirationPhoto_2",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "width": 185,
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 12,
+                "weight": 600,
+                "color": "#000000",
+                "alpha": 0.9,
+                "tracking": 0.04,
+                "lineHeight": 14.06,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "imageParams"
+                },
+                "font": "sys",
+                "size": 7.2,
+                "weight": 400,
+                "color": "#000000",
+                "alpha": 1,
+                "tracking": 0,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "color_card_perspective",
+            "width": 42,
+            "height": 21,
+            "scale": "contain",
+            "gravity": "rightTop",
+            "margins": {
+              "top": 20,
+              "right": 23
+            },
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "color_card_perspective": {
+        "file": "color_card_perspective.webp",
+        "width": 240,
+        "height": 240
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
+    "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_3",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "realme 品牌印记 · 3",
+    "nameEn": "realme_brand_imprint_inspirationPhoto_3",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "row",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 600,
+                "color": "#000000",
+                "alpha": 0.54,
+                "tracking": 0.04,
+                "lineHeight": 9.38,
+                "align": "left",
+                "gravity": "leftVerticalCenter",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "imageParams"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 500,
+                "color": "#000000",
+                "alpha": 0.54,
+                "tracking": 0.03,
+                "lineHeight": 9.38,
+                "align": "left",
+                "gravity": "verticalCenter",
+                "margins": {
+                  "left": 12
+                },
+                "optional": false
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "color_card_explore",
+            "width": 62,
+            "height": 12,
+            "scale": "contain",
+            "gravity": "rightTop",
+            "margins": {
+              "top": 24,
+              "right": 23
+            },
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "color_card_explore": {
+        "file": "color_card_explore.webp",
+        "width": 240,
+        "height": 240
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
     "id": "oppo-gallery:restrict_local_songkran_holiday_2025_style_1",
     "vendor": "oppo",
     "family": "OPPO 相册",
@@ -4378,7 +4805,13 @@ export const OPPO_GALLERY_STYLES = [
         ]
       }
     ],
-    "assets": {},
+    "assets": {
+      "songkran_watermark_icon": {
+        "file": "songkran_watermark_icon.webp",
+        "width": 563,
+        "height": 192
+      }
+    },
     "audit": {
       "status": "approx",
       "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
@@ -4837,7 +5270,7 @@ export const OPPO_GALLERY_STYLES = [
     "bands": [
       {
         "direction": "overlay",
-        "thickness": 54,
+        "thickness": 56,
         "offset": {
           "x": 20,
           "y": 20
@@ -4879,13 +5312,13 @@ export const OPPO_GALLERY_STYLES = [
                 "align": "left",
                 "gravity": "horCenter",
                 "margins": {
-                  "top": 6.18
+                  "top": 4.18
                 },
                 "optional": false,
                 "shadow": {
                   "color": "#65000000",
                   "blur": 3.3000000000000003,
-                  "x": 1,
+                  "x": 0.7,
                   "y": 0
                 }
               }
@@ -4896,7 +5329,7 @@ export const OPPO_GALLERY_STYLES = [
     ],
     "assets": {
       "hassel_watermark_h_logo_text_style": {
-        "file": "hassel_watermark_h_logo_text_style.png",
+        "file": "hassel_watermark_h_logo_text_style.webp",
         "width": 526,
         "height": 397
       }
@@ -4943,7 +5376,7 @@ export const OPPO_GALLERY_STYLES = [
                   "kind": "model"
                 },
                 "font": "avenir",
-                "size": 11,
+                "size": 10,
                 "weight": 600,
                 "color": "#FFFFFF",
                 "alpha": 1,
@@ -4956,7 +5389,7 @@ export const OPPO_GALLERY_STYLES = [
                 "shadow": {
                   "color": "#65000000",
                   "blur": 3.3000000000000003,
-                  "x": 1,
+                  "x": 0.7,
                   "y": 0
                 }
               },
@@ -4976,8 +5409,8 @@ export const OPPO_GALLERY_STYLES = [
               {
                 "kind": "image",
                 "asset": "hasselblad_watermark_text_style",
-                "width": 98,
-                "height": 11.7,
+                "width": 88.2,
+                "height": 10.53,
                 "scale": "contain",
                 "gravity": "verticalCenter",
                 "margins": {

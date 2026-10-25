@@ -31,14 +31,14 @@ interface DebugRenderResult {
 }
 
 // The debug API mirrors what the gallery can actually render: every hand-written
-// variant plus the five manually registered stock variants (oppo-polaroid and
-// xiaomi-standard 6/7/8/107). The auto-generated stock variants render through
+// variant plus the manually registered stock variant (oppo-polaroid). Xiaomi
+// standard 6/7/8/107 moved to the generated IR in P2 and render through
 // window.__fmStock instead.
 const RENDERABLE_VARIANTS = TEMPLATE_VARIANTS.filter(
-  (v) => v.category !== '系统相机' || v.base === 'polaroidFrame' || v.base === 'xiaomiStandard'
+  (v) => v.category !== '系统相机' || v.base === 'polaroidFrame'
 )
-if (RENDERABLE_VARIANTS.length !== 73) {
-  console.warn(`__fmVariants: expected 73 renderable variants, got ${RENDERABLE_VARIANTS.length}`)
+if (RENDERABLE_VARIANTS.length !== 69) {
+  console.warn(`__fmVariants: expected 69 renderable variants, got ${RENDERABLE_VARIANTS.length}`)
 }
 
 async function applyVariantLogo(design: Design, variant: TemplateVariant, asset: PhotoAsset): Promise<void> {
@@ -98,11 +98,16 @@ function cropToAspect(image: HTMLImageElement, aspect: number): { canvas: HTMLCa
   return { canvas, w, h }
 }
 
-async function renderStockPreview(id: string): Promise<DebugRenderResult> {
+async function renderStockPreview(id: string, opts?: { ratio?: string; maxEdge?: number }): Promise<DebugRenderResult> {
   const style = STOCK_STYLE_LIST.find((s) => s.id === id)
   if (!style) throw new Error(`unknown stock style: ${id}`)
   const base = await getSampleAsset()
-  const image = await loadImage(base.previewUrl)
+  const source = await loadImage(base.previewUrl)
+  const aspect = parseAspect(opts?.ratio)
+  const cropped = aspect ? cropToAspect(source, aspect) : null
+  const image: CanvasImageSource = cropped ? cropped.canvas : source
+  const imageW = cropped ? cropped.w : source.naturalWidth || source.width
+  const imageH = cropped ? cropped.h : source.naturalHeight || source.height
   const isXiaomi = style.vendor === 'xiaomi'
   const isVivo = style.vendor === 'vivo'
   const exif = {
@@ -115,9 +120,11 @@ async function renderStockPreview(id: string): Promise<DebugRenderResult> {
     iso: 640,
     hasAny: true
   }
-  const asset: PhotoAsset = { ...base, width: image.width, height: image.height, exif }
+  const asset: PhotoAsset = { ...base, width: imageW, height: imageH, exif }
   const design: Design = {
     templateId: 'systemCamera',
+    // The 4:3 sample path mirrors __fmVariants: the photo is center-cropped to the
+    // requested aspect, the design ratio itself stays 'original'.
     ratio: 'original',
     params: { systemStyle: id },
     text: { ...DEFAULT_TEXT },
@@ -127,20 +134,44 @@ async function renderStockPreview(id: string): Promise<DebugRenderResult> {
     export: { ...DEFAULT_EXPORT }
   }
   const canvas = document.createElement('canvas')
-  const rendered = await renderDesign(canvas, design, asset, image, image.width, image.height, { preview: true })
+  const exportMode = Boolean(opts && (opts.ratio || opts.maxEdge))
+  const rendered = await renderDesign(canvas, design, asset, image, imageW, imageH, { preview: !exportMode })
+  if (!exportMode) {
+    const out = document.createElement('canvas')
+    out.width = THUMB_W
+    out.height = THUMB_H
+    const ctx = out.getContext('2d')!
+    ctx.fillStyle = '#0b0b0c'
+    ctx.fillRect(0, 0, THUMB_W, THUMB_H)
+    const scale = Math.min(THUMB_W / canvas.width, THUMB_H / canvas.height)
+    const dw = canvas.width * scale
+    const dh = canvas.height * scale
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(canvas, (THUMB_W - dw) / 2, (THUMB_H - dh) / 2, dw, dh)
+    return { data: out.toDataURL('image/webp', 0.86), W: rendered.W, H: rendered.H, photoRect: rendered.photoRect }
+  }
+  const maxEdge = Math.max(0, Math.floor(Number(opts?.maxEdge) || 0))
+  const scale = maxEdge > 0 ? Math.min(1, maxEdge / Math.max(canvas.width, canvas.height)) : 1
+  if (scale >= 1) {
+    return { data: canvas.toDataURL('image/png'), W: canvas.width, H: canvas.height, photoRect: rendered.photoRect }
+  }
+  const outW = Math.max(1, Math.round(canvas.width * scale))
+  const outH = Math.max(1, Math.round(canvas.height * scale))
   const out = document.createElement('canvas')
-  out.width = THUMB_W
-  out.height = THUMB_H
-  const ctx = out.getContext('2d')!
-  ctx.fillStyle = '#0b0b0c'
-  ctx.fillRect(0, 0, THUMB_W, THUMB_H)
-  const scale = Math.min(THUMB_W / canvas.width, THUMB_H / canvas.height)
-  const dw = canvas.width * scale
-  const dh = canvas.height * scale
+  out.width = outW
+  out.height = outH
+  const ctx = out.getContext('2d', { alpha: false })!
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(canvas, (THUMB_W - dw) / 2, (THUMB_H - dh) / 2, dw, dh)
-  return { data: out.toDataURL('image/webp', 0.86), W: rendered.W, H: rendered.H, photoRect: rendered.photoRect }
+  ctx.drawImage(canvas, 0, 0, outW, outH)
+  const photoRect: Rect = {
+    x: rendered.photoRect.x * scale,
+    y: rendered.photoRect.y * scale,
+    w: rendered.photoRect.w * scale,
+    h: rendered.photoRect.h * scale
+  }
+  return { data: out.toDataURL('image/png'), W: outW, H: outH, photoRect }
 }
 
 async function renderVariantPreview(
@@ -215,7 +246,7 @@ interface VariantDebugApi {
 const debugWindow = window as unknown as {
   __fmStock: {
     list: () => { id: string; name: string; vendor: string; family: string; status: string }[]
-    render: (id: string) => Promise<DebugRenderResult>
+    render: (id: string, opts?: { ratio?: string; maxEdge?: number }) => Promise<DebugRenderResult>
   }
   __fmVariants: VariantDebugApi
 }

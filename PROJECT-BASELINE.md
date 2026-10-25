@@ -3,7 +3,7 @@
 > **本页是唯一的“当前状态”页面（single source of truth）。**
 > 其他文档只保留方法、分类、门槛与历史；凡涉及当前计数、平台状态、交付哈希、已知缺口或范围，一律链接本页，不再各自抄写数字。
 >
-> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 02:08**（本机时区）；最近更新：2026-10-25（**W1 终审完成**：47/47 终审 PASS（13 套独立重测 + 34 套批次逐字节一致），0 provisional / 0 fail，无结构失败；typecheck/build/e2e/workflow/validate:ir 全绿。**用户目视签收仍待完成**，不宣称 pixel-perfect）。
+> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 02:08**（本机时区）；最近更新：2026-10-25（**W3 收口**：最新 OPPO 17.10.7 + 小米 17 Ultra 已同步入库，目录计数由 160/92/82/87 升至 **164/96/90/95**；typecheck/build/e2e/workflow/validate:ir 全绿；ASSESS-W3 判定 GREEN / KEEP-ALL。**W1 终审 47/47 PASS**、**W2 workflow 106/106** 保持绿色；**用户目视签收仍待完成**，不宣称 pixel-perfect，系统相机全线仍 **0 `verified`**）。
 > 工作日志与历史证据：[../HANDOFF.md](../HANDOFF.md) §7（§7.5 起为按时间顺序的历史记录，数字是当时值）。
 
 ---
@@ -19,7 +19,7 @@
 | G0 | 主管验收 | 待 W0a/W0b/W0c/W0d（均已收口） | — |
 | W1 | 47 套像素审计与修复 | 审计完成；**W1b A1 PASS 5/5、A2 PASS 3/3**（Batch A 8/8）、**B1a PASS 5/5**、**B1b glass-card PASS + glass-palette PASS + glass-pill-5 PROVISIONAL（后由 C 复测 PASS）**、**B2a PASS 6/6（wm-classic/black/canon/left/wide/right）**、**B2b PASS 3/3（grad-1/grad-2/video-cover；前两者使用 APK 原版毕业贴纸）**、**B3a PASS 5/5（movie-1/2、ratio-1/2/3）**、**B3b-1/2 PASS 5/5（color-1/2/3、color-walk、color-reveal）**、**B3b-3 PASS 4/4（new-color-2、ticket-1、ticket-2、simple-3）**；B3b 已全部收口；**Batch C PASS 4/4（simple-1/2/4、glass-pill-5）**；**W1 终审完成：47/47 PASS（13 套独立重测 + 34 套批次逐字节一致），0 provisional / 0 fail，无结构失败；用户目视签收待做** | `_research/original-47/specs/`、`specs-after/`、`sheets-after/`、`triage.json`；[`w1-triage.md`](../_research/cleanup/w1-triage.md)、[`w1b-a1-report.md`](../_research/cleanup/w1b-a1-report.md)、[`w1b-a2-report.md`](../_research/cleanup/w1b-a2-report.md)、[`b1a-verify-report.md`](../_research/cleanup/b1a-verify-report.md)、[`w1b-b1b1-report.md`](../_research/cleanup/w1b-b1b1-report.md)、[`w1b-b1b2-report.md`](../_research/cleanup/w1b-b1b2-report.md)、[`w1b-b2a1-report.md`](../_research/cleanup/w1b-b2a1-report.md)、[`w1b-b2a2-report.md`](../_research/cleanup/w1b-b2a2-report.md)、[`w1b-b2b-report.md`](../_research/cleanup/w1b-b2b-report.md)、[`w1b-b3a1-report.md`](../_research/cleanup/w1b-b3a1-report.md)、[`w1b-b3a2-report.md`](../_research/cleanup/w1b-b3a2-report.md)、[`w1b-b3b1-report.md`](../_research/cleanup/w1b-b3b1-report.md)、[`w1b-b3b2-report.md`](../_research/cleanup/w1b-b3b2-report.md)、[`w1b-b3b3a-report.md`](../_research/cleanup/w1b-b3b3a-report.md)、[`w1b-b3b3b-report.md`](../_research/cleanup/w1b-b3b3b-report.md)、[`w1b-c-report.md`](../_research/cleanup/w1b-c-report.md)、[`FINAL-AUDIT.md`](../_research/cleanup/FINAL-AUDIT.md)、[`final-verify-b-audit47.json`](../_research/cleanup/final-verify-b-audit47.json) |
 | **W2** | **核心工作流 E2E** | **完成（PASS 106/106）** | `scripts/e2e-workflow.mjs`；[`w2-fix-report.md`](../_research/cleanup/w2-fix-report.md) |
-| W3 | 最新厂商边框对齐 | 审计完成；目录待更新（下一波） | `_research/vendor-latest/`；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
+| W3 | 最新厂商边框对齐 | **最新 OPPO / 小米已同步**：OPPO Gallery **17.10.7** 43 套已重导（+5 realme、`brand_3` 退役）、小米 **NeoHyper 17 Ultra** 7 套已同步（`film 15` / `leica 2,91` / `standard 6,7,8,107`，后者由手写迁入生成 IR、计数不变）；**vivo 39 套仍 blocked（缺宿主布局与可信参考帧）**；95 套 stock 全 `approx`、**0 `verified`**；ASSESS-W3 GREEN / KEEP-ALL，工作区待提交 | `_research/vendor-latest/`、[`w3-assess.md`](../_research/cleanup/w3-assess.md)、[`w3b-oppo-data-report.md`](../_research/cleanup/w3b-oppo-data-report.md)、[`w3b-oppo-ui-report.md`](../_research/cleanup/w3b-oppo-ui-report.md)、[`w3b-xiaomi-report.md`](../_research/cleanup/w3b-xiaomi-report.md)；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
 | W4–W5 | Android 真机走查、打包终验 | 待 W3（W4 走查 → W5 打包/最终验收） | 本页 §3 |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
@@ -28,7 +28,7 @@
 
 **W2**：核心工作流 E2E **PASS 106/106 断言，failed 0，pageerror 0**；覆盖双图批量、预设保存/重载/套用、自定义 PNG 水印、全部参数、文件名 token、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 往返；预设 `outputDir` 可移植性缺陷已修复。
 
-**W3**：OPPO Gallery **17.10.7** 已从 Find X9 Ultra 包提取；43 个最新 Gallery 样式为 **25 same / 14 outdated / 5 missing**（14 outdated = 13 changed + 1 不再随包），另有 **10** 个相机包样式 `unverifiable`；小米 **7 套 outdated**；vivo **39 套仍 blocked**。目录与变体尚未按最新包更新。
+**W3**：最新厂商边框已同步入库（工作区状态，尚未提交）。OPPO Gallery **17.10.7** 已从 Find X9 Ultra 包重导，生成 IR 现为 **43** 个 Gallery 样式（提取阶段判定 25 same / 14 outdated / 5 missing，均已按新包落库），新增 5 套 realme（`personalize_film_realme 1/2`、`realme_brand_imprint_inspirationPhoto 1/2/3`），`personalize_brand_3` 已干净退役（0 残留引用）；另有 10 个相机包样式 `unverifiable`。小米 **NeoHyper 17 Ultra**（`com.android.camera 6.7.000280.0` 素材 v36）**7 套 outdated 已同步**：`film 15`、`leica 2/91`、`standard 6/7/8/107`，其中 4 套 `standard` 由手写变体迁入生成 IR（**计数不变**，适配器取消 `standard` 家族过滤）。**vivo 39 套仍 blocked**——缺宿主布局与可信参考帧，不伪造。目录与预览已按最新包更新（见 §1）。**95 套 stock 全为 `approx`，0 `verified`**；小米 4:3 证据尚有 2/7 未判定项（`film 15` 画布比 1.2790、`leica 2` 1.0804），见 [`w3b-xiaomi-report.md`](../_research/cleanup/w3b-xiaomi-report.md) §6 残余。
 
 ---
 
@@ -36,21 +36,25 @@
 
 | 项目 | 当前值 | 说明 |
 |---|---:|---|
-| 模板库卡片 | **160** | 手写 **68** + 系统相机 **92** |
+| 模板库卡片 | **164** | 手写 **68** + 系统相机 **96** |
 | 手写变体 | **68** | `V(...)`；其中 47 个为原版复刻，其余为自研/精选 |
-| 系统相机 stock | **92** | 分解见下 |
+| 系统相机 stock | **96** | 分解见下 |
 | 原版参考图 | **47** | `src/renderer/src/assets/previews/` 根目录（45 webp + 1 png + 1 jpg） |
-| 手写渲染预览 | **73** | `assets/previews/rendered/*.webp` |
-| 系统相机预览 | **87** | `assets/previews/system/*.webp`；5 套无独立预览 |
-| 生成 stock 样式 | **82** | 39 OPPO Gallery + 9 CameraPro + 34 小米；全部 `approx`，**0 `verified`** |
+| 手写渲染预览 | **69** | `assets/previews/rendered/*.webp`；= `build-variant-previews.cjs` 的 `expectedVariants` 69（68 手写 + 1 `oppo-polaroid`）。W3 迁移后 4 张孤立 `xiaomi-standard-*.webp` 已清理 |
+| 系统相机预览 | **95** | `assets/previews/system/*.webp`；5 套无厂商原版预览（见 §2.2） |
+| stock 样式（运行时 `__fmStock.list`） | **95** | OPPO 52 + 小米 40 + vivo 3；全部 `approx`，**0 `verified`** |
+| 生成 stock 样式 | **90** | 43 OPPO Gallery + 9 CameraPro + 38 小米 |
+| 生成 stock 变体 | **90** | 与生成样式一一对应 |
 | 品牌字标 | **62 可见 / 63 定义** | Samyang 无可靠独立字标，隐藏不列出 |
 | blocked | **4 组 / 42 个样式** | 小米 Leica 5/88/89 + vivo 全部（39 套），见 §2.3 |
 
-**系统相机 92 套分解**
+**系统相机 96 套分解**
 
-- **OPPO 49** = Gallery 39 + CameraPro 9 + Polaroid PLD 1
-- **小米 40** = 生成 34 + 侧栏 classic 22/99 2 + 标准 6/7/8/107 4
+- **OPPO 53** = Gallery 43 + CameraPro 9 + Polaroid PLD 1（其中 52 个为 stock 样式条目，Polaroid 为独立变体，预览走 `previews/rendered/oppo-polaroid.webp`）
+- **小米 40** = 生成 38（含已迁入 IR 的标准 6/7/8/107）+ 侧栏 classic 22/99 手工 2
 - **vivo 3** = Zeiss 上框 / 上下框 / 内嵌
+
+（53 + 40 + 3 = 96；stock 样式 52 + 40 + 3 = 95，差额是 Polaroid 只有变体没有独立 stock 样式。）
 
 ---
 
@@ -66,11 +70,11 @@
 - **其余残余**：simple-1/2/4 的参考字为宽斜体科技字面（现用 Bebas Neue 近似，大写高 2.17 vs 3.75 %H）；品牌字标为审计 fixture 驱动（EXIF 为 Panasonic DC-S1，自动渲染 LUMIX/Panasonic，参考图为 Canon/Leica/SONY/Nikon），属素材残余而非模板缺陷；glass-pill-5 为 SONY serif 字标 vs LUMIX autoLogo，仅槽位锚点可比，品牌 ink 宽不可比、参考置信度低；`canvasAspect` 是按各参考图取值的**变体级**参数（1.3045 / 1.4971），4:3 审计导出与参考原生比例的差异属画布/比例取值残余，不是全局画布策略，其它模板与多比例导出行为未变。
 - 几何输入是 `_research/original-47/geometry-diff.json`，由 `_research/original-47/manifest.json` 驱动（47 行；早期 13 已知 / 34 未测量，W1 已用 47 套 TemplateSpec 补测）。旧的 `_research/preview-analysis/geometry-diff.json`、`_research/pair-sheet/` 只作历史证据，不等于 47 套验收完成。
 
-### 2.2 系统相机 92 套
+### 2.2 系统相机 96 套
 
-- 较早一批 90 套完成过 4:3 结构级核对（其中 85 套有厂商原版预览、5 套 config-only）；后补的小米 classic 22/99 按小米 17 Ultra config 接入。
-- **82 个生成 stock 样式 + 手工覆盖样式全部为 `approx`，0 `verified`。**
-- 已知近似来源：字体替换、图标细节、透明/纹理/渐变的纯色兜底、精确 dp→px 边距；GR5 参数边栏字号/行距偏大。
+- 较早一批完成过 4:3 结构级核对（其中 85 套有厂商原版预览、5 套 config-only）；小米 classic 22/99 按小米 17 Ultra config 接入；W3 已把 OPPO 17.10.7 与小米 NeoHyper 17U 的最新包重导进 IR，**新迁入的 4 套小米标准与 3 套刷新样式尚未重跑同等级 4:3 结构核对**。
+- **90 个生成 stock 样式（+ 手工覆盖样式，运行时共 95 套）全部为 `approx`，0 `verified`。**
+- 已知近似来源：字体替换、图标细节、透明/纹理/渐变的纯色兜底、精确 dp→px 边距；GR5 参数边栏字号/行距偏大。`validate-ir` 的 37 条 warning 全部属这类既有主题近似（`transparent theme uses fallback` / `texture theme not painted as texture`），0 error。
 - **5 套无厂商原版预览**（Polaroid PLD、小米标准 6/7/8/107），只能按宿主 config 与素材核对，不能升级 `verified`。
 
 ### 2.3 blocked（4 组 / 42 个样式）
@@ -90,10 +94,10 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
-| `typecheck` / `build` | 通过 | W1 终审轮（FINAL-VERIFY-B）复跑：`typecheck` exit 0（node + web 无诊断）、`build` exit 0（electron-vite 1.34s） |
-| `npm run test:e2e` | 通过 | W1 终审轮：total 160 / system 92 / blocked 4 / errors 0 |
-| `npm run test:workflow` | 通过 | 106/106 断言 / failed 0 / pageError 0 / consoleError 0（W2 核心工作流，W1 终审轮复跑） |
-| `npm run validate:ir` | 通过 | 82 生成样式 / 82 生成变体 / 87 预览；0 error；37 条既有主题近似 warning |
+| `typecheck` / `build` | 通过 | W3 收口轮复跑（清理孤立预览后）：`typecheck` exit 0（node + web 无诊断）、`build` exit 0（electron-vite 1.31s） |
+| `npm run test:e2e` | 通过 | W3 收口轮复跑：total **164** / system **96** / blocked **4** / errors 0，1 张导出成功 |
+| `npm run test:workflow` | 通过 | 106/106 断言 / failed 0 / pageError 0 / consoleError 0（W2 核心工作流；W3 审收轮 ASSESS-W3 复跑仍 106/106） |
+| `npm run validate:ir` | 通过 | W3 收口轮复跑：**90** 生成样式 / **90** 生成变体 / **95** 系统预览；0 error；37 条既有主题近似 warning |
 | Windows 桌面 | 通过 | 打包版冷启动正常；品牌库 62 卡、套用正常、0 pageerror |
 | Android | **冷启动通过，细项目检欠 1 项** | 02:05 APK 已安装并冷启动；底栏（bottom-tab）移动端界面已建；选图/导出/系统分享已验；**品牌选择弹窗尚未目视** |
 | 多比例 | 历史全量目检通过 | 上一轮 4:3 + 3:2/2:3/16:9/1:1/4:5/3:4/9:16 未见拉伸/裁切/重叠；后续新增模式未重跑同等全量 |
@@ -116,11 +120,16 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 ## 5. 已知缺口
 
 1. **原版 47 套：终审通过，待用户目视签收**：47/47 TemplateSpec 已生成，修复批次 A=8 / B=30 / C=4 已全部收口。**W1 终审 47/47 PASS**（13 套独立重测 + 34 套批次逐字节一致，0 provisional / 0 fail，无结构失败），typecheck/build/e2e/workflow/validate:ir 全绿；ticket-2 终审标题 295 px（-1.02pp，19/19 门槛通过）。**用户目视签收尚未完成，不把 47 套标为最终验收完成、0 套 `verified`**，不宣称 pixel-perfect。残余：字体替换（Chakra Petch 水平缩放、Bebas Neue/YouShe 字面）、品牌字标素材（fixture Panasonic/LUMIX vs 参考 Canon/Leica/SONY）、画布/比例取值，以及 glass-pill-5 参考置信度低。
-2. **系统相机全部 `approx`**：82 个生成 stock 样式 0 `verified`；5 套无厂商原版预览；字体/纹理/渐变仍为近似。
+2. **系统相机全部 `approx`**：90 个生成 stock 样式（运行时共 95 套）0 `verified`；5 套无厂商原版预览；字体/纹理/渐变仍为近似；`validate-ir` 的 37 条 warning 即此类近似，不阻断。
 3. **4 组 blocked / 42 个样式**：小米 Leica 5/88/89 + vivo 39；需要旋转文字、重叠布局或宿主参考帧支持。
 4. **Android 品牌选择弹窗未目视**：02:05 包冷启动通过，但弹窗级 UI 只做了代码/入口确认，未完成真机目检。
 5. **授权审计不做**：按 2026-10-25 范围冻结，项目只按个人使用维护，不做 licensing / 公开发布审计（这是范围决定，不是待办）。
 6. **文档口径已收口**：历史数字只保留在 `HANDOFF.md` §7.5–§7.18 / §8 的标记历史区，当前事实只认本页。
+7. **W3 收口残余（已记录，未修复；详见 [`w3b-xiaomi-report.md`](../_research/cleanup/w3b-xiaomi-report.md) §6）**：
+   - **`xiaomi-film:15` 双样式源**：同时存在于 `generated/xiaomiStyles.ts`（适配器重导，`referenceWidth` 1080）与 `core/system/styles.ts` 的手工 `XIAOMI_FILM_15` 覆盖，手工项生效。本轮两处已同步，值一致，但属第二事实源：再一次重跑小米适配器会与之静默分叉（OPPO 侧 HASSEL/LUMO/GR5/OPPO_FILM_2/OPPO_MASTERSIGN_3/OPPO_RETRO_5 为同类既有模式）。
+   - **`xiaomiStandard` 基础模板已死**：`core/templates.ts:3843` 定义、`:4277` 注册、`types.ts:13` 联合类型仍在，但**已无任何变体引用**、无测试断言；留待后续波次清理。
+   - **小米 4:3 证据 2/7 未判定**：`xiaomi-film:15` 画布比 **1.2790**、`xiaomi-leica:2` **1.0804**，超出 `after/manifest.json` 自述 `ratio: "4:3"` 的 1.3333 ±0.004；驱动脚本只 `console.log` 不断言，其自身 "4:3 check" 实为 false。侧栏（side-band）样式几何上可能合理，但**尚无裁定**。
+   - 以上三条都不改变结论：**厂商线保持 `approx`，0 `verified`**；`verified` 只留给 W4 真机走查。
 
 ---
 

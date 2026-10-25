@@ -1,14 +1,16 @@
 // Convert OPPO Gallery master-watermark JSONs into FrameMark's stock IR.
-// Read-only over _research; writes generated TS + copies nothing (assets already in app).
+// Source: OPPO Gallery 17.10.7 (com.coloros.gallery3d 17010007, Find X9 Ultra PMA120).
+// Read-only over _research; writes generated TS + copies referenced bitmaps into app assets.
+// Usage: node oppo.cjs [--styles-only]  (--styles-only skips generated/oppoVariants.ts)
 const fs = require('node:fs')
 const path = require('node:path')
-const crypto = require('node:crypto')
 const sharp = require('sharp')
 
-const ROOT = 'D:/border&watermark/_research/extracted/oppo-watermarks/gallery-master-styles'
-const STYLE_DIR = path.join(ROOT, 'assets/watermark_master_styles')
+const ROOT = 'D:/border&watermark/_research/vendor-latest/oppo/assets'
+const STYLE_DIR = path.join(ROOT, 'watermark_master_styles')
 const OUT_DIR = 'D:/border&watermark/framemark/src/renderer/src/core/system/generated'
 const APP_ASSET_DIR = 'D:/border&watermark/framemark/src/renderer/src/assets/system/oppo/gallery'
+const STYLES_ONLY = process.argv.includes('--styles-only')
 
 const TEXT_KINDS = {
   0: 'model',
@@ -30,7 +32,9 @@ const NAME_MAP = [
   ['personalize_masterSign', '大师签名'],
   ['personalize_retroCamera', '复古相机'],
   ['personalize_brand', '品牌'],
+  ['personalize_film_realme', 'realme 胶片'],
   ['personalize_film', '胶片'],
+  ['realme_brand_imprint_inspirationPhoto', 'realme 品牌印记'],
   ['video_text_style', '文字 · 视频'],
   ['text_style', '文字'],
   ['restrict_local_songkran', '宋干节']
@@ -281,11 +285,10 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
 }
 
 function collectBitmapFiles() {
-  const map = JSON.parse(fs.readFileSync(path.join(ROOT, 'bitmap-map.json'), 'utf8').replace(/^﻿/, ''))
+  const map = JSON.parse(fs.readFileSync(path.join(ROOT, 'bitmaps/_map.json'), 'utf8').replace(/^﻿/, ''))
   const out = new Map()
-  for (const item of map.bitmapsFound) {
-    const file = item.files?.[0]
-    if (file) out.set(item.name, path.basename(file))
+  for (const [name, item] of Object.entries(map)) {
+    if (item && item.present !== false && item.file) out.set(name, path.basename(item.file))
   }
   return out
 }
@@ -320,24 +323,29 @@ async function main() {
     path.join(OUT_DIR, 'oppoGallery.ts'),
     `import type { StockStyle } from '../ir'\n\nexport const OPPO_GALLERY_STYLES = ${JSON.stringify(styles, null, 2)} as StockStyle[]\n`
   )
-  const variants = styles.map((s) => ({
-    id: `stock-${s.id.replace('oppo-gallery:', 'oppo-')}`,
-    name: s.name,
-    en: s.nameEn,
-    category: '系统相机',
-    base: 'systemCamera',
-    params: { systemStyle: s.id },
-    text: { showMake: true, showModel: true, showExif: true, showDate: true, showLogo: true },
-    badge: '近似',
-    vendor: 'oppo',
-    family: s.family,
-    fidelity: s.audit.status
-  }))
-  fs.writeFileSync(
-    path.join(OUT_DIR, 'oppoVariants.ts'),
-    `import type { TemplateVariant } from '../../../types'\n\nexport const OPPO_GALLERY_VARIANTS = ${JSON.stringify(variants, null, 2)} as TemplateVariant[]\n`
-  )
-  console.log('styles', styles.length, 'variants', variants.length)
+  if (STYLES_ONLY) {
+    console.log('styles', styles.length)
+    console.log('variants skipped (--styles-only)')
+  } else {
+    const variants = styles.map((s) => ({
+      id: `stock-${s.id.replace('oppo-gallery:', 'oppo-')}`,
+      name: s.name,
+      en: s.nameEn,
+      category: '系统相机',
+      base: 'systemCamera',
+      params: { systemStyle: s.id },
+      text: { showMake: true, showModel: true, showExif: true, showDate: true, showLogo: true },
+      badge: '近似',
+      vendor: 'oppo',
+      family: s.family,
+      fidelity: s.audit.status
+    }))
+    fs.writeFileSync(
+      path.join(OUT_DIR, 'oppoVariants.ts'),
+      `import type { TemplateVariant } from '../../../types'\n\nexport const OPPO_GALLERY_VARIANTS = ${JSON.stringify(variants, null, 2)} as TemplateVariant[]\n`
+    )
+    console.log('styles', styles.length, 'variants', variants.length)
+  }
   console.log('missing assets:')
   const allAssets = new Set(styles.flatMap((s) => Object.keys(s.assets)))
   for (const a of allAssets) if (!bitmapFiles.has(a)) console.log(' -', a)

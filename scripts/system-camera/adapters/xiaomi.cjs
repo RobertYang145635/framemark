@@ -4,11 +4,12 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const sharp = require('sharp')
 
-const ROOT = 'D:/border&watermark/_research/extracted/xiaomi-watermarks'
+// Source of truth: Xiaomi 17 Ultra NeoHyper (com.android.camera 6.7.000280.0) asset v36.
+const ROOT = 'D:/border&watermark/_research/roms/neohyper/apk-assets/assets/watermarks'
 const OUT_DIR = 'D:/border&watermark/framemark/src/renderer/src/core/system/generated'
 const APP_ASSET_DIR = 'D:/border&watermark/framemark/src/renderer/src/assets/system/xiaomi'
 
-const FAMILY_LABEL = { classic: '经典', film: '胶片', leica: '徕卡', standard: '标准', tag: '标签', disney: '迪士尼' }
+const FAMILY_LABEL = { classic: '经典', film: '胶片', leica: '徕卡', standard: '小米标准', tag: '标签', disney: '迪士尼' }
 
 function dp(v, fallback) {
   if (typeof v === 'number') return v
@@ -534,7 +535,7 @@ async function convertStyle(family, id) {
 async function main() {
   const styles = []
   const blocked = []
-  for (const family of fs.readdirSync(ROOT).filter((f) => fs.statSync(path.join(ROOT, f)).isDirectory() && f !== 'standard')) {
+  for (const family of fs.readdirSync(ROOT).filter((f) => fs.statSync(path.join(ROOT, f)).isDirectory())) {
     for (const id of fs.readdirSync(path.join(ROOT, family)).filter((f) => /^\d+$/.test(f)).sort((a, b) => Number(a) - Number(b))) {
       const r = await convertStyle(family, id)
       if (r?.style) styles.push(r.style)

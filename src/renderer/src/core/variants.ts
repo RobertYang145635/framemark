@@ -594,31 +594,6 @@ TEMPLATE_VARIANTS.push({
   fidelity: 'approx'
 })
 
-const xiaomiStandardVariant = (id: string, name: string): TemplateVariant => ({
-  id,
-  name,
-  en: 'XIAOMI STANDARD',
-  category: '系统相机',
-  base: 'xiaomiStandard',
-  params: { theme: 'ink', standardPosition: 'bottom', insetPct: 4.44, offsetPct: 3.43, shadow: 0.6 },
-  text: { showLogo: true, showModel: true, showExif: false, showDate: true },
-  renderedPreview: renderedPreview(id),
-  badge: '近似',
-  autoLogo: true,
-  vendor: 'xiaomi',
-  family: '小米相机',
-  fidelity: 'approx'
-})
-TEMPLATE_VARIANTS.push(xiaomiStandardVariant('xiaomi-standard-6', '小米标准 · 6'))
-TEMPLATE_VARIANTS.push(xiaomiStandardVariant('xiaomi-standard-107', '小米标准 · 107'))
-const xiaomiStackVariant = (id: string, name: string, showExif: boolean): TemplateVariant => ({
-  ...xiaomiStandardVariant(id, name),
-  params: { theme: 'ink', standardLayout: 'stack', showStandardExif: showExif, offsetPct: 2.8 },
-  text: { showLogo: true, showModel: true, showExif: showExif, showDate: true }
-})
-TEMPLATE_VARIANTS.push(xiaomiStackVariant('xiaomi-standard-7', '小米标准 · 7', false))
-TEMPLATE_VARIANTS.push(xiaomiStackVariant('xiaomi-standard-8', '小米标准 · 8', true))
-
 export const VARIANT_MAP: Record<string, TemplateVariant> = Object.fromEntries(
   TEMPLATE_VARIANTS.map((v) => [v.id, v])
 )

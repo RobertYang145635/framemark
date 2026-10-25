@@ -1,4 +1,4 @@
-// Rebuild the 73 rendered variant previews through window.__fmVariants (ID based).
+// Rebuild the 69 rendered variant previews through window.__fmVariants (ID based).
 //
 // Thumbnails are staged in a temp directory and swapped in atomically, so a
 // partial failure never destroys the existing previews (previews for failed ids
@@ -12,7 +12,7 @@ const { _electron: electron } = require('playwright-core')
 const project = path.resolve(__dirname, '..')
 const previewsDir = path.join(project, 'src/renderer/src/assets/previews')
 const outDir = path.join(previewsDir, 'rendered')
-const expectedVariants = 73
+const expectedVariants = 69
 const runId = `${process.pid}-${Date.now()}`
 const tmpDir = path.join(previewsDir, `.rendered-tmp-${runId}`)
 const backupDir = path.join(previewsDir, `.rendered-backup-${runId}`)

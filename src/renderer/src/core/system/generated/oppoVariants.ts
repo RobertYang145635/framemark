@@ -338,27 +338,6 @@ export const OPPO_GALLERY_VARIANTS = [
     "fidelity": "approx"
   },
   {
-    "id": "stock-oppo-personalize_brand_3",
-    "name": "品牌 · 3",
-    "en": "personalize_brand_3",
-    "category": "系统相机",
-    "base": "systemCamera",
-    "params": {
-      "systemStyle": "oppo-gallery:personalize_brand_3"
-    },
-    "text": {
-      "showMake": true,
-      "showModel": true,
-      "showExif": true,
-      "showDate": true,
-      "showLogo": true
-    },
-    "badge": "近似",
-    "vendor": "oppo",
-    "family": "OPPO 相册",
-    "fidelity": "approx"
-  },
-  {
     "id": "stock-oppo-personalize_brand_5",
     "name": "品牌 · 5",
     "en": "personalize_brand_5",
@@ -429,6 +408,48 @@ export const OPPO_GALLERY_VARIANTS = [
     "base": "systemCamera",
     "params": {
       "systemStyle": "oppo-gallery:personalize_film_2"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-oppo-personalize_film_realme_1",
+    "name": "realme 胶片 · 1",
+    "en": "personalize_film_realme_1",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "oppo-gallery:personalize_film_realme_1"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-oppo-personalize_film_realme_2",
+    "name": "realme 胶片 · 2",
+    "en": "personalize_film_realme_2",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "oppo-gallery:personalize_film_realme_2"
     },
     "text": {
       "showMake": true,
@@ -618,6 +639,69 @@ export const OPPO_GALLERY_VARIANTS = [
     "base": "systemCamera",
     "params": {
       "systemStyle": "oppo-gallery:personalize_retroCamera_5"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-oppo-realme_brand_imprint_inspirationPhoto_1",
+    "name": "realme 品牌印记 · 1",
+    "en": "realme_brand_imprint_inspirationPhoto_1",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "oppo-gallery:realme_brand_imprint_inspirationPhoto_1"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-oppo-realme_brand_imprint_inspirationPhoto_2",
+    "name": "realme 品牌印记 · 2",
+    "en": "realme_brand_imprint_inspirationPhoto_2",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "oppo-gallery:realme_brand_imprint_inspirationPhoto_2"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-oppo-realme_brand_imprint_inspirationPhoto_3",
+    "name": "realme 品牌印记 · 3",
+    "en": "realme_brand_imprint_inspirationPhoto_3",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "oppo-gallery:realme_brand_imprint_inspirationPhoto_3"
     },
     "text": {
       "showMake": true,

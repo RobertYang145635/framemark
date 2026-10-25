@@ -70,8 +70,12 @@ const blocked = fs.readFileSync(path.join(project, 'src/renderer/src/core/system
 for (const id of variantIds) {
   if (blocked.includes(`id: '${id}'`)) errors.push(`blocked id also shipped as variant: ${id}`)
 }
-if (styles.length !== 82) warnings.push(`generated stock styles ${styles.length} (expected 82; manual Polaroid + Xiaomi standard + vivo Zeiss are separate)`)
-if (variants.length !== 82) warnings.push(`generated stock variants ${variants.length} (expected 82; manual Polaroid + Xiaomi standard + vivo Zeiss are separate)`)
+const previewCount = fs.readdirSync(previews).filter((f) => f.endsWith('.webp')).length
+if (styles.length !== 90) warnings.push(`generated stock styles ${styles.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss are separate)`)
+if (variants.length !== 90) warnings.push(`generated stock variants ${variants.length} (expected 90; manual Polaroid + Xiaomi sidebar + vivo Zeiss are separate)`)
+if (previewCount !== 95) warnings.push(`stock previews ${previewCount} (expected 95; includes 2 manual Xiaomi sidebar previews + 3 vivo Zeiss)`)
+if (!fs.existsSync(path.join(previews, 'stock-xiaomi-standard-6.webp'))) errors.push('missing preview: stock-xiaomi-standard-6.webp')
+if (!fs.existsSync(path.join(previews, 'stock-xiaomi-standard-107.webp'))) errors.push('missing preview: stock-xiaomi-standard-107.webp')
 for (const id of ['stock-vivo-zeiss-border_top', 'stock-vivo-zeiss-up_down', 'stock-vivo-zeiss-inside']) {
   if (!fs.existsSync(path.join(previews, `${id}.webp`))) errors.push(`missing preview: ${id}.webp`)
 }
@@ -86,7 +90,7 @@ if (fs.existsSync(manifestFile)) {
 console.log(JSON.stringify({
   styles: styles.length,
   variants: variants.length,
-  previews: fs.readdirSync(previews).filter((f) => f.endsWith('.webp')).length,
+  previews: previewCount,
   errors: errors.length,
   warnings: warnings.length
 }, null, 2))

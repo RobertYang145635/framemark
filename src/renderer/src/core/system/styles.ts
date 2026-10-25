@@ -29,7 +29,7 @@ const HASSEL: StockStyle = {
             {
               kind: 'group',
               orientation: 'column',
-              width: 160,
+              width: 190,
               gravity: 'leftVerticalCenter',
               children: [
                 {
@@ -184,105 +184,6 @@ const LUMO: StockStyle = {
   }
 }
 
-const XIAOMI_LEICA_2: StockStyle = {
-  id: 'xiaomi-leica:2',
-  vendor: 'xiaomi',
-  family: '小米相机',
-  name: '徕卡 · 2',
-  nameEn: 'leica_2_xuanyuan',
-  placement: 'out',
-  referenceWidth: 1080,
-  margins: { left: 80, top: 80, right: 80, bottom: 258 },
-  background: '#FFFFFF',
-  bands: [
-    {
-      direction: 'top',
-      thickness: 80,
-      children: [
-        {
-          kind: 'group',
-          orientation: 'row',
-          width: 1080,
-          height: 80,
-          gravity: 'rightBottom',
-          margins: { left: 80 },
-          children: [
-            { kind: 'space', weight: 1 },
-            {
-              kind: 'image',
-              asset: 'xiaomi-leica-2-xiaomi',
-              width: 101,
-              height: 24,
-              scale: 'contain',
-              gravity: 'leftBottom',
-              margins: { right: 10 }
-            },
-            {
-              kind: 'text',
-              token: { kind: 'template', value: '@model=@{versionNumber} @{versionName}' },
-              font: 'misans',
-              size: 21.6,
-              weight: 500,
-              color: '#000000',
-              align: 'left',
-              gravity: 'leftBottom'
-            }
-          ]
-        }
-      ]
-    },
-    {
-      direction: 'bottom',
-      thickness: 258,
-      children: [
-        {
-          kind: 'group',
-          orientation: 'column',
-          gravity: 'center',
-          children: [
-            {
-              kind: 'image',
-              asset: 'xiaomi-leica-2-leica',
-              width: 72,
-              height: 72,
-              scale: 'contain',
-              gravity: 'center'
-            },
-            {
-              kind: 'text',
-              token: { kind: 'template', value: '@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}' },
-              font: 'oxanium',
-              size: 20,
-              weight: 500,
-              color: '#E20612',
-              align: 'center',
-              gravity: 'center',
-              margins: { top: 20 }
-            },
-            {
-              kind: 'text',
-              token: { kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' },
-              font: 'oxanium',
-              size: 20,
-              weight: 500,
-              color: '#000000',
-              alpha: 0.7,
-              align: 'center',
-              gravity: 'center',
-              margins: { top: 12 }
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  assets: {
-    'xiaomi-leica-2-xiaomi': { file: 'xiaomi/leica/2/xiaomi_black.webp', width: 673, height: 160 },
-    'xiaomi-leica-2-leica': { file: 'xiaomi/leica/2/leica.webp', width: 240, height: 240 }
-  },
-  audit: { status: 'approx', notes: 'Hand-authored from Xiaomi leica/2 (xuanyuan) config; pending visual audit.' }
-}
-
 const GR5_LABELS = [
   'Style', 'Saturation', 'Hue', 'Tone', 'Contrast', 'Highlight', 'Shadow',
   'Sharpness', 'Clarity', 'Grain Intensity', 'Grain Size'
@@ -393,163 +294,6 @@ const GR5: StockStyle = {
   }
 }
 
-const XIAOMI_LEICA_91: StockStyle = {
-  id: 'xiaomi-leica:91',
-  vendor: 'xiaomi',
-  family: '小米相机',
-  name: '徕卡 · 91',
-  nameEn: 'leica_91',
-  placement: 'in',
-  referenceWidth: 1080,
-  margins: { left: 0, top: 0, right: 0, bottom: 0 },
-  background: '#00000000',
-  transparentBackground: true,
-  bands: [
-    {
-      direction: 'overlay',
-      children: [
-        {
-          kind: 'group',
-          orientation: 'row',
-          width: 920,
-          gravity: 'topHorCenter',
-          margins: { top: 72 },
-          children: [
-            {
-              kind: 'group',
-              orientation: 'column',
-              width: 520,
-              gravity: 'leftTop',
-              children: [
-                {
-                  kind: 'group',
-                  orientation: 'row',
-                  gravity: 'leftVerticalCenter',
-                  children: [
-                    {
-                      kind: 'image',
-                      asset: 'leica-91-logo-xiaomi_white',
-                      width: 101,
-                      height: 24,
-                      scale: 'contain',
-                      margins: { right: 8 }
-                    },
-                    {
-                      kind: 'text',
-                      token: { kind: 'template', value: '@model=@{versionNumber}' },
-                      font: 'misans',
-                      size: 21.6,
-                      weight: 500,
-                      color: '#FFFFFF',
-                      tracking: 0,
-                      lineHeight: 26,
-                      align: 'left'
-                    },
-                    {
-                      kind: 'text',
-                      token: { kind: 'template', value: '@model=@{versionName}' },
-                      font: 'misans',
-                      size: 13.2,
-                      weight: 400,
-                      color: '#FFFFFF',
-                      tracking: 0.028,
-                      lineHeight: 20,
-                      align: 'center',
-                      optional: true,
-                      margins: { left: 4 },
-                      outline: { paddingX: 5, height: 20, radius: 4, strokeWidth: 1, strokeColor: '#BFFFFFFF' }
-                    }
-                  ]
-                },
-                {
-                  kind: 'group',
-                  orientation: 'row',
-                  gravity: 'leftVerticalCenter',
-                  margins: { top: 22 },
-                  children: [
-                    {
-                      kind: 'text',
-                      token: { kind: 'template', value: '@time=@wm_time_yyyy_MM_dd' },
-                      font: 'lg1056',
-                      size: 20,
-                      weight: 400,
-                      color: '#FFFFFF',
-                      tracking: 0.15,
-                      lineHeight: 24,
-                      align: 'left',
-                      shadow: { color: 'rgba(0,0,0,0.5)', blur: 4, x: 0, y: 1 }
-                    },
-                    {
-                      kind: 'text',
-                      token: { kind: 'template', value: '@time=@wm_time_HH_mm' },
-                      font: 'lg1056',
-                      size: 20,
-                      weight: 400,
-                      color: '#FFFFFF',
-                      tracking: 0.15,
-                      lineHeight: 24,
-                      align: 'left',
-                      margins: { left: 24 },
-                      shadow: { color: 'rgba(0,0,0,0.5)', blur: 4, x: 0, y: 1 }
-                    }
-                  ]
-                }
-              ]
-            },
-            { kind: 'space', weight: 1 },
-            {
-              kind: 'group',
-              orientation: 'column',
-              gravity: 'rightTop',
-              children: [
-                { kind: 'image', asset: 'leica-91-leica', width: 60, height: 60, scale: 'contain', gravity: 'rightTop' },
-                {
-                  kind: 'text',
-                  token: { kind: 'location' },
-                  font: 'misans',
-                  size: 18,
-                  weight: 400,
-                  color: '#FFFFFF',
-                  tracking: 0.04,
-                  lineHeight: 22,
-                  align: 'right',
-                  optional: true,
-                  gravity: 'rightTop',
-                  margins: { top: 14 },
-                  shadow: { color: 'rgba(0,0,0,0.5)', blur: 4, x: 0, y: 1 }
-                },
-                {
-                  kind: 'text',
-                  token: { kind: 'template', value: '@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}' },
-                  font: 'misans',
-                  size: 18,
-                  weight: 500,
-                  color: '#FFFFFF',
-                  tracking: 0.04,
-                  lineHeight: 22,
-                  align: 'right',
-                  gravity: 'rightTop',
-                  margins: { top: 4 },
-                  shadow: { color: 'rgba(0,0,0,0.5)', blur: 4, x: 0, y: 1 }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  assets: {
-    'leica-91-logo-xiaomi_white': { file: 'xiaomi/leica/91/xiaomi_white.webp', width: 673, height: 160 },
-    'leica-91-leica': { file: 'xiaomi/leica/91/leica.webp', width: 240, height: 240 }
-  },
-  audit: {
-    status: 'approx',
-    notes: 'In-style Zeiss/Leica top overlay; absolute host layout approximated from center_top config. Pending visual audit.'
-  }
-}
-
-
 function oppoSideStyle(id: string, name: string, assetKey: string, file: string, w: number, h: number, dims: { width: number; height: number }): StockStyle {
   return {
     id,
@@ -633,10 +377,6 @@ function oppoSideStyle(id: string, name: string, assetKey: string, file: string,
   }
 }
 
-const OPPO_BRAND_3: StockStyle = oppoSideStyle(
-  'oppo-gallery:personalize_brand_3', '品牌 · 3', 'brand_imagine_dark', 'brand_imagine_dark.webp', 100, 52,
-  { width: 528, height: 272 }
-)
 const OPPO_FILM_2: StockStyle = oppoSideStyle(
   'oppo-gallery:personalize_film_2', '胶片 · 2', 'film_daylight_vertical_dark', 'film_daylight_vertical_dark.webp', 100, 68,
   { width: 400, height: 272 }
@@ -734,7 +474,7 @@ const XIAOMI_FILM_15: StockStyle = {
   nameEn: 'film_15',
   placement: 'out',
   referenceWidth: 1080,
-  margins: { left: 80, top: 80, right: 80, bottom: 100 },
+  margins: { left: 80, top: 80, right: 80, bottom: 80 },
   background: '#141414',
   bands: [
     {
@@ -743,10 +483,10 @@ const XIAOMI_FILM_15: StockStyle = {
       children: [
         {
           kind: 'group',
-          orientation: 'column',
-          width: 920,
-          height: 80,
-          gravity: 'leftTop',
+          orientation: 'row',
+          matchWidth: true,
+          matchHeight: true,
+          margins: { left: 80, right: 80 },
           children: [
             {
               kind: 'image',
@@ -754,7 +494,7 @@ const XIAOMI_FILM_15: StockStyle = {
               width: 80,
               height: 17.9,
               scale: 'contain',
-              gravity: 'topHorCenter'
+              gravity: 'leftVerticalCenter'
             },
             {
               kind: 'text',
@@ -765,10 +505,8 @@ const XIAOMI_FILM_15: StockStyle = {
               color: '#CE9238',
               tracking: 0.04,
               lineHeight: 20,
-              width: 920,
-              align: 'center',
-              optional: true,
-              margins: { top: 4 }
+              gravity: 'rightVerticalCenter',
+              optional: true
             }
           ]
         }
@@ -776,14 +514,14 @@ const XIAOMI_FILM_15: StockStyle = {
     },
     {
       direction: 'bottom',
-      thickness: 100,
+      thickness: 80,
       children: [
         {
           kind: 'group',
-          orientation: 'column',
-          width: 920,
-          height: 100,
-          gravity: 'leftTop',
+          orientation: 'row',
+          matchWidth: true,
+          matchHeight: true,
+          margins: { left: 80, right: 80 },
           children: [
             {
               kind: 'text',
@@ -794,20 +532,18 @@ const XIAOMI_FILM_15: StockStyle = {
               color: '#CE9238',
               tracking: 0.03,
               lineHeight: 20,
-              width: 920,
-              align: 'left'
+              gravity: 'leftVerticalCenter'
             },
             {
               kind: 'group',
               orientation: 'row',
-              gravity: 'leftVerticalCenter',
-              margins: { top: 6 },
+              gravity: 'center',
               children: [
                 {
                   kind: 'image',
                   asset: 'film-15-logo-xiaomi_CE9238',
-                  width: 101,
-                  height: 24,
+                  width: 109.4,
+                  height: 26,
                   scale: 'contain',
                   margins: { right: 8 }
                 },
@@ -846,9 +582,7 @@ const XIAOMI_FILM_15: StockStyle = {
               color: '#CE9238',
               tracking: 0.03,
               lineHeight: 20,
-              width: 920,
-              align: 'left',
-              margins: { top: 16 }
+              gravity: 'rightVerticalCenter'
             }
           ]
         }
@@ -859,7 +593,7 @@ const XIAOMI_FILM_15: StockStyle = {
     'film-15-icon_triangle': { file: 'xiaomi/film/15/icon_triangle.webp', width: 161, height: 36 },
     'film-15-logo-xiaomi_CE9238': { file: 'xiaomi/film/15/xiaomi_CE9238.webp', width: 673, height: 160 }
   },
-  audit: { status: 'approx', notes: 'Footer reflowed with explicit 6/10dp gaps; source 80dp band was too tight for date+brand+EXIF at 4:3.' }
+  audit: { status: 'approx', notes: 'NeoHyper 17 Ultra film/15: 80dp bands with 80dp side inset, top triangle+location row, bottom time+brand+EXIF row, #CE9238. Config-derived; no vendor-rendered 4:3 frame.' }
 }
 
 function xiaomiInnerSidebar(
@@ -1034,10 +768,7 @@ export const STOCK_STYLES: Record<string, StockStyle> = {
   ...Object.fromEntries(VIVO_STYLES.map((s) => [s.id, s])),
   [HASSEL.id]: HASSEL,
   [LUMO.id]: LUMO,
-  [XIAOMI_LEICA_2.id]: XIAOMI_LEICA_2,
-  [XIAOMI_LEICA_91.id]: XIAOMI_LEICA_91,
   [GR5.id]: GR5,
-  [OPPO_BRAND_3.id]: OPPO_BRAND_3,
   [OPPO_FILM_2.id]: OPPO_FILM_2,
   [OPPO_MASTERSIGN_3.id]: OPPO_MASTERSIGN_3,
   [OPPO_RETRO_5.id]: OPPO_RETRO_5,

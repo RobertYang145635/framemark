@@ -653,6 +653,90 @@ export const XIAOMI_VARIANTS = [
     "fidelity": "approx"
   },
   {
+    "id": "stock-xiaomi-standard-6",
+    "name": "小米标准 · 6",
+    "en": "standard_6",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "xiaomi-standard:6"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "xiaomi",
+    "family": "小米相机",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-xiaomi-standard-7",
+    "name": "小米标准 · 7",
+    "en": "standard_7",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "xiaomi-standard:7"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "xiaomi",
+    "family": "小米相机",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-xiaomi-standard-8",
+    "name": "小米标准 · 8",
+    "en": "standard_8",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "xiaomi-standard:8"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "xiaomi",
+    "family": "小米相机",
+    "fidelity": "approx"
+  },
+  {
+    "id": "stock-xiaomi-standard-107",
+    "name": "小米标准 · 107",
+    "en": "standard_107",
+    "category": "系统相机",
+    "base": "systemCamera",
+    "params": {
+      "systemStyle": "xiaomi-standard:107"
+    },
+    "text": {
+      "showMake": true,
+      "showModel": true,
+      "showExif": true,
+      "showDate": true,
+      "showLogo": true
+    },
+    "badge": "近似",
+    "vendor": "xiaomi",
+    "family": "小米相机",
+    "fidelity": "approx"
+  },
+  {
     "id": "stock-xiaomi-tag-9",
     "name": "标签 · 9",
     "en": "tag_9",

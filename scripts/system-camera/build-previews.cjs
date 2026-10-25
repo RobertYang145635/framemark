@@ -7,6 +7,11 @@ const project = path.resolve(__dirname, '..', '..')
 const outDir = path.join(project, 'src/renderer/src/assets/previews/system')
 fs.mkdirSync(outDir, { recursive: true })
 
+// Optional scope filter, e.g. --prefix=oppo-gallery: renders only those styles
+// and merges their manifest rows instead of overwriting the whole manifest.
+const prefixArg = process.argv.slice(2).find((a) => a.startsWith('--prefix='))
+const prefix = prefixArg ? prefixArg.slice('--prefix='.length) : ''
+
 function variantId(styleId) {
   if (styleId.startsWith('oppo-gallery:')) return 'stock-oppo-' + styleId.slice('oppo-gallery:'.length)
   return 'stock-' + styleId.replace(/[:]/g, '-')
@@ -16,8 +21,9 @@ async function main() {
   const app = await electron.launch({ executablePath: require('electron'), args: ['.'], cwd: project })
   const page = await app.firstWindow()
   await page.waitForSelector('.app-shell.ready', { timeout: 20000 })
-  const list = await page.evaluate(() => window.__fmStock.list())
-  console.log('styles', list.length)
+  const all = await page.evaluate(() => window.__fmStock.list())
+  const list = prefix ? all.filter((item) => item.id.startsWith(prefix)) : all
+  console.log('styles', list.length, prefix ? `(of ${all.length}, prefix ${prefix})` : '')
   let ok = 0
   let failed = 0
   const manifest = []
@@ -45,8 +51,14 @@ async function main() {
   }
   const auditDir = path.resolve(project, '..', '_research', 'stock-audit')
   fs.mkdirSync(auditDir, { recursive: true })
-  fs.writeFileSync(path.join(auditDir, 'previews-manifest.json'), JSON.stringify(manifest, null, 2))
-  console.log({ ok, failed })
+  const manifestFile = path.join(auditDir, 'previews-manifest.json')
+  let merged = manifest
+  if (prefix) {
+    const existing = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')) : []
+    merged = [...existing.filter((x) => !String(x.styleId ?? '').startsWith(prefix)), ...manifest]
+  }
+  fs.writeFileSync(manifestFile, JSON.stringify(merged, null, 2))
+  console.log({ ok, failed, manifest: merged.length })
   await app.close()
   if (failed) process.exitCode = 1
 }
