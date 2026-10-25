@@ -154,6 +154,15 @@ export type StockNode =
 
 export interface StockBand {
   direction: 'top' | 'bottom' | 'left' | 'right' | 'overlay'
+  /**
+   * Degrees. Whole-band rotation painted about the band box centre, matching
+   * the vendor's band-level `bitmaps[i].rotation` (OPPO ships only 90: a
+   * full-length 50dp strip laid out horizontally, then turned onto its side —
+   * text and child images rotate with it). Undefined/0 leaves a band untouched;
+   * for ±90 the children are laid out in the axis-swapped box sharing the same
+   * centre, so the vendor's aspect-preserving fit rules still apply.
+   */
+  rotation?: number
   thickness?: number
   width?: number
   radius?: number

@@ -197,7 +197,12 @@ function paintItem(
   foreground: string[],
   themeId: string | undefined,
   onLightSurface = false,
-  brandDark = false
+  brandDark = false,
+  // Rotated bands paint inside a canvas transform, in the band's pre-rotation
+  // coordinate space: the on-canvas clamp below compares against the WRONG
+  // axis there (a ±90° band's text runs along the photo's long edge), so it is
+  // skipped — `fitBandItems()` already keeps the content inside the band.
+  inRotatedBand = false
 ): void {
   const ctx = env.ctx
   let box = scaleRect(item.box, k)
@@ -282,7 +287,7 @@ function paintItem(
   ctx.textAlign = item.align
   const pad = Math.max(3, Math.min(36, Math.round(env.W * 0.025)))
   let fit = 1
-  if (box.w > env.W - pad * 2 || box.h > env.H - pad * 2) {
+  if (!inRotatedBand && (box.w > env.W - pad * 2 || box.h > env.H - pad * 2)) {
     fit = Math.min(
       1,
       (env.W - pad * 2) / Math.max(1, box.w),
@@ -295,8 +300,10 @@ function paintItem(
   box = { ...box, w: box.w * fit, h: box.h * fit }
   if (item.align === 'center') box.x = centerX - box.w / 2
   else if (item.align === 'right') box.x = rightX - box.w
-  box.x = Math.max(pad, Math.min(box.x, env.W - pad - box.w))
-  box.y = Math.max(pad, Math.min(box.y, env.H - pad - box.h))
+  if (!inRotatedBand) {
+    box.x = Math.max(pad, Math.min(box.x, env.W - pad - box.w))
+    box.y = Math.max(pad, Math.min(box.y, env.H - pad - box.h))
+  }
   if (node.outline && node.outline.strokeWidth > 0) {
     const stroke = node.outline.strokeColorIndex != null
       ? foreground[node.outline.strokeColorIndex]
@@ -348,20 +355,34 @@ export function paintStockLayout(
 
   const drawBand = (band: StockLayout['bands'][number]): void => {
     const r = scaleRect(band.box, scale)
+    // Whole-band rotation (vendor `bitmaps[i].rotation`): turn the band's
+    // pre-rotation drawing (background + items, one coordinate space) about
+    // the band box centre. Text and child images rotate with it.
+    const rotated = !!band.rotation
+    ctx.save()
+    if (rotated) {
+      const cx = r.x + r.w / 2
+      const cy = r.y + r.h / 2
+      ctx.translate(cx, cy)
+      ctx.rotate(((band.rotation as number) * Math.PI) / 180)
+      ctx.translate(-cx, -cy)
+    }
     if (band.band.background) {
+      const bg = rotated ? scaleRect(band.layoutBox ?? band.box, scale) : r
       ctx.save()
       ctx.fillStyle = cssColor(band.band.background)
       if (band.band.radius) {
         ctx.beginPath()
-        roundRectPath(ctx, r.x, r.y, r.w, r.h, band.band.radius * scale)
+        roundRectPath(ctx, bg.x, bg.y, bg.w, bg.h, band.band.radius * scale)
         ctx.fill()
       } else {
-        ctx.fillRect(r.x, r.y, r.w, r.h)
+        ctx.fillRect(bg.x, bg.y, bg.w, bg.h)
       }
       ctx.restore()
     }
     const onLightSurface = false
-    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface, brandDark)
+    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface, brandDark, rotated)
+    ctx.restore()
   }
 
   for (const band of layout.bands) if (band.band.drawFirst) drawBand(band)

@@ -2882,6 +2882,7 @@ export const OPPO_GALLERY_STYLES = [
           "x": 0,
           "y": 0
         },
+        "rotation": 90,
         "children": [
           {
             "kind": "text",
@@ -2915,7 +2916,7 @@ export const OPPO_GALLERY_STYLES = [
             "tracking": 0.03,
             "lineHeight": 9.38,
             "align": "left",
-            "gravity": "verticalCenter",
+            "gravity": "leftVerticalCenter",
             "margins": {
               "left": 12
             },
@@ -3073,6 +3074,7 @@ export const OPPO_GALLERY_STYLES = [
           "x": 0,
           "y": 0
         },
+        "rotation": 90,
         "children": [
           {
             "kind": "group",
@@ -3566,6 +3568,7 @@ export const OPPO_GALLERY_STYLES = [
           "x": 0,
           "y": 0
         },
+        "rotation": 90,
         "children": [
           {
             "kind": "text",
@@ -3599,7 +3602,7 @@ export const OPPO_GALLERY_STYLES = [
             "tracking": 0.03,
             "lineHeight": 9.38,
             "align": "left",
-            "gravity": "verticalCenter",
+            "gravity": "leftVerticalCenter",
             "margins": {
               "left": 12
             },

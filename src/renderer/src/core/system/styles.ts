@@ -294,105 +294,11 @@ const GR5: StockStyle = {
   }
 }
 
-function oppoSideStyle(id: string, name: string, assetKey: string, file: string, w: number, h: number, dims: { width: number; height: number }): StockStyle {
-  return {
-    id,
-    vendor: 'oppo',
-    family: 'OPPO 相册',
-    name,
-    nameEn: id.replace('oppo-gallery:', ''),
-    placement: 'with',
-    referenceWidth: 360,
-    margins: { left: 0, top: 0, right: 150, bottom: 0 },
-    background: '#FFFFFF',
-    bands: [
-      {
-        direction: 'right',
-        thickness: 150,
-        background: '#FFFFFF',
-        children: [
-          {
-            kind: 'group',
-            orientation: 'column',
-            width: 142,
-            matchHeight: true,
-            margins: { left: 4, right: 4, top: 18, bottom: 18 },
-            children: [
-              {
-                kind: 'text',
-                token: { kind: 'model' },
-                font: 'sys',
-                size: 10,
-                weight: 600,
-                color: '#222222',
-                tracking: 0.03,
-                lineHeight: 13,
-                width: 134,
-                align: 'left',
-                optional: false
-              },
-              {
-                kind: 'text',
-                token: { kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' },
-                font: 'sys',
-                size: 8,
-                weight: 400,
-                color: '#77716A',
-                tracking: 0.02,
-                lineHeight: 11,
-                width: 134,
-                align: 'left',
-                margins: { top: 8 }
-              },
-              {
-                kind: 'text',
-                token: { kind: 'location' },
-                font: 'sys',
-                size: 8,
-                weight: 400,
-                color: '#77716A',
-                tracking: 0.02,
-                lineHeight: 11,
-                width: 134,
-                align: 'left',
-                optional: true,
-                margins: { top: 3 }
-              },
-              { kind: 'space', weight: 1 },
-              {
-                kind: 'image',
-                asset: assetKey,
-                width: w,
-                height: h,
-                scale: 'contain',
-                gravity: 'topHorCenter'
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    assets: { [assetKey]: { file, width: dims.width, height: dims.height } },
-    audit: { status: 'approx', notes: 'Side panel reflowed to prevent clipping; source config uses a 50dp panel but a 97dp logo. Pending visual audit.' }
-  }
-}
-
-const OPPO_FILM_2: StockStyle = oppoSideStyle(
-  'oppo-gallery:personalize_film_2', '胶片 · 2', 'film_daylight_vertical_dark', 'film_daylight_vertical_dark.webp', 100, 68,
-  { width: 400, height: 272 }
-)
-const OPPO_MASTERSIGN_3: StockStyle = oppoSideStyle(
-  'oppo-gallery:personalize_masterSign_3', '大师签名 · 3', 'master_sign_3_dark', 'master_sign_3_dark.webp', 110, 30,
-  { width: 750, height: 204 }
-)
-// realme 胶片 · 2 ships as a 50dp *rotated* side strip (bitmaps[0].rotation = 90) whose content
-// runs along the photo's long edge with a 97dp logo. The IR has no glyph rotation, so the strip
-// is reflowed through the same side-panel helper as its siblings (胶片 · 2 / 大师签名 · 3)
-// instead of being crushed to ~1.7px micro-text by fitBandItems().
-const OPPO_FILM_REALME_2: StockStyle = oppoSideStyle(
-  'oppo-gallery:personalize_film_realme_2', 'realme 胶片 · 2', 'realme_film_daylight', 'realme_film_daylight.webp', 100, 70,
-  { width: 368, height: 256 }
-)
+// 胶片 · 2 / realme 胶片 · 2 / 大师签名 · 3 used to be reflowed through an
+// `oppoSideStyle` 150dp side-panel helper because the IR had no band rotation.
+// `StockBand.rotation` now carries the vendor's `bitmaps[0].rotation: 90`
+// faithfully (50dp strip, glyphs turned with it), so all three ship the
+// generated IR and the helper is gone. No other style used `oppoSideStyle`.
 
 const OPPO_RETRO_5: StockStyle = {
   id: 'oppo-gallery:personalize_retroCamera_5',
@@ -779,9 +685,6 @@ export const STOCK_STYLES: Record<string, StockStyle> = {
   [HASSEL.id]: HASSEL,
   [LUMO.id]: LUMO,
   [GR5.id]: GR5,
-  [OPPO_FILM_2.id]: OPPO_FILM_2,
-  [OPPO_FILM_REALME_2.id]: OPPO_FILM_REALME_2,
-  [OPPO_MASTERSIGN_3.id]: OPPO_MASTERSIGN_3,
   [OPPO_RETRO_5.id]: OPPO_RETRO_5,
   [XIAOMI_FILM_15.id]: XIAOMI_FILM_15,
   [XIAOMI_CLASSIC_22.id]: XIAOMI_CLASSIC_22,

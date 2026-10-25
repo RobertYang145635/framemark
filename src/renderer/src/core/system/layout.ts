@@ -77,7 +77,17 @@ export type PlacedItem = PlacedText | PlacedImage | PlacedShape | PlacedGroup
 
 export interface PlacedBand {
   band: StockBand
+  /** Final on-canvas band rect (what the background must cover). */
   box: StockRect
+  /**
+   * Rotated bands only: the pre-rotation rect the items were laid out in —
+   * `box` with w/h swapped about the same centre (±90°). Item boxes and
+   * `layoutBox` share one coordinate space; `paint.ts` turns them into canvas
+   * space with the band's rotation transform.
+   */
+  layoutBox?: StockRect
+  /** Rotated bands only: degrees copied from `band.rotation`. */
+  rotation?: number
   items: PlacedItem[]
 }
 
@@ -544,6 +554,20 @@ function bandBox(style: StockStyle, band: StockBand, photo: StockRect, W: number
   }
 }
 
+/**
+ * Rotated bands lay their content out in the pre-rotation rect (the final box
+ * with w/h swapped about the same centre for ±90°), exactly like the vendor's
+ * "horizontal strip, then rotate the band" semantics. Other angles keep the
+ * final rect and are only turned at paint time.
+ */
+function layoutBoxForBand(band: StockBand, box: StockRect): StockRect {
+  const rot = ((band.rotation ?? 0) % 360 + 360) % 360
+  if (rot !== 90 && rot !== 270) return box
+  const cx = box.x + box.w / 2
+  const cy = box.y + box.h / 2
+  return { x: cx - box.h / 2, y: cy - box.w / 2, w: box.h, h: box.w }
+}
+
 export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout {
   const baseW = style.referenceWidth
   const ratio = env.ph / env.pw
@@ -552,6 +576,11 @@ export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout 
   const W = m.left + baseW + m.right
   const H = m.top + basePhotoH + m.bottom
   const photo: StockRect = { x: m.left, y: m.top, w: baseW, h: basePhotoH }
-  const bands = style.bands.map((band) => placeBandRoot(band, bandBox(style, band, photo, W, H), env))
+  const bands = style.bands.map((band) => {
+    const box = bandBox(style, band, photo, W, H)
+    if (!band.rotation) return placeBandRoot(band, box, env)
+    const layoutBox = layoutBoxForBand(band, box)
+    return { ...placeBandRoot(band, layoutBox, env), box, layoutBox, rotation: band.rotation }
+  })
   return { W, H, photo, bands }
 }

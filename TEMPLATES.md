@@ -46,7 +46,7 @@
 
 - v36 精选：classic/film/leica/standard/tag 等可转换样式；34 套生成 + 4 套手写 standard（6/7/8/107）+ 2 套侧栏 classic 22/99。
 - 10 套 in-style overlay：classic 19/71/97、Disney 31/32/33、Leica 91、标签 9/10/11；背景透明、按宿主 anchor 贴照片。
-- classic 22/99 按小米 17 Ultra（NeoHyper）config 接入右侧栏；Leica 5/88/89 仍 blocked，需旋转文字或照片内叠加支持。
+- classic 22/99 按小米 17 Ultra（NeoHyper）config 接入右侧栏；Leica 5/88/89 仍 blocked（侧栏绝对布局缺可用总宽度 / 底部 218dp 容器与照片内叠加超出 IR 表达）；**非旋转文字**——三套小米 config 均无 `rotation` 字段，竖排仅为垂直堆叠（IR `column` 已支持），见 orient-audit.md。
 
 ### vivo 3 / 39 blocked
 

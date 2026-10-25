@@ -315,10 +315,24 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
     const direction = band.direction
     const content = band.content ?? band
     const pos = band.position ?? {}
+    // Band-level rotation (vendor `bitmaps[i].rotation`, OPPO Gallery ships 90
+    // only): the whole strip — glyphs included — turns about the band box
+    // centre at paint time. 0/absent stays undefined so JSON.stringify drops
+    // it and every other style's IR is byte-identical.
+    const rotation = num(content.rotation, 0) || undefined
     const children = (content.elements ?? band.elements ?? []).map((n) => convertNode(n, assets, bitmapFiles, dimensions)).filter(Boolean)
     while (children[0]?.kind === 'space') children.shift()
     while (children[children.length - 1]?.kind === 'space') children.pop()
     if (!children.length) continue
+    if (rotation) {
+      // A rotated band's `layoutWeight` element (gravity `verticalCenter`) is a
+      // LinearLayout cell that FILLS the room between its siblings — its text
+      // starts right after the previous element. Our row solver reads
+      // `verticalCenter` as "centre in the whole band", which drove the EXIF
+      // text under the right-anchored logo (film_2 / masterSign_3), so carry
+      // those cells as left-aligned flow instead.
+      for (const c of children) if (c.gravity === 'verticalCenter') c.gravity = 'leftVerticalCenter'
+    }
     let dir
     let thickness
     if (direction === 1) {
@@ -331,7 +345,9 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
       if (!(thickness > 0)) thickness = margins.bottom
     } else if (direction === 2) {
       dir = margins.right >= margins.left ? 'right' : 'left'
-      thickness = num(content.width, 0)
+      // A ±90° side strip is declared as a horizontal band: its on-card
+      // thickness is the declared height, not the (usually -1) width.
+      thickness = rotation && Math.abs(((rotation % 180) + 180) % 180) === 90 ? num(content.height, 0) : num(content.width, 0)
       if (!(thickness > 0)) thickness = dir === 'right' ? margins.right : margins.left
     } else if (direction === 4) {
       dir = 'overlay'
@@ -345,6 +361,7 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
       thickness: Math.max(0, thickness),
       offset: { x: num(pos.borderX), y: num(pos.borderY) },
       gravity: pos.gravity,
+      rotation,
       children
     })
   }
