@@ -3,9 +3,9 @@
 > **本页是唯一的“当前状态”页面（single source of truth）。**
 > 其他文档只保留方法、分类、门槛与历史；凡涉及当前计数、平台状态、交付哈希、已知缺口或范围，一律链接本页，不再各自抄写数字。
 >
-> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 11:54**（W5 重打包，本机时区）；最近更新：2026-10-25（**W5 收口**：W0–W5 全部完成，代码与文档均已提交，HEAD **`3e4af60`**、工作区干净；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**W5 打包终验**；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
+> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 17:24**（REPACKAGE 重打包，本机时区）；最近更新：2026-10-25（**REPACKAGE 收口**：W0–W5 之后又有三个修复提交落库——`0ef4f83` fix(render) 清除文字/图形重叠并修复 realme 条带版式、`be150e1` fix(templates) 恢复 wm-black 镜头行并按内容去重 EXIF、`b242f7c` fix(store) 切换模板不再残留上一模板的文字开关、模糊日期改用拍摄日期；全量重打包并刷新交付集，HEAD **`b242f7c`**（docs 提交紧随其后）；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**REPACKAGE 打包版复测 164/96/4/62、0 pageerror、真机冷启动 416 ms**；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
 > **当前状态：待用户目视签字**——机器门槛（typecheck / build / e2e / workflow / validate:ir / 47 套逐套测量 / 真机走查）全绿，唯一欠项是用户对 47 套与厂商线的目视签收；签收前不宣称 pixel-perfect、不升级任何 `verified`。
-> 提交链（新→旧）：`3e4af60` feat(vendor) OPPO 17.10.7 + 小米 17U · `5dac9c6` W1 47 套终审 · `fc12d99` Batch C · `edfb484` B3b-3 · `73a3fd7` B3b-1/2 · `f35d4f2` B3a · `27484c0` B2b · `23f00d9` B2a · `f69d77f` B1b · `f1410c2` B1a · `e002e18` A2 · `9657624` A1 · `438c7a1` W2 · `76448c2` W0 文档/工具 · `08fe989` 基线卫生 · `3311904` git 基线。
+> 提交链（新→旧）：`b242f7c` fix(store) 模板切换文字开关复位/模糊日期用拍摄日期 · `be150e1` fix(templates) wm-black 镜头行恢复 + EXIF 内容去重 · `0ef4f83` fix(render) 文字/图形重叠清除 + realme 条带修复 · `5af87d7` docs 交付文档口径 · `418f737` docs 清理收口 · `3e4af60` feat(vendor) OPPO 17.10.7 + 小米 17U · `5dac9c6` W1 47 套终审 · `fc12d99` Batch C · `edfb484` B3b-3 · `73a3fd7` B3b-1/2 · `f35d4f2` B3a · `27484c0` B2b · `23f00d9` B2a · `f69d77f` B1b · `f1410c2` B1a · `e002e18` A2 · `9657624` A1 · `438c7a1` W2 · `76448c2` W0 文档/工具 · `08fe989` 基线卫生 · `3311904` git 基线。
 > 工作日志与历史证据：[../HANDOFF.md](../HANDOFF.md) §7（§7.5 起为按时间顺序的历史记录，数字是当时值）、§14（W0–W5 收口）。
 
 ---
@@ -14,7 +14,7 @@
 
 | 波次 | 内容 | 状态 | 产物 / 入口 |
 |---|---|---|---|
-| W0a | 源码快照 + `framemark/` 内 git 基线 | 完成 | 当时 HEAD `08fe989`（当前 HEAD `3e4af60`）；`_research/snapshots/framemark-src-20261025-0235.zip` |
+| W0a | 源码快照 + `framemark/` 内 git 基线 | 完成 | 当时 HEAD `08fe989`（当前 HEAD `b242f7c`）；`_research/snapshots/framemark-src-20261025-0235.zip` |
 | **W0b** | **文档单一事实源（本页 + REQUIREMENTS）** | **完成** | `PROJECT-BASELINE.md`、`REQUIREMENTS.md`、`_research/cleanup/docs-report.md` |
 | W0c | 审计工具修复 | 完成 | `_research/cleanup/`、`scripts/audit-original47.cjs` |
 | W0d | 47 套清单（TemplateSpec 骨架） | 完成 | `_research/original-47/manifest.json`（已接入本页 §2.1） |
@@ -24,6 +24,7 @@
 | W3 | 最新厂商边框对齐 | **完成（已提交 `3e4af60`）**：OPPO Gallery **17.10.7** 43 套已重导（13 套过时样式已同步、+5 realme、`brand_3` 退役、10 个 CameraPro 样式 `unverifiable`）、小米 **NeoHyper 17 Ultra** 7 套已同步（`film 15` / `leica 2,91` / `standard 6,7,8,107`，后者由手写迁入生成 IR、计数不变）；**vivo 39 套仍 blocked（缺宿主布局与可信参考帧）**；95 套 stock 全 `approx`、**0 `verified`**；ASSESS-W3 GREEN / KEEP-ALL | `_research/vendor-latest/`、[`w3-assess.md`](../_research/cleanup/w3-assess.md)、[`w3b-oppo-data-report.md`](../_research/cleanup/w3b-oppo-data-report.md)、[`w3b-oppo-ui-report.md`](../_research/cleanup/w3b-oppo-ui-report.md)、[`w3b-xiaomi-report.md`](../_research/cleanup/w3b-xiaomi-report.md)；[`oppo-extract-report.md`](../_research/cleanup/oppo-extract-report.md)、[`vendor-inventory-report.md`](../_research/cleanup/vendor-inventory-report.md) |
 | **W4** | **Android 真机走查（PGEM10）** | **完成**：冷启动 300 ms；2 张批量导出 PASS；自定义 PNG 水印上画布 PASS；新 W3 样式带 `近似` 角标正常渲染 PASS；单张导出 → 分享 → Android 系统选择器 PASS（`s3_share.png`）；上报的 4 项「缺陷」全部裁定为测试脚本产物或设计行为（P0 0 / P1 0） | `_research/android-walkthrough/`、[`walkthrough-report.md`](../_research/android-walkthrough/walkthrough-report.md)、[`mobile-triage.md`](../_research/cleanup/mobile-triage.md) |
 | **W5** | **打包与最终验收** | **完成**：Windows zip **281,392,888 B** / APK **30,040,222 B**（哈希见 §4）；打包版 exe 实测 **164 / 96 / 4 / 62、0 pageerror**；汇总报告 [`FINAL-ACCEPTANCE.md`](../_research/cleanup/FINAL-ACCEPTANCE.md)。**当前状态：待用户目视签字** | `_research/packaging/`、[`packaging-report.md`](../_research/cleanup/packaging-report.md)；本页 §3–§5 |
+| **REPACKAGE** | **修复后重打包（本轮）** | **完成**：`0ef4f83`+`be150e1`+`b242f7c` 落库后 typecheck/build 0、e2e 164/96/4、workflow 106/106、validate:ir 90/90/95 0 error；zip **281,403,373 B** / APK **30,046,986 B**（见 §4）；打包版 exe 复测 **164/96/4/62、0 pageerror**；真机覆盖安装冷启动 **416 ms / LaunchState COLD**、数据保留；交付集（docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；保真重导出评审集 `_research/review-164/exports-real/`（164 卡，**0 项真实变形/重叠缺陷**）。**已知状态泄漏缺陷已修**：切换模板会残留上一个模板的文字开关（EXIF/文字类 flag 不随变体重置），`b242f7c` 起切换即复位 | `_research/cleanup/repackage-report.md`、`_research/packaging/win-packaged-counts-fixed.json`、`_research/android-verify/fm-fixed-cold.png`、`_research/review-164/exports-real/` |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
 
@@ -101,34 +102,34 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
-| `typecheck` / `build` | 通过 | W5 收口轮（HEAD `3e4af60`）：`typecheck` exit 0（node + web 无诊断）、`build` exit 0（electron-vite `✓ built in 1.28s`）；日志 `_research/packaging/typecheck.log`、`build.log` |
+| `typecheck` / `build` | 通过 | REPACKAGE 轮（HEAD `b242f7c`）：`npm run typecheck` exit 0、`npm run build` exit 0（electron-vite `✓ built in 1.31s`，新入口 `out/renderer/assets/index-DAVspqQd.js`）；日志 `_research/cleanup/_repackage_build.log` |
 | `npm run test:e2e` | 通过 | W3 收口轮复跑：total **164** / system **96** / blocked **4** / errors 0，1 张导出成功 |
 | `npm run test:workflow` | 通过 | **106/106 断言 / failed 0 / pageError 0 / consoleError 0**（W2 核心工作流；W3 审收轮 ASSESS-W3 复跑仍 106/106；W1 终审轮 FINAL-VERIFY-B 复跑仍 106/106） |
 | `npm run validate:ir` | 通过 | W3 收口轮复跑：**90** 生成样式 / **90** 生成变体 / **95** 系统预览；0 error；37 条既有主题近似 warning |
-| Windows 桌面（W5 打包版） | 通过 | `release/FrameMark-win32-x64/FrameMark.exe` 冷启动实测 `.tpl-card` **164**、系统相机 **96**、blocked **4**、品牌卡 **62**、静态 canvas **0**、**pageerror 0**；证据 `_research/packaging/win-packaged-counts.json` |
-| Android 真机（W4 走查） | **通过（走查四项全 PASS）** | PGEM10 / Android 16，交付 APK（sha256 与 §4 一致）；冷启动 **300 ms**；2 张批量导出、自定义水印上画布、新 W3 样式 `近似` 渲染、单张导出 → 分享 → 系统选择器均 PASS；上报的 4 项缺陷裁定为脚本产物/设计行为（P0 0 / P1 0）；证据 `_research/android-walkthrough/`。**欠项**：品牌库**弹窗本体**（点开后的 62 卡网格）仍未真机目视，本轮只确认入口与「从 62 个品牌中选择」文案在设备 DOM 中呈现 |
+| Windows 桌面（W5 打包版） | 通过 | `release/FrameMark-win32-x64/FrameMark.exe` 冷启动实测 `.tpl-card` **164**、系统相机 **96**、blocked **4**、品牌卡 **62**、静态 canvas **0**、**pageerror 0**；证据 `_research/packaging/win-packaged-counts.json`；**REPACKAGE 轮对最终交付包复测同口径全过**：证据 `_research/packaging/win-packaged-counts-fixed.json`（verdict PASS） |
+| Android 真机（W4 走查） | **通过（走查四项全 PASS）** | PGEM10 / Android 16，交付 APK（sha256 与 §4 一致）；冷启动 **300 ms**；2 张批量导出、自定义水印上画布、新 W3 样式 `近似` 渲染、单张导出 → 分享 → 系统选择器均 PASS；上报的 4 项缺陷裁定为脚本产物/设计行为（P0 0 / P1 0）；证据 `_research/android-walkthrough/`。**欠项**：品牌库**弹窗本体**（点开后的 62 卡网格）仍未真机目视，本轮只确认入口与「从 62 个品牌中选择」文案在设备 DOM 中呈现。**REPACKAGE 轮**：最终 APK `adb install -r` 覆盖安装（未清数据）→ force-stop → `am start -W` **TotalTime 416 ms / LaunchState COLD / Status ok**，截图编辑器正常渲染、用户水印「Robert 阳」仍在＝数据保留；证据 `_research/android-verify/fm-fixed-cold.png` |
 | 多比例 | 历史全量目检通过 | 上一轮 4:3 + 3:2/2:3/16:9/1:1/4:5/3:4/9:16 未见拉伸/裁切/重叠；后续新增模式未重跑同等全量 |
 
 ---
 
-## 4. 交付基线（W5 重打包：**2026-10-25 11:54**，源码 = HEAD `3e4af60`）
+## 4. 交付基线（REPACKAGE 重打包：**2026-10-25 17:24**，源码 = HEAD `b242f7c`）
 
 | 文件 | 字节数 | SHA-256 | 校验 |
 |---|---:|---|---|
-| `交付/FrameMark-Windows-x64.zip` | **281,392,888** | `164ff8ee8fc2781868c3f3202a5cc3db00ebbedd914d5fedf89475a039dec72f` | OK（W5 新包，937 条目，内含本轮 `out/renderer/assets/index-C3DP_BOX.js`） |
-| `交付/FrameMark-Android-v1.0.0.apk` | **30,040,222** | `4fa4c260afd6002975c9955526085b28d5d4a9a86b7bb0d7752d0880e07870ed` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`） |
-| `交付/FrameMark-使用与验收说明.docx` | **878,978** | `38cb66252432f7ee060a73cc6bddbeea2c54b956b3daf7263fd002d9ca5a8f4b` | 02:07 版，**W5 未重生**（口径仍是 160/92 一代，见 §5.3 条 13） |
-| `交付/FrameMark-使用与验收说明.pdf` | **1,116,992** | `446017b511e91a00e6dce64d4217f63a12a3fb16abe5cfa4a5de5f030d983489` | 02:08 版，**W5 未重生**（同上） |
+| `交付/FrameMark-Windows-x64.zip` | **281,403,373** | `d10b60eecaa5dc3a53b8b28a06f5dd9cd718828610a24fe4c4eac25772d47c27` | OK（REPACKAGE 新包，内含 `out/renderer/assets/index-DAVspqQd.js`，打包版 exe 复测 164/96/4/62、0 pageerror） |
+| `交付/FrameMark-Android-v1.0.0.apk` | **30,046,986** | `3ac923639e7025d3c2a0b5bcf9f8c5076c23f5d1fe02c1a0767103fad2661a68` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；`:app:mergeReleaseAssets`+`:app:packageRelease` 确认执行＝非陈旧包；签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 416 ms PASS） |
+| `交付/FrameMark-使用与验收说明.docx` | **881,571** | `fa11ef20b7aa3dc1e28e85fa0f05514f84764fbdc32a31031e0b00eaee534e43` | REPACKAGE 重签发（`scripts/make-delivery-docx.cjs`，内嵌上表 zip/APK 新哈希；口径 164/96/4/62、workflow 106/106、47/47 parity、渲染/状态修复与 416 ms 冷启动） |
+| `交付/FrameMark-使用与验收说明.pdf` | **1,159,967** | `ed81743a23b490c1ccb6524cee82ce7779f399597744cb9ead5b7e77a9b62f1b` | REPACKAGE 重签发（Word COM `SaveAs` 格式 17，与既有 PDF 同法） |
 
-被取代的上一代哈希：zip `b1011ff1853929e18c3ebaa49d6b82ca65ab16b78a2c2cda809a54f6ecedf33f`、APK `1f77d3ab112b873796d4cb8231eeac0e6d0ed4c5e18e07af4bde6127afe6cf58`（02:08 基线）。
+被取代的上一代哈希：zip `164ff8ee8fc2781868c3f3202a5cc3db00ebbedd914d5fedf89475a039dec72f`、APK `4fa4c260afd6002975c9955526085b28d5d4a9a86b7bb0d7752d0880e07870ed`（W5 11:54 基线）；更早：zip `b1011ff1…`、APK `1f77d3ab…`（02:08 基线）。
 
-**`交付/SHA256.txt` 目前仍是 02:08 一代的四行哈希，已过期**：W5 按任务边界只允许覆盖 zip/APK 两个产物，未改写 `SHA256.txt`，也未重生 docx/PDF。用户签字后需要用上表四行重新签发 `SHA256.txt`（连同重生成的 docx/PDF）。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
+**`交付/SHA256.txt` 已随本轮重签发**（同格式四行：zip/APK/docx/PDF），`cd 交付 && sha256sum -c SHA256.txt` → **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
 
 ---
 
 ## 5. 当前状态与残余（W5 收口）
 
-**当前状态：待用户目视签字。** W0–W5 已全部收口并提交（HEAD `3e4af60`，工作区干净）；47 套终审 47/47 PASS、workflow 106/106、e2e 164/96/4、validate:ir 90/90/95 0 error、真机走查四项 PASS、交付包已重打并复算哈希。**以下残余全部如实列出，不隐藏、不粉饰**；签字前不把任何模板标为 `verified`，也不宣称 pixel-perfect。
+**当前状态：待用户目视签字。** W0–W5 与 REPACKAGE 均已收口并提交（源码 HEAD `b242f7c`，三个修复提交 `0ef4f83`/`be150e1`/`b242f7c` 之后交付集已全部重签发）；47 套终审 47/47 PASS、workflow 106/106、e2e 164/96/4、validate:ir 90/90/95 0 error、真机走查四项 PASS、保真重导出（`_research/review-164/exports-real/`）0 项真实变形/重叠缺陷、交付包已重打并复算哈希（`sha256sum -c` 4/4 OK）。**以下残余全部如实列出，不隐藏、不粉饰**；签字前不把任何模板标为 `verified`，也不宣称 pixel-perfect。
 
 ### 5.1 待用户签字（唯一未闭合项）
 
@@ -150,7 +151,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 10. **`xiaomi-film:15` 双样式源**：同时存在于 `generated/xiaomiStyles.ts`（适配器重导，`referenceWidth` 1080）与 `core/system/styles.ts` 的手工 `XIAOMI_FILM_15` 覆盖，手工项生效。本轮两处已同步、值一致，但属第二事实源：再跑一次小米适配器会静默分叉（OPPO 侧 HASSEL/LUMO/GR5/OPPO_FILM_2/OPPO_MASTERSIGN_3/OPPO_RETRO_5 为同类既有模式）。
 11. **`xiaomiStandard` 基础模板已死**：`core/templates.ts:3843` 定义、`:4277` 注册、`types.ts:13` 联合类型仍在，但**已无任何变体引用**、无测试断言；留待后续波次清理。
 12. **小米 4:3 证据 2/7 未判定**：`xiaomi-film:15` 画布比 **1.2790**、`xiaomi-leica:2` **1.0804**，超出 `after/manifest.json` 自述 `ratio: "4:3"` 的 1.3333 ±0.004；驱动脚本只 `console.log` 不断言，其自身 "4:3 check" 实为 false。侧栏（side-band）样式几何上可能合理，但**尚无裁定**。
-13. **交付文档链未闭合**：`交付/SHA256.txt` 仍是 02:08 一代哈希（已过期），docx/PDF 未随 W5 重打包重生成（内容仍是 160/92 一代口径）。**W5 的任务边界只允许覆盖 zip/APK 两个产物**，因此留给签字后统一重发（见 §4）。
+13. **交付文档链已闭合（REPACKAGE）**：`交付/SHA256.txt`、docx、PDF 已随最终包全部重签发并 `sha256sum -c` 4/4 OK（见 §4）。历史：W5 轮任务边界只允许覆盖 zip/APK，当时未重生 docx/PDF。
 14. **Android 品牌库弹窗本体未目视**：W4 走查未覆盖点开后的 62 卡网格；设备侧只确认了入口与「自动匹配 EXIF 品牌，或从 62 个品牌中选择」文案在 DOM 中呈现。桌面打包版品牌库 62 卡已实测 0 pageerror。
 15. **移动端无障碍探针协议**（非应用缺陷）：Chromium/Android 无障碍层对 `overflow:auto` 容器内未裁剪/视口外节点会上报越界或 `[0,0][0,0]` bounds，真机 agent 必须「滚动后重新 dump + 截图核对后再点」，且 `adb input text` 打不了中文；已写入 [`mobile-triage.md`](../_research/cleanup/mobile-triage.md) 建议，作为后续走查规程。
 16. **授权 / 公开发布审计不做**：按 2026-10-25 范围冻结，项目只按个人使用维护，**本轮未做任何 public-release / licensing 工作**（这是用户的范围决定，不是待办）。
@@ -192,10 +193,12 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 - **W3 厂商**：`_research/cleanup/w3-assess.md`、`w3b-oppo-data-report.md`、`w3b-oppo-ui-report.md`、`w3b-xiaomi-report.md`、`oppo-extract-report.md`、`vendor-inventory-report.md`；素材与 after 证据 `_research/vendor-latest/`、`_research/roms/neohyper/`
 - **W4 真机**：`_research/android-walkthrough/`（`walkthrough-report.md` + `walk_*.png` + `s2_*`/`s3_*` 分享证据 + `*.xml` uiautomator 转储）、`_research/cleanup/mobile-triage.md`
 - **W5 打包**：`_research/cleanup/packaging-report.md`、`_research/packaging/`（`typecheck.log`、`build.log`、`package-win.log`、`cap-copy.log`、`gradle-assembleRelease.log`、`win-packaged-counts.json`、打包版截图）
+- **REPACKAGE 重打包**：`_research/cleanup/repackage-report.md`、`_research/packaging/`（`package-win-fixed.log`、`cap-copy-fixed.log`、`gradle-assembleRelease-fixed.log`、`win-packaged-counts-fixed.json`、`verify-packaged-fixed.mjs`、`win-packaged-fixed-*.png`）、`_research/android-verify/fm-fixed-cold.png`、`_research/cleanup/_repackage_build.log`
+- **保真重导出评审集（当前）**：`_research/review-164/exports-real/`（164 卡走真实导出路径，配 `manifest-real.json`/`index-real.html`/`DELTA.md`；本轮修复复核以该集为准，取代旧 `exports/` 预览口径集）
 - **总验收**：`_research/cleanup/FINAL-ACCEPTANCE.md`
 - 系统相机结构核对：`_research/stock-fidelity/report.md`、`_research/stock-fidelity-vendor/sheet-01..18.jpg`
 - 4:3 全量目检：`_research/pc-audit-4x3/`、`_research/pc-audit-originals/`
 - 多比例：`_research/ratio-audit/`
 - Android（上一轮）：`_research/android-verify/`
-- 交付校验：`交付/SHA256.txt`（**已过期，见 §4**）
+- 交付校验：`交付/SHA256.txt`（REPACKAGE 轮重签发，`sha256sum -c` 4/4 OK，见 §4）
 - 清理基线：`_research/cleanup/baseline-report.md`、`baseline-hygiene.md`、`_research/snapshots/`
