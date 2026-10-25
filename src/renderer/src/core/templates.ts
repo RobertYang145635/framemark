@@ -3645,7 +3645,11 @@ const portraitTicket: TemplateDef = {
     // barcode top 69.2 % (h 14.6 %), serial 79.4 %.
     const left = cardX + cardW * 0.0908
     const title = String(env.params.stubTitle ?? 'QING DAO').toUpperCase()
-    drawFitted(ctx, title, left, seam + stubH * 0.2373, cardW * 0.58, cardW * 0.0635, ink, {
+    // 0.0635 cardW rendered the title ink 284 px wide on a 1200 px canvas
+    // (fallback glyphs) vs the ref 25.6 %W; ticket-2 overrides stubTitleSize
+    // to 0.066 (322 px loaded, ~294 px fallback, both inside 1.5pp).
+    const titleSize = cardW * (Number(env.params.stubTitleSize) || 0.0635)
+    drawFitted(ctx, title, left, seam + stubH * 0.2373, cardW * 0.58, titleSize, ink, {
       family: FONT_UI,
       weight: 800,
       baseline: 'middle',

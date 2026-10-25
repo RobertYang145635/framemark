@@ -475,7 +475,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
 
   // 票据
   V('ticket-1', '票据 01', '票据', 'sideTicket', 'ticket.webp', { theme: 'ink', ticketBg: '#244231', ticketPanel: '#31533f', stubTitle: 'HANG ZHOU', stubLabel: 'GUANGYING 100' }),
-  V('ticket-2', '票据 02', '票据', 'portraitTicket', 'ticket2.webp', { theme: 'stone', ticketBg: '#c7dfe6', ticketCard: '#ffffff', ticketInk: '#2d6f7c', stubTitle: 'QING DAO', stubLabel: 'GUANGYING 100' }),
+  V('ticket-2', '票据 02', '票据', 'portraitTicket', 'ticket2.webp', { theme: 'stone', ticketBg: '#c7dfe6', ticketCard: '#ffffff', ticketInk: '#2d6f7c', stubTitle: 'QING DAO', stubLabel: 'GUANGYING 100', stubTitleSize: 0.066 }),
 
   // 毕业
   V(
