@@ -1,6 +1,7 @@
 import type { CropInfo, Design, Params, PhotoAsset, Ratio, Rect, TemplateRenderEnv, TextSettings } from '../types'
 import { getTemplate } from './templates'
 import { loadImage } from './images'
+import { textScaleOf } from './draw'
 import { drawWatermark } from './watermark'
 import { resolveTokens } from './exif'
 
@@ -35,8 +36,8 @@ function mergeParams(design: Design, defaults: Record<string, unknown>): Params 
 }
 
 function scaledContext(ctx: CanvasRenderingContext2D, scale: number): CanvasRenderingContext2D {
-  const s = Math.max(0.5, Math.min(2, Number.isFinite(scale) ? scale : 1))
-  if (Math.abs(s - 1) < 0.001) return ctx
+  const s = textScaleOf(scale)
+  if (s === 1) return ctx
   return new Proxy(ctx, {
     set(target, prop, value) {
       if (prop === 'font' && typeof value === 'string') {

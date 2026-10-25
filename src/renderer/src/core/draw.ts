@@ -60,6 +60,19 @@ export function setFont(ctx: CanvasRenderingContext2D, size: number, family = FO
   ctx.font = `${style} ${weight} ${Math.max(1, size)}px ${family}`
 }
 
+/**
+ * The single clamp applied to `design.text.fontScale` (the Inspector's 字号缩放
+ * slider). `scene.ts` scales every `ctx.font` it paints with this value, so any
+ * code that measures text has to use the same number or the glyphs paint
+ * outside the advance they were laid out with. Returns exactly `1` for the
+ * default so callers can skip the whole branch.
+ */
+export function textScaleOf(raw: unknown): number {
+  const n = Number(raw)
+  const s = Math.max(0.5, Math.min(2, Number.isFinite(n) ? n : 1))
+  return Math.abs(s - 1) < 0.001 ? 1 : s
+}
+
 export function setTracking(ctx: CanvasRenderingContext2D, px: number): void {
   try {
     ;(ctx as unknown as { letterSpacing: string }).letterSpacing = `${px}px`

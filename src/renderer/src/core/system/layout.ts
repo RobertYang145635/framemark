@@ -1,4 +1,4 @@
-import { setFont, setTracking } from '../draw'
+import { setFont, setTracking, textScaleOf } from '../draw'
 import type {
   StockBand,
   StockGroupNode,
@@ -116,15 +116,21 @@ function lineHeightOf(node: StockTextNode): number {
   return node.lineHeight ?? node.size * 1.2
 }
 
-function measureLine(ctx: CanvasRenderingContext2D, text: string, node: StockTextNode): number {
+function measureLine(ctx: CanvasRenderingContext2D, text: string, node: StockTextNode, fontScale = 1): number {
   setTracking(ctx, (node.tracking ?? 0) * node.size)
-  setFont(ctx, node.size, stockFontFamily(node.font), node.weight)
+  // `paint.ts` draws this node through `scene.ts/scaledContext`, which multiplies
+  // the px in `ctx.font` by `text.fontScale`. Measuring at the unscaled size is
+  // what let 字号缩放 > 1 paint glyphs 22% wider than the advance the row was
+  // laid out with, i.e. the vendor's 16-unit gaps collapsing to ~12 and "35mm"
+  // touching "f/". Same clamp, same size ⇒ the advance the layout spends is the
+  // advance the glyph takes.
+  setFont(ctx, node.size * fontScale, stockFontFamily(node.font), node.weight)
   const w = ctx.measureText(text).width
   setTracking(ctx, 0)
   return w
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, node: StockTextNode, maxWidth: number): string[] {
+function wrapText(ctx: CanvasRenderingContext2D, text: string, node: StockTextNode, maxWidth: number, fontScale: number): string[] {
   if (!maxWidth || maxWidth <= 0) return text.split('\n')
   const out: string[] = []
   for (const paragraph of text.split('\n')) {
@@ -135,7 +141,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, node: StockTextNo
     let line = ''
     for (const ch of Array.from(paragraph)) {
       const next = line + ch
-      if (line && measureLine(ctx, next, node) > maxWidth) {
+      if (line && measureLine(ctx, next, node, fontScale) > maxWidth) {
         out.push(line)
         line = ch
       } else {
@@ -151,9 +157,10 @@ function textMeasured(node: StockTextNode, env: StockEnv): Measured {
   const value = stockTokenText(node.token, env)
   if (!value) return { w: 0, h: 0 }
   const ctx = ctxForMeasure()
-  const lines = wrapText(ctx, value, node, node.width ?? 0)
+  const fontScale = textScaleOf(env.text?.fontScale)
+  const lines = wrapText(ctx, value, node, node.width ?? 0, fontScale)
   const lineHeight = lineHeightOf(node)
-  const textWidth = node.width ?? Math.max(...lines.map((l) => measureLine(ctx, l, node)), 0)
+  const textWidth = node.width ?? Math.max(...lines.map((l) => measureLine(ctx, l, node, fontScale)), 0)
   const textHeight = lineHeight * Math.max(1, lines.length)
   const outline = node.outline
   const width = outline?.width ?? textWidth + (outline?.paddingX ?? 0) * 2
