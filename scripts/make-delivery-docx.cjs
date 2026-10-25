@@ -83,7 +83,7 @@ async function main() {
     ['版本', 'FrameMark 1.0.0'],
     ['交付日期', '2026-10-25'],
     ['桌面平台', 'Windows 10/11 x64 便携版（未签名）'],
-    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；签名包冷读 164 卡/系统 96/blocked 4（最终交付包真机冷启动 416 ms，LaunchState COLD），选图、2 张批量导出、原比例/3:2/Polaroid 导出、新建厂商样式“近似”徽章与系统分享均通过'],
+    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；签名包冷读 164 卡/系统 96/blocked 4（最终交付包真机冷启动 365 ms，LaunchState COLD），选图、2 张批量导出、原比例/3:2/Polaroid 导出、新建厂商样式“近似”徽章与系统分享均通过'],
     ['渲染方式', 'Canvas 2D 本地渲染；桌面 sharp 编码与 EXIF 回写；Android MediaStore 相册写入'],
     ['离线', '不接入云服务，不上传照片、水印或预设']
   ], [1800, 7200]))
@@ -113,7 +113,7 @@ async function main() {
 
   children.push(heading('二·附：系统相机水印目录', 2))
   children.push(p('系统相机分类现包含 96 套：OPPO 53（Gallery 43 + CameraPro 9 + Polaroid 拍立得 1）、小米 40、vivo 3（Zeiss 上框/上下框/内嵌）。另有 4 组 blocked：小米 3 套侧栏（Leica 5/88/89）与 vivo 39 套（合并为一组），均在目录底部显示原因，不可导出。GR5 右侧参数边栏已接入，滤镜值不在 EXIF 时以“—”占位；目录内 95 套库存（stock）样式全部标记 approx，verified 为 0。'))
-  children.push(p('本轮厂商对齐（W3）：OPPO Gallery 同步至 ColorOS 17.10.7，修正 13 处过时配置、新增 5 套 realme 样式、下线 1 套已退役样式（personalize_brand_3）；小米同步至 17 Ultra，film 15 与 Leica 2/91 更新，standard 6/7/8/107 迁移入生成管线。'))
+  children.push(p('本轮厂商对齐（W3）：OPPO Gallery 同步至 ColorOS 17.10.7，修正 13 处过时配置、新增 5 套 realme 样式、下线 1 套已退役样式（personalize_brand_3）；小米同步至 17 Ultra，film 15 与 Leica 2/91 更新，standard 6/7/8/107 迁移入生成管线。厂商水印（系统相机）分类中的品牌字标不再固定为厂商名：字标现随照片 EXIF 品牌（或 Inspector 中手动选择的“品牌 LOGO”）自动切换，例如用松下 DC-S1 样张套用小米徕卡版式时，字标显示 Panasonic 而非 xiaomi；同轮修复 leica-111 字标散落与 leica-92 焦距行重力（focal-line gravity）两处厂商版式缺陷。'))
   children.push(note('blocked 不是“已完成”：它们缺宿主布局、滤镜元数据或可靠参考帧。vivo 的 PAG 已能渲染，但当前只能确认照片层与占位页脚，尚不足以生成可信参考。'))
 
   children.push(heading('三、格式与“无损”边界', 1))
@@ -134,6 +134,7 @@ async function main() {
     ['多比例全量目检', 'Windows 打包版 / 7 种比例', '158 套（新增 2 套待补）× 3:2 / 2:3 / 16:9 / 1:1 / 4:5 / 3:4 / 9:16 共 1106 张，0 页面错误；无拉伸、裁切、重叠；固定版式按设计比例出图'],
     ['原版模板 parity 审计（W1）', 'Node + sharp 像素级测量', '47/47 原版模板通过 ≤2% 结构差 / ≤2 百分点 像素差门禁：13 套本轮独立复测，34 套与已审计批次字节级一致'],
     ['渲染与状态修复（本轮）', '源码构建 + 打包版 Playwright 复核', '修复文字/图形重叠与 realme 条带版式；恢复 wm-black 镜头行并按内容去重 EXIF；切换模板不再残留上一模板的文字开关、模糊日期改用拍摄日期；164 卡保真重导出（exports-real）0 项真实变形/重叠缺陷；打包版复核 164 卡/96 系统/4 blocked/62 品牌、0 pageerror'],
+    ['品牌字标与厂商版式（本轮）', 'Windows 打包版 Playwright + 真机冷启动', 'DC-S1 样张下 leica-91/111 字标均为 Panasonic（非 xiaomi），leica-111 版式无散落；leica-92 焦距行重力修复后全库文字对文字绘制重叠仅余 1 处（xpan_1 厂商负行距，字形可读）；打包版复核 164/96/4/62、0 pageerror；真机覆盖安装冷启动 COLD 365 ms'],
     ['核心工作流回归（W2）', '打包版 Electron + Playwright', 'npm run test:workflow：106/106 断言通过、0 pageerror（2 张批量、预设保存/重载/应用、自定义 PNG 水印、高级参数、文件名变量、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 导入导出）；已修复预设内 outputDir 跨机不互通问题'],
     ['透明水印（单张 + 平铺）', 'Windows 打包版', '白色 PNG 叠加成功；平铺、透明度、宽度、九宫格位置均生效'],
     ['预设闭环', 'Windows 打包版', '保存 → 导出 JSON → 删除 → 导入 → 应用，水印与模板均恢复'],
@@ -160,7 +161,7 @@ async function main() {
     ['自定义水印（W4 复验）', '签名 APK / 透明 PNG', '—', '自定义 PNG 水印直接绘制到画布并随成片写入相册'],
     ['新厂商样式（W4 复验）', 'realme / 小米 standard 新样式', '—', '新样式正常渲染，卡片带“近似”徽章'],
     ['导出→分享（W4 复验）', '签名 APK / 系统分享面板', '—', '单张导出完成后点“分享”拉起 Android 系统选择器成功'],
-    ['最终交付包冷启动（本轮复核）', '签名 APK / PGEM10', '416 ms', 'LaunchState COLD；编辑器渲染正常、用户数据保留（覆盖安装未清数据）'],
+    ['最终交付包冷启动（本轮复核）', '签名 APK / PGEM10', '365 ms', 'LaunchState COLD；编辑器渲染正常、用户数据保留（覆盖安装未清数据）'],
     ['移动端弹窗与快捷条', 'Android 发版包', '—', '已修复模板库全屏弹窗标题/关闭按钮被状态栏压住；当前模板会自动补入快捷条并居中']
   ], [2000, 2500, 1800, 2700]))
   children.push(p('注：表内单张/批量的尺寸与耗时为上一构建的历史实测，仅作量级参考；最终发版包的真机复验（W4）覆盖冷启动、2 张批量导出、自定义水印、新厂商样式渲染与导出后系统分享，全部通过。', { size: 19, color: '5B5144' }))
