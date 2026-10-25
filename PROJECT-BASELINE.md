@@ -3,9 +3,9 @@
 > **本页是唯一的“当前状态”页面（single source of truth）。**
 > 其他文档只保留方法、分类、门槛与历史；凡涉及当前计数、平台状态、交付哈希、已知缺口或范围，一律链接本页，不再各自抄写数字。
 >
-> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 19:56**（CLOSE-OUT 重打包，本机时区）；最近更新：2026-10-25（**CLOSE-OUT 收口**：REPACKAGE 之后又有四个提交落库——`394ebe1` fix(vendor) 小米 FrameLayout gravity（leica-111 字标散落修复）、`549a653` feat(system-camera) 品牌字标改随照片 EXIF 品牌 / Inspector 手选、`652807f` fix(vendor) 小米 leica-92 焦距行重力、`ddd9dec` chore(previews) wm-black 预览重生成；全量重打包并刷新交付集，HEAD **`ddd9dec`**；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**CLOSE-OUT 打包版复测 164/96/4/62、0 pageerror，真机冷启动 365 ms / LaunchState COLD**、**打包版品牌字标抽检：DC-S1 样张下 leica-91/111 字标均为 Panasonic**；绘制级文字对文字重叠全库仅剩 1 处（`hassel_style_xpan_1` 厂商负行距，字形可读，按保真原则保留）；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
+> 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 22:08**（ANCHOR-PACKAGE 重打包，本机时区）；最近更新：2026-10-25（**ANCHOR-PACKAGE**：`ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带样式支持厂商 band 旋转（`personalize_film_2` / `personalize_film_realme_2` / `personalize_masterSign_3`，仍 `approx`、待真机样张判定）与 `3b48e89` feat(system-camera) **系统相机九宫格锚点选择器**落库——stock 水印位置由 `AnchorGrid`（与自定义水印面板共用控件）+ 第 10 项「厂商原版」默认位选择，整组可动条带（含旋转条带）作为刚性整体平移到照片画布锚点位并限幅不出界，X/Y 滑块降级为水平/垂直微调；默认渲染与 rotation-verify 基线**逐字节一致**（4 张默认导出 Buffer.equals 全 true）；typecheck/build 0、e2e 164/96/4、workflow 106/106、validate-ir 90 样式 0 error、watermark-e2e 锚点选择器 `.anchor-grid button[title="右下"]` 未破坏；打包版 exe 复测 **164/96/4/62、0 pageerror 且锚点实测可用**（`anchor-packaged.json`）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**（`fm-anchor-cold.png`）；交付集（zip/APK/docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；此前 **CLOSE-OUT 收口**：REPACKAGE 之后又有四个提交落库——`394ebe1` fix(vendor) 小米 FrameLayout gravity（leica-111 字标散落修复）、`549a653` feat(system-camera) 品牌字标改随照片 EXIF 品牌 / Inspector 手选、`652807f` fix(vendor) 小米 leica-92 焦距行重力、`ddd9dec` chore(previews) wm-black 预览重生成；全量重打包并刷新交付集，HEAD **`ddd9dec`**；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**CLOSE-OUT 打包版复测 164/96/4/62、0 pageerror，真机冷启动 365 ms / LaunchState COLD**、**打包版品牌字标抽检：DC-S1 样张下 leica-91/111 字标均为 Panasonic**；绘制级文字对文字重叠全库仅剩 1 处（`hassel_style_xpan_1` 厂商负行距，字形可读，按保真原则保留）；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
 > **当前状态：待用户目视签字**——机器门槛（typecheck / build / e2e / workflow / validate:ir / 47 套逐套测量 / 真机走查）全绿，唯一欠项是用户对 47 套与厂商线的目视签收；签收前不宣称 pixel-perfect、不升级任何 `verified`。
-> 提交链（新→旧）：`b242f7c` fix(store) 模板切换文字开关复位/模糊日期用拍摄日期 · `be150e1` fix(templates) wm-black 镜头行恢复 + EXIF 内容去重 · `0ef4f83` fix(render) 文字/图形重叠清除 + realme 条带修复 · `5af87d7` docs 交付文档口径 · `418f737` docs 清理收口 · `3e4af60` feat(vendor) OPPO 17.10.7 + 小米 17U · `5dac9c6` W1 47 套终审 · `fc12d99` Batch C · `edfb484` B3b-3 · `73a3fd7` B3b-1/2 · `f35d4f2` B3a · `27484c0` B2b · `23f00d9` B2a · `f69d77f` B1b · `f1410c2` B1a · `e002e18` A2 · `9657624` A1 · `438c7a1` W2 · `76448c2` W0 文档/工具 · `08fe989` 基线卫生 · `3311904` git 基线。
+> 提交链（新→旧）：`3b48e89` feat(system-camera) 九宫格锚点选择器 · `de48ff9` docs 更正小米 Leica blocked 原因 · `ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带旋转 · `b242f7c` fix(store) 模板切换文字开关复位/模糊日期用拍摄日期 · `be150e1` fix(templates) wm-black 镜头行恢复 + EXIF 内容去重 · `0ef4f83` fix(render) 文字/图形重叠清除 + realme 条带修复 · `5af87d7` docs 交付文档口径 · `418f737` docs 清理收口 · `3e4af60` feat(vendor) OPPO 17.10.7 + 小米 17U · `5dac9c6` W1 47 套终审 · `fc12d99` Batch C · `edfb484` B3b-3 · `73a3fd7` B3b-1/2 · `f35d4f2` B3a · `27484c0` B2b · `23f00d9` B2a · `f69d77f` B1b · `f1410c2` B1a · `e002e18` A2 · `9657624` A1 · `438c7a1` W2 · `76448c2` W0 文档/工具 · `08fe989` 基线卫生 · `3311904` git 基线。
 > 工作日志与历史证据：[../HANDOFF.md](../HANDOFF.md) §7（§7.5 起为按时间顺序的历史记录，数字是当时值）、§14（W0–W5 收口）。
 
 ---
@@ -26,6 +26,8 @@
 | **W5** | **打包与最终验收** | **完成**：Windows zip **281,392,888 B** / APK **30,040,222 B**（哈希见 §4）；打包版 exe 实测 **164 / 96 / 4 / 62、0 pageerror**；汇总报告 [`FINAL-ACCEPTANCE.md`](../_research/cleanup/FINAL-ACCEPTANCE.md)。**当前状态：待用户目视签字** | `_research/packaging/`、[`packaging-report.md`](../_research/cleanup/packaging-report.md)；本页 §3–§5 |
 | **REPACKAGE** | **修复后重打包（本轮）** | **完成**：`0ef4f83`+`be150e1`+`b242f7c` 落库后 typecheck/build 0、e2e 164/96/4、workflow 106/106、validate:ir 90/90/95 0 error；zip **281,403,373 B** / APK **30,046,986 B**（见 §4）；打包版 exe 复测 **164/96/4/62、0 pageerror**；真机覆盖安装冷启动 **416 ms / LaunchState COLD**、数据保留；交付集（docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；保真重导出评审集 `_research/review-164/exports-real/`（164 卡，**0 项真实变形/重叠缺陷**）。**已知状态泄漏缺陷已修**：切换模板会残留上一个模板的文字开关（EXIF/文字类 flag 不随变体重置），`b242f7c` 起切换即复位 | `_research/cleanup/repackage-report.md`、`_research/packaging/win-packaged-counts-fixed.json`、`_research/android-verify/fm-fixed-cold.png`、`_research/review-164/exports-real/` |
 | **CLOSE-OUT** | **品牌字标 + 厂商版式修复后重打包（本轮）** | **完成**：`394ebe1`+`549a653`+`652807f`+`ddd9dec` 落库后 typecheck/build 0；zip **281,408,593 B** / APK **30,051,126 B**（见 §4）；打包版 exe 复测 **164/96/4/62、0 pageerror**（`win-packaged-counts-brandswap.json`）；打包版品牌字标抽检 PASS：DC-S1 样张（`_research/test-assets/ratio-study/4x3.jpg`）下 `stock-xiaomi-leica-91` / `stock-xiaomi-leica-111` 字标均为 **Panasonic**（非 xiaomi），leica-111 版式无散落（`_research/packaging/brandswap-check/`）；真机覆盖安装冷启动 **365 ms / LaunchState COLD**、数据保留（`fm-brandswap-cold.png`）；交付集（docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；leica-92 焦距行重力修复后绘制级文字对文字命中 4→1（余 1 为 xpan_1 厂商负行距，保真保留），95 套 stock 0 新增命中、仅 leica-92 的 rect 移动 | `_research/cleanup/lastoverlap/fix-report.md`、`_research/cleanup/close-out-report.md`、`_research/packaging/win-packaged-counts-brandswap.json`、`_research/packaging/brandswap-check/`、`_research/android-verify/fm-brandswap-cold.png` |
+| **ROTATION** | **OPPO 侧边条带旋转** | **完成（已提交 `ff32b4b`）**：全库仅有的 3 套 band 级 `rotation:90` 样式（`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3`）渲染修复并走真实导出路径复核（`_research/cleanup/rotation/verify/`，逐字节基线即本轮锚点默认导出的对照基线）；三套仍为 `approx`，**升级 `verified` 待真机样张** | `_research/cleanup/rotation/impl-report.md`、`rotation/verify/exports/` |
+| **ANCHOR-PACKAGE** | **系统相机九宫格锚点（本轮）** | **完成（已提交 `3b48e89`）**：stock 卡片「版式参数」新增水印位置九宫格锚点（复用自定义水印面板同一 `AnchorGrid` 控件与标签）+ 第 10 项「厂商原版」为默认，整组可动条带（含旋转条带，无轴交换）刚性平移并限幅在画布内，X/Y 降级为水平/垂直微调；**真实 UI 证明**：哈苏文字·1 上 居中/右上/下中 三处锚点画布哈希均变化且文字组确实移动、无出界无重叠，切回厂商原版画布哈希与初始一致（`3442034355998acd…`）；胶片·2 旋转条带锚点抽检 PASS；真实导出路径 6 张（3 锚点 + 3 旋转默认），**4 张默认导出与 rotation-verify 基线逐字节一致**；门全绿：e2e 164/96/4、workflow 106/106、validate-ir 90/0、watermark-e2e `.anchor-grid button[title="右下"]` 选择器未破坏；打包版 exe 复测 164/96/4/62、0 pageerror、锚点功能实测（`anchor-packaged.json` verdict PASS）；zip **281,415,003 B** / APK **30,055,822 B**（见 §4）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**、数据保留（`fm-anchor-cold.png`）；交付集全量重签发 `sha256sum -c` **4/4 OK** | `_research/cleanup/anchor-package/`（`report.md`、`ui/`、`exports/`、`tools/`）、`_research/packaging/anchor-packaged.json`、`_research/android-verify/fm-anchor-cold.png` |
 
 本页是**唯一当前状态页**；表格里的“完成”只表示对应产物存在且可复核，不表示 47 套或 stock 已验收。
 
@@ -105,26 +107,26 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 | 平台 / 检查 | 状态 | 备注 |
 |---|---|---|
-| `typecheck` / `build` | 通过 | REPACKAGE 轮（HEAD `b242f7c`）：`npm run typecheck` exit 0、`npm run build` exit 0（electron-vite `✓ built in 1.31s`，新入口 `out/renderer/assets/index-DAVspqQd.js`）；日志 `_research/cleanup/_repackage_build.log` |
+| `typecheck` / `build` | 通过 | ANCHOR-PACKAGE 轮（HEAD `3b48e89`）：`npm run typecheck` 与 `npm run build` exit 0；e2e **164/96/4、0 error**、workflow **106/106**、validate-ir **90 样式 / 0 error / 37 既有 warning**、watermark-e2e（含 `.anchor-grid button[title="右下"]` 断言）exit 0；日志 `_research/cleanup/anchor-package/tools/{e2e,workflow,package-win}.log` |
 | `npm run test:e2e` | 通过 | W3 收口轮复跑：total **164** / system **96** / blocked **4** / errors 0，1 张导出成功 |
 | `npm run test:workflow` | 通过 | **106/106 断言 / failed 0 / pageError 0 / consoleError 0**（W2 核心工作流；W3 审收轮 ASSESS-W3 复跑仍 106/106；W1 终审轮 FINAL-VERIFY-B 复跑仍 106/106） |
 | `npm run validate:ir` | 通过 | W3 收口轮复跑：**90** 生成样式 / **90** 生成变体 / **95** 系统预览；0 error；37 条既有主题近似 warning |
 | Windows 桌面（W5 打包版） | 通过 | `release/FrameMark-win32-x64/FrameMark.exe` 冷启动实测 `.tpl-card` **164**、系统相机 **96**、blocked **4**、品牌卡 **62**、静态 canvas **0**、**pageerror 0**；证据 `_research/packaging/win-packaged-counts.json`；**REPACKAGE 轮对最终交付包复测同口径全过**：证据 `_research/packaging/win-packaged-counts-fixed.json`（verdict PASS） |
-| Android 真机（W4 走查） | **通过（走查四项全 PASS）** | PGEM10 / Android 16，交付 APK（sha256 与 §4 一致）；冷启动 **300 ms**；2 张批量导出、自定义水印上画布、新 W3 样式 `近似` 渲染、单张导出 → 分享 → 系统选择器均 PASS；上报的 4 项缺陷裁定为脚本产物/设计行为（P0 0 / P1 0）；证据 `_research/android-walkthrough/`。**欠项**：品牌库**弹窗本体**（点开后的 62 卡网格）仍未真机目视，本轮只确认入口与「从 62 个品牌中选择」文案在设备 DOM 中呈现。**REPACKAGE 轮**：最终 APK `adb install -r` 覆盖安装（未清数据）→ force-stop → `am start -W` **TotalTime 416 ms / LaunchState COLD / Status ok**，截图编辑器正常渲染、用户水印「Robert 阳」仍在＝数据保留；证据 `_research/android-verify/fm-fixed-cold.png` |
+| Android 真机（W4 走查） | **通过（走查四项全 PASS）** | PGEM10 / Android 16，交付 APK（sha256 与 §4 一致）；冷启动 **300 ms**；2 张批量导出、自定义水印上画布、新 W3 样式 `近似` 渲染、单张导出 → 分享 → 系统选择器均 PASS；上报的 4 项缺陷裁定为脚本产物/设计行为（P0 0 / P1 0）；证据 `_research/android-walkthrough/`。**欠项**：品牌库**弹窗本体**（点开后的 62 卡网格）仍未真机目视，本轮只确认入口与「从 62 个品牌中选择」文案在设备 DOM 中呈现。**REPACKAGE 轮**：最终 APK `adb install -r` 覆盖安装（未清数据）→ force-stop → `am start -W` **TotalTime 416 ms / LaunchState COLD / Status ok**，截图编辑器正常渲染、用户水印「Robert 阳」仍在＝数据保留；证据 `_research/android-verify/fm-fixed-cold.png`。**ANCHOR-PACKAGE 轮**：同法复装新 APK，冷启动 **764 ms / LaunchState COLD**，截图为编辑器正常渲染（哈苏·4 卡片 + 参数面板）、数据保留；证据 `_research/android-verify/fm-anchor-cold.png` |
 | 多比例 | 历史全量目检通过 | 上一轮 4:3 + 3:2/2:3/16:9/1:1/4:5/3:4/9:16 未见拉伸/裁切/重叠；后续新增模式未重跑同等全量 |
 
 ---
 
-## 4. 交付基线（REPACKAGE 重打包：**2026-10-25 17:24**，源码 = HEAD `b242f7c`）
+## 4. 交付基线（ANCHOR-PACKAGE 重打包：**2026-10-25 22:08**，源码 = HEAD `3b48e89`）
 
 | 文件 | 字节数 | SHA-256 | 校验 |
 |---|---:|---|---|
-| `交付/FrameMark-Windows-x64.zip` | **281,408,593** | `39b1918e30d6eecbc2cec506c3c7b21b0cd1918ebf5e8b8e7bba057e68ac5a95` | OK（CLOSE-OUT 新包，打包版 exe 复测 164/96/4/62、0 pageerror，品牌字标抽检 PASS） |
-| `交付/FrameMark-Android-v1.0.0.apk` | **30,051,126** | `6a6600416f396d809aa44d387e8c7c551e2dc87df6f7f14910e172e649d11827` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；capacitor copy + `assembleRelease` 全量重跑；签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 365 ms PASS） |
-| `交付/FrameMark-使用与验收说明.docx` | **881,970** | `f52ae5146dfe3c40e0ec240254e71157adba5c1306692cf7f85cb7d885ff737c` | CLOSE-OUT 重签发（`scripts/make-delivery-docx.cjs`，内嵌上表 zip/APK 新哈希；新增厂商字标说明与 365 ms 冷启动口径） |
-| `交付/FrameMark-使用与验收说明.pdf` | **1,165,588** | `402d8b3b564e809da24f2dd2d563b40d4149f037d3f828956a606ae6dbd8b8c8` | CLOSE-OUT 重签发（Word COM `SaveAs` 格式 17，先移走旧 PDF 再导出） |
+| `交付/FrameMark-Windows-x64.zip` | **281,415,003** | `49e9a2eb352dc5c4ee7b49898fb9ae1678a402c739f65944842625ea449d4969` | OK（ANCHOR-PACKAGE 新包，打包版 exe 复测 164/96/4/62、0 pageerror，锚点功能实测 PASS：`_research/packaging/anchor-packaged.json`） |
+| `交付/FrameMark-Android-v1.0.0.apk` | **30,055,822** | `1d6c5709f16f1d52a3a0c95e1d4c78e57edbbfe5938f5293a6133dc4f6df7e55` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；capacitor copy + `assembleRelease` 全量重跑，gradle 内置签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 764 ms COLD PASS） |
+| `交付/FrameMark-使用与验收说明.docx` | **882,227** | `43a0c49f2dbceb3312e24f63d9a3753b809fb2fddfd6edc357f77e082c21818a` | ANCHOR-PACKAGE 重签发（`scripts/make-delivery-docx.cjs`，功能清单新增「系统相机水印位置·九宫格锚点」条目，内嵌上表新哈希） |
+| `交付/FrameMark-使用与验收说明.pdf` | **1,168,074** | `e5542ccd95c895f25ac79da9821f733c76835e6998de5343a415ca50cd332284` | ANCHOR-PACKAGE 重签发（Word COM `SaveAs` 格式 17，先移走旧 PDF 再导出） |
 
-被取代的上一代哈希：zip `d10b60ee…`、APK `3ac92363…`、docx `fa11ef20…`、PDF `ed81743a…`（REPACKAGE 17:24 基线）；更早：zip `164ff8ee…`、APK `4fa4c260…`（W5 11:54 基线）、zip `b1011ff1…`、APK `1f77d3ab…`（02:08 基线）。
+被取代的上一代哈希：zip `39b1918e…`、APK `6a660041…`、docx `f52ae514…`、PDF `402d8b3b…`（CLOSE-OUT 基线）；更早：zip `d10b60ee…`、APK `3ac92363…`、docx `fa11ef20…`、PDF `ed81743a…`（REPACKAGE 17:24 基线）、zip `164ff8ee…`、APK `4fa4c260…`（W5 11:54 基线）、zip `b1011ff1…`、APK `1f77d3ab…`（02:08 基线）。
 
 **`交付/SHA256.txt` 已随本轮重签发**（同格式四行：zip/APK/docx/PDF），`cd 交付 && sha256sum -c SHA256.txt` → **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
 
@@ -132,7 +134,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 ## 5. 当前状态与残余（W5 收口）
 
-**当前状态：待用户目视签字。** W0–W5、REPACKAGE 与 CLOSE-OUT 均已收口并提交（源码 HEAD `ddd9dec`，`394ebe1`/`549a653`/`652807f`/`ddd9dec` 四提交后交付集已全部重签发）；**行为变更（`549a653`）：厂商水印与原版模板的品牌字标不再固定跟随模板厂商，而是随照片 EXIF 品牌（或 Inspector 中手选的品牌 LOGO）自动切换**；47 套终审 47/47 PASS、workflow 106/106、e2e 164/96/4、validate:ir 90/90/95 0 error、真机走查四项 PASS、保真重导出（`_research/review-164/exports-real/`）0 项真实变形/重叠缺陷、绘制级文字对文字重叠 4→1（余 1 为厂商负行距保真项）、交付包已重打并复算哈希（`sha256sum -c` 4/4 OK）。**以下残余全部如实列出，不隐藏、不粉饰**；签字前不把任何模板标为 `verified`，也不宣称 pixel-perfect。
+**当前状态：待用户目视签字。** W0–W5、REPACKAGE、CLOSE-OUT、ROTATION 与 ANCHOR-PACKAGE 均已收口并提交（源码 HEAD `3b48e89`，`ff32b4b`/`de48ff9`/`3b48e89` 三提交后交付集已全部重签发）；**行为变更（`3b48e89`）：系统相机卡片的水印位置支持九宫格锚点（含「厂商原版」默认位），默认渲染与锚点上线前逐字节一致**；**行为变更（`549a653`）：厂商水印与原版模板的品牌字标不再固定跟随模板厂商，而是随照片 EXIF 品牌（或 Inspector 中手选的品牌 LOGO）自动切换**；47 套终审 47/47 PASS、workflow 106/106、e2e 164/96/4、validate:ir 90/90/95 0 error、真机走查四项 PASS、保真重导出（`_research/review-164/exports-real/`）0 项真实变形/重叠缺陷、绘制级文字对文字重叠 4→1（余 1 为厂商负行距保真项）、交付包已重打并复算哈希（`sha256sum -c` 4/4 OK）。**以下残余全部如实列出，不隐藏、不粉饰**；签字前不把任何模板标为 `verified`，也不宣称 pixel-perfect。
 
 ### 5.1 待用户签字（唯一未闭合项）
 
@@ -151,6 +153,7 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 9a. **`hassel_style_xpan_1` 负行距保真项**：绘制级文字对文字全库唯一残余命中（px=338.09），源自厂商配置 `topMargin:-3` 的紧凑行距；字形墨迹不碰撞、文字可读，**按保真原则设计性保留**，不再"修复"成失真版式（证据 `_research/cleanup/lastoverlap/fix-report.md`）。
 9b. **品牌字标 letterbox 约 32%**：字标槽位向右生长直至撞上模型文字，字标可见墨宽通常只占槽位约 68%（约 32% 为留白），属槽位策略残余，非渲染缺陷。
 9c. **samyang 无字标文件**：品牌库 62 卡中 samyang 缺可靠字标素材文件，画布上保持隐藏（不伪造字标）。
+9d. **3 套旋转条带样式仍 `approx`**：`personalize_film_2`、`personalize_film_realme_2`、`personalize_masterSign_3` 的 `rotation:90` 侧边条带已由 `ff32b4b` 修复渲染并经真实导出路径 + 几何/绘制矩形双重复核（无轴交换、锚点平移为同一刚性 delta），但**升级 `verified` 仍待真机样张对照**；`xpan_1` 厂商负行距按保真原则设计性保留（见 9a）；其余 95 套 stock 全 `approx`、**0 `verified`**；vivo 39 套 blocked 不变。
 
 ### 5.3 代码/证据卫生（已记录，本轮不动源码）
 

@@ -100,6 +100,7 @@ async function main() {
   children.push(table(['能力', '实现情况'], [
     ['边框模板', '68 个手写版式，覆盖背景模糊、水印边框、留白、卡片、玻璃、色卡、电影字幕、胶片齿孔、拍立得等；与 96 套系统相机合计 164 卡'],
     ['系统相机', '96 套：OPPO 53（Gallery 43 + CameraPro 9 + Polaroid 1）、小米 40、vivo 3；另有 4 组 blocked 在目录内标注原因，不导出'],
+    ['系统相机水印位置', '版式参数内新增九宫格锚点（与自定义水印面板共用同一控件），默认「厂商原版」保持厂商位置并可一键复位；选择锚点后整组水印（含旋转条带）作为刚性整体平移到照片画布对应位置并限幅不出界，另有水平/垂直微调'],
     ['EXIF', '自动读取品牌、机型、镜头、焦距、光圈、快门、ISO、日期；支持手动覆盖；桌面/Android JPG 回写'],
     ['品牌 Logo', '62 个有可靠字标的品牌，可自动匹配或手动选；可调节大小、位置和显隐；停产老牌字标取自官方历史资料或说明书扫描件，无可靠字标者不列出'],
     ['透明水印', '支持 PNG/WebP；照片内 / 整张画布；九宫格锚点；水平/垂直偏移；宽度、透明度、旋转；平铺与间距'],
@@ -113,7 +114,7 @@ async function main() {
 
   children.push(heading('二·附：系统相机水印目录', 2))
   children.push(p('系统相机分类现包含 96 套：OPPO 53（Gallery 43 + CameraPro 9 + Polaroid 拍立得 1）、小米 40、vivo 3（Zeiss 上框/上下框/内嵌）。另有 4 组 blocked：小米 3 套侧栏（Leica 5/88/89）与 vivo 39 套（合并为一组），均在目录底部显示原因，不可导出。GR5 右侧参数边栏已接入，滤镜值不在 EXIF 时以“—”占位；目录内 95 套库存（stock）样式全部标记 approx，verified 为 0。'))
-  children.push(p('本轮厂商对齐（W3）：OPPO Gallery 同步至 ColorOS 17.10.7，修正 13 处过时配置、新增 5 套 realme 样式、下线 1 套已退役样式（personalize_brand_3）；小米同步至 17 Ultra，film 15 与 Leica 2/91 更新，standard 6/7/8/107 迁移入生成管线。厂商水印（系统相机）分类中的品牌字标不再固定为厂商名：字标现随照片 EXIF 品牌（或 Inspector 中手动选择的“品牌 LOGO”）自动切换，例如用松下 DC-S1 样张套用小米徕卡版式时，字标显示 Panasonic 而非 xiaomi；同轮修复 leica-111 字标散落与 leica-92 焦距行重力（focal-line gravity）两处厂商版式缺陷。'))
+  children.push(p('本轮厂商对齐（W3）：OPPO Gallery 同步至 ColorOS 17.10.7，修正 13 处过时配置、新增 5 套 realme 样式、下线 1 套已退役样式（personalize_brand_3）；小米同步至 17 Ultra，film 15 与 Leica 2/91 更新，standard 6/7/8/107 迁移入生成管线。厂商水印（系统相机）分类中的品牌字标不再固定为厂商名：字标现随照片 EXIF 品牌（或 Inspector 中手动选择的“品牌 LOGO”）自动切换，例如用松下 DC-S1 样张套用小米徕卡版式时，字标显示 Panasonic 而非 xiaomi；同轮修复 leica-111 字标散落与 leica-92 焦距行重力（focal-line gravity）两处厂商版式缺陷。本轮新增：系统相机卡片的水印位置支持九宫格锚点选择（与自定义水印共用同一控件），默认「厂商原版」，选中锚点后整组水印刚性平移、旋转条带不做轴交换，且始终限幅在画布内。'))
   children.push(note('blocked 不是“已完成”：它们缺宿主布局、滤镜元数据或可靠参考帧。vivo 的 PAG 已能渲染，但当前只能确认照片层与占位页脚，尚不足以生成可信参考。'))
 
   children.push(heading('三、格式与“无损”边界', 1))
