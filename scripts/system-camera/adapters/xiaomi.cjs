@@ -271,7 +271,16 @@ async function convertNode(node, ctx) {
     const n = await convertNode(c, ctx)
     if (n) children.push(n)
   }
-  if (!children.length) return null
+  if (!children.length) {
+    // Vendor spacer: an empty wrap_content Layout that only carries a horizontal margin is a
+    // fixed gap, not dead weight (leica/92 `space_layout`, margin_left 40dp, sits between the
+    // Leica roundel and the EXIF column; dropping it made the two touch at dx = 0).
+    const gap = dp(node.margin_left, 0) + dp(node.margin_right, 0)
+    if (node.orientation === 'horizontal' && String(node.layout_width) === 'wrap_content' && gap > 0) {
+      return { kind: 'space', width: gap }
+    }
+    return null
+  }
   applyBrandLogo(children)
   const orientation = node.orientation === 'horizontal' ? 'row' : 'column'
   const w = dp(node.layout_width, undefined)
@@ -356,6 +365,22 @@ async function convertOverlayContainer(container, ctx) {
     if (converted) children.push(converted)
   }
   if (!children.length) return null
+  // Android hands a `match_parent` child of a horizontal LinearLayout the *remaining* width.
+  // Our row solver instead anchors left-gravity children to the band's left edge and
+  // right-gravity children to its right edge, so a child that claims the whole band width
+  // collapses that packing: it is placed at x = 0 and every right-anchored sibling after it
+  // is pushed off-canvas, then fitBandItems() rescales the band (leica/91 dropped the EXIF
+  // block onto the date run's baseline). Inside a multi-child overlay row these groups are
+  // therefore emitted as wrap_content; their own `right` gravity still anchors the content.
+  const isRow = container.orientation !== 'vertical'
+  if (isRow && children.length > 1) {
+    for (const c of children) {
+      if (c.kind === 'group' && c.matchWidth) {
+        c.matchWidth = false
+        delete c.width
+      }
+    }
+  }
   const width = widthFromLayout(container.layout_width)
   const height = dp(container.layout_height, 0)
   return {

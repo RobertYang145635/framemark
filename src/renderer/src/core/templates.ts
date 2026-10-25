@@ -2539,7 +2539,8 @@ const blur: TemplateDef = {
       })
       return { x: m, y: m, w: pw, h: ph }
     }
-    let y = m + ph + m + footer * 0.34
+    const titleY = m + ph + m + footer * 0.34
+    let y = titleY
     drawFitted(ctx, titleOf(env).toUpperCase(), cx, y, W - 2 * m, S * 0.024, theme.fg, {
       align: 'center',
       weight: 600,
@@ -2565,8 +2566,17 @@ const blur: TemplateDef = {
         min: S * 0.008
       })
     }
-    if (env.text.showLogo) {
-      drawBrandLogo(env, cx - S * 0.09, m + ph + m + footer * 0.08, S * 0.18, footer * 0.18, theme.fg)
+    // logoPos is only read here so the mark can be parked in the footer margin.
+    // 'center' (the default) keeps the historic placement byte-for-byte; 'left'
+    // / 'right' clear the centred model and EXIF runs on the x axis instead of
+    // sharing their centre line, and 'none' drops the mark.
+    const logoPos = String(env.params.logoPos ?? 'center')
+    if (env.text.showLogo && logoPos !== 'none') {
+      const lw = S * 0.18
+      const lh = footer * 0.18
+      const lx = logoPos === 'left' ? m : logoPos === 'right' ? W - m - lw : cx - lw / 2
+      const ly = logoPos === 'center' ? m + ph + m + footer * 0.08 : titleY - lh / 2
+      drawBrandLogo(env, lx, ly, lw, lh, theme.fg)
     }
     return { x: m, y: m, w: pw, h: ph }
   }

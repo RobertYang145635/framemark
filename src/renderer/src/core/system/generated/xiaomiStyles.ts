@@ -673,7 +673,7 @@ export const XIAOMI_STYLES = [
               {
                 "kind": "group",
                 "orientation": "column",
-                "matchWidth": true,
+                "matchWidth": false,
                 "matchHeight": true,
                 "gravity": "rightVerticalCenter",
                 "margins": {},
@@ -824,6 +824,10 @@ export const XIAOMI_STYLES = [
                         },
                         "margins": {},
                         "optional": true
+                      },
+                      {
+                        "kind": "space",
+                        "width": 32
                       }
                     ]
                   }
@@ -1176,6 +1180,20 @@ export const XIAOMI_STYLES = [
                 "children": [
                   {
                     "kind": "group",
+                    "orientation": "row",
+                    "matchWidth": false,
+                    "matchHeight": false,
+                    "gravity": "leftVerticalCenter",
+                    "margins": {},
+                    "children": [
+                      {
+                        "kind": "space",
+                        "width": 18
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "group",
                     "orientation": "column",
                     "matchWidth": false,
                     "matchHeight": false,
@@ -1469,6 +1487,20 @@ export const XIAOMI_STYLES = [
                 "children": [
                   {
                     "kind": "group",
+                    "orientation": "row",
+                    "matchWidth": false,
+                    "matchHeight": false,
+                    "gravity": "leftVerticalCenter",
+                    "margins": {},
+                    "children": [
+                      {
+                        "kind": "space",
+                        "width": 18
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "group",
                     "orientation": "column",
                     "matchWidth": false,
                     "matchHeight": false,
@@ -1712,7 +1744,7 @@ export const XIAOMI_STYLES = [
               {
                 "kind": "group",
                 "orientation": "column",
-                "matchWidth": true,
+                "matchWidth": false,
                 "matchHeight": true,
                 "gravity": "rightVerticalCenter",
                 "margins": {},
@@ -1863,6 +1895,10 @@ export const XIAOMI_STYLES = [
                         },
                         "margins": {},
                         "optional": true
+                      },
+                      {
+                        "kind": "space",
+                        "width": 32
                       }
                     ]
                   }
@@ -2783,7 +2819,7 @@ export const XIAOMI_STYLES = [
               {
                 "kind": "group",
                 "orientation": "column",
-                "matchWidth": true,
+                "matchWidth": false,
                 "matchHeight": true,
                 "gravity": "rightVerticalCenter",
                 "margins": {},
@@ -2934,6 +2970,10 @@ export const XIAOMI_STYLES = [
                         },
                         "margins": {},
                         "optional": true
+                      },
+                      {
+                        "kind": "space",
+                        "width": 32
                       }
                     ]
                   }
@@ -7014,7 +7054,7 @@ export const XIAOMI_STYLES = [
               {
                 "kind": "group",
                 "orientation": "row",
-                "matchWidth": true,
+                "matchWidth": false,
                 "matchHeight": false,
                 "gravity": "rightTop",
                 "margins": {
@@ -7326,6 +7366,10 @@ export const XIAOMI_STYLES = [
                     "scale": "contain",
                     "isBrandLogo": false,
                     "margins": {}
+                  },
+                  {
+                    "kind": "space",
+                    "width": 40
                   },
                   {
                     "kind": "group",
@@ -8052,6 +8096,20 @@ export const XIAOMI_STYLES = [
                 "children": [
                   {
                     "kind": "group",
+                    "orientation": "row",
+                    "matchWidth": false,
+                    "matchHeight": false,
+                    "gravity": "leftVerticalCenter",
+                    "margins": {},
+                    "children": [
+                      {
+                        "kind": "space",
+                        "width": 20
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "group",
                     "orientation": "column",
                     "matchWidth": false,
                     "matchHeight": false,
@@ -8592,6 +8650,20 @@ export const XIAOMI_STYLES = [
                   "left": 48
                 },
                 "children": [
+                  {
+                    "kind": "group",
+                    "orientation": "row",
+                    "matchWidth": false,
+                    "matchHeight": false,
+                    "gravity": "leftVerticalCenter",
+                    "margins": {},
+                    "children": [
+                      {
+                        "kind": "space",
+                        "width": 20
+                      }
+                    ]
+                  },
                   {
                     "kind": "group",
                     "orientation": "column",

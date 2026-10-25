@@ -4507,8 +4507,8 @@ export const OPPO_GALLERY_STYLES = [
     "assets": {
       "color_card_inspiration": {
         "file": "color_card_inspiration.webp",
-        "width": 240,
-        "height": 240
+        "width": 163,
+        "height": 23
       }
     },
     "audit": {
@@ -4607,8 +4607,8 @@ export const OPPO_GALLERY_STYLES = [
     "assets": {
       "color_card_perspective": {
         "file": "color_card_perspective.webp",
-        "width": 240,
-        "height": 240
+        "width": 96,
+        "height": 48
       }
     },
     "audit": {
@@ -4709,8 +4709,8 @@ export const OPPO_GALLERY_STYLES = [
     "assets": {
       "color_card_explore": {
         "file": "color_card_explore.webp",
-        "width": 240,
-        "height": 240
+        "width": 120,
+        "height": 24
       }
     },
     "audit": {

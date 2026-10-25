@@ -385,6 +385,14 @@ const OPPO_MASTERSIGN_3: StockStyle = oppoSideStyle(
   'oppo-gallery:personalize_masterSign_3', '大师签名 · 3', 'master_sign_3_dark', 'master_sign_3_dark.webp', 110, 30,
   { width: 750, height: 204 }
 )
+// realme 胶片 · 2 ships as a 50dp *rotated* side strip (bitmaps[0].rotation = 90) whose content
+// runs along the photo's long edge with a 97dp logo. The IR has no glyph rotation, so the strip
+// is reflowed through the same side-panel helper as its siblings (胶片 · 2 / 大师签名 · 3)
+// instead of being crushed to ~1.7px micro-text by fitBandItems().
+const OPPO_FILM_REALME_2: StockStyle = oppoSideStyle(
+  'oppo-gallery:personalize_film_realme_2', 'realme 胶片 · 2', 'realme_film_daylight', 'realme_film_daylight.webp', 100, 70,
+  { width: 368, height: 256 }
+)
 
 const OPPO_RETRO_5: StockStyle = {
   id: 'oppo-gallery:personalize_retroCamera_5',
@@ -770,6 +778,7 @@ export const STOCK_STYLES: Record<string, StockStyle> = {
   [LUMO.id]: LUMO,
   [GR5.id]: GR5,
   [OPPO_FILM_2.id]: OPPO_FILM_2,
+  [OPPO_FILM_REALME_2.id]: OPPO_FILM_REALME_2,
   [OPPO_MASTERSIGN_3.id]: OPPO_MASTERSIGN_3,
   [OPPO_RETRO_5.id]: OPPO_RETRO_5,
   [XIAOMI_FILM_15.id]: XIAOMI_FILM_15,

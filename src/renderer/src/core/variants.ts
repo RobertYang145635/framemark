@@ -145,7 +145,11 @@ const V = (
 export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   ...STOCK_VARIANTS,
   // 背景模糊
-  V('blur-classic', '经典模式', '背景模糊', 'blur', null, { theme: 'paper', marginPct: 3.5, radiusPct: 2, shadow: 6, footerPct: 11, blur: 26 }, '原版'),
+  // logoPos:'right' parks the brand mark in the footer margin instead of on the
+  // centred model/EXIF column; autoLogo resolves the mark from the photo's own
+  // EXIF so a Panasonic frame cannot inherit the Leica roundel that the
+  // vendor-xiaomi* variants force-set into store.design.logo.
+  V('blur-classic', '经典模式', '背景模糊', 'blur', null, { theme: 'paper', marginPct: 3.5, radiusPct: 2, shadow: 6, footerPct: 11, blur: 26, logoPos: 'right' }, '原版', undefined, undefined, true),
   V('blur-date', '简约日期', '背景模糊', 'blur', null, { theme: 'ink', marginPct: 3, radiusPct: 1.5, shadow: 5, footerPct: 9, blur: 30, minimalFooter: true }),
 
   // 厂商水印
@@ -335,7 +339,12 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
       logoPos: 'center',
       footerPct: 0,
       footerMode: 'overlay',
-      slots: 'title,logo,brand,exif,lens,date',
+      // 'lens' dropped: it re-stated focal length + aperture that the 'exif'
+      // slot already prints one line above ("366mm F6.3 1/400s ISO125" plus
+      // "DC-S1 366MM F6.3"), so EXIF rendered twice. Every overlay slot is
+      // positioned by an absolute ov*Y frame param, so removing it moves
+      // nothing else in the stack.
+      slots: 'title,logo,brand,exif,date',
       frame:
         '{"ovLeftX":0.0913,"ovTextX":0.1293,"ovLogoW":0.0323,"ovLogoH":0.0519,"ovLogoCenterY":0.7839,"ovTitleY":0.7637,"ovBrandY":0.7968,"ovRightCenterX":0.749,"ovExifY":0.7507,"ovLensY":0.7925,"ovDateY":0.8285}'
     },

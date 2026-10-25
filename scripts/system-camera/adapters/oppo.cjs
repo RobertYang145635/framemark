@@ -122,6 +122,56 @@ function registerAsset(asset, rawFile, assets, dimensions) {
   }
 }
 
+// `bitmapSourceType: 4` (a `colorCard` block) is a *dynamically composed* colour card: the APK
+// ships it as a 240x240 design placeholder whose artwork only occupies a small band in the
+// middle, on a solid white canvas. Contain-fitting the padded placeholder into the declared box
+// (e.g. 62x12) shrinks the real artwork to ~5x1 layout units, i.e. an invisible dash. The
+// placeholder's content box matches the declared box aspect 1:1 (explore 120x24 -> 5.00 vs
+// 62x12 -> 5.17; perspective 96x48 -> 2.00 vs 42x21 -> 2.00), so the content is what is meant
+// to fill the box: the copy that ships is cropped to its non-white content.
+const COLOR_CARD_ASSETS = new Map()
+
+function contentBox(data, info) {
+  let x1 = Infinity
+  let y1 = Infinity
+  let x2 = -1
+  let y2 = -1
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      const i = (y * info.width + x) * 4
+      const white = data[i] > 250 && data[i + 1] > 250 && data[i + 2] > 250
+      if (data[i + 3] > 20 && !white) {
+        if (x < x1) x1 = x
+        if (x > x2) x2 = x
+        if (y < y1) y1 = y
+        if (y > y2) y2 = y
+      }
+    }
+  }
+  if (!Number.isFinite(x1) || x2 < 0) return null
+  return { left: x1, top: y1, width: x2 - x1 + 1, height: y2 - y1 + 1 }
+}
+
+async function trimColorCardAssets() {
+  const trimmed = new Map()
+  for (const [asset, file] of COLOR_CARD_ASSETS) {
+    const full = path.join(APP_ASSET_DIR, file)
+    if (!fs.existsSync(full)) continue
+    const { data, info } = await sharp(full).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    const box = contentBox(data, info)
+    if (!box) continue
+    // already cropped to its content (idempotent on re-runs)
+    if (box.left === 0 && box.top === 0 && box.width >= info.width && box.height >= info.height) continue
+    const tmp = `${full}.trim.tmp`
+    await sharp(full).extract(box).webp({ quality: 92 }).toFile(tmp)
+    fs.rmSync(full, { force: true })
+    fs.renameSync(tmp, full)
+    const meta = await sharp(full).metadata()
+    trimmed.set(asset, { width: meta.width, height: meta.height })
+  }
+  return trimmed
+}
+
 function convertNode(n, assets, bitmapFiles, dimensions) {
   if (!n || n.visible === false) return null
   const content = n.content ?? n
@@ -159,6 +209,9 @@ function convertNode(n, assets, bitmapFiles, dimensions) {
     if (!asset) return null
     const file = bitmapFiles.get(asset)
     if (file) registerAsset(asset, file, assets, dimensions)
+    if (content.colorCard || content.bitmapSourceType === 4) {
+      COLOR_CARD_ASSETS.set(asset, asset + (path.extname(file ?? '') || '.webp'))
+    }
     const width = Math.max(1, num(content.width, 1))
     const height = Math.max(1, num(content.height, 1))
     let scale = scaleOf(content.scaleType)
@@ -318,6 +371,13 @@ async function main() {
       for (const band of style.bands) for (const child of band.children) walk(child)
     }
   }
+  const trimmed = await trimColorCardAssets()
+  for (const style of styles) {
+    for (const [key, dim] of trimmed) {
+      if (style.assets?.[key]) style.assets[key] = { ...style.assets[key], width: dim.width, height: dim.height }
+    }
+  }
+  if (trimmed.size) console.log('colour-card assets cropped to content:', [...trimmed.keys()].join(', '))
   fs.mkdirSync(OUT_DIR, { recursive: true })
   fs.writeFileSync(
     path.join(OUT_DIR, 'oppoGallery.ts'),
