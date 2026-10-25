@@ -2539,7 +2539,9 @@ const blur: TemplateDef = {
     drawPhoto(env, m, m, pw, ph, radiusOf(env), pct(env.params.shadow, 6))
     const cx = W / 2
     if (env.params.minimalFooter === true) {
-      const dt = dateText(env) || formatDateOnly(new Date())
+      // Never invent a date: showDate gates the row, and when it is on we use the
+      // photo's EXIF capture date only. A missing capture date renders nothing.
+      const dt = dateText(env)
       drawFitted(ctx, titleOf(env).toUpperCase(), cx, m + ph + m + footer * 0.42, W - 2 * m, S * 0.019, theme.sub, {
         align: 'center',
         family: FONT_UI,

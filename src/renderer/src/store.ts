@@ -15,7 +15,7 @@ import { getTemplate } from './core/templates'
 import { getVariant } from './core/variants'
 import { autoLogo, logoAsset } from './core/brands'
 import { photoFromFile, photoFromPath, photoFromUrl, revokePhoto, imageAssetFromFile } from './core/photos'
-import { defaultDesign, hydrateDesign, isValidDesign, makeDesignFromVariant, portablePresetDesign } from './core/presets'
+import { DEFAULT_TEXT, defaultDesign, hydrateDesign, isValidDesign, makeDesignFromVariant, portablePresetDesign } from './core/presets'
 import { getAllPresets, putPreset, removePreset, loadLastDesign, saveLastDesign, downloadJson, readJsonFile } from './core/storage'
 import { exportBatch } from './core/exporter'
 import { saveTextDocument } from './core/gallery'
@@ -227,11 +227,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => {
       const previous = getVariant(s.design.variantId)
       const previousIsDefault = !s.design.text.title || s.design.text.title === previous.text?.title
-      const text = variant.text
-        ? { ...s.design.text, ...variant.text }
-        : previousIsDefault
-          ? { ...s.design.text, title: '', subtitle: '' }
-          : s.design.text
+      const isSameVariant = s.design.variantId === variant.id
+      // A variant's own `text` block is authoritative for every visibility flag.
+      // Rebuild from DEFAULT_TEXT (the same base makeDesignFromVariant uses at boot)
+      // so nothing — e.g. showDate:false — leaks from the previously selected variant.
+      // Re-applying the SAME variant leaves live user edits untouched; switching to a
+      // different variant resets the flags to that variant's declared design.
+      let text: TextSettings
+      if (isSameVariant) {
+        text = s.design.text
+      } else {
+        text = { ...DEFAULT_TEXT, ...(variant.text ?? {}) } as TextSettings
+        // Preserve a user-typed custom title/subtitle across text-less variants
+        // (legacy previousIsDefault behaviour); flags stay authoritative above.
+        if (!variant.text && !previousIsDefault) {
+          text.title = s.design.text.title
+          text.subtitle = s.design.text.subtitle
+        }
+      }
       return {
         design: {
           ...s.design,
