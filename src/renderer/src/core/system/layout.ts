@@ -568,6 +568,135 @@ function layoutBoxForBand(band: StockBand, box: StockRect): StockRect {
   return { x: cx - box.h / 2, y: cy - box.w / 2, w: box.h, h: box.w }
 }
 
+/**
+ * Bands whose content is a repositionable watermark: overlay bands (text /
+ * graphics laid on top of the photo) and rotated edge strips. Plain
+ * `top`/`bottom`/`left`/`right` frame bands are the border, not movable text,
+ * so the global offset never touches them.
+ */
+function isMovableBand(band: StockBand): boolean {
+  return band.direction === 'overlay' || !!band.rotation
+}
+
+/**
+ * Bounding rect of everything a band paints on the canvas — the reference the
+ * global offset clamps against. A rotated band's items already live inside its
+ * final `box` (they are solved in `layoutBox`, w/h swapped, and turned back into
+ * `box` at paint time), so `box` alone is its canvas footprint; an unrotated
+ * band paints its items directly and, only if it declares a `background`, the
+ * plate at `box`.
+ */
+function bandVisualExtent(placed: PlacedBand): StockRect {
+  if (placed.rotation) return placed.box
+  const boxes: StockRect[] = placed.band.background
+    ? [placed.box, ...placed.items.map((i) => i.box)]
+    : placed.items.map((i) => i.box)
+  let rect: StockRect | null = null
+  for (const r of boxes) {
+    if (r.w <= 0 || r.h <= 0) continue
+    if (!rect) {
+      rect = { x: r.x, y: r.y, w: r.w, h: r.h }
+      continue
+    }
+    const x1 = Math.min(rect.x, r.x)
+    const y1 = Math.min(rect.y, r.y)
+    const x2 = Math.max(rect.x + rect.w, r.x + r.w)
+    const y2 = Math.max(rect.y + rect.h, r.y + r.h)
+    rect = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }
+  }
+  return rect ?? placed.box
+}
+
+function clampShift(total: number, min: number, max: number): number {
+  return max < min ? Math.max(0, min) : Math.min(Math.max(total, min), max)
+}
+
+/**
+ * Rigidly translate a movable band by an already-clamped (tx,ty): `box`,
+ * `layoutBox` and every item shift together, so a rotated band turns about its
+ * moved centre — a translation is always canvas-space and never swaps axes.
+ */
+function translateBand(placed: PlacedBand, tx: number, ty: number): void {
+  if (tx === 0 && ty === 0) return
+  placed.box = { ...placed.box, x: placed.box.x + tx, y: placed.box.y + ty }
+  if (placed.layoutBox) placed.layoutBox = { ...placed.layoutBox, x: placed.layoutBox.x + tx, y: placed.layoutBox.y + ty }
+  for (const item of placed.items) item.box = { ...item.box, x: item.box.x + tx, y: item.box.y + ty }
+}
+
+/**
+ * Rigidly translate a movable band by (dx,dy) in canvas-space layout units,
+ * clamped so its visible extent never leaves [0,W]×[0,H]. The clamp is
+ * symmetric — the same bound applies at either end of an axis, so pushing the
+ * watermark right cannot drive it off the right edge any more than pushing left
+ * can drive it off the left.
+ */
+function nudgeBand(placed: PlacedBand, W: number, H: number, dx: number, dy: number): void {
+  const e = bandVisualExtent(placed)
+  const tx = clampShift(dx, -e.x, W - (e.x + e.w))
+  const ty = clampShift(dy, -e.y, H - (e.y + e.h))
+  translateBand(placed, tx, ty)
+}
+
+function unionExtent(bands: PlacedBand[]): StockRect | null {
+  let rect: StockRect | null = null
+  for (const b of bands) {
+    const e = bandVisualExtent(b)
+    if (!rect) {
+      rect = { x: e.x, y: e.y, w: e.w, h: e.h }
+      continue
+    }
+    const x1 = Math.min(rect.x, e.x)
+    const y1 = Math.min(rect.y, e.y)
+    const x2 = Math.max(rect.x + rect.w, e.x + e.w)
+    const y2 = Math.max(rect.y + rect.h, e.y + e.h)
+    rect = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }
+  }
+  return rect
+}
+
+/**
+ * Nine-grid anchor picker for stock styles (`env.params.stockAnchor`), the same
+ * mental model and the same values as the watermark layer's `Anchor` type
+ * ('top-left' … 'bottom-right', plus 'center'). Absent or 'vendor' returns null
+ * ⇒ the vendor's own position, which skips every nudge branch and keeps the
+ * solve byte-identical to the committed build (hard requirement).
+ */
+function stockAnchorAxes(value: unknown): { h: 'left' | 'center' | 'right'; v: 'top' | 'center' | 'bottom' } | null {
+  const s = String(value ?? 'vendor')
+  if (!s || s === 'vendor') return null
+  const parts = s.split('-')
+  const h = parts.includes('left') ? 'left' : parts.includes('right') ? 'right' : 'center'
+  const v = parts.includes('top') ? 'top' : parts.includes('bottom') ? 'bottom' : 'center'
+  return { h, v }
+}
+
+/**
+ * Translate the WHOLE movable watermark group (every overlay / rotated band,
+ * rigidly, one shared delta) so the union of its visual extents sits at the
+ * selected anchor of the usable canvas — the photo area, i.e. the region the
+ * vendor watermark is meant to live on; margin frame bands are not usable.
+ * The X/Y fine-tune sliders are then added on top of the anchor shift, and the
+ * combined delta passes through the same canvas-bounded clamp `nudgeBand` uses
+ * (`[0,W]×[0,H]`), so no anchor + slider combination can leave the canvas.
+ * Rotated bands are moved by their final canvas-space `box` (bandVisualExtent
+ * returns the post-rotation footprint), so an anchor never swaps their axes.
+ */
+function anchorGroup(movable: PlacedBand[], photo: StockRect, W: number, H: number, axes: NonNullable<ReturnType<typeof stockAnchorAxes>>, dx: number, dy: number): void {
+  const e = unionExtent(movable)
+  if (!e) return
+  const tx0 =
+    axes.h === 'left' ? photo.x - e.x
+    : axes.h === 'right' ? photo.x + photo.w - (e.x + e.w)
+    : photo.x + (photo.w - e.w) / 2 - e.x
+  const ty0 =
+    axes.v === 'top' ? photo.y - e.y
+    : axes.v === 'bottom' ? photo.y + photo.h - (e.y + e.h)
+    : photo.y + (photo.h - e.h) / 2 - e.y
+  const tx = clampShift(tx0 + dx, -e.x, W - (e.x + e.w))
+  const ty = clampShift(ty0 + dy, -e.y, H - (e.y + e.h))
+  for (const b of movable) translateBand(b, tx, ty)
+}
+
 export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout {
   const baseW = style.referenceWidth
   const ratio = env.ph / env.pw
@@ -576,11 +705,37 @@ export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout 
   const W = m.left + baseW + m.right
   const H = m.top + basePhotoH + m.bottom
   const photo: StockRect = { x: m.left, y: m.top, w: baseW, h: basePhotoH }
+  // Global watermark nudge driven by `env.params` (Inspector sliders).
+  // Convention: `stockOffsetXPct` = % of the reference width, `stockOffsetYPct`
+  // = % of the photo's short edge, both expressed in layout units so the render
+  // `scale` carries them to pixels — as painted, X moves by % of the photo width
+  // and Y by % of the photo's short edge. Defaults are absent ⇒ 0/0, which skips
+  // the whole nudge branch below and leaves every solved rect byte-identical to
+  // the vendor-faithful solve.
+  const px = Number(env.params.stockOffsetXPct)
+  const py = Number(env.params.stockOffsetYPct)
+  const dx = Number.isFinite(px) ? (px / 100) * baseW : 0
+  const dy = Number.isFinite(py) ? (py / 100) * Math.min(baseW, basePhotoH) : 0
+  const nudged = dx !== 0 || dy !== 0
+  // Nine-grid anchor for the stock watermark group ('vendor' / absent ⇒ null ⇒
+  // the vendor's own position). Both this and the slider branch are skipped at
+  // the default, so the untouched solve stays byte-identical.
+  const axes = stockAnchorAxes(env.params.stockAnchor)
   const bands = style.bands.map((band) => {
     const box = bandBox(style, band, photo, W, H)
-    if (!band.rotation) return placeBandRoot(band, box, env)
-    const layoutBox = layoutBoxForBand(band, box)
-    return { ...placeBandRoot(band, layoutBox, env), box, layoutBox, rotation: band.rotation }
+    let placed: PlacedBand
+    if (!band.rotation) {
+      placed = placeBandRoot(band, box, env)
+    } else {
+      const layoutBox = layoutBoxForBand(band, box)
+      placed = { ...placeBandRoot(band, layoutBox, env), box, layoutBox, rotation: band.rotation }
+    }
+    if (!axes && nudged && isMovableBand(band)) nudgeBand(placed, W, H, dx, dy)
+    return placed
   })
+  if (axes) {
+    const movable = bands.filter((b) => isMovableBand(b.band))
+    if (movable.length) anchorGroup(movable, photo, W, H, axes, dx, dy)
+  }
   return { W, H, photo, bands }
 }

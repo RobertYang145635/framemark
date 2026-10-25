@@ -18,6 +18,8 @@ import { useAppStore } from '../store'
 import { getTemplate } from '../core/templates'
 import { getVariant } from '../core/variants'
 import { BRANDS } from '../core/brands'
+import { getStockStyle } from '../core/system/styles'
+import type { StockStyle } from '../core/system/ir'
 import { IconButton, Section, Segmented, Slider, Switch } from './ui'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
@@ -51,6 +53,41 @@ const TEXT_FLAGS: { key: keyof TextSettings; label: string }[] = [
   { key: 'showLogo', label: 'Logo' }
 ]
 
+/**
+ * The nine-grid position picker the watermark layer already uses (`.anchor-grid`
+ * in styles.css). Exported within this file so stock-style cards reuse the SAME
+ * visual control and the SAME labels — one mental model for "位置可调".
+ */
+const ANCHOR_OPTIONS: { value: Anchor; label: string }[] = [
+  { value: 'top-left', label: '左上' },
+  { value: 'top-center', label: '上中' },
+  { value: 'top-right', label: '右上' },
+  { value: 'middle-left', label: '左中' },
+  { value: 'center', label: '居中' },
+  { value: 'middle-right', label: '右中' },
+  { value: 'bottom-left', label: '左下' },
+  { value: 'bottom-center', label: '下中' },
+  { value: 'bottom-right', label: '右下' }
+]
+
+function AnchorGrid({ value, onSelect }: { value: string; onSelect: (a: Anchor) => void }) {
+  return (
+    <div className="anchor-grid">
+      {ANCHOR_OPTIONS.map((a) => (
+        <button
+          key={a.value}
+          type="button"
+          className={value === a.value ? 'active' : ''}
+          onClick={() => onSelect(a.value)}
+          title={a.label}
+        >
+          <span />
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function ThemeSwatches() {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
@@ -77,6 +114,19 @@ function ThemeSwatches() {
   )
 }
 
+/**
+ * Does this stock style declare a `isBrandLogo` slot node? The stock engine's
+ * only logo consumer is `params.brandLogoFile`, which `assets.ts` applies solely
+ * to `isBrandLogo` slots — fixed co-brand marks (Leica roundel, Hasselblad, the
+ * 哈苏文字 marks) have none, so the brand picker would be inert for those cards.
+ */
+function stockHasBrandSlot(style: StockStyle | null): boolean {
+  if (!style) return false
+  const walk = (nodes: StockStyle['bands'][number]['children']): boolean =>
+    nodes.some((n) => (n.kind === 'image' ? !!n.isBrandLogo : n.kind === 'group' ? walk(n.children) : false))
+  return style.bands.some((b) => walk(b.children))
+}
+
 function LogoSection() {
   const design = useAppStore((s) => s.design)
   const setBrandPickerOpen = useAppStore((s) => s.setBrandPickerOpen)
@@ -84,6 +134,18 @@ function LogoSection() {
   const clearLogo = useAppStore((s) => s.clearLogo)
   const setText = useAppStore((s) => s.setText)
   const setParam = useAppStore((s) => s.setParam)
+  const def = getTemplate(design.templateId)
+  // Stock cards (Task-2, option (b) — do not leave a control that does nothing):
+  // `显示 Logo` (text.showLogo) and `Logo 大小` (params.logoScale) have no consumer
+  // anywhere in core/system — the stock engine reads neither — so they are hidden
+  // on stock cards rather than wired onto a path that cannot honour them without
+  // breaking the vendor-faithful (0,0) render. `brandLogoFile` DOES drive
+  // `isBrandLogo` slots, so the brand-picker row is kept for slot styles and the
+  // whole section is dropped for stock styles that have no such node (e.g. the
+  // two 哈苏文字 cards, whose logo is a fixed co-brand mark).
+  const isStock = def.id === 'systemCamera'
+  const stockStyle = isStock ? getStockStyle(String(design.params.systemStyle ?? '')) : null
+  if (isStock && !stockHasBrandSlot(stockStyle)) return null
 
   return (
     <Section
@@ -119,21 +181,25 @@ function LogoSection() {
           ) : null}
         </div>
       </div>
-      <Switch
-        checked={design.text.showLogo}
-        onChange={(v) => setText({ showLogo: v })}
-        label="显示 Logo"
-        hint="选中品牌后再决定是否显示"
-      />
-      <Slider
-        label="Logo 大小"
-        value={Number(design.params.logoScale ?? 5)}
-        min={0}
-        max={10}
-        step={0.5}
-        onChange={(v) => setParam('logoScale', v)}
-        disabled={!design.text.showLogo}
-      />
+      {!isStock ? (
+        <>
+          <Switch
+            checked={design.text.showLogo}
+            onChange={(v) => setText({ showLogo: v })}
+            label="显示 Logo"
+            hint="选中品牌后再决定是否显示"
+          />
+          <Slider
+            label="Logo 大小"
+            value={Number(design.params.logoScale ?? 5)}
+            min={0}
+            max={10}
+            step={0.5}
+            onChange={(v) => setParam('logoScale', v)}
+            disabled={!design.text.showLogo}
+          />
+        </>
+      ) : null}
     </Section>
   )
 }
@@ -217,7 +283,10 @@ const PARAM_LABELS: Record<string, string> = {
   glassLayout: '玻璃布局',
   glassAlign: '玻璃位置',
   sideLayout: '侧栏布局',
-  corner: '角标位置'
+  corner: '角标位置',
+  stockAnchor: '水印锚点',
+  stockOffsetXPct: '水印水平微调',
+  stockOffsetYPct: '水印垂直微调'
 }
 
 const EXPOSED_PARAMS = new Set([
@@ -378,6 +447,17 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
   const isRatio = def.id === 'ratio'
   const isPalette = def.id === 'palette'
   const isBlur = def.id === 'blur'
+  const isSystemCamera = def.id === 'systemCamera'
+  // A stock card exposes the nine-grid position picker (and the X/Y fine-tune)
+  // only when it actually has a movable watermark group (an on-photo overlay,
+  // or a rotated edge strip); pure border-frame stock cards have nothing to
+  // move and stay honest (no dead control). Same rule as the hidden Logo
+  // controls above. See `core/system/layout.ts/solveStockLayout`.
+  const stockMovable =
+    isSystemCamera &&
+    !!getStockStyle(String(design.params.systemStyle ?? ''))?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
+  // 'vendor' = the style's own committed position (pixel-identical default).
+  const stockAnchor = String(design.params.stockAnchor ?? 'vendor')
   const themeOptions = variant.themes?.length ? variant.themes : def.themes
 
   const resetVariantParams = useAppStore((s) => s.resetVariantParams)
@@ -438,7 +518,53 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
         {isMovie ? (
           <Slider label="上下黑边" value={Number(design.params.barPct ?? 8)} min={3} max={16} step={0.5} suffix="%" onChange={(v) => setParam('barPct', v)} />
         ) : null}
-        {!controls.length && !isMovie ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
+        {stockMovable ? (
+          <div className="field-stack">
+            <label className="field compact">
+              <span>水印位置</span>
+              <button
+                className={`toggle-chip ${stockAnchor === 'vendor' ? 'on' : ''}`}
+                onClick={() => setParam('stockAnchor', 'vendor')}
+                type="button"
+                title="厂商原版位置"
+              >
+                厂商原版
+              </button>
+            </label>
+            <AnchorGrid value={stockAnchor} onSelect={(a) => setParam('stockAnchor', a)} />
+            <Slider
+              label="水平微调"
+              value={Number(design.params.stockOffsetXPct ?? 0)}
+              min={-40}
+              max={40}
+              step={0.5}
+              suffix="%"
+              onChange={(v) => setParam('stockOffsetXPct', v)}
+            />
+            <Slider
+              label="垂直微调"
+              value={Number(design.params.stockOffsetYPct ?? 0)}
+              min={-40}
+              max={40}
+              step={0.5}
+              suffix="%"
+              onChange={(v) => setParam('stockOffsetYPct', v)}
+            />
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setParam('stockAnchor', 'vendor')
+                setParam('stockOffsetXPct', 0)
+                setParam('stockOffsetYPct', 0)
+              }}
+              type="button"
+            >
+              <RotateCcw size={14} />
+              复位为厂商位置
+            </button>
+          </div>
+        ) : null}
+        {!controls.length && !isMovie && !stockMovable ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
       </Section>
 
       {themeOptions?.length ? (
@@ -594,17 +720,6 @@ function WatermarkPanel() {
   const setWatermarkFile = useAppStore((s) => s.setWatermarkFile)
   const fileRef = useRef<HTMLInputElement>(null)
   const wm = design.watermark
-  const anchors: { value: Anchor; label: string }[] = [
-    { value: 'top-left', label: '左上' },
-    { value: 'top-center', label: '上中' },
-    { value: 'top-right', label: '右上' },
-    { value: 'middle-left', label: '左中' },
-    { value: 'center', label: '居中' },
-    { value: 'middle-right', label: '右中' },
-    { value: 'bottom-left', label: '左下' },
-    { value: 'bottom-center', label: '下中' },
-    { value: 'bottom-right', label: '右下' }
-  ]
   return (
     <div className="inspector-pane">
       <Section title="水印图层" hint="支持透明 PNG/WebP；默认压在照片区域内">
@@ -664,19 +779,7 @@ function WatermarkPanel() {
             compact
           />
         </label>
-        <div className="anchor-grid">
-          {anchors.map((a) => (
-            <button
-              key={a.value}
-              type="button"
-              className={wm.anchor === a.value ? 'active' : ''}
-              onClick={() => setWatermark({ anchor: a.value })}
-              title={a.label}
-            >
-              <span />
-            </button>
-          ))}
-        </div>
+        <AnchorGrid value={wm.anchor} onSelect={(a) => setWatermark({ anchor: a })} />
         <Slider label="水平偏移" value={wm.offsetX} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetX: v })} />
         <Slider label="垂直偏移" value={wm.offsetY} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetY: v })} />
         <Slider label="宽度" value={wm.widthPct} min={2} max={60} step={0.5} suffix="%" onChange={(v) => setWatermark({ widthPct: v })} />
