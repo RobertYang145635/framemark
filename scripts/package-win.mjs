@@ -40,6 +40,8 @@ async function main() {
     const n = p.split(path.sep).join('/').replace(/^\/+/, '')
     if (!n) return false
     if (/^(android|src|scripts|_research|release|\.git)(\/|$)/.test(n)) return true
+    // isolate-build scratch dirs under out/ (_g1/_pd/_av) are not runtime payload
+    if (/^out\/_/.test(n)) return true
     if (/^(package-lock\.json|capacitor\.config\.json|tsconfig.*\.json|electron\.vite\.config\.ts)$/.test(n)) return true
     if (/^resources(\/|$)/.test(n)) return true
     if (/^node_modules\/(@capacitor|@fontsource|react|react-dom|lucide-react|zustand|@types|@electron|electron|electron-vite|vite|typescript|playwright-core)(\/|$)/.test(n)) return true

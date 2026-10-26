@@ -6,14 +6,14 @@
 > 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 23:22**（ALIGN-PACKAGE 重打包，本机时区）；最近更新：2026-10-25（**ANCHOR-PACKAGE**：`ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带样式支持厂商 band 旋转（`personalize_film_2` / `personalize_film_realme_2` / `personalize_masterSign_3`，仍 `approx`、待真机样张判定）与 `3b48e89` feat(system-camera) **系统相机九宫格锚点选择器**落库——stock 水印位置由 `AnchorGrid`（与自定义水印面板共用控件）+ 第 10 项「厂商原版」默认位选择，整组可动条带（含旋转条带）作为刚性整体平移到照片画布锚点位并限幅不出界，X/Y 滑块降级为水平/垂直微调；默认渲染与 rotation-verify 基线**逐字节一致**（4 张默认导出 Buffer.equals 全 true）；typecheck/build 0、e2e 164/96/4、workflow 106/106、validate-ir 90 样式 0 error、watermark-e2e 锚点选择器 `.anchor-grid button[title="右下"]` 未破坏；打包版 exe 复测 **164/96/4/62、0 pageerror 且锚点实测可用**（`anchor-packaged.json`）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**（`fm-anchor-cold.png`）；交付集（zip/APK/docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；此前 **CLOSE-OUT 收口**：REPACKAGE 之后又有四个提交落库——`394ebe1` fix(vendor) 小米 FrameLayout gravity（leica-111 字标散落修复）、`549a653` feat(system-camera) 品牌字标改随照片 EXIF 品牌 / Inspector 手选、`652807f` fix(vendor) 小米 leica-92 焦距行重力、`ddd9dec` chore(previews) wm-black 预览重生成；全量重打包并刷新交付集，HEAD **`ddd9dec`**；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**CLOSE-OUT 打包版复测 164/96/4/62、0 pageerror，真机冷启动 365 ms / LaunchState COLD**、**打包版品牌字标抽检：DC-S1 样张下 leica-91/111 字标均为 Panasonic**；绘制级文字对文字重叠全库仅剩 1 处（`hassel_style_xpan_1` 厂商负行距，字形可读，按保真原则保留）；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
 > **当前状态：待用户目视签字**——机器门槛（typecheck / build / e2e / workflow / validate:ir / 47 套逐套测量 / 真机走查）全绿，唯一欠项是用户对 47 套与厂商线的目视签收；签收前不宣称 pixel-perfect、不升级任何 `verified`。
 >
-> **⚠️ 交付集已过期（2026-10-26 04:12）**：`交付/` 里的 zip/APK/docx/PDF 是 HEAD `244f5bb` 的产物，**不再等于当前源码状态**。三件事同时挂账：
-> 1. fontScale 量画一致修复**已提交 `865d651`**（`core/draw.ts` 新增 `textScaleOf()`、`core/scene.ts` 的 `scaledContext` 改用它、`core/system/layout.ts` 量字侧乘同一系数）。根因：Inspector「字号缩放」非 1 时绘制侧乘系数、量字侧未乘 ⇒ 字形超出推进宽度，厂商 16 单位间距塌成 12.7。**桌面端 `fontScale=1` 输出与修复前逐字节相同**（`4694db3b1de4042cef8658638477bc7f4f8b3e11b6e6ebc16a5f8d8ce4ba18d6`）；**真机已验收**：设备保持用户自己的 `fontScale=1.22`，哈苏·4 五间距 15.92/8.37/9.02/16.51/8.61（期望 16/8/8/16/8，全 OK），墨迹高度 10.61u/8.08u 与修复前相同（放大保留，未动用户设置）。证据 `_research/phone-fidelity/cdp2/hassel4-phone.jpg`。**但 `交付/` 仍是修复前的包，必须重打。**
-> 2. 新发现**适配层丢弃厂商 `*Title` 标签部件**（任务 #56）：`hassel_style_4` 厂商有 9 个 `textSourcePart`，我们 IR 只落 7 个节点，丢了 `FLTitle`/`ApertureTitle`/`ShutterTitle`，并把整体 `ApertureValue`（`f/2.1`）错拆成淡色 `f/` + 间距 + 数值、快门少 `s` 后缀。修它要重生成 IR ⇒ **会改动已签字基线中受影响的那些张**，故排在 PARITY-175 双档基线建立之后。
-> 3. **用户手机上装的既不是交付包也不是干净版**：md5 `76e36ba7f15ab4820f51931a5084aa64`（03:23 某 agent 覆盖装的含修复临时构建），交付包是 `fc0697b295402383c27c51c27bb37cf7`。收尾必须装回经过完整校验的版本。
+> **当前状态（2026-10-26 14:40，源码 HEAD `9502f25` + 本轮收尾补丁）**
+> - **两端一致性 T12 双档通过**：1.00 档配对 **175/175**、全等 **164**、亚像素差 11、**实质差异 0**；1.22 档配对 **175/175**、全等 **145**、亚像素差 30、**实质差异 0**。证据 `_research/parity-final/ops-diff-fs10.json` / `-fs122.json`（T12 只认这两个路径）。
+> - **此前报出的 2 张 MATERIAL 已查明为真机测试态泄漏，不是渲染分叉**：设备 localStorage 的 `paramOverrides` 残留 `stock-oppo-hassel_text_style_1.stockAnchor=top-left`、`stock-xiaomi-classic-17.brandLogoFile=oppo_black/theme=white`；清空这两个桶后重导，两端指令流回到同参口径（hassel_text_style_1 文本 x 差 0.00006 px；xiaomi-classic-17 字标画布恢复 1024×157）。原状态备份 `_research/parity-final/phone-state-backup.json`，清空前指令 `_research/parity-final/phone-ops-sign2-preclean/`。**判据教训：harness 复用设备用户态时，必须先对齐 per-style 参数覆盖，再谈两端差异。**
+> - **已修复并复验**：Avenir `.ttc` 只取 face#0 导致全库偏粗 → 四个单 face TTF；泰文字面跨端回退 → 打包本机 NotoSansThai；1.22 档 3 对严重叠字清零（canary 见过红）；OPPO `*Title` 部件恢复、XPAN 改读 `baseImageSize=291`。
+> - **交付集本轮重打**：zip 剔除 `out/_g1` scratch（`scripts/package-win.mjs` 新增 `out/_*` 忽略规则）；APK **29,316,016 B / sha256 `26fe569e…`**，真机已装、0 CDP socket、冷启动 3 次 **282/257/242 ms（COLD）**，进度数据保留。zip/docx/PDF 的最终哈希**以 `交付/SHA256.txt` 为准**（`sha256sum -c` 应 4/4 OK）。
+> - 收尾门禁原始输出：`_research/final-check.json`；未结项：`_research/ACCEPTANCE-LEDGER.md` §D。
 >
-> **验收口径修正**：此前报告的"绘制级间距违例 0 / 文字重叠 0"**仅在 `fontScale=1` 默认档成立**，当时检测器没有在非默认参数档跑过（任务 #49 起补双档）。另：`_research/review-164/` 的历史导出集已剪至只剩 `exports-real-v4`（释放 1.87GB），看图入口仍是 `index-real.html`。
-> 提交链（新→旧）：`e256965` fix(system-camera) 品牌字标按厂商槽墨迹高度/中心线/自身推导间距对齐（37 套预览随迁） · `3b48e89` feat(system-camera) 九宫格锚点选择器 · `de48ff9` docs 更正小米 Leica blocked 原因 · `ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带旋转 · `b242f7c` fix(store) 模板切换文字开关复位/模糊日期用拍摄日期 · `be150e1` fix(templates) wm-black 镜头行恢复 + EXIF 内容去重 · `0ef4f83` fix(render) 文字/图形重叠清除 + realme 条带修复 · `5af87d7` docs 交付文档口径 · `418f737` docs 清理收口 · `3e4af60` feat(vendor) OPPO 17.10.7 + 小米 17U · `5dac9c6` W1 47 套终审 · `fc12d99` Batch C · `edfb484` B3b-3 · `73a3fd7` B3b-1/2 · `f35d4f2` B3a · `27484c0` B2b · `23f00d9` B2a · `f69d77f` B1b · `f1410c2` B1a · `e002e18` A2 · `9657624` A1 · `438c7a1` W2 · `76448c2` W0 文档/工具 · `08fe989` 基线卫生 · `3311904` git 基线。
-> 工作日志与历史证据：[../HANDOFF.md](../HANDOFF.md) §7（§7.5 起为按时间顺序的历史记录，数字是当时值）、§14（W0–W5 收口）。
+> **保留的旧基线与历史**：下方 2026-10-25 的 W0–W5/交付记录是当时值，不再更新。`_research/signed-baseline/exports-real-v4-20261026/` 仍是唯一权威 175 张只读快照（聚合 SHA256 `ff2a32e8…`）；看图入口 `_research/review-175-pair/index.html`（175 卡 × 桌面/真机 × 字号 1.00/1.22 四宫格）。工作日志：[../HANDOFF.md](../HANDOFF.md) §7（按时间顺序的历史值）、§14。
 
 ---
 
@@ -126,18 +126,18 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 ---
 
-## 4. 交付基线（VIVO-CLOSE 重打包：**2026-10-26 00:53**，源码 = HEAD `f796854`）
+## 4. 交付基线（2026-10-26 收尾重打，源码 = HEAD `9502f25` + 本轮补丁）
+
+> **权威哈希以 `交付/SHA256.txt` 为准**（四行：zip / APK / docx / PDF；`cd 交付 && sha256sum -c SHA256.txt` 应 **4/4 OK**）。本页不再抄写不可复现的 zip 哈希，避免"文档哈希跑在包前面"的再次漂移；验收报告 `_research/repackage-2026-10-26/report.md`。
 
 | 文件 | 字节数 | SHA-256 | 校验 |
 |---|---:|---|---|
-| `交付/FrameMark-Windows-x64.zip` | **281,578,322** | `1b5119f49417f3a467de25073fb49e1edc2e416e21714521206836a9286c26a0` | OK（VIVO-CLOSE 新包，打包版 exe 复测 **175/107/4/62、0 pageerror、vivo 筛选 14 卡**：`_research/packaging/vivo-packaged.json`、`win-packaged-vivo-*.png`） |
-| `交付/FrameMark-Android-v1.0.0.apk` | **30,254,864** | `610d63f62eb1474d861ef72494057560ba137d75ed9de46685c38322b3d598a4` | OK（versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；capacitor copy + `assembleRelease` 全量重跑（`:app:packageRelease` / `:app:assembleRelease` 实际执行，APK 内 `assets/public/assets/index-DgAlEFGd.js` 与本轮 build 一致，且 `assets/public/assets/chinoiserie-hebei-DVFrJTOT.webp` 等国风素材已随包），gradle 内置签名 `CN=FrameMark, OU=Personal, O=FrameMark`，证书 SHA-256 `a3f8e1d9b22b92cc687c85cc4648f92678a01a50d99fe249cdedd2a7422c873f`；真机覆盖安装冷启动 381 ms COLD PASS） |
-| `交付/FrameMark-使用与验收说明.docx` | **882,695** | `96c568c28e7367dc2ade41c45c296a374ca988b3d851e979da0725833730bf9e` | VIVO-CLOSE 重签发（`scripts/make-delivery-docx.cjs` 已按 vivo 扩充改口径：175 卡 / 系统相机 107 / 106 套 stock 全 approx / vivo 14 已接 · 28 blocked · 美术由厂商 VectorDrawable 转换，运行时内嵌上表新哈希） |
-| `交付/FrameMark-使用与验收说明.pdf` | **1,180,113** | `d0641f8997ca1b975c3aea64bb864f00bec5366125096ccd9d2aca5f3a7d44ed` | VIVO-CLOSE 重签发（Word COM `SaveAs` 格式 17，先移走旧 PDF → `_research/packaging/_old-delivery-vivo.pdf.bak`，`%PDF-1.7` 头校验通过） |
+| `交付/FrameMark-Windows-x64.zip` | 见 `SHA256.txt` | 见 `SHA256.txt` | 本轮重打，已剔除 `out/_g1`（43.9 MB scratch）；打包版 exe 复测见 `_research/repackage-2026-10-26/` |
+| `交付/FrameMark-Android-v1.0.0.apk` | **29,316,016** | `26fe569e4148136627cec4d0fe359b26577fec0dd945654ed24da6fc3aca4555` | versionName 1.0.0 / versionCode 1 / minSdk 29 / targetSdk 34；含 4 个 AvenirNext 单 face + 2 个 NotoSansThai、0 `.ttc`、CDP 开关 off；真机覆盖安装（未清数据）冷启动 **282/257/242 ms COLD**，证据 `_research/parity-final/final-apk-cold.png` |
+| `交付/FrameMark-使用与验收说明.docx` | 见 `SHA256.txt` | 见 `SHA256.txt` | 交付日期改为 2026-10-26、冷启动口径改为本 APK 实测 257 ms（3 次） |
+| `交付/FrameMark-使用与验收说明.pdf` | 见 `SHA256.txt` | 见 `SHA256.txt` | Word COM `SaveAs` 格式 17，`%PDF-1.7` 头校验 |
 
-被取代的上一代哈希：zip `67797acb…`、APK `43515a50…`、docx `79f19764…`、PDF `63a1cf04…`（ALIGN-PACKAGE 23:22 基线）；更早：zip `49e9a2eb…`、APK `1d6c5709…`、docx `43a0c49f…`、PDF `e5542ccd…`（ANCHOR-PACKAGE 22:08 基线）；更早：zip `39b1918e…`、APK `6a660041…`、docx `f52ae514…`、PDF `402d8b3b…`（CLOSE-OUT 基线）、zip `d10b60ee…`、APK `3ac92363…`、docx `fa11ef20…`、PDF `ed81743a…`（REPACKAGE 17:24 基线）、zip `164ff8ee…`、APK `4fa4c260…`（W5 11:54 基线）。
-
-**`交付/SHA256.txt` 已随本轮重签发**（同格式四行：zip/APK/docx/PDF），`cd 交付 && sha256sum -c SHA256.txt` → **4/4 OK**。任何代码、素材或文档数字改动都应重新打包并重算本表；只做审计不改代码时不重打包。
+被取代的历史哈希（仅存档，不再代表当前交付）：zip `96c0d090…`（含 `_g1`，已作废）、APK `610d63f6…`、docx `96c568c2…`、PDF `d0641f89…`（VIVO-CLOSE）；更早的 ALIGN/ANCHOR/CLOSE-OUT/REPACKAGE/W5 记录见 `_research/repackage-2026-10-26/report.md` 与 `_research/cleanup/`。任何代码、素材或文档数字改动都应重新打包并重算 `SHA256.txt`；只做审计不改代码时不重打包。
 
 ---
 
