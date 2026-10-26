@@ -9,7 +9,8 @@ const REPORT = 'D:/border&watermark/_research/logos-real/manifest.json'
 const SOURCES = {
   agfa: { file: 'agfa.svg', tones: { black: '#111111', white: '#FFFFFF', red: null } },
   alpa: { file: 'alpa.svg', tones: { black: '#111111', white: '#FFFFFF' } },
-  arri: { file: 'arri.svg', tones: { black: '#111111', white: '#FFFFFF' } },
+  // arri.com master (1920x737, blue wordmark + oval on white); the old arri.svg was a bare "ARRI."
+  arri: { file: 'vendor/arri-logo-color.png', raster: 'ink-alpha', inkWhiteCutoff: 245, allowEnlargement: true, tones: { black: '#111111', white: '#FFFFFF' } },
   casio: { file: 'casio.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   contax: { file: 'contax.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   cosina: { file: 'cosina-logo.svg', tones: { black: '#111111', white: '#FFFFFF' } },
@@ -21,12 +22,14 @@ const SOURCES = {
   mamiya: { file: 'mamiya-logo.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   minolta: { file: 'minolta.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   motorola: { file: 'si-motorola.svg', tones: { black: '#111111', white: '#FFFFFF' } },
-  nokia: { file: 'si-nokia.svg', tones: { black: '#111111', white: '#FFFFFF' } },
+  // 1em/24 viewBox source: without renderWidth librsvg rasterises ~67px and withoutEnlargement keeps it tiny
+  nokia: { file: 'si-nokia.svg', renderWidth: 4800, tones: { black: '#111111', white: '#FFFFFF' } },
   phaseone: { file: 'phase-one-1.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   polaroid: { file: 'polaroid.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   realme: { file: 'realme-1.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   rollei: { file: 'rollei.svg', tones: { black: '#111111', white: '#FFFFFF' } },
-  sigma: { file: 'sigma.svg', tones: { black: '#111111', white: '#FFFFFF' } },
+  // Feb-2025 Sigma rebrand: serif wordmark (86x21), not the old upright sans lockup in sigma.svg
+  sigma: { file: 'vendor/sigma-logo-2025.svg', renderWidth: 4800, tones: { black: '#111111', white: '#FFFFFF' } },
   tamron: { file: 'tamron.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   tokina: { file: 'tokina.svg', tones: { black: '#111111', white: '#FFFFFF' } },
   yashica: { file: 'yashica.svg', tones: { black: '#111111', white: '#FFFFFF' } },
@@ -167,43 +170,106 @@ function clearWhiteBackground(raw, width, height) {
   return out
 }
 
+// 1em-viewBox icons (si-nokia) have no usable intrinsic size; give the canvas real pixels before
+// rasterising so the vector is supersampled instead of being drawn at ~67px and blown up later.
+function setSvgCanvas(svg, targetWidth) {
+  const vb = svg.match(/viewBox\s*=\s*"([^"]+)"/i)
+  if (!vb) throw new Error('renderWidth requires a viewBox')
+  const p = vb[1].trim().split(/[\s,]+/).map(Number)
+  if (p.length !== 4 || !(p[2] > 0) || !(p[3] > 0)) throw new Error('unusable viewBox: ' + vb[1])
+  const width = targetWidth
+  const height = Math.round(targetWidth * p[3] / p[2])
+  const set = (tag, name, val) => {
+    const re = new RegExp(`\\b${name}\\s*=\\s*"[^"]*"`, 'i')
+    return re.test(tag) ? tag.replace(re, `${name}="${val}"`) : tag.replace(/^<svg\b/i, `<svg ${name}="${val}"`)
+  }
+  const out = svg.replace(/<svg\b[^>]*>/i, (tag) => set(set(tag, 'width', width), 'height', height))
+  return { svg: out, width, height }
+}
+
+// White-paper bitmap (arri.com master) -> straight-alpha ink. alpha = 255 - min(R,G,B), normalised
+// by the asset's darkest min-channel (the solid brand blue has min 12, so raw 255-min = 243) and
+// cut off where the pixel is paper. RGB is left black here; the tone pass fills it.
+function inkAlphaRgba(src, width, height, cutoff) {
+  const hist = new Uint32Array(256)
+  for (let i = 0; i < src.length; i += 4) {
+    const m = Math.min(src[i], src[i + 1], src[i + 2])
+    if (m < 128 && src[i + 3] > 0) hist[m]++
+  }
+  let floor = 0
+  let best = -1
+  for (let m = 0; m < 128; m++) if (hist[m] > best) { best = hist[m]; floor = m }
+  const scale = 255 / Math.max(1, 255 - floor)
+  const out = Buffer.alloc(width * height * 4)
+  for (let i = 0; i < src.length; i += 4) {
+    const m = Math.min(src[i], src[i + 1], src[i + 2])
+    const a = m >= cutoff ? 0 : Math.max(0, Math.min(255, Math.round((255 - m) * scale)))
+    out[i + 3] = Math.round(a * src[i + 3] / 255)
+  }
+  return { rgba: out, floor }
+}
+
 async function build(key, spec) {
   const src = path.join(RAW, spec.file)
   if (!fs.existsSync(src)) throw new Error(`missing source: ${src}`)
-  const xml = fs.readFileSync(src, 'utf8')
-  const stripped = stripPageBackground(xml)
-  let sourceSvg = stripped.svg
-  let knockout = null
-  if (spec.knockoutWhite) {
-    const split = splitWhiteKnockout(stripped.svg, stripped.whitePaths)
-    if (!split) throw new Error(`knockoutWhite set but no white paths found in ${spec.file}`)
-    sourceSvg = split.main
-    knockout = split.knockout
-  }
-  const base = await sharp(Buffer.from(sourceSvg), { density: 300 }).png().toBuffer()
-  const initial = await sharp(base).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-  let rgba = initial.data
-  if (knockout) {
-    const kb = await sharp(Buffer.from(knockout), { density: 300 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-    if (kb.info.width !== initial.info.width || kb.info.height !== initial.info.height) {
-      throw new Error(`knockout raster size mismatch for ${spec.file}`)
+  let rgba
+  let width
+  let height
+  let removed = []
+  let render = { mode: 'svg', density: 300 }
+  if (spec.raster === 'ink-alpha') {
+    const dec = await sharp(fs.readFileSync(src)).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    width = dec.info.width
+    height = dec.info.height
+    const ink = inkAlphaRgba(dec.data, width, height, spec.inkWhiteCutoff ?? 245)
+    rgba = ink.rgba
+    render = { mode: 'raster-ink-alpha', cutoff: spec.inkWhiteCutoff ?? 245, inkMinChannelFloor: ink.floor, sourceDims: { w: width, h: height } }
+  } else {
+    let xml = fs.readFileSync(src, 'utf8')
+    let canvas = null
+    if (spec.renderWidth) {
+      canvas = setSvgCanvas(xml, spec.renderWidth)
+      xml = canvas.svg
     }
-    rgba = Buffer.from(rgba)
-    for (let i = 3; i < rgba.length; i += 4) rgba[i] = Math.max(0, rgba[i] - kb.data[i])
+    const stripped = stripPageBackground(xml)
+    removed = stripped.removed
+    let sourceSvg = stripped.svg
+    let knockout = null
+    if (spec.knockoutWhite) {
+      const split = splitWhiteKnockout(stripped.svg, stripped.whitePaths)
+      if (!split) throw new Error(`knockoutWhite set but no white paths found in ${spec.file}`)
+      sourceSvg = split.main
+      knockout = split.knockout
+    }
+    const density = canvas ? 72 : 300
+    const base = await sharp(Buffer.from(sourceSvg), { density }).png().toBuffer()
+    const initial = await sharp(base).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    width = initial.info.width
+    height = initial.info.height
+    rgba = initial.data
+    if (knockout) {
+      const kb = await sharp(Buffer.from(knockout), { density }).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+      if (kb.info.width !== width || kb.info.height !== height) {
+        throw new Error(`knockout raster size mismatch for ${spec.file}`)
+      }
+      rgba = Buffer.from(rgba)
+      for (let i = 3; i < rgba.length; i += 4) rgba[i] = Math.max(0, rgba[i] - kb.data[i])
+    }
+    render = { mode: 'svg', density, canvas: canvas ? { w: canvas.width, h: canvas.height } : null }
   }
   // Safety net only: the page background is already gone from the SVG, so this must be a no-op
   // for the affected sources. It stays because a few sources may still paint a border-touching paper.
-  const cleared = clearWhiteBackground(rgba, initial.info.width, initial.info.height)
-  const trimmed = await sharp(cleared, { raw: { width: initial.info.width, height: initial.info.height, channels: 4 } })
+  const cleared = spec.raster === 'ink-alpha' ? rgba : clearWhiteBackground(rgba, width, height)
+  const trimmed = await sharp(cleared, { raw: { width, height, channels: 4 } })
     .trim({ threshold: 1 })
     // cubic, not the default lanczos3: lanczos undershoot clips alpha to 0 at hard vector edges and
     // leaves 1 px transparent hairline "holes" along glyph edges (visible on green/dark backgrounds).
-    .resize({ width: 1600, height: 800, fit: 'inside', withoutEnlargement: true, kernel: 'cubic' })
+    .resize({ width: 1600, height: 800, fit: 'inside', withoutEnlargement: !spec.allowEnlargement, kernel: 'cubic' })
     .png()
     .toBuffer()
   const meta = await sharp(trimmed).metadata()
   if (!meta.width || !meta.height) throw new Error('empty render')
-  if (!stripped.removed.length) console.warn('WARN no full-canvas page background found in', spec.file)
+  if (spec.raster !== 'ink-alpha' && !removed.length) console.warn('WARN no full-canvas page background found in', spec.file)
   const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   const written = []
   for (const [tone, color] of Object.entries(spec.tones)) {
@@ -222,7 +288,7 @@ async function build(key, spec) {
     fs.writeFileSync(file, buf)
     written.push({ tone, file, bytes: buf.length })
   }
-  return { key, source: spec.file, width: info.width, height: info.height, removedBackground: stripped.removed, tones: written }
+  return { key, source: spec.file, width: info.width, height: info.height, removedBackground: removed, render, tones: written }
 }
 
 async function main() {
