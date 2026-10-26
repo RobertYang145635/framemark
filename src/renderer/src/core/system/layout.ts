@@ -33,12 +33,20 @@ export interface PlacedText {
   alpha: number
   tracking: number
   align: 'left' | 'center' | 'right'
+  /**
+   * IR 节点路径（`b0/bottom0/g2`，与 `build-controls.cjs` 的路径域同一约定）。
+   * 控件层的逐节点参数（`slotAlpha:<path>` …）在 `paint.ts` 按这个键读取；
+   * 键 absent ⇒ 沿用节点自己声明的值。
+   */
+  path?: string
 }
 
 export interface PlacedImage {
   kind: 'image'
   node: StockImageNode
   box: StockRect
+  /** 同 `PlacedText.path`。 */
+  path?: string
   /**
    * Brand slots only: how much empty space the solved band actually leaves
    * around the declared box, per side. `paint.ts` grows a swapped wordmark into
@@ -100,6 +108,66 @@ export interface StockLayout {
 
 type Measured = { w: number; h: number; text?: PlacedText }
 
+/* ============================================================================
+ * 逐套控件面板（`core/controls`）的参数读取通路
+ *
+ * 键名与 `core/controls/index.ts/paramKeyOf` 逐字对齐，值写在 `design.params`
+ * （按样式分桶的 `paramOverrides[variantId]` 合并结果）里；IR 节点路径由本文件
+ * 的遍历算出，约定与 `scripts/system-camera/build-controls.cjs` 的 ir-index 一致：
+ *   条带 `b<下标>` → 条带子节点 `b<i>/<direction><j>`（direction 缺省 'row'）
+ *   组子节点 `<父路径>/g<下标>`
+ * 默认态（这些键全部 absent）⇒ 下面每个函数都返回“无覆盖”，调用点整体走原分支，
+ * solve 结果与接线前逐字节相同。
+ * ========================================================================== */
+
+/** `slotOff:<path> === false` ⇒ 该行/该组被用户关掉（absent/true ⇒ 可见＝原行为）。 */
+function isSlotOff (env: StockEnv, path: string): boolean {
+  return env.params ? env.params[`slotOff:${path}`] === false : false
+}
+
+/** 子节点路径表：条带用 `<bandPath>/<direction><i>`，组用 `<path>/g<i>`。 */
+function childPaths (parentId: string, direction: string | undefined, count: number): string[] {
+  const dir = direction ?? 'row'
+  const out: string[] = []
+  for (let i = 0; i < count; i++) out.push(`${parentId}/${dir}${i}`)
+  return out
+}
+
+function groupChildPaths (path: string, count: number): string[] {
+  const out: string[] = []
+  for (let i = 0; i < count; i++) out.push(`${path}/g${i}`)
+  return out
+}
+
+/**
+ * 一组子节点里真正参与布局的那些（节点 + 它的 IR 路径）：原有“optional 且取不到
+ * 文字 ⇒ 剔除”之外，只多了一条“`slotOff` 明确为 false ⇒ 剔除”。
+ * 无控件参数时，输出的序列与原 `node.children.filter(...)` 完全一致。
+ */
+function visiblePairs<T extends StockNode> (children: T[], env: StockEnv, paths: string[]): { node: T; path: string }[] {
+  const out: { node: T; path: string }[] = []
+  for (let i = 0; i < children.length; i++) {
+    const c = children[i]
+    const p = paths[i]
+    if (isSlotOff(env, p)) continue
+    if (c.kind === 'text' && c.optional && !stockTokenText(c.token, env, p)) continue
+    out.push({ node: c, path: p })
+  }
+  return out
+}
+
+/** `slotGravity:<path>` 覆盖节点自己的 gravity（absent / 'vendor' ⇒ undefined ⇒ 用原值）。 */
+function slotGravityOverride (env: StockEnv, path: string): string | undefined {
+  const raw = env.params ? env.params[`slotGravity:${path}`] : undefined
+  if (typeof raw !== 'string' || raw.length === 0 || raw === 'vendor') return undefined
+  return raw
+}
+
+/** 生效方位 = 控件覆盖 ⇉ 节点自身 ⇉ 父组/条带 gravity（后两者与接线前同一表达式）。 */
+function effectiveGravity (env: StockEnv, path: string, node: StockNode, fallback: string | undefined): string | undefined {
+  return slotGravityOverride(env, path) ?? nodeGravity(node) ?? fallback
+}
+
 let measureCtx: CanvasRenderingContext2D | null = null
 
 function ctxForMeasure(): CanvasRenderingContext2D {
@@ -112,8 +180,23 @@ function ctxForMeasure(): CanvasRenderingContext2D {
   return measureCtx
 }
 
-function lineHeightOf(node: StockTextNode): number {
-  return node.lineHeight ?? node.size * 1.2
+/**
+ * #69 A3 — the row step has to grow with the glyphs.
+ *
+ * `measureLine()` already measures at `node.size * fontScale` (layout.ts:127) and
+ * `scene.ts/scaledContext()` paints at it, so at 字号缩放 1.22 the ink of every
+ * stock text node is 22% taller — but `node.lineHeight ?? node.size * 1.2` was a
+ * fontScale-free constant. Layout therefore spent the 1.0 row step and paint took
+ * 1.22 of ink: `stock-oppo-hassel_style_xpan_1`'s model line (net clearance
+ * 2.23px at 1.0) turned into a 14.55% overlap, and every multi-line stock band
+ * sat one glyph-height closer than it looked.
+ *
+ * `fontScale === 1` returns the declared value *unmultiplied*, so the 1.0 arm —
+ * and the signed 175-card baseline derived from it — is bit-for-bit unchanged.
+ */
+function lineHeightOf(node: StockTextNode, fontScale = 1): number {
+  const lh = node.lineHeight ?? node.size * 1.2
+  return fontScale === 1 ? lh : lh * fontScale
 }
 
 function measureLine(ctx: CanvasRenderingContext2D, text: string, node: StockTextNode, fontScale = 1): number {
@@ -153,13 +236,13 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, node: StockTextNo
   return out
 }
 
-function textMeasured(node: StockTextNode, env: StockEnv): Measured {
-  const value = stockTokenText(node.token, env)
+function textMeasured(node: StockTextNode, env: StockEnv, path: string): Measured {
+  const value = stockTokenText(node.token, env, path)
   if (!value) return { w: 0, h: 0 }
   const ctx = ctxForMeasure()
   const fontScale = textScaleOf(env.text?.fontScale)
   const lines = wrapText(ctx, value, node, node.width ?? 0, fontScale)
-  const lineHeight = lineHeightOf(node)
+  const lineHeight = lineHeightOf(node, fontScale)
   const textWidth = node.width ?? Math.max(...lines.map((l) => measureLine(ctx, l, node, fontScale)), 0)
   const textHeight = lineHeight * Math.max(1, lines.length)
   const outline = node.outline
@@ -179,7 +262,8 @@ function textMeasured(node: StockTextNode, env: StockEnv): Measured {
       color: node.color ?? '#000000',
       alpha: node.alpha ?? 1,
       tracking: (node.tracking ?? 0) * node.size,
-      align: outline ? 'center' : node.align ?? 'left'
+      align: outline ? 'center' : node.align ?? 'left',
+      path
     }
   }
 }
@@ -189,10 +273,10 @@ function marginSum(m: { left?: number; top?: number; right?: number; bottom?: nu
   return axis === 'x' ? (m.left ?? 0) + (m.right ?? 0) : (m.top ?? 0) + (m.bottom ?? 0)
 }
 
-function intrinsic(node: StockNode, env: StockEnv): Measured {
+function intrinsic(node: StockNode, env: StockEnv, path: string): Measured {
   switch (node.kind) {
     case 'text':
-      return textMeasured(node, env)
+      return textMeasured(node, env, path)
     case 'image':
       return { w: node.width, h: node.height }
     case 'shape':
@@ -200,7 +284,7 @@ function intrinsic(node: StockNode, env: StockEnv): Measured {
     case 'space':
       return { w: node.width ?? 0, h: node.height ?? 0 }
     case 'group': {
-      const flow = measureGroup(node, env)
+      const flow = measureGroup(node, env, path)
       return { w: node.width ?? flow.w, h: node.height ?? flow.h }
     }
     default:
@@ -208,27 +292,29 @@ function intrinsic(node: StockNode, env: StockEnv): Measured {
   }
 }
 
-function measureGroup(node: StockGroupNode, env: StockEnv): { w: number; h: number } {
-  const children = node.children.filter((c) => !(c.kind === 'text' && c.optional && !stockTokenText(c.token, env)))
+function measureGroup(node: StockGroupNode, env: StockEnv, path: string): { w: number; h: number } {
+  const kids = visiblePairs(node.children, env, groupChildPaths(path, node.children.length))
   if (node.orientation === 'row') {
     let w = 0
     let h = 0
-    for (const child of children) {
-      const m = intrinsic(child, env)
+    for (const kid of kids) {
+      const child = kid.node
+      const m = intrinsic(child, env, kid.path)
       w += m.w + marginSum(child.kind === 'space' ? undefined : child.margins, 'x')
       h = Math.max(h, m.h + marginSum(child.kind === 'space' ? undefined : child.margins, 'y'))
     }
-    w += Math.max(0, children.length - 1) * (node.gap ?? 0)
+    w += Math.max(0, kids.length - 1) * (node.gap ?? 0)
     return { w, h }
   }
   let w = 0
   let h = 0
-  for (const child of children) {
-    const m = intrinsic(child, env)
+  for (const kid of kids) {
+    const child = kid.node
+    const m = intrinsic(child, env, kid.path)
     h += m.h + marginSum(child.kind === 'space' ? undefined : child.margins, 'y')
     w = Math.max(w, m.w + marginSum(child.kind === 'space' ? undefined : child.margins, 'x'))
   }
-  h += Math.max(0, children.length - 1) * (node.gap ?? 0)
+  h += Math.max(0, kids.length - 1) * (node.gap ?? 0)
   return { w, h }
 }
 
@@ -251,26 +337,26 @@ function alignCross(g: string | undefined, outer: number, inner: number, horizon
   return (outer - inner) / 2
 }
 
-function placeText(node: StockTextNode, box: StockRect, env: StockEnv, out: PlacedItem[]): void {
-  const m = textMeasured(node, env)
+function placeText(node: StockTextNode, box: StockRect, env: StockEnv, out: PlacedItem[], path: string): void {
+  const m = textMeasured(node, env, path)
   if (!m.text) return
   out.push({ ...m.text, box })
 }
 
-function placeNode(node: StockNode, box: StockRect, env: StockEnv, out: PlacedItem[]): void {
+function placeNode(node: StockNode, box: StockRect, env: StockEnv, out: PlacedItem[], path: string): void {
   switch (node.kind) {
     case 'text':
-      placeText(node, box, env, out)
+      placeText(node, box, env, out, path)
       break
     case 'image':
-      out.push({ kind: 'image', node, box })
+      out.push({ kind: 'image', node, box, path })
       break
     case 'shape':
       out.push({ kind: 'shape', node, box })
       break
     case 'group':
       if (node.background) out.push({ kind: 'group', box, color: node.background })
-      layoutChildren(node, box, env, out)
+      layoutChildren(node, box, env, out, groupChildPaths(path, node.children.length))
       break
     case 'space':
       break
@@ -285,44 +371,45 @@ function nodeMargins(node: StockNode): StockMargins | undefined {
   return node.kind === 'space' ? undefined : node.margins
 }
 
-function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out: PlacedItem[]): void {
-  const children = node.children.filter((c) => !(c.kind === 'text' && c.optional && !stockTokenText(c.token, env)))
+function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out: PlacedItem[], childPaths: string[]): void {
+  const kids = visiblePairs(node.children, env, childPaths)
+  const children = kids.map((k) => k.node)
   if (!children.length) return
 
   if (children.length === 1) {
     const child = children[0]
     if (child.kind === 'space') return
     const m = child.margins
-    let size = intrinsic(child, env)
+    let size = intrinsic(child, env, kids[0].path)
     if (child.kind === 'group' && child.matchWidth) size = { ...size, w: box.w - marginSum(m, 'x') }
     if (child.kind === 'group' && child.matchHeight) size = { ...size, h: box.h - marginSum(m, 'y') }
-    const parts = gravityParts(nodeGravity(child) ?? node.gravity)
+    const parts = gravityParts(effectiveGravity(env, kids[0].path, child, node.gravity))
     const contentW = box.w - (m?.left ?? 0) - (m?.right ?? 0)
     const contentH = box.h - (m?.top ?? 0) - (m?.bottom ?? 0)
     const x = box.x + (m?.left ?? 0) + (parts.h === 'right' ? contentW - size.w : parts.h === 'center' ? (contentW - size.w) / 2 : 0)
     const y = box.y + (m?.top ?? 0) + (parts.v === 'bottom' ? contentH - size.h : parts.v === 'center' ? (contentH - size.h) / 2 : 0)
-    placeNode(child, { x, y, w: size.w, h: size.h }, env, out)
+    placeNode(child, { x, y, w: size.w, h: size.h }, env, out, kids[0].path)
     return
   }
 
   const horizontal = node.orientation === 'row'
   const gap = node.gap ?? 0
-  const sizes = children.map((c) => {
-    let m = intrinsic(c, env)
+  const sizes = children.map((c, i) => {
+    let m = intrinsic(c, env, kids[i].path)
     if (c.kind === 'group' && c.matchWidth) m = { ...m, w: box.w - marginSum(c.margins, 'x') }
     if (c.kind === 'group' && c.matchHeight) m = { ...m, h: box.h - marginSum(c.margins, 'y') }
     return m
   })
 
-  const cross = (child: StockNode, m: StockMargins | undefined, inner: number): number =>
-    alignCross(nodeGravity(child) ?? node.gravity, (horizontal ? box.h : box.w) - (horizontal ? (m?.top ?? 0) + (m?.bottom ?? 0) : (m?.left ?? 0) + (m?.right ?? 0)), inner, horizontal)
+  const cross = (child: StockNode, m: StockMargins | undefined, inner: number, childPath: string): number =>
+    alignCross(effectiveGravity(env, childPath, child, node.gravity), (horizontal ? box.h : box.w) - (horizontal ? (m?.top ?? 0) + (m?.bottom ?? 0) : (m?.left ?? 0) + (m?.right ?? 0)), inner, horizontal)
 
   if (horizontal && !children.some((c) => c.kind === 'space')) {
     const lefts: number[] = []
     const rights: number[] = []
     const centers: number[] = []
     children.forEach((c, i) => {
-      const p = gravityParts(nodeGravity(c))
+      const p = gravityParts(slotGravityOverride(env, kids[i].path) ?? nodeGravity(c))
       if (p.h === 'right') rights.push(i)
       else if (p.h === 'center') centers.push(i)
       else lefts.push(i)
@@ -334,8 +421,8 @@ function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out
         const m = nodeMargins(c)
         const size = sizes[i]
         const x = xL + (m?.left ?? 0)
-        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h)
-        placeNode(c, { x, y, w: size.w, h: size.h }, env, out)
+        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h, kids[i].path)
+        placeNode(c, { x, y, w: size.w, h: size.h }, env, out, kids[i].path)
         xL = x + size.w + (m?.right ?? 0)
       }
       let xR = box.x + box.w
@@ -345,8 +432,8 @@ function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out
         const m = nodeMargins(c)
         const size = sizes[i]
         const x = xR - (m?.right ?? 0) - size.w
-        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h)
-        placeNode(c, { x, y, w: size.w, h: size.h }, env, out)
+        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h, kids[i].path)
+        placeNode(c, { x, y, w: size.w, h: size.h }, env, out, kids[i].path)
         xR = x - (m?.left ?? 0)
       }
       for (const i of centers) {
@@ -354,8 +441,8 @@ function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out
         const m = nodeMargins(c)
         const size = sizes[i]
         const x = box.x + (box.w - size.w) / 2
-        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h)
-        placeNode(c, { x, y, w: size.w, h: size.h }, env, out)
+        const y = box.y + (m?.top ?? 0) + cross(c, m, size.h, kids[i].path)
+        placeNode(c, { x, y, w: size.w, h: size.h }, env, out, kids[i].path)
       }
       return
     }
@@ -384,13 +471,13 @@ function layoutChildren(node: StockGroupNode, box: StockRect, env: StockEnv, out
     const size = sizes[i]
     if (horizontal) {
       const x = cursor + (m?.left ?? 0)
-      const y = box.y + (m?.top ?? 0) + cross(child, m, size.h)
-      placeNode(child, { x, y, w: size.w, h: size.h }, env, out)
+      const y = box.y + (m?.top ?? 0) + cross(child, m, size.h, kids[i].path)
+      placeNode(child, { x, y, w: size.w, h: size.h }, env, out, kids[i].path)
       cursor += size.w + (m?.left ?? 0) + (m?.right ?? 0)
     } else {
-      const x = box.x + (m?.left ?? 0) + cross(child, m, size.w)
+      const x = box.x + (m?.left ?? 0) + cross(child, m, size.w, kids[i].path)
       const y = cursor + (m?.top ?? 0)
-      placeNode(child, { x, y, w: size.w, h: size.h }, env, out)
+      placeNode(child, { x, y, w: size.w, h: size.h }, env, out, kids[i].path)
       cursor += size.h + (m?.top ?? 0) + (m?.bottom ?? 0)
     }
   }
@@ -492,29 +579,73 @@ function annotateBrandFree(bandBox: StockRect, items: PlacedItem[]): void {
   }
 }
 
-function finishBand(box: StockRect, items: PlacedItem[]): void {
+/**
+ * #69 A4 — art slots are blind to 字号缩放, text slots are not.
+ *
+ * A text node's measured box grows with `fontScale` (`measureLine` scales the
+ * advance) while a sibling art node keeps the `width`/`height`/gravity frame the
+ * vendor declared — `stock-oppo-personalize_masterSign_3` is the proof: its
+ * `master_sign_3_dark.webp` sits at x=2983.13675 in *both* arms (down to the
+ * digit), while the date beside it ran from 2960.36 to 3140.28. Result: 38.15% of
+ * the date's ink lands on the signature.
+ *
+ * The clearance is restored by moving the art out of the ink the scaled text
+ * actually occupies, along the axis that packed them, by the measured penetration
+ * — after which the pre-existing `fitBandItems()` clamp still gets the last word
+ * on band overflow. The 2%-of-the-smaller-box bar is the same judgement
+ * `_research/fontscale-audit/overlap-check.cjs` reports a hit with, so this pass
+ * fires on exactly the cards the audit calls 叠字 and ignores the tangent pairs.
+ * `fontScale === 1` returns before touching a single box: the 1.0 arm cannot be
+ * affected, by construction.
+ */
+function clearArtFromScaledText(items: PlacedItem[], fontScale: number): void {
+  if (fontScale === 1) return
+  for (const text of items) {
+    if (text.kind !== 'text' || text.box.w <= 0 || text.box.h <= 0) continue
+    for (const art of items) {
+      if (art === text || art.kind !== 'image' || art.box.w <= 0 || art.box.h <= 0) continue
+      const ox = Math.min(text.box.x + text.box.w, art.box.x + art.box.w) - Math.max(text.box.x, art.box.x)
+      const oy = Math.min(text.box.y + text.box.h, art.box.y + art.box.h) - Math.max(text.box.y, art.box.y)
+      if (ox <= 0 || oy <= 0) continue
+      const smaller = Math.min(text.box.w * text.box.h, art.box.w * art.box.h)
+      if (smaller <= 0 || (ox * oy) / smaller < 0.02) continue
+      art.box = art.box.x >= text.box.x ? { ...art.box, x: art.box.x + ox + 0.5 } : { ...art.box, y: art.box.y + oy + 0.5 }
+    }
+  }
+}
+
+function finishBand(box: StockRect, items: PlacedItem[], fontScale = 1): void {
+  clearArtFromScaledText(items, fontScale)
   fitBandItems(box, items)
   annotateBrandFree(box, items)
 }
 
-function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv): PlacedBand {
+/**
+ * `bandPath` 是条带在 IR 里的路径（`b0`…，由 `solveStockLayout` 按下标给出），
+ * 子节点路径与 `scripts/system-camera/build-controls.cjs` 的 ir-index 同一约定：
+ * `b<i>/<direction><j>`（direction 缺省 'row'）。控件参数（slotText/slotOff/slotGravity）
+ * 全部按这个键读取；键 absent ⇒ 布局与接线前逐字节相同。
+ */
+function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv, bandPath: string): PlacedBand {
   const out: PlacedItem[] = []
+  const paths = childPaths(bandPath, band.direction, band.children.length)
   if (band.children.length === 1) {
     const child = band.children[0]
-    if (!(child.kind === 'text' && child.optional && !stockTokenText(child.token, env))) {
-      let size = intrinsic(child, env)
+    const childPath = paths[0]
+    if (!isSlotOff(env, childPath) && !(child.kind === 'text' && child.optional && !stockTokenText(child.token, env, childPath))) {
+      let size = intrinsic(child, env, childPath)
       const m = child.kind === 'space' ? undefined : child.margins
       if (child.kind === 'group' && child.matchWidth) size = { ...size, w: box.w - marginSum(m, 'x') }
       if (child.kind === 'group' && child.matchHeight) size = { ...size, h: box.h - marginSum(m, 'y') }
-      const g = (child.kind === 'group' ? child.gravity : child.kind === 'text' ? child.gravity : child.kind === 'image' ? child.gravity : child.kind === 'shape' ? child.gravity : undefined) ?? band.gravity
+      const g = slotGravityOverride(env, childPath) ?? ((child.kind === 'group' ? child.gravity : child.kind === 'text' ? child.gravity : child.kind === 'image' ? child.gravity : child.kind === 'shape' ? child.gravity : undefined) ?? band.gravity)
       const parts = gravityParts(g)
       const contentW = box.w - (m?.left ?? 0) - (m?.right ?? 0)
       const contentH = box.h - (m?.top ?? 0) - (m?.bottom ?? 0)
       const x = box.x + (m?.left ?? 0) + (parts.h === 'right' ? contentW - size.w : parts.h === 'center' ? (contentW - size.w) / 2 : 0)
       const y = box.y + (m?.top ?? 0) + (parts.v === 'bottom' ? contentH - size.h : parts.v === 'center' ? (contentH - size.h) / 2 : 0)
-      placeNode(child, { x, y, w: size.w, h: size.h }, env, out)
+      placeNode(child, { x, y, w: size.w, h: size.h }, env, out, childPath)
     }
-    finishBand(box, out)
+    finishBand(box, out, textScaleOf(env.text?.fontScale))
     return { band, box, items: out }
   }
   // OPPO bands with multiple children are effectively a row; a single child group supplies its own orientation.
@@ -526,8 +657,8 @@ function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv): PlacedBa
     gravity: 'center',
     children: band.children
   }
-  layoutChildren(root, box, env, out)
-  finishBand(box, out)
+  layoutChildren(root, box, env, out, paths)
+  finishBand(box, out, textScaleOf(env.text?.fontScale))
   return { band, box, items: out }
 }
 
@@ -728,14 +859,15 @@ export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout 
   // the vendor's own position). Both this and the slider branch are skipped at
   // the default, so the untouched solve stays byte-identical.
   const axes = stockAnchorAxes(env.params.stockAnchor)
-  const bands = style.bands.map((band) => {
+  const bands = style.bands.map((band, bi) => {
     const box = bandBox(style, band, photo, W, H)
+    const bandPath = `b${bi}`
     let placed: PlacedBand
     if (!band.rotation) {
-      placed = placeBandRoot(band, box, env)
+      placed = placeBandRoot(band, box, env, bandPath)
     } else {
       const layoutBox = layoutBoxForBand(band, box)
-      placed = { ...placeBandRoot(band, layoutBox, env), box, layoutBox, rotation: band.rotation }
+      placed = { ...placeBandRoot(band, layoutBox, env, bandPath), box, layoutBox, rotation: band.rotation }
     }
     if (!axes && nudged && isMovableBand(band)) nudgeBand(placed, W, H, dx, dy)
     return placed

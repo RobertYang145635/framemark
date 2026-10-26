@@ -117,6 +117,15 @@ export interface TextSettings {
 
 export type ParamValue = string | number | boolean
 export type Params = Record<string, ParamValue>
+/**
+ * Sparse per-style parameter overrides. A key is present ONLY when the user
+ * changed it away from what the variant declares, so an untouched bucket is
+ * absent and rendering falls through to the template/variant defaults —
+ * which is what keeps the 175-card byte baseline identical to pre-patch.
+ * Keyed by the style identity (`variantId`, falling back to `templateId`).
+ */
+export type ParamBucket = Record<string, ParamValue>
+export type ParamOverrides = Record<string, ParamBucket>
 
 export interface ExportSettings {
   format: 'jpeg' | 'png' | 'webp' | 'tiff'
@@ -132,6 +141,12 @@ export interface Design {
   variantId?: string
   ratio: Ratio
   params: Params
+  /**
+   * Per-style user overrides layered on top of `params`. Optional and sparse:
+   * absent/empty means "nothing was overridden", in which case `params` is
+   * byte-for-byte what it was before bucketing existed.
+   */
+  paramOverrides?: ParamOverrides
   text: TextSettings
   watermark: WatermarkSettings
   logo: ImageAsset | null

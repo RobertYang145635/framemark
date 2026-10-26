@@ -8,6 +8,7 @@ export function TopBar() {
   const presets = useAppStore((s) => s.presets)
   const activePresetId = useAppStore((s) => s.activePresetId)
   const photos = useAppStore((s) => s.photos)
+  const selectedId = useAppStore((s) => s.selectedId)
   const busy = useAppStore((s) => s.busy)
   const job = useAppStore((s) => s.job)
   const applyPreset = useAppStore((s) => s.applyPreset)
@@ -17,9 +18,18 @@ export function TopBar() {
 
   const variant = getVariant(design.variantId)
   const active = activePresetId && presets.some((p) => p.id === activePresetId) ? activePresetId : ''
+  // The primary top-bar button only ever writes ONE file (store.exportCurrent -> the
+  // selected photo). Say so on the button and in its tooltip, and point at the batch
+  // entries instead of letting "导出" read as "export this batch" (PRODUCT-DEFECTS #58 /
+  // defect 2). No new interaction: the batch paths stay Filmstrip 批量导出 / Inspector
+  // 导出全部.
+  const currentPhoto = photos.find((p) => p.id === selectedId) ?? photos[0] ?? null
+  const exportTitle = currentPhoto
+    ? `仅导出当前这 1 张照片：${currentPhoto.name}（共 ${photos.length} 张在册）。整批导出请用照片条的「批量导出」或导出面板的「导出全部」。`
+    : '仅导出当前这 1 张照片（还没有照片，请先添加）。整批导出请用照片条的「批量导出」或导出面板的「导出全部」。'
 
   return (
-    <header className="topbar">
+    <header className="topbar glass-strong">
       <div className="brand">
         <span className="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none">
@@ -66,17 +76,23 @@ export function TopBar() {
             <span className="hide-sm">{busy ?? '导出中'}</span>
           </span>
         ) : null}
-        <button className="btn btn-ghost topbar-action" onClick={() => void pickPhotos()} type="button">
+        <button className="btn btn-ghost topbar-action glass-btn glass-spot glass-ripple glass-press" onClick={() => void pickPhotos()} type="button">
           <ImagePlus size={17} />
           <span>添加</span>
         </button>
-        <button className="btn btn-ghost topbar-action" onClick={() => setPresetDialogOpen(true)} type="button">
+        <button className="btn btn-ghost topbar-action glass-btn glass-spot glass-ripple glass-press" onClick={() => setPresetDialogOpen(true)} type="button">
           <Save size={17} />
           <span>预设</span>
         </button>
-        <button className="btn btn-primary" onClick={() => void exportCurrent()} type="button">
+        <button
+          className="btn btn-primary glass-btn glass-spot glass-ripple glass-press"
+          onClick={() => void exportCurrent()}
+          type="button"
+          title={exportTitle}
+          aria-label="仅导出当前照片"
+        >
           <Download size={17} />
-          <span>导出</span>
+          <span>导出当前</span>
         </button>
       </div>
     </header>

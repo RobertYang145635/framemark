@@ -28,9 +28,9 @@ export function ExportOverlay() {
   const failed = job.errors.length > 0
   return (
     <div className="export-overlay">
-      <div className="export-card">
+      <div className="export-card glass">
         <div className="export-card-head">
-          <span className={`export-icon ${done ? (failed ? 'warn' : 'ok') : ''}`}>
+          <span className={`export-icon ${done ? `glass-animate-pop ${failed ? 'warn' : 'ok'}` : ''}`}>
             {job.running ? <Loader2 size={22} className="spin" /> : failed ? <AlertTriangle size={22} /> : <Check size={22} />}
           </span>
           <div>
@@ -54,7 +54,7 @@ export function ExportOverlay() {
 
         {job.running ? (
           <div className="export-card-actions">
-            <button className="btn btn-ghost" onClick={cancel} disabled={job.cancelled} type="button">
+            <button className="btn btn-ghost glass-btn glass-ripple glass-press" onClick={cancel} disabled={job.cancelled} type="button">
               {job.cancelled ? '正在取消…' : '取消导出'}
             </button>
             <span className="progress-num">{pct}%</span>
@@ -73,7 +73,7 @@ export function ExportOverlay() {
             ) : null}
             <div className="export-card-actions">
               {job.lastPath && window.framemark ? (
-                <button className="btn btn-ghost" onClick={() => void window.framemark!.showInFolder(job.lastPath!)} type="button">
+                <button className="btn btn-ghost glass-btn glass-ripple glass-press" onClick={() => void window.framemark!.showInFolder(job.lastPath!)} type="button">
                   <FolderOpen size={15} />
                   在文件夹中显示
                 </button>
@@ -86,7 +86,7 @@ export function ExportOverlay() {
               <span className="spacer" />
               {canShare ? (
                 <button
-                  className="btn btn-ghost"
+                  className="btn btn-ghost glass-btn glass-ripple glass-press"
                   onClick={() => {
                     void GallerySaver.shareImage({
                       uri: job.lastPath!,
@@ -102,7 +102,7 @@ export function ExportOverlay() {
                   分享
                 </button>
               ) : null}
-              <button className="btn btn-primary" onClick={close} type="button">
+              <button className="btn btn-primary glass-btn glass-spot glass-ripple glass-press" onClick={close} type="button">
                 完成
               </button>
             </div>

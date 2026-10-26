@@ -57,6 +57,10 @@ export type StockTokenKind =
 export interface StockToken {
   kind: StockTokenKind
   value?: string
+  /** vendor-declared per-photo parameter key (OPPO `content.extendParamsType`), e.g.
+   *  `master_model_param_filter`. Present means: the element is an input slot for the
+   *  controls layer, and the vendor's own `content` string is only a sample value. */
+  slot?: string
 }
 
 export interface StockTextOutline {

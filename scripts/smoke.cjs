@@ -1,6 +1,8 @@
 const path = require('node:path')
 const fs = require('node:fs')
 const { _electron: electron } = require('playwright-core')
+// #57 PATH-LITERALS: test assets are resolved from a single entry point, not hardcoded root paths
+const { tryResolveAsset } = require('../../_research/test-assets/resolve-test-asset.cjs')
 
 async function main() {
   const project = path.resolve(__dirname, '..')
@@ -22,11 +24,10 @@ async function main() {
   await page.waitForTimeout(1500)
   console.log('framemark api:', await page.evaluate(() => Boolean(window.framemark)))
   await page.screenshot({ path: path.join(outDir, '01-initial.png') })
-  const inputs = [
-    'D:/border&watermark/P1170883.jpg',
-    'D:/border&watermark/P1181817.jpg',
-    'D:/border&watermark/PYHY5599-已增强-降噪.jpg'
-  ].filter((p) => fs.existsSync(p))
+  // tolerates a missing asset exactly like the old `.filter(fs.existsSync)` did
+  const inputs = ['P1170883.jpg', 'P1181817.jpg', 'PYHY5599-已增强-降噪.jpg']
+    .map((n) => tryResolveAsset(n))
+    .filter((p) => p && fs.existsSync(p))
   if (inputs.length) {
     await page.setInputFiles('#framemark-file-input', inputs)
     await page.waitForSelector('.thumb', { timeout: 30000 })

@@ -32,13 +32,13 @@ export function Modal({
   if (!open) return null
   return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${wide ? 'modal-wide' : ''} ${className ?? ''}`} role="dialog" aria-modal="true">
+      <div className={`modal glass ${wide ? 'modal-wide' : ''} ${className ?? ''}`} role="dialog" aria-modal="true">
         <header className="modal-head">
           <div>
             <h2>{title}</h2>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
-          <button className="icon-btn" onClick={onClose} title="关闭">
+          <button className="icon-btn glass-btn glass-spot glass-ripple glass-press" onClick={onClose} title="关闭">
             <X size={18} />
           </button>
         </header>
@@ -111,7 +111,7 @@ export function Segmented<T extends string>({
       {options.map((o) => (
         <button
           key={o.value}
-          className={value === o.value ? 'active' : ''}
+          className={`glass-press ${value === o.value ? 'active' : ''}`}
           onClick={() => onChange(o.value)}
           title={o.hint}
         >
@@ -190,7 +190,7 @@ export function IconButton({
 }) {
   return (
     <button
-      className={`icon-btn ${active ? 'active' : ''} ${danger ? 'danger' : ''} ${className ?? ''}`}
+      className={`icon-btn glass-btn glass-ripple glass-press ${active ? 'active' : ''} ${danger ? 'danger' : ''} ${className ?? ''}`}
       title={title}
       aria-label={title}
       onClick={onClick}

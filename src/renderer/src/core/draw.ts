@@ -73,6 +73,39 @@ export function textScaleOf(raw: unknown): number {
   return Math.abs(s - 1) < 0.001 ? 1 : s
 }
 
+/**
+ * #69 — what font scale is the context we are *measuring through* actually
+ * applying?
+ *
+ * `scene.ts/scaledContext()` rewrites only one thing: the px inside `ctx.font`.
+ * Every coordinate, every `letterSpacing` and every width cap a caller hands us
+ * stays in design units. So a fit loop measuring through that context reads ink
+ * `s` times wider than the room it is fitting into — `fitSize()`'s 0.96 ladder
+ * then ate the whole scale and 字号缩放 stopped working (14 cards / 15 ops, 9 of
+ * them pinned at exactly `0.96^5 = 0.9948`: the user drags the slider and the
+ * bottom EXIF row does not move at all).
+ *
+ * Probing is the only way to recover `s` without touching `scene.ts` or the 40+
+ * call sites: write a known size, read back what the context reports, restore
+ * what was there. An unscaled context gives `100/100 === 1`, and every product
+ * that multiplies by it is then an exact IEEE no-op — which is what keeps the 1.0
+ * arm (and the signed 175-card baseline derived from it) byte-identical.
+ */
+export function paintedTextScale(ctx: CanvasRenderingContext2D, probe = 100): number {
+  try {
+    const prior = ctx.font
+    setFont(ctx, probe, FONT_UI, 400)
+    const raw = /(\d*\.?\d+)px/.exec(ctx.font)?.[1]
+    const painted = raw === undefined ? NaN : Number(raw)
+    if (!Number.isFinite(painted)) return 1
+    const s = textScaleOf(painted / probe)
+    ctx.font = s === 1 ? prior : prior.replace(/(\d*\.?\d+)px/, (_m, n: string) => `${parseFloat(n) / s}px`)
+    return s
+  } catch {
+    return 1
+  }
+}
+
 export function setTracking(ctx: CanvasRenderingContext2D, px: number): void {
   try {
     ;(ctx as unknown as { letterSpacing: string }).letterSpacing = `${px}px`
@@ -183,27 +216,45 @@ export function drawBlurredBackdrop(
   tint: Theme,
   tintAlpha: number
 ): void {
-  const smallW = Math.min(420, Math.max(160, Math.round(W / 7)))
-  const smallH = Math.max(80, Math.round(smallW * (H / W)))
+  // 假控件补线：这里原来写死 W/7 的降采样倍率，Inspector 的「背景模糊」滑杆
+  // （params.blur）根本没人读。现在按倍率缩放，默认档 26 ⇒ 7*(26/26)=7，
+  // 与写死值逐位相同（IEEE754 下 x/1、x*1、26/26 都是精确运算）⇒ 基线不动。
+  //
+  // #72：滑杆下限是 0，而 `pct()` 对 0（以及 null / ''）返回的就是 0 ——
+  // `blurDiv = 7*(0/26) = 0`，`W/0 = Infinity`，被 `min(420, max(160, …))` 收成
+  // 420，于是「完全不模糊」这一档照样走了降采样 + `blur(max(1, …))` 的 1px 滤镜
+  // 地板（零除 + 一个既降采样又带滤镜的底片）。blur <= 0 现在直接走无降采样、无
+  // ctx.filter 的分支；blur > 0 的算式逐位不变（同一个 `blurPct`、同一串运算、
+  // 同一组 clamp），175 卡基线不受影响。
+  const blurPct = pct(env.params.blur, 26)
+  const noBlur = !(blurPct > 0)
+  const blurDiv = 7 * (blurPct / 26)
+  const smallW = noBlur ? Math.max(1, W) : Math.min(420, Math.max(160, Math.round(W / blurDiv)))
+  const smallH = noBlur ? Math.max(1, H) : Math.max(80, Math.round(smallW * (H / W)))
   const c = env.crop
   const scale = Math.max(smallW / c.sw, smallH / c.sh)
   const sw = smallW / scale
   const sh = smallH / scale
   const sx = c.sx + (c.sw - sw) / 2
   const sy = c.sy + (c.sh - sh) / 2
-  const tmp = document.createElement('canvas')
-  tmp.width = smallW
-  tmp.height = smallH
-  const tctx = tmp.getContext('2d')!
-  tctx.drawImage(env.photo, sx, sy, sw, sh, 0, 0, smallW, smallH)
   const ctx = env.ctx
-  const blur = shortSide(env) * 0.0015 * Math.max(0, pct(env.params.blur, 26))
+  const over = 1.12
   ctx.save()
   ctx.imageSmoothingQuality = 'high'
-  ctx.filter = `blur(${Math.max(1, blur)}px)`
-  const over = 1.12
-  ctx.drawImage(tmp, -W * (over - 1) / 2, -H * (over - 1) / 2, W * over, H * over)
-  ctx.filter = 'none'
+  if (noBlur) {
+    // full-resolution crop straight onto the canvas: no downsample step, no filter
+    ctx.drawImage(env.photo, sx, sy, sw, sh, (-W * (over - 1)) / 2, (-H * (over - 1)) / 2, W * over, H * over)
+  } else {
+    const tmp = document.createElement('canvas')
+    tmp.width = smallW
+    tmp.height = smallH
+    const tctx = tmp.getContext('2d')!
+    tctx.drawImage(env.photo, sx, sy, sw, sh, 0, 0, smallW, smallH)
+    const blur = shortSide(env) * 0.0015 * Math.max(0, blurPct)
+    ctx.filter = `blur(${Math.max(1, blur)}px)`
+    ctx.drawImage(tmp, -W * (over - 1) / 2, -H * (over - 1) / 2, W * over, H * over)
+    ctx.filter = 'none'
+  }
   ctx.globalAlpha = tintAlpha
   ctx.fillStyle = tint.bg
   ctx.fillRect(0, 0, W, H)
@@ -275,13 +326,30 @@ export function fitSize(
   min: number,
   family: string,
   weight: string | number,
-  tracking = 0
+  tracking = 0,
+  scale?: number
 ): number {
+  // #69 A5 — the cap has to be stated on the same scale as the measurement.
+  // `setFont()` below goes through `scene.ts/scaledContext`, so
+  // `ctx.measureText()` returns ink painted at `size * s`; the slot the caller
+  // measured out in design units is `maxWidth`, so its painted room at this font
+  // scale is `maxWidth * s`. Comparing the two on different scales is what made
+  // the ladder consume `k` extra 0.96 steps and cancel the slider out. With the
+  // cap scaled, the loop again solves the *design* fit — the same answer the 1.0
+  // arm gets — and the ink that lands on canvas is that size times `s`: exactly
+  // linear in 字号缩放. `scale === 1` keeps `maxWidth` byte-for-byte.
+  const s = scale ?? paintedTextScale(ctx)
+  // `+ 1e-6` only on the scaled branch: a text that fits the slot EXACTLY at 1.0
+  // compares `(size*s)*advance` against `maxWidth*s`, and those two products round
+  // differently by ~1e-13 — without the slack the ladder would drop a whole 0.96
+  // step (a 4% font jump) on a knife-edge float. 1e-6 px is invisible and is NOT
+  // applied at s === 1, where `cap` stays the byte-for-byte `maxWidth`.
+  const cap = s === 1 ? maxWidth : maxWidth * s + 1e-6
   let size = start
   setTracking(ctx, tracking * size)
   while (size > min) {
     setFont(ctx, size, family, weight)
-    if (ctx.measureText(text).width <= maxWidth) break
+    if (ctx.measureText(text).width <= cap) break
     size *= 0.96
   }
   setFont(ctx, size, family, weight)
@@ -302,7 +370,8 @@ export function drawFitted(
   const family = opts.family ?? FONT_UI
   const weight = opts.weight ?? 400
   const tracking = opts.tracking ?? 0
-  const finalSize = fitSize(ctx, text, maxWidth, size, opts.min ?? size * 0.45, family, weight, tracking)
+  const scale = paintedTextScale(ctx)
+  const finalSize = fitSize(ctx, text, maxWidth, size, opts.min ?? size * 0.45, family, weight, tracking, scale)
   ctx.save()
   ctx.fillStyle = color
   ctx.textAlign = opts.align ?? 'left'
@@ -317,7 +386,21 @@ export function drawFitted(
   ctx.fillText(text, x, y)
   resetTracking(ctx)
   ctx.restore()
-  return finalSize
+  // #69 A1/A2 — the part of the row pitch that lives in this file. Every stacked
+  // template advances with this return value (`y += drawFitted(...)`,
+  // `metaY +=`, `cy += camSize * 0.55` in `drawMeta` below), and it used to be the
+  // *design* size. Once A5 stops the fit ladder from eating the scale, the design
+  // size no longer grows with 字号缩放 — so a pitch built on it would keep a 1.0
+  // line step under 1.22 ink, which is exactly the collision the audit calls 叠字.
+  // Returning the advance the ink actually took keeps the pitch proportional to
+  // the glyphs. `scale === 1` hands back `finalSize` unmultiplied, so the 1.0 arm
+  // is bit-for-bit untouched.
+  // Tracking is deliberately NOT multiplied here: that is `card-4`'s settled
+  // 1.2708 = 1.22/0.96 quantisation (verdict B), out of scope for this batch.
+  // Rows positioned by an absolute fraction of the card (`ticket-1`'s
+  // `cardH * (0.2395 + i * 0.1208)`, `fm-editorial`'s `top * 0.30 / top * 0.62`)
+  // ignore this return value and still need the `templates.ts` step in README §A1.
+  return scale === 1 ? finalSize : finalSize * scale
 }
 
 export function drawMeta(

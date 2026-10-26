@@ -62,7 +62,7 @@ export function TemplateGallery({
             <p>{total} 个版式 · 原版风格全覆盖</p>
           </div>
           {onOpenReferences ? (
-            <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} type="button">
+            <button className="btn btn-ghost btn-sm glass-btn glass-spot glass-ripple glass-press" onClick={onOpenReferences} type="button">
               <Images size={15} />
               <span>原版</span>
             </button>
@@ -82,7 +82,7 @@ export function TemplateGallery({
         {['全部', ...VARIANT_CATEGORIES].map((c) => (
           <button
             key={c}
-            className={category === c ? 'active' : ''}
+            className={`glass-ripple glass-press ${category === c ? 'active' : ''}`}
             onClick={() => {
               setCategory(c)
               if (c !== '系统相机') setVendor('全部')
@@ -94,7 +94,7 @@ export function TemplateGallery({
         ))}
       </div>
       {category === '系统相机' ? (
-        <div className="gallery-chips gallery-subchips">
+        <div className="gallery-chips gallery-subchips glass-animate-enter">
           {[
             { id: '全部', label: '全部厂商' },
             { id: 'oppo', label: 'OPPO' },
@@ -103,7 +103,7 @@ export function TemplateGallery({
           ].map((v) => (
             <button
               key={v.id}
-              className={vendor === v.id ? 'active' : ''}
+              className={`glass-ripple glass-press ${vendor === v.id ? 'active' : ''}`}
               onClick={() => setVendor(v.id)}
               type="button"
             >
@@ -114,7 +114,7 @@ export function TemplateGallery({
       ) : null}
       <div className="gallery-scroll">
         {filtered.map((group) => (
-          <section key={group.category} className="gallery-group">
+          <section key={group.category} className="gallery-group glass-animate-enter">
             <div className="gallery-group-head">
               <h3>{group.category}</h3>
               <span>{group.items.length}</span>
@@ -123,7 +123,7 @@ export function TemplateGallery({
               {group.items.map((v) => (
                 <button
                   key={v.id}
-                  className={`tpl-card ${activeId === v.id ? 'active' : ''}`}
+                  className={`tpl-card glass-hover glass-press ${activeId === v.id ? 'active' : ''}`}
                   onClick={() => {
                     setVariant(v.id)
                     onPick?.()

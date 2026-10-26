@@ -12,15 +12,49 @@ const OUT_DIR = 'D:/border&watermark/framemark/src/renderer/src/core/system/gene
 const APP_ASSET_DIR = 'D:/border&watermark/framemark/src/renderer/src/assets/system/oppo/gallery'
 const STYLES_ONLY = process.argv.includes('--styles-only')
 
-const TEXT_KINDS = {
-  0: 'model',
-  1: 'imageParams',
-  2: 'timeLocation',
-  3: 'time',
-  4: 'location',
-  5: 'greeting',
-  6: 'custom',
-  7: 'filter'
+// numeric `content.textSource` -> what the vendor Gallery really reads for that element.
+// Names are the Gallery DEX constants (WatermarkElementKt.TEXT_SOURCE_*); the string carriers
+// come from the WatermarkStyleOperatorImpl.h dispatch (classes2.dex 0x59df2e..0x59e054).
+// Evidence: _research/textsource-enum/{enum-map.json,dex-evidence.txt}.
+//
+//   -1 NONE          hidden placeholder (the shipped JSONs mark every one of them visible:false)
+//   0..4 / 7         runtime fields -> `kind` (7 FILTER is a declared constant no style uses)
+//   5 GREETING       the element's own `aiContent` string (a decoration the style ships)
+//   6 CUSTOM         a master-mode parameter slot: `extendParamsType` names the slot and the
+//                    element's own `content` is only the vendor's SAMPLE value for that photo
+//                    (清新/80/无/5/10/-10/0/开). Those are not EXIF tags, so baking them would
+//                    invent data on every user photo => bind the slot, render blank by default.
+//
+// Why OPPO must stop emitting the `greeting`/`custom` kinds (issue #59): core/system/tokens.ts
+// folds both onto `env.text.customLine` (default ''), a fold vivo and Xiaomi rely on
+// (vivoManual.ts writes {kind:'custom'} directly). Fixing it in the adapter keeps those vendors'
+// renders untouched and puts the vendor's own literal back where the vendor reads it.
+const TEXT_SOURCE = {
+  [-1]: { name: 'NONE', drop: true },
+  0: { name: 'MODEL', kind: 'model' },
+  1: { name: 'IMAGE_PARAMS', kind: 'imageParams' },
+  2: { name: 'TIME_LOCATION', kind: 'timeLocation' },
+  3: { name: 'TIME', kind: 'time' },
+  4: { name: 'LOCATION', kind: 'location' },
+  5: { name: 'GREETING', literalFrom: 'aiContent' },
+  6: { name: 'CUSTOM', literalFrom: 'content', slotFrom: 'extendParamsType' },
+  7: { name: 'FILTER', unresolved: true }
+}
+
+// An unknown numeric textSource must never vanish silently -- that is precisely the mechanism
+// that almost got #59 filed as "the whole element class is dropped". Every miss is collected,
+// written to textSource-unknown.json next to the IR and summarised in that style's audit.notes,
+// so a vendor enum bump shows up red instead of as "a line is missing and nobody knows why".
+const UNKNOWN_TEXT_SOURCES = []
+let currentStyleId = ''
+
+function noteUnknownTextSource(styleId, elementId, source, recovered) {
+  UNKNOWN_TEXT_SOURCES.push({
+    style: `oppo-gallery:${styleId}`,
+    elementId: elementId ?? null,
+    textSource: source,
+    recoveredFromLiteral: recovered
+  })
 }
 
 const NAME_MAP = [
@@ -82,22 +116,58 @@ function scaleOf(v) {
   return 'fill'
 }
 
-function partToken(part) {
-  const map = {
-    ISOValue: { kind: 'template', value: '@exif=@{iso}' },
-    ISOTitle: { kind: 'literal', value: 'ISO' },
-    FValue: { kind: 'template', value: '@exif=@{aperture}' },
-    FTitle: { kind: 'literal', value: 'F' },
-    ApertureValue: { kind: 'template', value: '@exif=@{aperture}' },
-    ApertureTitle: { kind: 'literal', value: 'f/' },
-    MMValue: { kind: 'template', value: '@exif=@{focal}' },
-    MMTitle: { kind: 'literal', value: 'mm' },
-    SValue: { kind: 'template', value: '@exif=@{speed}' },
-    STitle: { kind: 'literal', value: 's' },
-    ShutterTitle: { kind: 'skip' },
-    FLTitle: { kind: 'skip' }
+// A `textSource: 1` (EXIF) row is declared by the vendor as *label + value* pairs
+// (`content.textSourcePart`). The label words are NOT in the style JSON — only
+// `hassel_style_4` pins one inline (`ISOTitle.textSourcePartValue: "ISO"`) — they live
+// in the Gallery DEX string pool's affix table, and the literals below are those
+// strings verbatim (exact matches, evidence `_research/ir-fidelity/dex-exif-strings.json`;
+// the vendor's own picker previews confirm the composed row,
+// `_research/vendor-preview-truth/work/V-exif-sheet.png`:
+// `hassel_style_4` -> `FL 30mm   Aperture f/2.1   Shutter 1/45s   ISO 100`).
+//
+// `f/` and the trailing `s` are affixes of the *value* parts (the pool also carries the
+// format strings `f/@.`, `f/4`, `f/-`), so they belong to `ApertureValue` / `SValue` and
+// never to the label slot. A style that ships its unit as its own dim element
+// (`personalize_masterSign_2`, `personalize_retroCamera_5`: `SValue` + sibling `STitle`)
+// must not get the affix on top, or the unit prints twice (`1/45ss`).
+const PART_LABELS = {
+  FLTitle: 'FL',
+  MMTitle: 'mm',
+  ApertureTitle: 'Aperture',
+  ShutterTitle: 'Shutter',
+  ISOTitle: 'ISO',
+  FTitle: 'F',
+  STitle: 's'
+}
+
+const PART_VALUES = {
+  ISOValue: '@{iso}',
+  FValue: '@{aperture}',
+  ApertureValue: 'f/@{aperture}',
+  MMValue: '@{focal}',
+  SValue: '@{speed}'
+}
+
+function hasSiblingPart(siblings, part) {
+  return (siblings ?? []).some((s) => ((s?.content ?? s)?.textSourcePart ?? s?.textSourcePart) === part)
+}
+
+function partToken(part, content, siblings) {
+  const label = PART_LABELS[part]
+  if (typeof label === 'string') {
+    // an inline vendor label (`textSourcePartValue`) wins over the DEX literal
+    return { kind: 'literal', value: String(content?.textSourcePartValue ?? label) }
   }
-  return map[part] ?? null
+  const value = PART_VALUES[part]
+  if (typeof value !== 'string') return null
+  // The vendor appends `s` to a bare shutter value only when that style has no shutter
+  // LABEL sibling. Ground truth on one and the same photo: `hassel_style_3` (0 parts, one
+  // composed EXIF string) renders `1/33s`, while `hassel_style_4` renders `1/33` next to a
+  // `ShutterTitle` label. The label key is `STitle` in masterSign_2/retroCamera_5 but
+  // `ShutterTitle` in the hassel/lumo text styles -- matching only the first re-added the
+  // suffix to style_4, which the vendor photo disproves.
+  const hasShutterLabel = hasSiblingPart(siblings, 'STitle') || hasSiblingPart(siblings, 'ShutterTitle')
+  return { kind: 'template', value: `@exif=${part === 'SValue' && !hasShutterLabel ? `${value}s` : value}` }
 }
 
 function marginsOf(pos = {}) {
@@ -203,7 +273,7 @@ async function trimColorCardAssets() {
 // ---------------------------------------------------------------------------
 const PHONE_WORDMARK_ASSETS = new Set([])
 
-function convertNode(n, assets, bitmapFiles, dimensions) {
+function convertNode(n, assets, bitmapFiles, dimensions, siblings) {
   if (!n || n.visible === false) return null
   const content = n.content ?? n
   const type = content.type ?? n.type
@@ -215,7 +285,26 @@ function convertNode(n, assets, bitmapFiles, dimensions) {
   if (type === 'text') {
     const source = content.textSource ?? n.textSource
     const part = content.textSourcePart ?? n.textSourcePart
-    const token = source === 1 && part ? partToken(part) : TEXT_KINDS[source] ? { kind: TEXT_KINDS[source] } : null
+    const spec = TEXT_SOURCE[source]
+    let token = null
+    if (source === 1 && part) {
+      token = partToken(part, content, siblings) // EXIF row split into label + value, see #56
+    } else if (spec && spec.literalFrom) {
+      const slotKey = spec.slotFrom ? content[spec.slotFrom] : null
+      const raw = content[spec.literalFrom]
+      // a slot key means the vendor string is that photo's own master parameter, which EXIF
+      // never carries: keep the node, bind the slot, render empty until a control fills it
+      token = { kind: 'literal', value: slotKey ? '' : raw == null ? '' : String(raw) }
+      if (slotKey) token.slot = String(slotKey)
+    } else if (spec && spec.kind) {
+      token = { kind: spec.kind }
+    } else if (typeof source === 'number') {
+      // NONE (visible after all) or an enum this adapter does not know yet: recover the
+      // element's own literal when there is one and record the miss -- never drop quietly
+      const raw = content.content ?? content.aiContent
+      noteUnknownTextSource(currentStyleId, n.id ?? content.id ?? null, source, raw != null)
+      token = raw == null ? null : { kind: 'literal', value: String(raw) }
+    }
     if (!token || token.kind === 'skip') return null
     const paint = n.paint ?? content.paint ?? {}
     return {
@@ -231,7 +320,12 @@ function convertNode(n, assets, bitmapFiles, dimensions) {
       align: 'left',
       gravity,
       margins,
-      optional: source === -1,
+      // Supervisor ruling (#59, V2): an unfilled master-mode slot keeps its box and margins.
+      // The vendor always has a value there; we merely lack the data, so the geometry must stay
+      // as the vendor declared it and only the string is blank. Collapsing empty nodes would move
+      // the separator by ~10.4 layout units and deviate further from the original. A decorative
+      // literal that is empty (no slot to fill later) still exits the row.
+      optional: token.kind === 'literal' ? token.value.length === 0 && !token.slot : false,
       shadow: shadowOf(paint)
     }
   }
@@ -285,7 +379,7 @@ function convertNode(n, assets, bitmapFiles, dimensions) {
   }
   if (type === 'elements') {
     const raw = content.elements ?? n.elements ?? []
-    const children = raw.map((c) => convertNode(c, assets, bitmapFiles, dimensions)).filter(Boolean)
+    const children = raw.map((c) => convertNode(c, assets, bitmapFiles, dimensions, raw)).filter(Boolean)
     if (!children.length) return null
     return {
       kind: 'group',
@@ -301,6 +395,7 @@ function convertNode(n, assets, bitmapFiles, dimensions) {
 }
 
 function convertStyle(styleId, j, bitmapFiles, dimensions) {
+  currentStyleId = styleId
   const size = j.size ?? {}
   const margins = {
     left: num(size.leftMargin),
@@ -320,7 +415,8 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
     // centre at paint time. 0/absent stays undefined so JSON.stringify drops
     // it and every other style's IR is byte-identical.
     const rotation = num(content.rotation, 0) || undefined
-    const children = (content.elements ?? band.elements ?? []).map((n) => convertNode(n, assets, bitmapFiles, dimensions)).filter(Boolean)
+    const raw = content.elements ?? band.elements ?? []
+    const children = raw.map((n) => convertNode(n, assets, bitmapFiles, dimensions, raw)).filter(Boolean)
     while (children[0]?.kind === 'space') children.shift()
     while (children[children.length - 1]?.kind === 'space') children.pop()
     if (!children.length) continue
@@ -369,6 +465,7 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
   const hasSide = margins.left > 0 || margins.right > 0
   const hasVertical = margins.top > 0 || margins.bottom > 0
   const placement = hasSide ? 'with' : hasVertical ? 'out' : 'in'
+  const unknown = UNKNOWN_TEXT_SOURCES.filter((u) => u.style === `oppo-gallery:${styleId}`)
   return {
     id: `oppo-gallery:${styleId}`,
     vendor: 'oppo',
@@ -376,14 +473,23 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
     name: nameOf(styleId),
     nameEn: styleId,
     placement,
-    referenceWidth: 360,
+    // #65: the vendor's `baseImageSize` IS the reference width, and it is the PHOTO width
+    // (proved on the vendor's own photo pair: original 3072x4096 -> card 3244x5130 predicts
+    // 3242.7x5128.5, -0.04%/-0.03%; card-width semantics miss by +0.88%. See
+    // _research/scale-audit2/semantics-by-photo.cjs). 42 of 43 styles declare 360; only
+    // hassel_style_xpan_1 declares 291, which the old hardcoded 360 rendered 1.237x too large.
+    referenceWidth: Number(j.baseImageSize) || 360,
     margins,
     background: j.background?.color ?? '#00000000',
     bands,
     assets,
     audit: {
       status: 'approx',
-      notes: 'Auto-converted from OPPO Gallery JSON; pending visual audit.'
+      // a non-empty unknown list is red by construction; the per-element detail goes to
+      // textSource-unknown.json next to the IR.
+      notes: unknown.length
+        ? `Auto-converted from OPPO Gallery JSON; pending visual audit. UNKNOWN textSource [${unknown.map((u) => `${u.elementId}:ts${u.textSource}${u.recoveredFromLiteral ? '+literal' : ''}`).join(', ')}] -> see textSource-unknown.json`
+        : 'Auto-converted from OPPO Gallery JSON; pending visual audit.'
     }
   }
 }
@@ -430,6 +536,11 @@ async function main() {
   }
   if (trimmed.size) console.log('colour-card assets cropped to content:', [...trimmed.keys()].join(', '))
   fs.mkdirSync(OUT_DIR, { recursive: true })
+  // only when non-empty: a clean corpus must not add a build artifact nobody asked for
+  if (UNKNOWN_TEXT_SOURCES.length) {
+    fs.writeFileSync(path.join(OUT_DIR, 'textSource-unknown.json'), JSON.stringify(UNKNOWN_TEXT_SOURCES, null, 2))
+    console.log('UNKNOWN textSource entries', UNKNOWN_TEXT_SOURCES.length)
+  }
   fs.writeFileSync(
     path.join(OUT_DIR, 'oppoGallery.ts'),
     `import type { StockStyle } from '../ir'\n\nexport const OPPO_GALLERY_STYLES = ${JSON.stringify(styles, null, 2)} as StockStyle[]\n`

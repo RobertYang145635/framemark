@@ -1,9 +1,25 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+/** Mirrors FolderScanResult in the main process: files plus the ceilings that were applied. */
+interface FolderScanResult {
+  files: string[]
+  maxFiles: number
+  maxDepth: number
+  droppedFiles: number
+  skippedDirs: number
+  guardHit: boolean
+}
+
+interface ImportOptions {
+  maxFiles?: number
+  maxDepth?: number
+}
+
 const api = {
   pickImages: (): Promise<string[]> => ipcRenderer.invoke('dialog:pickImages'),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('dialog:pickFolder'),
-  listImages: (folder: string): Promise<string[]> => ipcRenderer.invoke('folder:listImages', folder),
+  listImages: (folder: string, options?: ImportOptions): Promise<FolderScanResult> =>
+    ipcRenderer.invoke('folder:listImages', folder, options),
   previewImage: (filePath: string) => ipcRenderer.invoke('image:preview', filePath),
   readImage: (filePath: string) => ipcRenderer.invoke('image:read', filePath),
   defaultExportDir: (): Promise<string> => ipcRenderer.invoke('export:defaultDir'),

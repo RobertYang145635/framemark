@@ -4011,8 +4011,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_black",
         "label": "texture_black",
-        "swatch": "#FF1C1D1F;@img=background_texture_1.png",
-        "background": "#FF1C1D1F;@img=background_texture_1.png",
+        "swatch": "#FF1C1D1F",
+        "background": "#FF1C1D1F",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4023,8 +4023,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_white",
         "label": "texture_white",
-        "swatch": "#FFFFFFFF;@img=background_texture_1.png",
-        "background": "#FFFFFFFF;@img=background_texture_1.png",
+        "swatch": "#FFFFFFFF",
+        "background": "#FFFFFFFF",
         "foreground": [
           "#FF000000",
           "#4D000000",
@@ -4035,8 +4035,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_rose_gray",
         "label": "texture_rose_gray",
-        "swatch": "#FF9F7F85;@img=background_texture_1.png",
-        "background": "#FF9F7F85;@img=background_texture_1.png",
+        "swatch": "#FF9F7F85",
+        "background": "#FF9F7F85",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4047,8 +4047,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_blue_gray_light",
         "label": "texture_blue_gray_light",
-        "swatch": "#FFB3BEC7;@img=background_texture_1.png",
-        "background": "#FFB3BEC7;@img=background_texture_1.png",
+        "swatch": "#FFB3BEC7",
+        "background": "#FFB3BEC7",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4059,8 +4059,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_blue_gray_dark",
         "label": "texture_blue_gray_dark",
-        "swatch": "#FF63788B;@img=background_texture_1.png",
-        "background": "#FF63788B;@img=background_texture_1.png",
+        "swatch": "#FF63788B",
+        "background": "#FF63788B",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4071,8 +4071,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_blue_gray",
         "label": "texture_blue_gray",
-        "swatch": "#FF737F7D;@img=background_texture_1.png",
-        "background": "#FF737F7D;@img=background_texture_1.png",
+        "swatch": "#FF737F7D",
+        "background": "#FF737F7D",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4083,8 +4083,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_green_dark",
         "label": "texture_green_dark",
-        "swatch": "#FF39372C;@img=background_texture_1.png",
-        "background": "#FF39372C;@img=background_texture_1.png",
+        "swatch": "#FF39372C",
+        "background": "#FF39372C",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4095,8 +4095,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_green_gray_light",
         "label": "texture_green_gray_light",
-        "swatch": "#FF7D8473;@img=background_texture_1.png",
-        "background": "#FF7D8473;@img=background_texture_1.png",
+        "swatch": "#FF7D8473",
+        "background": "#FF7D8473",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4107,8 +4107,8 @@ export const XIAOMI_STYLES = [
       {
         "id": "texture_brown_gray",
         "label": "texture_brown_gray",
-        "swatch": "#FF776D5D;@img=background_texture_1.png",
-        "background": "#FF776D5D;@img=background_texture_1.png",
+        "swatch": "#FF776D5D",
+        "background": "#FF776D5D",
         "foreground": [
           "#FFFFFFFF",
           "#B2FFFFFF",
@@ -4137,7 +4137,7 @@ export const XIAOMI_STYLES = [
       "right": 74,
       "bottom": 322
     },
-    "background": "#FF1C1D1F;@img=background_texture_1.png",
+    "background": "#FF1C1D1F",
     "bands": [
       {
         "direction": "bottom",

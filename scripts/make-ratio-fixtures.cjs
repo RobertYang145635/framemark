@@ -1,16 +1,18 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const sharp = require('sharp')
+// #57 PATH-LITERALS: source photos are resolved from a single entry point, not hardcoded root paths
+const { resolveAsset } = require('../../_research/test-assets/resolve-test-asset.cjs')
 
 const OUT = 'D:/border&watermark/_research/test-assets/ratio-study'
 fs.mkdirSync(OUT, { recursive: true })
 
 const jobs = [
-  { name: '3x2.jpg', src: 'D:/border&watermark/P1181817.jpg', w: 3000, h: 2000 },
-  { name: '2x3.jpg', src: 'D:/border&watermark/PYHY5599-已增强-降噪.jpg', w: 2000, h: 3000 },
-  { name: '1x1.jpg', src: 'D:/border&watermark/P1181817.jpg', w: 2800, h: 2800 },
-  { name: '4x5.jpg', src: 'D:/border&watermark/P1181817.jpg', w: 2400, h: 3000 },
-  { name: '16x9.jpg', src: 'D:/border&watermark/P1181817.jpg', w: 3200, h: 1800 }
+  { name: '3x2.jpg', src: resolveAsset('P1181817.jpg'), w: 3000, h: 2000 },
+  { name: '2x3.jpg', src: resolveAsset('PYHY5599-已增强-降噪.jpg'), w: 2000, h: 3000 },
+  { name: '1x1.jpg', src: resolveAsset('P1181817.jpg'), w: 2800, h: 2800 },
+  { name: '4x5.jpg', src: resolveAsset('P1181817.jpg'), w: 2400, h: 3000 },
+  { name: '16x9.jpg', src: resolveAsset('P1181817.jpg'), w: 3200, h: 1800 }
 ]
 
 ;(async () => {

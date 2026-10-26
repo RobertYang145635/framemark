@@ -15,10 +15,30 @@ import { ExportOverlay } from './components/ExportOverlay'
 import { Toast } from './components/Toast'
 import { DebugAssets } from './components/DebugAssets'
 import { Modal } from './components/ui'
-import { getVariant } from './core/variants'
+import { mountGlassChrome, paintGlassChromeBeforeFirstFrame } from './components/glass/glassBoot'
+import { getVariant, TEMPLATE_VARIANTS } from './core/variants'
+import { STOCK_STYLE_LIST } from './core/system/styles'
 import { ensureFonts } from './core/fonts'
 
+/**
+ * GLASS-UI G-1 · 玻璃外壳挂载（G-0 交付机制、本批接调用点）。
+ * 放在模块顶层而不是 useEffect：本文件被 main.tsx import 的瞬间就执行，React 还没
+ * 渲染任何节点，等效于原型 design/index.html L9-18 的首帧前内联脚本（index.html 属本批
+ * 禁改范围），避免亮/暗切换与画质降档时的闪白。
+ */
+paintGlassChromeBeforeFirstFrame()
+
 const QUICK = ['wm-classic', 'white-1', 'color-1', 'glass-card-4', 'movie-1', 'fm-polaroid']
+
+/**
+ * The 模板库 dialog used to claim "原版 40+", a number that stopped describing the app
+ * long ago (PRODUCT-DEFECTS #58 / defect 3). Both figures are derived from the live
+ * registries instead of being typed in again: `STOCK_STYLE_LIST` is the built-in vendor
+ * style registry and `TEMPLATE_VARIANTS` is exactly what the gallery renders as cards.
+ */
+const BUILT_IN_STYLE_COUNT = new Set(STOCK_STYLE_LIST.map((s) => s.id)).size
+const GALLERY_CARD_COUNT = new Set(TEMPLATE_VARIANTS.map((v) => v.id)).size
+const TEMPLATE_MODAL_SUBTITLE = `内置 ${BUILT_IN_STYLE_COUNT} 套厂商样式 · ${GALLERY_CARD_COUNT} 张版式卡片，全部可直接套用；左侧缩略图可对照原版预览。`
 
 export function App() {
   const init = useAppStore((s) => s.init)
@@ -50,6 +70,15 @@ export function App() {
     void init()
     void ensureFonts()
   }, [init])
+
+  /**
+   * GLASS-UI G-1 · 动效与主题跟随：
+   *  - attachGlassMotion 事件委托（光斑/按压/涟漪），卸载时解绑；
+   *  - watchSystemColorScheme 只在用户存了 auto 时响应 prefers-color-scheme（01 §6.2）；
+   *  - 首屏之后跑一次离屏 blur 基准做低端 GPU 自动降档（04 §C）。
+   * reduced-motion 不需要 JS 状态源：styles.css 末尾的总闸 + glassMotion 每次事件实时读 matchMedia。
+   */
+  useEffect(() => mountGlassChrome(), [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -148,7 +177,7 @@ export function App() {
       </div>
 
       <div className="workspace">
-        <aside className="sidebar templates-panel">
+        <aside className="sidebar templates-panel glass">
           <TemplateGallery onOpenReferences={() => setReferenceOpen(true)} />
         </aside>
         <main className="center-column">
@@ -162,7 +191,7 @@ export function App() {
         open={templatesOpen}
         onClose={() => setTemplatesOpen(false)}
         title="模板库"
-        subtitle="原版 40+ 照片版式已全部映射为预设；左侧缩略图可直接对照原版预览。"
+        subtitle={TEMPLATE_MODAL_SUBTITLE}
         wide
         className="template-modal"
       >

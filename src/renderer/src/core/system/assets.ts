@@ -1,6 +1,6 @@
 import type { StockBrandEnv, StockImageNode, StockNode, StockStyle } from './ir'
-import type { TemplateRenderEnv } from '../../types'
-import { BRANDS, LOGO_FILES, matchBrand } from '../brands'
+import type { Params, TemplateRenderEnv } from '../../types'
+import { BRANDS, LOGO_FILES, autoLogo, matchBrand } from '../brands'
 import { createCanvas, loadImage } from '../images'
 import { ensureSystemFonts } from './fonts'
 
@@ -118,6 +118,68 @@ function imageAspect(img: HTMLImageElement): number {
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
   return h > 0 ? w / h : 0
+}
+
+/* ------------------------------------------------------------------ *
+ * Hand-card brand wordmarks (FIX #64, second iteration)
+ *
+ * `scene.ts` used to build `env.images.logo` from `design.logo`, and
+ * `design.logo` is a GLOBAL field: `rescopeParams()` (store.ts) deliberately does
+ * not re-scope it, so the mark of the previously selected card painted the next
+ * one (the `stock-xiaomi-leica-1` defect). Clearing it on every variant switch
+ * closed the leak but left the hand family with no brand at all — a hand
+ * `TemplateDef` has no `isBrandLogo` slot for `resolveBrandSlot()` to fill, so
+ * `drawBrandLogo()` (draw.ts) fell through to its drawn-text substitute.
+ *
+ * The carrier a hand card *does* own is its style definition, and it already has
+ * three declared sources, in this precedence:
+ *   1. `params.brandLogoFile` — the Inspector pick, bucketed per style
+ *      (`writeParam`), so it is this card's own pick or nothing;
+ *   2. `variant.vendorLogo`  — a fixed co-brand mark the style names
+ *      (`card-1` → `laika`, `person-1` → `hasu_long_black`, …);
+ *   3. `variant.autoLogo`    — "the wordmark follows the photo's brand", which
+ *      `wm-classic`/`wm-black`/`wm-canon`/`person-5`/`glass-white-*` already
+ *      declare and which resolves through the SAME registry the stock slots use.
+ * Anything else paints nothing. A brand mark is never synthesised from a name:
+ * if `LOGO_FILES` has no real bitmap for the resolved brand there is no
+ * wordmark, exactly as `assets.ts:37-39` prescribes for the stock slots.
+ * ------------------------------------------------------------------ */
+
+/** The tone rule the whole app already uses for an auto-matched wordmark. */
+export function themeIsDark (params: Params | undefined): boolean {
+  return ['ink', 'black'].includes(String(params?.theme ?? ''))
+}
+
+export interface StyleBrandDecl {
+  /** `params.brandLogoFile` — this style's own bucketed Inspector pick. */
+  pick?: unknown
+  /** `variant.vendorLogo` — fixed mark declared by the style definition. */
+  vendorLogo?: string
+  /** `variant.autoLogo` — resolve the wordmark from this photo's EXIF brand. */
+  autoLogo?: boolean
+}
+
+/**
+ * The registry file name this style declares, or null when it declares none.
+ * Pure and per-render: no argument here can be supplied by another card.
+ */
+export function styleBrandFile (decl: StyleBrandDecl, exif: { make?: string; model?: string }, dark: boolean): string | null {
+  const pick = typeof decl.pick === 'string' ? decl.pick.trim() : ''
+  if (pick) return pick
+  if (decl.vendorLogo) return decl.vendorLogo
+  if (decl.autoLogo) return autoLogo(String(exif?.make ?? ''), String(exif?.model ?? ''), dark)
+  return null
+}
+
+/** Decode the declared brand bitmap, or null (⇒ the slot stays empty). */
+export async function loadStyleBrandLogo (
+  decl: StyleBrandDecl,
+  exif: { make?: string; model?: string },
+  dark: boolean
+): Promise<HTMLImageElement | null> {
+  const file = styleBrandFile(decl, exif, dark)
+  if (!file) return null
+  return loadBrandLogo(file)
 }
 
 /* ------------------------------------------------------------------ *
@@ -247,9 +309,17 @@ export function resolveBrandSlot(
 ): BrandSlotChoice | null {
   const exifKey = brandKeyForEnv(env)
   const pickedParam = env.params?.brandLogoFile
-  const pickedKey =
-    brandKeyOfLogoFile(typeof pickedParam === 'string' ? pickedParam : undefined) ??
-    brandKeyOfLogoFile(env.design?.logo?.name)
+  // FIX #64: the pick is `params.brandLogoFile` ONLY. `design.logo` is a GLOBAL
+  // field that `rescopeParams()` (store.ts:164-169) deliberately does not re-scope,
+  // while `brandLogoFile` is bucketed per variant — so reading `design.logo.name`
+  // here re-imported the previously selected variant's brand into a slot whose
+  // bucket had just been reset to "no pick => resolve from this photo's EXIF
+  // brand", the rule store.ts:440-442 states for the Inspector pick. On
+  // `stock-xiaomi-leica-1` that substituted Hasselblad's 1024x70 long wordmark
+  // for the photo's own Panasonic 1024x157 one.
+  const pickedKey = brandKeyOfLogoFile(
+    typeof pickedParam === 'string' ? pickedParam : undefined
+  )
   // An explicit Inspector pick of a *different* brand wins. The pick's own
   // brand files are preloaded by `prepareStockStyle()` (via
   // `params.brandLogoFile`), so `chooseBrandSlot` can re-cut the pick to a
@@ -258,8 +328,10 @@ export function resolveBrandSlot(
   if (pickedKey && pickedKey !== exifKey) {
     const cut = chooseBrandSlot(pickedKey, env.images, dark)
     if (cut) return cut
-    const img = env.images.logo
-    if (img) return { file: String(env.design?.logo?.name ?? pickedKey), img, aspect: imageAspect(img) }
+    // No last resort through `env.images.logo`: a brand slot must never be painted from
+    // an arbitrary user bitmap whose intrinsic canvas size then drives `brandSlotRect()`.
+    // Leave the slot empty, as assets.ts:37-39 and paint.ts:432 already prescribe for a
+    // pick with no usable wordmark.
     return null
   }
   if (!exifKey) return null

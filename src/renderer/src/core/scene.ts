@@ -1,9 +1,12 @@
 import type { CropInfo, Design, Params, PhotoAsset, Ratio, Rect, TemplateRenderEnv, TextSettings } from '../types'
 import { getTemplate } from './templates'
+import { VARIANT_MAP } from './variants'
 import { loadImage } from './images'
 import { textScaleOf } from './draw'
 import { drawWatermark } from './watermark'
 import { resolveTokens } from './exif'
+import { logoAsset } from './brands'
+import { styleBrandFile, themeIsDark } from './system/assets'
 
 const RATIOS: Record<Exclude<Ratio, 'original'>, number> = {
   '1:1': 1,
@@ -105,7 +108,31 @@ export async function renderDesign(
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   const text = resolveText(design.text, asset, template.name)
-  const logo = design.logo ? await loadImage(design.logo.dataUrl) : undefined
+  // FIX #64 (second iteration): the brand wordmark comes from THIS style's own
+  // declaration — its bucketed pick, its `vendorLogo`, its `autoLogo` — and from
+  // the photo's EXIF, never from `design.logo`. `design.logo` is a global field
+  // that survives a variant switch, which is what painted the previous card's
+  // mark on the next one; clearing it (store.ts `setVariant`) then left the hand
+  // family with no bitmap at all. See core/system/assets.ts "Hand-card brand
+  // wordmarks". A style with no declaration gets no wordmark — nothing invented.
+  // The bitmap is loaded through `logoAsset()` (the registry's own loader) rather
+  // than an arbitrary user image, so a style with no declaration cannot paint
+  // anything, and the decoded mark keeps the same PNG path the accepted renders used.
+  const variant = design.variantId ? VARIANT_MAP[design.variantId] : undefined
+  const brandFile = styleBrandFile(
+    { pick: params.brandLogoFile, vendorLogo: variant?.vendorLogo, autoLogo: variant?.autoLogo },
+    asset.exif,
+    themeIsDark(params)
+  )
+  let logo: HTMLImageElement | undefined
+  if (brandFile) {
+    try {
+      const assetLogo = await logoAsset(brandFile)
+      logo = await loadImage(assetLogo.dataUrl)
+    } catch {
+      logo = undefined // no real asset for that brand => the slot stays empty
+    }
+  }
   const avatar = design.avatar ? await loadImage(design.avatar.dataUrl) : undefined
   const env: TemplateRenderEnv = {
     ctx: scaledContext(ctx, text.fontScale),

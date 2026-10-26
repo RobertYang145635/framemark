@@ -1,6 +1,8 @@
 const path = require('node:path')
 const fs = require('node:fs')
 const { _electron: electron } = require('playwright-core')
+// #57 PATH-LITERALS: test assets are resolved from a single entry point, not hardcoded root paths
+const { resolveAsset } = require('../../_research/test-assets/resolve-test-asset.cjs')
 
 async function main() {
   const project = path.resolve(__dirname, '..')
@@ -20,9 +22,9 @@ async function main() {
   await page.screenshot({ path: path.join(shots, '10-clean-initial.png') })
 
   await page.setInputFiles('#framemark-file-input', [
-    'D:/border&watermark/P1170883.jpg',
-    'D:/border&watermark/P1181817.jpg',
-    'D:/border&watermark/PYHY5599-已增强-降噪.jpg'
+    resolveAsset('P1170883.jpg'),
+    resolveAsset('P1181817.jpg'),
+    resolveAsset('PYHY5599-已增强-降噪.jpg')
   ])
   await page.waitForSelector('.thumb', { timeout: 60000 })
   await page.waitForTimeout(2500)

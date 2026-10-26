@@ -438,7 +438,10 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     null,
     { theme: 'white', borderPct: 2, footerPct: 9.5, signature: 'FrameMark' },
     '实测',
-    { showDate: false }
+    { showDate: false },
+    undefined,
+    // FIX #64b: own brand declaration (see wm-simple in 水印边框 below).
+    true
   ),
 
   // 水印边框
@@ -469,7 +472,14 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     null,
     { theme: 'white', logoPos: 'center', footerMode: 'simple', footerAuto: true },
     '实测',
-    { showDate: false }
+    { showDate: false },
+    undefined,
+    // FIX #64b: this card's own brand declaration — the wordmark follows the
+    // photo's EXIF brand (same rule as wm-classic/wm-black/wm-canon above),
+    // resolved per render by scene.ts from THIS style. It is not inherited from
+    // the global `design.logo`, which is what leaked one card's mark onto the
+    // next one (assets.ts "Hand-card brand wordmarks").
+    true
   ),
   V(
     'wm-black',
@@ -517,6 +527,10 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     undefined,
     true
   ),
+  // FIX #64b: wm-left / wm-wide / wm-right are the same 水印边框 family as
+  // wm-classic, wm-black and wm-canon, so they declare `autoLogo` like their
+  // siblings do: their wordmark is resolved from the photo they are painted on,
+  // through the brand registry — never from the global `design.logo`.
   V('wm-left', '左标双行', '水印边框', 'brandFooter', 'watermark2.webp', {
     theme: 'white',
     logoPos: 'center',
@@ -524,7 +538,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     logoCenterX: 0.5,
     slots: 'model,logo,exif',
     frame: '{"logoW":0.11,"rule":0,"bandRule":0,"rightX":0.7383,"rightW":0.25,"modelY":0.48,"exifY":0.48}'
-  }),
+  }, undefined, undefined, undefined, true),
   V('wm-wide', '白边双行', '水印边框', 'brandFooter', 'watermark3.webp', {
     theme: 'white',
     logoPos: 'center',
@@ -532,7 +546,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     logoCenterX: 0.5,
     slots: 'logo',
     frame: '{"logoW":0.11,"rule":0,"bandRule":0}'
-  }),
+  }, undefined, undefined, undefined, true),
   V('wm-right', '右标双行', '水印边框', 'brandFooter', 'watermark4.webp', {
     theme: 'white',
     logoPos: 'right',
@@ -540,7 +554,7 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
     slots: 'brand,logo,exif',
     frame:
       '{"borderPct":1.32,"borderTopPct":0.88,"logoW":0.068,"logoCx":0.6304,"leftX":0.0596,"ruleX":0.6738,"rightX":0.6924,"rightW":0.30,"brandY":0.58,"exifY":0.58,"bandRule":0}'
-  }),
+  }, undefined, undefined, undefined, true),
 
   // 留白
   V('white-1', '纯白 01', '留白', 'matteOverlay', 'whiteborder1.webp', { theme: 'white', marginPct: 4.3, marginTopPct: 3.47, marginBottomPct: 4.44, radiusPct: 2.0, overlayMode: 'brand', brandWidthPct: 26.4, brandOffsetPct: 5.6, overlayBrand: 'HASSELBLAD' }, '热门', { showLogo: true, showExif: false, showDate: false }, 'hasu_long_white'),
@@ -581,14 +595,18 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   // divider at 601/1200 = 50.08%W (the audit's 44.83%W read the word "z30" as the
   // divider; pixel run 538..584 is text, x=601 is the 1px rule), divider->logo 1.83%S.
   V('glass-card-4', '玻璃 04', '液态玻璃', 'specFooter', 'glass4.webp', { theme: 'white', marginPct: 3, footerPct: 22, radiusPct: 1.5, shadow: 0.5, contentW: 32.43, sepX: 50, logoGap: 1.83 }, '热门', undefined, undefined, true),
-  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glassSideCard', 'glass5.webp', { theme: 'ink', canvasAspect: 1.4971, cardAspect: 0.6903, cardSide: 'right', contentSide: 'left', cardHeightPct: 88.7, cardWidthPct: 0, cardInsetPct: 13.18, cardRadiusPct: 2.4, cardMattePct: 1.1, blur: 30, tintAlpha: 0.24, rowSet: 'fmm', textInsetPct: 31.1, brandInsetPct: 31.1, brandWidthPct: 26.0, brandHeightPct: 4.6, brandTopPct: 28.5, rowsTopPct: 44.3, rowBoxWPct: 9.1, rowBoxHPct: 7.4, rowPitchPct: 13.0, rowValueGapPct: 10.4, rowLabelPct: 3.0, rowValuePct: 4.0 }),
-  V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill', pillOrder: 'stack' }),
+  // FIX #64b: the 液态玻璃 cards that paint a brand mark (glassSideCard/glass)
+  // declare `autoLogo` like glass-white-1..3 and glass-card-4 already do, so the
+  // mark resolves from the photo through the brand registry instead of from the
+  // global `design.logo`.
+  V('glass-pill-5', '玻璃 05', '液态玻璃', 'glassSideCard', 'glass5.webp', { theme: 'ink', canvasAspect: 1.4971, cardAspect: 0.6903, cardSide: 'right', contentSide: 'left', cardHeightPct: 88.7, cardWidthPct: 0, cardInsetPct: 13.18, cardRadiusPct: 2.4, cardMattePct: 1.1, blur: 30, tintAlpha: 0.24, rowSet: 'fmm', textInsetPct: 31.1, brandInsetPct: 31.1, brandWidthPct: 26.0, brandHeightPct: 4.6, brandTopPct: 28.5, rowsTopPct: 44.3, rowBoxWPct: 9.1, rowBoxHPct: 7.4, rowPitchPct: 13.0, rowValueGapPct: 10.4, rowLabelPct: 3.0, rowValuePct: 4.0 }, undefined, undefined, undefined, true),
+  V('glass-liquid', '液态玻璃', '液态玻璃', 'glass', 'liquid_glass.webp', { theme: 'black', glassLayout: 'pill', pillOrder: 'stack' }, undefined, undefined, undefined, true),
   // glass-palette ref is a 3:4 portrait canvas (1500x2000) with one glass panel at
   // 89.2%W x 29.7%H (6.5%H bottom) holding a 3-col x 2-row grid of 11%W discs with
   // hex labels. It uses its own local def so the portrait canvas and the wide
   // panel do not leak into `glass` (glass-liquid stays a landscape pill).
   V('glass-palette', '玻璃色卡', '液态玻璃', 'glassPalettePortrait', 'glass_palette.webp', { theme: 'ink', panelWidthPct: 89.2, panelHeightPct: 29.7, panelBottomPct: 6.5, swatchCols: 3, swatchRows: 2, swatchPct: 12.3 }),
-  V('glass-card', '玻璃卡片', '液态玻璃', 'glassSideCard', 'glass.webp', { theme: 'ink', cardAspect: 1.3333, cardSide: 'right', contentSide: 'left', cardWidthPct: 56.25, cardHeightPct: 0, cardInsetPct: 6.35, cardRadiusPct: 1.6, blur: 26, tintAlpha: 0.2, rowSet: 'fiso', rowValueGapPct: 6.0, rowValuePct: 5.6 }),
+  V('glass-card', '玻璃卡片', '液态玻璃', 'glassSideCard', 'glass.webp', { theme: 'ink', cardAspect: 1.3333, cardSide: 'right', contentSide: 'left', cardWidthPct: 56.25, cardHeightPct: 0, cardInsetPct: 6.35, cardRadiusPct: 1.6, blur: 26, tintAlpha: 0.2, rowSet: 'fiso', rowValueGapPct: 6.0, rowValuePct: 5.6 }, undefined, undefined, undefined, true),
 
   // 色卡
   V('color-1', '色卡 01', '色卡', 'paletteCard', 'color1.webp', { theme: 'white', marginPct: 2, radiusPct: 2, shadow: 0.4, palettePct: 22, paletteRowPct: 120.5, paletteGapPct: 3.6 }, '热门'),
@@ -729,7 +747,9 @@ export const TEMPLATE_VARIANTS: TemplateVariant[] = [
   V('fm-editorial', '杂志编辑', 'FrameMark 精选', 'editorial', null, { theme: 'cream', marginPct: 8.5, footerPct: 14 }),
   V('fm-polaroid', '拍立得', 'FrameMark 精选', 'polaroid', null, { theme: 'paper', marginPct: 5.5, footerPct: 22 }),
   V('fm-film', '胶片齿孔', 'FrameMark 精选', 'film', null, { theme: 'black', grain: 0.16 }),
-  V('fm-vertical', '竖排字幕', 'FrameMark 精选', 'vertical', null, { theme: 'ink' }),
+  // FIX #64b: fm-vertical paints a brand mark (templates.ts vertical render), so
+  // it declares where that mark comes from — this photo's EXIF brand.
+  V('fm-vertical', '竖排字幕', 'FrameMark 精选', 'vertical', null, { theme: 'ink' }, undefined, undefined, undefined, true),
   V('fm-overlay', '电影字幕', 'FrameMark 精选', 'overlay', null, { theme: 'ink' })
 ]
 

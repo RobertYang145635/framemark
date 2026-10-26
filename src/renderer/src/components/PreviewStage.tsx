@@ -105,7 +105,7 @@ export function PreviewStage() {
         </div>
         <div className="stage-tools">
           <button
-            className={`btn btn-ghost btn-sm ${compare ? 'active' : ''}`}
+            className={`btn btn-ghost btn-sm glass-btn glass-ripple glass-press ${compare ? 'active' : ''}`}
             onPointerDown={() => setCompare(true)}
             onPointerUp={() => setCompare(false)}
             onPointerLeave={() => setCompare(false)}
@@ -117,7 +117,7 @@ export function PreviewStage() {
             <span>按住看原图</span>
           </button>
           <button
-            className={`btn btn-ghost btn-sm ${zoom === 'actual' ? 'active' : ''}`}
+            className={`btn btn-ghost btn-sm glass-btn glass-ripple glass-press ${zoom === 'actual' ? 'active' : ''}`}
             onClick={() => setZoom((z) => (z === 'fit' ? 'actual' : 'fit'))}
             type="button"
             title={zoom === 'fit' ? '按实际预览像素显示' : '适应窗口'}
@@ -140,7 +140,7 @@ export function PreviewStage() {
               <ImagePlus size={15} />
               添加照片
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={addRandomSample} type="button">
+            <button className="btn btn-ghost btn-sm glass-btn glass-ripple glass-press" onClick={addRandomSample} type="button">
               载入示例图
             </button>
           </div>

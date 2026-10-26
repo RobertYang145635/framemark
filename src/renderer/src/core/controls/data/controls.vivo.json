@@ -1,0 +1,1347 @@
+{
+  "schema": "framemark-stock-style-controls/v1",
+  "family": "vivo",
+  "generatedBy": "scripts/system-camera/build-controls.cjs",
+  "inputs": [
+    "_research/editing-model/slot-inventory.json",
+    "_research/editing-model/vendor-edit-model.json",
+    "_research/controls-impl/staging/ir-index.json",
+    "_research/controls-impl/staging/vendor-detail.json"
+  ],
+  "records": [
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-zeiss:border_top",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 上框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|themes|cobrandWordmark|dateLine|exifCompositeLine|literalText|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "themeSwatches.theme.style",
+          "kind": "themeSwatches",
+          "label": "主题",
+          "group": "detail",
+          "consumer": "theme.theme",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_ZEISS_TOP-20260317/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_material 主题圈 2 项",
+            "match": "band-gate"
+          },
+          "param": "theme",
+          "default": null,
+          "domain": {
+            "options": [
+              "white",
+              "black",
+              "glass"
+            ],
+            "themeCount": 3
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.model.g1",
+          "kind": "toggle",
+          "label": "显示「model」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L115",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/top0/g0/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.exifCompositeLine.g0",
+          "kind": "toggle",
+          "label": "显示「exifCompositeLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L115",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/bottom0/g0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "pref_camera_watermark_qrcode",
+          "why": "IR 未绘制二维码"
+        },
+        {
+          "key": "(position)",
+          "why": "厂商 subCard 有位置枚举，但该套无可动条带（边框型样式），锚点无消费对象"
+        }
+      ],
+      "notes": "vivo 模板 BORDER_ZEISS_TOP-20260317"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-zeiss:up_down",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 上下框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|themes|cobrandWordmark|dateLine|exifCompositeLine|literalText|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "themeSwatches.theme.style",
+          "kind": "themeSwatches",
+          "label": "主题",
+          "group": "detail",
+          "consumer": "theme.theme",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_ZEISS_UP_DOWN_PHOTO-20260511/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_material 主题圈 3 项",
+            "match": "band-gate"
+          },
+          "param": "theme",
+          "default": null,
+          "domain": {
+            "options": [
+              "white",
+              "black",
+              "glass"
+            ],
+            "themeCount": 3
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.model.g1",
+          "kind": "toggle",
+          "label": "机型行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_ZEISS_UP_DOWN_PHOTO-20260511/unpacked/assets/temp.json",
+            "detail": "pref_camera_water_mark_logo removable:false selectable:false options:0（开关上提到整组，避免留下孤零前后缀）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/top0/g0/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.exifCompositeLine.g0",
+          "kind": "toggle",
+          "label": "参数行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_ZEISS_UP_DOWN_PHOTO-20260511/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_param removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/bottom0/g0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "brand_icon",
+          "why": "vivo 无 isBrandLogo 节点 ⇒ chooseBrandSlot 无消费对象"
+        },
+        {
+          "key": "pref_camera_watermark_live",
+          "why": "IR 未绘制 Live 角标"
+        },
+        {
+          "key": "(position)",
+          "why": "厂商 subCard 有位置枚举，但该套无可动条带（边框型样式），锚点无消费对象"
+        }
+      ],
+      "notes": "vivo 模板 BORDER_ZEISS_UP_DOWN_PHOTO-20260511"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-zeiss:inside",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 内嵌",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|exifCompositeLine|literalText|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.modelLine.g1",
+          "kind": "toggle",
+          "label": "机型行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BLUE_ZEISS_INSIDE_PHOTO-202608013/unpacked/assets/temp.json",
+            "detail": "pref_camera_water_mark_logo removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g1/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.exifCompositeLine.g2",
+          "kind": "toggle",
+          "label": "参数行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BLUE_ZEISS_INSIDE_PHOTO-202608013/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_param removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g1/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BLUE_ZEISS_INSIDE_PHOTO-202608013/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [0]",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BLUE_ZEISS_INSIDE_PHOTO-202608013/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [0]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BLUE_ZEISS_INSIDE_PHOTO-202608013/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [0]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "brand_icon",
+          "why": "vivo 无 isBrandLogo 节点 ⇒ chooseBrandSlot 无消费对象"
+        }
+      ],
+      "notes": "vivo 模板 BLUE_ZEISS_INSIDE_PHOTO-202608013"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-polaroid:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "拍立得 · 签名框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|dateLine|locationLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "机型行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "pref_camera_water_mark_logo removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/bottom0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.dateLine.g2",
+          "kind": "toggle",
+          "label": "日期行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_time removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/bottom0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.locationLine.g3",
+          "kind": "toggle",
+          "label": "地点行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_location removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/bottom0/g3",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [3,0]",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [3,0]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/POLAROID_PHOTO-20260520/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [3,0]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "pref_camera_watermark_material",
+          "why": "厂商有主题圈但 IR themes 为空 ⇒ 无可消费对象"
+        },
+        {
+          "key": "pref_camera_watermark_signature_type",
+          "why": "custom 在该套 IR 无对应节点（厂商有此开关，我们没绘制）"
+        }
+      ],
+      "notes": "vivo 模板 POLAROID_PHOTO-20260520"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-stamp:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "邮票 · 齿孔框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|dateLine|locationLine|modelLine",
+      "source": "manual",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 un_support_edit:true ⇒ 该套不可编辑，不发控件",
+      "notes": "vivo BORDER_STAMP_PHOTO-20260520"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-tone:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "色调 · 右侧栏",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|literalText|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_TONE-20260902/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [1]",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_TONE-20260902/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [1]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/BORDER_TONE-20260902/unpacked/assets/temp.json",
+            "detail": "subCard currentPosition/defaultPosition 枚举 [1]",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.model.right0",
+          "kind": "toggle",
+          "label": "显示「model」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L431",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b1/right0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "pref_camera_watermark_material",
+          "why": "厂商有主题圈但 IR themes 为空 ⇒ 无可消费对象"
+        },
+        {
+          "key": "pref_camera_watermark_qrcode",
+          "why": "IR 未绘制二维码"
+        }
+      ],
+      "notes": "vivo 模板 BORDER_TONE-20260902"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-geographic:overlay",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "地理 · 信息叠加",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|customLine|dateLine|locationLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "slider.customLine.g2",
+          "kind": "slider",
+          "label": "「customLine」不透明度",
+          "group": "content",
+          "consumer": "slider.slotAlpha",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/GEOGRAPHIC_PHOTO-20260428/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_signature_opacity 透明度滑杆 optionCount:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotAlpha",
+          "targetNode": "b0/overlay0/g2",
+          "default": null,
+          "domain": {
+            "min": 0.2,
+            "max": 1,
+            "step": 0.05,
+            "unit": "alpha"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.locationLine.g3",
+          "kind": "toggle",
+          "label": "地点行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/GEOGRAPHIC_PHOTO-20260428/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_location removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g3",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.customLine.g2",
+          "kind": "text",
+          "label": "编辑「customLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/GEOGRAPHIC_PHOTO-20260428/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_user_content selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "机型行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/GEOGRAPHIC_PHOTO-20260428/unpacked/assets/temp.json",
+            "detail": "pref_camera_water_mark_logo removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.dateLine.g1",
+          "kind": "toggle",
+          "label": "日期行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/GEOGRAPHIC_PHOTO-20260428/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_time removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.customLine.g2",
+          "kind": "toggle",
+          "label": "显示「customLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L469",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L469",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L469",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L469",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "SCALE_LEVEL",
+          "why": "尺度调节作用于整卡，已由通用面板 fontScale 承担 ⇒ 不重复发控件"
+        }
+      ],
+      "notes": "vivo 模板 GEOGRAPHIC_PHOTO-20260428"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-postcard:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "明信片 · 邮戳框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|customLine|dateLine|literalText|locationLine|modelLine|vectorArt",
+      "source": "manual",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 un_support_edit:true ⇒ 该套不可编辑，不发控件",
+      "notes": "vivo BORDER_POST_CARD_PHOTO-20260903"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-chinoiserie-loc:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 地点印章",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|dateLine|locationLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.locationLine.g1",
+          "kind": "toggle",
+          "label": "显示「locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L594",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g3/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "(no temp.json)",
+          "why": "厂商模板未导出／模板名无法判定 ⇒ 仅给最小集"
+        }
+      ],
+      "notes": "无厂商 temp.json 映射 ⇒ 最小集（inferred）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-chinoiserie-signet:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 文字印章",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|dateLine|locationLine|modelLine|vectorArt",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.locationLine.g1",
+          "kind": "toggle",
+          "label": "显示「locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L645",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g3/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "(no temp.json)",
+          "why": "厂商模板未导出／模板名无法判定 ⇒ 仅给最小集"
+        }
+      ],
+      "notes": "无厂商 temp.json 映射 ⇒ 最小集（inferred）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-chinoiserie-ink:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 水墨印章",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|dateLine|locationLine|modelLine|vectorArt",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.locationLine.g1",
+          "kind": "toggle",
+          "label": "显示「locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L686",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g3/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "(no temp.json)",
+          "why": "厂商模板未导出／模板名无法判定 ⇒ 仅给最小集"
+        }
+      ],
+      "notes": "无厂商 temp.json 映射 ⇒ 最小集（inferred）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-signature:overlay",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "艺术 · 手写签名",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|customLine|dateLine+locationLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.customLine.g0",
+          "kind": "toggle",
+          "label": "显示「customLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L726",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.dateLine+locationLine.g2",
+          "kind": "toggle",
+          "label": "显示「dateLine+locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L726",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L726",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L726",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L726",
+            "detail": "手工样式（不走 adapter 重导）：条带 b0 overlay/rotation ⇒ 位置锚点最小集；厂商 subCard 无该套位置枚举",
+            "match": "manual"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "(no temp.json)",
+          "why": "厂商模板未导出／模板名无法判定 ⇒ 仅给最小集"
+        }
+      ],
+      "notes": "无厂商 temp.json 映射 ⇒ 最小集（inferred）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-border-photo:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "个性 · 色卡边框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|customLine|dateLine+locationLine|exifCompositeLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.customLine.g0",
+          "kind": "text",
+          "label": "编辑「customLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/STYLE_COLOR_PHOTO-20260508/unpacked/assets/temp.json",
+            "detail": "support_text selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.exifCompositeLine.g0",
+          "kind": "toggle",
+          "label": "参数行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "vivo-subcard",
+            "ref": "_research/extracted/vivo-watermarks/assets/STYLE_COLOR_PHOTO-20260508/unpacked/assets/temp.json",
+            "detail": "pref_camera_watermark_param removable:false selectable:false options:0",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g2/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.dateLine+locationLine.g1",
+          "kind": "toggle",
+          "label": "显示「dateLine+locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L773",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g2/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "pref_camera_watermark_time",
+          "why": "date 在该套 IR 无对应节点（厂商有此开关，我们没绘制）"
+        },
+        {
+          "key": "pref_camera_watermark_live",
+          "why": "IR 未绘制 Live 角标"
+        }
+      ],
+      "notes": "vivo 模板 STYLE_COLOR_PHOTO-20260508"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "vivo-feature-photo:frame",
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "功能 · 参数边框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|dateLine+locationLine|exifCompositeLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "toggle.exifCompositeLine.g0",
+          "kind": "toggle",
+          "label": "显示「exifCompositeLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L813",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g2/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.dateLine+locationLine.g1",
+          "kind": "toggle",
+          "label": "显示「dateLine+locationLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/vivoManual.ts#L813",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true，无 vivo subCard 证据可比对",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g2/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "key": "(no temp.json)",
+          "why": "厂商模板未导出／模板名无法判定 ⇒ 仅给最小集"
+        }
+      ],
+      "notes": "无厂商 temp.json 映射 ⇒ 最小集（inferred）"
+    }
+  ]
+}

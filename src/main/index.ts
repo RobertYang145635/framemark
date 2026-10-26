@@ -49,23 +49,96 @@ async function parseExif(source: string | Buffer): Promise<Record<string, unknow
   }
 }
 
-async function listImagesRecursive(root: string, depth = 0): Promise<string[]> {
-  if (depth > 3) return []
-  const out: string[] = []
-  let entries: import('node:fs').Dirent[] = []
-  try {
-    entries = await fs.readdir(root, { withFileTypes: true }) as import('node:fs').Dirent[]
-  } catch {
-    return out
+/**
+ * Folder-import ceilings (PRODUCT-DEFECTS #58 / defect 1).
+ *
+ * The old scanner hard-coded 500 files + recursion depth 3 and silently returned a
+ * shortened batch, so a photography folder with a few thousand frames lost most of its
+ * photos without a word. The ceilings are now named constants with generous defaults,
+ * overridable per call (`folder:listImages` options) or process-wide (env vars), and
+ * every ceiling that actually bites is counted and reported back to the renderer, which
+ * must surface it — a truncated import can never be silent again.
+ */
+const IMPORT_MAX_FILES_DEFAULT = 5000
+const IMPORT_MAX_DEPTH_DEFAULT = 8
+/** Safety valve for pathological trees: stop walking after this many directory entries. */
+const SCAN_ENTRY_GUARD = 200_000
+
+interface ImportOptions {
+  maxFiles?: number
+  maxDepth?: number
+}
+
+interface FolderScanResult {
+  /** Images handed to the renderer, in the same pre-order traversal as before. */
+  files: string[]
+  /** The ceilings that were in force for this scan (so the UI can quote them). */
+  maxFiles: number
+  maxDepth: number
+  /** Image files found but NOT returned because `maxFiles` was reached. */
+  droppedFiles: number
+  /** Sub-directories found but NOT entered because `maxDepth` was reached. */
+  skippedDirs: number
+  /** True when the safety valve stopped the walk early (counts are then a floor). */
+  guardHit: boolean
+}
+
+function positiveInt(value: unknown, fallback: number): number {
+  const n = typeof value === 'string' ? Number(value) : typeof value === 'number' ? value : NaN
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback
+}
+
+function resolveImportLimits(options?: ImportOptions): { maxFiles: number; maxDepth: number } {
+  const envFiles = positiveInt(process.env['FRAMEMARK_IMPORT_MAX_FILES'], Number.NaN)
+  const envDepth = positiveInt(process.env['FRAMEMARK_IMPORT_MAX_DEPTH'], Number.NaN)
+  return {
+    maxFiles: positiveInt(options?.maxFiles, positiveInt(envFiles, IMPORT_MAX_FILES_DEFAULT)),
+    maxDepth: positiveInt(options?.maxDepth, positiveInt(envDepth, IMPORT_MAX_DEPTH_DEFAULT))
   }
-  for (const e of entries) {
-    if (out.length >= 500) break
-    if (e.name.startsWith('.')) continue
-    const full = path.join(root, e.name)
-    if (e.isDirectory()) out.push(...(await listImagesRecursive(full, depth + 1)))
-    else if (e.isFile() && isImage(e.name)) out.push(full)
+}
+
+function emptyScanResult(limits: { maxFiles: number; maxDepth: number }): FolderScanResult {
+  return { files: [], maxFiles: limits.maxFiles, maxDepth: limits.maxDepth, droppedFiles: 0, skippedDirs: 0, guardHit: false }
+}
+
+async function scanImages(root: string, options?: ImportOptions): Promise<FolderScanResult> {
+  const limits = resolveImportLimits(options)
+  const result = emptyScanResult(limits)
+  let visitedEntries = 0
+
+  const walk = async (dir: string, depth: number): Promise<void> => {
+    let entries: import('node:fs').Dirent[] = []
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true }) as import('node:fs').Dirent[]
+    } catch {
+      return
+    }
+    for (const e of entries) {
+      if (result.guardHit) return
+      if (++visitedEntries > SCAN_ENTRY_GUARD) {
+        result.guardHit = true
+        return
+      }
+      if (e.name.startsWith('.')) continue
+      const full = path.join(dir, e.name)
+      if (e.isDirectory()) {
+        // Depth is counted in nesting levels below the picked folder: the picked folder
+        // itself is level 0, so maxDepth = 8 walks 8 levels of sub-folders and reports
+        // every directory deeper than that instead of skipping it in silence.
+        if (depth + 1 > limits.maxDepth) {
+          result.skippedDirs++
+          continue
+        }
+        await walk(full, depth + 1)
+      } else if (e.isFile() && isImage(e.name)) {
+        if (result.files.length < limits.maxFiles) result.files.push(full)
+        else result.droppedFiles++
+      }
+    }
   }
-  return out
+
+  await walk(root, 0)
+  return result
 }
 
 function sanitizeFilename(name: string): string {
@@ -194,9 +267,10 @@ function registerIpc(): void {
     return r.canceled ? null : r.filePaths[0] ?? null
   })
 
-  ipcMain.handle('folder:listImages', async (_e, folder: string) => {
-    if (typeof folder !== 'string' || !folder) return []
-    return listImagesRecursive(folder)
+  ipcMain.handle('folder:listImages', async (_e, folder: string, options?: ImportOptions) => {
+    const limits = resolveImportLimits(options)
+    if (typeof folder !== 'string' || !folder) return emptyScanResult(limits)
+    return scanImages(folder, options)
   })
 
   ipcMain.handle('image:preview', async (_e, filePath: string) => {

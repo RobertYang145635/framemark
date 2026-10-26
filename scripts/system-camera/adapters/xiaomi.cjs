@@ -571,10 +571,41 @@ async function convertRoot(root, ctx) {
   return { bands, margins: { left: leftPad, top: topThick, right: rightPad, bottom: bottomThick }, photoIndex }
 }
 
+/**
+ * #67 档A — a Xiaomi `wmRes.background[].value` is a `;`-separated list of
+ * directives, not a colour:
+ *
+ *     @color=#FF1C1D1F;@img=background_texture_1.png
+ *
+ * `v.slice(7)` returned everything after `@color=`, so the `;@img=…` tail rode
+ * into the IR: 19 lines of `src/renderer/src/core/system/generated/xiaomiStyles.ts`
+ * (4014/4015 … 4110/4111 plus the style-level `background` at 4140 — all of them
+ * inside the `xiaomi-film:13` block, which runs 4004..4239) carry an illegal CSS
+ * colour. `paint.ts` hands that string to `fillStyle`, Canvas rejects it and keeps
+ * the previous value silently, and `lightSurface()`'s strict `#AARRGGBB` parse also
+ * failed on the tail — so the nine themes of that one style painted the wrong
+ * plate and picked the wrong brand-wordmark cut.
+ *
+ * Take the colour *segment* only, and only when it is a legal hex colour; anything
+ * else keeps the old '#FFFFFF' fallback. Values without a `;` come out of the loop
+ * byte-identical, which is what bounds this change to `stock-xiaomi-film-13`.
+ *
+ * 档B (NOT in this batch): the `@img=` segment is a dropped vendor texture
+ * (小米 19 套 / 42 元素). Parse it beside this function (`themeImage(bg)`), carry it
+ * as `StockTheme.backgroundImage` in `ir.ts`, and draw it with one `drawImage`
+ * ahead of `paint.ts:549`'s plate fill. Separate impact set (~5 cards) and it needs
+ * a layout judgement (texture tiling / alpha) before it ships.
+ */
 function themeColor(bg) {
-  const v = String(bg?.value ?? '')
-  if (v.startsWith('@color=')) return v.slice(7)
-  if (v.startsWith('@algo=')) return '#00000000'
+  const raw = String(bg?.value ?? '')
+  for (const part of raw.split(';')) {
+    const seg = part.trim()
+    if (seg.startsWith('@color=')) {
+      const v = seg.slice(7).trim()
+      return /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v) ? v : '#FFFFFF'
+    }
+    if (seg.startsWith('@algo=')) return '#00000000'
+  }
   return '#FFFFFF'
 }
 

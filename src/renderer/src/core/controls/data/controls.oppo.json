@@ -1,0 +1,4185 @@
+{
+  "schema": "framemark-stock-style-controls/v1",
+  "family": "oppo",
+  "generatedBy": "scripts/system-camera/build-controls.cjs",
+  "inputs": [
+    "_research/editing-model/slot-inventory.json",
+    "_research/editing-model/vendor-edit-model.json",
+    "_research/controls-impl/staging/ir-index.json",
+    "_research/controls-impl/staging/vendor-detail.json"
+  ],
+  "records": [
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 页脚",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|exifCompositeLine|modelLine|shape",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_style_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#7",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2/g1/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-hidden",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_style_1.json",
+            "detail": "visible:false 备用元素 el#12 textSource:model ⇒ 厂商自带换行位",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 2",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_style_2.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 3",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_style_3.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_4",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 4",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText|modelLine",
+      "source": "baseline",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 11 个文字元素里 editable:true 1 处、visible:false 1 处；（editable 全部绑不上：1 处，见 unmappedVendor）；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）",
+      "unmappedVendor": [
+        {
+          "element": 14,
+          "textSource": "time_location",
+          "visible": false,
+          "gravity": "horCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_master_mode_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 大师模式",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|cobrandWordmark|customLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 10 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_style_xpan_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · XPAN",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_style_xpan_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b1/bottom1/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_text_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 1",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 19,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "horCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:hassel_text_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 2",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 7,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 9,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 11,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 页脚",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_style_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 2",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_style_2.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_style_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 3",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_style_3.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b1/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_style_master_mode_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 大师模式",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|cobrandWordmark|customLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 10 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_text_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO 文字 · 1",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 19,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "horCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:lumo_text_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO 文字 · 2",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/lumo_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 7,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 9,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 11,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_brand_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 1",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|exifCompositeLine|houseWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b1/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_brand_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 2",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|dateLine|exifCompositeLine|houseWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_2.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g3",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_2.json",
+            "detail": "editable:true textSource:3(time) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g3",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_brand_5",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 5",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|exifCompositeLine|houseWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_5.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_brand_6",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 6",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_6.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_film_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "胶片 · 1",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_film_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "胶片 · 2",
+      "placement": "with",
+      "rotatedBand": true,
+      "fingerprint": "with|rot|artImage|dateLine+locationLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.dateLine+locationLine.right1",
+          "kind": "text",
+          "label": "编辑「dateLine+locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_2.json",
+            "detail": "editable:true textSource:2(time_location) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_film_realme_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 胶片 · 1",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_realme_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_film_realme_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 胶片 · 2",
+      "placement": "with",
+      "rotatedBand": true,
+      "fingerprint": "with|rot|artImage|dateLine+locationLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.dateLine+locationLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine+locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_realme_2.json",
+            "detail": "editable:true textSource:2(time_location) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_realme_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_realme_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_film_realme_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_masterSign_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 1",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b1/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_masterSign_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 2",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText|shape",
+      "source": "baseline",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 8 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_masterSign_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 3",
+      "placement": "with",
+      "rotatedBand": true,
+      "fingerprint": "with|rot|artImage|dateLine+locationLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.dateLine+locationLine.right1",
+          "kind": "text",
+          "label": "编辑「dateLine+locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_3.json",
+            "detail": "editable:true textSource:2(time_location) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_masterSign_4",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 4",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_masterSign_4.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_retroCamera_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 1",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_retroCamera_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 2",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|artImage|dateLine|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_2.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_2.json",
+            "detail": "editable:true textSource:3(time) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_retroCamera_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 3",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_3.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_retroCamera_4",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 4",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|dateLine|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_4.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g3",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_retroCamera_4.json",
+            "detail": "editable:true textSource:3(time) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g3",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:personalize_retroCamera_5",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 5",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText",
+      "source": "manual",
+      "panel": "generic",
+      "controls": [],
+      "noControlsReason": "厂商 8 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:realme_brand_imprint_inspirationPhoto_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 1",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/realme_brand_imprint_inspirationPhoto_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#6",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom2/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:realme_brand_imprint_inspirationPhoto_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 2",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/realme_brand_imprint_inspirationPhoto_2.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:realme_brand_imprint_inspirationPhoto_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 3",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/realme_brand_imprint_inspirationPhoto_3.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:restrict_local_songkran_holiday_2025_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "宋干节 · 1",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|artImage|greetingLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.greetingLine.g1",
+          "kind": "text",
+          "label": "编辑「greetingLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/restrict_local_songkran_holiday_2025_style_1.json",
+            "detail": "editable:true textSource:5(greeting) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:text_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 1",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "editable:true textSource:0(model) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "editable:true textSource:4(location) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "editable:true textSource:3(time) el#7",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "gravitySegment.modelLine.g0",
+          "kind": "gravitySegment",
+          "label": "「modelLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "厂商给该元素 layoutGravity:leftTop，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay1/g0",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:text_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 2",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.overlay0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "editable:true textSource:0(model) el#2",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "editable:true textSource:4(location) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "editable:true textSource:3(time) el#6",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "gravitySegment.modelLine.overlay0",
+          "kind": "gravitySegment",
+          "label": "「modelLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "厂商给该元素 layoutGravity:horCenter，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay0",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 8,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:text_style_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 3",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|artImage|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "editable:true textSource:0(model) el#2",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "editable:true textSource:4(location) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "editable:true textSource:3(time) el#6",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "gravitySegment.modelLine.g0",
+          "kind": "gravitySegment",
+          "label": "「modelLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "厂商给该元素 layoutGravity:leftTop，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay0/g0",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:video_hassel_text_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 视频 · 1",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 19,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "horCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:video_hassel_text_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 视频 · 2",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_hassel_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 7,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 9,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        },
+        {
+          "element": 11,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:video_text_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 1",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|cobrandWordmark|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_1.json",
+            "detail": "editable:true textSource:4(location) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_1.json",
+            "detail": "editable:true textSource:3(time) el#7",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:video_text_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 2",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_2.json",
+            "detail": "editable:true textSource:4(location) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_2.json",
+            "detail": "editable:true textSource:3(time) el#6",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_2.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 8,
+          "textSource": "custom/literal",
+          "visible": false,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:false 的用户增行，IR 无默认文本/字号），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-gallery:video_text_style_3",
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 3",
+      "placement": "in",
+      "rotatedBand": false,
+      "fingerprint": "in|artImage|dateLine|locationLine|modelLine|shape",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.locationLine.g0",
+          "kind": "text",
+          "label": "编辑「locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_3.json",
+            "detail": "editable:true textSource:4(location) el#4",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g1/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-style-editable",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_3.json",
+            "detail": "editable:true textSource:3(time) el#6",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g1/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/vendor-latest/oppo/assets/watermark_master_styles/video_text_style_3.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:gr_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 上框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_1.json",
+            "detail": "editable:true textSource:0(model) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/top0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/top0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:gr_style_2",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 页脚",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g2",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_2.json",
+            "detail": "editable:true textSource:0(model) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g2",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_2.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:gr_style_3",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 下框",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_3.json",
+            "detail": "editable:true textSource:0(model) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g1",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_3.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:gr_style_4",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 叠加",
+      "placement": "overlay",
+      "rotatedBand": false,
+      "fingerprint": "overlay|cobrandWordmark|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g2",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "editable:true textSource:0(model) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g2",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "gravitySegment.modelLine.g2",
+          "kind": "gravitySegment",
+          "label": "「modelLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "厂商给该元素 layoutGravity:horCenter，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay0/g2",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_4.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:gr_style_5",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 参数边栏",
+      "placement": "with",
+      "rotatedBand": false,
+      "fingerprint": "with|cobrandWordmark|literalText|modelLine",
+      "source": "manual",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/gr_style_5.json",
+            "detail": "editable:true textSource:0(model) el#2",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/right0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "manual",
+          "evidence": {
+            "source": "manual-override",
+            "ref": "src/renderer/src/core/system/styles.ts#L227 const GR5",
+            "detail": "手工样式（不走 adapter 重导）：IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "manual"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/right0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:tone_frame_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "色调边框 · 上",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|exifCompositeLine|literalText",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/tone_frame_style_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#3",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/top0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.imageParams.top0",
+          "kind": "toggle",
+          "label": "显示「imageParams」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/tone_frame_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/top0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 2,
+          "textSource": "custom/literal",
+          "visible": true,
+          "gravity": "topHorCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:true 却没绘制），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:tone_gallery_frame_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "色调边框 · 页脚",
+      "placement": "out",
+      "rotatedBand": false,
+      "fingerprint": "out|exifMetricLine[aperture]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/tone_gallery_frame_style_1.json",
+            "detail": "editable:true textSource:0(model) el#5",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/bottom0/g1/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.model.g1",
+          "kind": "toggle",
+          "label": "显示「model」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/tone_gallery_frame_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/bottom0/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 2,
+          "textSource": "custom/literal",
+          "visible": true,
+          "gravity": "topHorCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:true 却没绘制），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:leica_live_moment_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "徕卡动态",
+      "placement": "overlay",
+      "rotatedBand": false,
+      "fingerprint": "overlay|cobrandWordmark|exifCompositeLine|literalText|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#7",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g3",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "editable:true textSource:0(model) el#8",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g3",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.exifCompositeLine.g2",
+          "kind": "toggle",
+          "label": "显示「exifCompositeLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g2",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.modelLine.g3",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g3",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/leica_live_moment_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ],
+      "unmappedVendor": [
+        {
+          "element": 5,
+          "textSource": "custom/literal",
+          "visible": true,
+          "gravity": "verticalCenter",
+          "why": "厂商 editable 元素在 IR 里无对应节点 ⇒ 结构缺口（visible:true 却没绘制），见 risks.md"
+        }
+      ]
+    },
+    {
+      "schemaVersion": "framemark-stock-style-controls/v1",
+      "styleId": "oppo-camerapro:liquid_glass_style_1",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "液态玻璃",
+      "placement": "overlay",
+      "rotatedBand": false,
+      "fingerprint": "overlay|dateLine|exifCompositeLine|modelLine",
+      "source": "baseline",
+      "panel": "declared",
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "editable:true textSource:0(model) el#2",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "editable:true textSource:1(imageParams(EXIF)) el#7",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay2/g0/g0",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "vendor",
+          "evidence": {
+            "source": "oppo-camerapro-editable",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "editable:true textSource:3(time) el#8",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotText",
+          "targetNode": "b0/overlay2/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "toggle.modelLine.g0",
+          "kind": "toggle",
+          "label": "显示「modelLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.exifCompositeLine.g0",
+          "kind": "toggle",
+          "label": "显示「exifCompositeLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay2/g0/g0",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "toggle.dateLine.g1",
+          "kind": "toggle",
+          "label": "显示「dateLine」行",
+          "group": "content",
+          "consumer": "toggle.slotOff",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-optional-heuristic",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "IR optional:true 但厂商 style JSON 无 editable/visible:false 标志（oppo.cjs 只把 textSource===-1 标 optional）",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotOff",
+          "targetNode": "b0/overlay2/g1",
+          "default": "on",
+          "domain": {
+            "on": true,
+            "off": true
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "gravitySegment.modelLine.g0",
+          "kind": "gravitySegment",
+          "label": "「modelLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "厂商给该元素 layoutGravity:leftVerticalCenter，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay0/g0",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "gravitySegment.exifCompositeLine.g0",
+          "kind": "gravitySegment",
+          "label": "「exifCompositeLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "厂商给该元素 layoutGravity:verticalCenter，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay2/g0/g0",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "gravitySegment.dateLine.g1",
+          "kind": "gravitySegment",
+          "label": "「dateLine」方位",
+          "group": "layout",
+          "consumer": "gravity.slotGravity",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "vendor-enum-universe",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "厂商给该元素 layoutGravity:rightTop，10 值枚举来自 OPPO style JSON 全集；但\"单行改方位\"厂商没有授权字段",
+            "match": "tokenKind-unique"
+          },
+          "param": "slotGravity",
+          "targetNode": "b0/overlay2/g1",
+          "default": null,
+          "domain": {
+            "options": [
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom",
+              "bottomHorCenter"
+            ]
+          },
+          "fidelityRisk": true
+        },
+        {
+          "id": "anchorGrid.bandb0.b0",
+          "kind": "anchorGrid",
+          "label": "水印位置",
+          "group": "layout",
+          "consumer": "anchorGrid.stockAnchor",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockAnchor",
+          "targetBand": "b0",
+          "default": "vendor",
+          "domain": {
+            "options": [
+              "vendor",
+              "leftTop",
+              "leftCenter",
+              "leftBottom",
+              "centerTop",
+              "center",
+              "centerBottom",
+              "rightTop",
+              "rightCenter",
+              "rightBottom"
+            ]
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetX.b0",
+          "kind": "xyOffset",
+          "label": "水平微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetXPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "xyOffset.offsetY.b0",
+          "kind": "xyOffset",
+          "label": "垂直微调",
+          "group": "layout",
+          "consumer": "xyOffset.stockOffset",
+          "provenance": "inferred",
+          "evidence": {
+            "source": "ir-slot-structure",
+            "ref": "_research/extracted/oppo-watermarks/assets/watermark/liquid_glass_style_1.json",
+            "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段",
+            "match": "band-gate"
+          },
+          "param": "stockOffsetYPct",
+          "targetBand": "b0",
+          "default": 0,
+          "domain": {
+            "min": -25,
+            "max": 25,
+            "step": 0.5,
+            "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        }
+      ]
+    }
+  ]
+}

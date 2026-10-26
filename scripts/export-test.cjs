@@ -1,6 +1,8 @@
 const path = require('node:path')
 const fs = require('node:fs')
 const { _electron: electron } = require('playwright-core')
+// #57 PATH-LITERALS: test assets are resolved from a single entry point, not hardcoded root paths
+const { resolveAsset } = require('../../_research/test-assets/resolve-test-asset.cjs')
 
 const outRoot = 'D:/border&watermark/_research/exports'
 const shots = 'D:/border&watermark/_research/shots'
@@ -52,9 +54,9 @@ async function main() {
   }, outRoot)
 
   const inputs = [
-    'D:/border&watermark/P1170883.jpg',
-    'D:/border&watermark/P1181817.jpg',
-    'D:/border&watermark/PYHY5599-已增强-降噪.jpg'
+    resolveAsset('P1170883.jpg'),
+    resolveAsset('P1181817.jpg'),
+    resolveAsset('PYHY5599-已增强-降噪.jpg')
   ]
   await page.setInputFiles('#framemark-file-input', inputs)
   await page.waitForSelector('.thumb', { timeout: 60000 })
@@ -69,7 +71,7 @@ async function main() {
 
   // watermark
   await page.locator('.inspector-tabs button', { hasText: '水印' }).click()
-  await page.locator('.inspector-pane input[type=file]').setInputFiles('D:/border&watermark/水印_黑色.png')
+  await page.locator('.inspector-pane input[type=file]').setInputFiles(resolveAsset('水印_黑色.png'))
   await page.waitForTimeout(1500)
   await page.screenshot({ path: path.join(shots, '05-watermark.png') })
   console.log('watermark stage:', (await page.locator('.stage-title').innerText()).replace(/\n+/g, ' | '))

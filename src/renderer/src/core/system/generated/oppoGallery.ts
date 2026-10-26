@@ -417,6 +417,24 @@ export const OPPO_GALLERY_STYLES = [
                       {
                         "kind": "text",
                         "token": {
+                          "kind": "literal",
+                          "value": "FL"
+                        },
+                        "font": "avenir",
+                        "size": 8.45,
+                        "weight": 500,
+                        "color": "#000000",
+                        "alpha": 0.65,
+                        "tracking": 0.03,
+                        "lineHeight": 11.54,
+                        "align": "left",
+                        "gravity": "leftVerticalCenter",
+                        "margins": {},
+                        "optional": false
+                      },
+                      {
+                        "kind": "text",
+                        "token": {
                           "kind": "template",
                           "value": "@exif=@{focal}"
                         },
@@ -456,7 +474,7 @@ export const OPPO_GALLERY_STYLES = [
                         "kind": "text",
                         "token": {
                           "kind": "literal",
-                          "value": "f/"
+                          "value": "Aperture"
                         },
                         "font": "avenir",
                         "size": 8.45,
@@ -476,7 +494,7 @@ export const OPPO_GALLERY_STYLES = [
                         "kind": "text",
                         "token": {
                           "kind": "template",
-                          "value": "@exif=@{aperture}"
+                          "value": "@exif=f/@{aperture}"
                         },
                         "font": "avenir",
                         "size": 8.45,
@@ -489,6 +507,26 @@ export const OPPO_GALLERY_STYLES = [
                         "gravity": "verticalCenter",
                         "margins": {
                           "left": 8
+                        },
+                        "optional": false
+                      },
+                      {
+                        "kind": "text",
+                        "token": {
+                          "kind": "literal",
+                          "value": "Shutter"
+                        },
+                        "font": "avenir",
+                        "size": 8.45,
+                        "weight": 500,
+                        "color": "#000000",
+                        "alpha": 0.65,
+                        "tracking": 0.03,
+                        "lineHeight": 11.54,
+                        "align": "left",
+                        "gravity": "verticalCenter",
+                        "margins": {
+                          "left": 16
                         },
                         "optional": false
                       },
@@ -657,7 +695,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter"
                     },
                     "font": "sys",
                     "size": 7,
@@ -696,7 +736,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter_intensity"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -737,7 +779,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_soft_light"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -778,7 +822,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_tone"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -819,7 +865,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter_saturation"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -860,7 +908,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_color_temperature"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -901,7 +951,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_cyan_magenta"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -942,7 +994,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_sharpness"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -983,7 +1037,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_vig_enable"
                     },
                     "font": "avenir",
                     "size": 7,
@@ -1065,7 +1121,7 @@ export const OPPO_GALLERY_STYLES = [
     "name": "哈苏 · XPAN",
     "nameEn": "hassel_style_xpan_1",
     "placement": "with",
-    "referenceWidth": 360,
+    "referenceWidth": 291,
     "margins": {
       "left": 15,
       "top": 95,
@@ -1752,7 +1808,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1791,7 +1849,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter_intensity"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1832,7 +1892,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_soft_light"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1873,7 +1935,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_tone"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1914,7 +1978,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_filter_saturation"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1955,7 +2021,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_color_temperature"
                     },
                     "font": "sys",
                     "size": 7,
@@ -1996,7 +2064,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_cyan_magenta"
                     },
                     "font": "sys",
                     "size": 7,
@@ -2037,7 +2107,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_sharpness"
                     },
                     "font": "sys",
                     "size": 7,
@@ -2078,7 +2150,9 @@ export const OPPO_GALLERY_STYLES = [
                   {
                     "kind": "text",
                     "token": {
-                      "kind": "custom"
+                      "kind": "literal",
+                      "value": "",
+                      "slot": "master_model_param_vig_enable"
                     },
                     "font": "sys",
                     "size": 7,
@@ -4773,7 +4847,8 @@ export const OPPO_GALLERY_STYLES = [
               {
                 "kind": "text",
                 "token": {
-                  "kind": "greeting"
+                  "kind": "literal",
+                  "value": "สุขสันต์วันสงกรานต์"
                 },
                 "font": "sys",
                 "size": 10,

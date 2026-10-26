@@ -1,4 +1,4 @@
-export const STOCK_FONT_SYS = '"StockSysSans", "OplusSans", "Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
+export const STOCK_FONT_SYS = '"StockSysSans", "StockThai", "OplusSans", "Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
 export const STOCK_FONT_AVENIR = '"StockAvenir", "StockSysSans", "Inter", "Microsoft YaHei", sans-serif'
 export const STOCK_FONT_BUTLER = '"StockButler", "StockSysSans", "Inter", "Microsoft YaHei", sans-serif'
 export const STOCK_FONT_FZ = '"StockFZ", "StockSysSans", "Microsoft YaHei", "Noto Sans CJK SC", serif'
@@ -31,7 +31,12 @@ export function ensureSystemFonts(): Promise<void> {
       document.fonts.load('400 40px "StockSysSans"'),
       document.fonts.load('500 40px "StockSysSans"'),
       document.fonts.load('700 40px "StockSysSans"'),
+      document.fonts.load('400 40px "StockThai"', 'ส'),
+      document.fonts.load('700 40px "StockThai"', 'ส'),
       document.fonts.load('400 40px "StockAvenir"'),
+      document.fonts.load('500 40px "StockAvenir"'),
+      document.fonts.load('600 40px "StockAvenir"'),
+      document.fonts.load('700 40px "StockAvenir"'),
       document.fonts.load('500 40px "StockButler"'),
       document.fonts.load('700 40px "StockButler"'),
       document.fonts.load('400 40px "StockFZ"'),

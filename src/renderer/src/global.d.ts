@@ -9,10 +9,19 @@ export interface PreviewImageResult {
   exif: Record<string, unknown> | null
 }
 
+export interface FolderScanResult {
+  files: string[]
+  maxFiles: number
+  maxDepth: number
+  droppedFiles: number
+  skippedDirs: number
+  guardHit: boolean
+}
+
 export interface FramemarkAPI {
   pickImages: () => Promise<string[]>
   pickFolder: () => Promise<string | null>
-  listImages: (folder: string) => Promise<string[]>
+  listImages: (folder: string, options?: { maxFiles?: number; maxDepth?: number }) => Promise<FolderScanResult>
   previewImage: (filePath: string) => Promise<PreviewImageResult>
   readImage: (filePath: string) => Promise<{ data: Uint8Array; name: string }>
   defaultExportDir: () => Promise<string>

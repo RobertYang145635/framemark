@@ -28,6 +28,7 @@ import {
   pickTitle,
   fitSize,
   drawFitted,
+  paintedTextScale,
   drawMeta,
   drawSwatches,
   drawPaletteTiles,
@@ -123,6 +124,62 @@ function logoScale(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' 
 
 function metaColor(theme: { fg: string; sub: string }, _env: TemplateRenderEnv): { fg: string; sub: string } {
   return { fg: theme.fg, sub: theme.sub }
+}
+
+/* ------------------------------------------------------------------ *
+ * Measured-extent flow for the hand cards (#2, fix-round2)
+ *
+ * `fm-editorial` and `ticket-1` place their rows at absolute pixel offsets
+ * (`top * 0.30`, `cardH * (0.2395 + i * 0.1208)`). `scene.ts/scaledContext`
+ * scales the FONT with 字号缩放 and leaves the coordinates alone, so a gap that
+ * cleared the ink at 1.0 stops clearing at 1.22 — three SEVERE overlaps. These
+ * two helpers let a row be positioned from the box its text ACTUALLY paints.
+ *
+ * `measureFitted()` runs the same fit ladder `drawFitted()` will run and returns
+ * both the size it lands on and the width that size paints. Because `setFont`
+ * and `measureText` go through the scaled proxy, `width` (and `size * scale`)
+ * are PAINTED pixels — the same canvas space the overlap detector measures in.
+ *
+ * `INK_ABOVE / INK_BELOW` are the em box (0.93 em tall, split 0.72 above /
+ * 0.21 below the alphabetic baseline; 0.465/0.465 around a `middle` baseline).
+ * The detector's `inkBox()` uses exactly this model, so clearing an em box
+ * clears the measurement — and it is conservative against real glyph extents.
+ * ------------------------------------------------------------------ */
+
+const INK_ABOVE = 0.72
+const INK_BELOW = 0.21
+const INK_ABOVE_MIDDLE = 0.465
+
+function inkTops(size: number, baseline: 'alphabetic' | 'middle'): number {
+  return baseline === 'middle' ? size * INK_ABOVE_MIDDLE : size * INK_ABOVE
+}
+
+interface FittedRun {
+  /** the size the ink is painted at (design size x 字号缩放) */
+  size: number
+  /** the width that size paints, in canvas px */
+  width: number
+}
+
+function measureFitted(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  size: number,
+  min: number,
+  family: string,
+  weight: string | number,
+  tracking = 0
+): FittedRun {
+  if (!text) return { size: 0, width: 0 }
+  const scale = paintedTextScale(ctx)
+  const fitted = fitSize(ctx, text, maxWidth, size, min, family, weight, tracking, scale)
+  // identical state to the paint pass in `drawFitted`, so the advance matches
+  setTracking(ctx, tracking * fitted)
+  setFont(ctx, fitted, family, weight)
+  const width = ctx.measureText(text).width
+  resetTracking(ctx)
+  return { size: fitted * scale, width }
 }
 
 const minimal: TemplateDef = {
@@ -629,13 +686,24 @@ const sideTicket: TemplateDef = {
     const sx = boundary + cardW * 0.0342
     const sw = cardW * 0.208
     const lines = String(env.params.stubTitle ?? 'HANG ZHOU').toUpperCase().split(/\s+/).slice(0, 2)
-    for (let i = 0; i < lines.length; i++) {
-      drawFitted(ctx, lines[i], sx, cardY + cardH * (0.2395 + i * 0.1208), sw, cardH * 0.123, fg, {
+    // #2 — the two stub title lines advance by 0.98211 EM of the size they are
+    // painted at, not by an absolute `cardH * 0.1208` step. 0.1208/0.123 is the
+    // pitch this card already declares at fontScale 1 (line step / declared size),
+    // so the 1.0 render is unchanged; but `scaledContext` grows the font and not
+    // the coordinates, so a fixed step kept the 1.0 line height under 1.22 ink
+    // (overlap-check ticket-1 op1xop2, 13.44%). Advancing in em keeps the leading
+    // proportional to the glyphs at every scale.
+    const stubSize = cardH * 0.123
+    const stubPitch = 0.1208 / 0.123
+    let stubY = cardY + cardH * 0.2395
+    for (const lineText of lines) {
+      const painted = drawFitted(ctx, lineText, sx, stubY, sw, stubSize, fg, {
         family: FONT_UI,
         weight: 800,
         baseline: 'middle',
         min: cardH * 0.06
       })
+      stubY += painted * stubPitch
     }
     const dt = dateText(env)
     const stubDate = /^\d{4}-\d{2}-\d{2}$/.test(dt) ? dt.slice(0, 7) : dt
@@ -1631,7 +1699,7 @@ const xiaomiLeica: TemplateDef = {
   description: '按小米相机 Leica 水印类反编译参数实现：短边 /1080 的 168/138 设计高度、左品牌右参数、分隔线、徕卡红标。',
   defaults: { theme: 'white', shadow: 0, radiusPct: 0, logoScale: 5, logoPos: 'right' },
   themes: lightThemes,
-  controls: ['footer'],
+  controls: [], // A4 摘除假控件：见 _research/editing-model-hand/hand-controls-proposal.json.fakeControlInventory
   layout(env) {
     const ratio = Math.min(env.pw, env.ph) / 1080
     const designH = env.text.showDate ? 168 : 138
@@ -1741,7 +1809,7 @@ const paramStack: TemplateDef = {
     logoPos: 'none'
   },
   themes: darkThemes,
-  controls: ['footer'],
+  controls: [], // A4 摘除假控件：见 _research/editing-model-hand/hand-controls-proposal.json.fakeControlInventory
   // simple-1/2/4 references are 1024x785 (1.3045), not the 4:3 audit baseline;
   // variant-scoped canvasAspect crops the export to the reference proportion.
   layout(env) {
@@ -1981,7 +2049,7 @@ const matteOverlay: TemplateDef = {
     logoPos: 'none'
   },
   themes: lightThemes,
-  controls: ['margin', 'radius', 'footer'],
+  controls: ['margin', 'radius'], // A4 摘除假控件：见 _research/editing-model-hand/hand-controls-proposal.json.fakeControlInventory
   layout(env) {
     const S = Math.min(env.pw, env.ph)
     const m = (S * pct(env.params.marginPct, 4.5)) / 100
@@ -2861,19 +2929,33 @@ const editorial: TemplateDef = {
     ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, W, H)
     const issue = `NO. ${String(Math.abs((env.exif.dateTime || '01').split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 3)) % 99).padStart(2, '0')}`
-    drawFitted(ctx, 'FRAMEMARK / PHOTO ANNUAL', m, top * 0.30, W * 0.6, S * 0.013, theme.sub, {
+    const headY = top * 0.30
+    const headRun = measureFitted(ctx, 'FRAMEMARK / PHOTO ANNUAL', W * 0.6, S * 0.013, S * 0.008, FONT_MONO, 500, 0.1)
+    drawFitted(ctx, 'FRAMEMARK / PHOTO ANNUAL', m, headY, W * 0.6, S * 0.013, theme.sub, {
       family: FONT_MONO,
       weight: 500,
       tracking: 0.1,
       min: S * 0.008
     })
-    drawFitted(ctx, issue, W - m, top * 0.30, W * 0.22, S * 0.013, theme.sub, {
+    drawFitted(ctx, issue, W - m, headY, W * 0.22, S * 0.013, theme.sub, {
       align: 'right',
       family: FONT_MONO,
       tracking: 0.06,
       min: S * 0.008
     })
-    drawFitted(ctx, titleOf(env), m, top * 0.62, W - 2 * m, S * 0.072, theme.fg, {
+    // #2 — the headline no longer sits a fixed 0.32*top under the masthead. Its
+    // em box is now placed under the masthead's em box plus a fifth of an em of
+    // clearance, measured at the sizes the ink is actually painted at, so the row
+    // flows instead of colliding as 字号缩放 grows (overlap-check fm-editorial
+    // op0xop2: 60.85% of the masthead box eaten at 1.22). At 1.0 the nominal
+    // offset is already the larger of the two, so the position is unchanged.
+    const titleSize = S * 0.072
+    const titleRun = measureFitted(ctx, titleOf(env), W - 2 * m, titleSize, S * 0.028, FONT_CN, 400, 0)
+    const titleY = Math.max(
+      top * 0.62,
+      headY + headRun.size * INK_BELOW + headRun.size * 0.2 + inkTops(titleRun.size, 'alphabetic')
+    )
+    drawFitted(ctx, titleOf(env), m, titleY, W - 2 * m, titleSize, theme.fg, {
       family: FONT_CN,
       weight: 400,
       min: S * 0.028
@@ -2902,8 +2984,43 @@ const editorial: TemplateDef = {
       [env.exif.lens, exifLine(env.exif)].filter(Boolean).join('  ') || '—',
       formatDateOnly(env.exif.dateTime) || '—'
     ]
-    for (let i = 0; i < 3; i++) {
-      const x = m + i * colW
+    // #2 — the three footer columns flow from measured ink instead of from the
+    // nominal thirds. The OPTICS value is a long lens string: its slot is
+    // `colW - S*0.02`, but the fit ladder bottoms out at `min` and the ink keeps
+    // spilling into the DATE column (overlap-check fm-editorial op7xop9, 34.2%,
+    // new because #69 A5 let that row actually scale for the first time). Each
+    // column now starts at max(nominal, the previous column's measured right edge
+    // + 0.85 em of clearance) and is fitted to the slot that leaves, so nothing
+    // can reach into its neighbour at any 字号缩放. At 1.0 the nominal thirds are
+    // already the larger term, so the positions are the accepted baseline.
+    const labelSizes = labels.map((t) =>
+      measureFitted(ctx, t, colW - S * 0.02, S * 0.011, S * 0.007, FONT_MONO, 500, 0.12)
+    )
+    const valueSizes = values.map((t, i) =>
+      measureFitted(ctx, t, colW - S * 0.02, S * 0.016, S * 0.009, i === 2 ? FONT_MONO : FONT_UI, 500, 0)
+    )
+    const colX: number[] = []
+    for (let i = 0; i < labels.length; i++) {
+      const nominal = m + i * colW
+      if (i === 0) {
+        colX.push(nominal)
+        continue
+      }
+      const prev = Math.max(labelSizes[i - 1].width, valueSizes[i - 1].width)
+      const gap = Math.max(valueSizes[i - 1].size, labelSizes[i - 1].size) * 0.85
+      colX.push(Math.max(nominal, colX[i - 1] + prev + gap))
+    }
+    // the row keeps its right margin: a column the flow pushed past it moves back
+    // (its own measured content is what has to stay inside), and the neighbour it
+    // gave room to keeps the 0.85 em clearance it was placed with
+    const last = colX.length - 1
+    const rightEdge = W - m - Math.max(labelSizes[last].width, valueSizes[last].width)
+    if (rightEdge > colX[last - 1]) colX[last] = Math.min(colX[last], rightEdge)
+    for (let i = 0; i < labels.length; i++) {
+      const x = colX[i]
+      // The slot stays the declared design share (`colW - S*0.02`): with #69 A5 a
+      // slot fits `slot * 字号缩放` of ink, which is exactly how much the row paints,
+      // so re-declaring it here would be shrinking the type to dodge the collision.
       drawFitted(ctx, labels[i], x, footY + S * 0.03, colW - S * 0.02, S * 0.011, theme.sub, {
         family: FONT_MONO,
         weight: 500,
@@ -3001,7 +3118,7 @@ const glass: TemplateDef = {
     ctx.fill()
     roundRectPath(ctx, cardX, cardY, cardW, cardH, r)
     ctx.clip()
-    ctx.filter = `blur(${Math.max(1, S * 0.012)}px)`
+    ctx.filter = `blur(${Math.max(1, S * 0.012 * (pct(env.params.blur, 24) / 24))}px)`
     ctx.drawImage(
       tmp,
       (cardX / W) * tmpW,
@@ -3256,7 +3373,7 @@ const glassPalettePortrait: TemplateDef = {
     ctx.fillStyle = `rgba(0,0,0,${Math.min(0.6, Math.max(0, pct(env.params.tintAlpha, 0.3)))})`
     ctx.fill()
     ctx.clip()
-    ctx.filter = `blur(${Math.max(1, S * 0.012)}px)`
+    ctx.filter = `blur(${Math.max(1, S * 0.012 * (pct(env.params.blur, 24) / 24))}px)`
     ctx.drawImage(
       tmp,
       (panelX / W) * tmpW,
@@ -3495,7 +3612,7 @@ const ticket: TemplateDef = {
   description: '圆角票卡、撕线与条码存根，把照片做成一张纪念票。',
   defaults: { marginPct: 6, radiusPct: 2, shadow: 5, footerPct: 16, theme: 'ink', logoScale: 5 },
   themes: darkThemes,
-  controls: ['margin', 'shadow', 'footer'],
+  controls: ['margin', 'footer'], // A4 摘除假控件：见 _research/editing-model-hand/hand-controls-proposal.json.fakeControlInventory
   layout(env) {
     const S = Math.min(env.pw, env.ph)
     const outer = (S * pct(env.params.marginPct, 6)) / 100

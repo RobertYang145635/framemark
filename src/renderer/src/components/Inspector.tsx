@@ -21,6 +21,7 @@ import { BRANDS } from '../core/brands'
 import { getStockStyle } from '../core/system/styles'
 import type { StockStyle } from '../core/system/ir'
 import { IconButton, Section, Segmented, Slider, Switch } from './ui'
+import { StyleControlsPanel } from './controls/StyleControlsPanel'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: 'original', label: '原始' },
@@ -566,6 +567,10 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
         ) : null}
         {!controls.length && !isMovie && !stockMovable ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
       </Section>
+
+      {/* 逐套差异化面板：控件集合来自 core/controls 的 JSON 记录（106 套 IR 样式一套路子），
+          读写只走 setParam ⇒ design.paramOverrides[variantId]，切换卡片时各套的值互不串味。 */}
+      <StyleControlsPanel />
 
       {themeOptions?.length ? (
         <Section title="主题">

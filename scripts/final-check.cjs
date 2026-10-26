@@ -14,7 +14,10 @@ const { execFileSync } = require('child_process')
 
 const ROOT = 'D:/border&watermark'
 const APP = path.join(ROOT, 'framemark')
-const V4 = path.join(ROOT, '_research/review-164/exports-real-v4')
+// The 175-file set used to live in _research/review-164/exports-real-v4 as a second, byte-identical
+// copy of the read-only signed snapshot (verified per-file SHA256: 175/175 identical, see
+// _research/cleanup/dupe-manifest-2026-10-26.json). That duplicate was deleted; read the snapshot.
+const V4 = path.join(ROOT, '_research/signed-baseline/exports-real-v4-20261026')
 const args = process.argv.slice(2)
 const FS = (args.find((a) => a.startsWith('--fs=')) || '--fs=1').split('=')[1]
 const SKIP_E2E = args.includes('--skip-e2e')
@@ -85,8 +88,13 @@ if (!SKIP_E2E) {
   }
   try {
     const out = run('node', ['scripts/e2e-workflow.mjs'])
-    const m = out.match(/(\d+)\/(\d+)/g)
-    rec('T7', 'workflow E2E', !!m, (m || []).slice(-3).join(' '))
+    // 读 harness 自己打的 JSON 结论（e2e-workflow.mjs:794 在 `=== RESULT ===` 后输出
+    // {assertions,passed,failed,failures,defects,notes}）。旧写法只 match 任意 `n/m`，
+    // 既没验失败数为 0、也会在文案改口径时假红。
+    const i = out.lastIndexOf('=== RESULT ===')
+    const j = i < 0 ? null : JSON.parse(out.slice(i + 14))
+    const ok = !!j && j.failed === 0 && j.assertions > 0 && j.passed === j.assertions && (!j.failures || j.failures.length === 0)
+    rec('T7', 'workflow E2E', ok, j ? `断言 ${j.passed}/${j.assertions} · 失败 ${j.failed} · 缺陷 ${(j.defects || []).length}` : '解析不到 RESULT JSON')
   } catch (e) {
     rec('T7', 'workflow E2E', false, String(e.message).slice(0, 120))
   }
@@ -169,6 +177,38 @@ try {
   }
 } catch (e) {
   rec('T11', '渲染基线对撞', false, String(e.message).slice(0, 160))
+}
+
+// T12/T13: the two instruments built for "desktop and phone must look identical" and
+// "no overlapping glyphs". They read the supervisor-side evidence files; a missing file is
+// a FAIL (an absent measurement never counts as a pass).
+// 最终验收证据钉在 `_research/parity-final/` 这一个目录：每轮收尾把当轮被接受的那份
+// 复制/改名到这里，T12/T13 只认它。以前直接指各条线的工作目录，线一挪文件门禁就假红。
+const PFINAL = path.join(ROOT, '_research', 'parity-final')
+for (const [tag, f] of [['1.00', 'ops-diff-fs10.json'], ['1.22', 'ops-diff-fs122.json']]) {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(PFINAL, f), 'utf8'))
+    const mat = (j.cards || []).filter((c) => c.severity === 'MATERIAL')
+    const ok = j.shared === 175 && mat.length === 0
+    rec(`T12-${tag}`, `两端绘制指令一致（字号 ${tag}）`, ok,
+      `配对 ${j.shared}/175 · 全等 ${j.identical} · 亚像素字距 ${j.diverge - mat.length} · ★实质差异 ${mat.length}${mat.length ? ' → ' + mat.map((c) => `${c.id}(${c.maxDeltaPx}px/${c.maxPctCanvasWidth}%)`).join(', ') : ''}`)
+  } catch (e) {
+    rec(`T12-${tag}`, `两端绘制指令一致（字号 ${tag}）`, false, `★证据文件缺失或不可读: ${String(e.message).slice(0, 120)}`)
+  }
+}
+try {
+  const o = JSON.parse(fs.readFileSync(path.join(PFINAL, 'overlap-report.json'), 'utf8'))
+  const hits = o.hits || []
+  // The detector must prove it can go red: the canary sweep has to contain a SEVERE bucket,
+  // otherwise "0 overlaps" would be a vacuous pass.
+  const canaryRed = (o.canary || []).some((c) => String(c.bucket).toUpperCase().includes('SEVERE'))
+  const ok = hits.length === 0 && canaryRed
+  rec('T13', '叠字几何检测（175 卡 × 各档）', ok,
+    `严重重叠 ${hits.length} 对${hits.length ? ' → ' + hits.slice(0, 6).map((p) => `${p.set}/${p.card} ${Math.round((p.pctOfSmaller || 0) * 100) / 100}%`).join(', ') : ''}` +
+    ` · 亚阈值 ${(o.subThreshold || []).length} · 判据自测 ${canaryRed ? '见过红' : '★没红过=恒绿判据'}` +
+    ` · 未定位 op ${(o.unlocalizedOps || []).length}`)
+} catch (e) {
+  rec('T13', '叠字几何检测（175 卡 × 各档）', false, `★证据文件缺失或不可读: ${String(e.message).slice(0, 120)}`)
 }
 
 const fails = results.filter((r) => r.pass === false)

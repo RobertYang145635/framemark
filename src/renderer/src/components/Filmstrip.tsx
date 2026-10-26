@@ -15,7 +15,7 @@ export function Filmstrip() {
   const desktop = Boolean(window.framemark)
 
   return (
-    <section className="filmstrip">
+    <section className="filmstrip glass">
       <div className="filmstrip-head">
         <div className="filmstrip-title">
           <strong>照片</strong>
@@ -24,19 +24,24 @@ export function Filmstrip() {
         </div>
         <div className="filmstrip-actions">
           {desktop ? (
-            <button className="btn btn-ghost btn-sm hide-sm" onClick={() => void addFolder()} type="button">
+            <button className="btn btn-ghost btn-sm hide-sm glass-btn glass-ripple glass-press" onClick={() => void addFolder()} type="button">
               <FolderOpen size={15} />
               文件夹
             </button>
           ) : null}
-          <button className="btn btn-ghost btn-sm" onClick={() => void pickPhotos()} type="button">
+          <button className="btn btn-ghost btn-sm glass-btn glass-ripple glass-press" onClick={() => void pickPhotos()} type="button">
             <ImagePlus size={15} />
             添加
           </button>
           {photos.length > 1 ? (
-            <button className="btn btn-ghost btn-sm" onClick={() => void exportAll()} type="button">
+            <button
+              className="btn btn-ghost btn-sm glass-btn glass-spot glass-ripple glass-press"
+              onClick={() => void exportAll()}
+              type="button"
+              title={`导出全部 ${photos.length} 张照片（当前模板套用到每张）。顶栏的「导出当前」只写 1 张。`}
+            >
               <Download size={15} />
-              批量
+              批量导出
             </button>
           ) : null}
         </div>
@@ -44,7 +49,7 @@ export function Filmstrip() {
       <div className="thumbs">
         {photos.map((p, i) => (
           <div key={p.id} className={`thumb ${p.id === selectedId ? 'active' : ''}`}>
-            <button className="thumb-main" onClick={() => selectPhoto(p.id)} title={p.name} type="button">
+            <button className="thumb-main glass-press" onClick={() => selectPhoto(p.id)} title={p.name} type="button">
               <img src={p.previewUrl} alt={p.name} loading="lazy" />
               <span className="thumb-index">{String(i + 1).padStart(2, '0')}</span>
             </button>
@@ -58,7 +63,7 @@ export function Filmstrip() {
             </button>
           </div>
         ))}
-        <button className="thumb-add" onClick={() => void pickPhotos()} type="button" title="添加照片">
+        <button className="thumb-add glass-ripple glass-press" onClick={() => void pickPhotos()} type="button" title="添加照片">
           <ImagePlus size={20} />
           <span>添加</span>
         </button>

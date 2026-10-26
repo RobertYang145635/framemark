@@ -4,6 +4,8 @@ import type {
   Design,
   ExportJob,
   InspectorTab,
+  ParamOverrides,
+  ParamValue,
   Params,
   PhotoAsset,
   Preset,
@@ -15,15 +17,49 @@ import { getTemplate } from './core/templates'
 import { getVariant } from './core/variants'
 import { autoLogo, logoAsset } from './core/brands'
 import { photoFromFile, photoFromPath, photoFromUrl, revokePhoto, imageAssetFromFile } from './core/photos'
-import { DEFAULT_TEXT, defaultDesign, hydrateDesign, isValidDesign, makeDesignFromVariant, portablePresetDesign } from './core/presets'
+import {
+  DEFAULT_TEXT,
+  declaredParams,
+  defaultDesign,
+  hydrateDesign,
+  isValidDesign,
+  makeDesignFromVariant,
+  materializeParams,
+  paramBucketKey,
+  portablePresetDesign,
+  pruneOverrides
+} from './core/presets'
 import { getAllPresets, putPreset, removePreset, loadLastDesign, saveLastDesign, downloadJson, readJsonFile } from './core/storage'
 import { exportBatch } from './core/exporter'
 import { saveTextDocument } from './core/gallery'
+import type { FolderScanResult } from './global'
 
 interface Toast {
   id: number
   message: string
   type: 'info' | 'success' | 'error'
+}
+
+interface ImportSummary {
+  added: number
+  failed: number
+}
+
+/**
+ * Turns the main process' folder-scan counters into one honest sentence (PRODUCT-DEFECTS
+ * #58 / defect 1). Returns null when nothing was dropped: the old scanner just returned
+ * fewer files and said nothing, which is exactly what this guards against.
+ */
+function folderScanNotice(scan: FolderScanResult | undefined, imported: number): string | null {
+  if (!scan) return null
+  const dropped = Number(scan.droppedFiles) || 0
+  const skippedDirs = Number(scan.skippedDirs) || 0
+  if (!dropped && !skippedDirs && !scan.guardHit) return null
+  const parts: string[] = []
+  if (dropped) parts.push(`${dropped.toLocaleString('zh-CN')} 张未导入（单次上限 ${scan.maxFiles.toLocaleString('zh-CN')} 张）`)
+  if (skippedDirs) parts.push(`${skippedDirs} 个子目录未扫描（层级上限 ${scan.maxDepth} 层）`)
+  if (scan.guardHit) parts.push('目录过大，扫描已提前停止')
+  return `文件夹只导入了 ${imported.toLocaleString('zh-CN')} 张：${parts.join('；')}`
 }
 
 interface AppState {
@@ -42,7 +78,7 @@ interface AppState {
   toast: Toast | null
   init: () => Promise<void>
   addFiles: (files: File[]) => Promise<void>
-  addPaths: (paths: string[]) => Promise<void>
+  addPaths: (paths: string[]) => Promise<ImportSummary>
   addSample: (url: string, name: string) => Promise<void>
   pickPhotos: () => Promise<void>
   addFolder: () => Promise<void>
@@ -79,6 +115,58 @@ interface AppState {
 
 const isDesktop = typeof window !== 'undefined' && Boolean(window.framemark)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Write one param for the style the design currently points at.
+ *
+ * Both carriers move together:
+ *   - `params` — the flat object every renderer already reads (templates.ts and
+ *     core/system read `env.params.<key>` at ~276 sites, the 全部参数 panel and
+ *     PreviewStage read `design.params`, and two e2e scripts read
+ *     `localStorage['framemark.lastDesign.v1'].params.<key>`), and
+ *   - `paramOverrides[bucket]` — the sparse per-style bucket that makes the value
+ *     survive a style switch.
+ * A key only ever lands in the bucket because the user set it, so an untouched
+ * style has no bucket entry and renders its declared defaults.
+ */
+function writeParam (design: Design, key: string, value: ParamValue): Design {
+  const bucket = paramBucketKey(design)
+  const overrides: ParamOverrides = {
+    ...(design.paramOverrides ?? {}),
+    [bucket]: { ...(design.paramOverrides?.[bucket] ?? {}), [key]: value }
+  }
+  const params = { ...design.params, [key]: value } as Params
+  // A value pushed back onto the declared one is not an override any more: drop it
+  // so the bucket stays sparse (invariant I1) and later default changes still land.
+  const pruned = pruneOverrides(overrides, declaredParams(design), bucket)
+  return { ...design, params, ...(pruned ? { paramOverrides: pruned } : { paramOverrides: undefined }) }
+}
+
+/** Remove one param from BOTH carriers (what `clearLogo` must do to brandLogoFile). */
+function dropParam (design: Design, key: string): Design {
+  const bucket = paramBucketKey(design)
+  const overrides: ParamOverrides = { ...(design.paramOverrides ?? {}) }
+  if (overrides[bucket]) {
+    const { [key]: _dropped, ...rest } = overrides[bucket]
+    if (Object.keys(rest).length) overrides[bucket] = rest
+    else delete overrides[bucket]
+  }
+  const { [key]: _dropped, ...params } = design.params
+  return { ...design, params, paramOverrides: Object.keys(overrides).length ? overrides : undefined }
+}
+
+/**
+ * Re-point a design at another style: rebuild `params` from THAT style's declared
+ * values plus its own bucket only. This is the anti-cross-contamination step —
+ * a key the new style never had an override for falls back to its own default,
+ * it cannot inherit the value the previous style was showing.
+ */
+function rescopeParams (design: Design, variantId: string): Design {
+  const variant = getVariant(variantId)
+  const base = getTemplate(variant.base)
+  const declared = { ...base.defaults, ...(variant.params ?? {}) } as Params
+  return { ...design, templateId: base.id, variantId: variant.id, params: materializeParams(declared, design.paramOverrides, variant.id) }
+}
 
 async function autoApplyLogo(photo: PhotoAsset | undefined): Promise<void> {
   if (!photo) return
@@ -151,8 +239,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addPaths: async (paths) => {
-    if (!paths.length) return
-    if (!window.framemark) return
+    if (!paths.length) return { added: 0, failed: 0 }
+    if (!window.framemark) return { added: 0, failed: 0 }
     set({ busy: `正在读取 ${paths.length} 张照片…` })
     const added: PhotoAsset[] = []
     let failed = 0
@@ -172,6 +260,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     await autoApplyLogo(added[0])
     if (added.length) get().showToast(`已添加 ${added.length} 张照片`, 'success')
     if (failed) get().showToast(`${failed} 张照片读取失败`, 'error')
+    return { added: added.length, failed }
   },
 
   addSample: async (url, name) => {
@@ -200,13 +289,26 @@ export const useAppStore = create<AppState>((set, get) => ({
     const folder = await window.framemark.pickFolder()
     if (!folder) return
     set({ busy: '正在扫描文件夹…' })
-    const files = await window.framemark.listImages(folder)
-    set({ busy: null })
+    let scan: FolderScanResult
+    try {
+      scan = await window.framemark.listImages(folder)
+    } finally {
+      set({ busy: null })
+    }
+    const files = scan?.files ?? []
     if (!files.length) {
-      get().showToast('这个文件夹里没有找到照片', 'error')
+      const notice = folderScanNotice(scan, 0)
+      get().showToast(notice ?? '这个文件夹里没有找到照片', 'error')
       return
     }
-    await get().addPaths(files)
+    const summary = await get().addPaths(files)
+    // A ceiling that bit must stay on screen: show it after addPaths so it is the toast
+    // the user actually reads (PRODUCT-DEFECTS #58 / defect 1 — no silent truncation).
+    const notice = folderScanNotice(scan, summary.added)
+    if (notice) {
+      const tail = summary.failed ? `；另有 ${summary.failed} 张读取失败` : ''
+      get().showToast(`${notice}${tail}`, 'error')
+    }
   },
 
   removePhoto: (id) => {
@@ -223,7 +325,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setVariant: (id) => {
     const variant = getVariant(id)
-    const base = getTemplate(variant.base)
     set((s) => {
       const previous = getVariant(s.design.variantId)
       const previousIsDefault = !s.design.text.title || s.design.text.title === previous.text?.title
@@ -247,11 +348,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       return {
         design: {
-          ...s.design,
-          templateId: base.id,
-          variantId: variant.id,
-          params: { ...base.defaults, ...(variant.params ?? {}) } as Params,
-          text
+          // params is rescoped per style (declared values of THIS variant ⊕ its own
+          // bucket); templateId/variantId are set inside rescopeParams. The `text`
+          // rebuild below is b242f7c's authoritative-flags logic and stays untouched.
+          ...rescopeParams(s.design, variant.id),
+          text,
+          // FIX #64 (other half, not in leica-wordmark-64.patch): `design.logo` is a
+          // GLOBAL field that `rescopeParams()` deliberately does not re-scope, so it
+          // survived a variant switch and handed the previous card's wordmark to
+          // `env.images.logo` — the cross-card state leak behind
+          // `stock-xiaomi-leica-1`. Same rule as `text` above: switching cards
+          // resets, never inherits. Re-applying the SAME variant keeps the user's
+          // live pick (store.ts:444-448), matching the existing isSameVariant branch.
+          logo: isSameVariant ? s.design.logo : null
         },
         activePresetId: null,
         tab: 'template'
@@ -278,15 +387,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  setParam: (key, value) =>
-    set((s) => ({ design: { ...s.design, params: { ...s.design.params, [key]: value } }, activePresetId: null })),
+  setParam: (key, value) => set((s) => ({ design: writeParam(s.design, key, value), activePresetId: null })),
 
   resetVariantParams: () => {
     const s = get()
     const variant = getVariant(s.design.variantId)
     const base = getTemplate(variant.base)
+    const declared = { ...base.defaults, ...(variant.params ?? {}) } as Params
+    const bucket = paramBucketKey(s.design)
+    // "恢复此模板的默认参数" means THIS style's overrides go away; other styles keep theirs.
+    const others: ParamOverrides = { ...(s.design.paramOverrides ?? {}) }
+    delete others[bucket]
     set({
-      design: { ...s.design, params: { ...base.defaults, ...(variant.params ?? {}) } as Params },
+      design: {
+        ...s.design,
+        params: declared,
+        paramOverrides: Object.keys(others).length ? others : undefined
+      },
       activePresetId: null
     })
   },
@@ -327,20 +444,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     // brand's wordmark for the isBrandLogo slots. It is recorded even when the
     // bitmap load fails: the pick then means "brand chosen, no asset" and the
     // stock slots render empty instead of the vendor's baked mark.
+    //
+    // It is an EXPLICIT user choice, so it is bucketed per style: an absent key
+    // means "auto-resolve the wordmark from this photo's EXIF brand" (549a653),
+    // and that derivation must never be inherited by another style.
     try {
       const asset = await logoAsset(file)
       set((s) => ({
         design: {
-          ...s.design,
+          ...writeParam(s.design, 'brandLogoFile', file),
           logo: asset,
-          text: { ...s.design.text, showLogo: true },
-          params: { ...s.design.params, brandLogoFile: file }
+          text: { ...s.design.text, showLogo: true }
         },
         activePresetId: null
       }))
       get().showToast('Logo 已应用', 'success')
     } catch {
-      set((s) => ({ design: { ...s.design, params: { ...s.design.params, brandLogoFile: file } } }))
+      set((s) => ({ design: writeParam(s.design, 'brandLogoFile', file) }))
       get().showToast('Logo 载入失败', 'error')
     }
   },
@@ -363,10 +483,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   clearLogo: () =>
-    set((s) => {
-      const { brandLogoFile: _drop, ...restParams } = s.design.params
-      return { design: { ...s.design, logo: null, params: restParams }, activePresetId: null }
-    }),
+    set((s) => ({
+      // dropParam clears the key from the flat object AND from this style's bucket,
+      // so "no explicit pick" (⇒ auto-match from EXIF) is restored consistently.
+      design: { ...dropParam(s.design, 'brandLogoFile'), logo: null },
+      activePresetId: null
+    })),
 
   setAvatarFile: async (file) => {
     try {

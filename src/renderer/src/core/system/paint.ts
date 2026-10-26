@@ -17,11 +17,29 @@ function scaleFree(f: BrandFree | undefined, k: number): BrandFree | undefined {
   return { left: f.left * k, right: f.right * k, top: f.top * k, bottom: f.bottom * k }
 }
 
-const tintCache = new Map<string, HTMLCanvasElement>()
+/**
+ * Tint canvases are cached BY BITMAP, not by name (FIX #64).
+ *
+ * `resolveBrandSlot()` can hand back the SAME `slot.file` string for two different
+ * bitmaps: the old assets.ts:262 labelled `env.images.logo` (the Inspector's
+ * `design.logo.dataUrl`, re-encoded by `logoAsset()` — scene.ts:108/122) with a
+ * brand key or a logo name, while the registry path labels it with the registry
+ * file. A name-keyed Map served the first card's canvas to every later card
+ * sharing that name, and `tinted()`'s canvas IS the measured source:
+ * `brandSlotRect()` takes iw/ih from `imageSize(raw)` (paint.ts:115-120), so a
+ * substituted wordmark's intrinsic height alone decides the drawn rect. That is
+ * how `stock-xiaomi-leica-1` painted a 1024x70 mark on Android and a 1024x157 one
+ * on desktop (23.00px vs 51.59px of ink, against the vendor's own 58.77px).
+ *
+ * Keying on the decoded image object makes the aliasing impossible. The inner key
+ * still carries `name|colour`, so the non-slot path (key = bakedKey, unique per
+ * style) stays bit-for-bit identical.
+ */
+const tintCache = new WeakMap<HTMLImageElement, Map<string, HTMLCanvasElement>>()
 
 function tinted(img: HTMLImageElement, color: string, key: string): CanvasImageSource {
   const cacheKey = `${key}|${color}`
-  const cached = tintCache.get(cacheKey)
+  const cached = tintCache.get(img)?.get(cacheKey)
   if (cached) return cached
   const w = img.naturalWidth || img.width
   const h = img.naturalHeight || img.height
@@ -34,7 +52,9 @@ function tinted(img: HTMLImageElement, color: string, key: string): CanvasImageS
   ctx.globalCompositeOperation = 'source-in'
   ctx.fillStyle = color
   ctx.fillRect(0, 0, w, h)
-  tintCache.set(cacheKey, canvas)
+  const byImage = tintCache.get(img)
+  if (byImage) byImage.set(cacheKey, canvas)
+  else tintCache.set(img, new Map([[cacheKey, canvas]]))
   return canvas
 }
 
@@ -134,7 +154,7 @@ function gravityAnchor(gravity: string | undefined): { h: 'left' | 'center' | 'r
 /**
  * Absolute floor on the wordmark→sibling gap, so a slot can never paint
  * touching glyphs even when a style declares no margin at all. The real gap
- * comes from the vendor (`brandSlotGapPx`), not from here.
+ * comes from the vendor (`brandSlotGapParts`), not from here.
  */
 const SLOT_GAP_FLOOR = 2
 
@@ -148,26 +168,31 @@ const SLOT_MARGIN_FALLBACK_UNITS = 8
 
 /**
  * The gap the VENDOR leaves between this slot's visible mark and the next
- * element, in output pixels. Two vendor-authored components, no invented
+ * element, as its two vendor-authored components in output pixels — no invented
  * constant:
- *   1. the IR node's own margin on the side the mark grows into — the row
- *      spacing the vendor config declared (`margins.right`, or `left` for a
- *      right-anchored slot), and
- *   2. the transparent padding the vendor's own wordmark bitmap carries on that
- *      side, which `contain` renders *inside* the box, so the vendor's mark
- *      visually ends short of its box edge.
- * Component 2 is what makes the pair read as spaced rather than merely
- * non-intersecting: for `classic 19` it is 8 + 1.7 = 9.7 layout units, while
- * the pre-fix code kept `max(2, h * 0.02)` = 2px — the same distance as the
- * intra-letter spacing inside "Panasonic", which is why the pair read as one
- * run.
+ *   1. `marginPx` — the IR node's own margin on the side the mark grows into,
+ *      the row spacing the vendor config declared (`margins.right`, or `left`
+ *      for a right-anchored slot), converted from layout units by `k`, and
+ *   2. `padPx` — the transparent padding the vendor's own wordmark bitmap
+ *      carries on that side, which `contain` renders *inside* the box, so the
+ *      vendor's mark visually ends short of its box edge.
+ *
+ * The two are returned apart because two different parties pay them (#68).
+ * `layout.ts/annotateBrandFree` measures the room the band really leaves, and
+ * that room *already* includes the declared margin — on `classic 19`
+ * `free.right` is exactly the node's 8 layout units — so a width clamp that
+ * subtracts the margin again charges it twice. `padPx` is derived from `box.w`,
+ * which `scaleRect()` has already multiplied by `k`, so it is output px and must
+ * not be scaled a second time either (the pre-fix `(declared + padSide) * k`
+ * did exactly that: on `classic 19` it billed 30.12px where the vendor leaves
+ * 8 units of margin *plus* 4.2px of bitmap pad).
  */
-function brandSlotGapPx(
+function brandSlotGapParts(
   node: StockImageNode,
   box: StockRect,
   k: number,
   vendorInk: InkBox | null
-): number {
+): { marginPx: number; padPx: number } {
   const m = node.margins
   const preferRight = !/right/i.test(String(node.gravity ?? ''))
   const declared =
@@ -175,9 +200,10 @@ function brandSlotGapPx(
   let padSide = 0
   if (vendorInk && vendorInk.cw > 0) {
     const pad = preferRight ? vendorInk.cw - vendorInk.x - vendorInk.w : vendorInk.x
+    // `box.w` is already an output px width (scaled by `k`) — no `k` here.
     padSide = (pad / vendorInk.cw) * box.w
   }
-  return Math.max(SLOT_GAP_FLOOR, (declared + padSide) * k)
+  return { marginPx: declared * k, padPx: padSide }
 }
 
 /** Ink padding fractions of a bitmap (0 when unmeasured → canvas == ink). */
@@ -201,14 +227,21 @@ export interface BrandSlotMetrics {
   sub?: InkBox | null
   /** alpha bbox of the vendor bitmap this slot replaces, in its own canvas px */
   vendor?: InkBox | null
-  /** vendor-derived minimum gap from the substituted INK to the nearest sibling, output px */
-  gapPx?: number
+  /**
+   * The vendor's declared slot→sibling margin in output px. The band's measured
+   * `free` already leaves this much room, so the width clamp does not subtract
+   * it again (#68); the height clamp, which grows into unmeasured band height,
+   * still does.
+   */
+  marginPx?: number
+  /** the vendor bitmap's own transparent side pad, output px — what the clamp keeps */
+  padPx?: number
 }
 
 /**
  * Breathing room a grown wordmark keeps from the nearest sibling. Kept for the
  * no-metrics fallback path only; real slot renders use the vendor-derived
- * `brandSlotGapPx()`.
+ * `brandSlotGapParts()`.
  */
 function slotSafeGap(box: StockRect): number {
   return Math.max(SLOT_GAP_FLOOR, box.h * 0.02)
@@ -237,7 +270,9 @@ function slotSafeGap(box: StockRect): number {
  *     (padTop == padBottom), so that is the box's vertical centre, which is also
  *     where `textBaseline: 'middle'` puts the model text beside it;
  *  3. **keep the vendor's gap** — growth is clamped on the INK edge, not the
- *     canvas edge, and stops short of the sibling by `brandSlotGapPx()`.
+ *     canvas edge, and stops short of the sibling by the vendor bitmap's own
+ *     side pad (`brandSlotGapParts().padPx`); the declared margin is not
+ *     subtracted again because the band's measured `free` already leaves it.
  *
  * `free` (from `layout.ts/annotateBrandFree`) is the empty room the band really
  * leaves on the growth side. When the ink-height target does not fit, the whole
@@ -275,20 +310,28 @@ export function brandSlotRect(
   }
 
   // 2. clamp on the INK edge so the mark stops short of the sibling
-  const gap = hasInk ? Math.max(metrics?.gapPx ?? 0, SLOT_GAP_FLOOR) : slotSafeGap(box)
+  const parts = hasInk ? { marginPx: metrics?.marginPx ?? 0, padPx: metrics?.padPx ?? 0 } : null
+  const gap = parts ? Math.max(SLOT_GAP_FLOOR, parts.marginPx + parts.padPx) : slotSafeGap(box)
+  // #68: `free` already measures the room the vendor's declared margin leaves,
+  // so the width clamp only charges what the layout has *not* paid for yet — the
+  // bitmap's own side pad, floored at `SLOT_GAP_FLOOR` so a pad-less asset still
+  // never touches glyphs. The height clamp keeps the full `gap`: a mark growing
+  // upwards buys nothing from the margin.
+  const gapExtra = Math.max(SLOT_GAP_FLOOR, gap - (parts?.marginPx ?? 0))
   if (free) {
     // How wide the INK may be: from the edge the vendor's own mark started on to
-    // the sibling limit (`slack - gap`) on the growth side. Note the gap is
-    // *subtracted*, not floored at zero slack — the vendor's declared margin can
-    // be smaller than the required gap, and a grow-only clamp (`max(0, slack -
-    // gap)`) then let the mark eat the whole box and leave only `slack`, which
-    // is exactly how the pre-fix render collapsed 9.7 units of spacing to 2px.
+    // the sibling limit (`slack - gapExtra`) on the growth side. Note the gap is
+    // *subtracted*, not floored at zero slack — the room the vendor declared can
+    // be smaller than the pad we still have to keep, and a grow-only clamp
+    // (`max(0, slack - gap)`) then let the mark eat the whole box and leave only
+    // `slack`, which is exactly how the pre-fix render collapsed 9.7 units of
+    // spacing to 2px.
     const slackX =
       ha === 'center' ? Math.min(free.left, free.right) * 2 : ha === 'left' ? free.right : free.left
     const maxInkW =
       ha === 'right'
-        ? box.w * (1 - ven.r) + slackX - gap
-        : box.w * (1 - ven.l) + slackX - (ha === 'center' ? gap * 2 : gap)
+        ? box.w * (1 - ven.r) + slackX - gapExtra
+        : box.w * (1 - ven.l) + slackX - (ha === 'center' ? gapExtra * 2 : gapExtra)
     const maxW = Math.max(box.w * 0.2, maxInkW) / Math.max(0.05, 1 - sub.l - sub.r)
     const slackY = va === 'top' ? free.bottom : va === 'bottom' ? free.top : Math.min(free.top, free.bottom) * 2
     const maxH = box.h + Math.max(0, slackY - gap)
@@ -374,6 +417,21 @@ function paintVectorNode(ctx: CanvasRenderingContext2D, key: string, box: StockR
   ctx.restore()
 }
 
+/**
+ * 逐套控件面板（`core/controls`，kind='slider' / consumer='slider.slotAlpha'）写进
+ * `design.params` 的**逐节点不透明度乘子**，键 `slotAlpha:<IR 节点路径>`。
+ * absent / 非法 ⇒ null ⇒ 调用点沿用节点自己声明的 alpha（乘 1），默认态逐字节不变。
+ * 面板给的域是 0.2–1 且目标节点自身 alpha 为 1，所以「乘子」与「绝对不透明度」在这条
+ * 控件上等价；实现按契约取乘子语义，绝不覆盖厂商 alpha 之外的量。
+ */
+function slotAlphaMultiplier (env: TemplateRenderEnv, path: string | undefined): number {
+  if (!path || !env.params) return 1
+  const raw = env.params[`slotAlpha:${path}`]
+  const n = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : Number.NaN
+  if (!Number.isFinite(n)) return 1
+  return Math.min(1, Math.max(0, n))
+}
+
 function paintItem(
   env: TemplateRenderEnv,
   item: PlacedItem,
@@ -439,18 +497,21 @@ function paintItem(
       : item.node.tint ?? (!themedAsset && item.node.isBrandLogo ? foreground[item.node.colorIndex ?? 0] : undefined)
     const img = tint ? tinted(raw, cssColor(tint), slot ? brandSlotKey(slot.file) : bakedKey) : raw
     ctx.save()
-    ctx.globalAlpha = item.node.alpha ?? 1
+    ctx.globalAlpha = (item.node.alpha ?? 1) * slotAlphaMultiplier(env, item.path)
     if (slot) {
       // ink-aware fit: match the vendor's *visible* mark height and optical
       // centre, grow into the band's real slack, stop short of the sibling by
-      // the vendor's own declared gap. The vendor bitmap is still loaded for
-      // every slot (it is the baked asset the slot replaces), which is what
-      // makes the vendor's ink metrics available here.
+      // the vendor bitmap's own side pad (the declared margin is already inside
+      // `brandFree`). The vendor bitmap is still loaded for every slot (it is
+      // the baked asset the slot replaces), which is what makes the vendor's ink
+      // metrics available here.
       const vendorImg = env.images[bakedKey]
+      const gapParts = brandSlotGapParts(item.node, box, k, vendorImg ? inkBoxOf(vendorImg) : null)
       const metrics: BrandSlotMetrics = {
         sub: inkBoxOf(raw),
         vendor: vendorImg && vendorImg !== raw ? inkBoxOf(vendorImg) : null,
-        gapPx: brandSlotGapPx(item.node, box, k, vendorImg ? inkBoxOf(vendorImg) : null)
+        marginPx: gapParts.marginPx,
+        padPx: gapParts.padPx
       }
       const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k), metrics)
       ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
@@ -476,7 +537,7 @@ function paintItem(
   // text
   const node = item.node
   ctx.save()
-  ctx.globalAlpha = item.alpha
+  ctx.globalAlpha = item.alpha * slotAlphaMultiplier(env, item.path)
   const themed = node.colorIndex != null ? foreground[node.colorIndex] : undefined
   const rawColor = themed ?? item.color
   ctx.fillStyle = cssColor(onLightSurface ? contrastOnLight(rawColor) : rawColor)

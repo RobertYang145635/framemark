@@ -135,7 +135,23 @@ function tokenOf(content) {
 function convertText(node, ctx) {
   const content = node.content ?? node
   const token = tokenOf(content)
-  if (!token) return null
+  if (!token) {
+    // Tripwire for the exact mechanism that almost got #59 filed as "the whole element class is
+    // dropped": a text node that maps to no token must never vanish without a trace.
+    // `textSource` here is a *CameraPro*-local enum -- the cracked Gallery table
+    // (_research/textsource-enum/enum-map.json) only spans -1 and 0..7 (NONE..FILTER), while this
+    // corpus uses 0 / 1 / 3 / 8 / -1. 8 is the GR filter-parameter family (24 nodes, all of them
+    // in gr_style_5: $.bitmaps[0].content.elements[*].content.textSourcePart = filterTitle ..
+    // particleSizeValue) and is NOT the gallery's 7 = TEXT_SOURCE_FILTER, so nothing here proves
+    // what the next value would mean -- an unhandled bump would silently delete rows.
+    // ts -1 with an empty literal is the documented NONE placeholder (liquid_glass_style_1,
+    // polaroid_pld_style_1) and stays quiet, so today's IR is byte-identical.
+    const src = Number(content.textSource ?? -1)
+    if (src !== -1) {
+      ctx.unsupported.add(`dropped text element: textSource=${src} part=${content.textSourcePart ?? '-'}`)
+    }
+    return null
+  }
   const paint = node.paint ?? content.paint ?? {}
   const optional = token.kind === 'model' || token.kind === 'imageParams' || token.kind === 'time' || token.kind === 'timeLocation'
   const width = num(content.width, 0)
@@ -311,7 +327,15 @@ async function convertStyle(spec) {
     name: spec.name,
     nameEn: spec.en,
     placement,
-    referenceWidth: 360,
+    // #65, same source as the gallery adapter: the vendor's `baseImageSize` IS the reference
+    // width and it is the PHOTO width (proved on the vendor's own photo pair in
+    // _research/scale-audit2/semantics-by-photo.cjs). Read the field instead of assuming.
+    // Scanned corpus (_research/camerapro-adapter/scan.json): all 10 shipped CameraPro JSONs
+    // declare baseImageSize = 360 ($.baseImageSize), so on today's material this is a byte-level
+    // no-op -- the point is that a future asset pack shipping another photo width
+    // (the gallery corpus already has one: hassel_style_xpan_1 = 291) cannot silently
+    // re-introduce the 1.237x scale error this line had.
+    referenceWidth: Number(j.baseImageSize) || 360,
     margins,
     background,
     bands,

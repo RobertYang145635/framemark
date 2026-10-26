@@ -41,10 +41,52 @@
   font-display: swap;
 }
 
+/* SysSans-En 只有拉丁字形；songkran 卡的泰文行原本落到 OS 回退，桌面与手机度量大不同。
+   打包与该机 /system/fonts 同一份 NotoSansThai，两端改为按字形确定性命中，手机侧渲染不变。 */
+@font-face {
+  font-family: 'StockThai';
+  src: url('./assets/system/oppo/fonts/NotoSansThai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'StockThai';
+  src: url('./assets/system/oppo/fonts/NotoSansThai-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* Avenir Next 是一张 12 字面的 TrueType 集合（AvenirNext.ttc）。Chromium 从 CSS
+   `src:` 读集合时只会取 face#0（= Bold），所以旧的那条 `font-weight: 100 900` 让
+   400/500/600 全部渲染成 Bold。这里改为按字面拆开的离散规则：每个权重对应一个
+   单字面文件（由 tools/extract-face.cjs 从同一张 .ttc 里逐表原样抽出，未裁剪字形、
+   未合成、未换家族）。字面来源：#7 Regular / #5 Medium / #2 DemiBold / #0 Bold。 */
 @font-face {
   font-family: 'StockAvenir';
-  src: url('./assets/system/oppo/fonts/AvenirNext.ttc') format('truetype');
-  font-weight: 100 900;
+  src: url('./assets/system/oppo/fonts/AvenirNext-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'StockAvenir';
+  src: url('./assets/system/oppo/fonts/AvenirNext-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'StockAvenir';
+  src: url('./assets/system/oppo/fonts/AvenirNext-DemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'StockAvenir';
+  src: url('./assets/system/oppo/fonts/AvenirNext-Bold.ttf') format('truetype');
+  font-weight: 700;
   font-display: swap;
 }
 
@@ -69,27 +111,169 @@
   font-display: swap;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASS-UI G-0 · 液态玻璃设计 token 层
+   事实源：design/index.html（2766 行 / v1.4-glass / md5 070a803af733c5752f4c95c680acbf86）
+   注释里的 L### 都是原型 CSS 原文行号（值照抄，非印象）。
+   纪律：本层只新增变量与基元类，不改任何组件的 DOM 结构或类名归属。
+   ══════════════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
-  --bg: #0a0a0b;
-  --bg-2: #0f0f11;
-  --panel: #121214;
-  --panel-2: #17171a;
-  --panel-3: #1d1d21;
-  --line: #26262b;
-  --line-2: #34343a;
-  --text: #f1eee7;
-  --text-2: #b9b4aa;
-  --muted: #8d8880;
-  --faint: #66625c;
-  --gold: #d8b477;
-  --gold-2: #ecd29b;
-  --gold-soft: rgba(216, 180, 119, 0.13);
-  --danger: #ef7062;
-  --ok: #8ecb9b;
-  --radius: 14px;
+
+  /* ── 强调色：冷蓝族。--gold / --gold-2 / --gold-soft 整族退场（玻璃方案里没有金色） ── */
+  --accent: #9ed1ff;                       /* L714 */
+  --accent-strong: #c4e4ff;                /* L714 */
+  --accent-ink: #07111f;                   /* L714（任务书写 #07101f，以原型原文 #07111f 为准） */
+  --accent-solid: rgba(250, 252, 255, 0.92);       /* 主按钮＝反向纯白玻璃 L758 */
+  --accent-solid-soft: rgba(245, 249, 255, 0.9);   /* chip / segment 激活态 L769 / L780 */
+  --accent-solid-edge: rgba(255, 255, 255, 0.92);  /* L758 / L769 */
+  --accent-switch: #84c8f4;                /* switch.on 轨道 L786 */
+  /* 衍生色用 color-mix 挂在 --accent 上 ⇒ 亮/暗主题自动跟随，不需要第二套硬编码 */
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, transparent);        /* 替 --gold-soft */
+  --accent-tint: color-mix(in srgb, var(--accent) 26%, transparent);        /* 替硬编码 rgba(216,180,119,.22~.3) */
+  --accent-line: color-mix(in srgb, var(--accent) 42%, transparent);        /* 描边 .35~.55 */
+  --accent-line-strong: color-mix(in srgb, var(--accent) 72%, transparent); /* 选中描边 .7~.8 */
+  --accent-glow: color-mix(in srgb, var(--accent) 25%, transparent);        /* 选中外发光环 .2~.25 */
+
+  /* ── 玻璃表面配方（半透明 + backdrop-filter 才成立） ── */
+  --glass-canvas-bg: #050810;              /* 窗口底色 L714 */
+  --glass-panel-strong: rgba(18, 27, 45, 0.52);    /* 顶栏 L725 */
+  --glass-panel: rgba(16, 25, 42, 0.55);           /* 侧栏 / 胶片条 / sheet L732 */
+  --glass-sheet: rgba(10, 18, 33, 0.62);           /* 移动端 sheet L791 */
+  --glass-export-bar: rgba(10, 18, 33, 0.66);      /* 导出条 L796 */
+  --glass-btn: rgba(255, 255, 255, 0.09);          /* 通用按钮 L752 */
+  --glass-btn-hover: rgba(255, 255, 255, 0.16);    /* 按钮 hover L757 */
+  --glass-input: rgba(2, 8, 20, 0.36);             /* 搜索 / 输入框 L763 */
+  --glass-card: rgba(255, 255, 255, 0.055);        /* 模板卡 / 导出摘要 L770 / L782 */
+  --glass-card-hover: rgba(255, 255, 255, 0.1);    /* 卡 hover L771 */
+  --glass-active: rgba(5, 12, 26, 0.56);           /* inspector tab active L777 */
+  --glass-toast: rgba(16, 27, 47, 0.82);           /* toast L809 */
+  --glass-scrim: rgba(4, 8, 14, 0.52);             /* sheet scrim L1185 */
+  --glass-popover: rgba(9, 16, 30, 0.48);          /* 浮注 / zoom 胶囊 L784 */
+  /* 舞台：它盖在活 canvas 之上 ⇒ 禁用 backdrop-filter ⇒ 取不透明近似色（04 §C 铁律，见下方注释） */
+  --glass-stage: #0a1220;
+  /* 过渡别名用的"浓玻璃"档（原型 tinted 浓度 L824）：中间批次保持可读，G-1 起逐组件换真玻璃 */
+  --glass-panel-tinted: rgba(11, 21, 40, 0.9);
+  --glass-panel-2-tinted: rgba(15, 27, 48, 0.92);
+  --glass-panel-3-tinted: rgba(28, 42, 66, 0.95);
+  --glass-flat-dark: #111b2a;              /* flat / reduced-transparency 暗档 L929 */
+  --glass-flat-light: #f4f8fb;             /* flat / reduced-transparency 亮档 L935 */
+
+  /* ── 边缘三段高光（缺一条就不"液态"） ── */
+  --glass-edge: rgba(255, 255, 255, 0.17);         /* 外框 1px L731 */
+  --glass-edge-strong: rgba(255, 255, 255, 0.22);  /* 顶栏 / 按钮 L723 / L750 */
+  --glass-edge-hi: inset 0 1px 0 rgba(255, 255, 255, 0.35);   /* 顶内高光 L733 */
+  --glass-edge-lo: inset 0 -1px 0 rgba(0, 0, 0, 0.38);        /* 底内暗边 L733 */
+  --glass-active-edge: rgba(255, 255, 255, 0.95);  /* 选中描边 L772 */
+
+  /* ── blur / saturate 档位（整条 filter 作为 token，flat 档才能一句关净） ── */
+  --glass-filter-panel: blur(34px) saturate(150%);      /* L734 */
+  --glass-filter-strong: blur(34px) saturate(155%);     /* 顶栏 / 底部导航 L727 / L803 */
+  --glass-filter-btn: blur(18px) saturate(140%);        /* 按钮 / zoom 胶囊 L755 */
+  --glass-filter-toast: blur(28px);                     /* toast L809 */
+  --glass-filter-scrim: blur(3px);                      /* sheet scrim L1185 */
+  --glass-filter-popover: blur(16px);                   /* 浮注 L784 */
+
+  /* ── 阴影 ── */
+  --glass-shadow-lg: 0 14px 32px rgba(0, 0, 0, 0.18);   /* 面板 L733 */
+  --glass-shadow-md: 0 10px 35px rgba(0, 0, 0, 0.22);   /* 顶栏 L726 */
+  --glass-shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.12);    /* 按钮 L754 */
+
+  /* ── 光斑 / 涟漪 ── */
+  --glass-spot: radial-gradient(80px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.08) 42%, transparent 70%);   /* L601 */
+  --glass-ripple-color: rgba(255, 255, 255, 0.48);                                   /* L584 */
+  --mx: 50%;
+  --my: 50%;
+
+  /* ── 分级圆角（单一 --radius 撑不住玻璃体系） ── */
+  --radius-pill: 999px;        /* 按钮 / chip / segment / tab L749-779 */
+  --radius-chip: 999px;
+  --radius-topbar: 23px;       /* L724 */
+  --radius-panel: 25px;        /* 侧栏 L736 */
+  --radius-stage: 27px;        /* 舞台 L741 */
+  --radius-sheet: 30px;        /* 手机 sheet L791 */
+  --radius-nav: 26px;          /* 底部导航 L800 */
+  --radius-strip: 22px;        /* 胶片条 L748 */
+  --radius-card: 17px;         /* 模板卡 L770 */
+  --radius-input: 13px;        /* 输入框 L762 */
+  --radius-summary: 18px;      /* 导出摘要 L782 */
+  --radius-toast: 16px;        /* toast L809 */
+
+  /* ── 动效令牌（时长/曲线逐条取自 04 文档） ── */
+  --dur-fast: 160ms;      /* 通用按钮过渡 04-A */
+  --dur-spot: 180ms;      /* 光斑淡入 04-A */
+  --dur-lift: 180ms;      /* 模板 hover 抬升 04-A */
+  --dur-base: 200ms;      /* toast 淡入 / 进度 04-A, B6 */
+  --dur-dismiss: 260ms;   /* sheet dismiss / 面板展开 04-B1/B2 */
+  --dur-enter: 240ms;     /* toast 进 / 抽屉 / FLIP 04-B3/B7/B8 */
+  --dur-present: 320ms;   /* sheet present 04-B2 */
+  --dur-press: 340ms;     /* 玻璃按压回弹 04-A */
+  --dur-pop: 350ms;       /* 完成态弹性 scale 04-B6 */
+  --dur-ripple: 620ms;    /* 涟漪 04-A */
+  --ease-spring: cubic-bezier(0.2, 1.45, 0.36, 1);      /* 按压 / 选中 / 完成 */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);           /* sheet present / 面板展开 */
+  --ease-ripple: cubic-bezier(0.18, 0.72, 0.22, 1);     /* 涟漪 */
+  --ease-switch: cubic-bezier(0.34, 1.56, 0.64, 1);     /* 开关圆头 */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in: cubic-bezier(0.55, 0.06, 0.68, 0.19);
+  --transition-glass: background var(--dur-fast) ease, border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;                     /* 04-A 全量 .16s ease */
+  --transition-press: transform var(--dur-press) var(--ease-spring);
+  --transition-spot: opacity var(--dur-spot) ease;
+  --transition-lift: transform var(--dur-lift) var(--ease-out), border-color var(--dur-lift) var(--ease-out),
+    box-shadow var(--dur-lift) var(--ease-out);
+  --transition-sheet-present: transform var(--dur-present) var(--ease-ios), opacity var(--dur-present) var(--ease-ios);
+  --transition-sheet-dismiss: transform var(--dur-dismiss) ease-in, opacity var(--dur-dismiss) ease-in;
+  --transition-disclose: grid-template-rows var(--dur-dismiss) var(--ease-ios), visibility 0s linear var(--dur-dismiss);
+  --transition-switch: background var(--dur-base) ease;                              /* 04-A .24s ease */
+  --transition-knob: transform var(--dur-press) var(--ease-switch);
+  --transition-progress: transform var(--dur-base) var(--ease-out);                  /* 04-B6 用 scaleX 不用 width */
+  --transition-toast-in: transform var(--dur-enter) var(--ease-spring), opacity var(--dur-enter) var(--ease-spring);
+  --transition-toast-out: transform var(--dur-spot) ease-in, opacity var(--dur-spot) ease-in;
+
+  /* ── 文字 / 线 / 底（同名换值：文本 L716、次要 L773、再次 L805、danger 沿用 L34） ── */
+  --bg: var(--glass-canvas-bg);
+  --bg-2: var(--glass-stage);
+  --text: #f5f8ff;
+  --text-2: rgba(226, 237, 251, 0.8);
+  --muted: rgba(218, 230, 250, 0.66);
+  --faint: rgba(203, 218, 240, 0.45);
+  --line: rgba(255, 255, 255, 0.11);
+  --line-2: rgba(255, 255, 255, 0.17);
+  --danger: #e69a8e;
+  --ok: #a8decf;
+  /* Warning must stay warm: gold used to carry the "warning" meaning, and the glass
+     accent is cold blue — reusing it would make warnings look like selected state. */
+  --warn: #e3c07a;
+  --warn-line: rgba(227, 192, 122, 0.34);
+  --warn-soft: rgba(227, 192, 122, 0.12);
+
+  /* ── 窗口极光底色（原型 L718，仅 body 一处使用） ── */
+  --glass-aurora:
+    radial-gradient(100% 120% at 12% 108%, rgba(218, 126, 75, 0.5), transparent 48%),
+    radial-gradient(80% 80% at 88% 8%, rgba(77, 129, 211, 0.55), transparent 52%),
+    linear-gradient(135deg, #17243c 0%, #0a101c 54%, #251f25 100%);
+
+  /* ── 旧变量名过渡别名（191 处 var() 引用点因此不必一次改完；
+        指向"浓玻璃"档，保证 G-1 之前的每个中间态都可读、可独立回滚） ── */
+  --panel: var(--glass-panel-tinted);
+  --panel-2: var(--glass-panel-2-tinted);
+  --panel-3: var(--glass-panel-3-tinted);
+  --radius: 14px;            /* 保持旧值：分级圆角另开新 token，避免全部圆角一次性漂移 */
+
+  /* ── 字体（保留不动：@font-face 与 Canvas 渲染字体与本次重构无关） ── */
   --font: 'Inter', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
   --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-display: -apple-system, 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', sans-serif; /* 玻璃方案标题 L542 */
+
+  /* 裁决点 A：品牌金备用色。当前**没有任何规则引用它**，纯留作一行回退开关：
+     .brand-mark / .progress-track 原为品牌金色（#d8b477→#ecd29b 渐变），
+     已按 01 §7「品牌区 gold 描边改为玻璃高光描边」转冷蓝；若裁决"保留品牌金"，
+     把 --brand-mark-ink / --brand-progress-fill 指到这里即可。 */
+  --brand-gold-legacy: #d8b477;
+  --brand-mark-ink: var(--accent-strong);
+  --brand-progress-fill: linear-gradient(90deg, var(--accent), var(--accent-strong));
 }
 
 * {
@@ -104,10 +288,8 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(216, 180, 119, 0.06), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(80, 110, 150, 0.06), transparent 55%),
-    var(--bg);
+  /* 极光底色＝玻璃身后那层颜色（原型 L718）。原先的金色 radial 随 --gold 族一起退场。 */
+  background: var(--glass-aurora);
   color: var(--text);
   font-family: var(--font);
   font-size: 13px;
@@ -155,25 +337,29 @@ button:disabled {
   display: flex;
   flex-direction: column;
   opacity: 0;
-  transition: opacity 0.25s ease;
+  /* 04-D：应用原有淡入保留，只把写死的 0.25s 换成令牌 */
+  transition: opacity var(--dur-enter) var(--ease-out);
 }
 .app-shell.ready {
   opacity: 1;
 }
 
 /* ── top bar ─────────────────────────────────────────────── */
+/* G-1：顶栏外壳＝G-0 的 .glass-strong 基元（表面 / blur34·155 / 三段边缘 / 23px 胶囊都在基元里），
+   这里只留布局。原先硬编码的 rgba(10,10,11,.86)+blur(18px) 是 G-0 遗留的最后一处，
+   已收编进 --glass-panel-strong / --glass-filter-strong（-webkit- 成对写，见文末基元）。 */
 .topbar {
   flex: 0 0 64px;
   display: flex;
   align-items: center;
   gap: 18px;
   padding: 0 18px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(10, 10, 11, 0.86);
-  backdrop-filter: blur(18px);
-  position: sticky;
-  top: 0;
   z-index: 30;
+}
+.topbar.glass-strong {
+  position: sticky;
+  top: 10px;
+  margin: 10px 12px 0;
 }
 .brand {
   display: flex;
@@ -184,12 +370,12 @@ button:disabled {
 .brand-mark {
   width: 34px;
   height: 34px;
-  color: var(--gold);
+  color: var(--brand-mark-ink);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(216, 180, 119, 0.32);
+  border: 1px solid var(--accent-line);
   border-radius: 10px;
-  background: linear-gradient(145deg, rgba(216, 180, 119, 0.16), rgba(216, 180, 119, 0.03));
+  background: linear-gradient(145deg, var(--accent-tint), var(--accent-soft));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .brand-mark svg {
@@ -254,7 +440,7 @@ button:disabled {
   font-size: 12px;
 }
 .preset-select:focus {
-  border-color: rgba(216, 180, 119, 0.5);
+  border-color: var(--accent-line);
 }
 .preset-caption {
   font-size: 9px;
@@ -270,10 +456,8 @@ button:disabled {
 }
 .topbar-actions .topbar-action {
   height: 34px;
-  padding: 0 9px;
+  padding: 0 12px;
   gap: 5px;
-  border-color: var(--line);
-  background: rgba(255, 255, 255, 0.02);
 }
 .topbar-actions .topbar-action span {
   font-size: 11.5px;
@@ -282,7 +466,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--gold);
+  color: var(--accent);
   font-size: 11px;
   max-width: 160px;
   white-space: nowrap;
@@ -299,14 +483,17 @@ button:disabled {
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(216, 180, 119, 0.28);
-  border-radius: 9px;
-  background: rgba(18, 18, 20, 0.94);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--glass-edge-strong);
+  border-radius: var(--radius-input);
+  background: var(--glass-panel-strong);
+  /* 成对前缀（G-0 遗留 10 处之一） */
+  -webkit-backdrop-filter: var(--glass-filter-strong);
+  backdrop-filter: var(--glass-filter-strong);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-md);
 }
 .debug-assets > span {
   padding: 0 5px;
-  color: var(--gold);
+  color: var(--accent);
   font: 8px/1 var(--font-mono);
   letter-spacing: 0.08em;
 }
@@ -336,16 +523,16 @@ button:disabled {
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+  transition: var(--transition-glass), var(--transition-press);
 }
 .btn:active {
   transform: translateY(1px);
 }
 .btn-primary {
-  background: linear-gradient(180deg, var(--gold-2), var(--gold));
-  color: #1a140a;
+  background: var(--accent-solid);
+  color: var(--accent-ink);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 22px rgba(216, 180, 119, 0.14);
+  box-shadow: 0 8px 22px var(--accent-glow);
 }
 .btn-primary:hover {
   filter: brightness(1.04);
@@ -387,7 +574,7 @@ button:disabled {
   color: var(--muted);
   display: inline-grid;
   place-items: center;
-  transition: all 0.15s ease;
+  transition: var(--transition-glass);
 }
 .icon-btn:hover {
   color: var(--text);
@@ -395,9 +582,9 @@ button:disabled {
   border-color: var(--line);
 }
 .icon-btn.active {
-  color: var(--gold);
-  background: var(--gold-soft);
-  border-color: rgba(216, 180, 119, 0.25);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
 }
 .icon-btn.danger:hover {
   color: var(--danger);
@@ -418,7 +605,7 @@ button:disabled {
   display: block;
   font-size: 9px;
   letter-spacing: 0.16em;
-  color: var(--gold);
+  color: var(--accent);
   text-transform: uppercase;
   font-weight: 600;
 }
@@ -442,9 +629,9 @@ button:disabled {
   margin: 8px 0 0;
   padding: 7px 9px;
   border-radius: 8px;
-  border: 1px solid rgba(216, 180, 119, 0.22);
-  background: rgba(216, 180, 119, 0.07);
-  color: var(--gold-2);
+  border: 1px solid var(--warn-line);
+  background: var(--warn-soft);
+  color: var(--warn);
   font-size: 10.5px;
   line-height: 1.55;
 }
@@ -469,7 +656,10 @@ button:disabled {
 }
 .sidebar {
   min-height: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 180px), var(--panel);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 180px), var(--glass-panel);
+  /* 成对前缀（G-0 遗留 10 处缺 -webkit- 之一） */
+  -webkit-backdrop-filter: var(--glass-filter-panel);
+  backdrop-filter: var(--glass-filter-panel);
 }
 .templates-panel {
   border-right: 1px solid var(--line);
@@ -519,9 +709,10 @@ button:disabled {
 .gallery-search {
   margin: 0 12px 9px;
   height: 32px;
-  border-radius: 9px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.18);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-input);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28), var(--glass-edge-hi);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -563,9 +754,9 @@ button:disabled {
   font-size: 10.5px;
 }
 .gallery-chips button.active {
-  color: #1b150b;
-  background: var(--gold);
-  border-color: var(--gold);
+  color: var(--accent-ink);
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
   font-weight: 600;
 }
 .gallery-subchips {
@@ -606,23 +797,18 @@ button:disabled {
 }
 .tpl-card {
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  background: var(--panel-2);
+  background: var(--glass-card);
   text-align: left;
-  transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
   display: flex;
   flex-direction: column;
 }
+/* hover 抬升（04-A 模板 hover 180ms）与按压（04-B3）走 .glass-hover / .glass-press 基元，
+   这里不再自带写死的 transition/transform；active 态在文末覆盖区赢回。 */
 .tpl-card:hover {
-  border-color: var(--line-2);
-  transform: translateY(-1px);
-  background: var(--panel-3);
-}
-.tpl-card.active {
-  border-color: rgba(216, 180, 119, 0.8);
-  box-shadow: 0 0 0 1px rgba(216, 180, 119, 0.25), 0 8px 24px rgba(0, 0, 0, 0.25);
+  background: var(--glass-card-hover);
 }
 .tpl-art {
   position: relative;
@@ -656,15 +842,18 @@ button:disabled {
   left: 5px;
   padding: 2px 5px;
   border-radius: 4px;
-  background: rgba(10, 10, 11, 0.72);
+  background: var(--glass-stage);
   color: var(--text-2);
   font-size: 8px;
   letter-spacing: 0.04em;
-  backdrop-filter: blur(4px);
+  /* 04 §C 铁律：角标压在模板卡缩略的活 canvas 上（VariantThumb 走 renderDesign，
+     每次换设计全帧重画）⇒ backdrop-filter 会同帧重算，一律转 flat。前缀成对写、取值 none。 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .tpl-badge.hot {
-  background: var(--gold);
-  color: #1b150b;
+  background: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
 }
 .tpl-check {
@@ -674,8 +863,8 @@ button:disabled {
   width: 17px;
   height: 17px;
   border-radius: 999px;
-  background: var(--gold);
-  color: #1b150b;
+  background: var(--accent);
+  color: var(--accent-ink);
   display: grid;
   place-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -750,13 +939,15 @@ button:disabled {
   flex: 1;
   min-height: 0;
   position: relative;
-  border-radius: 16px;
-  border: 1px solid var(--line);
+  border-radius: var(--radius-stage);
+  border: 1px solid var(--glass-edge);
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0b0b0c;
+  /* 舞台玻璃：04 §C 铁律 —— .canvas-frame 及其上任何浮层永远不加 backdrop-filter，
+     所以这里用 --glass-stage 不透明近似色（01 §1 也是这个结论），不挂 .glass 基元。 */
+  background-color: var(--glass-stage);
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.075) 0.7px, transparent 0.7px),
     linear-gradient(135deg, rgba(255, 255, 255, 0.018), transparent 45%);
@@ -826,11 +1017,13 @@ button:disabled {
   transform: translateX(-50%);
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(10, 10, 11, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--glass-stage);
+  border: 1px solid var(--glass-edge-strong);
   font-size: 10px;
-  color: #fff;
-  backdrop-filter: blur(6px);
+  color: var(--text);
+  /* 压在活 canvas 上 ⇒ flat（04 §C 点名 compare-label） */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .render-error {
   position: absolute;
@@ -856,11 +1049,14 @@ button:disabled {
   align-items: center;
   gap: 10px;
   padding: 8px 10px 8px 8px;
-  border-radius: 12px;
-  border: 1px solid rgba(216, 180, 119, 0.22);
-  background: rgba(17, 16, 14, 0.82);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-summary);
+  border: 1px solid var(--accent-line);
+  background: var(--glass-panel-tinted);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-md);
+  /* 压在活 canvas 上 ⇒ flat（04 §C 点名 sample-banner）。--glass-panel-tinted 是 .9 浓度的
+     不透明近似值，去掉模糊后依旧完全可读（05 判据 8：flat 档必须可读）。 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   max-width: calc(100% - 28px);
 }
 .sample-icon {
@@ -869,8 +1065,8 @@ button:disabled {
   border-radius: 8px;
   display: grid;
   place-items: center;
-  color: var(--gold);
-  background: var(--gold-soft);
+  color: var(--accent);
+  background: var(--accent-soft);
   flex: 0 0 auto;
 }
 .sample-banner > span:nth-child(2) {
@@ -899,12 +1095,15 @@ button:disabled {
   align-items: center;
   gap: 7px;
   padding: 6px 11px;
-  border-radius: 999px;
-  background: rgba(12, 12, 13, 0.82);
-  border: 1px solid var(--line-2);
+  border-radius: var(--radius-pill);
+  background: var(--glass-panel-tinted);
+  border: 1px solid var(--glass-edge-strong);
   color: var(--text-2);
   font-size: 10.5px;
-  backdrop-filter: blur(10px);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo);
+  /* 压在活 canvas 上 ⇒ flat（04 §C 点名 busy-pill） */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 .stage-foot {
   flex: 0 0 auto;
@@ -920,11 +1119,10 @@ button:disabled {
 }
 
 /* ── filmstrip ───────────────────────────────────────────── */
+/* G-1：胶片条外壳＝.glass 基元（Filmstrip.tsx 挂的类），这里只留布局 */
 .filmstrip {
   flex: 0 0 auto;
-  border-top: 1px solid var(--line);
-  padding: 9px 16px 11px;
-  background: rgba(13, 13, 15, 0.7);
+  padding: 11px 14px 13px;
 }
 .filmstrip-head {
   display: flex;
@@ -950,7 +1148,7 @@ button:disabled {
   color: var(--faint);
 }
 .job-inline {
-  color: var(--gold) !important;
+  color: var(--accent) !important;
 }
 .filmstrip-actions {
   display: flex;
@@ -969,14 +1167,20 @@ button:disabled {
   flex: 0 0 auto;
   width: 76px;
   height: 58px;
-  border-radius: 8px;
+  border-radius: var(--radius-input);
   overflow: hidden;
-  border: 1px solid var(--line);
-  background: #0b0b0c;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-stage);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-sm);
+  transition: var(--transition-lift);
 }
+/* 04-B3：选中分两层 —— 外圈玻璃描边（box-shadow）+ 内圈 scale（glass-pop），全 transform/opacity */
 .thumb.active {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px rgba(216, 180, 119, 0.25);
+  border-color: var(--glass-active-edge);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), 0 0 0 2px var(--accent-glow), var(--glass-shadow-md);
+}
+.thumb.active .thumb-main img {
+  animation: glass-pop var(--dur-pop) var(--ease-spring) both;
 }
 .thumb-main {
   width: 100%;
@@ -1034,8 +1238,8 @@ button:disabled {
   font-size: 9.5px;
 }
 .thumb-add:hover {
-  color: var(--gold);
-  border-color: rgba(216, 180, 119, 0.4);
+  color: var(--accent);
+  border-color: var(--accent-line);
 }
 .filmstrip-empty {
   color: var(--faint);
@@ -1052,9 +1256,11 @@ button:disabled {
   display: flex;
   gap: 2px;
   padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(18, 18, 20, 0.92);
-  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-edge);
+  background: var(--glass-panel-strong);
+  /* 成对前缀（G-0 遗留 10 处之一）。背后是静态面板，blur 结果可被缓存，不属于活 canvas 区。 */
+  -webkit-backdrop-filter: var(--glass-filter-strong);
+  backdrop-filter: var(--glass-filter-strong);
   z-index: 5;
 }
 .inspector-tabs button {
@@ -1083,7 +1289,7 @@ button:disabled {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--gold);
+  background: var(--accent);
   position: absolute;
   top: 7px;
   right: 12px;
@@ -1187,7 +1393,7 @@ button:disabled {
   font-size: 11px;
 }
 .field input:focus {
-  border-color: rgba(216, 180, 119, 0.45);
+  border-color: var(--accent-line);
 }
 .field input::placeholder {
   color: #57534d;
@@ -1231,7 +1437,7 @@ button:disabled {
   width: 100%;
   height: 16px;
   margin: 0;
-  accent-color: var(--gold);
+  accent-color: var(--accent);
   background: transparent;
   cursor: pointer;
 }
@@ -1316,12 +1522,12 @@ button:disabled {
   transition: transform 0.15s ease, background 0.15s ease;
 }
 .switch.on {
-  background: rgba(216, 180, 119, 0.3);
-  border-color: rgba(216, 180, 119, 0.55);
+  background: var(--accent-switch);
+  border-color: var(--accent-line);
 }
 .switch.on span {
   transform: translateX(14px);
-  background: var(--gold-2);
+  background: var(--accent-ink);
 }
 .theme-swatches {
   display: flex;
@@ -1350,8 +1556,8 @@ button:disabled {
   font-style: normal;
 }
 .theme-swatch.active {
-  border-color: rgba(216, 180, 119, 0.55);
-  background: var(--gold-soft);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
   color: var(--text);
 }
 .toggle-grid {
@@ -1372,9 +1578,9 @@ button:disabled {
   color: var(--text-2);
 }
 .toggle-chip.on {
-  border-color: rgba(216, 180, 119, 0.42);
-  background: var(--gold-soft);
-  color: var(--gold-2);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 .logo-row {
   display: flex;
@@ -1500,8 +1706,8 @@ button:disabled {
   color: var(--faint);
 }
 .wm-drop:hover {
-  border-color: rgba(216, 180, 119, 0.4);
-  color: var(--gold);
+  border-color: var(--accent-line);
+  color: var(--accent);
 }
 .anchor-grid {
   display: grid;
@@ -1532,11 +1738,11 @@ button:disabled {
   background: var(--text-2);
 }
 .anchor-grid button.active {
-  background: var(--gold-soft);
-  border-color: rgba(216, 180, 119, 0.35);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
 }
 .anchor-grid button.active span {
-  background: var(--gold);
+  background: var(--accent);
 }
 .output-dir {
   display: flex;
@@ -1573,13 +1779,15 @@ button:disabled {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(5, 5, 6, 0.65);
-  backdrop-filter: blur(7px);
+  background: var(--glass-scrim);
+  /* 成对前缀（G-0 遗留 10 处之一）。lite 档 --glass-filter-scrim 已是 none（04-B2/B4 拖拽期降级配方）。 */
+  -webkit-backdrop-filter: var(--glass-filter-scrim);
+  backdrop-filter: var(--glass-filter-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 22px;
-  animation: fade-in 0.16s ease;
+  animation: glass-fade-in var(--dur-fast) var(--ease-out) both;
 }
 @keyframes fade-in {
   from {
@@ -1591,12 +1799,11 @@ button:disabled {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  background: #131315;
-  border: 1px solid var(--line-2);
-  border-radius: 18px;
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
   overflow: hidden;
-  animation: modal-in 0.2s ease;
+  /* 表面/边缘/模糊来自 ui.tsx 挂的 .glass 基元；这里只留弹窗专属尺寸与 present 动效（04-B2） */
+  border-radius: var(--radius-summary);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+  animation: glass-enter var(--dur-enter) var(--ease-spring) both;
 }
 @keyframes modal-in {
   from {
@@ -1692,8 +1899,8 @@ button:disabled {
   gap: 5px;
 }
 .brand-card.active {
-  border-color: rgba(216, 180, 119, 0.7);
-  box-shadow: 0 0 0 1px rgba(216, 180, 119, 0.2);
+  border-color: var(--accent-line-strong);
+  box-shadow: 0 0 0 1px var(--accent-glow);
 }
 .brand-card .brand-tile {
   border: 0;
@@ -1723,9 +1930,9 @@ button:disabled {
   border-color: var(--line-2);
 }
 .brand-tone.active {
-  color: var(--gold);
-  border-color: rgba(216, 180, 119, 0.5);
-  background: rgba(216, 180, 119, 0.08);
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 .brand-tile {
   border: 1px solid var(--line);
@@ -1742,8 +1949,8 @@ button:disabled {
   background: var(--panel-3);
 }
 .brand-tile.active {
-  border-color: rgba(216, 180, 119, 0.7);
-  box-shadow: 0 0 0 1px rgba(216, 180, 119, 0.2);
+  border-color: var(--accent-line-strong);
+  box-shadow: 0 0 0 1px var(--accent-glow);
 }
 .brand-logo-box {
   height: 58px;
@@ -1825,8 +2032,8 @@ button:disabled {
   background: rgba(255, 255, 255, 0.015);
 }
 .preset-row.active {
-  border-color: rgba(216, 180, 119, 0.4);
-  background: var(--gold-soft);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 .preset-row > div:first-child {
   display: flex;
@@ -1939,19 +2146,20 @@ button:disabled {
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: rgba(5, 5, 6, 0.7);
-  backdrop-filter: blur(8px);
+  background: var(--glass-scrim);
+  /* 成对前缀（G-0 遗留 10 处之一） */
+  -webkit-backdrop-filter: var(--glass-filter-scrim);
+  backdrop-filter: var(--glass-filter-scrim);
   display: grid;
   place-items: center;
   padding: 22px;
 }
 .export-card {
   width: min(480px, 94vw);
-  border-radius: 16px;
-  border: 1px solid var(--line-2);
-  background: #141416;
   padding: 18px;
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
+  border-radius: var(--radius-summary);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+  animation: glass-enter var(--dur-enter) var(--ease-spring) both;
 }
 .export-card-head {
   display: flex;
@@ -1983,9 +2191,9 @@ button:disabled {
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: var(--gold);
-  background: var(--gold-soft);
-  border: 1px solid rgba(216, 180, 119, 0.25);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
 }
 .export-icon.ok {
   color: var(--ok);
@@ -1999,17 +2207,19 @@ button:disabled {
 }
 .progress-track {
   height: 5px;
-  border-radius: 999px;
-  background: #26262b;
+  border-radius: var(--radius-pill);
+  background: var(--glass-input);
   overflow: hidden;
   margin: 15px 0 13px;
 }
 .progress-track span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #a9824c, var(--gold-2));
+  background: var(--brand-progress-fill);
   border-radius: inherit;
-  transition: width 0.25s ease;
+  /* 时长入令牌。TODO(G-5 / 04-B6)：width 触发布局，应改 transform:scaleX()，
+     但内联 style 在 ExportOverlay.tsx 里按百分比写死宽度，本批只做时长归一，不改几何。 */
+  transition: width var(--dur-base) var(--ease-out);
 }
 .export-card-actions {
   display: flex;
@@ -2047,24 +2257,29 @@ button:disabled {
 .export-errors span {
   color: var(--muted);
 }
+/* G-1 · Toast 玻璃皮 + 进出动画（04-B7）。居中改用 inset + margin-inline，把 transform
+   让给 glass-enter / glass-exit 关键帧；时长与曲线全部走令牌，不写死。 */
 .toast {
   position: fixed;
   z-index: 200;
   bottom: 26px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: fit-content;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 9px 13px;
-  border-radius: 10px;
-  border: 1px solid var(--line-2);
-  background: rgba(20, 20, 22, 0.94);
-  backdrop-filter: blur(12px);
+  border-radius: var(--radius-toast);
+  border: 1px solid var(--glass-edge-strong);
+  background: var(--glass-toast);
+  /* 成对前缀（G-0 遗留 10 处之一） */
+  -webkit-backdrop-filter: var(--glass-filter-toast);
+  backdrop-filter: var(--glass-filter-toast);
   color: var(--text-2);
   font-size: 11px;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
-  animation: toast-in 0.2s ease;
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-md);
   max-width: min(620px, 90vw);
 }
 @keyframes toast-in {
@@ -2094,11 +2309,16 @@ button:disabled {
   z-index: 90;
   pointer-events: none;
   opacity: 0;
-  background: rgba(8, 8, 9, 0.72);
-  backdrop-filter: blur(4px);
+  background: var(--glass-scrim);
+  /* 遮罩覆盖整个 app-shell，身后是活 canvas ⇒ 04 §C 铁律 / 04-B4 与 styles.css 文末基元注释
+     都把 drop-overlay 列为"永远不加 backdrop-filter"。dragover 期间全屏 blur 每帧重算，
+     这里直接取 flat 纯 rgba（B4 的"模糊截图快照"方案留待 G-5）。
+     成对前缀照写，取值 none。 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   display: grid;
   place-items: center;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-spot) var(--ease-out);
 }
 .drop-overlay.show {
   opacity: 1;
@@ -2108,8 +2328,9 @@ button:disabled {
   width: min(460px, 88vw);
   padding: 30px;
   border-radius: 18px;
-  border: 1.5px dashed rgba(216, 180, 119, 0.55);
-  background: rgba(20, 19, 17, 0.9);
+  border: 1.5px dashed var(--accent-line);
+  background: var(--glass-panel-tinted);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2219,7 +2440,7 @@ button:disabled {
     margin: 0 auto;
   }
   .quick-card.active {
-    border-color: rgba(216, 180, 119, 0.7);
+    border-color: var(--accent-line-strong);
   }
   .quick-card em {
     display: block;
@@ -2509,9 +2730,9 @@ button:disabled {
     height: 19px;
   }
   .inspector-tabs button.active {
-    color: var(--gold);
-    background: rgba(216, 180, 119, 0.09);
-    border-color: rgba(216, 180, 119, 0.22);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
   }
   .inspector-tabs .tab-dot {
     top: 8px;
@@ -2765,4 +2986,526 @@ button:disabled {
   font-size: 10px;
   line-height: 1.45;
   color: #77736c;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASS-UI G-0 · 亮/暗双主题机制（纯 CSS，不引第三方主题库）
+   属性挂在 <html data-color-mode="light|dark">：值由 localStorage['framemark.ui.theme']
+   （auto|light|dark）+ prefers-color-scheme 在首帧前决定，逻辑在
+   components/glass/glassTheme.ts（G-0 只提供机制，不改 DOM ⇒ 本批不挂载）。
+   属性缺省＝暗（现网行为），因此本批不会因系统主题而意外翻色。
+   亮档值全部取自原型 L878-897。硬约束：主题只换界面 token，照片像素 / ICC / EXIF /
+   导出颜色一律不受影响（原型自注 L1564 / L1995，01 §2）。
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-color-mode='light'] {
+  color-scheme: light;
+  --accent: #0c668d;              /* L878 */
+  --accent-strong: #084e6e;       /* L878 */
+  --accent-ink: #f7fcff;          /* L878 */
+  --accent-solid: #132f44;        /* primary 反相深蓝 L883 */
+  --accent-solid-soft: #132f44;   /* segment / chip active L895 / L896 */
+  --accent-solid-edge: #132f44;
+  --accent-switch: var(--accent); /* 亮档开关用 accent 本身（L861） */
+  --glass-canvas-bg: #dce5ec;     /* L878 */
+  --glass-panel-strong: rgba(249, 252, 255, 0.54);  /* L880 */
+  --glass-panel: rgba(249, 252, 255, 0.54);         /* L880 */
+  --glass-sheet: rgba(249, 252, 255, 0.66);
+  --glass-export-bar: rgba(249, 252, 255, 0.66);
+  --glass-btn: rgba(255, 255, 255, 0.5);            /* L882 */
+  --glass-btn-hover: rgba(255, 255, 255, 0.78);
+  --glass-input: rgba(255, 255, 255, 0.56);         /* L885 */
+  --glass-card: rgba(255, 255, 255, 0.42);          /* L887 */
+  --glass-card-hover: rgba(255, 255, 255, 0.62);
+  --glass-active: rgba(19, 47, 68, 0.9);            /* L892-896 */
+  --glass-toast: rgba(255, 255, 255, 0.78);
+  --glass-scrim: rgba(215, 226, 235, 0.6);
+  --glass-popover: rgba(251, 249, 244, 0.9);        /* L857 */
+  --glass-stage: #dfe7ee;
+  --glass-panel-tinted: rgba(246, 250, 253, 0.94);
+  --glass-panel-2-tinted: rgba(252, 254, 255, 0.95);
+  --glass-panel-3-tinted: rgba(255, 255, 255, 0.92);
+  --glass-flat-dark: var(--glass-flat-light);
+  --glass-edge: rgba(255, 255, 255, 0.9);           /* L880 */
+  --glass-edge-strong: rgba(255, 255, 255, 0.95);
+  --glass-edge-hi: inset 0 1px 0 rgba(255, 255, 255, 0.95);   /* L880 */
+  --glass-edge-lo: inset 0 -1px 0 rgba(45, 63, 77, 0.12);     /* L880 */
+  --glass-active-edge: #0c668d;                     /* L888 */
+  --glass-filter-panel: blur(38px) saturate(145%);  /* L880 */
+  --glass-filter-strong: blur(38px) saturate(145%);
+  --glass-filter-btn: blur(18px) saturate(140%);
+  --glass-ripple-color: rgba(17, 45, 62, 0.18);     /* L593 */
+  --glass-shadow-lg: 0 16px 38px rgba(51, 76, 92, 0.14);      /* L880 */
+  --glass-shadow-md: 0 10px 28px rgba(51, 76, 92, 0.12);
+  --glass-shadow-sm: 0 5px 14px rgba(51, 75, 92, 0.09);       /* L882 */
+  --bg: var(--glass-canvas-bg);
+  --bg-2: var(--glass-stage);
+  --text: #13222e;                /* L878 */
+  --text-2: #46586a;
+  --muted: #5d6d77;               /* L889 */
+  --faint: rgba(19, 34, 46, 0.45);
+  --line: rgba(19, 47, 68, 0.14);
+  --line-2: rgba(19, 47, 68, 0.22);
+  --danger: #b3423a;
+  --ok: #2f6b52;
+  --warn: #8a5a12;
+  --warn-line: rgba(138, 90, 18, 0.3);
+  --warn-soft: rgba(227, 192, 122, 0.22);
+  --glass-aurora:
+    radial-gradient(110% 120% at 8% 105%, rgba(255, 201, 155, 0.6), transparent 48%),
+    radial-gradient(90% 90% at 92% 0%, rgba(155, 207, 244, 0.68), transparent 54%),
+    linear-gradient(135deg, #edf4f8, #dae3e9 55%, #f4ece2);                        /* L879 */
+}
+
+/* ── 玻璃质量三档（04 §C）：full 默认 / lite 半径减半＋按钮级关 / flat 全不透明兜底 ── */
+html[data-glass-quality='lite'] {
+  --glass-filter-panel: blur(17px) saturate(150%);
+  --glass-filter-strong: blur(17px) saturate(155%);
+  --glass-filter-toast: blur(14px);
+  --glass-filter-scrim: none;   /* 拖拽中 scrim 的 blur 每帧重算 ⇒ 降级为纯 rgba（04-B2/B4） */
+  --glass-filter-popover: blur(8px);
+}
+html[data-glass-quality='lite'] .glass-btn {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;          /* 按钮背后是面板不是活内容，视觉损失最小（04 §C lite） */
+}
+html[data-glass-quality='flat'] {
+  --glass-filter-panel: none;
+  --glass-filter-strong: none;
+  --glass-filter-btn: none;
+  --glass-filter-toast: none;
+  --glass-filter-scrim: none;
+  --glass-filter-popover: none;
+  --glass-panel: var(--glass-flat-dark);
+  --glass-panel-strong: var(--glass-flat-dark);
+  --glass-sheet: var(--glass-flat-dark);
+  --glass-export-bar: var(--glass-flat-dark);
+  --glass-card: rgba(255, 255, 255, 0.06);
+  --glass-input: #0b1524;
+  --glass-toast: #0b1524;
+  --glass-scrim: rgba(4, 8, 14, 0.78);
+  --glass-popover: #0b1524;
+}
+html[data-color-mode='light'][data-glass-quality='flat'] {
+  --glass-panel: var(--glass-flat-light);
+  --glass-panel-strong: var(--glass-flat-light);
+  --glass-sheet: var(--glass-flat-light);
+  --glass-export-bar: var(--glass-flat-light);
+  --glass-input: #ffffff;
+  --glass-toast: #ffffff;
+  --glass-scrim: rgba(215, 226, 235, 0.86);
+  --glass-popover: #ffffff;
+}
+
+/* ── 无障碍三闸（原型 L923-946 / L1166-1169） ── */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-flat-dark);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  html[data-color-mode='light'] .glass,
+  html[data-color-mode='light'] .glass-strong {
+    background: var(--glass-flat-light);
+  }
+  .glass-spot::before {
+    display: none;
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --glass-edge: #eaf4ff;
+    --glass-panel: #0b1524;
+    --glass-panel-strong: #0b1524;
+    --line: #eaf4ff;
+    --line-2: #eaf4ff;
+  }
+  html[data-color-mode='light'] {
+    --glass-edge: #0f2b3d;
+    --glass-panel: #f8fbfd;
+    --glass-panel-strong: #f8fbfd;
+    --line: #0f2b3d;
+    --line-2: #0f2b3d;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASS-UI G-0 · 玻璃表面基元（只新增类，不改既有类；G-1 起逐组件挂上来）
+   ── 性能铁律（04 §C，为什么存在这条）──
+   backdrop-filter 是"把它身后已绘制内容读进纹理再模糊"，每帧重算。本项目中央预览
+   canvas 在每次改设计 / 读 EXIF / 换片时由 renderDesign 全帧重画，那一刻所有"盖在它
+   之上"的玻璃层会在同一帧重算 blur —— 6 个大面 + 10+ 小面同帧 ⇒ 直接掉帧。
+   因此：.canvas-frame（活 canvas 外层）自身与其上任何浮层（busy-pill / compare-label /
+   sample-banner / stage-tools / drop-overlay）**永远不加 backdrop-filter**，
+   舞台一律用 --glass-stage 不透明近似色。
+   另：Electron/Chromium 仍要求 -webkit- 前缀成对写，两者都留。
+   ══════════════════════════════════════════════════════════════════════════ */
+.glass {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-panel);
+  background: var(--glass-panel);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+  -webkit-backdrop-filter: var(--glass-filter-panel);
+  backdrop-filter: var(--glass-filter-panel);
+  transition: var(--transition-glass);
+}
+.glass-strong {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--glass-edge-strong);
+  border-radius: var(--radius-topbar);
+  background: var(--glass-panel-strong);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-md);
+  -webkit-backdrop-filter: var(--glass-filter-strong);
+  backdrop-filter: var(--glass-filter-strong);
+  transition: var(--transition-glass);
+}
+/* 1px 高光上沿 + 暗下沿：只加边缘，不加表面（给已有表面的元素用） */
+.glass-edge {
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo);
+}
+/* 按钮/胶囊级玻璃（原型 ui-btn L749-757）。lite 档整条关掉它的 backdrop-filter：
+   按钮背后是面板而不是活内容，视觉损失最小、每帧成本直接归零（04 §C lite）。 */
+.glass-btn {
+  position: relative;
+  isolation: isolate;
+  border: 1px solid var(--glass-edge-strong);
+  border-radius: var(--radius-pill);
+  background: var(--glass-btn);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--glass-shadow-sm);
+  -webkit-backdrop-filter: var(--glass-filter-btn);
+  backdrop-filter: var(--glass-filter-btn);
+  transition: var(--transition-glass), var(--transition-press);
+}
+.glass-btn:hover {
+  background: var(--glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.glass-edge-strong {
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo);
+}
+/* 外投影三档（与内边缘正交，可单独叠加） */
+.glass-shadow {
+  box-shadow: var(--glass-shadow-md);
+}
+.glass-shadow-sm {
+  box-shadow: var(--glass-shadow-sm);
+}
+.glass-shadow-md {
+  box-shadow: var(--glass-shadow-md);
+}
+.glass-shadow-lg {
+  box-shadow: var(--glass-shadow-lg);
+}
+/* 光斑：跟随指针的 80px 折射高光（原型 L595-601）。--mx/--my 由 glassMotion.ts 写入。
+   仅限按钮/胶囊级小面：大面板做跟随折射＝每帧重绘（04-B9 明列为限制项）。 */
+.glass-spot {
+  position: relative;
+  isolation: isolate;
+  --mx: 50%;
+  --my: 50%;
+}
+.glass-spot::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--glass-spot);
+  transition: opacity var(--dur-spot) ease;
+}
+.glass-spot:hover::before,
+.glass-spot:focus-visible::before,
+.glass-spot.glass-spot-on::before {
+  opacity: 1;
+}
+/* 渐变描边环（原型 L602-608 的 mask-composite 配方）：玻璃身份的最后一层 */
+.glass-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.5;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.05) 32%,
+      rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.24));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+/* 涟漪：点击处扩散的水波。CSS-only 版（:active 中心起）＋ JS 版（glassMotion.ts 在
+   指针位置插入 .glass-ripple-dot，animationend 自删，避免列表连点堆积，04-A） */
+.glass-ripple {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transform-origin: center;
+  transition: var(--transition-press);
+}
+.glass-ripple:active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 200%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--glass-ripple-color),
+      color-mix(in srgb, var(--glass-ripple-color) 36%, transparent) 42%, transparent 70%);
+  animation: glass-ripple var(--dur-ripple) var(--ease-ripple) forwards;
+}
+.glass-ripple-dot {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(0.12);
+  opacity: 0.9;
+  background: radial-gradient(circle, var(--glass-ripple-color),
+      color-mix(in srgb, var(--glass-ripple-color) 36%, transparent) 42%, transparent 70%);
+  animation: glass-ripple var(--dur-ripple) var(--ease-ripple) forwards;
+}
+/* 按压：过冲回弹（原型 .liquid-active L623-629） */
+.glass-press:active,
+.liquid-active {
+  transform: scale(0.96);
+}
+
+/* ── 动效基元：进入 / 退出 / 悬浮 / 面板展开 / sheet / toast / 数字 ── */
+@keyframes glass-ripple {
+  0% { transform: scale(0.12); opacity: 0.86; }
+  65% { opacity: 0.4; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes glass-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes glass-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes glass-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes glass-exit {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(8px) scale(0.96); }
+}
+@keyframes glass-sheet-present {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes glass-sheet-dismiss {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0; }
+}
+@keyframes glass-drawer-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes glass-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes glass-ticker {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.glass-animate-enter {
+  animation: glass-enter var(--dur-enter) var(--ease-spring) both;
+}
+.glass-animate-exit {
+  animation: glass-exit var(--dur-spot) var(--ease-in) both;
+}
+.glass-animate-pop {
+  animation: glass-pop var(--dur-pop) var(--ease-spring) both;
+}
+/* 面板展开/收起（04-B1）：grid-template-rows 0fr→1fr，收起态内容退出 a11y 树 */
+.glass-disclose {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: var(--transition-disclose);
+}
+.glass-disclose > * {
+  overflow: hidden;
+  min-height: 0;
+}
+.glass-disclose[hidden] {
+  display: none;          /* display:grid 会盖掉 UA 的 [hidden]{display:none}，必须显式赢回来 */
+}
+.glass-disclose-collapsed {
+  grid-template-rows: 0fr;
+  visibility: hidden;     /* 收起态内容退出 a11y 树（04-B1） */
+}
+/* hover 抬升（04-A 模板卡 180ms） */
+.glass-hover {
+  transition: var(--transition-lift);
+}
+.glass-hover:hover {
+  transform: translateY(-3px);
+  border-color: var(--glass-active-edge);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+}
+
+/* ── reduced-motion 总闸（04-A 最后一行 / 原型 L1166-1169, L643-653）：全部降级 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  .glass-ripple:active::after,
+  .glass-ripple-dot {
+    display: none !important;   /* JS 侧也会检查 matchMedia，不生成 span（04-B10） */
+  }
+  .glass-press:active,
+  .liquid-active,
+  .glass-hover:hover {
+    transform: none !important; /* 按压不 scale */
+  }
+  .glass-spot::before {
+    transition: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASS-UI G-1 · 外壳换皮覆盖区
+   必须在文件末尾：这里用「同等特异性 + 后置」赢过上面的组件默认值与 G-0 基元，
+   只引用 G-0 已有的 token，不新增任何变量。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 玻璃按钮的填充要赢过 .btn-ghost / .btn-secondary（同为 0,2,0，本区在后）。
+   注意：光斑/涟漪/按压由 .glass-spot / .glass-ripple / .glass-press 基元提供，
+   大面板一律不做跟随折射（04-B9 限制项）。 */
+.btn.glass-btn,
+.icon-btn.glass-btn {
+  background: var(--glass-btn);
+  border-color: var(--glass-edge-strong);
+  color: var(--text-2);
+}
+.btn.glass-btn:hover,
+.icon-btn.glass-btn:hover {
+  background: var(--glass-btn-hover);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--text);
+}
+.btn-ghost.glass-btn.active,
+.icon-btn.glass-btn.active {
+  background: var(--glass-active);
+  border-color: var(--glass-edge-strong);
+  color: var(--text);
+}
+.btn-primary.glass-btn,
+.btn-primary.glass-btn:hover {
+  background: var(--accent-solid);
+  color: var(--accent-ink);
+  border-color: var(--accent-solid-edge);
+  box-shadow: var(--glass-edge-hi), 0 8px 22px var(--accent-glow);
+}
+.btn-sm.glass-btn {
+  height: 28px;
+  padding: 0 11px;
+}
+
+/* 侧栏 / 胶片条胶囊化（左栏挂了 .glass 基元；右栏 Inspector.tsx 本批禁改 ⇒ 同 token 补齐） */
+.templates-panel {
+  border-right: 0;
+}
+.templates-panel.glass {
+  margin: 10px 0 12px 12px;
+}
+.sidebar.inspector-panel {
+  margin: 10px 12px 12px 0;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+}
+.filmstrip.glass {
+  margin: 8px 0 12px;
+  border-radius: var(--radius-strip);
+}
+
+/* 模板卡：hover 抬升走 .glass-hover 基元，选中态在这里赢回（同为 0,2,0 但本区在后） */
+.tpl-card.glass-hover {
+  transition: var(--transition-lift), var(--transition-glass);
+}
+.tpl-card.active {
+  border-color: var(--accent-line-strong);
+  background: var(--glass-card-hover);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), 0 0 0 1px var(--accent-glow), var(--glass-shadow-md);
+}
+
+/* chips：玻璃描边 + 选中反相；不给每个 chip 加 backdrop-filter —— 一屏十几枚小面，
+   收益（面板本来就是不透明底）远不如成本（04 §C 层数×面积）。 */
+.gallery-chips button.glass-ripple {
+  background: var(--glass-btn);
+  border-color: var(--glass-edge);
+  color: var(--muted);
+}
+.gallery-chips button.glass-ripple:hover {
+  background: var(--glass-btn-hover);
+  color: var(--text);
+}
+.gallery-chips button.glass-ripple.active {
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+  color: var(--accent-ink);
+}
+
+/* 主题切换 / 画质降档过渡（G-1 要求项）：data-color-mode 与 data-glass-quality 变更时补间。
+   .glass / .glass-strong / .glass-btn 基元自带 --transition-glass，顶栏·胶片条·弹窗·导出卡
+   走那条；这里补的是没挂基元的外壳面（body 极光底色是 background-image，不可插值 ⇒ 允许硬切，
+   04-D 记录）。canvas 与照片区不在此列 —— 主题只换界面 token，不得给预览像素染色（01 §2 硬约束）。 */
+.app-shell,
+.sidebar,
+.canvas-viewport,
+.inspector-tabs,
+.stage-foot,
+.gallery-search {
+  transition: background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    -webkit-backdrop-filter var(--dur-base) var(--ease-out),
+    backdrop-filter var(--dur-base) var(--ease-out);
+}
+.sidebar {
+  /* .sidebar 的底色写在 background-image 渐变层里，主题切换时靠上面这条过渡补间
+     不成立（渐变不可插值）⇒ 只过渡边缘与投影，避免每帧重算整层 */
+  transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* 面板展开/收起（04-B1）：本批能合法挂载的是"出现"方向 —— 筛选切换后重挂的分组与厂商
+   subchips 用 glass-enter 进入；反向收起需要元素常驻 + grid-template-rows 0fr→1fr，
+   而带收起语义的 AdvancedParams / sheet-grabber 三态都在 Inspector.tsx（本批禁改）。
+   TODO(G-4/G-5)：把它们换成 .glass-disclose / .glass-disclose-collapsed。 */
+.gallery-group.glass-animate-enter {
+  transform-origin: top center;
+}
+.gallery-subchips.glass-animate-enter {
+  margin-top: 0;
+}
+
+/* 导出完成态图标：弹性 scale（04-B6）；reduced-motion 下由文末总闸归零 */
+.export-icon.glass-animate-pop {
+  border-radius: var(--radius-pill);
 }

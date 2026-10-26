@@ -82,7 +82,26 @@ function templateText(template: string, env: StockEnv): string {
   return s.trim()
 }
 
-export function stockTokenText(token: StockToken, env: StockEnv): string {
+/**
+ * 控件层（`core/controls`，逐套编辑面板）写进 `design.params` 的逐节点文字覆盖。
+ * 键名与 `core/controls/index.ts/paramKeyOf` 逐字对齐：`slotText:<IR 节点路径>`。
+ * absent / 空串 ⇒ null ⇒ 走原 token 逻辑（默认态逐字节不变）。
+ */
+function slotTextOverride (env: StockEnv, nodePath: string | undefined): string | null {
+  if (!nodePath || !env.params) return null
+  const raw = env.params[`slotText:${nodePath}`]
+  return typeof raw === 'string' && raw.length > 0 ? raw : null
+}
+
+/**
+ * 一个 token 在这张照片上该显示什么文字。
+ * `nodePath` 是该节点在 IR 里的路径（`b0/bottom0/g2` … 与
+ * `scripts/system-camera/build-controls.cjs` 的路径域同一套约定），
+ * 由 `layout.ts` 在遍历时算出来并传进来；不传（老调用点）⇒ 行为与今天完全一致。
+ */
+export function stockTokenText(token: StockToken, env: StockEnv, nodePath?: string): string {
+  const override = slotTextOverride(env, nodePath)
+  if (override !== null) return override
   switch (token.kind) {
     case 'literal':
       return token.value ?? ''

@@ -29,7 +29,10 @@ const artDir = path.join(runDir, 'artifacts')
 const fixtureA = path.join(workspace, '_research', 'test-assets', 'ratio-study', '4x3.jpg')
 const fixtureB = path.join(workspace, '_research', 'test-assets', 'contax-t2.jpg')
 const wmPng = path.join(workspace, '_research', 'test-assets', 'wm-white.png')
-const wmPngFallback = path.join(workspace, '水印_白色.png')
+// #57 PATH-LITERALS: the fallback used to be a hardcoded workspace-root absolute path.
+// Resolved lazily in main() so module load never throws.
+const { resolveAsset: resolveTestAsset } = require('../../_research/test-assets/resolve-test-asset.cjs')
+const wmPngFallbackName = '水印_白色.png'
 const bigA = path.join(workspace, '_research', 'test-assets', 'p1181817.jpg')
 const bigB = path.join(workspace, '_research', 'test-assets', 'p1170883.jpg')
 
@@ -280,7 +283,7 @@ async function main() {
   }
   let wmFile = wmPng
   if (!fs.existsSync(wmFile)) {
-    wmFile = wmPngFallback
+    wmFile = resolveTestAsset(wmPngFallbackName)
     notes.push(`wm-white.png missing; used ${wmFile}`)
   }
   notes.push('contax-t2.jpg found and used as the second EXIF fixture (no substitution).')
