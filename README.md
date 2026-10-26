@@ -10,7 +10,7 @@
 - 预设保存整个设计（含水印图片、Logo、导出设置），支持 JSON 导出 / 导入
 - 批量导出，逐张进度、取消、文件命名变量
 - 桌面：JPG（质量 100 / 4:4:4）、PNG、无损 WebP、LZW TIFF，JPG 回写原 EXIF 并默认移除 GPS
-- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。签名 APK 已安装并冷启动通过，**品牌选择弹窗尚未目视**（状态见 PROJECT-BASELINE §3）
+- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。签名 APK 已安装并冷启动通过；打包版品牌选择弹窗已按 2x 目视核验，**62/62 字标完整不裁切**，12 个家族可见透明的 A/O 内孔（状态见 PROJECT-BASELINE §3）
 
 ## 目录
 
