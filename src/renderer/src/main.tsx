@@ -38,9 +38,9 @@ if (Capacitor.isNativePlatform()) {
     try {
       await StatusBar.setOverlaysWebView({ overlay: false })
       await StatusBar.setBackgroundColor({ color: '#f0f2f5' })
-      // Capacitor's enum is named after the theme, not the text: Style.Dark =
-      // light text for dark backgrounds.
-      await StatusBar.setStyle({ style: Style.Dark })
+      // Capacitor's enum is named after the text: Light = dark icons for a
+      // light background, matching the HyperOS skin.
+      await StatusBar.setStyle({ style: Style.Light })
     } catch {
       // Older native shells may not expose every method; layout still works.
     }
