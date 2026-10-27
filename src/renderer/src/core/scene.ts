@@ -155,7 +155,9 @@ export async function renderDesign(
   // list them by position. Stock cards draw through their own per-slot IR path.
   const draws: TextDraw[] = []
   const handCapture = design.templateId !== 'systemCamera'
-  const restoreRecorder = handCapture ? attachTextRecorder(ctx, draws, text, asset.exif) : null
+  const restoreRecorder = handCapture
+    ? attachTextRecorder(ctx, draws, text, asset.exif, design.variantId ?? design.templateId)
+    : null
   const renderCtx = scaledContext(ctx, text.fontScale)
   const env: TemplateRenderEnv = {
     ctx: renderCtx,

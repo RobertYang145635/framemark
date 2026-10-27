@@ -66,7 +66,8 @@ export function attachTextRecorder(
   ctx: CanvasRenderingContext2D,
   sink: TextDraw[],
   settings: TextSettings,
-  exif: ExifData
+  exif: ExifData,
+  scope: string
 ): () => void {
   const target = ctx
   const original = target.fillText
@@ -81,7 +82,7 @@ export function attachTextRecorder(
     const source = classifyTextSource(raw, settings, exif)
     const index = counts.get(source) ?? 0
     counts.set(source, index + 1)
-    const key = `${source}#${index}`
+    const key = `${scope}#${source}#${index}`
     const text = settings.lineText?.[key] ?? raw
     const isHidden = hidden.has(key) || !text
     const size = parseFloat(target.font) || 12
@@ -153,4 +154,25 @@ export function attributeTextSlots(
     })
   }
   return slots.sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+/**
+ * Pre-v4.1 designs keyed line overrides `<source>#<n>`; the painter now writes
+ * `<variant>#<source>#<n>` so two cards that share a base template cannot read
+ * each other's overrides. Idempotent: keys that already carry the scope stay.
+ */
+export function migrateTextLineKeys(
+  text: TextSettings,
+  scope: string
+): TextSettings {
+  if (!text.lineText && !text.hiddenLines) return text
+  const prefix = `${scope}#`
+  const fix = (key: string) => (key.startsWith(prefix) ? key : `${prefix}${key}`)
+  return {
+    ...text,
+    ...(text.lineText
+      ? { lineText: Object.fromEntries(Object.entries(text.lineText).map(([k, v]) => [fix(k), v])) }
+      : {}),
+    ...(text.hiddenLines ? { hiddenLines: text.hiddenLines.map(fix) } : {})
+  }
 }

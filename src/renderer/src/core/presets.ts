@@ -1,6 +1,7 @@
 import type { Design, ExportSettings, ParamBucket, ParamOverrides, Params, TemplateVariant, TextSettings, WatermarkSettings } from '../types'
 import { getTemplate } from './templates'
 import { DEFAULT_VARIANT_ID, getVariant } from './variants'
+import { migrateTextLineKeys } from './text-slots'
 
 export const DEFAULT_TEXT: TextSettings = {
   title: '',
@@ -176,7 +177,7 @@ export function hydrateDesign(input: Partial<Design> | null | undefined): Design
     ratio: input.ratio ?? 'original',
     params,
     ...(pruned ? { paramOverrides: pruned } : {}),
-    text: { ...DEFAULT_TEXT, ...(input.text ?? {}) },
+    text: migrateTextLineKeys({ ...DEFAULT_TEXT, ...(input.text ?? {}) }, variantId || base.id),
     watermark: { ...DEFAULT_WATERMARK, ...(input.watermark ?? {}) },
     logo: input.logo ?? null,
     avatar: input.avatar ?? null,
