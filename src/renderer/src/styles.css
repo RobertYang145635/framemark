@@ -6893,3 +6893,47 @@ html[data-skin='hyperos'] .import-secondary {
 html[data-skin='hyperos'] .brand-logo-box {
   border-radius: 8px;
 }
+
+/* 2026-10-28 参考卡收口：不再用模糊底填满，图片按 4:3 完整显示 */
+html[data-skin='hyperos'] .reference-inspector {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: block;
+}
+html[data-skin='hyperos'] .reference-preview {
+  flex: 0 0 auto;
+  display: block;
+  min-height: 0;
+}
+html[data-skin='hyperos'] .reference-preview-media {
+  aspect-ratio: 4 / 3;
+  min-height: 0;
+  padding: 4px;
+  display: block;
+  background: #f4f6f9;
+}
+html[data-skin='hyperos'] .reference-preview-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f4f6f9;
+}
+html[data-skin='hyperos'] .reference-preview-blur {
+  display: none;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .reference-preview-media,
+html[data-skin='hyperos'][data-color-mode='dark'] .reference-preview-img {
+  background: #171a1f;
+}
+
+/* 输出栏从“贴底直角条”改成同一套 12px 卡片 */
+html[data-skin='hyperos'] .inspector-foot {
+  margin: 0 10px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  align-items: center;
+}

@@ -571,7 +571,6 @@ function ReferencePreview({
       </div>
       <button className="reference-preview" onClick={onOpen} type="button" title={`打开${label}图库`}>
         <span className="reference-preview-media">
-          <img className="reference-preview-blur" src={src} alt="" aria-hidden="true" loading="lazy" />
           <img className="reference-preview-img" src={src} alt={`${variant.name} ${label}`} loading="lazy" />
         </span>
         <span className="reference-preview-foot">
