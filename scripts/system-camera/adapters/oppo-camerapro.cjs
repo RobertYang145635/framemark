@@ -327,15 +327,13 @@ async function convertStyle(spec) {
     name: spec.name,
     nameEn: spec.en,
     placement,
-    // #65, same source as the gallery adapter: the vendor's `baseImageSize` IS the reference
-    // width and it is the PHOTO width (proved on the vendor's own photo pair in
-    // _research/scale-audit2/semantics-by-photo.cjs). Read the field instead of assuming.
-    // Scanned corpus (_research/camerapro-adapter/scan.json): all 10 shipped CameraPro JSONs
-    // declare baseImageSize = 360 ($.baseImageSize), so on today's material this is a byte-level
-    // no-op -- the point is that a future asset pack shipping another photo width
-    // (the gallery corpus already has one: hassel_style_xpan_1 = 291) cannot silently
-    // re-introduce the 1.237x scale error this line had.
+    // CameraPro's `baseImageSize` is the photo SHORT edge, unlike the Gallery
+    // corpus (whose baseImageSize is the photo width). The vendor's own GR1/2/3
+    // screenshots put the bands at 19.9%/14.4%, 13.8% and 18.6% of a 4:3 photo's
+    // width — 95/70/90 units over 480 (360 × 4/3), not over 360. Read the field
+    // and let `stockReferenceWidth()` derive the 480 from the render aspect.
     referenceWidth: Number(j.baseImageSize) || 360,
+    referenceWidthMode: 'shortEdge',
     margins,
     background,
     bands,

@@ -214,6 +214,13 @@ export interface StockStyle {
   nameEn: string
   placement: 'out' | 'in' | 'with' | 'overlay'
   referenceWidth: number
+  /**
+   * What `referenceWidth` measures. Gallery/Xiaomi configs declare a photo
+   * width; the CameraPro pack declares `baseImageSize` as the photo SHORT edge
+   * (360), so a 4:3 landscape lays out on 480 units, not 360. The extra unit
+   * width is derived from the render aspect in `stockReferenceWidth()`.
+   */
+  referenceWidthMode?: 'width' | 'shortEdge'
   margins: { left: number; top: number; right: number; bottom: number }
   background: string
   transparentBackground?: boolean

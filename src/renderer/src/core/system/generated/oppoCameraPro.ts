@@ -9,6 +9,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "RICOH GR · TOP",
     "placement": "out",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 8,
       "top": 95,
@@ -89,6 +90,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "RICOH GR · FOOTER",
     "placement": "out",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 8,
       "top": 8,
@@ -181,6 +183,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "RICOH GR · BOTTOM",
     "placement": "out",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 0,
       "top": 0,
@@ -257,6 +260,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "RICOH GR · OVERLAY",
     "placement": "overlay",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 0,
       "top": 0,
@@ -348,6 +352,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "RICOH GR · SIDEBAR",
     "placement": "with",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 6,
       "top": 6,
@@ -1146,6 +1151,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "TONE FRAME · TOP",
     "placement": "out",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 0,
       "top": 210,
@@ -1221,6 +1227,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "TONE FRAME · FOOTER",
     "placement": "out",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 14,
       "top": 14,
@@ -1442,6 +1449,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "LEICA LIVE MOMENT",
     "placement": "overlay",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 0,
       "top": 0,
@@ -1618,6 +1626,7 @@ export const OPPO_CAMERAPRO_STYLES = [
     "nameEn": "LIQUID GLASS",
     "placement": "overlay",
     "referenceWidth": 360,
+    "referenceWidthMode": "shortEdge",
     "margins": {
       "left": 0,
       "top": 0,

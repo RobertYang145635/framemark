@@ -856,6 +856,14 @@ function anchorGroup(movable: PlacedBand[], photo: StockRect, W: number, H: numb
 }
 
 export function stockReferenceWidth(style: StockStyle, env: Pick<StockEnv, 'pw' | 'ph' | 'params'>): number {
+  // CameraPro's `baseImageSize` is the photo short edge, not its width. The
+  // vendor's own GR1/2/3 screenshots pin the bands at 19.9%/14.4%, 13.8% and
+  // 18.6% of a 4:3 photo's width — exactly what 95/70/90 units over 480 (360 ×
+  // 4/3) give. Scaling by the 360 width instead inflated every band and mark by
+  // 4/3, the "永远大一圈" mismatch. Portrait/square keep the declared 360.
+  if (style.referenceWidthMode === 'shortEdge') {
+    return style.referenceWidth * Math.max(1, env.pw / env.ph)
+  }
   // OPPO album Hasselblad 1 behaves like two design canvases: a 4:3 landscape
   // card is laid out on 560 units (60u band = 10.7% of the photo width, matching
   // the Find X6 Pro sample), while the 3:4 portrait card is the 360-unit design
