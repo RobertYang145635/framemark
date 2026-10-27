@@ -21,6 +21,7 @@ export function PreviewStage() {
   const selectedId = useAppStore((s) => s.selectedId)
   const design = useAppStore((s) => s.design)
   const busy = useAppStore((s) => s.busy)
+  const importProgress = useAppStore((s) => s.importProgress)
   const addSample = useAppStore((s) => s.addSample)
   const setPreviewMeta = useAppStore((s) => s.setPreviewMeta)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
@@ -269,7 +270,7 @@ export function PreviewStage() {
           {compare ? <span className="compare-label">原图</span> : null}
           {error ? <div className="render-error">{error}</div> : null}
         </div>
-        {busy ? (
+        {busy && !importProgress ? (
           <div className="busy-pill">
             <Loader2 size={14} className="spin" />
             {busy}

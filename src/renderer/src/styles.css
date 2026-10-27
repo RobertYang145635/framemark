@@ -7132,3 +7132,110 @@ button.border-series-head:focus-visible {
   outline: 2px solid var(--accent-solid-edge);
   outline-offset: 1px;
 }
+
+/* ── 2026-10-28 导入进度：选图/拖入/文件夹统一反馈 ───────────── */
+.import-progress-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--glass-scrim);
+}
+.import-progress-card {
+  width: min(380px, calc(100vw - 40px));
+  padding: 16px 18px 13px;
+  border: 1px solid var(--glass-edge-strong);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 24px 70px rgba(10, 18, 32, 0.22);
+  animation: import-progress-in 0.18s var(--ease-out, ease-out) both;
+}
+.import-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.import-progress-icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-solid-soft);
+  color: var(--accent);
+}
+.import-progress-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.import-progress-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.import-progress-copy span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.import-progress-pct {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-style: normal;
+}
+.import-progress-track {
+  height: 6px;
+  margin: 14px 0 8px;
+}
+.import-progress-track span {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, white));
+}
+.import-progress-track span::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.48) 48%, transparent 76%);
+  content: '';
+  animation: import-progress-sheen 1.25s linear infinite;
+}
+.import-progress-track.is-indeterminate span {
+  animation: import-progress-slide 1.15s ease-in-out infinite;
+}
+.import-progress-foot {
+  color: var(--faint);
+  font-size: 9.5px;
+  letter-spacing: 0.01em;
+}
+@keyframes import-progress-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes import-progress-sheen {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(210%); }
+}
+@keyframes import-progress-slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(280%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .import-progress-card,
+  .import-progress-track span,
+  .import-progress-track span::after {
+    animation: none;
+  }
+}

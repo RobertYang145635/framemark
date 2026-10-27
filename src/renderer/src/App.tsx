@@ -13,6 +13,7 @@ import { PresetDialog } from './components/PresetDialog'
 import { ReferenceGallery } from './components/ReferenceGallery'
 import { ExportDialog } from './components/ExportDialog'
 import { ExportOverlay } from './components/ExportOverlay'
+import { ImportProgressOverlay } from './components/ImportProgressOverlay'
 import { Toast } from './components/Toast'
 import { DebugAssets } from './components/DebugAssets'
 import { Modal } from './components/ui'
@@ -171,6 +172,7 @@ export function App() {
       <PresetDialog />
       <ExportDialog />
       <ExportOverlay />
+      <ImportProgressOverlay />
       <Toast />
 
       <input

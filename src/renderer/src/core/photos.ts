@@ -41,7 +41,10 @@ async function makePreviewFromBitmap(bitmap: ImageBitmap, max = 1800): Promise<{
   return { canvas, url: URL.createObjectURL(blob) }
 }
 
-export async function photoFromFile(file: File): Promise<PhotoAsset> {
+export type ImportPhase = (phase: string, filePct: number) => void
+
+export async function photoFromFile(file: File, onPhase?: ImportPhase): Promise<PhotoAsset> {
+  onPhase?.('读取照片信息', 0.08)
   let raw: Record<string, any> | null = null
   try {
     raw = ((await exifr.parse(file, EXIF_OPTS as any)) as Record<string, any>) ?? null
@@ -49,6 +52,7 @@ export async function photoFromFile(file: File): Promise<PhotoAsset> {
     raw = null
   }
   const known = orientedSize(raw)
+  onPhase?.('解码照片', 0.35)
   let bitmap: ImageBitmap
   try {
     if (known) {
@@ -69,11 +73,13 @@ export async function photoFromFile(file: File): Promise<PhotoAsset> {
   } catch {
     bitmap = await createImageBitmap(file)
   }
+  onPhase?.('生成预览', 0.72)
   const preview = await makePreviewFromBitmap(bitmap)
   const originalW = known?.w ?? bitmap.width
   const originalH = known?.h ?? bitmap.height
   bitmap.close()
   const exif = normalizeExif(raw, originalW, originalH, file.name)
+  onPhase?.('准备完成', 1)
   return {
     id: uid(),
     name: file.name,

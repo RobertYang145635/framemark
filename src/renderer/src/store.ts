@@ -77,6 +77,15 @@ function folderScanNotice(scan: FolderScanResult | undefined, imported: number):
   return `文件夹只导入了 ${imported.toLocaleString('zh-CN')} 张：${parts.join('；')}`
 }
 
+export interface ImportProgress {
+  done: number
+  total: number
+  current: string
+  phase: string
+  /** Fraction of the current file (0–1), so one large photo still moves the bar. */
+  filePct: number
+}
+
 interface AppState {
   photos: PhotoAsset[]
   selectedId: string | null
@@ -85,6 +94,8 @@ interface AppState {
   activePresetId: string | null
   initialized: boolean
   busy: string | null
+  /** Visible import progress for picker/drop/folder imports (null = idle). */
+  importProgress: ImportProgress | null
   job: ExportJob | null
   /** Text lines captured from the last hand-template render (v4 文字 pane). */
   textSlots: TextSlot[]
@@ -251,6 +262,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activePresetId: null,
   initialized: false,
   busy: null,
+  importProgress: null,
   job: null,
   textSlots: [],
   previewMeta: null,
@@ -282,20 +294,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   addFiles: async (files) => {
     const images = files.filter((f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|tiff?|heic|heif)$/i.test(f.name))
     if (!images.length) return
-    set({ busy: `正在读取 ${images.length} 张照片…` })
+    set({
+      busy: `正在读取 ${images.length} 张照片…`,
+      importProgress: { done: 0, total: images.length, current: images[0].name, phase: '读取照片信息', filePct: 0 }
+    })
     const added: PhotoAsset[] = []
     let failed = 0
-    for (const file of images) {
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i]
       try {
-        added.push(await photoFromFile(file))
+        added.push(
+          await photoFromFile(file, (phase, filePct) =>
+            set({ importProgress: { done: i, total: images.length, current: file.name, phase, filePct } })
+          )
+        )
       } catch {
         failed++
       }
+      set({ importProgress: { done: i + 1, total: images.length, current: file.name, phase: '整理照片', filePct: 0 } })
     }
     set((s) => ({
       photos: [...s.photos, ...added],
       selectedId: s.selectedId ?? added[0]?.id ?? null,
-      busy: null
+      busy: null,
+      importProgress: null
     }))
     await autoApplyLogo(added[0])
     if (added.length) get().showToast(`已添加 ${added.length} 张照片`, 'success')
@@ -305,21 +327,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   addPaths: async (paths) => {
     if (!paths.length) return { added: 0, failed: 0 }
     if (!window.framemark) return { added: 0, failed: 0 }
-    set({ busy: `正在读取 ${paths.length} 张照片…` })
+    const nameOf = (p: string) => p.split(/[\\/]/).pop() || p
+    set({
+      busy: `正在读取 ${paths.length} 张照片…`,
+      importProgress: { done: 0, total: paths.length, current: nameOf(paths[0]), phase: '读取照片', filePct: 0.15 }
+    })
     const added: PhotoAsset[] = []
     let failed = 0
-    for (const p of paths) {
+    for (let i = 0; i < paths.length; i++) {
+      const p = paths[i]
+      set({
+        importProgress: { done: i, total: paths.length, current: nameOf(p), phase: '生成预览', filePct: 0.45 }
+      })
       try {
         const preview = await window.framemark.previewImage(p)
         added.push(photoFromPath(preview, p))
       } catch {
         failed++
       }
+      set({
+        importProgress: { done: i + 1, total: paths.length, current: nameOf(p), phase: '整理照片', filePct: 0 }
+      })
     }
     set((s) => ({
       photos: [...s.photos, ...added],
       selectedId: s.selectedId ?? added[0]?.id ?? null,
-      busy: null
+      busy: null,
+      importProgress: null
     }))
     await autoApplyLogo(added[0])
     if (added.length) get().showToast(`已添加 ${added.length} 张照片`, 'success')
@@ -352,12 +386,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!window.framemark) return
     const folder = await window.framemark.pickFolder()
     if (!folder) return
-    set({ busy: '正在扫描文件夹…' })
+    set({
+      busy: '正在扫描文件夹…',
+      importProgress: { done: 0, total: 0, current: folder, phase: '扫描文件夹', filePct: 0 }
+    })
     let scan: FolderScanResult
     try {
       scan = await window.framemark.listImages(folder)
     } finally {
-      set({ busy: null })
+      set({ busy: null, importProgress: null })
     }
     const files = scan?.files ?? []
     if (!files.length) {
