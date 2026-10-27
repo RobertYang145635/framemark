@@ -1,6 +1,8 @@
 import type { StockBrandEnv, StockImageNode, StockNode, StockStyle } from './ir'
-import type { Params, TemplateRenderEnv } from '../../types'
-import { BRANDS, LOGO_FILES, autoLogo, matchBrand } from '../brands'
+import type { BrandVersionRef, Params, TemplateRenderEnv } from '../../types'
+import { BRANDS, autoLogo, logoCutForFile, logoUrlFor, matchBrand } from '../brands'
+import { LOGO_VERSION_BY_ID, versionForAssetKey } from '../logo-catalog'
+import { cutFitsSurface, cutForVersionSurface } from '../logo-compat'
 import { createCanvas, loadImage } from '../images'
 import { ensureSystemFonts } from './fonts'
 
@@ -91,10 +93,18 @@ for (const brand of BRANDS) {
  * registry file name the user picked (`logoAsset()` sets it), so a picked logo
  * tells us which brand the user wants. Unknown / hand-dropped logos return null
  * and leave the EXIF resolution in charge.
+ *
+ * Catalog keys win over the legacy `brands.ts` index: a version-only cut
+ * (`ver:<brand>:<cut>`) has no `BRANDS.files` entry, and an alias stem may map
+ * to a different brand than the file-name heuristic would guess.
  */
 export function brandKeyOfLogoFile(name: string | undefined): string | null {
   if (!name) return null
-  const clean = String(name).replace(/^logo-/, '').replace(/\.(webp|png|jpe?g)$/i, '')
+  const raw = String(name)
+  const base = raw.replace(/\\/g, '/').split('/').pop() ?? ''
+  const clean = base.replace(/^logo-/, '').replace(/\.(webp|png|jpe?g)$/i, '')
+  const catalog = versionForAssetKey(raw) ?? versionForAssetKey(base) ?? versionForAssetKey(clean)
+  if (catalog) return catalog.brandKey
   return BRAND_FILE_INDEX.get(clean) ?? null
 }
 
@@ -103,7 +113,8 @@ const logoCache = new Map<string, HTMLImageElement>()
 export async function loadBrandLogo(file: string): Promise<HTMLImageElement | null> {
   const hit = logoCache.get(file)
   if (hit) return hit
-  const url = LOGO_FILES[file]
+  // `logoUrlFor()` resolves both legacy registry stems and catalog `ver:` keys.
+  const url = logoUrlFor(file)
   if (!url) return null
   try {
     const img = await loadImage(url)
@@ -157,17 +168,54 @@ export interface StyleBrandDecl {
   vendorLogo?: string
   /** `variant.autoLogo` — resolve the wordmark from this photo's EXIF brand. */
   autoLogo?: boolean
+  /** `design.brandVersion` — an explicit Logo Library version pick. */
+  version?: BrandVersionRef | null
 }
 
 /**
  * The registry file name this style declares, or null when it declares none.
  * Pure and per-render: no argument here can be supplied by another card.
+ *
+ * Compatibility is enforced HERE, not in the picker: a file that cannot read on
+ * `surface` yields null, never a silent switch to the opposite tone.
+ *
+ *   1. `version`  — the explicit version pick wins outright. A version with no
+ *      cut for this surface yields null (slot empty); it must never fall
+ *      through to `pick`/`vendorLogo`/`autoLogo`.
+ *   2. `pick`     — a catalogued legacy file is rejected when its cut does not
+ *      fit the surface; uncatalogued (hand-dropped) files pass through.
+ *   3. `vendorLogo` — fixed co-brand mark, vendor-faithful, returned as-is.
+ *   4. `autoLogo` — legacy resolution, then the resulting cut is re-validated
+ *      (or, without cut metadata, the `_white`/`_black` suffix heuristic).
  */
-export function styleBrandFile (decl: StyleBrandDecl, exif: { make?: string; model?: string }, dark: boolean): string | null {
+export function styleBrandFile (
+  decl: StyleBrandDecl,
+  exif: { make?: string; model?: string },
+  surface: 'light' | 'dark'
+): string | null {
+  if (decl.version) {
+    const version = LOGO_VERSION_BY_ID[decl.version.versionId]
+    if (!version) return null
+    const cut = cutForVersionSurface(version, surface)
+    return cut ? cut.assetKey : null
+  }
   const pick = typeof decl.pick === 'string' ? decl.pick.trim() : ''
-  if (pick) return pick
+  if (pick) {
+    const cut = logoCutForFile(pick)
+    if (cut) return cutFitsSurface(cut, surface) ? cut.assetKey : null
+    return pick
+  }
   if (decl.vendorLogo) return decl.vendorLogo
-  if (decl.autoLogo) return autoLogo(String(exif?.make ?? ''), String(exif?.model ?? ''), dark)
+  if (decl.autoLogo) {
+    const file = autoLogo(String(exif?.make ?? ''), String(exif?.model ?? ''), surface === 'dark')
+    if (!file) return null
+    const cut = logoCutForFile(file)
+    if (cut) return cutFitsSurface(cut, surface) ? file : null
+    // No catalog metadata: the registry's own tone suffixes are the only signal.
+    if (surface === 'dark' && /_black$/i.test(file)) return null
+    if (surface === 'light' && /_white$/i.test(file)) return null
+    return file
+  }
   return null
 }
 
@@ -175,9 +223,9 @@ export function styleBrandFile (decl: StyleBrandDecl, exif: { make?: string; mod
 export async function loadStyleBrandLogo (
   decl: StyleBrandDecl,
   exif: { make?: string; model?: string },
-  dark: boolean
+  surface: 'light' | 'dark'
 ): Promise<HTMLImageElement | null> {
-  const file = styleBrandFile(decl, exif, dark)
+  const file = styleBrandFile(decl, exif, surface)
   if (!file) return null
   return loadBrandLogo(file)
 }
@@ -270,6 +318,11 @@ function toneRank(file: string, dark: boolean): number {
  * Pick the best preloaded bitmap for a brand: wordmark-shaped first (a square
  * lockup in a wide slot reads as a smudge), then the tone that suits the card,
  * then the widest candidate. Returns null when nothing usable was preloaded.
+ *
+ * Incompatible candidates are dropped BEFORE ranking: a catalogued cut must fit
+ * the surface (`cutFitsSurface`), and an uncatalogued legacy file is rejected by
+ * its `_black`/`_white` suffix. This is what stops a black mark landing on a
+ * dark card when the brand also ships a white cut.
  */
 export function chooseBrandSlot(
   brandKey: string,
@@ -278,10 +331,17 @@ export function chooseBrandSlot(
 ): BrandSlotChoice | null {
   const brand = BRANDS.find((b) => b.key === brandKey)
   if (!brand) return null
+  const surface: 'light' | 'dark' = dark ? 'dark' : 'light'
   const candidates: BrandSlotChoice[] = []
   for (const file of brand.files) {
     const img = images[brandSlotKey(file)]
     if (!img) continue
+    const cut = logoCutForFile(file)
+    if (cut) {
+      if (!cutFitsSurface(cut, surface)) continue
+    } else if (dark ? /_black$/i.test(file) : /_white$/i.test(file)) {
+      continue
+    }
     const aspect = imageAspect(img)
     if (!aspect) continue
     candidates.push({ file, img, aspect })
@@ -300,13 +360,32 @@ export function chooseBrandSlot(
 /**
  * The bitmap a brand slot should draw for this render, or null when the slot
  * must stay empty. Reads the map produced by `prepareStockStyle()` off `env`.
- * Precedence: explicit Inspector pick (`params.brandLogoFile`, written by
- * `store.ts` next to `design.logo`) → EXIF `matchBrand` → nothing.
+ * Precedence:
+ *   1. `design.brandVersion` — an explicit Logo Library version. Its cut for
+ *      this surface is drawn verbatim (no re-cut by wordmark shape), and a
+ *      version with no cut here leaves the slot empty.
+ *   2. `params.brandLogoFile` — the Inspector pick; an incompatible catalogued
+ *      cut is rejected instead of being re-toned.
+ *   3. EXIF `matchBrand` — through `chooseBrandSlot()` (already filtered).
  */
 export function resolveBrandSlot(
   env: TemplateRenderEnv,
   dark: boolean
 ): BrandSlotChoice | null {
+  const surface: 'light' | 'dark' = dark ? 'dark' : 'light'
+  // 1. explicit version pick: the user's choice is authoritative.
+  const versionRef = env.design?.brandVersion
+  if (versionRef) {
+    const version = LOGO_VERSION_BY_ID[versionRef.versionId]
+    if (!version) return null
+    const cut = cutForVersionSurface(version, surface)
+    if (!cut) return null
+    const img = env.images[brandSlotKey(cut.assetKey)]
+    if (!img) return null
+    const aspect = imageAspect(img)
+    if (!aspect) return null
+    return { file: cut.assetKey, img, aspect }
+  }
   const exifKey = brandKeyForEnv(env)
   const pickedParam = env.params?.brandLogoFile
   // FIX #64: the pick is `params.brandLogoFile` ONLY. `design.logo` is a GLOBAL
@@ -317,9 +396,24 @@ export function resolveBrandSlot(
   // brand", the rule store.ts:440-442 states for the Inspector pick. On
   // `stock-xiaomi-leica-1` that substituted Hasselblad's 1024x70 long wordmark
   // for the photo's own Panasonic 1024x157 one.
-  const pickedKey = brandKeyOfLogoFile(
-    typeof pickedParam === 'string' ? pickedParam : undefined
-  )
+  const picked = typeof pickedParam === 'string' ? pickedParam.trim() : ''
+  // 2. legacy pick: a catalogued cut is drawn EXACTLY as picked. It must fit the
+  // surface (an incompatible cut hides the slot — never re-toned into the
+  // opposite ink behind the user's back), and it must have been preloaded: a
+  // missing decode yields an empty slot, never a different version/tone file
+  // that `chooseBrandSlot()` might have ranked higher.
+  if (picked) {
+    const pickedCut = logoCutForFile(picked)
+    if (pickedCut) {
+      if (!cutFitsSurface(pickedCut, surface)) return null
+      const exact = env.images[brandSlotKey(pickedCut.assetKey)]
+      if (!exact) return null
+      const aspect = imageAspect(exact)
+      if (!aspect) return null
+      return { file: pickedCut.assetKey, img: exact, aspect }
+    }
+  }
+  const pickedKey = brandKeyOfLogoFile(picked || undefined)
   // An explicit Inspector pick of a *different* brand wins. The pick's own
   // brand files are preloaded by `prepareStockStyle()` (via
   // `params.brandLogoFile`), so `chooseBrandSlot` can re-cut the pick to a
@@ -334,6 +428,7 @@ export function resolveBrandSlot(
     // pick with no usable wordmark.
     return null
   }
+  // 3. EXIF brand.
   if (!exifKey) return null
   const resolved = chooseBrandSlot(exifKey, env.images, dark)
   if (resolved) return resolved
@@ -375,6 +470,23 @@ export async function prepareStockStyle(
       for (const file of brand?.files ?? []) {
         const img = await loadBrandLogo(file)
         if (img) out[brandSlotKey(file)] = img
+      }
+    }
+    // An explicit selection may name cuts no `BRANDS.files` entry covers (`ver:`
+    // keys): the version branch and the legacy pick both preload EVERY cut of
+    // the selected version under its own asset key, so a theme flip can switch
+    // light↔dark without another decode and `resolveBrandSlot()` can return the
+    // exact pick instead of letting `chooseBrandSlot()` re-rank the siblings.
+    const versions = new Map<string, ReturnType<typeof versionForAssetKey>>()
+    const version = env?.brandVersion ? LOGO_VERSION_BY_ID[env.brandVersion.versionId] : undefined
+    if (version) versions.set(version.id, version)
+    const pickedCut = env?.brandLogoFile ? logoCutForFile(env.brandLogoFile) : null
+    const pickedVersion = pickedCut ? versionForAssetKey(pickedCut.assetKey) : null
+    if (pickedVersion) versions.set(pickedVersion.id, pickedVersion)
+    for (const selected of versions.values()) {
+      for (const cut of selected?.cuts ?? []) {
+        const img = await loadBrandLogo(cut.assetKey)
+        if (img) out[brandSlotKey(cut.assetKey)] = img
       }
     }
   }

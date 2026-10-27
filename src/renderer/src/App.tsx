@@ -3,21 +3,21 @@ import { Capacitor } from '@capacitor/core'
 import { App as NativeApp } from '@capacitor/app'
 import { useAppStore } from './store'
 import { TopBar } from './components/TopBar'
-import { TemplateGallery } from './components/TemplateGallery'
-import { VariantThumb } from './components/VariantThumb'
+import { ImportScreen } from './components/ImportScreen'
+import { BorderLibrary } from './components/BorderLibrary'
 import { PreviewStage } from './components/PreviewStage'
 import { Filmstrip } from './components/Filmstrip'
 import { Inspector } from './components/Inspector'
 import { BrandPicker } from './components/BrandPicker'
 import { PresetDialog } from './components/PresetDialog'
 import { ReferenceGallery } from './components/ReferenceGallery'
+import { ExportDialog } from './components/ExportDialog'
 import { ExportOverlay } from './components/ExportOverlay'
 import { Toast } from './components/Toast'
 import { DebugAssets } from './components/DebugAssets'
 import { Modal } from './components/ui'
 import { mountGlassChrome, paintGlassChromeBeforeFirstFrame } from './components/glass/glassBoot'
-import { getVariant, TEMPLATE_VARIANTS } from './core/variants'
-import { STOCK_STYLE_LIST } from './core/system/styles'
+import { BORDER_CATEGORIES, TAXONOMY_CARDS } from './core/taxonomy.generated'
 import { ensureFonts } from './core/fonts'
 
 /**
@@ -28,43 +28,18 @@ import { ensureFonts } from './core/fonts'
  */
 paintGlassChromeBeforeFirstFrame()
 
-const QUICK = ['wm-classic', 'white-1', 'color-1', 'glass-card-4', 'movie-1', 'fm-polaroid']
-
-/**
- * The 模板库 dialog used to claim "原版 40+", a number that stopped describing the app
- * long ago (PRODUCT-DEFECTS #58 / defect 3). Both figures are derived from the live
- * registries instead of being typed in again: `STOCK_STYLE_LIST` is the built-in vendor
- * style registry and `TEMPLATE_VARIANTS` is exactly what the gallery renders as cards.
- */
-const BUILT_IN_STYLE_COUNT = new Set(STOCK_STYLE_LIST.map((s) => s.id)).size
-const GALLERY_CARD_COUNT = new Set(TEMPLATE_VARIANTS.map((v) => v.id)).size
-const TEMPLATE_MODAL_SUBTITLE = `内置 ${BUILT_IN_STYLE_COUNT} 套厂商样式 · ${GALLERY_CARD_COUNT} 张版式卡片，全部可直接套用；左侧缩略图可对照原版预览。`
+const BORDER_MODAL_SUBTITLE = `${BORDER_CATEGORIES.length} 类 · ${TAXONOMY_CARDS.length} 套`
 
 export function App() {
   const init = useAppStore((s) => s.init)
   const initialized = useAppStore((s) => s.initialized)
-  const design = useAppStore((s) => s.design)
-  const setVariant = useAppStore((s) => s.setVariant)
+  const photos = useAppStore((s) => s.photos)
   const addFiles = useAppStore((s) => s.addFiles)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [referenceOpen, setReferenceOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
   const dragDepth = useRef(0)
   const fileInput = useRef<HTMLInputElement>(null)
-  const activeQuickCard = useRef<HTMLButtonElement>(null)
-  const quickStrip = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const strip = quickStrip.current
-    const card = activeQuickCard.current
-    if (!strip || !card) return
-    strip.scrollTo({
-      left: card.offsetLeft - (strip.clientWidth - card.offsetWidth) / 2,
-      behavior: 'smooth'
-    })
-  }, [design.variantId])
-
-  const quickIds = design.variantId && !QUICK.includes(design.variantId) ? [design.variantId, ...QUICK] : QUICK
 
   useEffect(() => {
     void init()
@@ -100,6 +75,10 @@ export function App() {
       }
       if (state.presetDialogOpen) {
         state.setPresetDialogOpen(false)
+        return
+      }
+      if (state.exportDialog) {
+        state.closeExportDialog()
         return
       }
       if (state.brandPickerOpen) {
@@ -155,59 +134,42 @@ export function App() {
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <TopBar />
       <DebugAssets />
 
-      <div className="quick-strip" ref={quickStrip}>
-        {quickIds.map((id) => {
-          const v = getVariant(id)
-          return (
-            <button
-              key={id}
-              ref={design.variantId === id ? activeQuickCard : undefined}
-              className={`quick-card ${design.variantId === id ? 'active' : ''}`}
-              onClick={() => setVariant(id)}
-              type="button"
-            >
-              <VariantThumb variant={v} className="quick-canvas" />
-              <em>{v.name}</em>
-            </button>
-          )
-        })}
-      </div>
+      {photos.length === 0 ? (
+        <ImportScreen />
+      ) : (
+        <>
+          <TopBar />
 
-      <div className="workspace">
-        <aside className="sidebar templates-panel glass">
-          <TemplateGallery onOpenReferences={() => setReferenceOpen(true)} />
-        </aside>
-        <main className="center-column">
-          <PreviewStage />
-          <Filmstrip />
-        </main>
-        <Inspector onOpenTemplates={() => setTemplatesOpen(true)} onOpenReferences={() => setReferenceOpen(true)} />
-      </div>
+          <div className="workspace">
+            <aside className="sidebar templates-panel glass">
+              <BorderLibrary />
+            </aside>
+            <main className="center-column">
+              <PreviewStage />
+              <Filmstrip />
+            </main>
+            <Inspector onOpenTemplates={() => setTemplatesOpen(true)} onOpenReferences={() => setReferenceOpen(true)} />
+          </div>
+        </>
+      )}
 
       <Modal
         open={templatesOpen}
         onClose={() => setTemplatesOpen(false)}
-        title="模板库"
-        subtitle={TEMPLATE_MODAL_SUBTITLE}
+        title="边框"
+        subtitle={BORDER_MODAL_SUBTITLE}
         wide
-        className="template-modal"
+        className="border-library-modal"
       >
-        <TemplateGallery
-          modal
-          onPick={() => setTemplatesOpen(false)}
-          onOpenReferences={() => {
-            setTemplatesOpen(false)
-            setReferenceOpen(true)
-          }}
-        />
+        <BorderLibrary modal onPick={() => setTemplatesOpen(false)} />
       </Modal>
 
       <ReferenceGallery open={referenceOpen} onClose={() => setReferenceOpen(false)} />
       <BrandPicker />
       <PresetDialog />
+      <ExportDialog />
       <ExportOverlay />
       <Toast />
 

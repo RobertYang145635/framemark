@@ -58,7 +58,15 @@ function Provenance ({ value }: { value: ControlProvenance }) {
   return <span className={`fmk-prov ${p.cls}`} title={value === 'vendor' ? '厂商配置里就有这一行的可编辑/可关标志' : '厂商没有授权，由本项目推出'}>{p.text}</span>
 }
 
-export function StyleControlsPanel () {
+export function StyleControlsPanel ({
+  filter,
+  compact = false
+}: {
+  /** Optional allow-list (Phase 3 tabs). Only applied in compact mode. */
+  filter?: (view: ControlView) => boolean
+  /** Flat, live-only rendering for the Logo/文字/布局/主题 editor tabs. */
+  compact?: boolean
+} = {}) {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
   const resetVariantParams = useAppStore((s) => s.resetVariantParams)
@@ -71,6 +79,41 @@ export function StyleControlsPanel () {
   const liveCount = views.filter((v) => v.live).length
 
   const onChange = (key: string, value: ParamValue) => setParam(key, value)
+
+  if (compact) {
+    // Phase 3 tabs: one flat list, live controls only. Provenance / evidence /
+    // 保真击穿 tags and group headers stay out of the user-facing tabs; the full
+    // panel below remains for dev/legacy. An empty result renders nothing so a
+    // tab never shows a fake control row.
+    const list = views.filter((v) => v.live && (!filter || filter(v)))
+    if (!list.length) return null
+    return (
+      <section className="panel-section fmk-style-controls editor-controls" data-style={record.styleId}>
+        <div className="editor-controls-head">
+          <button
+            className="btn btn-ghost btn-sm"
+            type="button"
+            onClick={resetVariantParams}
+            title="只清空这一套的改动，其它套不受影响"
+          >
+            <RotateCcw size={14} />
+            全部原版
+          </button>
+        </div>
+        <div className="editor-controls-list">
+          {list.map((view) => (
+            <div
+              className="editor-controls-item"
+              key={`${view.control.id}:${paramKeyOf(view.control)}`}
+              data-control-id={view.control.id}
+            >
+              {renderView(view, styleId, onChange)}
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="panel-section fmk-style-controls" data-style={record.styleId}>

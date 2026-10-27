@@ -25,7 +25,10 @@ export const systemCamera: TemplateDef = {
     return {
       images: await prepareStockStyle(style, {
         exif: env.exif,
-        brandLogoFile: typeof picked === 'string' && picked ? picked : undefined
+        brandLogoFile: typeof picked === 'string' && picked ? picked : undefined,
+        // The explicit Logo Library pick travels through prepare so every cut
+        // of that version is decoded before paint needs it.
+        brandVersion: env.brandVersion
       })
     }
   },

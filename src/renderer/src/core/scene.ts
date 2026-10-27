@@ -6,7 +6,8 @@ import { textScaleOf } from './draw'
 import { drawWatermark } from './watermark'
 import { resolveTokens } from './exif'
 import { logoAsset } from './brands'
-import { styleBrandFile, themeIsDark } from './system/assets'
+import { surfaceForDesign } from './logo-compat'
+import { styleBrandFile } from './system/assets'
 
 const RATIOS: Record<Exclude<Ratio, 'original'>, number> = {
   '1:1': 1,
@@ -85,6 +86,10 @@ export async function renderDesign(
   const template = getTemplate(design.templateId)
   const crop = computeCrop(imageW, imageH, design.ratio)
   const params = mergeParams(design, template.defaults)
+  // The surface the painted card actually is — the SAME rule `paint.ts` uses
+  // for `brandDark` (simple luma > 0.7, alpha < 0.4 ⇒ dark), so the wordmark
+  // tone chosen here can never disagree with the tone the painter assumes.
+  const surface = surfaceForDesign(design)
   const prepareEnv = {
     pw: crop.sw,
     ph: crop.sh,
@@ -92,7 +97,8 @@ export async function renderDesign(
     exif: asset.exif,
     params,
     text: design.text,
-    images: {}
+    images: {},
+    brandVersion: design.brandVersion
   }
   const prepared = template.prepare ? await template.prepare(prepareEnv) : undefined
   const layout = template.layout(prepareEnv)
@@ -119,10 +125,18 @@ export async function renderDesign(
   // than an arbitrary user image, so a style with no declaration cannot paint
   // anything, and the decoded mark keeps the same PNG path the accepted renders used.
   const variant = design.variantId ? VARIANT_MAP[design.variantId] : undefined
+  // `version` is the explicit Logo Library pick: `styleBrandFile()` then draws
+  // exactly that version's cut for this surface and returns null when the
+  // version has none — never the old black file.
   const brandFile = styleBrandFile(
-    { pick: params.brandLogoFile, vendorLogo: variant?.vendorLogo, autoLogo: variant?.autoLogo },
+    {
+      pick: params.brandLogoFile,
+      vendorLogo: variant?.vendorLogo,
+      autoLogo: variant?.autoLogo,
+      version: design.brandVersion
+    },
     asset.exif,
-    themeIsDark(params)
+    surface
   )
   let logo: HTMLImageElement | undefined
   if (brandFile) {

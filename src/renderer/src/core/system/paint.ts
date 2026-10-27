@@ -18,6 +18,34 @@ function scaleFree(f: BrandFree | undefined, k: number): BrandFree | undefined {
 }
 
 /**
+ * Brand-slot size multiplier from the Inspector `logoScale` param (0–10, 5 is
+ * neutral). Absent / non-numeric / 5 ⇒ exactly 1 so default renders are
+ * byte-identical. The band is 0.68x…1.32x.
+ */
+function logoScaleFactor(raw: unknown): number {
+  if (raw === undefined || raw === null) return 1
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return 1
+  const factor = 0.68 + Math.max(0, Math.min(10, n)) * 0.064
+  // 0.064 is not binary-exact, so 5 lands on 1.0000000000000002 — snap it.
+  return Math.abs(factor - 1) < 1e-9 ? 1 : factor
+}
+
+/**
+ * Resize a slot rect about its own centre, keeping it inside the node box with
+ * a 2% inset. Only brand slots call this, so no other node geometry moves.
+ */
+function scaleSlotRect(rect: StockRect, factor: number, box: StockRect): StockRect {
+  const w = Math.min(rect.w * factor, box.w * 0.96)
+  const h = Math.min(rect.h * factor, box.h * 0.96)
+  const cx = rect.x + rect.w / 2
+  const cy = rect.y + rect.h / 2
+  const x = Math.max(box.x + box.w * 0.02, Math.min(cx - w / 2, box.x + box.w * 0.98 - w))
+  const y = Math.max(box.y + box.h * 0.02, Math.min(cy - h / 2, box.y + box.h * 0.98 - h))
+  return { x, y, w, h }
+}
+
+/**
  * Tint canvases are cached BY BITMAP, not by name (FIX #64).
  *
  * `resolveBrandSlot()` can hand back the SAME `slot.file` string for two different
@@ -482,6 +510,9 @@ function paintItem(
   if (item.kind === 'image') {
     const themedAsset = themeId ? item.node.themeAssets?.[themeId] : undefined
     const bakedKey = themedAsset ?? item.node.asset
+    // The Inspector's global "show logo" switch silences brand slots too. Default
+    // is true (`DEFAULT_TEXT.showLogo`), so untouched designs render unchanged.
+    if (item.node.isBrandLogo && env.text?.showLogo === false) return
     // A brand slot follows the photo, never the vendor folder: resolveBrandSlot()
     // returns the wordmark of the EXIF brand (or the brand picked in the
     // Inspector). No usable wordmark means the slot stays empty — drawing the
@@ -514,7 +545,9 @@ function paintItem(
         padPx: gapParts.padPx
       }
       const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k), metrics)
-      ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h)
+      const factor = logoScaleFactor(env.params.logoScale)
+      const drawRect = factor === 1 ? rect : scaleSlotRect(rect, factor, box)
+      ctx.drawImage(img, drawRect.x, drawRect.y, drawRect.w, drawRect.h)
     } else if (item.node.scale === 'contain') {
       drawContain(ctx, img, box.x, box.y, box.w, box.h)
     } else if (item.node.scale === 'cover') {

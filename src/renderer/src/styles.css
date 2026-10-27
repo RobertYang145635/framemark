@@ -2007,6 +2007,415 @@ button:disabled {
   font-size: 8.5px;
   color: var(--faint);
 }
+
+/* ── Logo Library (Phase 1c) ─────────────────────────────── */
+.logo-library-modal {
+  width: min(980px, 96vw);
+  max-height: 86vh;
+}
+.logo-library-modal .modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.logo-library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+  flex-wrap: wrap;
+}
+.logo-library-toolbar .gallery-search {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* brand list */
+.logo-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.logo-brand-card {
+  position: relative;
+  min-height: 44px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.logo-brand-card:hover {
+  border-color: var(--line-2);
+  background: var(--panel-3);
+}
+.logo-brand-card.active {
+  border-color: var(--accent-line-strong);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+.logo-brand-preview {
+  height: 64px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 8px;
+}
+.logo-brand-preview.light {
+  background-color: #e6e1d6;
+  background-image:
+    linear-gradient(45deg, #d4cec1 25%, transparent 25%),
+    linear-gradient(-45deg, #d4cec1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4cec1 75%),
+    linear-gradient(-45deg, transparent 75%, #d4cec1 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+.logo-brand-preview.dark {
+  background-color: #17171a;
+  background-image:
+    linear-gradient(45deg, #202024 25%, transparent 25%),
+    linear-gradient(-45deg, #202024 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #202024 75%),
+    linear-gradient(-45deg, transparent 75%, #202024 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+.logo-brand-preview img {
+  max-width: 100%;
+  max-height: 48px;
+  object-fit: contain;
+  display: block;
+}
+.logo-brand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.logo-brand-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.logo-brand-sub {
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* version page */
+.logo-library-back {
+  min-height: 44px;
+  margin: 0 0 8px;
+  padding: 0 10px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.logo-library-back:hover {
+  color: var(--text);
+}
+.logo-library-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.logo-library-head .logo-brand-preview {
+  width: 96px;
+  height: 64px;
+  flex: 0 0 auto;
+}
+.logo-library-head-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.logo-library-head-meta strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.logo-library-head-meta em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--faint);
+}
+.logo-version-count {
+  font-size: 12px;
+  color: var(--faint);
+  margin: 0 0 2px;
+}
+.logo-era {
+  margin-top: 10px;
+}
+.logo-era-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+.logo-era-head em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--faint);
+}
+.logo-version-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.logo-version-card {
+  min-height: 180px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.logo-version-card:not(.locked):hover {
+  border-color: var(--line-2);
+  background: var(--panel-3);
+}
+.logo-version-card.selected {
+  border-color: var(--accent-line-strong);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+.logo-version-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.logo-version-preview {
+  height: 92px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 10px;
+}
+.logo-version-preview.light {
+  background-color: #e6e1d6;
+  background-image:
+    linear-gradient(45deg, #d4cec1 25%, transparent 25%),
+    linear-gradient(-45deg, #d4cec1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4cec1 75%),
+    linear-gradient(-45deg, transparent 75%, #d4cec1 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+.logo-version-preview.dark {
+  background-color: #17171a;
+  background-image:
+    linear-gradient(45deg, #202024 25%, transparent 25%),
+    linear-gradient(-45deg, #202024 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #202024 75%),
+    linear-gradient(-45deg, transparent 75%, #202024 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+.logo-version-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.logo-version-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px 10px;
+  min-width: 0;
+}
+.logo-version-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.logo-version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.logo-version-badge.selected {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.logo-version-badge.unavailable {
+  border-color: rgba(196, 142, 44, 0.45);
+  background: rgba(196, 142, 44, 0.14);
+  color: var(--warn);
+}
+.logo-version-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--warn);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.logo-version-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.logo-version-meta {
+  font-size: 11.5px;
+  color: var(--faint);
+  line-height: 1.4;
+}
+.logo-version-alias {
+  font-size: 11px;
+  color: var(--faint);
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* Inspector logo card */
+.logo-section-preview {
+  width: 86px;
+  height: 54px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.logo-section-preview.on-light {
+  background: #f3f1ea;
+}
+.logo-section-preview.on-dark {
+  background: #17171a;
+}
+.logo-section-preview.unavailable {
+  border-color: rgba(196, 142, 44, 0.55);
+  opacity: 0.55;
+}
+.logo-section-warn {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--warn);
+}
+.logo-section-preview img {
+  max-width: 86%;
+  max-height: 34px;
+  object-fit: contain;
+  display: block;
+}
+.logo-section-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.logo-section-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.logo-section-years {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--faint);
+}
+.logo-section-meta .logo-actions {
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .logo-library-modal {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: 0;
+  }
+  .logo-library-modal .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .logo-library-toolbar {
+    gap: 8px;
+  }
+  .logo-library-toolbar .gallery-search {
+    flex: 1 1 100%;
+  }
+  .logo-brand-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .logo-brand-preview {
+    height: 56px;
+  }
+  .logo-version-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .logo-version-card {
+    min-height: 176px;
+  }
+  .logo-version-preview {
+    height: 84px;
+  }
+  .logo-library-head .logo-brand-preview {
+    width: 84px;
+    height: 56px;
+  }
+}
+
 .preset-save-box {
   display: flex;
   align-items: flex-end;
@@ -3512,4 +3921,862 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
 /* 导出完成态图标：弹性 scale（04-B6）；reduced-motion 下由文末总闸归零 */
 .export-icon.glass-animate-pop {
   border-radius: var(--radius-pill);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FrameMark v4 · Phase 2 · 导入页与 7 类边框库
+   只新增 scoped 类，不改动 .template-gallery / .brand-* / Logo 库的既有规则；
+   卡片继续复用 .tpl-card / .tpl-art / .tpl-meta，避免 175 张卡的几何漂移。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── import screen ───────────────────────────────────────── */
+.import-screen {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  padding: 20px 24px calc(20px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+.import-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.import-brand .brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+.import-brand .brand-mark svg {
+  width: 28px;
+  height: 28px;
+}
+/* 顶栏在 1340px 以下只剩图标；导入页没有其它标识，文字标必须常显 */
+.import-brand .brand-text {
+  display: flex;
+}
+.import-brand .brand-text strong {
+  font-size: 23px;
+}
+.import-brand .brand-text em {
+  display: block;
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+}
+.import-stage {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.import-panel {
+  width: min(980px, 100%);
+  min-height: clamp(360px, 52vh, 520px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+}
+.import-visual {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(600px 300px at 50% 18%, rgba(158, 209, 255, 0.12), transparent 72%),
+    linear-gradient(160deg, #0c1522, #07090d 62%);
+}
+.import-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.import-visual-empty {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(420px 220px at 62% 34%, rgba(255, 191, 128, 0.14), transparent 70%),
+    linear-gradient(180deg, transparent 55%, rgba(5, 8, 14, 0.55));
+}
+.import-format {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 1;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(8, 12, 18, 0.7);
+  color: var(--text-2);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.import-copy {
+  min-width: 0;
+  padding: clamp(24px, 3.6vw, 44px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.import-copy h1 {
+  margin: 0;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.import-sub {
+  margin: 11px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.import-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.import-primary {
+  width: 100%;
+  height: 52px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  gap: 9px;
+}
+.import-secondary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.import-secondary-btn {
+  flex: 1 1 0;
+  min-width: 148px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  gap: 7px;
+}
+.import-hint {
+  margin: 14px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+.import-foot {
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .import-panel {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .import-visual {
+    min-height: 0;
+    aspect-ratio: 16 / 8;
+    max-height: 250px;
+  }
+  .import-copy {
+    padding: 22px 24px 26px;
+  }
+}
+
+@media (max-width: 700px) {
+  .import-screen {
+    gap: 14px;
+    padding: calc(14px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom));
+  }
+  .import-brand {
+    padding: 0 16px;
+  }
+  .import-brand .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .import-brand .brand-mark svg {
+    width: 23px;
+    height: 23px;
+  }
+  .import-brand .brand-text em {
+    display: block;
+  }
+  .import-panel {
+    width: 100%;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+  .import-visual {
+    aspect-ratio: 4 / 3;
+    max-height: 36dvh;
+  }
+  .import-copy {
+    padding: 20px 16px 24px;
+  }
+  .import-copy h1 {
+    font-size: 28px;
+  }
+  .import-secondary {
+    flex-direction: column;
+  }
+  .import-secondary-btn {
+    flex: none;
+    width: 100%;
+  }
+  .import-foot {
+    padding: 0 16px;
+  }
+}
+
+/* ── border library ──────────────────────────────────────── */
+.border-library {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.border-library-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 17px 14px 9px;
+}
+.border-library-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.border-library-total {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass-btn);
+  color: var(--faint);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+.border-category-nav {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 12px 10px;
+}
+.border-category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: left;
+}
+.border-category-btn:last-child {
+  grid-column: 1 / -1;
+}
+.border-category-btn em {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--faint);
+}
+.border-category-btn:hover {
+  background: var(--glass-btn);
+  color: var(--text);
+}
+.border-category-btn.active {
+  color: var(--accent-ink);
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+  font-weight: 600;
+}
+.border-category-btn.active em {
+  color: inherit;
+  opacity: 0.72;
+}
+.border-vendor-chips {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 9px 12px 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.border-chip {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.border-chip em {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--faint);
+  margin-left: 3px;
+}
+.border-chip:hover {
+  background: var(--glass-btn);
+  color: var(--text);
+}
+.border-chip.active {
+  color: var(--accent-ink);
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+  font-weight: 600;
+}
+.border-chip.active em {
+  color: inherit;
+  opacity: 0.7;
+}
+.border-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 12px 18px;
+}
+.border-section {
+  margin-bottom: 18px;
+  scroll-margin-top: 6px;
+}
+.border-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 5px 2px 8px;
+}
+.border-section-head h3 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.border-section-head span {
+  font-size: 9px;
+  color: var(--faint);
+}
+.border-grid {
+  gap: 8px;
+}
+.border-card {
+  min-height: 44px;
+}
+.border-card .tpl-meta {
+  justify-content: flex-start;
+  padding: 7px 8px 8px;
+}
+.border-card .tpl-meta strong {
+  max-width: 100%;
+}
+.border-card-hidden {
+  display: none !important;
+}
+.border-section-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 9px 0 2px;
+}
+.border-section-more {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: var(--glass-btn);
+  color: var(--text-2);
+  font-size: 11px;
+}
+.border-section-more:hover {
+  background: var(--glass-btn-hover);
+  color: var(--text);
+}
+
+/* ── border library modal ────────────────────────────────── */
+/* 整屏浏览面：默认 0.52 遮罩下 175 张缩略会和背后的工作区抢注意力，只加深这一层 */
+.modal-backdrop:has(> .border-library-modal) {
+  background: color-mix(in srgb, var(--glass-canvas-bg) 84%, transparent);
+}
+.border-library-modal .modal-body {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.border-library-modal .border-library {
+  height: min(70vh, 760px);
+}
+.border-library-inline .border-vendor-chips {
+  border-top: 0;
+  padding: 14px 20px 12px;
+}
+.border-library-modal .border-scroll {
+  padding: 2px 20px 20px;
+}
+.border-library-modal .border-section .tpl-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1340px) {
+  .border-library-modal .border-section .tpl-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop:has(> .border-library-modal) {
+    padding: 0;
+    align-items: stretch;
+  }
+  .border-library-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    /* 全屏后没有露出遮罩边缘，半透明面板会让底下的工作区透上来 ⇒ 换实底深色 */
+    background: linear-gradient(180deg, #121a29, #0b0f16 46%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .border-library-modal .modal-head {
+    padding: calc(14px + env(safe-area-inset-top)) 16px 12px;
+  }
+  .border-library-modal .modal-body {
+    flex: 1;
+    min-height: 0;
+  }
+  .border-library-modal .border-library {
+    height: 100%;
+    min-height: 0;
+  }
+  .border-library-inline .border-vendor-chips {
+    padding: 10px 12px;
+  }
+  .border-library-modal .border-chip {
+    height: 44px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .border-library-modal .border-scroll {
+    padding: 0 12px calc(18px + env(safe-area-inset-bottom));
+  }
+  .border-library-modal .border-section .tpl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .border-library-modal .border-section-more {
+    height: 44px;
+    min-width: 120px;
+  }
+  .border-library-modal .border-card .tpl-meta strong {
+    font-size: 11px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FrameMark v4 · Phase 3 · Inspector 工具切换 / 编辑页签
+   只新增 scoped 类；.inspector-panel / .inspector-scroll / .sheet-grabber /
+   .inspector-tabs（旧类保留兼容）等既有规则不改。编辑页签在移动端位于
+   sheet 顶部，底部是固定的 .mobile-editor-bar（边框 / 水印）。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── desktop tool switch ─────────────────────────────────── */
+.inspector-tool-switch {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px 6px;
+}
+.inspector-tool-switch button {
+  position: relative;
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--glass-btn);
+  color: var(--muted);
+  font-size: 12px;
+}
+.inspector-tool-switch button:hover {
+  color: var(--text-2);
+}
+.inspector-tool-switch button.active {
+  color: var(--accent-ink);
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+}
+.inspector-tool-switch .tab-dot {
+  top: 5px;
+  right: 9px;
+}
+
+/* ── editor tabs (top of the border tool) ────────────────── */
+.editor-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 2px;
+  padding: 2px 10px 8px;
+  border-bottom: 1px solid var(--glass-edge);
+  position: relative;
+  z-index: 5;
+}
+.editor-tabs button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.editor-tabs button:hover {
+  color: var(--text-2);
+}
+.editor-tabs button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-tabs button.active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.055);
+  border-color: var(--line);
+}
+
+.editor-pane {
+  padding-top: 2px;
+}
+
+/* ── compact per-tab control list ────────────────────────── */
+.editor-controls {
+  border-bottom: 0;
+}
+.editor-controls-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+.editor-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.editor-controls-item {
+  min-width: 0;
+}
+
+/* bottom bar only exists on the mobile sheet */
+.mobile-editor-bar {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  /* 工具切换交给底部栏；sheet 略加高，扣掉页签/底栏后正文仍可滚动 */
+  .inspector-tool-switch {
+    display: none;
+  }
+  .inspector-panel {
+    height: clamp(340px, 48dvh, 470px);
+  }
+  .inspector-panel.collapsed {
+    height: clamp(230px, 30dvh, 300px);
+  }
+  .editor-tabs {
+    order: 0;
+    position: static;
+    padding: 2px 8px 8px;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+  }
+  .editor-tabs button {
+    height: 46px;
+    flex-direction: row;
+    gap: 6px;
+    font-size: 13.5px;
+    border-radius: 10px;
+  }
+  .editor-tabs button svg {
+    width: 18px;
+    height: 18px;
+  }
+  .editor-tabs button.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+  }
+  .inspector-scroll {
+    order: 1;
+  }
+  .editor-pane {
+    padding-top: 4px;
+  }
+  .editor-controls-head .btn {
+    min-height: 40px;
+  }
+  .mobile-editor-bar {
+    order: 2;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: #101012;
+    position: relative;
+    z-index: 6;
+  }
+  .mobile-editor-bar button {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  .mobile-editor-bar button svg {
+    width: 20px;
+    height: 20px;
+  }
+  .mobile-editor-bar button.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+  }
+  .mobile-editor-bar .tab-dot {
+    top: 8px;
+    right: calc(50% - 26px);
+  }
+}
+
+@media (max-width: 700px) and (orientation: landscape) {
+  .inspector-panel {
+    height: 58dvh;
+  }
+  .inspector-panel.collapsed {
+    height: 40dvh;
+  }
+}
+
+/* ── Phase 4 · 水印落点图（canvas 上的直接拖动层） ──────────
+   04 §C 铁律：本层压在 .canvas-frame 的活 canvas 上，一律 flat，不加 backdrop-filter。 */
+.wm-placement {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+}
+.wm-placement-area {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.34);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.wm-placement-area.is-canvas {
+  border-color: var(--accent-line);
+}
+.wm-anchor-map {
+  position: absolute;
+  pointer-events: none;
+}
+.wm-anchor-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(8, 14, 26, 0.55);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+.wm-anchor-dot:hover {
+  background: rgba(8, 14, 26, 0.8);
+  transform: translate(-50%, -50%) scale(1.18);
+}
+.wm-anchor-dot.active {
+  background: var(--accent);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.wm-drag-box {
+  position: absolute;
+  border: 1.5px solid var(--accent-line-strong);
+  border-radius: 4px;
+  background: var(--accent-soft);
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+  outline: none;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+.wm-drag-box:hover,
+.wm-drag-box:focus-visible {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+.wm-drag-box.dragging {
+  cursor: grabbing;
+  background: var(--accent-tint);
+  border-color: var(--accent-strong);
+}
+.wm-drag-box:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.wm-drag-grip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(8, 14, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #eef5ff;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+.wm-drag-box:hover .wm-drag-grip,
+.wm-drag-box:focus-visible .wm-drag-grip,
+.wm-drag-box.dragging .wm-drag-grip {
+  opacity: 1;
+}
+.wm-readout {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(8, 14, 26, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #dfe9f7;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: background 0.14s ease;
+}
+.wm-readout.dragging {
+  background: rgba(8, 14, 26, 0.86);
+}
+
+/* Phase 4 · 编辑页切换的轻动效（reduced-motion 由文件末尾总闸关掉） */
+@keyframes fmk-pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.editor-pane {
+  animation: fmk-pane-in 0.18s ease both;
+}
+@media (max-width: 700px) {
+  .editor-pane {
+    animation-duration: 0.14s;
+  }
+}
+
+/* ── Phase 4 · 导出对话框 ─────────────────────────────────── */
+.export-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.export-dialog .field > span {
+  font-size: 11px;
+  color: var(--text-2);
+}
+.export-dialog .segmented {
+  flex-wrap: wrap;
+}
+.export-long-edge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.export-long-edge-input {
+  width: 92px !important;
+}
+.export-long-edge em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+.field-hint {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--faint);
+  word-break: break-all;
+}
+.export-dir-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.export-dir-row input {
+  flex: 1;
+  min-width: 0;
+}
+.export-dialog-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.export-dialog-foot .hint-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }

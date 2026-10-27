@@ -136,6 +136,29 @@ export interface ExportSettings {
   outputDir: string
 }
 
+/** Which photos the Phase 4 export dialog will write. */
+export type ExportScope = 'current' | 'all'
+
+/**
+ * Pointer at a specific Logo Library version/cut picked for a design. Additive
+ * metadata for the logo overhaul: it is absent on every design/preset written by
+ * older builds, and readers must treat `undefined` as "no version selected"
+ * (fall back to the legacy `logo` asset). `defaultDesign()` and
+ * `makeDesignFromVariant()` never emit it.
+ */
+export interface BrandVersionRef {
+  brandKey: string
+  versionId: string
+  cutId: string
+  /** Catalog asset key the bitmap was loaded from (`ver:<brand>:<cut>` or a legacy file stem). */
+  assetKey: string
+  /** Kept for compatibility with the Phase 0 shape; always equal to `assetKey`. */
+  file: string
+  ink: 'dark' | 'light' | 'color' | 'ambiguous'
+  surface?: 'light' | 'dark' | 'both' | 'none'
+  name?: string
+}
+
 export interface Design {
   templateId: TemplateId
   variantId?: string
@@ -151,6 +174,13 @@ export interface Design {
   watermark: WatermarkSettings
   logo: ImageAsset | null
   avatar?: ImageAsset | null
+  /**
+   * Additive metadata: which Logo Library version the user picked. Optional and
+   * absent on old designs/presets — `defaultDesign()` and
+   * `makeDesignFromVariant()` must not emit it, so their output stays unchanged.
+   * A reference only: `logo` keeps carrying the pixel data.
+   */
+  brandVersion?: BrandVersionRef | null
   export: ExportSettings
 }
 
@@ -216,7 +246,14 @@ export interface TemplateRenderEnv {
   isPreview: boolean
 }
 
-export type TemplatePrepareEnv = Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>
+export type TemplatePrepareEnv = Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'> & {
+  /**
+   * Additive: the Logo Library version the user picked. Prepare has no `design`,
+   * so this is the only way `systemCamera.prepare` can preload the version's
+   * cuts for the stock brand slots.
+   */
+  brandVersion?: BrandVersionRef | null
+}
 
 export interface TemplateLayout {
   W: number
@@ -248,3 +285,14 @@ export type ExportJob = {
 }
 
 export type InspectorTab = 'template' | 'watermark' | 'export'
+
+/**
+ * Phase 3 editor shell: the Inspector has two top-level tools. `border` shows
+ * the four per-style editor tabs, `watermark` shows the uploaded PNG layer.
+ * `InspectorTab` above is kept only for compatibility (presets/legacy callers);
+ * the Inspector itself no longer reads it.
+ */
+export type InspectorTool = 'border' | 'watermark'
+
+/** Editor tabs inside the `border` tool, in display order. */
+export type EditorTab = 'logo' | 'text' | 'layout' | 'theme'

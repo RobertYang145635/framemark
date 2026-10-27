@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Eye, ImagePlus, Loader2, Maximize2, Sparkles } from 'lucide-react'
-import type { PhotoAsset } from '../types'
+import type { PhotoAsset, Rect } from '../types'
 import { useAppStore } from '../store'
 import { getSampleAsset } from '../core/sample'
 import { loadImage } from '../core/images'
 import { renderDesign } from '../core/scene'
 import { ensureFonts } from '../core/fonts'
 import { getVariant } from '../core/variants'
+import { WatermarkPlacement } from './WatermarkPlacement'
 
 const sampleModules = import.meta.glob('../assets/samples/*.jpg', {
   eager: true,
@@ -27,7 +28,13 @@ export function PreviewStage() {
   const [fontReady, setFontReady] = useState(false)
   const [zoom, setZoom] = useState<'fit' | 'actual'>('fit')
   const [compare, setCompare] = useState(false)
-  const [meta, setMeta] = useState<{ W: number; H: number; outW: number; outH: number } | null>(null)
+  const [meta, setMeta] = useState<{
+    W: number
+    H: number
+    outW: number
+    outH: number
+    photoRect: Rect
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const variant = getVariant(design.variantId)
@@ -71,7 +78,8 @@ export function PreviewStage() {
             W: result.W,
             H: result.H,
             outW: Math.round(result.W * scale),
-            outH: Math.round(result.H * scale)
+            outH: Math.round(result.H * scale),
+            photoRect: result.photoRect
           })
           setError(null)
         } catch (e) {
@@ -147,6 +155,9 @@ export function PreviewStage() {
         ) : null}
         <div className="canvas-frame">
           <canvas ref={canvasRef} aria-label="模板预览" />
+          {!compare && meta ? (
+            <WatermarkPlacement canvas={canvasRef.current} photoRect={meta.photoRect} W={meta.W} H={meta.H} />
+          ) : null}
           {compare && selected ? <img className="compare-overlay" src={selected.previewUrl} alt="原图" /> : null}
           {compare ? <span className="compare-label">原图</span> : null}
           {error ? <div className="render-error">{error}</div> : null}

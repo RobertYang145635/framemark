@@ -1,4 +1,4 @@
-import type { ExifData, Params, TextSettings } from '../../types'
+import type { BrandVersionRef, ExifData, Params, TextSettings } from '../../types'
 
 export type StockEnv = {
   pw: number
@@ -18,6 +18,12 @@ export type StockEnv = {
 export type StockBrandEnv = Pick<StockEnv, 'exif'> & {
   /** logo registry file the user picked in the Inspector, e.g. `leica_white` */
   brandLogoFile?: string
+  /**
+   * Additive: the explicit Logo Library version picked for this design. When
+   * present it wins over `brandLogoFile`/EXIF and every cut of the version is
+   * preloaded, so a theme change can swap light↔dark without a reload.
+   */
+  brandVersion?: BrandVersionRef | null
 }
 
 export type StockVendor = 'oppo' | 'xiaomi' | 'vivo'

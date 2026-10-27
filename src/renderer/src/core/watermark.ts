@@ -1,5 +1,44 @@
 import type { Rect, WatermarkSettings } from '../types'
 
+/** The region the watermark is positioned inside (photo itself or the whole canvas). */
+export function watermarkArea(
+  settings: WatermarkSettings,
+  photoRect: Rect,
+  canvasW: number,
+  canvasH: number
+): Rect {
+  return settings.target === 'canvas' ? { x: 0, y: 0, w: canvasW, h: canvasH } : photoRect
+}
+
+/**
+ * The unrotated draw rectangle for a single watermark. Kept in one place so the
+ * canvas painter and the direct-manipulation overlay can never disagree.
+ */
+export function watermarkRect(
+  settings: WatermarkSettings,
+  photoRect: Rect,
+  canvasW: number,
+  canvasH: number,
+  imgW: number,
+  imgH: number
+): Rect | null {
+  const area = watermarkArea(settings, photoRect, canvasW, canvasH)
+  if (area.w <= 1 || area.h <= 1) return null
+  const iw = imgW || 1
+  const ih = imgH || 1
+  const w = Math.max(8, (area.w * Math.max(1, settings.widthPct)) / 100)
+  const h = (w * ih) / iw
+  const dx = (area.w * settings.offsetX) / 100
+  const dy = (area.h * settings.offsetY) / 100
+  let x = area.x + dx
+  let y = area.y + dy
+  if (settings.anchor.includes('right')) x = area.x + area.w - w - dx
+  else if (settings.anchor.includes('center') || settings.anchor === 'center') x = area.x + area.w / 2 - w / 2 + dx
+  if (settings.anchor.startsWith('bottom')) y = area.y + area.h - h - dy
+  else if (settings.anchor.startsWith('middle') || settings.anchor === 'center') y = area.y + area.h / 2 - h / 2 + dy
+  return { x, y, w, h }
+}
+
 export function drawWatermark(
   ctx: CanvasRenderingContext2D,
   settings: WatermarkSettings,
@@ -9,7 +48,7 @@ export function drawWatermark(
   img: HTMLImageElement
 ): void {
   if (!settings.enabled || !settings.asset) return
-  const area: Rect = settings.target === 'canvas' ? { x: 0, y: 0, w: canvasW, h: canvasH } : photoRect
+  const area = watermarkArea(settings, photoRect, canvasW, canvasH)
   if (area.w <= 1 || area.h <= 1) return
   const iw = img.naturalWidth || img.width || 1
   const ih = img.naturalHeight || img.height || 1
@@ -49,17 +88,12 @@ export function drawWatermark(
     return
   }
 
-  const w = Math.max(8, (area.w * Math.max(1, settings.widthPct)) / 100)
-  const h = (w * ih) / iw
-  const dx = (area.w * settings.offsetX) / 100
-  const dy = (area.h * settings.offsetY) / 100
-  let x = area.x + dx
-  let y = area.y + dy
-  if (settings.anchor.includes('right')) x = area.x + area.w - w - dx
-  else if (settings.anchor.includes('center') || settings.anchor === 'center') x = area.x + area.w / 2 - w / 2 + dx
-  if (settings.anchor.startsWith('bottom')) y = area.y + area.h - h - dy
-  else if (settings.anchor.startsWith('middle') || settings.anchor === 'center') y = area.y + area.h / 2 - h / 2 + dy
-
+  const rect = watermarkRect(settings, photoRect, canvasW, canvasH, iw, ih)
+  if (!rect) {
+    ctx.restore()
+    return
+  }
+  const { x, y, w, h } = rect
   ctx.translate(x + w / 2, y + h / 2)
   ctx.rotate(rotation)
   ctx.drawImage(img, -w / 2, -h / 2, w, h)

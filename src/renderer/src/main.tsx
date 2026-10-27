@@ -18,7 +18,8 @@ import { DEFAULT_EXPORT, DEFAULT_TEXT, DEFAULT_WATERMARK, makeDesignFromVariant 
 import { autoLogo, logoAsset } from './core/brands'
 import { TEMPLATE_VARIANTS } from './core/variants'
 import { STOCK_STYLE_LIST } from './core/system/styles'
-import type { Design, PhotoAsset, Rect, TemplateVariant } from './types'
+import { collectBrandNodes } from './core/system/assets'
+import type { BrandVersionRef, Design, PhotoAsset, Rect, TemplateVariant } from './types'
 
 const THUMB_W = 480
 const THUMB_H = 360
@@ -28,6 +29,21 @@ interface DebugRenderResult {
   W: number
   H: number
   photoRect?: Rect
+}
+
+/**
+ * Debug-only render options. Normal UI never passes these; omitting every field
+ * keeps `__fmStock.render` / `__fmVariants.render` byte-identical to before.
+ */
+interface DebugRenderOptions {
+  ratio?: string
+  maxEdge?: number
+  /** Overrides `design.params.theme` (stock theme id / hand palette id). */
+  theme?: string
+  /** Explicit Logo Library version, or null to clear it. */
+  brandVersion?: BrandVersionRef | null
+  /** `false` silences every logo path (brand slots included). */
+  showLogo?: boolean
 }
 
 // The debug API mirrors what the gallery can actually render: every hand-written
@@ -98,7 +114,7 @@ function cropToAspect(image: HTMLImageElement, aspect: number): { canvas: HTMLCa
   return { canvas, w, h }
 }
 
-async function renderStockPreview(id: string, opts?: { ratio?: string; maxEdge?: number }): Promise<DebugRenderResult> {
+async function renderStockPreview(id: string, opts?: DebugRenderOptions): Promise<DebugRenderResult> {
   const style = STOCK_STYLE_LIST.find((s) => s.id === id)
   if (!style) throw new Error(`unknown stock style: ${id}`)
   const base = await getSampleAsset()
@@ -133,6 +149,10 @@ async function renderStockPreview(id: string, opts?: { ratio?: string; maxEdge?:
     avatar: null,
     export: { ...DEFAULT_EXPORT }
   }
+  // Debug-only overrides (the normal app never calls this API).
+  if (opts?.theme !== undefined) design.params.theme = opts.theme
+  design.brandVersion = opts?.brandVersion ?? null
+  if (opts?.showLogo === false) design.text.showLogo = false
   const canvas = document.createElement('canvas')
   const exportMode = Boolean(opts && (opts.ratio || opts.maxEdge))
   const rendered = await renderDesign(canvas, design, asset, image, imageW, imageH, { preview: !exportMode })
@@ -176,7 +196,7 @@ async function renderStockPreview(id: string, opts?: { ratio?: string; maxEdge?:
 
 async function renderVariantPreview(
   id: string,
-  opts?: { ratio?: string; maxEdge?: number }
+  opts?: DebugRenderOptions
 ): Promise<DebugRenderResult> {
   const variant = RENDERABLE_VARIANTS.find((v) => v.id === id)
   if (!variant) throw new Error(`unknown template variant: ${id}`)
@@ -189,6 +209,11 @@ async function renderVariantPreview(
   const imageH = cropped ? cropped.h : source.naturalHeight || source.height
   const asset: PhotoAsset = { ...base, width: imageW, height: imageH }
   const design = makeDesignFromVariant(variant)
+  // Debug-only overrides; `applyVariantLogo` runs after the theme is in place so
+  // an autoLogo's light/dark choice follows the overridden palette.
+  if (opts?.theme !== undefined) design.params.theme = opts.theme
+  design.brandVersion = opts?.brandVersion ?? null
+  if (opts?.showLogo === false) design.text.showLogo = false
   await applyVariantLogo(design, variant, asset)
 
   const canvas = document.createElement('canvas')
@@ -240,13 +265,22 @@ async function renderVariantPreview(
 
 interface VariantDebugApi {
   list: () => { id: string; name: string; category: string }[]
-  render: (id: string, opts?: { ratio?: string; maxEdge?: number }) => Promise<DebugRenderResult>
+  render: (id: string, opts?: DebugRenderOptions) => Promise<DebugRenderResult>
 }
 
 const debugWindow = window as unknown as {
   __fmStock: {
-    list: () => { id: string; name: string; vendor: string; family: string; status: string }[]
-    render: (id: string, opts?: { ratio?: string; maxEdge?: number }) => Promise<DebugRenderResult>
+    list: () => {
+      id: string
+      name: string
+      vendor: string
+      family: string
+      status: string
+      themes: string[]
+      themeBackgrounds: Record<string, string>
+      brandSlots: number
+    }[]
+    render: (id: string, opts?: DebugRenderOptions) => Promise<DebugRenderResult>
   }
   __fmVariants: VariantDebugApi
 }
@@ -258,7 +292,12 @@ debugWindow.__fmStock = {
       name: s.name,
       vendor: s.vendor,
       family: s.family,
-      status: s.audit.status
+      status: s.audit.status,
+      // Ids and the background each one paints on: enough for an audit script
+      // to pick a light and a dark surface without reading style data.
+      themes: (s.themes ?? []).map((t) => t.id),
+      themeBackgrounds: Object.fromEntries((s.themes ?? []).map((t) => [t.id, t.background])),
+      brandSlots: collectBrandNodes(s).length
     })),
   render: renderStockPreview
 }

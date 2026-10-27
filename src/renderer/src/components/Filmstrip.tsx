@@ -10,7 +10,7 @@ export function Filmstrip() {
   const removePhoto = useAppStore((s) => s.removePhoto)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
   const addFolder = useAppStore((s) => s.addFolder)
-  const exportAll = useAppStore((s) => s.exportAll)
+  const openExportDialog = useAppStore((s) => s.openExportDialog)
   const job = useAppStore((s) => s.job)
   const desktop = Boolean(window.framemark)
 
@@ -36,9 +36,9 @@ export function Filmstrip() {
           {photos.length > 1 ? (
             <button
               className="btn btn-ghost btn-sm glass-btn glass-spot glass-ripple glass-press"
-              onClick={() => void exportAll()}
+              onClick={() => openExportDialog('all')}
               type="button"
-              title={`导出全部 ${photos.length} 张照片（当前模板套用到每张）。顶栏的「导出当前」只写 1 张。`}
+              title={`打开导出设置并默认选择全部 ${photos.length} 张（当前模板套用到每张）。顶栏的「导出当前」只写 1 张。`}
             >
               <Download size={15} />
               批量导出

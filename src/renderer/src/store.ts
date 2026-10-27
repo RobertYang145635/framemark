@@ -1,9 +1,13 @@
 import { create } from 'zustand'
 import { Capacitor } from '@capacitor/core'
 import type {
+  BrandVersionRef,
   Design,
+  EditorTab,
   ExportJob,
+  ExportScope,
   InspectorTab,
+  InspectorTool,
   ParamOverrides,
   ParamValue,
   Params,
@@ -15,7 +19,17 @@ import type {
 } from './types'
 import { getTemplate } from './core/templates'
 import { getVariant } from './core/variants'
-import { autoLogo, logoAsset } from './core/brands'
+import { autoLogo, logoAsset, logoCutForFile, matchBrand } from './core/brands'
+import { LOGO_VERSION_BY_ID, versionForAssetKey } from './core/logo-catalog'
+import {
+  autoLogoVersionForBrand,
+  cutFitsSurface,
+  cutForVersionSurface,
+  fallbackVersionForSurface,
+  refForVersion,
+  refFromAssetKey,
+  surfaceForDesign
+} from './core/logo-compat'
 import { photoFromFile, photoFromPath, photoFromUrl, revokePhoto, imageAssetFromFile } from './core/photos'
 import {
   DEFAULT_TEXT,
@@ -72,8 +86,14 @@ interface AppState {
   busy: string | null
   job: ExportJob | null
   tab: InspectorTab
+  /** Phase 3 top-level Inspector tool (边框 / 水印). */
+  tool: InspectorTool
+  /** Active editor tab inside the border tool. */
+  editorTab: EditorTab
   brandPickerOpen: boolean
   presetDialogOpen: boolean
+  /** Phase 4 export dialog; null = closed, otherwise the scope it opened with. */
+  exportDialog: ExportScope | null
   galleryQuery: string
   toast: Toast | null
   init: () => Promise<void>
@@ -93,13 +113,19 @@ interface AppState {
   setExport: (patch: Partial<Design['export']>) => void
   setRatio: (ratio: Ratio) => void
   setLogoFromBrand: (file: string) => Promise<void>
+  setLogoVersion: (versionId: string, cutId?: string) => Promise<void>
+  ensureLogoCompatibility: () => Promise<void>
   autoMatchLogo: () => Promise<void>
   clearLogo: () => void
   setAvatarFile: (file: File) => Promise<void>
   clearAvatar: () => void
   setTab: (tab: InspectorTab) => void
+  setTool: (tool: InspectorTool) => void
+  setEditorTab: (tab: EditorTab) => void
   setBrandPickerOpen: (open: boolean) => void
   setPresetDialogOpen: (open: boolean) => void
+  openExportDialog: (scope: ExportScope) => void
+  closeExportDialog: () => void
   setGalleryQuery: (q: string) => void
   savePreset: (name: string) => Promise<void>
   applyPreset: (id: string) => void
@@ -115,6 +141,8 @@ interface AppState {
 
 const isDesktop = typeof window !== 'undefined' && Boolean(window.framemark)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
+/** Dedupes the "no version for this surface" warning to once per version+surface. */
+let lastMissingLogoWarnKey = ''
 
 /**
  * Write one param for the style the design currently points at.
@@ -168,6 +196,28 @@ function rescopeParams (design: Design, variantId: string): Design {
   return { ...design, templateId: base.id, variantId: variant.id, params: materializeParams(declared, design.paramOverrides, variant.id) }
 }
 
+/**
+ * Hydration-time upgrade of the additive `brandVersion` pointer (types.ts).
+ *
+ * Presets and last-design restores carry `params.brandLogoFile` / `logo.name`
+ * (and possibly an older/partial `brandVersion`). When the pointer is missing or
+ * names a version the catalog no longer has, derive it from the picked asset via
+ * `refFromAssetKey`. An existing valid pointer is left verbatim: loading a preset
+ * must not silently repaint it (surface enforcement only runs on a theme change).
+ */
+function normalizeBrandVersion (design: Design): Design {
+  if (design.brandVersion && LOGO_VERSION_BY_ID[design.brandVersion.versionId]) return design
+  const surface = surfaceForDesign(design)
+  const pick = typeof design.params.brandLogoFile === 'string'
+    ? design.params.brandLogoFile
+    : design.logo?.name
+  const ref = pick ? refFromAssetKey(pick, surface) : null
+  if (ref) return { ...design, brandVersion: ref }
+  if (design.brandVersion === undefined) return design
+  const { brandVersion: _dropped, ...rest } = design
+  return rest
+}
+
 async function autoApplyLogo(photo: PhotoAsset | undefined): Promise<void> {
   if (!photo) return
   const state = useAppStore.getState()
@@ -194,8 +244,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   busy: null,
   job: null,
   tab: 'template',
+  tool: 'border',
+  editorTab: 'logo',
   brandPickerOpen: false,
   presetDialogOpen: false,
+  exportDialog: null,
   galleryQuery: '',
   toast: null,
 
@@ -211,7 +264,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
     if (!design.export.outputDir) design.export.outputDir = '相册 / Pictures/FrameMark'
-    set({ presets, design, initialized: true })
+    set({ presets, design: normalizeBrandVersion(design), initialized: true })
     window.setTimeout(() => set({ initialized: true }), 400)
   },
 
@@ -360,10 +413,16 @@ export const useAppStore = create<AppState>((set, get) => ({
           // `stock-xiaomi-leica-1`. Same rule as `text` above: switching cards
           // resets, never inherits. Re-applying the SAME variant keeps the user's
           // live pick (store.ts:444-448), matching the existing isSameVariant branch.
-          logo: isSameVariant ? s.design.logo : null
+          logo: isSameVariant ? s.design.logo : null,
+          // The version pointer follows the same reset rule as the bitmap it
+          // describes; a stale ref must never outlive the logo it was picked for.
+          brandVersion: isSameVariant ? s.design.brandVersion : null
         },
         activePresetId: null,
-        tab: 'template'
+        tab: 'template',
+        // Picking a border returns to the border tool, at its first editor tab.
+        tool: 'border',
+        editorTab: 'logo'
       }
     })
     if (variant.vendorLogo || variant.autoLogo) {
@@ -387,7 +446,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  setParam: (key, value) => set((s) => ({ design: writeParam(s.design, key, value), activePresetId: null })),
+  setParam: (key, value) => {
+    set((s) => ({ design: writeParam(s.design, key, value), activePresetId: null }))
+    // A theme flip can make the picked logo cut unreadable (black mark on a dark
+    // card). Reconcile in the background so typing/sliders never block on a decode.
+    if (key === 'theme') void get().ensureLogoCompatibility()
+  },
 
   resetVariantParams: () => {
     const s = get()
@@ -448,20 +512,144 @@ export const useAppStore = create<AppState>((set, get) => ({
     // It is an EXPLICIT user choice, so it is bucketed per style: an absent key
     // means "auto-resolve the wordmark from this photo's EXIF brand" (549a653),
     // and that derivation must never be inherited by another style.
+    //
+    // Phase 1b-1: resolve the catalog pointer for the CURRENT surface as a side
+    // effect only. `brandLogoFile`/`logo` semantics and legacy picker behavior
+    // are unchanged; an un-catalogued (hand-dropped) file clears the pointer.
+    const ref = refFromAssetKey(file, surfaceForDesign(get().design))
     try {
       const asset = await logoAsset(file)
       set((s) => ({
         design: {
           ...writeParam(s.design, 'brandLogoFile', file),
           logo: asset,
-          text: { ...s.design.text, showLogo: true }
+          text: { ...s.design.text, showLogo: true },
+          brandVersion: ref
         },
         activePresetId: null
       }))
       get().showToast('Logo 已应用', 'success')
     } catch {
-      set((s) => ({ design: writeParam(s.design, 'brandLogoFile', file) }))
+      set((s) => ({
+        design: { ...writeParam(s.design, 'brandLogoFile', file), brandVersion: ref }
+      }))
       get().showToast('Logo 载入失败', 'error')
+    }
+  },
+
+  setLogoVersion: async (versionId, cutId) => {
+    const version = LOGO_VERSION_BY_ID[versionId]
+    if (!version) return
+    const surface = surfaceForDesign(get().design)
+    const requested = cutId ? version.cuts.find((c) => c.id === cutId) : null
+    const cut =
+      requested && cutFitsSurface(requested, surface)
+        ? requested
+        : cutForVersionSurface(version, surface)
+    if (!cut) {
+      get().showToast(`这个版本只适用于${surface === 'dark' ? '深色' : '浅色'}底`, 'error')
+      return
+    }
+    let asset
+    try {
+      asset = await logoAsset(cut.assetKey)
+    } catch {
+      get().showToast('Logo 载入失败', 'error')
+      return
+    }
+    const ref: BrandVersionRef = {
+      brandKey: version.brandKey,
+      versionId: version.id,
+      cutId: cut.id,
+      assetKey: cut.assetKey,
+      file: cut.assetKey,
+      ink: cut.ink,
+      surface: cut.surface,
+      name: version.name
+    }
+    lastMissingLogoWarnKey = ''
+    set((s) => ({
+      design: {
+        ...writeParam(s.design, 'brandLogoFile', cut.assetKey),
+        brandVersion: ref,
+        logo: asset,
+        text: { ...s.design.text, showLogo: true }
+      },
+      activePresetId: null
+    }))
+  },
+
+  ensureLogoCompatibility: async () => {
+    const { design } = get()
+    const current = design.brandVersion
+    if (!current) return
+    const surface = surfaceForDesign(design)
+    const version = LOGO_VERSION_BY_ID[current.versionId]
+    if (!version) return
+
+    const cut = cutForVersionSurface(version, surface)
+    if (cut) {
+      if (cut.id === current.cutId && cut.assetKey === current.assetKey) return
+      let asset
+      try {
+        asset = await logoAsset(cut.assetKey)
+      } catch {
+        return
+      }
+      const next = refForVersion(version, surface)
+      if (!next) return
+      lastMissingLogoWarnKey = ''
+      set((s) =>
+        s.design.brandVersion?.versionId === version.id
+          ? {
+              design: {
+                ...writeParam(s.design, 'brandLogoFile', cut.assetKey),
+                brandVersion: next,
+                logo: asset,
+                text: { ...s.design.text, showLogo: true }
+              }
+            }
+          : {}
+      )
+      get().showToast(`已换成${surface === 'dark' ? '白' : '黑'}版 Logo`, 'info')
+      return
+    }
+
+    const fallback = fallbackVersionForSurface(version, surface)
+    const next = fallback ? refForVersion(fallback, surface) : null
+    if (fallback && next) {
+      let asset
+      try {
+        asset = await logoAsset(next.assetKey)
+      } catch {
+        return
+      }
+      lastMissingLogoWarnKey = ''
+      set((s) =>
+        s.design.brandVersion?.versionId === version.id
+          ? {
+              design: {
+                ...writeParam(s.design, 'brandLogoFile', next.assetKey),
+                brandVersion: next,
+                logo: asset,
+                text: { ...s.design.text, showLogo: true }
+              }
+            }
+          : {}
+      )
+      get().showToast(`已换成同款的${surface === 'dark' ? '深' : '浅'}底版本`, 'info')
+      return
+    }
+
+    // No version can live on this surface. Keep `brandVersion`/`logo` intact in
+    // this slice (renderer enforcement comes next); warn once per theme change.
+    const warnKey = `${version.id}:${surface}`
+    if (lastMissingLogoWarnKey !== warnKey) {
+      lastMissingLogoWarnKey = warnKey
+      get().showToast(
+        `这个 Logo 没有${surface === 'dark' ? '深色' : '浅色'}底版本，导出时不会显示`,
+        'error'
+      )
     }
   },
 
@@ -478,6 +666,28 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().showToast('没有匹配到品牌 Logo，可手动选择', 'error')
       return
     }
+    // Legacy `autoLogo` can return a cut that cannot read on this card (e.g. a
+    // black-only brand on a dark surface). Upgrade to a compatible catalog
+    // version instead of pinning an unreadable cut; compatible picks keep the
+    // old path byte-for-byte.
+    const surface = surfaceForDesign(s.design)
+    const cut = logoCutForFile(file)
+    if (cut && !cutFitsSurface(cut, surface)) {
+      const brandKey =
+        matchBrand(photo.exif.make, photo.exif.model) ??
+        versionForAssetKey(file)?.brandKey ??
+        versionForAssetKey(cut.assetKey)?.brandKey
+      const version = brandKey ? autoLogoVersionForBrand(brandKey, surface) : null
+      if (!version) {
+        get().showToast(
+          `这个品牌没有${surface === 'dark' ? '深色' : '浅色'}底 Logo，可手动选择`,
+          'error'
+        )
+        return
+      }
+      await get().setLogoVersion(version.id)
+      return
+    }
     await get().setLogoFromBrand(file)
     get().showToast('已按 EXIF 匹配品牌 Logo', 'success')
   },
@@ -486,7 +696,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       // dropParam clears the key from the flat object AND from this style's bucket,
       // so "no explicit pick" (⇒ auto-match from EXIF) is restored consistently.
-      design: { ...dropParam(s.design, 'brandLogoFile'), logo: null },
+      design: { ...dropParam(s.design, 'brandLogoFile'), logo: null, brandVersion: null },
       activePresetId: null
     })),
 
@@ -503,8 +713,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearAvatar: () => set((s) => ({ design: { ...s.design, avatar: null }, activePresetId: null })),
 
   setTab: (tab) => set({ tab }),
+  setTool: (tool) => set({ tool }),
+  setEditorTab: (editorTab) => set({ editorTab }),
   setBrandPickerOpen: (open) => set({ brandPickerOpen: open }),
   setPresetDialogOpen: (open) => set({ presetDialogOpen: open }),
+  openExportDialog: (scope) => set({ exportDialog: scope }),
+  closeExportDialog: () => set({ exportDialog: null }),
   setGalleryQuery: (q) => set({ galleryQuery: q }),
 
   savePreset: async (name) => {
@@ -529,7 +743,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Presets are portable: keep the user's current export folder and ignore any
     // machine-specific outputDir saved by legacy presets.
     design.export = { ...design.export, outputDir: liveOutputDir }
-    set({ design, activePresetId: preset.id, tab: 'template' })
+    // Upgrades a preset saved before the catalog (or with a partial pointer) to a
+    // version ref derived from its own pick; purely additive metadata.
+    set({ design: normalizeBrandVersion(design), activePresetId: preset.id, tab: 'template' })
     get().showToast(`已应用「${preset.name}」`, 'success')
   },
 

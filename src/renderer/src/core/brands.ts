@@ -1,18 +1,13 @@
 import type { ImageAsset } from '../types'
 import { createCanvas, loadImage } from './images'
+import { LOGO_FILES } from './logo-files'
+import type { LogoCut } from './logo-catalog'
+import { cutForAssetKey } from './logo-catalog'
+import { logoVersionAssetUrl } from './logo-version-assets'
 
-const modules = import.meta.glob('../assets/logos/*.webp', {
-  eager: true,
-  query: '?url',
-  import: 'default'
-}) as Record<string, string>
-
-export const LOGO_FILES: Record<string, string> = {}
-for (const [filePath, url] of Object.entries(modules)) {
-  const name = filePath.split('/').pop()?.replace(/\.webp$/i, '') ?? ''
-  if (!name || name === 'logo' || name === 'logo_empty') continue
-  LOGO_FILES[name] = url
-}
+// Re-exported so every existing importer (`BrandPicker`, `system/assets.ts`,
+// tests) keeps reading the same registry object from `core/brands`.
+export { LOGO_FILES }
 
 export interface BrandDef {
   key: string
@@ -195,11 +190,30 @@ export function matchBrand(make: string, model: string): string | null {
 
 const assetCache = new Map<string, Promise<ImageAsset>>()
 
+/**
+ * URL for an app logo file OR a catalog asset key (`ver:<brand>:<cut>`), or null
+ * when neither registry knows it. Legacy app stems keep resolving exactly as
+ * before, so `logoAsset()` call sites need no change.
+ */
+export function logoUrlFor(file: string): string | null {
+  return LOGO_FILES[file] ?? logoVersionAssetUrl(file)
+}
+
+/**
+ * Catalog cut behind a registry file name, accepting a legacy stem with or
+ * without extension / a `logo-` prefix. Null for hand-dropped or unknown files.
+ */
+export function logoCutForFile(file: string): LogoCut | null {
+  const base = String(file).replace(/\\/g, '/').split('/').pop() ?? ''
+  const clean = base.replace(/^logo-/, '').replace(/\.(webp|png|jpe?g)$/i, '')
+  return cutForAssetKey(file) ?? cutForAssetKey(base) ?? cutForAssetKey(clean)
+}
+
 export function logoAsset(file: string): Promise<ImageAsset> {
   const hit = assetCache.get(file)
   if (hit) return hit
   const p = (async () => {
-    const url = LOGO_FILES[file]
+    const url = logoUrlFor(file)
     if (!url) throw new Error('Logo 不存在')
     const img = await loadImage(url)
     const canvas = createCanvas(img.naturalWidth, img.naturalHeight)

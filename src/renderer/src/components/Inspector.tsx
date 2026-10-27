@@ -1,26 +1,36 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   Camera,
-  Download,
   Droplets,
-  FolderOpen,
+  Frame,
+  Image as ImageIcon,
   ImagePlus,
   Images,
+  LayoutGrid,
+  Palette,
   RotateCcw,
-  Save,
-  SlidersHorizontal,
   Sparkles,
   Trash2,
+  Type,
   Upload
 } from 'lucide-react'
-import type { Anchor, InspectorTab, Ratio, TextSettings } from '../types'
+import type { Anchor, EditorTab, Ratio, TextSettings } from '../types'
 import { useAppStore } from '../store'
 import { getTemplate } from '../core/templates'
 import { getVariant } from '../core/variants'
-import { BRANDS } from '../core/brands'
+import { LOGO_VERSION_BY_ID } from '../core/logo-catalog'
+import { DISPLAY_LOGO_BRAND_COUNT, SELECTED_LOGO_VERSION_COUNT } from '../core/logo-selection.generated'
+import { cutForVersionSurface, surfaceForDesign } from '../core/logo-compat'
 import { getStockStyle } from '../core/system/styles'
-import type { StockStyle } from '../core/system/ir'
-import { IconButton, Section, Segmented, Slider, Switch } from './ui'
+import { controlsFor } from '../core/controls'
+import type { ControlView } from '../core/controls'
+import {
+  availableEditorTabs,
+  editorTabForControl,
+  isHandTemplate,
+  stockHasBrandSlot
+} from '../core/editor/capabilities'
+import { Section, Segmented, Slider, Switch } from './ui'
 import { StyleControlsPanel } from './controls/StyleControlsPanel'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
@@ -29,20 +39,6 @@ const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: '4:5', label: '4:5' },
   { value: '16:9', label: '16:9' },
   { value: '3:2', label: '3:2' }
-]
-
-const FORMATS = [
-  { value: 'jpeg' as const, label: 'JPG' },
-  { value: 'png' as const, label: 'PNG' },
-  { value: 'webp' as const, label: 'WebP' },
-  { value: 'tiff' as const, label: 'TIFF' }
-]
-
-const LONG_EDGE = [
-  { value: 0, label: '原图' },
-  { value: 4096, label: '4096' },
-  { value: 3000, label: '3000' },
-  { value: 2048, label: '2048' }
 ]
 
 const TEXT_FLAGS: { key: keyof TextSettings; label: string }[] = [
@@ -115,19 +111,6 @@ function ThemeSwatches() {
   )
 }
 
-/**
- * Does this stock style declare a `isBrandLogo` slot node? The stock engine's
- * only logo consumer is `params.brandLogoFile`, which `assets.ts` applies solely
- * to `isBrandLogo` slots — fixed co-brand marks (Leica roundel, Hasselblad, the
- * 哈苏文字 marks) have none, so the brand picker would be inert for those cards.
- */
-function stockHasBrandSlot(style: StockStyle | null): boolean {
-  if (!style) return false
-  const walk = (nodes: StockStyle['bands'][number]['children']): boolean =>
-    nodes.some((n) => (n.kind === 'image' ? !!n.isBrandLogo : n.kind === 'group' ? walk(n.children) : false))
-  return style.bands.some((b) => walk(b.children))
-}
-
 function LogoSection() {
   const design = useAppStore((s) => s.design)
   const setBrandPickerOpen = useAppStore((s) => s.setBrandPickerOpen)
@@ -137,21 +120,24 @@ function LogoSection() {
   const setParam = useAppStore((s) => s.setParam)
   const def = getTemplate(design.templateId)
   // Stock cards (Task-2, option (b) — do not leave a control that does nothing):
-  // `显示 Logo` (text.showLogo) and `Logo 大小` (params.logoScale) have no consumer
-  // anywhere in core/system — the stock engine reads neither — so they are hidden
-  // on stock cards rather than wired onto a path that cannot honour them without
-  // breaking the vendor-faithful (0,0) render. `brandLogoFile` DOES drive
-  // `isBrandLogo` slots, so the brand-picker row is kept for slot styles and the
-  // whole section is dropped for stock styles that have no such node (e.g. the
-  // two 哈苏文字 cards, whose logo is a fixed co-brand mark).
+  // `显示 Logo` (text.showLogo) and `Logo 大小` (params.logoScale) are now honored
+  // by the stock engine for brands slots and by the hand templates, so both are
+  // shown. `brandLogoFile` drives `isBrandLogo` slots only, so stock styles with
+  // no such node (e.g. the two 哈苏文字 cards, whose logo is a fixed co-brand
+  // mark) still drop the whole section.
   const isStock = def.id === 'systemCamera'
   const stockStyle = isStock ? getStockStyle(String(design.params.systemStyle ?? '')) : null
   if (isStock && !stockHasBrandSlot(stockStyle)) return null
 
+  const surface = surfaceForDesign(design)
+  const version = design.brandVersion ? LOGO_VERSION_BY_ID[design.brandVersion.versionId] ?? null : null
+  const title = version?.name ?? design.logo?.name ?? '未选择'
+  const unavailable = Boolean(version && !cutForVersionSurface(version, surface))
+
   return (
     <Section
       title="品牌 Logo"
-      hint={`自动匹配 EXIF 品牌，或从 ${BRANDS.length} 个品牌中选择`}
+      hint={`自动匹配 EXIF 品牌，或从 ${DISPLAY_LOGO_BRAND_COUNT} 个品牌 / ${SELECTED_LOGO_VERSION_COUNT} 个已选版本中选择`}
       action={
         <button className="btn btn-ghost btn-sm" onClick={() => void autoMatchLogo()} type="button">
           <Sparkles size={14} />
@@ -160,7 +146,7 @@ function LogoSection() {
       }
     >
       <div className="logo-row">
-        <div className={`logo-current ${design.logo ? 'has' : ''}`}>
+        <div className={`logo-section-preview on-${surface} ${unavailable ? 'unavailable' : ''}`}>
           {design.logo ? (
             <img src={design.logo.dataUrl} alt={design.logo.name} />
           ) : (
@@ -169,38 +155,43 @@ function LogoSection() {
             </span>
           )}
         </div>
-        <div className="logo-actions">
-          <button className="btn btn-ghost btn-sm" onClick={() => setBrandPickerOpen(true)} type="button">
-            <Images size={14} />
-            品牌库
-          </button>
-          {design.logo ? (
-            <button className="btn btn-ghost btn-sm" onClick={clearLogo} type="button">
-              <Trash2 size={14} />
-              清除
-            </button>
+        <div className="logo-section-meta">
+          <strong className="logo-section-name" title={title}>{title}</strong>
+          {version ? <em className="logo-section-years">{version.years}</em> : null}
+          {unavailable ? (
+            <span className="logo-section-warn">
+              当前{surface === 'dark' ? '深色' : '浅色'}底不显示这个版本，请更换或切换底色
+            </span>
           ) : null}
+          <div className="logo-actions">
+            <button className="btn btn-ghost btn-sm" onClick={() => setBrandPickerOpen(true)} type="button">
+              <Images size={14} />
+              更换
+            </button>
+            {design.logo ? (
+              <button className="btn btn-ghost btn-sm" onClick={clearLogo} type="button">
+                <Trash2 size={14} />
+                清除
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
-      {!isStock ? (
-        <>
-          <Switch
-            checked={design.text.showLogo}
-            onChange={(v) => setText({ showLogo: v })}
-            label="显示 Logo"
-            hint="选中品牌后再决定是否显示"
-          />
-          <Slider
-            label="Logo 大小"
-            value={Number(design.params.logoScale ?? 5)}
-            min={0}
-            max={10}
-            step={0.5}
-            onChange={(v) => setParam('logoScale', v)}
-            disabled={!design.text.showLogo}
-          />
-        </>
-      ) : null}
+      <Switch
+        checked={design.text.showLogo}
+        onChange={(v) => setText({ showLogo: v })}
+        label="显示 Logo"
+        hint="选中品牌后再决定是否显示"
+      />
+      <Slider
+        label="Logo 大小"
+        value={Number(design.params.logoScale ?? 5)}
+        min={0}
+        max={10}
+        step={0.5}
+        onChange={(v) => setParam('logoScale', v)}
+        disabled={!design.text.showLogo}
+      />
     </Section>
   )
 }
@@ -251,112 +242,6 @@ function AvatarSection() {
   )
 }
 
-const PARAM_LABELS: Record<string, string> = {
-  marginTopPct: '上边距',
-  marginBottomPct: '下边距',
-  insetPct: '卡片内缩',
-  footerOffsetPct: '页脚偏移',
-  overlayMode: '品牌行模式',
-  overlayBrand: '品牌字',
-  brandWidthPct: '品牌宽度',
-  brandOffsetPct: '品牌偏移',
-  brandCenterPct: '品牌居中偏移',
-  brandTextSizePct: '品牌字号',
-  brandPlacement: '品牌位置',
-  exifWidthPct: 'EXIF 宽度',
-  exifSizePct: 'EXIF 字号',
-  exifOffsetPct: 'EXIF 偏移',
-  exifAlign: 'EXIF 对齐',
-  profileMode: '人物布局',
-  profileName: '昵称',
-  headerPct: '页眉高度',
-  chipTopPct: '浮层顶距',
-  avatarPct: '头像大小',
-  nameSizePct: '昵称字号',
-  modelSizePct: '机型字号',
-  footerLogoPct: '页脚 Logo',
-  logoPct: 'Logo 大小',
-  logoPos: 'Logo 位置',
-  footerAlign: '页脚对齐',
-  footerTextScale: '页脚字号',
-  minimalFooter: '简约日期',
-  borderStyle: '照片描边',
-  glassLayout: '玻璃布局',
-  glassAlign: '玻璃位置',
-  sideLayout: '侧栏布局',
-  corner: '角标位置',
-  stockAnchor: '水印锚点',
-  stockOffsetXPct: '水印水平微调',
-  stockOffsetYPct: '水印垂直微调'
-}
-
-const EXPOSED_PARAMS = new Set([
-  'theme', 'systemStyle', 'marginPct', 'radiusPct', 'shadow', 'footerPct',
-  'blur', 'grain', 'barPct', 'logoScale'
-])
-
-function AdvancedParams() {
-  const design = useAppStore((s) => s.design)
-  const def = getTemplate(design.templateId)
-  const variant = getVariant(design.variantId)
-  const setParam = useAppStore((s) => s.setParam)
-  const [open, setOpen] = useState(false)
-  const entries = Object.entries({ ...def.defaults, ...(variant.params ?? {}), ...design.params })
-    .filter(([key, value]) => !EXPOSED_PARAMS.has(key) && value !== undefined && value !== null && typeof value !== 'object')
-    .sort(([a], [b]) => (PARAM_LABELS[a] ?? a).localeCompare(PARAM_LABELS[b] ?? b, 'zh-CN'))
-  if (!entries.length) return null
-  return (
-    <Section
-      title="全部参数"
-      hint={`${entries.length} 个当前模板参数，含未在常用面板暴露的细项`}
-      action={
-        <button className="btn btn-ghost btn-sm" onClick={() => setOpen((v) => !v)} type="button">
-          <SlidersHorizontal size={14} />
-          {open ? '收起' : '展开'}
-        </button>
-      }
-    >
-      {open ? (
-        <div className="field-stack">
-          {entries.map(([key, value]) => {
-            const label = PARAM_LABELS[key] ?? key
-            if (typeof value === 'boolean') {
-              return (
-                <label className="field compact" key={key} title={key}>
-                  <span>{label}</span>
-                  <input type="checkbox" checked={value} onChange={(e) => setParam(key, e.target.checked)} />
-                </label>
-              )
-            }
-            if (typeof value === 'number') {
-              return (
-                <label className="field compact" key={key} title={key}>
-                  <span>{label}</span>
-                  <input
-                    type="number"
-                    step={Number.isInteger(value) ? 1 : 0.1}
-                    value={value}
-                    onChange={(e) => {
-                      const n = Number(e.target.value)
-                      if (Number.isFinite(n)) setParam(key, n)
-                    }}
-                  />
-                </label>
-              )
-            }
-            return (
-              <label className="field compact" key={key} title={key}>
-                <span>{label}</span>
-                <input value={String(value)} onChange={(e) => setParam(key, e.target.value)} />
-              </label>
-            )
-          })}
-        </div>
-      ) : null}
-    </Section>
-  )
-}
-
 function TextSection() {
   const design = useAppStore((s) => s.design)
   const setText = useAppStore((s) => s.setText)
@@ -364,7 +249,7 @@ function TextSection() {
   return (
     <Section
       title="文字与参数"
-      hint="留空标题时自动使用相机品牌/机型；支持 {make} {model} {lens} {date} {exif} 等变量"
+      hint="标题留空时会用照片信息自动填充；需要变量时可写 {make} {model} {date}"
     >
       <div className="field-stack">
         <label className="field">
@@ -404,7 +289,7 @@ function TextSection() {
           <input
             value={t.location ?? ''}
             onChange={(e) => setText({ location: e.target.value })}
-            placeholder="用于系统相机的地点 token，例如 成都 / 青岛"
+            placeholder="例如：成都 / 青岛"
           />
         </label>
       </div>
@@ -433,13 +318,92 @@ function TextSection() {
   )
 }
 
-function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates: () => void; onOpenReferences: () => void }) {
+/**
+ * Phase 3: the active editor tab's per-style controls. The capability function
+ * decides which tab owns a control, so this list and the other tabs can never
+ * show the same control twice.
+ */
+function EditorControlList({
+  tab,
+  filter
+}: {
+  tab: EditorTab
+  filter?: (view: ControlView) => boolean
+}) {
+  return (
+    <StyleControlsPanel
+      compact
+      filter={(view) => editorTabForControl(view) === tab && (!filter || filter(view))}
+    />
+  )
+}
+
+function CurrentTemplateHeader({ onOpenTemplates, onOpenReferences }: { onOpenTemplates: () => void; onOpenReferences: () => void }) {
+  const design = useAppStore((s) => s.design)
+  const resetVariantParams = useAppStore((s) => s.resetVariantParams)
+  const def = getTemplate(design.templateId)
+  const variant = getVariant(design.variantId)
+  return (
+    <div className="current-template">
+      <div>
+        <span className="eyebrow">{variant.category}</span>
+        <h3>{variant.name}</h3>
+        <p>{variant.description ?? def.description}</p>
+      </div>
+      <div className="current-template-actions">
+        <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} type="button">
+          <Images size={14} />
+          原版
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
+          <RotateCcw size={14} />
+          恢复
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onOpenTemplates} type="button">
+          更换
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function LogoEditor() {
+  const design = useAppStore((s) => s.design)
+  const stock = !isHandTemplate(design)
+  const stockStyle = stock ? getStockStyle(String(design.params.systemStyle ?? '')) : null
+  // LogoSection 已经覆盖了 stock 的 `brandLogoFile`（含自动匹配/显隐/大小），
+  // 逐套的 brandPicker 控件会变成第二个入口，因此只在没有通用区时保留它。
+  const hasLogoSection = !stock || stockHasBrandSlot(stockStyle)
+  return (
+    <>
+      <LogoSection />
+      <AvatarSection />
+      <EditorControlList
+        tab="logo"
+        filter={hasLogoSection ? (view) => view.control.kind !== 'brandPicker' : undefined}
+      />
+    </>
+  )
+}
+
+function TextEditor() {
+  const design = useAppStore((s) => s.design)
+  // Stock cards get their own per-slot text controls; the generic title/subtitle
+  // fields would be abstract, inert-looking inputs for them.
+  const hand = isHandTemplate(design)
+  return (
+    <>
+      {hand ? <TextSection /> : null}
+      <EditorControlList tab="text" />
+    </>
+  )
+}
+
+function LayoutEditor() {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
   const setRatio = useAppStore((s) => s.setRatio)
-  const setPresetDialogOpen = useAppStore((s) => s.setPresetDialogOpen)
   const def = getTemplate(design.templateId)
-  const variant = getVariant(design.variantId)
   const controls = def.controls ?? []
   const isMovie = def.id === 'movie'
   const isMinimal = def.id === 'minimal'
@@ -459,32 +423,9 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
     !!getStockStyle(String(design.params.systemStyle ?? ''))?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
   // 'vendor' = the style's own committed position (pixel-identical default).
   const stockAnchor = String(design.params.stockAnchor ?? 'vendor')
-  const themeOptions = variant.themes?.length ? variant.themes : def.themes
 
-  const resetVariantParams = useAppStore((s) => s.resetVariantParams)
   return (
-    <div className="inspector-pane">
-      <div className="current-template">
-        <div>
-          <span className="eyebrow">{variant.category}</span>
-          <h3>{variant.name}</h3>
-          <p>{variant.description ?? def.description}</p>
-        </div>
-        <div className="current-template-actions">
-          <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} type="button">
-            <Images size={14} />
-            原版
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
-            <RotateCcw size={14} />
-            恢复
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={onOpenTemplates} type="button">
-            更换
-          </button>
-        </div>
-      </div>
-
+    <>
       <Section title="画幅">
         <Segmented
           value={design.ratio}
@@ -567,16 +508,6 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
         ) : null}
         {!controls.length && !isMovie && !stockMovable ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
       </Section>
-
-      {/* 逐套差异化面板：控件集合来自 core/controls 的 JSON 记录（106 套 IR 样式一套路子），
-          读写只走 setParam ⇒ design.paramOverrides[variantId]，切换卡片时各套的值互不串味。 */}
-      <StyleControlsPanel />
-
-      {themeOptions?.length ? (
-        <Section title="主题">
-          <ThemeSwatches />
-        </Section>
-      ) : null}
 
       {(isMinimal || isFooter) ? (
         <Section title="细节">
@@ -702,20 +633,32 @@ function TemplatePanel({ onOpenTemplates, onOpenReferences }: { onOpenTemplates:
         </Section>
       ) : null}
 
-      <LogoSection />
-      <AvatarSection />
-      <TextSection />
-      <AdvancedParams />
+      {/* 逐套差异化控件里归到「布局」的那部分（锚点 / 微调 / 方位）。 */}
+      <EditorControlList tab="layout" />
+    </>
+  )
+}
 
-      <Section title="预设">
-        <div className="preset-save-row">
-          <button className="btn btn-secondary block" onClick={() => setPresetDialogOpen(true)} type="button">
-            <Save size={15} />
-            保存为预设
-          </button>
-        </div>
-      </Section>
-    </div>
+function ThemeEditor() {
+  const design = useAppStore((s) => s.design)
+  const def = getTemplate(design.templateId)
+  const variant = getVariant(design.variantId)
+  const themes = variant?.themes?.length ? variant.themes : def.themes
+  // 逐套 themeSwatches 读的也是 params.theme，但选项来自该厂商样式的完整主题
+  // （例如 xiaomi 的 white/black/light_blur/dark_blur）；再叠一个通用色卡就是
+  // 第二份入口，且选到 blur 主题时通用色卡会全灭。
+  const hasStyleTheme = (controlsFor(design)?.views ?? []).some(
+    (view) => view.live && editorTabForControl(view) === 'theme'
+  )
+  return (
+    <>
+      {themes?.length && !hasStyleTheme ? (
+        <Section title="主题">
+          <ThemeSwatches />
+        </Section>
+      ) : null}
+      <EditorControlList tab="theme" />
+    </>
   )
 }
 
@@ -801,124 +744,36 @@ function WatermarkPanel() {
   )
 }
 
-function ExportPanel() {
-  const design = useAppStore((s) => s.design)
-  const photos = useAppStore((s) => s.photos)
-  const setExport = useAppStore((s) => s.setExport)
-  const exportCurrent = useAppStore((s) => s.exportCurrent)
-  const exportAll = useAppStore((s) => s.exportAll)
-  const job = useAppStore((s) => s.job)
-  const desktop = Boolean(window.framemark)
-  const formats = desktop ? FORMATS : FORMATS.filter((f) => f.value !== 'tiff')
-  const qualityVisible = design.export.format === 'jpeg'
-  const changeDir = async () => {
-    if (!window.framemark) return
-    const dir = await window.framemark.pickExportDir()
-    if (dir) setExport({ outputDir: dir })
-  }
-  return (
-    <div className="inspector-pane">
-      <Section title="导出格式">
-        <Segmented
-          value={design.export.format}
-          options={formats}
-          onChange={(v) => setExport({ format: v })}
-          compact
-        />
-        {qualityVisible ? (
-          <Slider
-            label="JPEG 质量"
-            value={design.export.quality}
-            min={90}
-            max={100}
-            step={1}
-            onChange={(v) => setExport({ quality: v })}
-          />
-        ) : null}
-        <p className="hint-note">
-          {desktop
-            ? '桌面 JPG 使用 100 质量 + 4:4:4；PNG 与 TIFF 为真无损；WebP 使用无损编码（较慢）。'
-            : 'JPG 与 WebP 使用最高质量；PNG 为真无损。Android 的 PNG/WebP 不写入 EXIF。'}
-        </p>
-      </Section>
-
-      <Section title="尺寸">
-        <label className="field compact">
-          <span>长边限制</span>
-          <Segmented
-            value={String(design.export.longEdge)}
-            options={LONG_EDGE.map((o) => ({ value: String(o.value), label: o.label }))}
-            onChange={(v) => setExport({ longEdge: Number(v) })}
-            compact
-          />
-        </label>
-        <p className="hint-note">
-          {design.export.longEdge
-            ? `会重采样到长边 ${design.export.longEdge}px，属于有损缩放。`
-            : '默认按原图分辨率输出，不缩放。24MP 以上请预留内存。'}
-        </p>
-      </Section>
-
-      <Section title="元数据">
-        <Switch checked={design.export.removeGps} onChange={(v) => setExport({ removeGps: v })} label="移除 GPS 位置" hint="默认开启，保护隐私" />
-        <label className="field">
-          <span>文件名模板</span>
-          <input
-            value={design.export.filenamePattern}
-            onChange={(e) => setExport({ filenamePattern: e.target.value })}
-            placeholder="{name}-{template}"
-          />
-        </label>
-        <p className="token-hint">{'{name} {template} {preset} {date} {time} {index} {make} {model}'}</p>
-      </Section>
-
-      <Section title="输出位置">
-        {desktop ? (
-          <div className="output-dir">
-            <code title={design.export.outputDir}>{design.export.outputDir || '尚未选择'}</code>
-            <button className="btn btn-ghost btn-sm" onClick={() => void changeDir()} type="button">
-              <FolderOpen size={14} />
-              更改
-            </button>
-          </div>
-        ) : (
-          <div className="output-dir">
-            <code>系统相册 / Pictures/FrameMark</code>
-          </div>
-        )}
-      </Section>
-
-      <div className="export-actions">
-        <button className="btn btn-primary block" onClick={() => void exportCurrent()} disabled={!photos.length || job?.running} type="button">
-          <Download size={16} />
-          导出当前
-        </button>
-        <button className="btn btn-secondary block" onClick={() => void exportAll()} disabled={!photos.length || job?.running} type="button">
-          <Download size={16} />
-          导出全部（{photos.length}）
-        </button>
-        <p className="hint-note center">JPG 会回写相机 EXIF，方向自动校正；PNG/WebP/TIFF 不写入 EXIF。</p>
-      </div>
-    </div>
-  )
+const EDITOR_TAB_META: Record<EditorTab, { label: string; icon: React.ReactNode }> = {
+  logo: { label: 'Logo', icon: <ImageIcon size={15} /> },
+  text: { label: '文字', icon: <Type size={15} /> },
+  layout: { label: '布局', icon: <LayoutGrid size={15} /> },
+  theme: { label: '主题', icon: <Palette size={15} /> }
 }
 
 export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplates: () => void; onOpenReferences: () => void }) {
-  const tab = useAppStore((s) => s.tab)
-  const setTab = useAppStore((s) => s.setTab)
+  const design = useAppStore((s) => s.design)
+  const tool = useAppStore((s) => s.tool)
+  const setTool = useAppStore((s) => s.setTool)
+  const editorTab = useAppStore((s) => s.editorTab)
+  const setEditorTab = useAppStore((s) => s.setEditorTab)
   const watermarkEnabled = useAppStore((s) => s.design.watermark.enabled)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [sheetCollapsed, setSheetCollapsed] = useState(false)
 
+  const available = availableEditorTabs(design)
+  // A tab that this design cannot fill must never stay selected (e.g. after a
+  // style switch); render the first available tab and settle the store below.
+  const activeTab: EditorTab = available.includes(editorTab) ? editorTab : available[0] ?? 'layout'
+
+  useEffect(() => {
+    if (tool === 'border' && editorTab !== activeTab) setEditorTab(activeTab)
+  }, [tool, editorTab, activeTab, setEditorTab])
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-  }, [tab])
+  }, [tool, activeTab])
 
-  const tabs: { id: InspectorTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'template', label: '模板', icon: <SlidersHorizontal size={16} /> },
-    { id: 'watermark', label: '水印', icon: <Droplets size={16} /> },
-    { id: 'export', label: '导出', icon: <Download size={16} /> }
-  ]
   return (
     <aside className={`sidebar inspector-panel ${sheetCollapsed ? 'collapsed' : ''}`}>
       <button
@@ -930,19 +785,89 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
       >
         <span />
       </button>
-      <div className="inspector-tabs">
-        {tabs.map((t) => (
-          <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)} type="button">
-            {t.icon}
-            <span>{t.label}</span>
-            {t.id === 'watermark' && watermarkEnabled ? <i className="tab-dot" /> : null}
-          </button>
-        ))}
+
+      {/* Desktop tool switch: 边框 / 水印. On mobile the bottom bar owns this. */}
+      <div className="inspector-tool-switch" role="group" aria-label="编辑工具">
+        <button
+          type="button"
+          className={tool === 'border' ? 'active' : ''}
+          aria-pressed={tool === 'border'}
+          onClick={() => setTool('border')}
+        >
+          <Frame size={15} />
+          <span>边框</span>
+        </button>
+        <button
+          type="button"
+          className={tool === 'watermark' ? 'active' : ''}
+          aria-pressed={tool === 'watermark'}
+          onClick={() => setTool('watermark')}
+        >
+          <Droplets size={15} />
+          <span>水印</span>
+          {watermarkEnabled ? <i className="tab-dot" /> : null}
+        </button>
       </div>
+
+      {tool === 'border' ? (
+        <div className="editor-tabs" role="group" aria-label="边框编辑">
+          {available.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              data-editor-tab={tab}
+              className={activeTab === tab ? 'active' : ''}
+              aria-pressed={activeTab === tab}
+              onClick={() => setEditorTab(tab)}
+            >
+              {EDITOR_TAB_META[tab].icon}
+              <span>{EDITOR_TAB_META[tab].label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div className="inspector-scroll" ref={scrollRef}>
-        {tab === 'template' ? <TemplatePanel onOpenTemplates={onOpenTemplates} onOpenReferences={onOpenReferences} /> : null}
-        {tab === 'watermark' ? <WatermarkPanel /> : null}
-        {tab === 'export' ? <ExportPanel /> : null}
+        {tool === 'border' ? (
+          <div className="inspector-pane">
+            <CurrentTemplateHeader onOpenTemplates={onOpenTemplates} onOpenReferences={onOpenReferences} />
+            {/* key re-mounts the pane on tab change so the CSS enter motion actually runs */}
+            <div className="editor-pane" data-editor-pane={activeTab} key={activeTab}>
+              {activeTab === 'logo' ? <LogoEditor /> : null}
+              {activeTab === 'text' ? <TextEditor /> : null}
+              {activeTab === 'layout' ? <LayoutEditor /> : null}
+              {activeTab === 'theme' ? <ThemeEditor /> : null}
+            </div>
+          </div>
+        ) : (
+          <WatermarkPanel />
+        )}
+      </div>
+
+      {/* Mobile bottom bar: exactly 边框 / 水印. Desktop hides it. */}
+      <div className="mobile-editor-bar" role="group" aria-label="编辑工具">
+        <button
+          type="button"
+          className={tool === 'border' ? 'active' : ''}
+          aria-pressed={tool === 'border'}
+          onClick={() => {
+            if (tool === 'border') onOpenTemplates()
+            else setTool('border')
+          }}
+        >
+          <Frame size={20} />
+          <span>边框</span>
+        </button>
+        <button
+          type="button"
+          className={tool === 'watermark' ? 'active' : ''}
+          aria-pressed={tool === 'watermark'}
+          onClick={() => setTool('watermark')}
+        >
+          <Droplets size={20} />
+          <span>水印</span>
+          {watermarkEnabled ? <i className="tab-dot" /> : null}
+        </button>
       </div>
     </aside>
   )

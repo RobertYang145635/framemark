@@ -180,6 +180,10 @@ export function hydrateDesign(input: Partial<Design> | null | undefined): Design
     watermark: { ...DEFAULT_WATERMARK, ...(input.watermark ?? {}) },
     logo: input.logo ?? null,
     avatar: input.avatar ?? null,
+    // Additive metadata (see types.ts). Carried through verbatim only when the
+    // carrier actually has it, so legacy designs/presets hydrate to the same
+    // object shape they always did and `defaultDesign()` stays free of it.
+    ...(input.brandVersion !== undefined ? { brandVersion: input.brandVersion } : {}),
     export: { ...DEFAULT_EXPORT, ...(input.export ?? {}) }
   }
 }

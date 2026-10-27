@@ -1,0 +1,376 @@
+{
+  "note": "Manual curation for Phase 1a. Files are paths relative to _research/logo-versions (previews/...) or app:<stem> for src/renderer/src/assets/logos. Only fushi (Fujifilm) and hasu (Hasselblad) carry curated metadata here; all other brands are catalog-driven or auto-grouped as CANDIDATE/LEGACY.",
+  "brands": {
+    "fushi": {
+      "versions": [
+        {
+          "id": "fujifilm-red-symbol",
+          "name": "Fujifilm symbol + FUJIFILM wordmark (stacked)",
+          "era": "current",
+          "years": "2006–",
+          "kind": "lockup",
+          "tones": ["red / black"],
+          "confidence": "high",
+          "status": "READY",
+          "primaryCut": "fujifilm-red-symbol",
+          "cuts": [
+            {
+              "id": "fujifilm-red-symbol",
+              "file": "previews/fushi/fujifilm.png",
+              "aliases": ["previews/fushi/fujifilm-2.png"],
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-red-symbol-horizontal",
+          "name": "Fujifilm symbol + FUJIFILM wordmark (horizontal)",
+          "era": "current",
+          "years": "2006–",
+          "kind": "lockup",
+          "tones": ["red / black"],
+          "confidence": "high",
+          "status": "READY",
+          "primaryCut": "fujifilm-red-symbol-horizontal",
+          "cuts": [
+            {
+              "id": "fujifilm-red-symbol-horizontal",
+              "file": "previews/fushi/fujifilm-9.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-vertical",
+          "name": "Fujifilm vertical wordmark + symbol",
+          "era": "current",
+          "years": "2006–",
+          "kind": "lockup",
+          "tones": ["red / black"],
+          "confidence": "high",
+          "status": "READY",
+          "primaryCut": "fujifilm-vertical",
+          "cuts": [
+            {
+              "id": "fujifilm-vertical",
+              "file": "previews/fushi/fujifilm-3.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-rule",
+          "name": "Fujifilm wordmark with green rule",
+          "era": "current",
+          "years": "2006–",
+          "kind": "lockup",
+          "tones": ["red / black / green"],
+          "confidence": "high",
+          "status": "READY",
+          "primaryCut": "fujifilm-rule",
+          "cuts": [
+            {
+              "id": "fujifilm-rule",
+              "file": "previews/fushi/fujifilm-8.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-imaging-info",
+          "name": "Fujifilm symbol + FUJIFILM + I&I Imaging & Information",
+          "era": "classic",
+          "years": "2000s",
+          "kind": "lockup",
+          "tones": ["red / black / gray"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-imaging-info",
+          "cuts": [
+            {
+              "id": "fujifilm-imaging-info",
+              "file": "previews/fushi/fujifilm-6.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-green-box",
+          "name": "Fujifilm green block (square)",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-green-box",
+          "cuts": [
+            {
+              "id": "fujifilm-green-box",
+              "file": "previews/fushi/fujifilm-1.png",
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-green-banner",
+          "name": "Fujifilm green/white banner lockup",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-green-banner",
+          "cuts": [
+            {
+              "id": "fujifilm-green-banner",
+              "file": "previews/fushi/fujifilm-5.png",
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-green-strip",
+          "name": "Fujifilm green strip lockup",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-green-strip",
+          "cuts": [
+            {
+              "id": "fujifilm-green-strip",
+              "file": "previews/fushi/fujifilm-10.png",
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-green-strip-thin",
+          "name": "Fujifilm green strip lockup (thin)",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-green-strip-thin",
+          "cuts": [
+            {
+              "id": "fujifilm-green-strip-thin",
+              "file": "previews/fushi/fujifilm-11.png",
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-green-vertical",
+          "name": "Fujifilm vertical green banner",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-green-vertical",
+          "cuts": [
+            {
+              "id": "fujifilm-green-vertical",
+              "file": "previews/fushi/fujifilm-12.png",
+              "aliases": ["previews/fushi/fujifilm-13.png"],
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-diagonal",
+          "name": "Fujifilm diagonal green block",
+          "era": "historical",
+          "years": "1980s–2006",
+          "kind": "lockup",
+          "tones": ["green / white / red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-diagonal",
+          "cuts": [
+            {
+              "id": "fujifilm-diagonal",
+              "file": "previews/fushi/fujifilm-7.png",
+              "surface": "both",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-1980",
+          "name": "Fujifilm square mark",
+          "era": "historical",
+          "years": "1980–2006",
+          "kind": "emblem",
+          "tones": ["red"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "fujifilm-1980",
+          "cuts": [
+            {
+              "id": "fujifilm-1980",
+              "file": "previews/fushi/fujifilm-1980.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        },
+        {
+          "id": "fujifilm-wordmark-legacy",
+          "name": "FUJIFILM wordmark (app baseline, red J)",
+          "era": "legacy",
+          "years": "—",
+          "kind": "wordmark",
+          "tones": ["black / red", "white / red"],
+          "confidence": "medium",
+          "status": "LEGACY",
+          "primaryCut": "fushi_black",
+          "cuts": [
+            {
+              "id": "fushi_black",
+              "app": "fushi_black",
+              "surface": "light",
+              "previewSurface": "light"
+            },
+            {
+              "id": "fushi_white",
+              "app": "fushi_white",
+              "surface": "dark",
+              "previewSurface": "dark"
+            }
+          ]
+        }
+      ],
+      "unusable": [
+        {
+          "file": "previews/fushi/fujifilm-logo.png",
+          "note": "Partial red ribbon / black block fragment, not a complete logo lockup."
+        }
+      ]
+    },
+    "hasu": {
+      "versions": [
+        {
+          "id": "hasselblad-black",
+          "name": "HASSELBLAD wordmark",
+          "era": "current",
+          "years": "2000s–",
+          "kind": "wordmark",
+          "tones": ["black", "white"],
+          "confidence": "high",
+          "status": "READY",
+          "primaryCut": "hasu_long_black",
+          "aliases": ["hasselblad-wordmark"],
+          "cuts": [
+            {
+              "id": "hasu_long_black",
+              "app": "hasu_long_black",
+              "aliases": [
+                "previews/hasu/hasselblad.png",
+                "previews/hasu/hasselblad-2.png",
+                "app:hassel_wordmark_black"
+              ],
+              "surface": "light",
+              "previewSurface": "light"
+            },
+            {
+              "id": "hasu_long_white",
+              "app": "hasu_long_white",
+              "aliases": ["app:hassel_wordmark_white"],
+              "surface": "dark",
+              "previewSurface": "dark"
+            }
+          ]
+        },
+        {
+          "id": "hasselblad-lockup",
+          "name": "H monogram + HASSELBLAD wordmark lockup",
+          "era": "current",
+          "years": "2000s–",
+          "kind": "lockup",
+          "tones": ["black", "white"],
+          "confidence": "high",
+          "status": "LEGACY",
+          "primaryCut": "hasu_black",
+          "cuts": [
+            {
+              "id": "hasu_black",
+              "app": "hasu_black",
+              "surface": "light",
+              "previewSurface": "light"
+            },
+            {
+              "id": "hasu_white",
+              "app": "hasu_white",
+              "surface": "dark",
+              "previewSurface": "dark"
+            }
+          ]
+        },
+        {
+          "id": "hasselblad-h-mark",
+          "name": "H monogram",
+          "era": "current",
+          "years": "2000s–",
+          "kind": "emblem",
+          "tones": ["black", "white"],
+          "confidence": "high",
+          "status": "LEGACY",
+          "primaryCut": "hassel_h_black",
+          "cuts": [
+            {
+              "id": "hassel_h_black",
+              "app": "hassel_h_black",
+              "surface": "light",
+              "previewSurface": "light"
+            },
+            {
+              "id": "hassel_h_white_official",
+              "app": "hassel_h_white_official",
+              "aliases": ["app:hassel_h_white"],
+              "surface": "dark",
+              "previewSurface": "dark"
+            }
+          ]
+        },
+        {
+          "id": "hasselblad-blue",
+          "name": "HASSELBLAD wordmark (navy)",
+          "era": "classic",
+          "years": "n.d.",
+          "kind": "wordmark",
+          "tones": ["navy"],
+          "confidence": "medium",
+          "status": "READY",
+          "primaryCut": "hasselblad-blue",
+          "cuts": [
+            {
+              "id": "hasselblad-blue",
+              "file": "previews/hasu/hasselblad-1.png",
+              "surface": "light",
+              "previewSurface": "light"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

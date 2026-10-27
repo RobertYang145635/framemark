@@ -191,6 +191,22 @@ export function ControlXyOffset ({ view, onChange }: Props) {
 }
 
 /* ---------------- 6. themeSwatches ---------------- */
+/** 厂商主题键名是内部枚举；界面只说人话，未知键仍照实显示。 */
+const THEME_LABELS: Record<string, string> = {
+  white: '白底',
+  black: '黑底',
+  light_blur: '浅色虚化',
+  dark_blur: '深色虚化'
+}
+
+function themeLabel (id: string, fallback?: string): string {
+  const known = THEME_LABELS[id]
+  if (known) return known
+  // Some vendors already ship a Chinese label; keep it instead of the enum key.
+  if (fallback && /[^\x00-\x7F]/.test(fallback)) return fallback
+  return id
+}
+
 export function ControlThemeSwatches ({ view, styleId, onChange }: Props) {
   const control = view.control as ThemeSwatchesControl
   const style = getStockStyle(styleId)
@@ -205,16 +221,17 @@ export function ControlThemeSwatches ({ view, styleId, onChange }: Props) {
       {control.domain.options.map((id) => {
         const t = themes.find((x) => x.id === id)
         const swatch = t?.swatch
+        const label = themeLabel(id, t?.label)
         return (
           <button
             key={id}
             type="button"
             className={`fmk-swatch ${current === id ? 'active' : ''}`}
             onClick={() => onChange(view.paramKey, id)}
-            title={id}
+            title={label}
           >
             <i style={swatch ? { background: swatch } : undefined} />
-            <span>{t?.label ?? id}</span>
+            <span>{label}</span>
           </button>
         )
       })}

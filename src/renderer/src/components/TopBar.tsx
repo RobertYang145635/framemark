@@ -14,19 +14,17 @@ export function TopBar() {
   const applyPreset = useAppStore((s) => s.applyPreset)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
   const setPresetDialogOpen = useAppStore((s) => s.setPresetDialogOpen)
-  const exportCurrent = useAppStore((s) => s.exportCurrent)
+  const openExportDialog = useAppStore((s) => s.openExportDialog)
 
   const variant = getVariant(design.variantId)
   const active = activePresetId && presets.some((p) => p.id === activePresetId) ? activePresetId : ''
-  // The primary top-bar button only ever writes ONE file (store.exportCurrent -> the
-  // selected photo). Say so on the button and in its tooltip, and point at the batch
-  // entries instead of letting "导出" read as "export this batch" (PRODUCT-DEFECTS #58 /
-  // defect 2). No new interaction: the batch paths stay Filmstrip 批量导出 / Inspector
-  // 导出全部.
+  // The primary top-bar button opens the export dialog scoped to ONE file (store
+  // `exportCurrent` -> the selected photo); the dialog itself can switch to 全部 N 张.
+  // Batch entries stay in the Filmstrip so "导出当前" can never read as "export batch".
   const currentPhoto = photos.find((p) => p.id === selectedId) ?? photos[0] ?? null
   const exportTitle = currentPhoto
-    ? `仅导出当前这 1 张照片：${currentPhoto.name}（共 ${photos.length} 张在册）。整批导出请用照片条的「批量导出」或导出面板的「导出全部」。`
-    : '仅导出当前这 1 张照片（还没有照片，请先添加）。整批导出请用照片条的「批量导出」或导出面板的「导出全部」。'
+    ? `打开导出设置，默认只导出当前这 1 张：${currentPhoto.name}（共 ${photos.length} 张在册）。可在对话框里改成导出全部。`
+    : '打开导出设置（还没有照片，请先添加）。'
 
   return (
     <header className="topbar glass-strong">
@@ -86,10 +84,10 @@ export function TopBar() {
         </button>
         <button
           className="btn btn-primary glass-btn glass-spot glass-ripple glass-press"
-          onClick={() => void exportCurrent()}
+          onClick={() => openExportDialog('current')}
           type="button"
           title={exportTitle}
-          aria-label="仅导出当前照片"
+          aria-label="打开导出设置（默认当前照片）"
         >
           <Download size={17} />
           <span>导出当前</span>
