@@ -73,9 +73,9 @@ const storedQuality = (): GlassQuality | null => {
  * watchSystemColorScheme 继续跟随）。
  */
 export function bootColorMode(): ColorMode {
-  // HyperOS/Miuix skin is light-first; the OPCameraPro reference is a light
-  // system surface set. Keep the saved preference inert while this skin is on.
-  if (document.documentElement.dataset.skin === 'hyperos') return applyColorMode('light')
+  // The HyperOS skin now has its own dark palette; honour the saved preference
+  // and let `auto` follow the OS (system) setting.
+  if (document.documentElement.dataset.skin === 'hyperos') return applyColorMode(readThemePreference())
   const pref = read(THEME_STORAGE_KEY) ? readThemePreference() : 'dark'
   return applyColorMode(pref)
 }

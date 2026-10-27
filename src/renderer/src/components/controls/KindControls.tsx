@@ -109,6 +109,7 @@ export function ControlSlider ({ view, onChange }: Props) {
         suffix={d.unit === 'multiplier' ? '×' : ''}
         disabled={!view.live}
         onChange={(v) => onChange(view.paramKey, v)}
+        onReset={control.default === null ? undefined : () => onChange(view.paramKey, Number(control.default))}
       />
     </div>
   )
@@ -192,6 +193,7 @@ export function ControlXyOffset ({ view, onChange }: Props) {
       suffix="%"
       disabled={!view.live}
       onChange={(v) => onChange(view.paramKey, v)}
+      onReset={() => onChange(view.paramKey, 0)}
     />
   )
 }

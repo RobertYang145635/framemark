@@ -12,6 +12,7 @@ import { handControlsFor, handPanelFor, handPatch, handValue, normalizeHex } fro
 export function HandControlsPanel({ tab }: { tab: 'layout' | 'text' }) {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
+  const resetParam = useAppStore((s) => s.resetParam)
   const setText = useAppStore((s) => s.setText)
   const panel = handPanelFor(design.templateId)
   const controls = handControlsFor(design.templateId, tab)
@@ -44,6 +45,7 @@ export function HandControlsPanel({ tab }: { tab: 'layout' | 'text' }) {
               step={control.step ?? 1}
               suffix={control.unit ?? ''}
               onChange={(v) => write(control, v)}
+              onReset={control.scope === 'template-param' ? () => resetParam(control.param) : undefined}
             />
           )
         }

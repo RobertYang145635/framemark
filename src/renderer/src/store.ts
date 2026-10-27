@@ -88,6 +88,8 @@ interface AppState {
   job: ExportJob | null
   /** Text lines captured from the last hand-template render (v4 文字 pane). */
   textSlots: TextSlot[]
+  /** Output pixel size of the current preview (shown in the Inspector dock). */
+  previewMeta: { W: number; H: number; outW: number; outH: number } | null
   tab: InspectorTab
   /** Phase 3 top-level Inspector tool (边框 / 水印). */
   tool: InspectorTool
@@ -109,12 +111,15 @@ interface AppState {
   selectPhoto: (id: string) => void
   setVariant: (id: string) => void
   resetVariantParams: () => void
+  /** 双击滑杆复位：把单个参数写回当前模板/样式的声明值（覆盖被剪掉）。 */
+  resetParam: (key: string) => void
   setParam: (key: string, value: Params[string]) => void
   setText: (patch: Partial<TextSettings>) => void
   setWatermark: (patch: Partial<WatermarkSettings>) => void
   setWatermarkFile: (file: File) => Promise<void>
   setExport: (patch: Partial<Design['export']>) => void
   setTextSlots: (slots: TextSlot[]) => void
+  setPreviewMeta: (meta: { W: number; H: number; outW: number; outH: number } | null) => void
   setRatio: (ratio: Ratio) => void
   setLogoFromBrand: (file: string) => Promise<void>
   setLogoVersion: (versionId: string, cutId?: string) => Promise<void>
@@ -248,6 +253,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   busy: null,
   job: null,
   textSlots: [],
+  previewMeta: null,
   tab: 'template',
   tool: 'border',
   editorTab: 'logo',
@@ -477,6 +483,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     })
   },
 
+  resetParam: (key) => {
+    const s = get()
+    const value = declaredParams(s.design)[key]
+    set({
+      design: value === undefined ? dropParam(s.design, key) : writeParam(s.design, key, value),
+      activePresetId: null
+    })
+    if (key === 'theme') void get().ensureLogoCompatibility()
+  },
+
   setText: (patch) =>
     set((s) => ({ design: { ...s.design, text: { ...s.design.text, ...patch } }, activePresetId: null })),
 
@@ -506,6 +522,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ design: { ...s.design, export: { ...s.design.export, ...patch } } })),
 
   setTextSlots: (slots) => set({ textSlots: slots }),
+
+  setPreviewMeta: (previewMeta) => set({ previewMeta }),
 
   setRatio: (ratio) => set((s) => ({ design: { ...s.design, ratio }, activePresetId: null })),
 

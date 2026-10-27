@@ -58,6 +58,7 @@ export function Slider({
   step = 1,
   suffix = '',
   onChange,
+  onReset,
   disabled,
   hint
 }: {
@@ -68,12 +69,19 @@ export function Slider({
   step?: number
   suffix?: string
   onChange: (v: number) => void
+  onReset?: () => void
   disabled?: boolean
   hint?: string
 }) {
   const display = step < 0.1 ? value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '') : String(value)
   return (
-    <label className={`slider-row ${disabled ? 'disabled' : ''}`}>
+    <label
+      className={`slider-row ${disabled ? 'disabled' : ''}`}
+      title={onReset ? '双击复位到默认值' : undefined}
+      onDoubleClick={() => {
+        if (onReset) onReset()
+      }}
+    >
       <span className="slider-label">
         {label}
         {hint ? <em>{hint}</em> : null}

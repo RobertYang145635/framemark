@@ -1,7 +1,29 @@
-import React from 'react'
-import { Download, Frame, ImagePlus, Loader2, Save } from 'lucide-react'
+import React, { useState } from 'react'
+import { Download, Frame, ImagePlus, Loader2, Monitor, Moon, Save, Sun } from 'lucide-react'
 import { useAppStore } from '../store'
 import { getVariant } from '../core/variants'
+import { readThemePreference, setThemePreference, type ThemePreference } from './glass/glassTheme'
+
+function AppearanceToggle() {
+  const [pref, setPref] = useState<ThemePreference>(() => readThemePreference())
+  const label = pref === 'auto' ? '跟随系统' : pref === 'light' ? '浅色' : '深色'
+  const Icon = pref === 'auto' ? Monitor : pref === 'light' ? Sun : Moon
+  return (
+    <button
+      className="btn btn-ghost topbar-action topbar-appearance glass-btn glass-spot glass-ripple glass-press"
+      onClick={() => {
+        const next: ThemePreference = pref === 'auto' ? 'light' : pref === 'light' ? 'dark' : 'auto'
+        setPref(next)
+        setThemePreference(next)
+      }}
+      title={`外观：${label}（点击切换 跟随系统 / 浅色 / 深色）`}
+      aria-label={`外观：${label}，点击切换`}
+      type="button"
+    >
+      <Icon size={17} />
+    </button>
+  )
+}
 
 export function TopBar({ onOpenTemplates }: { onOpenTemplates: () => void }) {
   const design = useAppStore((s) => s.design)
@@ -78,6 +100,7 @@ export function TopBar({ onOpenTemplates }: { onOpenTemplates: () => void }) {
           <Frame size={17} />
           <span>模板</span>
         </button>
+        <AppearanceToggle />
         <button className="btn btn-ghost topbar-action glass-btn glass-spot glass-ripple glass-press" onClick={() => void pickPhotos()} type="button">
           <ImagePlus size={17} />
           <span>添加</span>

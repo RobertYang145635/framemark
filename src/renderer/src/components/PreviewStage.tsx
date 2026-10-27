@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Eye, ImagePlus, Loader2, Maximize2, Sparkles } from 'lucide-react'
+import { Eye, ImagePlus, Loader2, Maximize2, Minus, Plus, Sparkles } from 'lucide-react'
 import type { PhotoAsset, Rect } from '../types'
 import { useAppStore } from '../store'
 import { getSampleAsset } from '../core/sample'
@@ -22,11 +22,13 @@ export function PreviewStage() {
   const design = useAppStore((s) => s.design)
   const busy = useAppStore((s) => s.busy)
   const addSample = useAppStore((s) => s.addSample)
+  const setPreviewMeta = useAppStore((s) => s.setPreviewMeta)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
   const [sample, setSample] = useState<PhotoAsset | null>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [fontReady, setFontReady] = useState(false)
-  const [zoom, setZoom] = useState<'fit' | 'actual'>('fit')
+  const [zoom, setZoom] = useState(1)
+  const [viewport, setViewport] = useState({ w: 0, h: 0 })
   const [compare, setCompare] = useState(false)
   const [meta, setMeta] = useState<{
     W: number
@@ -37,6 +39,7 @@ export function PreviewStage() {
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const variant = getVariant(design.variantId)
   const selected = photos.find((p) => p.id === selectedId) ?? photos[0] ?? sample
   const isSample = !photos.length
@@ -81,6 +84,12 @@ export function PreviewStage() {
             outH: Math.round(result.H * scale),
             photoRect: result.photoRect
           })
+          setPreviewMeta({
+            W: result.W,
+            H: result.H,
+            outW: Math.round(result.W * scale),
+            outH: Math.round(result.H * scale)
+          })
           const slots = result.textSlots ?? []
           const prevSlots = useAppStore.getState().textSlots
           if (JSON.stringify(prevSlots) !== JSON.stringify(slots)) {
@@ -97,6 +106,40 @@ export function PreviewStage() {
       clearTimeout(timer)
     }
   }, [design, selected, image, fontReady])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setViewport({ w: entry.contentRect.width, h: entry.contentRect.height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const fit = useMemo(() => {
+    if (!meta || !viewport.w || !viewport.h) return null
+    const availW = Math.max(80, viewport.w - 36)
+    const availH = Math.max(80, viewport.h - 36)
+    const scale = Math.min(availW / meta.W, availH / meta.H, 1)
+    return { w: meta.W * scale, h: meta.H * scale }
+  }, [meta, viewport])
+
+  const shownW = fit ? Math.round(fit.w * zoom) : null
+  const shownH = fit ? Math.round(fit.h * zoom) : null
+  const clampZoom = (z: number) => Math.min(4, Math.max(0.5, Math.round(z * 100) / 100))
+
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      e.preventDefault()
+      setZoom((z) => clampZoom(z * (e.deltaY < 0 ? 1.12 : 0.89)))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   const sampleUrl = useMemo(() => sampleUrls[Math.floor(Math.random() * sampleUrls.length)], [])
   const addRandomSample = () => {
@@ -129,19 +172,49 @@ export function PreviewStage() {
             <Eye size={15} />
             <span>按住看原图</span>
           </button>
-          <button
-            className={`btn btn-ghost btn-sm glass-btn glass-ripple glass-press ${zoom === 'actual' ? 'active' : ''}`}
-            onClick={() => setZoom((z) => (z === 'fit' ? 'actual' : 'fit'))}
-            type="button"
-            title={zoom === 'fit' ? '按实际预览像素显示' : '适应窗口'}
-          >
-            <Maximize2 size={15} />
-            <span>{zoom === 'fit' ? '适应' : '100%'}</span>
-          </button>
+          <div className="zoom-cluster">
+            <button
+              className="zoom-step"
+              onClick={() => setZoom((z) => clampZoom(z / 1.25))}
+              type="button"
+              title="缩小"
+              aria-label="缩小"
+            >
+              <Minus size={14} />
+            </button>
+            <button
+              className="zoom-readout"
+              onClick={() => setZoom(1)}
+              onDoubleClick={() => setZoom(1)}
+              type="button"
+              title="适应窗口（滚轮配合 Ctrl/⌘ 缩放）"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              className="zoom-step"
+              onClick={() => setZoom((z) => clampZoom(z * 1.25))}
+              type="button"
+              title="放大"
+              aria-label="放大"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              className="zoom-fit"
+              onClick={() => setZoom(1)}
+              type="button"
+              title="适应窗口"
+              aria-label="适应窗口"
+              disabled={zoom === 1}
+            >
+              <Maximize2 size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className={`canvas-viewport ${zoom}`}>
+      <div ref={viewportRef} className={`canvas-viewport ${zoom > 1 ? "zoomed" : ""}`}>
         {isSample && selected ? (
           <div className="sample-banner">
             <span className="sample-icon"><Sparkles size={16} /></span>
@@ -158,8 +231,12 @@ export function PreviewStage() {
             </button>
           </div>
         ) : null}
-        <div className="canvas-frame">
-          <canvas ref={canvasRef} aria-label="模板预览" />
+        <div className="canvas-frame" style={fit && zoom > 1 ? { width: shownW! + 36, height: shownH! + 36 } : undefined}>
+          <canvas
+            ref={canvasRef}
+            aria-label="模板预览"
+            style={shownW ? { width: `${shownW}px`, height: `${shownH}px` } : undefined}
+          />
           {!compare && meta ? (
             <WatermarkPlacement canvas={canvasRef.current} photoRect={meta.photoRect} W={meta.W} H={meta.H} />
           ) : null}

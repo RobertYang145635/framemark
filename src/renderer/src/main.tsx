@@ -37,10 +37,18 @@ if (Capacitor.isNativePlatform()) {
   void (async () => {
     try {
       await StatusBar.setOverlaysWebView({ overlay: false })
-      await StatusBar.setBackgroundColor({ color: '#f0f2f5' })
-      // Capacitor's enum is named after the text: Light = dark icons for a
-      // light background, matching the HyperOS skin.
-      await StatusBar.setStyle({ style: Style.Light })
+      const syncStatusBar = async () => {
+        const dark = document.documentElement.getAttribute('data-color-mode') === 'dark'
+        await StatusBar.setBackgroundColor({ color: dark ? '#121418' : '#f0f2f5' })
+        // Capacitor's enum is named after the text: Light = dark icons for a
+        // light background; Dark = light icons for a dark background.
+        await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light })
+      }
+      await syncStatusBar()
+      new MutationObserver(() => void syncStatusBar()).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-color-mode']
+      })
     } catch {
       // Older native shells may not expose every method; layout still works.
     }

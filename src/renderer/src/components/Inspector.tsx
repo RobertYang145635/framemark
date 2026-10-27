@@ -37,6 +37,7 @@ import { StyleControlsPanel } from './controls/StyleControlsPanel'
 import { HandControlsPanel } from './controls/HandControlsPanel'
 import { handControlsFor } from '../core/controls/hand'
 import { declaredSlotKey, declaredTextSlots } from '../core/text-slots'
+import { DEFAULT_WATERMARK } from '../core/presets'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: 'original', label: '原始' },
@@ -114,6 +115,7 @@ function LogoSection() {
   const clearLogo = useAppStore((s) => s.clearLogo)
   const setText = useAppStore((s) => s.setText)
   const setParam = useAppStore((s) => s.setParam)
+  const resetParam = useAppStore((s) => s.resetParam)
   const def = getTemplate(design.templateId)
   // Stock cards (Task-2, option (b) — do not leave a control that does nothing):
   // `显示 Logo` (text.showLogo) and `Logo 大小` (params.logoScale) are now honored
@@ -186,6 +188,7 @@ function LogoSection() {
         max={10}
         step={0.5}
         onChange={(v) => setParam('logoScale', v)}
+        onReset={() => resetParam('logoScale')}
         disabled={!design.text.showLogo}
       />
     </Section>
@@ -274,7 +277,6 @@ function TextSection() {
   const slotValues = t.slotValues ?? {}
   const slotSizes = t.slotSizes ?? {}
   const lineSizes = t.lineSizes ?? {}
-  const [sizeKey, setSizeKey] = useState<string | null>(null)
   const sizeFor = (row: { key: string; declared: boolean }) =>
     row.declared ? slotSizes[row.key] ?? 1 : lineSizes[row.key] ?? 1
   const setSize = (row: { key: string; declared: boolean }, value: number) => {
@@ -377,15 +379,6 @@ function TextSection() {
                         ) : null}
                         <button
                           type="button"
-                          className={`icon-btn text-slot-size ${sizeKey === row.key ? 'active' : ''}`}
-                          title="单独调整这一行的字号"
-                          onClick={() => setSizeKey(sizeKey === row.key ? null : row.key)}
-                        >
-                          <Type size={13} />
-                          <em>{Math.round(size * 100)}%</em>
-                        </button>
-                        <button
-                          type="button"
                           className="icon-btn text-slot-eye"
                           title={row.hidden ? '恢复这一行' : '隐藏这一行'}
                           onClick={() => {
@@ -398,26 +391,27 @@ function TextSection() {
                           {row.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       </div>
-                      {sizeKey === row.key ? (
-                        <div className="text-slot-size-panel">
-                          <span>字号</span>
-                          <input
-                            type="range"
-                            min={0.6}
-                            max={1.6}
-                            step={0.02}
-                            value={size}
-                            disabled={row.hidden}
-                            onChange={(e) => setSize(row, Number(e.target.value))}
-                          />
-                          <em>{Math.round(size * 100)}%</em>
-                          {Math.abs(size - 1) > 0.001 ? (
-                            <button type="button" className="toggle-chip" onClick={() => setSize(row, 1)}>
-                              复位
-                            </button>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      <div className={`text-slot-size-panel ${row.hidden ? 'is-hidden' : ''}`} title="双击滑杆复位到 100%">
+                        <span>字号</span>
+                        <input
+                          type="range"
+                          min={0.6}
+                          max={1.6}
+                          step={0.02}
+                          value={size}
+                          disabled={row.hidden}
+                          onChange={(e) => setSize(row, Number(e.target.value))}
+                          onDoubleClick={() => setSize(row, 1)}
+                        />
+                        <button
+                          type="button"
+                          className="text-slot-size-value"
+                          onClick={() => setSize(row, 1)}
+                          title="点击复位到 100%"
+                        >
+                          {Math.round(size * 100)}%
+                        </button>
+                      </div>
                     </React.Fragment>
                   )
                 })}
@@ -581,6 +575,7 @@ function TextEditor() {
 function LayoutEditor() {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
+  const resetParam = useAppStore((s) => s.resetParam)
   const setRatio = useAppStore((s) => s.setRatio)
   const def = getTemplate(design.templateId)
   const controls = def.controls ?? []
@@ -619,25 +614,25 @@ function LayoutEditor() {
 
       <Section title="版式参数">
         {controls.includes('margin') ? (
-          <Slider label="边距" value={Number(design.params.marginPct ?? 6)} min={0} max={15} step={0.5} suffix="%" onChange={(v) => setParam('marginPct', v)} />
+          <Slider label="边距" value={Number(design.params.marginPct ?? 6)} min={0} max={15} step={0.5} suffix="%" onChange={(v) => setParam('marginPct', v)} onReset={() => resetParam('marginPct')} />
         ) : null}
         {controls.includes('radius') ? (
-          <Slider label="圆角" value={Number(design.params.radiusPct ?? 0)} min={0} max={10} step={0.5} suffix="%" onChange={(v) => setParam('radiusPct', v)} />
+          <Slider label="圆角" value={Number(design.params.radiusPct ?? 0)} min={0} max={10} step={0.5} suffix="%" onChange={(v) => setParam('radiusPct', v)} onReset={() => resetParam('radiusPct')} />
         ) : null}
         {controls.includes('shadow') ? (
-          <Slider label="阴影" value={Number(design.params.shadow ?? 0)} min={0} max={10} step={0.5} onChange={(v) => setParam('shadow', v)} />
+          <Slider label="阴影" value={Number(design.params.shadow ?? 0)} min={0} max={10} step={0.5} onChange={(v) => setParam('shadow', v)} onReset={() => resetParam('shadow')} />
         ) : null}
         {controls.includes('footer') ? (
-          <Slider label="文字区高度" value={Number(design.params.footerPct ?? 12)} min={5} max={25} step={0.5} suffix="%" onChange={(v) => setParam('footerPct', v)} />
+          <Slider label="文字区高度" value={Number(design.params.footerPct ?? 12)} min={5} max={25} step={0.5} suffix="%" onChange={(v) => setParam('footerPct', v)} onReset={() => resetParam('footerPct')} />
         ) : null}
         {controls.includes('blur') ? (
-          <Slider label="背景模糊" value={Number(design.params.blur ?? 26)} min={0} max={40} step={1} onChange={(v) => setParam('blur', v)} />
+          <Slider label="背景模糊" value={Number(design.params.blur ?? 26)} min={0} max={40} step={1} onChange={(v) => setParam('blur', v)} onReset={() => resetParam('blur')} />
         ) : null}
         {controls.includes('grain') ? (
-          <Slider label="颗粒" value={Number(design.params.grain ?? 0.12)} min={0} max={0.5} step={0.01} onChange={(v) => setParam('grain', v)} />
+          <Slider label="颗粒" value={Number(design.params.grain ?? 0.12)} min={0} max={0.5} step={0.01} onChange={(v) => setParam('grain', v)} onReset={() => resetParam('grain')} />
         ) : null}
         {isMovie ? (
-          <Slider label="上下黑边" value={Number(design.params.barPct ?? 8)} min={3} max={16} step={0.5} suffix="%" onChange={(v) => setParam('barPct', v)} />
+          <Slider label="上下黑边" value={Number(design.params.barPct ?? 8)} min={3} max={16} step={0.5} suffix="%" onChange={(v) => setParam('barPct', v)} onReset={() => resetParam('barPct')} />
         ) : null}
         {stockMovable ? (
           <div className="field-stack">
@@ -661,6 +656,7 @@ function LayoutEditor() {
               step={0.5}
               suffix="%"
               onChange={(v) => setParam('stockOffsetXPct', v)}
+              onReset={() => resetParam('stockOffsetXPct')}
             />
             <Slider
               label="垂直微调"
@@ -670,6 +666,7 @@ function LayoutEditor() {
               step={0.5}
               suffix="%"
               onChange={(v) => setParam('stockOffsetYPct', v)}
+              onReset={() => resetParam('stockOffsetYPct')}
             />
             <button
               className="btn btn-ghost btn-sm"
@@ -917,16 +914,16 @@ function WatermarkPanel() {
               />
             </label>
             <AnchorGrid value={wm.anchor} onSelect={(a) => setWatermark({ anchor: a })} />
-            <Slider label="水平偏移" value={wm.offsetX} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetX: v })} />
-            <Slider label="垂直偏移" value={wm.offsetY} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetY: v })} />
-            <Slider label="宽度" value={wm.widthPct} min={2} max={60} step={0.5} suffix="%" onChange={(v) => setWatermark({ widthPct: v })} />
-            <Slider label="不透明度" value={wm.opacity} min={0.05} max={1} step={0.01} onChange={(v) => setWatermark({ opacity: v })} />
-            <Slider label="旋转" value={wm.rotation} min={-180} max={180} step={1} suffix="°" onChange={(v) => setWatermark({ rotation: v })} />
+            <Slider label="水平偏移" value={wm.offsetX} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetX: v })} onReset={() => setWatermark({ offsetX: DEFAULT_WATERMARK.offsetX })} />
+            <Slider label="垂直偏移" value={wm.offsetY} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetY: v })} onReset={() => setWatermark({ offsetY: DEFAULT_WATERMARK.offsetY })} />
+            <Slider label="宽度" value={wm.widthPct} min={2} max={60} step={0.5} suffix="%" onChange={(v) => setWatermark({ widthPct: v })} onReset={() => setWatermark({ widthPct: DEFAULT_WATERMARK.widthPct })} />
+            <Slider label="不透明度" value={wm.opacity} min={0.05} max={1} step={0.01} onChange={(v) => setWatermark({ opacity: v })} onReset={() => setWatermark({ opacity: DEFAULT_WATERMARK.opacity })} />
+            <Slider label="旋转" value={wm.rotation} min={-180} max={180} step={1} suffix="°" onChange={(v) => setWatermark({ rotation: v })} onReset={() => setWatermark({ rotation: DEFAULT_WATERMARK.rotation })} />
           </Section>
 
           <Section title="平铺">
             <Switch checked={wm.tile} onChange={(v) => setWatermark({ tile: v })} label="平铺整个区域" hint="适合满屏防盗图水印" />
-            <Slider label="间距" value={wm.gapPct} min={0} max={30} step={0.5} suffix="%" onChange={(v) => setWatermark({ gapPct: v })} disabled={!wm.tile} />
+            <Slider label="间距" value={wm.gapPct} min={0} max={30} step={0.5} suffix="%" onChange={(v) => setWatermark({ gapPct: v })} onReset={() => setWatermark({ gapPct: DEFAULT_WATERMARK.gapPct })} disabled={!wm.tile} />
           </Section>
         </>
       ) : (
@@ -953,6 +950,9 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
   const editorTab = useAppStore((s) => s.editorTab)
   const setEditorTab = useAppStore((s) => s.setEditorTab)
   const watermarkEnabled = useAppStore((s) => s.design.watermark.enabled)
+  const previewMeta = useAppStore((s) => s.previewMeta)
+  const photos = useAppStore((s) => s.photos)
+  const selectedId = useAppStore((s) => s.selectedId)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [sheetCollapsed, setSheetCollapsed] = useState(false)
 
@@ -1037,6 +1037,15 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
         ) : (
           <WatermarkPanel />
         )}
+      </div>
+
+      <div className="inspector-foot">
+        <span>输出</span>
+        <strong>{previewMeta ? `${previewMeta.outW} × ${previewMeta.outH}` : '—'}</strong>
+        <em>
+          {(photos.find((p) => p.id === selectedId) ?? photos[0])?.name ?? ''}
+          {design.ratio !== 'original' ? ` · ${design.ratio}` : ''}
+        </em>
       </div>
 
       {/* Mobile bottom bar: exactly 边框 / 水印. Desktop hides it. */}

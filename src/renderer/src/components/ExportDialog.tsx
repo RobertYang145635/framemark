@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { FolderOpen, HardDriveDownload } from 'lucide-react'
 import type { Design, ExportScope } from '../types'
 import { useAppStore } from '../store'
+import { DEFAULT_EXPORT } from '../core/presets'
 import { Modal, Segmented, Slider, Switch } from './ui'
 
 const FORMAT_OPTIONS: { value: Design['export']['format']; label: string; hint: string }[] = [
@@ -115,6 +116,7 @@ export function ExportDialog() {
             max={100}
             step={1}
             onChange={(v) => setExport({ quality: v })}
+            onReset={() => setExport({ quality: DEFAULT_EXPORT.quality })}
             hint="100 = 4:4:4 最高质量"
           />
         ) : null}
