@@ -1,14 +1,22 @@
 /**
- * FrameMark personal-workflow E2E (W2a).
+ * FrameMark personal-workflow E2E (W2a) — migrated to the v4 photo-first UI shell.
  *
- * Proves the real editing path end to end:
- *   import 2 EXIF photos -> pick 经典双行 -> edit an advanced param -> add + enable a
- *   transparent watermark -> save a preset -> reload -> re-import -> apply preset ->
- *   configure filename tokens -> batch export JPG/PNG/WebP/TIFF -> inspect files ->
- *   cancel a batch -> preset JSON export/import -> zero pageerror.
+ * Proves the real editing path end to end on the NEW shell:
+ *   import 2 EXIF photos -> BorderLibrary taxonomy (175 cards / 7 categories / vendor
+ *   chips) -> pick 经典双行 -> edit a per-style param (布局 · 文字区高度) and watch the
+ *   canvas re-render -> add + enable a transparent watermark (anchor / 宽度 / 不透明度)
+ *   -> export PNG through the NEW 导出 dialog and prove the watermark reached the pixels
+ *   -> filename tokens -> save a preset -> disturb the design -> reload (same isolated
+ *   profile) -> re-import -> apply preset -> export JPG/PNG/WebP/TIFF batches ->
+ *   cancel a batch -> preset JSON export/import round-trip -> zero pageerror.
  *
- * Run with: npm run test:workflow   (build first: npm run build)
- * Exits non-zero on any failed assertion.
+ * Run with: node scripts/e2e-workflow.mjs   (out/ must be a current build)
+ * Exits non-zero on any failed assertion. Prints `=== RESULT ===` followed by a
+ * single-line JSON {assertions,passed,failed,failures,defects,notes} (scripts/final-check.cjs T7).
+ *
+ * ISOLATION: the app is launched with a throw-away `--user-data-dir` under the run
+ * directory so every run behaves like a first launch and never shares the GPU shader
+ * cache with another instance.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -37,6 +45,18 @@ const bigA = path.join(workspace, '_research', 'test-assets', 'p1181817.jpg')
 const bigB = path.join(workspace, '_research', 'test-assets', 'p1170883.jpg')
 
 const OUT_EXT = { jpg: '.jpg', png: '.png', webp: '.webp', tiff: '.tiff' }
+
+/** New taxonomy DOM contract: .tpl-card is ALWAYS 175 nodes; 7 category sections. */
+const CATEGORIES = [
+  { name: '厂商边框', key: 'vendor', count: 99 },
+  { name: '文字边框', key: 'text', count: 21 },
+  { name: '印象边框', key: 'impression', count: 13 },
+  { name: '白边边框', key: 'white', count: 12 },
+  { name: '卡片边框', key: 'card', count: 19 },
+  { name: '色彩边框', key: 'color', count: 6 },
+  { name: '简约边框', key: 'minimal', count: 5 }
+]
+const TOTAL_CARDS = CATEGORIES.reduce((n, c) => n + c.count, 0)
 
 let passed = 0
 let failed = 0
@@ -156,19 +176,77 @@ async function closeExportOverlay(page) {
   await page.waitForSelector('.export-card', { state: 'detached', timeout: 15000 }).catch(() => undefined)
 }
 
+/** Launch with a throw-away profile so every run is a genuine first start. */
+async function launchApp(profile) {
+  fs.rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 150 })
+  fs.mkdirSync(profile, { recursive: true })
+  const env = { ...process.env }
+  delete env.ELECTRON_RUN_AS_NODE
+  return electron.launch({
+    executablePath: require('electron'),
+    args: ['.', `--user-data-dir=${profile}`],
+    cwd: root,
+    env,
+    timeout: 60000
+  })
+}
+
+async function importPhotos(page, files, expected, timeout = 240000) {
+  await page.setInputFiles('#framemark-file-input', files)
+  await page.waitForFunction((n) => document.querySelectorAll('.thumb').length === n, expected, { timeout })
+}
+
+/** Hash the live preview canvas so a re-render can be observed without pixels leaving the page. */
+async function canvasHash(page) {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('.canvas-frame canvas')
+    if (!canvas) return null
+    const url = canvas.toDataURL('image/png')
+    let h = 2166136261
+    for (let i = 0; i < url.length; i += 7) {
+      h ^= url.charCodeAt(i)
+      h = Math.imul(h, 16777619)
+    }
+    return `${url.length}:${h >>> 0}`
+  })
+}
+
+function formatField(page) {
+  return page.locator('.export-dialog label.field', { hasText: '格式' })
+}
+
+async function activeFormatLabel(page) {
+  const el = formatField(page).locator('.segmented button.active')
+  return (await el.count()) ? ((await el.innerText()) ?? '').trim() : ''
+}
+
+/** The export dialog replaced the old 导出 tab: pick the format inside `.export-dialog`. */
 async function chooseFormat(page, label) {
-  const section = page.locator('.panel-section', { hasText: '导出格式' })
-  await section.getByRole('button', { name: label, exact: true }).click()
+  await formatField(page).locator('button', { hasText: label, exact: true }).click()
   await page.waitForFunction(
     (l) => {
-      const secs = [...document.querySelectorAll('.panel-section')]
-      const sec = secs.find((s) => s.textContent?.includes('导出格式'))
+      const fields = [...document.querySelectorAll('.export-dialog label.field')]
+      const sec = fields.find((f) => f.textContent?.includes('格式'))
       const active = sec?.querySelector('.segmented button.active')
       return active?.textContent?.trim() === l
     },
     label,
     { timeout: 10000 }
   )
+}
+
+async function openExportDialog(page, via = 'topbar') {
+  if (via === 'filmstrip') {
+    await page.locator('.filmstrip-actions button', { hasText: '批量导出' }).click()
+  } else {
+    await page.locator('.topbar-actions .btn-primary').click()
+  }
+  await page.waitForSelector('.export-dialog', { timeout: 10000 })
+}
+
+async function closeExportDialog(page) {
+  await page.locator('.export-dialog-foot button', { hasText: '取消' }).click()
+  await page.waitForSelector('.export-dialog', { state: 'detached', timeout: 10000 })
 }
 
 async function patchOpenDialog(app, dir) {
@@ -185,6 +263,16 @@ async function restoreOpenDialog(app) {
       delete globalThis.__fmOrigShowOpenDialog
     }
   })
+}
+
+/** Redirect the export dir exactly like the old script: stub the main dialog, click 选择. */
+async function pickExportDir(app, page, dir) {
+  await patchOpenDialog(app, dir)
+  await page.locator('.export-dir-row button').click()
+  await page.waitForFunction((d) => document.querySelector('.export-dir-row input')?.value === d, dir, {
+    timeout: 15000
+  })
+  await restoreOpenDialog(app)
 }
 
 async function idbSummary(page) {
@@ -224,8 +312,13 @@ async function idbSummary(page) {
         templateId: p.design?.templateId,
         variantId: p.design?.variantId,
         outputDir: p.design?.export?.outputDir,
+        format: p.design?.export?.format,
+        filenamePattern: p.design?.export?.filenamePattern,
         wmEnabled: p.design?.watermark?.enabled === true,
         wmTarget: p.design?.watermark?.target,
+        wmAnchor: p.design?.watermark?.anchor,
+        wmWidthPct: p.design?.watermark?.widthPct,
+        wmOpacity: p.design?.watermark?.opacity,
         wmAsset: p.design?.watermark?.asset
           ? {
               name: p.design.watermark.asset.name,
@@ -234,16 +327,38 @@ async function idbSummary(page) {
               prefix: String(p.design.watermark.asset.dataUrl ?? '').slice(0, 22)
             }
           : null,
-        footerTextScale: p.design?.params?.footerTextScale
+        footerPct: p.design?.params?.footerPct
       }))
+    }
+  })
+}
+
+async function lastDesign(page) {
+  return page.evaluate(() => {
+    try {
+      return JSON.parse(localStorage.getItem('framemark.lastDesign.v1') || 'null')
+    } catch {
+      return null
     }
   })
 }
 
 async function runBatch(page, { label, ext, expectedNames, snapshot, onFiles }) {
   await cleanOut()
+  await openExportDialog(page, 'filmstrip')
+  const scopeActive = (
+    (await page.locator('.export-dialog label.field', { hasText: '范围' }).locator('.segmented button.active').innerText()) ?? ''
+  ).trim()
+  check(`${label}: export dialog scope is 全部 N 张`, scopeActive.startsWith('全部'), scopeActive)
   await chooseFormat(page, label)
-  await page.locator('.export-actions button', { hasText: '导出全部' }).click()
+  if (label === 'JPG') {
+    check(
+      `${label}: JPG quality slider present`,
+      (await page.locator('.export-dialog .slider-row', { hasText: 'JPG 质量' }).count()) === 1
+    )
+  }
+  await page.locator('.export-dialog-foot button', { hasText: '开始导出' }).click()
+  await page.waitForSelector('.export-dialog', { state: 'detached', timeout: 10000 })
   await waitExportDone(page)
   const cardText = (await page.locator('.export-card').innerText()).replace(/\n+/g, ' | ')
   check(`${label}: overlay reports 导出完成`, cardText.includes('导出完成'), cardText)
@@ -272,6 +387,24 @@ async function runBatch(page, { label, ext, expectedNames, snapshot, onFiles }) 
   return files
 }
 
+/** EXIF null check for formats that must not carry it. */
+async function parseExifSafe(buf) {
+  try {
+    return (await exifr.parse(buf, {
+      tiff: true,
+      ifd0: true,
+      exif: true,
+      gps: true,
+      interop: true,
+      translateValues: true,
+      reviveValues: true,
+      mergeOutput: true
+    })) ?? null
+  } catch {
+    return null
+  }
+}
+
 async function main() {
   for (const [p, what] of [
     [fixtureA, 'fixture A'],
@@ -293,12 +426,8 @@ async function main() {
   fs.mkdirSync(altDir, { recursive: true })
   fs.mkdirSync(artDir, { recursive: true })
 
-  const app = await electron.launch({
-    executablePath: require('electron'),
-    args: ['.'],
-    cwd: root,
-    timeout: 60000
-  })
+  const profile = path.join(runDir, 'profile')
+  const app = await launchApp(profile)
   appRef = app
   const page = await app.firstWindow()
   const pageErrors = []
@@ -312,116 +441,221 @@ async function main() {
   check('app shell ready', true)
 
   // ---------------------------------------------------------------------------
-  // 2. Reset storage, seed output dir, reload
+  // 1. Explicit storage reset (determinism even if the profile dir survived), reload
   // ---------------------------------------------------------------------------
   console.log('\n--- reset storage ---')
-  let idb = null
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const cleared = await page.evaluate(() => {
-      localStorage.clear()
-      return localStorage.getItem('framemark.lastDesign.v1') === null
-    })
-    await page.evaluate(
-      () =>
-        new Promise((resolve) => {
-          let settled = false
-          const finish = () => {
-            if (!settled) {
-              settled = true
-              resolve(true)
-            }
+  const cleared = await page.evaluate(() => {
+    localStorage.clear()
+    return localStorage.getItem('framemark.lastDesign.v1') === null
+  })
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        let settled = false
+        const finish = () => {
+          if (!settled) {
+            settled = true
+            resolve(true)
           }
-          const req = indexedDB.deleteDatabase('framemark')
-          req.onsuccess = finish
-          req.onerror = finish
-          req.onblocked = finish
-          setTimeout(finish, 1500)
-        })
-    )
-    await page.reload({ waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('.app-shell.ready', { timeout: 30000 })
-    await page.waitForTimeout(400)
-    idb = await idbSummary(page)
-    if (attempt === 0) check('localStorage cleared', cleared)
-    if (idb.count === 0) break
-  }
-  check('IndexedDB presets reset to 0', idb?.count === 0, `count=${idb?.count}`)
-
-  const seed = { templateId: 'brandFooter', params: {}, export: { outputDir: outDir } }
-  await page.evaluate((v) => localStorage.setItem('framemark.lastDesign.v1', v), JSON.stringify(seed))
+        }
+        const req = indexedDB.deleteDatabase('framemark')
+        req.onsuccess = finish
+        req.onerror = finish
+        req.onblocked = finish
+        setTimeout(finish, 1500)
+      })
+  )
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.waitForSelector('.app-shell.ready', { timeout: 30000 })
-  await page.waitForTimeout(300)
-  check('seeded lastDesign present', (await page.evaluate(() => localStorage.getItem('framemark.lastDesign.v1'))) !== null)
-
-  // Seeded output dir is visible in the export tab (no native dialog needed).
-  await page.locator('.inspector-tabs button', { hasText: '导出' }).click()
-  const seededDir = (await page.locator('.output-dir code').textContent())?.trim()
-  check('seed outputDir applied', seededDir === outDir, `ui=${seededDir}`)
-  await page.locator('.inspector-tabs button', { hasText: '模板' }).click()
+  await page.waitForTimeout(400)
+  check('localStorage cleared', cleared)
+  const idb0 = await idbSummary(page)
+  check('IndexedDB presets reset to 0', idb0.count === 0, `count=${idb0.count}`)
 
   // ---------------------------------------------------------------------------
-  // 3. Import two photos with distinct EXIF
+  // 2. Photo-first home: ImportScreen with zero photos, no cards in the DOM
   // ---------------------------------------------------------------------------
   console.log('\n--- import photos ---')
-  await page.setInputFiles('#framemark-file-input', [fixtureA, fixtureB])
-  await page.waitForFunction(() => document.querySelectorAll('.thumb').length === 2, null, { timeout: 180000 })
+  check('ImportScreen shown while there are no photos', (await page.locator('.import-screen').count()) === 1)
+  check('no .tpl-card before the first photo', (await page.locator('.tpl-card').count()) === 0)
+  await importPhotos(page, [fixtureA, fixtureB], 2)
   const thumbTitles = await page.locator('.thumb-main').evaluateAll((els) => els.map((e) => e.getAttribute('title')))
   check('two thumbnails imported', (await page.locator('.thumb').count()) === 2, thumbTitles.join(', '))
-  check('thumb names match fixtures', thumbTitles.includes('4x3.jpg') && thumbTitles.includes('contax-t2.jpg'), thumbTitles.join(', '))
+  check(
+    'thumb names match fixtures',
+    thumbTitles.includes('4x3.jpg') && thumbTitles.includes('contax-t2.jpg'),
+    thumbTitles.join(', ')
+  )
+  check('workspace replaces ImportScreen after import', (await page.locator('.import-screen').count()) === 0)
+  check('BorderLibrary rendered in the left sidebar', (await page.locator('.border-library').count()) === 1)
+
+  // second photo can be selected
+  await page.locator('.thumb-main').nth(1).click()
+  await page.waitForFunction(() => document.querySelectorAll('.thumb')[1]?.classList.contains('active') === true)
+  const activeThumb = (await page.locator('.thumb.active .thumb-main').getAttribute('title')) ?? ''
+  check('second photo can be selected', activeThumb === 'contax-t2.jpg', activeThumb)
+  const stageMeta = (await page.locator('.stage-title .stage-meta').innerText()).trim()
+  check('preview stage follows the selected photo', stageMeta.includes('contax-t2.jpg'), stageMeta)
 
   // ---------------------------------------------------------------------------
-  // 4. Pick 经典双行 via template search
+  // 3. New taxonomy: 175 cards / 7 categories / vendor chips
+  // ---------------------------------------------------------------------------
+  console.log('\n--- border taxonomy ---')
+  check(`all ${TOTAL_CARDS} .tpl-card nodes stay in the DOM`, (await page.locator('.tpl-card').count()) === TOTAL_CARDS)
+  const nav = await page.locator('.border-category-nav button').evaluateAll((els) =>
+    els.map((e) => ({
+      name: e.querySelector('span')?.textContent?.trim() ?? '',
+      count: Number((e.querySelector('em')?.textContent ?? '').trim())
+    }))
+  )
+  check('category nav has 7 buttons', nav.length === 7, JSON.stringify(nav))
+  for (const c of CATEGORIES) {
+    check(
+      `category ${c.name} = ${c.count}`,
+      nav.some((v) => v.name === c.name && v.count === c.count),
+      JSON.stringify(nav)
+    )
+  }
+  check(
+    `text category section holds ${CATEGORIES[1].count} cards in the DOM`,
+    (await page.locator('.border-section[data-category="text"] .tpl-card').count()) === CATEGORIES[1].count
+  )
+  const chips = await page.locator('.border-vendor-chips button').evaluateAll((els) =>
+    els.map((e) => ({
+      name: (e.childNodes[0]?.textContent ?? '').trim(),
+      count: e.querySelector('em') ? Number((e.querySelector('em').textContent ?? '').trim()) : null
+    }))
+  )
+  check('vendor chips: 全部 / OPPO / 小米 / vivo', chips.length === 4, JSON.stringify(chips))
+  check(
+    'vendor chip OPPO = 47',
+    chips.some((c) => c.name === 'OPPO' && c.count === 47),
+    JSON.stringify(chips)
+  )
+  check(
+    'vendor chip 小米 = 40',
+    chips.some((c) => c.name === '小米' && c.count === 40),
+    JSON.stringify(chips)
+  )
+  check(
+    'vendor chip vivo = 12',
+    chips.some((c) => c.name === 'vivo' && c.count === 12),
+    JSON.stringify(chips)
+  )
+  await page.locator('.border-vendor-chips button', { hasText: 'OPPO' }).click()
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 47
+  )
+  check('OPPO chip narrows the vendor section to 47 visible cards', true)
+  check('all 175 cards remain in the DOM while filtered', (await page.locator('.tpl-card').count()) === TOTAL_CARDS)
+  await page.locator('.border-vendor-chips button', { hasText: '全部' }).click()
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 99
+  )
+  check('全部 chip restores all 99 vendor cards', true)
+
+  // ---------------------------------------------------------------------------
+  // 4. Pick 经典双行 via the border library
   // ---------------------------------------------------------------------------
   console.log('\n--- select template ---')
-  const search = page.locator('input[aria-label="搜索模板"]')
-  await search.fill('经典双行')
-  await page.waitForTimeout(350)
-  const card = page.locator('.tpl-card', { hasText: '经典双行' }).first()
-  check('search finds exactly one 经典双行 card', (await page.locator('.tpl-card', { hasText: '经典双行' }).count()) === 1)
-  await card.scrollIntoViewIfNeeded()
-  await card.click()
-  await page.waitForTimeout(600)
+  const card = page.locator('.tpl-card', { hasText: '经典双行' })
+  check('exactly one 经典双行 card in the DOM', (await card.count()) === 1, `count=${await card.count()}`)
+  await card.first().scrollIntoViewIfNeeded()
+  await card.first().click()
+  await page.waitForFunction(() => document.querySelector('.current-template h3')?.textContent?.trim() === '经典双行', null, {
+    timeout: 15000
+  })
   const tplTitle = (await page.locator('.current-template h3').innerText()).trim()
   check('current template title is 经典双行', tplTitle === '经典双行', tplTitle)
-  check('active card is 经典双行', (await page.locator('.tpl-card.active').innerText()).includes('经典双行'))
+  check('active card is 经典双行', (await page.locator('.tpl-card.active').first().innerText()).includes('经典双行'))
+  const tabLabels = await page.locator('.editor-tabs button').evaluateAll((els) =>
+    els.map((e) => (e.textContent ?? '').trim())
+  )
+  check(
+    'four editor tabs: Logo / 文字 / 布局 / 主题',
+    JSON.stringify(tabLabels) === JSON.stringify(['Logo', '文字', '布局', '主题']),
+    tabLabels.join(',')
+  )
 
   // ---------------------------------------------------------------------------
-  // 5. Edit an advanced numeric param (footerTextScale)
+  // 5. Advanced/per-style param: 布局 · 文字区高度 (old 全部参数 footerTextScale is gone)
   // ---------------------------------------------------------------------------
   console.log('\n--- advanced param ---')
-  const advSection = page.locator('.panel-section', { hasText: '全部参数' })
-  check('全部参数 section exists', (await advSection.count()) === 1)
-  await advSection.locator('button', { hasText: '展开' }).click()
-  await page.waitForTimeout(250)
-  const scaleInput = page.locator('label[title="footerTextScale"] input')
-  check('footerTextScale exposed', (await scaleInput.count()) === 1)
-  const scaleBefore = await scaleInput.inputValue()
-  await scaleInput.fill('1.4')
-  await page.waitForTimeout(300)
-  const scaleAfter = await scaleInput.inputValue()
-  check('footerTextScale edited in UI', scaleAfter === '1.4' && scaleAfter !== scaleBefore, `${scaleBefore} -> ${scaleAfter}`)
-  await page.waitForTimeout(700)
-  const persistedScale = await page.evaluate(() => {
-    try {
-      return JSON.parse(localStorage.getItem('framemark.lastDesign.v1') || '{}')?.params?.footerTextScale
-    } catch {
-      return undefined
-    }
-  })
-  check('footerTextScale persisted in lastDesign', Number(persistedScale) === 1.4, String(persistedScale))
+  await page.locator('.editor-tabs button', { hasText: '布局' }).click()
+  await page.waitForSelector('.editor-pane[data-editor-pane="layout"]', { timeout: 10000 })
+  check(
+    'layout pane always contains 画幅 .segmented',
+    (await page.locator('.editor-pane[data-editor-pane="layout"] .segmented').count()) >= 1
+  )
+  check(
+    'layout pane 画幅 defaults to 原始',
+    ((await page.locator('.editor-pane[data-editor-pane="layout"] .segmented button.active').first().innerText()) ?? '').trim() === '原始'
+  )
+  const footerSlider = page
+    .locator('.editor-pane[data-editor-pane="layout"] .slider-row', { hasText: '文字区高度' })
+    .locator('input[type="range"]')
+  check('文字区高度 slider exposed for 经典双行', (await footerSlider.count()) === 1)
+  const sliderBefore = await footerSlider.inputValue()
+  // The wm-classic variant declares footerPct 11.1; the browser snaps a range
+  // input to its step grid (5 + k*0.5), so accept the snapped neighbours too.
+  const sliderBeforeNum = Number(sliderBefore)
+  check(
+    '文字区高度 starts at the wm-classic declared ~11.1',
+    sliderBeforeNum >= 10.5 && sliderBeforeNum <= 11.5,
+    sliderBefore
+  )
+  const hashBefore = await canvasHash(page)
+  check('preview canvas hashes before the edit', typeof hashBefore === 'string' && hashBefore.length > 0, String(hashBefore))
+  await footerSlider.fill('16')
+  await page.waitForFunction(
+    () => {
+      const input = document.querySelector('.editor-pane[data-editor-pane="layout"] .slider-row input[type="range"]')
+      return Boolean(input) && input.value === '16'
+    },
+    null,
+    { timeout: 10000 }
+  )
+  check('文字区高度 edited in UI', (await footerSlider.inputValue()) === '16')
+  await page.waitForFunction(
+    (prev) => {
+      const canvas = document.querySelector('.canvas-frame canvas')
+      if (!canvas) return false
+      const url = canvas.toDataURL('image/png')
+      let h = 2166136261
+      for (let i = 0; i < url.length; i += 7) {
+        h ^= url.charCodeAt(i)
+        h = Math.imul(h, 16777619)
+      }
+      return `${url.length}:${h >>> 0}` !== prev
+    },
+    hashBefore,
+    { timeout: 30000 }
+  )
+  check('canvas re-renders after the param edit', true)
+  await page.waitForTimeout(900)
+  const persisted = await lastDesign(page)
+  check('footerPct persisted in lastDesign', Number(persisted?.params?.footerPct) === 16, String(persisted?.params?.footerPct))
+
+  // theme pane check (hand template keeps .theme-swatch)
+  await page.locator('.editor-tabs button', { hasText: '主题' }).click()
+  await page.waitForSelector('.editor-pane[data-editor-pane="theme"]', { timeout: 10000 })
+  check(
+    'theme pane shows hand-template .theme-swatch swatches',
+    (await page.locator('.editor-pane[data-editor-pane="theme"] .theme-swatch').count()) === 6
+  )
+  await page.locator('.editor-tabs button', { hasText: '布局' }).click()
+  await page.waitForSelector('.editor-pane[data-editor-pane="layout"]', { timeout: 10000 })
 
   // ---------------------------------------------------------------------------
-  // 6. Watermark: enable switch, upload transparent PNG, verify preview
+  // 6. Watermark: tool switch, upload transparent PNG, anchor + sliders
   // ---------------------------------------------------------------------------
   console.log('\n--- watermark ---')
-  await page.locator('.inspector-tabs button', { hasText: '水印' }).click()
-  const wmSwitch = page.locator('.switch-row', { hasText: '启用水印' })
-  const wmSwitchState = wmSwitch.locator('.switch')
-  check('watermark starts disabled', (await wmSwitchState.getAttribute('aria-checked')) === 'false')
-  await wmSwitch.click()
-  await page.waitForTimeout(200)
-  check('watermark switch enabled by click', (await wmSwitchState.getAttribute('aria-checked')) === 'true')
+  await page.locator('.inspector-tool-switch button', { hasText: '水印' }).click()
+  await page.waitForSelector('.inspector-pane input[type="file"]', { state: 'attached', timeout: 10000 })
+  const wmSwitch = page.locator('.inspector-pane .switch-row', { hasText: '启用水印' }).locator('.switch')
+  check('watermark starts disabled', (await wmSwitch.getAttribute('aria-checked')) === 'false')
   const wmInput = page.locator('.inspector-pane input[type="file"]')
   check('watermark file input present', (await wmInput.count()) === 1, `count=${await wmInput.count()}`)
   await wmInput.setInputFiles(wmFile)
@@ -431,74 +665,215 @@ async function main() {
   check('watermark preview image is a PNG data URL', wmSrc.startsWith('data:image/png'), wmSrc.slice(0, 30))
   check('watermark asset is wm-white.png', wmInfo.includes('wm-white.png'), wmInfo)
   check('watermark dimensions shown 1736x561', wmInfo.includes('1736') && wmInfo.includes('561'), wmInfo)
-  check('watermark still enabled after upload', (await wmSwitchState.getAttribute('aria-checked')) === 'true')
-  check('watermark tab dot visible', (await page.locator('.inspector-tabs button', { hasText: '水印' }).locator('.tab-dot').count()) === 1)
+  check('watermark enabled by upload', (await wmSwitch.getAttribute('aria-checked')) === 'true')
+  check(
+    'watermark tool dot visible',
+    (await page.locator('.inspector-tool-switch button', { hasText: '水印' }).locator('.tab-dot').count()) === 1
+  )
+  check('direct-manipulation layer appears over the canvas', (await page.locator('.wm-placement').count()) === 1)
+  check('.wm-drag-box present', (await page.locator('.wm-drag-box').count()) === 1)
+  check('nine .wm-anchor-dot handles on the layer', (await page.locator('.wm-anchor-dot').count()) === 9)
+  check('tile switch 平铺整个区域 present', (await page.locator('.inspector-pane .switch-row', { hasText: '平铺整个区域' }).count()) === 1)
+  check('旋转 slider present', (await page.locator('.inspector-pane .slider-row', { hasText: '旋转' }).count()) === 1)
+  check('间距 slider present', (await page.locator('.inspector-pane .slider-row', { hasText: '间距' }).count()) === 1)
+
+  await page.locator('.anchor-grid button[title="左下"]').click()
+  await page.waitForFunction(() => document.querySelector('.anchor-grid button[title="左下"]')?.classList.contains('active') === true)
+  check('anchor can move to 左下', true)
+  await page.locator('.anchor-grid button[title="右下"]').click()
+  await page.waitForFunction(() => document.querySelector('.anchor-grid button[title="右下"]')?.classList.contains('active') === true)
+  check('anchor returns to 右下', true)
+
+  const wmWidth = page.locator('.inspector-pane .slider-row', { hasText: '宽度' }).locator('input[type="range"]')
+  await wmWidth.fill('20')
+  check('watermark 宽度 set to 20%', (await wmWidth.inputValue()) === '20', await wmWidth.inputValue())
+  const wmOpacity = page.locator('.inspector-pane .slider-row', { hasText: '不透明度' }).locator('input[type="range"]')
+  await wmOpacity.fill('0.95')
+  check('watermark 不透明度 set to 0.95', (await wmOpacity.inputValue()) === '0.95', await wmOpacity.inputValue())
   await page.screenshot({ path: path.join(artDir, '01-watermark-enabled.png') })
 
   // ---------------------------------------------------------------------------
-  // 7a. Save a preset
+  // 7. Export the current photo as PNG via the NEW dialog; pixel-prove the watermark
+  // ---------------------------------------------------------------------------
+  console.log('\n--- export dialog + watermark pixels ---')
+  await page.locator('.thumb-main').nth(0).click()
+  await page.waitForFunction(() => document.querySelectorAll('.thumb')[0]?.classList.contains('active') === true)
+  await openExportDialog(page)
+  check('export dialog opened from the topbar', true)
+  const scopeTop = (
+    (await page.locator('.export-dialog label.field', { hasText: '范围' }).locator('.segmented button.active').innerText()) ?? ''
+  ).trim()
+  check('dialog defaults to 当前照片 scope', scopeTop === '当前照片', scopeTop)
+  await pickExportDir(app, page, outDir)
+  check('export dir redirected to the test out dir', (await page.locator('.export-dir-row input').inputValue()) === outDir)
+  const edgeChips = await page.locator('.export-long-edge .toggle-chip').evaluateAll((els) =>
+    els.map((e) => (e.textContent ?? '').trim())
+  )
+  check(
+    'long-edge chips are 原始尺寸 / 4096 / 3072 / 2048',
+    JSON.stringify(edgeChips) === JSON.stringify(['原始尺寸', '4096', '3072', '2048']),
+    edgeChips.join(',')
+  )
+  check(
+    'long edge defaults to 原始尺寸',
+    ((await page.locator('.export-long-edge .toggle-chip.on').innerText()) ?? '').trim() === '原始尺寸'
+  )
+  check('移除 GPS switch present', (await page.locator('.export-dialog .switch-row', { hasText: '移除 GPS' }).count()) === 1)
+  await chooseFormat(page, 'PNG')
+  check('PNG format selected in the dialog', true)
+  await page.locator('.export-dialog-foot button', { hasText: '开始导出' }).click()
+  await page.waitForSelector('.export-dialog', { state: 'detached', timeout: 10000 })
+  await waitExportDone(page)
+  const pngCardText = (await page.locator('.export-card').innerText()).replace(/\n+/g, ' | ')
+  check('PNG overlay reports 导出完成', pngCardText.includes('导出完成'), pngCardText)
+  check('PNG overlay reports 成功 1 张', pngCardText.includes('成功 1 张'), pngCardText)
+  check('PNG no .export-errors', (await page.locator('.export-errors').count()) === 0, pngCardText)
+  const wmFiles = listFiles(outDir)
+  check('watermark PNG: exactly 1 file', wmFiles.length === 1, wmFiles.join(', '))
+  check('watermark PNG: default {name}-{template} name', wmFiles[0] === '4x3-经典双行.png', wmFiles.join(', '))
+  if (wmFiles.length === 1 && wmFiles[0] === '4x3-经典双行.png') {
+    const wmBuf = fs.readFileSync(path.join(outDir, wmFiles[0]))
+    const wmMeta = await sharp(wmBuf).metadata()
+    check('watermark PNG decodes as png', wmMeta.format === 'png', `${wmMeta.format} ${wmMeta.width}x${wmMeta.height}`)
+    check('watermark PNG width = 2667 (no long-edge limit)', wmMeta.width === 2667, `${wmMeta.width}x${wmMeta.height}`)
+    check('watermark PNG height grows with the footer', (wmMeta.height ?? 0) > 2000, `${wmMeta.width}x${wmMeta.height}`)
+    check('watermark PNG size > 0', fs.statSync(path.join(outDir, wmFiles[0])).size > 0)
+    // White watermark, 20%W at 95% opacity, anchored bottom-right of the photo:
+    // count bright pixels in the bottom-right 30% of the photo region.
+    const region = {
+      left: Math.floor(2667 * 0.7),
+      top: Math.floor(2000 * 0.7),
+      width: 2667 - Math.floor(2667 * 0.7),
+      height: 2000 - Math.floor(2000 * 0.7)
+    }
+    const raw = await sharp(wmBuf).extract(region).raw().toBuffer({ resolveWithObject: true })
+    let bright = 0
+    for (let p = 0; p < raw.data.length; p += raw.info.channels) {
+      const min = Math.min(raw.data[p], raw.data[p + 1], raw.data[p + 2])
+      if (min >= 220) bright++
+    }
+    check(
+      'watermark PNG contains watermark pixels in the bottom-right corner',
+      bright >= 500,
+      `${bright} bright px in ${raw.info.width}x${raw.info.height} bottom-right region`
+    )
+  }
+  await closeExportOverlay(page)
+
+  // ---------------------------------------------------------------------------
+  // 8. Filename tokens + leave the design on WebP before saving the preset
+  // ---------------------------------------------------------------------------
+  console.log('\n--- filename pattern ---')
+  const pattern = '{index}-{name}-{template}-{make}'
+  await openExportDialog(page)
+  const patternInput = page.locator('.export-dialog label.field', { hasText: '文件名' }).locator('input')
+  await patternInput.fill(pattern)
+  check('filename pattern applied', (await patternInput.inputValue()) === pattern, await patternInput.inputValue())
+  await chooseFormat(page, 'WebP')
+  check('format switched to WebP in the dialog', (await activeFormatLabel(page)) === 'WebP')
+  await closeExportDialog(page)
+  check('export dialog closed via 取消', (await page.locator('.export-dialog').count()) === 0)
+
+  // ---------------------------------------------------------------------------
+  // 9. Save a preset
   // ---------------------------------------------------------------------------
   console.log('\n--- save preset ---')
   const presetName = `E2E工作流-${Date.now()}`
   await page.locator('.topbar-actions button', { hasText: '预设' }).click()
-  await page.waitForSelector('.modal', { timeout: 10000 })
+  await page.waitForSelector('.preset-save-box', { timeout: 10000 })
   await page.locator('.preset-save-box input').fill(presetName)
-  await page
-    .locator('.preset-save-box button', { hasText: '保存当前设计' })
-    .click()
-  await page.waitForSelector('.modal', { state: 'detached', timeout: 15000 })
+  await page.locator('.preset-save-box button', { hasText: '保存当前设计' }).click()
+  await page.waitForSelector('.preset-save-box', { state: 'detached', timeout: 15000 })
   await page.waitForFunction(
     () => document.querySelector('.toast')?.textContent?.includes('已保存') === true,
     null,
     { timeout: 15000 }
   )
   check('preset save toast shown', true)
-  idb = await idbSummary(page)
+  let idb = await idbSummary(page)
   const savedPreset = idb.presets.find((p) => p.name === presetName)
   check('preset persisted in IndexedDB', Boolean(savedPreset), JSON.stringify(idb.presets.map((p) => p.name)))
   check('preset stores wm-classic variant', savedPreset?.variantId === 'wm-classic', String(savedPreset?.variantId))
+  check('preset stores edited footerPct 16', Number(savedPreset?.footerPct) === 16, String(savedPreset?.footerPct))
   check('preset stores watermark enabled', savedPreset?.wmEnabled === true)
-  check('preset stores watermark PNG asset', String(savedPreset?.wmAsset?.prefix ?? '').startsWith('data:image/png;base64'), String(savedPreset?.wmAsset?.prefix))
-  check('preset stores edited footerTextScale', Number(savedPreset?.footerTextScale) === 1.4, String(savedPreset?.footerTextScale))
+  check('preset stores watermark anchor 右下', savedPreset?.wmAnchor === 'bottom-right', String(savedPreset?.wmAnchor))
+  check('preset stores watermark 宽度 20', Number(savedPreset?.wmWidthPct) === 20, String(savedPreset?.wmWidthPct))
+  check('preset stores watermark opacity 0.95', Number(savedPreset?.wmOpacity) === 0.95, String(savedPreset?.wmOpacity))
   check(
-    'preset does not store machine-specific outputDir',
-    !savedPreset?.outputDir,
-    String(savedPreset?.outputDir)
+    'preset stores watermark PNG asset',
+    String(savedPreset?.wmAsset?.prefix ?? '').startsWith('data:image/png;base64'),
+    String(savedPreset?.wmAsset?.prefix)
   )
+  check('preset stores export format webp', savedPreset?.format === 'webp', String(savedPreset?.format))
+  check('preset stores the filename pattern', savedPreset?.filenamePattern === pattern, String(savedPreset?.filenamePattern))
+  check('preset does not store machine-specific outputDir', !savedPreset?.outputDir, String(savedPreset?.outputDir))
 
   // ---------------------------------------------------------------------------
-  // 7b. Reload, re-import photos, apply preset, verify visible restoration
+  // 10. Disturb the live design, reload with the same isolated profile
   // ---------------------------------------------------------------------------
-  console.log('\n--- reload + apply preset ---')
+  console.log('\n--- disturb + reload ---')
+  await openExportDialog(page)
+  await chooseFormat(page, 'JPG')
+  check('pre-reload live format is JPG', (await activeFormatLabel(page)) === 'JPG')
+  await page.locator('.export-dialog label.field', { hasText: '文件名' }).locator('input').fill('e2e-tmp-{name}')
+  await closeExportDialog(page)
+  await page.locator('.inspector-tool-switch button', { hasText: '水印' }).click()
+  await page.locator('.inspector-pane .switch-row', { hasText: '启用水印' }).click()
+  await page.waitForFunction(
+    () => document.querySelector('.inspector-pane .switch-row .switch')?.getAttribute('aria-checked') === 'false'
+  )
+  check('watermark disabled before reload', true)
+  check(
+    'watermark tool dot gone while disabled',
+    (await page.locator('.inspector-tool-switch button', { hasText: '水印' }).locator('.tab-dot').count()) === 0
+  )
+  await page.locator('.inspector-tool-switch button', { hasText: '边框' }).click()
+  await page.locator('.editor-tabs button', { hasText: '布局' }).click()
+  const footerSlider2 = page
+    .locator('.editor-pane[data-editor-pane="layout"] .slider-row', { hasText: '文字区高度' })
+    .locator('input[type="range"]')
+  await footerSlider2.fill('9')
+  check('footer slider moved to 9 before reload', (await footerSlider2.inputValue()) === '9')
+  await page.waitForTimeout(900)
+  const preReload = await lastDesign(page)
+  check(
+    'pre-reload lastDesign has footerPct 9 + disabled watermark',
+    Number(preReload?.params?.footerPct) === 9 && preReload?.watermark?.enabled === false,
+    JSON.stringify({ footerPct: preReload?.params?.footerPct, wm: preReload?.watermark?.enabled })
+  )
+
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.waitForSelector('.app-shell.ready', { timeout: 30000 })
   await page.waitForTimeout(500)
   check('photos are not persisted across reload', (await page.locator('.thumb').count()) === 0)
+  check('app is back on ImportScreen after reload', (await page.locator('.import-screen').count()) === 1)
   idb = await idbSummary(page)
   check('preset survives reload in IndexedDB', idb.presets.some((p) => p.name === presetName), JSON.stringify(idb.presets.map((p) => p.name)))
 
-  await page.setInputFiles('#framemark-file-input', [fixtureA, fixtureB])
-  await page.waitForFunction(() => document.querySelectorAll('.thumb').length === 2, null, { timeout: 180000 })
+  // ---------------------------------------------------------------------------
+  // 11. Re-import, move the output dir, apply the preset, verify full restoration
+  // ---------------------------------------------------------------------------
+  console.log('\n--- reload + apply preset ---')
+  await importPhotos(page, [fixtureA, fixtureB], 2)
   check('photos re-imported after reload', (await page.locator('.thumb').count()) === 2)
 
-  // Move the output dir away from the saved value so we can see whether applying a
-  // preset overwrites it (presets embed the whole export block today).
-  await page.locator('.inspector-tabs button', { hasText: '导出' }).click()
-  await patchOpenDialog(app, altDir)
-  await page.locator('.output-dir button', { hasText: '更改' }).click()
-  await page.waitForFunction((dir) => document.querySelector('.output-dir code')?.textContent?.trim() === dir, altDir, {
-    timeout: 15000
-  })
-  await restoreOpenDialog(app)
-  const altDirUi = (await page.locator('.output-dir code').textContent())?.trim()
-  check('output dir can be changed before preset apply', altDirUi === altDir, String(altDirUi))
+  await openExportDialog(page)
+  check('design keeps pre-apply outputDir', (await page.locator('.export-dir-row input').inputValue()) === outDir)
+  check('design keeps pre-apply format JPG', (await activeFormatLabel(page)) === 'JPG')
+  check(
+    'design keeps pre-apply temp pattern',
+    (await page.locator('.export-dialog label.field', { hasText: '文件名' }).locator('input').inputValue()) === 'e2e-tmp-{name}'
+  )
+  await pickExportDir(app, page, altDir)
+  check('output dir can be changed before preset apply', (await page.locator('.export-dir-row input').inputValue()) === altDir)
+  await closeExportDialog(page)
 
   await page.locator('.topbar-actions button', { hasText: '预设' }).click()
-  await page.waitForSelector('.modal', { timeout: 10000 })
+  await page.waitForSelector('.preset-save-box', { timeout: 10000 })
   const presetRow = page.locator('.preset-row', { hasText: presetName })
   check('saved preset listed after reload', (await presetRow.count()) === 1, `rows=${await page.locator('.preset-row').count()}`)
   await presetRow.locator('button', { hasText: '应用' }).click()
-  await page.waitForSelector('.modal', { state: 'detached', timeout: 15000 })
+  await page.waitForSelector('.preset-save-box', { state: 'detached', timeout: 15000 })
   await page.waitForFunction(
     (n) => document.querySelector('.toast')?.textContent?.includes(`已应用「${n}」`) === true,
     presetName,
@@ -506,48 +881,40 @@ async function main() {
   )
   check('preset apply toast shown', true)
 
-  await page.locator('.inspector-tabs button', { hasText: '水印' }).click()
+  const tplAfter = (await page.locator('.current-template h3').innerText()).trim()
+  check('preset restores 经典双行 template', tplAfter === '经典双行', tplAfter)
+  await page.locator('.editor-tabs button', { hasText: '布局' }).click()
+  const footerSlider3 = page
+    .locator('.editor-pane[data-editor-pane="layout"] .slider-row', { hasText: '文字区高度' })
+    .locator('input[type="range"]')
+  check('preset restores edited footerPct 16', (await footerSlider3.inputValue()) === '16', await footerSlider3.inputValue())
+
+  await page.locator('.inspector-tool-switch button', { hasText: '水印' }).click()
   await page.waitForSelector('.wm-preview img', { timeout: 15000 })
   const wmSrcAfter = (await page.locator('.wm-preview img').getAttribute('src')) ?? ''
-  const wmSwitchAfter = page.locator('.switch-row', { hasText: '启用水印' }).locator('.switch')
+  const wmSwitchAfter = page.locator('.inspector-pane .switch-row', { hasText: '启用水印' }).locator('.switch')
   check('preset restores watermark preview', wmSrcAfter.startsWith('data:image/png'), wmSrcAfter.slice(0, 30))
   check('preset restores watermark enabled', (await wmSwitchAfter.getAttribute('aria-checked')) === 'true')
   check(
-    'preset restores watermark tab dot',
-    (await page.locator('.inspector-tabs button', { hasText: '水印' }).locator('.tab-dot').count()) === 1
+    'preset restores watermark tool dot',
+    (await page.locator('.inspector-tool-switch button', { hasText: '水印' }).locator('.tab-dot').count()) === 1
   )
   await page.screenshot({ path: path.join(artDir, '02-preset-restored.png') })
 
-  await page.locator('.inspector-tabs button', { hasText: '模板' }).click()
-  await page.waitForTimeout(300)
-  const tplAfter = (await page.locator('.current-template h3').innerText()).trim()
-  check('preset restores 经典双行 template', tplAfter === '经典双行', tplAfter)
-  await page.locator('.panel-section', { hasText: '全部参数' }).locator('button', { hasText: '展开' }).click()
-  await page.waitForTimeout(250)
-  const scaleRestored = await page.locator('label[title="footerTextScale"] input').inputValue()
-  check('preset restores edited footerTextScale', scaleRestored === '1.4', scaleRestored)
-
-  await page.locator('.inspector-tabs button', { hasText: '导出' }).click()
-  const dirAfterPreset = (await page.locator('.output-dir code').textContent())?.trim()
-  check('preset apply preserves current output dir', dirAfterPreset === altDir, `ui=${dirAfterPreset}`)
-  // Put the export dir back on the seeded path for the batches below.
-  await patchOpenDialog(app, outDir)
-  await page.locator('.output-dir button', { hasText: '更改' }).click()
-  await page.waitForFunction((dir) => document.querySelector('.output-dir code')?.textContent?.trim() === dir, outDir, {
-    timeout: 15000
-  })
-  await restoreOpenDialog(app)
+  await openExportDialog(page)
+  check('preset restores WebP format', (await activeFormatLabel(page)) === 'WebP')
+  check(
+    'preset restores filename pattern',
+    (await page.locator('.export-dialog label.field', { hasText: '文件名' }).locator('input').inputValue()) === pattern
+  )
+  check('preset apply preserves current output dir', (await page.locator('.export-dir-row input').inputValue()) === altDir)
+  await pickExportDir(app, page, outDir)
+  check('output dir back on the seeded path for the batches', (await page.locator('.export-dir-row input').inputValue()) === outDir)
+  await closeExportDialog(page)
 
   // ---------------------------------------------------------------------------
-  // 8. Filename pattern + JPG batch (2 photos)
+  // 12. JPG / PNG / WebP / TIFF batches through the export dialog
   // ---------------------------------------------------------------------------
-  console.log('\n--- filename pattern ---')
-  const pattern = '{index}-{name}-{template}-{make}'
-  const patternInput = page.locator('label.field', { hasText: '文件名模板' }).locator('input')
-  await patternInput.fill(pattern)
-  await page.waitForTimeout(300)
-  check('filename pattern applied', (await patternInput.inputValue()) === pattern, await patternInput.inputValue())
-
   const baseNames = ['001-4x3-经典双行-Panasonic', '002-contax-t2-经典双行-Contax']
   const sources = [
     { name: '4x3.jpg', make: 'Panasonic', model: 'DC-S1', width: 2667, height: 2000 },
@@ -569,16 +936,7 @@ async function main() {
         if (!fs.existsSync(full)) continue
         const buf = fs.readFileSync(full)
         const meta = await sharp(buf).metadata()
-        const exif = await exifr.parse(buf, {
-          tiff: true,
-          ifd0: true,
-          exif: true,
-          gps: true,
-          interop: true,
-          translateValues: true,
-          reviveValues: true,
-          mergeOutput: true
-        })
+        const exif = await parseExifSafe(buf)
         check(`JPG ${expected} Make=${src.make}`, exif?.Make === src.make, String(exif?.Make))
         check(`JPG ${expected} Model=${src.model}`, exif?.Model === src.model, String(exif?.Model))
         const orient = exif?.Orientation
@@ -599,7 +957,7 @@ async function main() {
         )
         check(`JPG ${expected} size > 100KB`, fs.statSync(full).size > 100 * 1024, `${fs.statSync(full).size} bytes`)
         if (i === 0) {
-          // The white watermark is composited at 90% opacity over dark leaves in
+          // The white watermark is composited at 95% opacity over dark leaves in
           // the bottom-right of the photo; verify it actually reached the pixels.
           const region = {
             left: Math.floor(src.width * 0.7),
@@ -624,18 +982,22 @@ async function main() {
     }
   })
 
-  // ---------------------------------------------------------------------------
-  // 10. PNG / WebP / TIFF batches (desktop)
-  // ---------------------------------------------------------------------------
   console.log('\n--- batch PNG ---')
   await runBatch(page, {
     label: 'PNG',
     ext: OUT_EXT.png,
     expectedNames: baseNames.map((b) => `${b}.png`),
     onFiles: async (files) => {
-      for (const f of files) {
-        const meta = await sharp(fs.readFileSync(path.join(outDir, f))).metadata()
-        check(`PNG ${f} decodes as png`, meta.format === 'png', `${meta.format} ${meta.width}x${meta.height}`)
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i]
+        const src = sources.find((s) => f.includes(s.name.replace(/\.[^.]+$/, ''))) ?? sources[0]
+        const buf = fs.readFileSync(path.join(outDir, f))
+        const meta = await sharp(buf).metadata()
+        check(`PNG ${f} decodes as png @${src.width}x`, meta.format === 'png' && meta.width === src.width, `${meta.format} ${meta.width}x${meta.height}`)
+        check(`PNG ${f} height grows with footer`, (meta.height ?? 0) > src.height, `${meta.width}x${meta.height}`)
+        check(`PNG ${f} size > 0`, fs.statSync(path.join(outDir, f)).size > 0)
+        const exif = await parseExifSafe(buf)
+        check(`PNG ${f} carries no EXIF`, !exif?.Make && !exif?.Model, JSON.stringify({ make: exif?.Make ?? null }))
       }
     }
   })
@@ -647,8 +1009,12 @@ async function main() {
     expectedNames: baseNames.map((b) => `${b}.webp`),
     onFiles: async (files) => {
       for (const f of files) {
-        const meta = await sharp(fs.readFileSync(path.join(outDir, f))).metadata()
+        const buf = fs.readFileSync(path.join(outDir, f))
+        const meta = await sharp(buf).metadata()
         check(`WebP ${f} decodes as webp`, meta.format === 'webp', `${meta.format} ${meta.width}x${meta.height}`)
+        check(`WebP ${f} size > 0`, fs.statSync(path.join(outDir, f)).size > 0)
+        const exif = await parseExifSafe(buf)
+        check(`WebP ${f} carries no EXIF`, !exif?.Make && !exif?.Model, JSON.stringify({ make: exif?.Make ?? null }))
       }
     }
   })
@@ -662,20 +1028,22 @@ async function main() {
       for (const f of files) {
         const meta = await sharp(fs.readFileSync(path.join(outDir, f))).metadata()
         check(`TIFF ${f} decodes as tiff`, meta.format === 'tiff', `${meta.format} ${meta.width}x${meta.height}`)
+        check(`TIFF ${f} size > 0`, fs.statSync(path.join(outDir, f)).size > 0)
       }
     }
   })
 
   // ---------------------------------------------------------------------------
-  // 11. Cancel one batch (add two large photos so cancellation is deterministic)
+  // 13. Cancel one batch (add two large photos so cancellation is deterministic)
   // ---------------------------------------------------------------------------
   console.log('\n--- cancel batch ---')
-  await page.setInputFiles('#framemark-file-input', [bigA, bigB])
-  await page.waitForFunction(() => document.querySelectorAll('.thumb').length === 4, null, { timeout: 240000 })
+  await importPhotos(page, [bigA, bigB], 4)
   check('two large photos added for cancel test', (await page.locator('.thumb').count()) === 4)
-  await chooseFormat(page, 'JPG')
   await cleanOut()
-  await page.locator('.export-actions button', { hasText: '导出全部' }).click()
+  await openExportDialog(page, 'filmstrip')
+  await chooseFormat(page, 'JPG')
+  await page.locator('.export-dialog-foot button', { hasText: '开始导出' }).click()
+  await page.waitForSelector('.export-card', { timeout: 30000 })
   await page.locator('.export-card button', { hasText: '取消导出' }).click({ timeout: 30000 })
   await waitExportDone(page)
   const cancelText = (await page.locator('.export-card').innerText()).replace(/\n+/g, ' | ')
@@ -684,13 +1052,14 @@ async function main() {
   check('app shell still alive after cancel', await page.locator('.app-shell').isVisible())
   await page.screenshot({ path: path.join(artDir, '04-cancelled.png') })
   await closeExportOverlay(page)
+  check('export overlay closed after cancel', (await page.locator('.export-card').count()) === 0)
 
   // ---------------------------------------------------------------------------
-  // 12. Preset JSON export / delete / import roundtrip (no native dialogs)
+  // 14. Preset JSON export / delete / import roundtrip (no native dialogs)
   // ---------------------------------------------------------------------------
   console.log('\n--- preset JSON roundtrip ---')
   await page.locator('.topbar-actions button', { hasText: '预设' }).click()
-  await page.waitForSelector('.modal', { timeout: 10000 })
+  await page.waitForSelector('.preset-save-box', { timeout: 10000 })
   await page.locator('.modal-foot button', { hasText: '导出预设' }).click()
   await page.waitForFunction(
     () => document.querySelector('.toast')?.textContent?.includes('预设已保存到') === true,
@@ -748,13 +1117,15 @@ async function main() {
   idb = await idbSummary(page)
   check('imported preset persisted in IndexedDB', idb.presets.some((p) => p.name === presetName), JSON.stringify(idb.presets.map((p) => p.name)))
   await page.locator('.modal-foot button', { hasText: '完成' }).click()
-  await page.waitForSelector('.modal', { state: 'detached', timeout: 10000 })
+  await page.waitForSelector('.preset-save-box', { state: 'detached', timeout: 10000 })
+  check('preset dialog closed via 完成', true)
 
   // ---------------------------------------------------------------------------
-  // 13. Zero pageerror
+  // 15. Zero pageerror / console error
   // ---------------------------------------------------------------------------
   await page.waitForTimeout(800)
   check('no pageerror across the whole workflow', pageErrors.length === 0, pageErrors.join(' | '))
+  check('no console.error across the whole workflow', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '))
   if (consoleErrors.length) {
     notes.push(`console.error entries: ${consoleErrors.slice(0, 5).join(' | ')}`)
   }
@@ -763,24 +1134,7 @@ async function main() {
   await app.close()
 
   console.log('\n=== RESULT ===')
-  console.log(
-    JSON.stringify(
-      {
-        assertions: passed + failed,
-        passed,
-        failed,
-        failures,
-        defects,
-        notes,
-        pageErrors,
-        consoleErrors,
-        artifacts: { runDir, outDir, artDir },
-        exportedPresetJson: exportedPath || null
-      },
-      null,
-      2
-    )
-  )
+  console.log(JSON.stringify({ assertions: passed + failed, passed, failed, failures, defects, notes }))
   process.exitCode = failed > 0 ? 1 : 0
 }
 
@@ -791,7 +1145,7 @@ try {
   failures.push({ name: 'harness', detail: String(error?.stack ?? error) })
   console.error('FAIL  harness ::', error?.stack ?? error)
   console.log('\n=== RESULT ===')
-  console.log(JSON.stringify({ assertions: passed + failed, passed, failed, failures, defects, notes }, null, 2))
+  console.log(JSON.stringify({ assertions: passed + failed, passed, failed, failures, defects, notes }))
   process.exitCode = 1
 } finally {
   if (appRef) {

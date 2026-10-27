@@ -77,14 +77,16 @@ try {
 }
 
 // 6. e2e 计数
+//    e2e.mjs 打印的计数口径 2026-10-27 起随七类边框库更新：175 张卡必须全部渲染在
+//    DOM 里（.tpl-card 契约）、七类分区齐全、且不允许任何 page/console error。
 if (!SKIP_E2E) {
   try {
     const out = run('node', ['scripts/e2e.mjs'])
-    const m = out.match(/"total":\s*(\d+),\s*"system":\s*(\d+),\s*"blocked":\s*(\d+)[\s\S]*?"errors":\s*(\[[^\]]*\])/)
-    const ok = !!m && m[4] === '[]'
-    rec('T6', 'e2e errors 为空', ok, m ? `total=${m[1]} system=${m[2]} blocked=${m[3]} errors=${m[4]}` : '解析不到计数')
+    const m = out.match(/"total":\s*(\d+),\s*"categories":\s*(\d+)[\s\S]*?"errors":\s*(\[[^\]]*\])/)
+    const ok = !!m && m[1] === '175' && m[2] === '7' && m[3] === '[]'
+    rec('T6', 'e2e 175 卡 / 七类 / errors 为空', ok, m ? `total=${m[1]} categories=${m[2]} errors=${m[3]}` : '解析不到计数')
   } catch (e) {
-    rec('T6', 'e2e errors 为空', false, String(e.message).slice(0, 120))
+    rec('T6', 'e2e 175 卡 / 七类 / errors 为空', false, String(e.message).slice(0, 120))
   }
   try {
     const out = run('node', ['scripts/e2e-workflow.mjs'])
