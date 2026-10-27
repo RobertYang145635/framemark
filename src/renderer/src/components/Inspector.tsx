@@ -523,15 +523,19 @@ function CurrentTemplateHeader({ onOpenReferences }: { onOpenReferences: () => v
   const resetVariantParams = useAppStore((s) => s.resetVariantParams)
   const def = getTemplate(design.templateId)
   const variant = getVariant(design.variantId)
+  // 有预览图时，参考图入口就是面板底部的实图卡片；不再重复放一个按钮。
+  const hasInlineReference = Boolean(variant.preview || variant.renderedPreview)
   return (
     <div className="current-template">
       <div className="current-template-top">
         <span className="eyebrow">{variant.category}</span>
         <div className="current-template-actions">
-          <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} title="查看这个模板对应的原版参考图" type="button">
-            <Images size={14} />
-            参考图
-          </button>
+          {hasInlineReference ? null : (
+            <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} title="查看这个模板对应的原版参考图" type="button">
+              <Images size={14} />
+              参考图
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
             <RotateCcw size={14} />
             重置
@@ -541,6 +545,41 @@ function CurrentTemplateHeader({ onOpenReferences }: { onOpenReferences: () => v
       <h3>{variant.name}</h3>
       <p>{variant.description ?? def.description}</p>
     </div>
+  )
+}
+
+function ReferencePreview({
+  variant,
+  onOpen
+}: {
+  variant: { name: string; preview?: string; renderedPreview?: string }
+  onOpen: () => void
+}) {
+  // 有供应商原版预览就用原版；手写卡没有原版时用本应用的渲染示例，
+  // 文案必须如实区分，不能把自家渲染说成厂商原版。
+  const src = variant.preview ?? variant.renderedPreview
+  if (!src) return null
+  const vendor = Boolean(variant.preview)
+  const label = vendor ? '原版参考' : '版式预览'
+  return (
+    <section className="panel-section reference-inspector">
+      <div className="section-head">
+        <div>
+          <h3>{label}</h3>
+          <p>{vendor ? '供应商原版水印，仅作对照；成片以画布为准' : '本应用渲染的版式示例，仅作对照；成片以画布为准'}</p>
+        </div>
+      </div>
+      <button className="reference-preview" onClick={onOpen} type="button" title={`打开${label}图库`}>
+        <span className="reference-preview-media">
+          <img className="reference-preview-blur" src={src} alt="" aria-hidden="true" loading="lazy" />
+          <img className="reference-preview-img" src={src} alt={`${variant.name} ${label}`} loading="lazy" />
+        </span>
+        <span className="reference-preview-foot">
+          <Images size={13} />
+          {label} · 查看参考图库
+        </span>
+      </button>
+    </section>
   )
 }
 
@@ -863,10 +902,13 @@ function ThemeEditor() {
 
 function WatermarkPanel() {
   const design = useAppStore((s) => s.design)
+  const photos = useAppStore((s) => s.photos)
+  const selectedId = useAppStore((s) => s.selectedId)
   const setWatermark = useAppStore((s) => s.setWatermark)
   const setWatermarkFile = useAppStore((s) => s.setWatermarkFile)
   const fileRef = useRef<HTMLInputElement>(null)
   const wm = design.watermark
+  const demoPhoto = photos.find((p) => p.id === selectedId) ?? photos[0] ?? null
   return (
     <div className="inspector-pane wm-pane">
       <Section title="水印图层" hint="支持透明 PNG/WebP；默认压在照片区域内">
@@ -952,7 +994,26 @@ function WatermarkPanel() {
           {wm.asset ? '水印已关闭；打开「启用水印」后可调整位置与透明度。' : '添加图片后才会出现位置、透明度与平铺参数。'}
         </p>
       )}
-      <p className="hint-note">白色水印在白底上会不可见，黑色水印同理；按模板底色选择。</p>
+      {!wm.asset ? (
+        <>
+          <Section title="使用提示">
+            <ul className="wm-tips">
+              <li>透明 PNG / WebP 边缘最干净</li>
+              <li>白色水印配深色画面，黑色反之</li>
+              <li>平铺做防盗图，间距 8% 以上更清楚</li>
+            </ul>
+          </Section>
+          {demoPhoto ? (
+            <figure className="wm-demo">
+              <div className="wm-demo-media">
+                <img src={demoPhoto.previewUrl} alt="" />
+                <span className="wm-demo-mark">样例水印</span>
+              </div>
+              <figcaption>水印效果示意 · 以你的图片为准</figcaption>
+            </figure>
+          ) : null}
+        </>
+      ) : null}
     </div>
   )
 }
@@ -976,6 +1037,7 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
   const selectedId = useAppStore((s) => s.selectedId)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [sheetCollapsed, setSheetCollapsed] = useState(false)
+  const variant = getVariant(design.variantId)
 
   const available = availableEditorTabs(design)
   // A tab that this design cannot fill must never stay selected (e.g. after a
@@ -1054,6 +1116,7 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
               {activeTab === 'layout' ? <LayoutEditor /> : null}
               {activeTab === 'theme' ? <ThemeEditor /> : null}
             </div>
+            <ReferencePreview variant={variant} onOpen={onOpenReferences} />
           </div>
         ) : (
           <WatermarkPanel />
