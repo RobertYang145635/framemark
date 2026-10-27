@@ -604,12 +604,15 @@ function LogoEditor() {
 function FooterFontSection() {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
+  const stored = String(design.params.footerFont ?? 'auto')
+  const value = (stored === 'oppo' ? 'auto' : stored) as 'auto' | 'oplus' | 'misans' | 'vivo' | 'serif'
   return (
-    <Section title="字体" hint="整块水印共用；品牌、机型与参数一起变">
+    <Section title="字体" hint="自动跟随照片品牌；也可手动指定">
       <Segmented
-        value={String(design.params.footerFont ?? 'oppo') as 'oppo' | 'misans' | 'vivo' | 'serif'}
+        value={value}
         options={[
-          { value: 'oppo', label: 'OPPO', hint: 'OPPO Sans：哈苏边框机型行同款' },
+          { value: 'auto', label: '自动', hint: '小米 → MiSans，vivo → vivo Sans，其他 → OPPO Sans' },
+          { value: 'oplus', label: 'OPPO', hint: 'OPPO Sans：哈苏边框机型行同款' },
           { value: 'misans', label: '小米', hint: 'MiSans：小米相机水印机型行同款' },
           { value: 'vivo', label: 'vivo', hint: 'vivo Sans：vivo 相机水印机型行同款' },
           { value: 'serif', label: '衬线', hint: 'Butler：高对比经典衬线' }

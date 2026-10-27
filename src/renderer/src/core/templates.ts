@@ -1134,7 +1134,7 @@ const brandFooter: TemplateDef = {
     footerMode: 'classic',
     footerAuto: false,
     footerTextScale: 1,
-    footerFont: 'oppo',
+    footerFont: 'auto',
     slots: '',
     logoCenterX: 0.53,
     frame: ''
@@ -1188,11 +1188,27 @@ const brandFooter: TemplateDef = {
     // byte-identical. Only the declared footer rows expose this control.
     const sizeOf = (id: string) =>
       Math.max(0.6, Math.min(1.6, pct(slotSizes[slotScope + '#' + id], 1)))
+    const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
+    const model = env.text.showModel
+      ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)
+      : ''
+    const title = footerTitle(env)
+    const makeText = (make || title).toUpperCase()
+    const modelText = model || (env.text.showLens ? env.exif.lens : '')
     // Four curated typefaces for the hand-written footer; the geometry stays
-    // identical so only the letterforms change. 'oppo' mirrors the OPPO album
-    // Hasselblad card (OPPO Sans 700, model tracking .05), the default; Xiaomi
-    // and vivo use their own camera fonts.
-    const fontStyle = String(env.params.footerFont ?? 'oppo')
+    // identical so only the letterforms change. The default follows the
+    // displayed brand: Xiaomi → MiSans, vivo → vivo Sans, everything else →
+    // OPPO Sans (the OPPO album Hasselblad card, 700 / model tracking .05).
+    // 'oppo' is the legacy default and is treated as auto so old designs pick
+    // up their brand font; 'oplus' forces OPPO explicitly.
+    const brandKey = `${make} ${env.exif.model}`.toLowerCase()
+    const autoFont = /xiaomi|redmi|poco/.test(brandKey)
+      ? 'misans'
+      : /vivo|iqoo/.test(brandKey)
+        ? 'vivo'
+        : 'oppo'
+    const requestedFont = String(env.params.footerFont ?? 'auto')
+    const fontStyle = requestedFont === 'auto' || requestedFont === 'oppo' ? autoFont : requestedFont
     const serif = fontStyle === 'serif'
     const vivo = fontStyle === 'vivo'
     const misans = fontStyle === 'misans'
@@ -1206,13 +1222,6 @@ const brandFooter: TemplateDef = {
     const modelSize = S * (serif ? 0.027 : modern ? 0.0255 : 0.029)
     const brandTracking = serif ? 0.01 : modern ? 0.02 : 0.03
     const modelTracking = serif ? 0.005 : modern ? 0.01 : 0.05
-    const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
-    const model = env.text.showModel
-      ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)
-      : ''
-    const title = footerTitle(env)
-    const makeText = (make || title).toUpperCase()
-    const modelText = model || (env.text.showLens ? env.exif.lens : '')
     const showBrand = on('brand')
     const showModel = on('model') && Boolean(modelText)
     const showLeftText = !(logoPos === 'left' && env.text.showLogo) && (showBrand || showModel)
