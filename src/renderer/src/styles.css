@@ -5121,6 +5121,8 @@ html[data-color-mode='light'] {
    ══════════════════════════════════════════════════════════════════════════ */
 html[data-skin='hyperos'] {
   color-scheme: light;
+  /* Android WebView 默认的蓝色点击高亮会盖住圆角、像一圈方角蓝框；触摸反馈由组件自身状态承担 */
+  -webkit-tap-highlight-color: transparent;
   --bg: #f0f2f5;
   --bg-2: #f0f2f5;
   --panel: #ffffff;
@@ -5414,11 +5416,27 @@ html[data-skin='hyperos'] .editor-tabs {
 }
 html[data-skin='hyperos'] .editor-tabs button {
   color: var(--muted);
+  position: relative;
 }
 html[data-skin='hyperos'] .editor-tabs button.active {
   color: #1d5fc6;
-  background: #e8f0fe;
-  border-color: #cfe0fb;
+  background: transparent;
+  border-color: transparent;
+}
+html[data-skin='hyperos'] .editor-tabs button.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 22px;
+  height: 2px;
+  margin-left: -11px;
+  border-radius: 2px;
+  background: #2f75e5;
+}
+html[data-skin='hyperos'] .editor-tabs button:active,
+html[data-skin='hyperos'] .mobile-editor-bar button:active {
+  opacity: 0.55;
 }
 html[data-skin='hyperos'] .current-template h3 {
   color: var(--text);
@@ -5641,8 +5659,8 @@ html[data-skin='hyperos'] .toast.error .toast-icon {
   }
   html[data-skin='hyperos'] .mobile-editor-bar button.active {
     color: #1d5fc6;
-    background: #e8f0fe;
-    border-color: #cfe0fb;
+    background: transparent;
+    border-color: transparent;
   }
   html[data-skin='hyperos'] .sheet-grabber {
     color: #c7ced8;
@@ -5737,7 +5755,7 @@ html[data-skin='hyperos'] .logo-actions .icon-btn {
     font-size: 12px;
   }
   html[data-skin='hyperos'] .mobile-editor-bar button.active {
-    background: #e8f0fe;
+    background: transparent;
     border-color: transparent;
   }
   html[data-skin='hyperos'] .inspector-panel {
