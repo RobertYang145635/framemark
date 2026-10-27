@@ -6,6 +6,12 @@
 > 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 23:22**（ALIGN-PACKAGE 重打包，本机时区）；最近更新：2026-10-25（**ANCHOR-PACKAGE**：`ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带样式支持厂商 band 旋转（`personalize_film_2` / `personalize_film_realme_2` / `personalize_masterSign_3`，仍 `approx`、待真机样张判定）与 `3b48e89` feat(system-camera) **系统相机九宫格锚点选择器**落库——stock 水印位置由 `AnchorGrid`（与自定义水印面板共用控件）+ 第 10 项「厂商原版」默认位选择，整组可动条带（含旋转条带）作为刚性整体平移到照片画布锚点位并限幅不出界，X/Y 滑块降级为水平/垂直微调；默认渲染与 rotation-verify 基线**逐字节一致**（4 张默认导出 Buffer.equals 全 true）；typecheck/build 0、e2e 164/96/4、workflow 106/106、validate-ir 90 样式 0 error、watermark-e2e 锚点选择器 `.anchor-grid button[title="右下"]` 未破坏；打包版 exe 复测 **164/96/4/62、0 pageerror 且锚点实测可用**（`anchor-packaged.json`）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**（`fm-anchor-cold.png`）；交付集（zip/APK/docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；此前 **CLOSE-OUT 收口**：REPACKAGE 之后又有四个提交落库——`394ebe1` fix(vendor) 小米 FrameLayout gravity（leica-111 字标散落修复）、`549a653` feat(system-camera) 品牌字标改随照片 EXIF 品牌 / Inspector 手选、`652807f` fix(vendor) 小米 leica-92 焦距行重力、`ddd9dec` chore(previews) wm-black 预览重生成；全量重打包并刷新交付集，HEAD **`ddd9dec`**；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**CLOSE-OUT 打包版复测 164/96/4/62、0 pageerror，真机冷启动 365 ms / LaunchState COLD**、**打包版品牌字标抽检：DC-S1 样张下 leica-91/111 字标均为 Panasonic**；绘制级文字对文字重叠全库仅剩 1 处（`hassel_style_xpan_1` 厂商负行距，字形可读，按保真原则保留）；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
 > **当前状态：待用户目视签字**——机器门槛（typecheck / build / e2e / workflow / validate:ir / 47 套逐套测量 / 真机走查）全绿，唯一欠项是用户对 47 套与厂商线的目视签收；签收前不宣称 pixel-perfect、不升级任何 `verified`。
 >
+> **2026-10-27 UI 换肤：OPCameraPro 风格浅色主题（HEAD `a52b61c`）**
+> - 用户决定把原液态玻璃 UI 全界面换成 OPCameraPro 风格的浅色设计（HyperOS / Miuix 语言）。实现为 `data-skin="hyperos"` 的 **CSS-only 皮肤层**（`styles.css`）+ 强制浅色模式（`glassBoot`），覆盖导入页、顶栏、边框库、画布、照片条、Inspector 四页签、Logo 库、水印面板、预设 / 导出 / 失败对话框、手机胶囊栏与全屏边框库；Android `colors.xml` / `styles.xml` 与 `StatusBar` 同步 `#F0F2F5` 浅底 + 深色图标（`Style.Light`）。
+> - 证据：19 步体验审计 `_research/ux-audit/report-skin4.json` **0 失败**；e2e 175/7、workflow **198/198**；同构建仅换 CSS 的 6 卡真实导出 **6/6 逐字节相同**（渲染未受皮肤影响）；打包版 exe **25/25 PASS**；真机三次冷启动 **244/249/236 ms 全 COLD**，真机导出 1 张 JPG 写入 `Pictures/FrameMark`（截图 `_research/v4-delivery/fm-skin-*.png`）。
+> - 已知限制：**不提供深色模式**（系统深色时仍为浅色界面）；模板缩略图内的深色衬底属模板画布本身；舞台 zoom/pan 仍未做。
+> - 交付哈希以 `交付/SHA256.txt` 为准（本轮起为 **6 条**：zip / APK / docx / PDF / 调研 md / 快速开始 txt）。
+
 > **2026-10-27 #73 焦距语义闭合（PM 报告唯一 P0）**
 > - 读取改为**优先 35mm 等效（0xA405）**，缺失时回退物理焦距；exifr 的 rational 对（如 [2300,100]）先归一化再比较。
 > - 写回安全线：`focalEquivalent` 随 fallback EXIF 传入主进程；重建 EXIF 时等效值写 `FocalLengthIn35mmFilm`（0xA405），**不再写 `FocalLength`（0x920A）**，避免污染用户照片元数据。
@@ -23,7 +29,7 @@
 > **当前状态（2026-10-27，源码包含 `90a3b7f` v4 外壳 + `d6a62d6` 测试迁移 + `edbe2a5` 文档 + `0144448` 文字直编/系列分组 + `85cfd13` 状态栏不覆盖）**
 > - **V4-SHELL 落地（照片优先）**：应用无照片时全屏「导入照片」页（选择照片 / 使用示例照片 / 页脚「7 类边框 · 175 套 · 61 个品牌」），导入后进入工作区；边框库移入左栏并另有「更换」弹窗，**175 张 `.tpl-card` 常驻 DOM**。边框库 = **7 个互斥分类 / 175 卡**：厂商边框 **99**（OPPO 47 / 小米 40 / vivo 12）、文字边框 **21**、印象边框 **13**、白边边框 **12**、卡片边框 **19**、色彩边框 **6**、简约边框 **5**（分类只改展示分组与筛选，§1 数据计数不变）。
 > - **Inspector 双工具 + 四页签**：右侧只有「边框」「水印」两个工具；「边框」分 **Logo / 文字 / 布局 / 主题** 四个编辑页签，439 条逐样式控件**无重复、无未分配**：Logo 37 / 文字 246 / 布局 118 / 主题 38（live 437，2 条 blocked 的 gravity 控件仍隐藏）。手写族保留通用「文字与参数」，stock 卡片渲染各自的逐槽控件；**stock 卡片去重**：主题只剩一条厂商主题（白底/黑底/浅色虚化/深色虚化），品牌只剩 Logo 页签「品牌 LOGO」一条入口（自动匹配/更换/清除/显示/大小），重复的通用色卡与第二个品牌选择器已移除。
-> - **Android 状态栏**：WebView 不再覆盖状态栏（`StatusBar.setOverlaysWebView(false)` + 深色底/白图标）；`env(safe-area-inset-top)` 在 Android WebView 常为 0，不能再靠页面 padding 兜底。
+> - **Android 状态栏**：WebView 不再覆盖状态栏（`StatusBar.setOverlaysWebView(false)`）；`env(safe-area-inset-top)` 在 Android WebView 常为 0，不能再靠页面 padding 兜底。**（2026-10-27 换肤后改为浅底 `#F0F2F5` + 深色图标，见顶部最新状态块）**
 - **水印落点层**：透明 PNG/WebP 水印仍是独立图层；新增**画布直拖落点层**（直接拖动水印、九个锚点、键盘微调），写回的 X/Y 偏移与滑杆一致；照片内 / 整张画布、宽度 / 不透明度 / 旋转 / 平铺 / 间距保留。
 > - **导出对话框**：旧「导出」Inspector 页签移除；顶栏「导出当前」（范围=当前照片，可切「全部 N 张」）或 Filmstrip「批量导出」打开新对话框：范围 / 格式（桌面 JPG·PNG·WebP·TIFF；Android 无 TIFF）/ JPG 质量 / 长边限制（原始 / 4096 / 3072 / 2048 或手填）/ 文件名变量 `{name} {template} {preset} {date} {time} {index} {make} {model} {width} {height}` / 输出文件夹（桌面可选，默认 `图片\FrameMark`）/ 移除 GPS；预设仍只从顶栏进入。移动端底栏仅「边框 / 水印」（48px 目标），编辑器弹层保留四页签，边框库全屏打开。
 > - **品牌 Logo 版本库**：采集 **63 品牌 / 268 版本 / 330 切图**，用户审阅 HTML 选择页后**选定 218 个版本**；应用内 **61 个展示品牌组 / 218 版本**（LUMIX → Panasonic、LUMO → OPPO 并入）。黑标只用于浅色底、白标只用于深色底；不能在当前底上渲染的已选版本显示「已选 · 当前不显示」并给出警告（不替换、不删除）；未选版本只从选择器隐藏，磁盘素材全保留（`_research/logo-versions/_audit/SELECTION-APPLIED.md`、[`framemark-logo-selection-20261027.json`](../framemark-logo-selection-20261027.json)）。**569 个 `.webp` 渲染素材随两端构建发布**（Windows zip 与 APK 内 `assets/public` 均可逐条列出）。
@@ -154,9 +160,9 @@ blocked 卡片在目录内可见、写明原因、不可点击导出；没有依
 
 ---
 
-## 4. 交付基线（2026-10-26 收尾重打，源码 = HEAD `9e44b19` + docs sync）
+## 4. 交付基线（2026-10-27 UI 换肤重打，源码 = HEAD `a52b61c` + 本页 docs 提交）
 
-> **权威哈希以 `交付/SHA256.txt` 为准**（四行：zip / APK / docx / PDF；`cd 交付 && sha256sum -c SHA256.txt` 应 **4/4 OK**）。本页不再抄写不可复现的 zip 哈希，避免"文档哈希跑在包前面"的再次漂移；验收报告 `_research/repackage-2026-10-26/report.md`。
+> **权威哈希以 `交付/SHA256.txt` 为准**（本轮起 **6 行**：zip / APK / docx / PDF / 调研 md / 快速开始 txt；`cd 交付 && sha256sum -c SHA256.txt` 应 **6/6 OK**）。本页不再抄写不可复现的 zip 哈希，避免"文档哈希跑在包前面"的再次漂移；验收报告见 `_research/ACCEPTANCE-LEDGER.md` 的「UI 换肤」条目。
 
 | 文件 | 字节数 | SHA-256 | 校验 |
 |---|---:|---|---|
