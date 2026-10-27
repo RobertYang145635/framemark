@@ -113,7 +113,15 @@ export interface TextSettings {
   showDate: boolean
   showLogo: boolean
   fontScale: number
+  /** User-hidden text tokens (v4 text-by-position editor). */
+  hidden?: TextToken[]
+  /** Per-line text overrides, keyed by `<source>#<occurrence>` from the render probe. */
+  lineText?: Record<string, string>
+  /** Per-line hidden state, same keys as `lineText`. */
+  hiddenLines?: string[]
 }
+
+export type TextToken = 'title' | 'subtitle' | 'signature' | 'customLine' | 'location'
 
 export type ParamValue = string | number | boolean
 export type Params = Record<string, ParamValue>
@@ -215,6 +223,26 @@ export interface TemplateVariant {
 }
 
 export interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/**
+ * One painted text line of a hand template, captured during a real render.
+ * The v4 文字 pane lists these by canvas position instead of abstract fields.
+ * `source` says what feeds the line: an editable token, one EXIF flag, or a
+ * composite "photo" row that is display-only.
+ */
+export interface TextSlot {
+  id: string
+  /** Stable line key `<source>#<occurrence>` used by lineText/hiddenLines. */
+  key: string
+  anchor: Anchor
+  text: string
+  source: TextToken | 'make' | 'model' | 'lens' | 'exif' | 'date' | 'photo'
+  hidden: boolean
   x: number
   y: number
   w: number

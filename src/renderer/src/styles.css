@@ -4780,3 +4780,134 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
   gap: 6px;
   min-width: 0;
 }
+
+/* ── Phase 5b · 边框库：系列分组 + 每类首屏 8 张 ─────────── */
+.border-series + .border-series {
+  margin-top: 10px;
+}
+.border-series-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 2px 6px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+}
+.border-series-head strong {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+.border-series-head em {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--faint);
+}
+.border-library-modal .border-series {
+  margin-bottom: 4px;
+}
+
+/* ── Phase 5b · 文字按方位直编 ─────────────────────────── */
+.text-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.text-slot-group {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+.text-slot-anchor {
+  padding-top: 8px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  text-align: right;
+}
+.text-slot-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.text-slot-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.text-slot-row input {
+  flex: 1;
+  min-width: 0;
+  height: 31px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 0 9px;
+  color: var(--text);
+  font-size: 11px;
+  outline: 0;
+}
+.text-slot-row input:focus {
+  border-color: var(--accent-line);
+}
+.text-slot-row.is-hidden {
+  opacity: 0.55;
+}
+.text-slot-readonly {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 31px;
+  padding: 0 9px;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  color: var(--text-2);
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.text-slot-readonly em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 9px;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+.text-slot-eye {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+}
+.text-hidden-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.text-hidden-row > em {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--faint);
+}
+.text-hidden-row .toggle-chip {
+  min-height: 26px;
+  font-size: 10.5px;
+}
+
+/* 水印页切换的轻动效（与编辑页签一致；reduced-motion 总闸统一关掉） */
+.inspector-pane.wm-pane {
+  animation: fmk-pane-in 0.16s ease both;
+}
+.wm-placement {
+  animation: fmk-pane-in 0.16s ease both;
+}

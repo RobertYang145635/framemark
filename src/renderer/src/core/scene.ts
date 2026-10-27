@@ -1,4 +1,4 @@
-import type { CropInfo, Design, Params, PhotoAsset, Ratio, Rect, TemplateRenderEnv, TextSettings } from '../types'
+import type { CropInfo, Design, Params, PhotoAsset, Ratio, Rect, TemplateRenderEnv, TextSettings, TextSlot } from '../types'
 import { getTemplate } from './templates'
 import { VARIANT_MAP } from './variants'
 import { loadImage } from './images'
@@ -8,6 +8,7 @@ import { resolveTokens } from './exif'
 import { logoAsset } from './brands'
 import { surfaceForDesign } from './logo-compat'
 import { styleBrandFile } from './system/assets'
+import { attachTextRecorder, attributeTextSlots, type TextDraw } from './text-slots'
 
 const RATIOS: Record<Exclude<Ratio, 'original'>, number> = {
   '1:1': 1,
@@ -65,12 +66,14 @@ function resolveText(text: TextSettings, asset: PhotoAsset, templateName: string
     templateName,
     date: new Date()
   }
+  const hidden = new Set(text.hidden ?? [])
   return {
     ...text,
-    title: resolveTokens(text.title, asset.exif, vars),
-    subtitle: resolveTokens(text.subtitle, asset.exif, vars),
-    signature: resolveTokens(text.signature, asset.exif, vars),
-    customLine: resolveTokens(text.customLine, asset.exif, vars)
+    title: hidden.has('title') ? '' : resolveTokens(text.title, asset.exif, vars),
+    subtitle: hidden.has('subtitle') ? '' : resolveTokens(text.subtitle, asset.exif, vars),
+    signature: hidden.has('signature') ? '' : resolveTokens(text.signature, asset.exif, vars),
+    customLine: hidden.has('customLine') ? '' : resolveTokens(text.customLine, asset.exif, vars),
+    location: hidden.has('location') ? '' : text.location
   }
 }
 
@@ -82,7 +85,7 @@ export async function renderDesign(
   imageW: number,
   imageH: number,
   opts: { preview: boolean }
-): Promise<{ W: number; H: number; photoRect: Rect }> {
+): Promise<{ W: number; H: number; photoRect: Rect; textSlots: TextSlot[] }> {
   const template = getTemplate(design.templateId)
   const crop = computeCrop(imageW, imageH, design.ratio)
   const params = mergeParams(design, template.defaults)
@@ -148,8 +151,14 @@ export async function renderDesign(
     }
   }
   const avatar = design.avatar ? await loadImage(design.avatar.dataUrl) : undefined
+  // Hand cards: record every text line the template paints so the 文字 pane can
+  // list them by position. Stock cards draw through their own per-slot IR path.
+  const draws: TextDraw[] = []
+  const handCapture = design.templateId !== 'systemCamera'
+  const restoreRecorder = handCapture ? attachTextRecorder(ctx, draws, text, asset.exif) : null
+  const renderCtx = scaledContext(ctx, text.fontScale)
   const env: TemplateRenderEnv = {
-    ctx: scaledContext(ctx, text.fontScale),
+    ctx: renderCtx,
     W,
     H,
     pw: crop.sw,
@@ -163,7 +172,12 @@ export async function renderDesign(
     images: { logo, avatar, ...(prepared?.images ?? {}) },
     isPreview: opts.preview
   }
-  const photoRect = template.render(env)
+  let photoRect: Rect
+  try {
+    photoRect = template.render(env)
+  } finally {
+    restoreRecorder?.()
+  }
   if (design.watermark.enabled && design.watermark.asset) {
     try {
       const wm = await loadImage(design.watermark.asset.dataUrl)
@@ -172,5 +186,6 @@ export async function renderDesign(
       // watermark failure should not kill the whole preview
     }
   }
-  return { W, H, photoRect }
+  const textSlots = handCapture ? attributeTextSlots(draws, W, H) : []
+  return { W, H, photoRect, textSlots }
 }

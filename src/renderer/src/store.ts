@@ -15,6 +15,7 @@ import type {
   Preset,
   Ratio,
   TextSettings,
+  TextSlot,
   WatermarkSettings
 } from './types'
 import { getTemplate } from './core/templates'
@@ -85,6 +86,8 @@ interface AppState {
   initialized: boolean
   busy: string | null
   job: ExportJob | null
+  /** Text lines captured from the last hand-template render (v4 文字 pane). */
+  textSlots: TextSlot[]
   tab: InspectorTab
   /** Phase 3 top-level Inspector tool (边框 / 水印). */
   tool: InspectorTool
@@ -111,6 +114,7 @@ interface AppState {
   setWatermark: (patch: Partial<WatermarkSettings>) => void
   setWatermarkFile: (file: File) => Promise<void>
   setExport: (patch: Partial<Design['export']>) => void
+  setTextSlots: (slots: TextSlot[]) => void
   setRatio: (ratio: Ratio) => void
   setLogoFromBrand: (file: string) => Promise<void>
   setLogoVersion: (versionId: string, cutId?: string) => Promise<void>
@@ -243,6 +247,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   initialized: false,
   busy: null,
   job: null,
+  textSlots: [],
   tab: 'template',
   tool: 'border',
   editorTab: 'logo',
@@ -499,6 +504,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setExport: (patch) =>
     set((s) => ({ design: { ...s.design, export: { ...s.design.export, ...patch } } })),
+
+  setTextSlots: (slots) => set({ textSlots: slots }),
 
   setRatio: (ratio) => set((s) => ({ design: { ...s.design, ratio }, activePresetId: null })),
 

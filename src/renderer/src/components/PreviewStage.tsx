@@ -81,6 +81,11 @@ export function PreviewStage() {
             outH: Math.round(result.H * scale),
             photoRect: result.photoRect
           })
+          const slots = result.textSlots ?? []
+          const prevSlots = useAppStore.getState().textSlots
+          if (JSON.stringify(prevSlots) !== JSON.stringify(slots)) {
+            useAppStore.getState().setTextSlots(slots)
+          }
           setError(null)
         } catch (e) {
           if (!cancelled) setError(e instanceof Error ? e.message : '渲染失败')

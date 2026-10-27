@@ -552,9 +552,9 @@ async function main() {
   await page.locator('.border-vendor-chips button', { hasText: '全部' }).click()
   await page.waitForFunction(
     () =>
-      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 99
+      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 24
   )
-  check('全部 chip restores all 99 vendor cards', true)
+  check('全部 chip restores the first 8 cards of each vendor group (24 visible, 99 mounted)', true)
 
   // ---------------------------------------------------------------------------
   // 4. Pick 经典双行 via the border library

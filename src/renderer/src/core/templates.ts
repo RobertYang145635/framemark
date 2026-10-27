@@ -94,7 +94,8 @@ const darkThemes = [
   { id: 'cream', label: '米色', swatch: THEMES.cream.bg }
 ]
 
-function titleOf(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): string {
+export function titleOf(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): string {
+  if (env.text.hidden?.includes('title')) return ''
   const t = env.text.title.trim()
   if (t) return t
   const cam = [

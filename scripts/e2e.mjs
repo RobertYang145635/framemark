@@ -139,10 +139,11 @@ try {
 
   await page.locator('.border-vendor-chips button', { hasText: '全部' }).click()
   await page.waitForFunction(
-    () => document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 99,
+    () => document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 24,
     null,
     { timeout: 15000 }
   )
+  console.log('PASS  全部 chip: 8 cards per vendor group (24 visible, 99 mounted)')
 
   // ---------------------------------------------------------------------------
   // 3. Stock theme on 经典 · 17: 主题 tab = per-style themeSwatches only

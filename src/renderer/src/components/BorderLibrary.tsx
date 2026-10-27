@@ -75,6 +75,11 @@ function VendorChips({
   )
 }
 
+function seriesOf(name: string): string {
+  const head = name.split('·')[0]?.trim() ?? ''
+  return head || name
+}
+
 function BorderSection({
   section,
   activeId,
@@ -98,9 +103,36 @@ function BorderSection({
   const matching = section.cards.filter(
     ({ card }) => section.key !== 'vendor' || brand === null || card.brand === brand
   )
-  const shown = new Set(
-    matching.slice(0, modal && !expanded ? CARD_LIMIT : matching.length).map(({ card }) => card.variantId)
-  )
+  // 分组只决定展示顺序，不决定是否渲染：175 张卡必须始终在 DOM 里（筛选/折叠
+  // 只加 .border-card-hidden）。厂商段未选厂商时按厂商分组，选中后按系列分组，
+  // 其它厂商的卡归入隐藏的「其他」组以保持 DOM 契约。
+  const groups: { key: string; label: string; cards: LibraryCard[] }[] = []
+  if (section.key === 'vendor') {
+    const by = brand === null
+      ? (card: LibraryCard) => card.card.brand ?? '其他'
+      : (card: LibraryCard) =>
+          card.card.brand === brand ? seriesOf(card.card.name) : '__other'
+    const index = new Map<string, { key: string; label: string; cards: LibraryCard[] }>()
+    for (const item of section.cards) {
+      const key = by(item)
+      let group = index.get(key)
+      if (!group) {
+        group = { key, label: key === '__other' ? '其他' : key, cards: [] }
+        index.set(key, group)
+        groups.push(group)
+      }
+      group.cards.push(item)
+    }
+  } else {
+    groups.push({ key: section.key, label: section.name, cards: section.cards })
+  }
+  const matchingIds = new Set(matching.map(({ card }) => card.variantId))
+  const limit = brand !== null && section.key === 'vendor' ? Number.POSITIVE_INFINITY : CARD_LIMIT
+  const shownOf = (cards: LibraryCard[]) => {
+    const selectable = cards.filter(({ card }) => matchingIds.has(card.variantId))
+    const visible = expanded ? selectable.length : Math.min(limit, selectable.length)
+    return new Set(selectable.slice(0, visible).map(({ card }) => card.variantId))
+  }
 
   return (
     <section className="border-section" data-category={section.key} ref={setSectionRef} aria-label={section.name}>
@@ -108,33 +140,46 @@ function BorderSection({
         <h3>{section.name}</h3>
         <span>{section.count}</span>
       </div>
-      <div className="tpl-grid border-grid">
-        {section.cards.map(({ card, variant }) => {
-          const active = activeId === card.variantId
-          const hidden = !shown.has(card.variantId)
-          return (
-            <button
-              key={card.variantId}
-              className={`tpl-card border-card glass-hover glass-press ${active ? 'active' : ''} ${hidden ? 'border-card-hidden' : ''}`}
-              onClick={() => {
-                setVariant(card.variantId)
-                onPick?.()
-              }}
-              title={card.name}
-              type="button"
-              aria-pressed={active}
-            >
-              <span className="tpl-art">
-                <VariantThumb variant={variant} />
-              </span>
-              <span className="tpl-meta">
-                <strong>{card.name}</strong>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-      {modal && matching.length > CARD_LIMIT ? (
+      {groups.map((group) => {
+        const shown = shownOf(group.cards)
+        return (
+          <div className="border-series" key={group.key}>
+            {groups.length > 1 ? (
+              <div className="border-series-head" aria-label={`${group.label} 系列`}>
+                <strong>{group.label}</strong>
+                <em>{group.cards.length}</em>
+              </div>
+            ) : null}
+            <div className="tpl-grid border-grid">
+              {group.cards.map(({ card, variant }) => {
+                const active = activeId === card.variantId
+                const hidden = !matchingIds.has(card.variantId) || !shown.has(card.variantId)
+                return (
+                  <button
+                    key={card.variantId}
+                    className={`tpl-card border-card glass-hover glass-press ${active ? 'active' : ''} ${hidden ? 'border-card-hidden' : ''}`}
+                    onClick={() => {
+                      setVariant(card.variantId)
+                      onPick?.()
+                    }}
+                    title={card.name}
+                    type="button"
+                    aria-pressed={active}
+                  >
+                    <span className="tpl-art">
+                      <VariantThumb variant={variant} />
+                    </span>
+                    <span className="tpl-meta">
+                      <strong>{card.name}</strong>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+      {matching.length > CARD_LIMIT ? (
         <div className="border-section-more-row">
           <button
             className="border-section-more glass-btn glass-spot glass-ripple glass-press"

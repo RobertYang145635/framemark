@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   Camera,
   Droplets,
+  Eye,
+  EyeOff,
   Frame,
   Image as ImageIcon,
   ImagePlus,
@@ -14,7 +16,7 @@ import {
   Type,
   Upload
 } from 'lucide-react'
-import type { Anchor, EditorTab, Ratio, TextSettings } from '../types'
+import type { Anchor, EditorTab, Ratio, TextSettings, TextSlot, TextToken } from '../types'
 import { useAppStore } from '../store'
 import { getTemplate } from '../core/templates'
 import { getVariant } from '../core/variants'
@@ -39,15 +41,6 @@ const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: '4:5', label: '4:5' },
   { value: '16:9', label: '16:9' },
   { value: '3:2', label: '3:2' }
-]
-
-const TEXT_FLAGS: { key: keyof TextSettings; label: string }[] = [
-  { key: 'showMake', label: '品牌' },
-  { key: 'showModel', label: '机型' },
-  { key: 'showLens', label: '镜头' },
-  { key: 'showExif', label: '参数' },
-  { key: 'showDate', label: '日期' },
-  { key: 'showLogo', label: 'Logo' }
 ]
 
 /**
@@ -245,66 +238,124 @@ function AvatarSection() {
 function TextSection() {
   const design = useAppStore((s) => s.design)
   const setText = useAppStore((s) => s.setText)
+  const slots = useAppStore((s) => s.textSlots)
   const t = design.text
+  const hiddenTokens = new Set(t.hidden ?? [])
+  const flagOff = ([
+    { key: 'showMake', label: '品牌' },
+    { key: 'showModel', label: '机型' },
+    { key: 'showLens', label: '镜头' },
+    { key: 'showExif', label: '参数' },
+    { key: 'showDate', label: '日期' }
+  ] as const).filter((f) => !t[f.key])
+  const toggleHidden = (token: TextToken) => {
+    const next = hiddenTokens.has(token)
+      ? [...hiddenTokens].filter((item) => item !== token)
+      : [...hiddenTokens, token]
+    setText({ hidden: next })
+  }
+  const tokenSources: Record<string, TextToken> = {
+    title: 'title',
+    subtitle: 'subtitle',
+    signature: 'signature',
+    customLine: 'customLine',
+    location: 'location'
+  }
+  const groups = SLOT_ORDER.map((anchor) => ({
+    anchor,
+    rows: slots.filter((slot) => slot.anchor === anchor)
+  })).filter((group) => group.rows.length)
+
+  const lineText = t.lineText ?? {}
+  const hiddenLines = new Set(t.hiddenLines ?? [])
+  const setLine = (key: string, value: string) => {
+    const next = { ...lineText }
+    if (value) next[key] = value
+    else delete next[key]
+    setText({ lineText: next })
+  }
+  const toggleLine = (key: string) => {
+    const next = hiddenLines.has(key)
+      ? [...hiddenLines].filter((item) => item !== key)
+      : [...hiddenLines, key]
+    setText({ hiddenLines: next })
+  }
+  const toggleFlag = (source: TextSlot['source']) => {
+    const key =
+      source === 'make' ? 'showMake'
+        : source === 'model' ? 'showModel'
+          : source === 'lens' ? 'showLens'
+            : source === 'exif' ? 'showExif'
+              : 'showDate'
+    setText({ [key]: !t[key] } as Partial<TextSettings>)
+  }
+
   return (
-    <Section
-      title="文字与参数"
-      hint="标题留空时会用照片信息自动填充；需要变量时可写 {make} {model} {date}"
-    >
-      <div className="field-stack">
-        <label className="field">
-          <span>标题</span>
-          <input
-            value={t.title}
-            onChange={(e) => setText({ title: e.target.value })}
-            placeholder="例如：海边的下午 / {make} {model}"
-          />
-        </label>
-        <label className="field">
-          <span>副标题</span>
-          <input
-            value={t.subtitle}
-            onChange={(e) => setText({ subtitle: e.target.value })}
-            placeholder="例如：2024 秋季 / {lens}"
-          />
-        </label>
-        <label className="field">
-          <span>签名</span>
-          <input
-            value={t.signature}
-            onChange={(e) => setText({ signature: e.target.value })}
-            placeholder="例如：YHY / 手写体"
-          />
-        </label>
-        <label className="field">
-          <span>自定义行</span>
-          <input
-            value={t.customLine}
-            onChange={(e) => setText({ customLine: e.target.value })}
-            placeholder="{exif} · {date}"
-          />
-        </label>
-        <label className="field">
-          <span>地点</span>
-          <input
-            value={t.location ?? ''}
-            onChange={(e) => setText({ location: e.target.value })}
-            placeholder="例如：成都 / 青岛"
-          />
-        </label>
-      </div>
-      <div className="toggle-grid">
-        {TEXT_FLAGS.map((f) => (
-          <button
-            key={f.key}
-            className={`toggle-chip ${(t as unknown as Record<string, boolean>)[f.key] ? 'on' : ''}`}
-            onClick={() => setText({ [f.key]: !(t as unknown as Record<string, boolean>)[f.key] } as Partial<TextSettings>)}
-            type="button"
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+    <Section title="文字" hint="按画面位置直接编辑；照片信息从 EXIF 自动填充，不改照片">
+      {groups.length ? (
+        <div className="text-slot-list">
+          {groups.map((group) => (
+            <div className="text-slot-group" key={group.anchor}>
+              <span className="text-slot-anchor">{SLOT_LABEL[group.anchor]}</span>
+              <div className="text-slot-rows">
+                {group.rows.map((slot) => {
+                  const token = tokenSources[slot.source]
+                  const tokenHidden = token ? hiddenTokens.has(token) : false
+                  const lineHidden = hiddenLines.has(slot.key)
+                  const hidden = slot.hidden || tokenHidden
+                  return (
+                    <div className={`text-slot-row ${hidden ? 'is-hidden' : ''}`} key={slot.key}>
+                      <input
+                        value={lineText[slot.key] ?? ''}
+                        placeholder={slot.text || '（空）'}
+                        disabled={hidden}
+                        onChange={(e) => setLine(slot.key, e.target.value)}
+                      />
+                      {slot.source === 'photo' || token ? null : (
+                        <span className="text-slot-readonly" title="照片信息">
+                          <em>照片信息</em>
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="icon-btn text-slot-eye"
+                        title={hidden ? '恢复这一行' : '隐藏这一行'}
+                        onClick={() =>
+                          token ? toggleHidden(token) : slot.source === 'photo' ? toggleLine(slot.key) : toggleFlag(slot.source)
+                        }
+                      >
+                        {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="hint-note">这个模板当前没有可编辑文字。</p>
+      )}
+      {hiddenTokens.size || flagOff.length ? (
+        <div className="text-hidden-row">
+          <em>已隐藏</em>
+          {[...hiddenTokens].map((token) => (
+            <button key={token} className="toggle-chip" onClick={() => toggleHidden(token)} type="button">
+              {TOKEN_LABEL[token]} ↺
+            </button>
+          ))}
+          {flagOff.map((flag) => (
+            <button
+              key={flag.key}
+              className="toggle-chip"
+              onClick={() => setText({ [flag.key]: true } as Partial<TextSettings>)}
+              type="button"
+            >
+              {flag.label} ↺
+            </button>
+          ))}
+        </div>
+      ) : null}
       <Slider
         label="字号缩放"
         value={t.fontScale}
@@ -316,6 +367,32 @@ function TextSection() {
       />
     </Section>
   )
+}
+
+const SLOT_ORDER: Anchor[] = [
+  'top-left', 'top-center', 'top-right',
+  'middle-left', 'center', 'middle-right',
+  'bottom-left', 'bottom-center', 'bottom-right'
+]
+
+const SLOT_LABEL: Record<Anchor, string> = {
+  'top-left': '左上',
+  'top-center': '中上',
+  'top-right': '右上',
+  'middle-left': '左中',
+  center: '居中',
+  'middle-right': '右中',
+  'bottom-left': '左下',
+  'bottom-center': '中下',
+  'bottom-right': '右下'
+}
+
+const TOKEN_LABEL: Record<TextToken, string> = {
+  title: '标题',
+  subtitle: '副标题',
+  signature: '签名',
+  customLine: '自定义行',
+  location: '地点'
 }
 
 /**
@@ -669,7 +746,7 @@ function WatermarkPanel() {
   const fileRef = useRef<HTMLInputElement>(null)
   const wm = design.watermark
   return (
-    <div className="inspector-pane">
+    <div className="inspector-pane wm-pane">
       <Section title="水印图层" hint="支持透明 PNG/WebP；默认压在照片区域内">
         <input
           ref={fileRef}
