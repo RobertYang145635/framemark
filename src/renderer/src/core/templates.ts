@@ -2,6 +2,8 @@ import type { Rect, TemplateDef, TemplateRenderEnv } from '../types'
 import { systemCamera } from './system/template'
 import {
   FONT_UI,
+  FONT_AVENIR,
+  FONT_SERIF,
   FONT_DISPLAY,
   FONT_MONO,
   FONT_HAND,
@@ -1195,17 +1197,18 @@ const brandFooter: TemplateDef = {
     const showLeftText = !(logoPos === 'left' && env.text.showLogo) && (showBrand || showModel)
     if (showLeftText) {
       if (showBrand) {
-        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.027 * sizeOf('brand'), theme.fg, {
-          family: FONT_UI,
-          weight: 700,
-          tracking: 0.03,
+        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.028 * sizeOf('brand'), theme.fg, {
+          family: FONT_AVENIR,
+          weight: 600,
+          tracking: 0.02,
           min: S * 0.013
         })
       }
       if (showModel) {
-        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.02 * sizeOf('model'), theme.sub, {
-          family: FONT_UI,
-          weight: 400,
+        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.025 * sizeOf('model'), theme.sub, {
+          family: FONT_SERIF,
+          weight: 700,
+          tracking: 0.015,
           min: S * 0.01
         })
       }
@@ -1259,22 +1262,24 @@ const brandFooter: TemplateDef = {
     }
     if (on('exif') && ex) {
       drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027 * sizeOf('exif'), theme.fg, {
-        family: FONT_MONO,
-        weight: 400,
+        family: FONT_AVENIR,
+        weight: 500,
+        tracking: 0.01,
         min: S * 0.012
       })
     }
     if (on('date') && dt) {
       drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021 * sizeOf('date'), theme.sub, {
-        family: FONT_MONO,
+        family: FONT_AVENIR,
         weight: 400,
+        tracking: 0.01,
         min: S * 0.01
       })
     }
     if (custom) {
       drawFitted(ctx, custom, rightX, footerTop + footer * 0.88, rightW, S * 0.016, theme.accent, {
-        family: FONT_MONO,
-        weight: 400,
+        family: FONT_AVENIR,
+        weight: 500,
         min: S * 0.009
       })
     }

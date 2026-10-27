@@ -4,6 +4,10 @@ import { exifLine, cameraLine, formatDateOnly, modelWithoutMake } from './exif'
 export { modelWithoutMake }
 
 export const FONT_UI = '"Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
+/** 品牌页脚的手写模板用 Avenir Next：比 Inter 更接近相机厂水印的字感。 */
+export const FONT_AVENIR = '"StockAvenir", "Avenir Next", "Inter", "Microsoft YaHei", sans-serif'
+/** 机型行可选衬线：Times New Roman 在 Windows/macOS 自带，移动端回落到通用 serif。 */
+export const FONT_SERIF = '"Times New Roman", "Nimbus Roman", "Liberation Serif", "Noto Serif", serif'
 export const FONT_DISPLAY = '"Bebas Neue", "Inter", "Microsoft YaHei", sans-serif'
 export const FONT_MONO = '"JetBrains Mono", "SFMono-Regular", "Consolas", monospace'
 export const FONT_HAND = '"Caveat", "Segoe Script", "KaiTi", cursive'
