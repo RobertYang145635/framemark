@@ -22,7 +22,7 @@ const HASSEL: StockStyle = {
         {
           kind: 'group',
           orientation: 'row',
-          width: 360,
+          width: 560,
           height: 60,
           gravity: 'center',
           children: [

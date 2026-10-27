@@ -665,8 +665,8 @@ function LayoutEditor() {
   const stockMovable =
     isSystemCamera &&
     !!stockStyle?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
-  const stockBanded = Boolean(stockStyle?.bands.some((b) => b.direction !== 'overlay'))
-  const stockScaleKey = stockStyle ? `stockScale:${stockStyle.id}` : ''
+  const stockBandBanded = Boolean(stockStyle?.bands.some((b) => b.direction === 'top' || b.direction === 'bottom'))
+  const stockBandScaleKey = stockStyle ? `stockBandScale:${stockStyle.id}` : ''
   // 'vendor' = the style's own committed position (pixel-identical default).
   const stockAnchor = String(design.params.stockAnchor ?? 'vendor')
   const hasStyleLayoutControls = (controlsFor(design)?.views ?? []).some(
@@ -765,22 +765,22 @@ function LayoutEditor() {
           </div>
         ) : null}
       </Section>
-      ) : stockBanded ? null : (
+      ) : stockBandBanded ? null : (
         <p className="hint-note">这个版式没有可调的布局参数；文字内容在「文字」页调整。</p>
       )}
 
-      {stockBanded ? (
+      {stockBandBanded ? (
         <Section title="边框大小" hint="100% = 厂商原版比例">
           <Slider
-            label="整体大小"
-            hint="白边、文字、Logo 一起缩放"
-            value={Number(design.params[stockScaleKey] ?? 100)}
-            min={60}
-            max={150}
+            label="白边高度"
+            hint="只改白边，文字/Logo 不动"
+            value={Number(design.params[stockBandScaleKey] ?? 100)}
+            min={50}
+            max={200}
             step={1}
             suffix="%"
-            onChange={(v) => setParam(stockScaleKey, v)}
-            onReset={() => resetParam(stockScaleKey)}
+            onChange={(v) => setParam(stockBandScaleKey, v)}
+            onReset={() => resetParam(stockBandScaleKey)}
           />
         </Section>
       ) : null}

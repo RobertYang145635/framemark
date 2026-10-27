@@ -841,20 +841,36 @@ export function stockReferenceWidth(style: StockStyle, env: Pick<StockEnv, 'pw' 
   // the Find X6 Pro sample), while the 3:4 portrait card is the 360-unit design
   // (512px band on a 3072-wide photo). Keying on orientation matches both
   // vendor originals; every other style keeps its declared reference width.
-  const base = style.id === 'oppo-gallery:hassel_style_1' && env.ph > env.pw ? 360 : style.referenceWidth
-  // Per-style user scale (100 = vendor). Larger scale ⇒ smaller reference width
-  // ⇒ thicker band and bigger type, all together. Scoped by style id so the
-  // flat params bag cannot leak one card's size into another.
-  const raw = Number(env.params[`stockScale:${style.id}`])
-  const scale = Number.isFinite(raw) && raw > 0 ? raw / 100 : 1
-  return base / scale
+  return style.id === 'oppo-gallery:hassel_style_1' && env.ph > env.pw ? 360 : style.referenceWidth
+}
+
+function withStockBandScale(style: StockStyle, env: Pick<StockEnv, 'params'>): StockStyle {
+  // User control changes only the vertical frame bands (white border height).
+  // Content sizes and horizontal anchors stay untouched, so the text never
+  // slides toward the centre when the border gets thinner/thicker.
+  const raw = Number(env.params[`stockBandScale:${style.id}`])
+  if (!Number.isFinite(raw) || raw <= 0) return style
+  const scale = Math.max(0.4, Math.min(2, raw / 100))
+  if (scale === 1) return style
+  const vertical = (b: StockStyle['bands'][number]) => b.direction === 'top' || b.direction === 'bottom'
+  if (!style.bands.some(vertical)) return style
+  return {
+    ...style,
+    margins: {
+      ...style.margins,
+      top: style.margins.top * scale,
+      bottom: style.margins.bottom * scale
+    },
+    bands: style.bands.map((b) => (vertical(b) ? { ...b, thickness: (b.thickness ?? 0) * scale } : b))
+  }
 }
 
 export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout {
-  const baseW = stockReferenceWidth(style, env)
+  const framed = withStockBandScale(style, env)
+  const baseW = stockReferenceWidth(framed, env)
   const ratio = env.ph / env.pw
   const basePhotoH = baseW * ratio
-  const m = style.margins
+  const m = framed.margins
   const W = m.left + baseW + m.right
   const H = m.top + basePhotoH + m.bottom
   const photo: StockRect = { x: m.left, y: m.top, w: baseW, h: basePhotoH }
@@ -874,7 +890,7 @@ export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout 
   // the vendor's own position). Both this and the slider branch are skipped at
   // the default, so the untouched solve stays byte-identical.
   const axes = stockAnchorAxes(env.params.stockAnchor)
-  const bands = style.bands.map((band, bi) => {
+  const bands = framed.bands.map((band, bi) => {
     const box = bandBox(style, band, photo, W, H)
     const bandPath = `b${bi}`
     let placed: PlacedBand
