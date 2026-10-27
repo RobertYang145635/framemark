@@ -1,16 +1,17 @@
 # 框印 FrameMark
 
-本地运行的「照片边框 + 透明 PNG 水印」工具，提供 Windows 桌面版和 Android 版。所有照片、EXIF、水印和预设只在本机处理，不上传云端。
+本地运行的「照片边框 + 透明 PNG 水印」工具，提供 Windows 桌面版和 Android 版。所有照片、EXIF、水印和预设只在本机处理，不上传云端。应用以「照片优先」启动：没有照片时先显示「导入照片」页（选择照片 / 使用示例照片），导入后进入编辑器工作区。
 
 ## 功能
 
-- 68 个手写边框 / 卡片 / 电影字幕模板，自动读取 EXIF；62 个有可靠字标的相机/手机品牌（停产老牌使用官方历史资料或说明书扫描件复原；Samyang 暂无可靠字标不列出）
-- 系统相机分类 92 套（OPPO 49 / 小米 40 / vivo 3）；4 组 blocked 在目录内标注原因、不可导出。当前计数、分解与 blocked 明细见 **[PROJECT-BASELINE](PROJECT-BASELINE.md) §1–§2**
-- 自定义透明 PNG / WebP 水印：九宫格定位、照片内或整张画布、宽度、透明度、旋转、平铺与间距
-- 预设保存整个设计（含水印图片、Logo、导出设置），支持 JSON 导出 / 导入
-- 批量导出，逐张进度、取消、文件命名变量
+- 175 套边框按 7 个互斥分类陈列：厂商边框 99（OPPO 47 / 小米 40 / vivo 12）、文字边框 21、印象边框 13、白边边框 12、卡片边框 19、色彩边框 6、简约边框 5；边框库在左栏（另有「更换」弹窗），自动读取 EXIF
+- 右侧 Inspector 只有「边框」「水印」两个工具：「边框」分 Logo / 文字 / 布局 / 主题 四个编辑页签；4 组 blocked（小米 Leica 5/88/89 与 vivo 剩余 28 套）保持不可导出、不进入边框库。当前计数、分解与 blocked 明细见 **[PROJECT-BASELINE](PROJECT-BASELINE.md) §1–§2**
+- 厂商 Logo 版本库：采集 63 个品牌 / 268 个版本 / 330 个切图，选定 218 个版本；应用内呈现 61 个展示品牌组（LUMIX → Panasonic、LUMO → OPPO 并入），黑标只用于浅色底、白标只用于深色底，不可用的版本显示「已选 · 当前不显示」（状态见 PROJECT-BASELINE §1–§3）
+- 自定义透明 PNG / WebP 水印：九宫格定位、照片内或整张画布、宽度、透明度、旋转、平铺与间距；新增画布落点层，可直接拖动水印、九个锚点、键盘微调
+- 预设保存整个设计（含水印图片、Logo、导出设置），支持 JSON 导出 / 导入；入口保持在顶栏
+- 导出走统一的「导出」对话框：范围（当前照片 / 全部 N 张）、格式、JPG 质量、长边限制、文件名变量、输出文件夹（默认 `图片\FrameMark`）、移除 GPS
 - 桌面：JPG（质量 100 / 4:4:4）、PNG、无损 WebP、LZW TIFF，JPG 回写原 EXIF 并默认移除 GPS
-- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。签名 APK 已安装并冷启动通过；打包版品牌选择弹窗已按 2x 目视核验，**62/62 字标完整不裁切**，12 个家族可见透明的 A/O 内孔（状态见 PROJECT-BASELINE §3）
+- Android：JPG、PNG、WebP，保存到系统相册 `Pictures/FrameMark`；单张导出后可直接调用系统分享面板。签名 APK 覆盖安装数据保留，三次冷启动全部 COLD（状态见 PROJECT-BASELINE §3）
 
 ## 目录
 
@@ -27,6 +28,7 @@ npm install
 npm run dev
 npm run build
 npm run test:e2e
+npm run test:workflow
 npm run validate:ir
 npm run previews:stock
 ```
