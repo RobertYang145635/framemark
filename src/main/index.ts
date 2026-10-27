@@ -173,7 +173,13 @@ function buildFallbackExif(fallback: any, width: number, height: number) {
   if (fallback?.dateTime) exif[piexif.ExifIFD.DateTimeOriginal] = String(fallback.dateTime).replace(/-/g, ':')
   if (fallback?.lens) exif[piexif.ExifIFD.LensModel] = String(fallback.lens)
   if (Number.isFinite(fallback?.aperture)) exif[piexif.ExifIFD.FNumber] = [Math.round(Number(fallback.aperture) * 100), 100]
-  if (Number.isFinite(fallback?.focal)) exif[piexif.ExifIFD.FocalLength] = [Math.round(Number(fallback.focal) * 100), 100]
+  if (Number.isFinite(fallback?.focal)) {
+    // A 35mm-equivalent reading must never be written into the physical tag
+    // (0x920A) — that would corrupt the user's metadata on re-export.
+    const value = [Math.round(Number(fallback.focal) * 100), 100]
+    if (fallback.__focal35) exif[piexif.ExifIFD.FocalLengthIn35mmFilm] = value
+    else exif[piexif.ExifIFD.FocalLength] = value
+  }
   if (Number.isFinite(fallback?.iso)) exif[piexif.ExifIFD.ISOSpeedRatings] = Math.round(Number(fallback.iso))
   if (Number.isFinite(fallback?.shutter)) {
     const s = Number(fallback.shutter)

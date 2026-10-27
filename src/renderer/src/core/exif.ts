@@ -47,7 +47,22 @@ export function normalizeExif(
   const make = String(raw.Make || '').trim()
   const model = String(raw.Model || raw.ModelName || '').trim()
   const lens = String(raw.LensModel || raw.Lens || raw.LensInfo || '').trim()
-  const focal = Number(raw.FocalLength) || Number(raw.FocalLengthIn35mmFormat) || null
+  // Vendor samples print the 35mm equivalent (23mm), not the physical focal
+  // length (3.5mm). Prefer 0xA405 when present; keep the writeback path from
+  // treating it as 0x920A (see focalEquivalent in the exporter/main). exifr may
+  // hand back a rational pair for this tag, so normalize arrays before Number().
+  const num = (v: unknown): number => {
+    const pair = v as { length?: number; [i: number]: number } | null
+    if (pair && typeof pair.length === 'number' && pair.length === 2) {
+      const d = Number(pair[1]) || 1
+      return Number(pair[0]) / d
+    }
+    return Number(v)
+  }
+  const focal35 = num(raw.FocalLengthIn35mmFormat) || 0
+  const focalPhysical = num(raw.FocalLength) || 0
+  const focalEquivalent = focal35 > 0
+  const focal = focal35 || focalPhysical || null
   const aperture = Number(raw.FNumber) || Number(raw.ApertureValue) || null
   const shutter = Number(raw.ExposureTime) || null
   const iso = Number(raw.ISO) || Number(raw.ISOSpeedRatings) || null
@@ -57,6 +72,7 @@ export function normalizeExif(
     model,
     lens,
     focal: Number.isFinite(focal as number) ? (focal as number) : null,
+    ...(focalEquivalent ? { focalEquivalent: true } : {}),
     aperture: Number.isFinite(aperture as number) ? (aperture as number) : null,
     shutter: Number.isFinite(shutter as number) ? (shutter as number) : null,
     iso: Number.isFinite(iso as number) ? (iso as number) : null,

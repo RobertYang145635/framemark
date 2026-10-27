@@ -50,6 +50,8 @@ export interface ExifData {
   model: string
   lens: string
   focal: number | null
+  /** True when `focal` came from the 35mm-equivalent tag (0xA405). */
+  focalEquivalent?: boolean
   aperture: number | null
   shutter: number | null
   iso: number | null
