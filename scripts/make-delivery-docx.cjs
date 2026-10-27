@@ -110,7 +110,7 @@ async function main() {
     ['桌面导出', '导出对话框：范围（当前照片 / 全部 N 张）、格式 JPG / PNG / WebP / TIFF、JPG 质量、长边限制（原始 / 4096 / 3072 / 2048 或手填）、输出文件夹（可选，默认 图片\\FrameMark）、移除 GPS；JPG 质量 100 + 4:4:4 + 原 EXIF，PNG / WebP 无损，TIFF LZW 无损'],
     ['Android 导出', '导出对话框在 Android 提供 JPG、PNG、WebP（无 TIFF）；写入系统相册 Pictures/FrameMark；JPG 回写 EXIF，PNG/WebP 不写 EXIF'],
     ['Android 分享', '单张导出完成后可直接打开系统分享面板，分享 MediaStore 中的成片'],
-    ['移动端适配', '竖屏 411×905 CSS px 实测；状态栏/底部手势区安全区；底部仅「边框 / 水印」两个 48px 工具按钮；编辑器弹层保留 Logo / 文字 / 布局 / 主题 四个页签；边框库全屏打开']
+    ['移动端适配', '竖屏 411×905 CSS px 实测；状态栏/底部手势区安全区；底部仅「边框 / 水印」两个 48px 工具按钮；编辑器弹层保留 Logo / 文字 / 布局 / 主题 四个页签；边框库全屏打开；Android 状态栏不覆盖（WebView 从状态栏下方开始，状态栏独立深色底 + 白图标）']
   ], [1800, 7200]))
 
   children.push(heading('二·附：厂商边框（系统相机水印）目录', 2))
