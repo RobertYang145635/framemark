@@ -6937,3 +6937,111 @@ html[data-skin='hyperos'] .inspector-foot {
   background: var(--panel-2);
   align-items: center;
 }
+
+/* ── 2026-10-28 左边栏：一次只看一个分类 + 系列分组 + 搜索 ───── */
+.border-search {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  margin: 0 12px 8px;
+  padding: 0 10px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-pill);
+  background: var(--glass-input);
+  color: var(--faint);
+}
+.border-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 11.5px;
+}
+.border-search input::placeholder {
+  color: var(--faint);
+}
+.border-search-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--glass-btn);
+  color: var(--muted);
+}
+.border-search-summary {
+  flex: 0 0 auto;
+  margin: -2px 14px 7px;
+  color: var(--faint);
+  font-size: 10px;
+}
+/* 侧栏一次只画一个分类；modal 仍保留全部分类 */
+.border-library:not(.border-library-inline) .border-section {
+  display: none;
+}
+.border-library:not(.border-library-inline) .border-section-active {
+  display: block;
+}
+.border-library:not(.border-library-inline) .border-section-active .border-vendor-chips {
+  position: static;
+}
+.border-series-empty {
+  display: none;
+}
+.border-card-peek {
+  display: none !important;
+}
+.border-series-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 7px 0 0;
+}
+.border-series-more {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+.border-series-more:hover {
+  background: var(--glass-btn);
+  color: var(--text);
+}
+
+/* 分类导航压成 4 列小格子：7 个分类两行看完，不再占半屏 */
+.border-category-nav {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 12px 8px;
+}
+.border-category-btn {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-height: 36px;
+  padding: 4px 5px;
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+}
+.border-category-btn[data-category='vendor'] {
+  grid-column: auto;
+}
+.border-category-btn:last-child {
+  grid-column: auto;
+}
+.border-category-btn em {
+  font-size: 8.5px;
+}
+.border-library:not(.border-library-inline) .border-section-head {
+  display: none;
+}

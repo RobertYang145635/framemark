@@ -560,6 +560,8 @@ async function main() {
   // 4. Pick 经典双行 via the border library
   // ---------------------------------------------------------------------------
   console.log('\n--- select template ---')
+  await page.locator('.border-category-nav button', { hasText: '文字' }).click()
+  await page.waitForTimeout(300)
   const card = page.locator('.tpl-card', { hasText: '经典双行' })
   check('exactly one 经典双行 card in the DOM', (await card.count()) === 1, `count=${await card.count()}`)
   await card.first().scrollIntoViewIfNeeded()
