@@ -5113,3 +5113,656 @@ html[data-color-mode='light'] {
     height: 80px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HYPEROS SKIN · OPCameraPro 参考（Compose/M3+Haze 的浅色系统 UI 语言）
+   该皮肤覆盖液态玻璃：浅灰画布、白色大圆角卡片、蓝色强调、胶囊底栏。
+   只覆盖 token 与既有类的表面/文字/圆角，不改 DOM 与选择器（e2e 依赖保持）。
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-skin='hyperos'] {
+  color-scheme: light;
+  --bg: #f0f2f5;
+  --bg-2: #f0f2f5;
+  --panel: #ffffff;
+  --panel-2: #ffffff;
+  --panel-3: #f6f8fb;
+  --text: #14181f;
+  --text-2: #3e4753;
+  --muted: #68727e;
+  --faint: #98a1ad;
+  --line: #e5e9ef;
+  --line-2: #d6dde6;
+  --danger: #c2413b;
+  --warn: #b26a00;
+
+  --accent: #2f75e5;
+  --accent-strong: #1d5fc6;
+  --accent-ink: #ffffff;
+  --accent-solid: #2f75e5;
+  --accent-solid-soft: #e8f0fe;
+  --accent-solid-edge: #2f75e5;
+  --accent-switch: #2f75e5;
+  --accent-soft: rgba(47, 117, 229, 0.1);
+  --accent-tint: rgba(47, 117, 229, 0.16);
+  --accent-line: rgba(47, 117, 229, 0.32);
+  --accent-line-strong: #2f75e5;
+  --accent-glow: rgba(47, 117, 229, 0.18);
+
+  --glass-canvas-bg: #f0f2f5;
+  --glass-panel-strong: #ffffff;
+  --glass-panel: #ffffff;
+  --glass-sheet: #ffffff;
+  --glass-export-bar: #ffffff;
+  --glass-btn: #ffffff;
+  --glass-btn-hover: #f2f5f9;
+  --glass-input: #f5f7fa;
+  --glass-card: #ffffff;
+  --glass-card-hover: #fafbfd;
+  --glass-active: #e8f0fe;
+  --glass-toast: #1f2937;
+  --glass-scrim: rgba(17, 24, 39, 0.32);
+  --glass-popover: #ffffff;
+  --glass-stage: #f7f8fa;
+  --glass-panel-tinted: #ffffff;
+  --glass-panel-2-tinted: #ffffff;
+  --glass-panel-3-tinted: #f6f8fb;
+  --glass-flat-dark: #ffffff;
+  --glass-flat-light: #f7f8fa;
+  --glass-edge: #e4e8ee;
+  --glass-edge-strong: #dde3ea;
+  --glass-edge-hi: inset 0 1px 0 #ffffff;
+  --glass-edge-lo: inset 0 -1px 0 rgba(16, 24, 40, 0.04);
+  --glass-active-edge: #2f75e5;
+  --glass-filter-panel: none;
+  --glass-filter-strong: none;
+  --glass-filter-btn: none;
+  --glass-filter-toast: none;
+  --glass-filter-scrim: none;
+  --glass-filter-popover: none;
+  --glass-shadow-lg: 0 18px 45px rgba(16, 24, 40, 0.1);
+  --glass-shadow-md: 0 10px 28px rgba(16, 24, 40, 0.09);
+  --glass-shadow-sm: 0 4px 12px rgba(16, 24, 40, 0.07);
+  --radius-topbar: 18px;
+  --radius-panel: 18px;
+  --radius-stage: 22px;
+  --radius-sheet: 24px;
+  --radius-nav: 22px;
+  --radius-strip: 16px;
+  --radius-card: 14px;
+  --radius-input: 10px;
+  --radius-summary: 18px;
+}
+
+html[data-skin='hyperos'] body {
+  background: var(--bg);
+  color: var(--text);
+}
+html[data-skin='hyperos'] .center-column {
+  background: var(--bg);
+}
+html[data-skin='hyperos'] .glass,
+html[data-skin='hyperos'] .glass-strong {
+  background: var(--glass-panel-strong);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-edge-hi), var(--glass-shadow-md);
+}
+html[data-skin='hyperos'] .glass-btn {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+html[data-skin='hyperos'] .glass-btn:hover {
+  background: var(--glass-btn-hover);
+}
+
+/* 顶栏 */
+html[data-skin='hyperos'] .brand strong {
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+html[data-skin='hyperos'] .brand .eyebrow {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .brand-mark {
+  background: #e8f0fe;
+  border-color: #d3e2fb;
+  color: #2f75e5;
+}
+html[data-skin='hyperos'] .topbar.glass-strong {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.06);
+}
+html[data-skin='hyperos'] .preset-select {
+  background: var(--panel-3);
+  border-color: var(--line);
+  color: var(--text);
+}
+html[data-skin='hyperos'] .btn-primary {
+  background: #2f75e5;
+  border-color: #2f75e5;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(47, 117, 229, 0.24);
+}
+html[data-skin='hyperos'] .btn-primary:hover {
+  background: #1d5fc6;
+}
+html[data-skin='hyperos'] .btn-ghost {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .btn-ghost:hover,
+html[data-skin='hyperos'] .btn-ghost.active {
+  background: #f2f5f9;
+  color: var(--text);
+  border-color: var(--line-2);
+}
+html[data-skin='hyperos'] .btn-secondary {
+  background: var(--panel-3);
+  border-color: var(--line);
+  color: var(--text);
+}
+html[data-skin='hyperos'] .icon-btn {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .icon-btn:hover {
+  background: #f2f5f9;
+  color: var(--text);
+}
+html[data-skin='hyperos'] .topbar-busy {
+  color: #1d5fc6;
+}
+
+/* 侧栏与边框库 */
+html[data-skin='hyperos'] .sidebar {
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .sidebar.inspector-panel {
+  border-color: var(--line);
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.06);
+}
+html[data-skin='hyperos'] .border-library-head h2 {
+  color: var(--text);
+  font-size: 17px;
+}
+html[data-skin='hyperos'] .border-library-total {
+  background: #f2f5f9;
+  border-color: var(--line);
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .border-category-nav {
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+html[data-skin='hyperos'] .border-category-btn {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .border-category-btn.active {
+  background: #2f75e5;
+  border-color: #2f75e5;
+  color: #fff;
+}
+html[data-skin='hyperos'] .border-chip {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .border-chip.active {
+  background: #e8f0fe;
+  border-color: #b9d2fb;
+  color: #1d5fc6;
+  font-weight: 600;
+}
+html[data-skin='hyperos'] .border-section-head h3 {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .border-series-head {
+  background: #f7f9fc;
+  border-color: #edf1f6;
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .border-series-head strong {
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .border-card {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+}
+html[data-skin='hyperos'] .border-card:hover {
+  background: #fff;
+  border-color: #cfd8e3;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
+}
+html[data-skin='hyperos'] .border-card.active {
+  border-color: #2f75e5;
+  box-shadow: 0 0 0 1px #2f75e5, 0 8px 22px rgba(47, 117, 229, 0.12);
+}
+html[data-skin='hyperos'] .border-card .tpl-meta strong {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .border-section-more {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+
+/* 舞台与胶片条 */
+html[data-skin='hyperos'] .stage-title strong {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .stage-meta,
+html[data-skin='hyperos'] .stage-foot {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .stage-tools {
+  background: #fff;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .canvas-viewport {
+  background-color: #f7f8fa;
+  background-image:
+    radial-gradient(rgba(20, 30, 45, 0.08) 0.7px, transparent 0.7px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5), transparent 45%);
+  border: 1px solid var(--line);
+}
+html[data-skin='hyperos'] .canvas-frame canvas {
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.16), 0 0 0 1px rgba(16, 24, 40, 0.06);
+}
+html[data-skin='hyperos'] .filmstrip {
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px rgba(16, 24, 40, 0.05);
+}
+html[data-skin='hyperos'] .filmstrip-title {
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .thumb {
+  border-color: var(--line);
+  background: #f7f8fa;
+}
+html[data-skin='hyperos'] .thumb.active {
+  border-color: #2f75e5;
+  box-shadow: 0 0 0 1px #2f75e5;
+}
+
+/* Inspector 与控件 */
+html[data-skin='hyperos'] .inspector-tool-switch {
+  background: #f2f5f9;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .inspector-tool-switch button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .inspector-tool-switch button.active {
+  background: #fff;
+  border-color: #fff;
+  color: #1d5fc6;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+html[data-skin='hyperos'] .editor-tabs {
+  background: #fff;
+  border-bottom-color: var(--line);
+}
+html[data-skin='hyperos'] .editor-tabs button {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .editor-tabs button.active {
+  color: #1d5fc6;
+  background: #e8f0fe;
+  border-color: #cfe0fb;
+}
+html[data-skin='hyperos'] .current-template h3 {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .current-template p,
+html[data-skin='hyperos'] .section-head h3 {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .panel-section {
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .hint-note {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .field > span {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .field input,
+html[data-skin='hyperos'] .field textarea,
+html[data-skin='hyperos'] .text-slot-row input,
+html[data-skin='hyperos'] .preset-save-box input,
+html[data-skin='hyperos'] .export-dir-row input,
+html[data-skin='hyperos'] .export-long-edge input,
+html[data-skin='hyperos'] .logo-library-toolbar input {
+  background: #f5f7fa;
+  border-color: #e3e7ed;
+  color: var(--text);
+}
+html[data-skin='hyperos'] .field input::placeholder,
+html[data-skin='hyperos'] .text-slot-row input::placeholder {
+  color: #9aa3ae;
+}
+html[data-skin='hyperos'] .field input:focus,
+html[data-skin='hyperos'] .text-slot-row input:focus {
+  border-color: #2f75e5;
+  box-shadow: 0 0 0 3px rgba(47, 117, 229, 0.12);
+}
+html[data-skin='hyperos'] .text-slot-anchor {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .text-slot-readonly {
+  background: #f7f9fc;
+  border-color: #e3e7ed;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .slider-row {
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .slider-value {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] input[type='range'] {
+  accent-color: #2f75e5;
+}
+html[data-skin='hyperos'] .segmented {
+  background: #f2f5f9;
+  border-color: #e5e9ef;
+}
+html[data-skin='hyperos'] .segmented button {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .segmented button.active {
+  background: #fff;
+  color: #1d5fc6;
+  border-color: #fff;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+html[data-skin='hyperos'] .switch-row strong {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .switch-row em {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .switch {
+  background: #d9dee6;
+}
+html[data-skin='hyperos'] .switch.on {
+  background: #2f75e5;
+}
+html[data-skin='hyperos'] .toggle-chip {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .toggle-chip.on {
+  background: #e8f0fe;
+  border-color: #b9d2fb;
+  color: #1d5fc6;
+}
+html[data-skin='hyperos'] .hand-color-row em {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .logo-row,
+html[data-skin='hyperos'] .logo-preview {
+  background: #f7f9fc;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .warn-note {
+  background: #fff4e5;
+  border-color: #f0c98a;
+  color: #8a5a12;
+}
+html[data-skin='hyperos'] .empty-note {
+  color: var(--faint);
+}
+
+/* 弹层：导出 / 预设 / 品牌库 / 确认 */
+html[data-skin='hyperos'] .modal-backdrop {
+  background: rgba(17, 24, 39, 0.32);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-skin='hyperos'] .modal.glass {
+  background: #fff;
+  border-color: #e5e9ef;
+  box-shadow: 0 24px 70px rgba(16, 24, 40, 0.22);
+}
+html[data-skin='hyperos'] .modal-head {
+  border-bottom: 1px solid var(--line);
+}
+html[data-skin='hyperos'] .modal-head h2 {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .modal-head p,
+html[data-skin='hyperos'] .modal-note {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .modal-foot {
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+html[data-skin='hyperos'] .export-dialog .hint-note,
+html[data-skin='hyperos'] .export-dialog-foot {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .export-card {
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: 0 18px 50px rgba(16, 24, 40, 0.2);
+}
+html[data-skin='hyperos'] .export-errors {
+  background: #fff4e5;
+  border-color: #f0c98a;
+  color: #8a5a12;
+}
+html[data-skin='hyperos'] .preset-row,
+html[data-skin='hyperos'] .preset-save-box {
+  background: #f7f9fc;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .preset-row strong {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .preset-row em {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .logo-brand-card,
+html[data-skin='hyperos'] .logo-version-card {
+  background: #fff;
+  border-color: var(--line);
+}
+html[data-skin='hyperos'] .logo-brand-card:hover,
+html[data-skin='hyperos'] .logo-version-card:not(.locked):hover {
+  background: #fafbfd;
+  border-color: #cfd8e3;
+}
+html[data-skin='hyperos'] .logo-brand-card.active,
+html[data-skin='hyperos'] .logo-version-card.selected {
+  border-color: #2f75e5;
+  box-shadow: 0 0 0 1px #2f75e5;
+}
+html[data-skin='hyperos'] .logo-version-badge {
+  background: #f7f9fc;
+  border-color: var(--line);
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .logo-version-badge.selected {
+  background: #e8f0fe;
+  border-color: #b9d2fb;
+  color: #1d5fc6;
+}
+html[data-skin='hyperos'] .logo-version-title {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .logo-library-modal .modal-body {
+  background: #fff;
+}
+
+/* Toast */
+html[data-skin='hyperos'] .toast {
+  background: #fff;
+  border: 1px solid #e5e9ef;
+  color: var(--text);
+  box-shadow: 0 12px 34px rgba(16, 24, 40, 0.16);
+}
+html[data-skin='hyperos'] .toast-icon {
+  background: #f2f5f9;
+}
+html[data-skin='hyperos'] .toast.error {
+  border-color: #f0c9c4;
+}
+html[data-skin='hyperos'] .toast.error .toast-icon {
+  background: #fdecea;
+}
+
+/* 手机：白色 sheet + 悬浮胶囊底栏 */
+@media (max-width: 700px) {
+  html[data-skin='hyperos'] .inspector-panel {
+    background: #fff;
+    border-color: var(--line);
+    box-shadow: 0 -12px 36px rgba(16, 24, 40, 0.12);
+  }
+  html[data-skin='hyperos'] .mobile-editor-bar {
+    background: #fff;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 18px rgba(16, 24, 40, 0.06);
+  }
+  html[data-skin='hyperos'] .mobile-editor-bar button {
+    color: var(--muted);
+  }
+  html[data-skin='hyperos'] .mobile-editor-bar button.active {
+    color: #1d5fc6;
+    background: #e8f0fe;
+    border-color: #cfe0fb;
+  }
+  html[data-skin='hyperos'] .sheet-grabber {
+    color: #c7ced8;
+  }
+}
+
+/* 导入页 */
+html[data-skin='hyperos'] .import-screen {
+  background: var(--bg);
+}
+html[data-skin='hyperos'] .import-panel {
+  background: #fff;
+}
+html[data-skin='hyperos'] .import-sub,
+html[data-skin='hyperos'] .import-hint,
+html[data-skin='hyperos'] .import-foot {
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .import-format {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #e5e9ef;
+  color: #3e4753;
+}
+html[data-skin='hyperos'] .sample-banner {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .compare-label {
+  background: #fff;
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .busy-pill {
+  background: #fff;
+  color: var(--text-2);
+  border-color: var(--line);
+}
+
+/* HyperOS 皮肤 · 细节校正 */
+html[data-skin='hyperos'] {
+  --muted: #5c6673;
+  --faint: #7f8a97;
+}
+html[data-skin='hyperos'] .export-dialog .field > span,
+html[data-skin='hyperos'] .export-dialog > .field > span,
+html[data-skin='hyperos'] .modal .field > span {
+  color: #3e4753;
+  font-weight: 500;
+}
+html[data-skin='hyperos'] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+html[data-skin='hyperos'] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+html[data-skin='hyperos'] ::-webkit-scrollbar-thumb {
+  background: #cfd8e3;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+html[data-skin='hyperos'] ::-webkit-scrollbar-thumb:hover {
+  background: #b7c3d2;
+  background-clip: content-box;
+}
+html[data-skin='hyperos'] .tpl-art {
+  background: #f7f9fc;
+}
+html[data-skin='hyperos'] .editor-pane .section-head {
+  border-bottom-color: var(--line);
+}
+html[data-skin='hyperos'] .logo-actions .btn,
+html[data-skin='hyperos'] .logo-actions .icon-btn {
+  background: #f5f7fa;
+  border-color: var(--line);
+}
+
+@media (max-width: 700px) {
+  /* OPCameraPro 的悬浮胶囊底栏：离底、圆角、细描边 */
+  html[data-skin='hyperos'] .mobile-editor-bar {
+    margin: 4px 12px calc(8px + env(safe-area-inset-bottom));
+    padding: 5px 6px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.12);
+  }
+  html[data-skin='hyperos'] .mobile-editor-bar button {
+    border-radius: 999px;
+    min-height: 48px;
+    font-size: 12px;
+  }
+  html[data-skin='hyperos'] .mobile-editor-bar button.active {
+    background: #e8f0fe;
+    border-color: transparent;
+  }
+  html[data-skin='hyperos'] .inspector-panel {
+    border-radius: 22px 22px 0 0;
+  }
+}
+
+/* 品牌/版本预览：把米色棋盘格换成与浅色皮肤同族的灰白棋盘 */
+html[data-skin='hyperos'] .logo-brand-preview.light,
+html[data-skin='hyperos'] .logo-version-preview.light {
+  background-color: #f4f6fa;
+  background-image:
+    linear-gradient(45deg, #e6ebf2 25%, transparent 25%),
+    linear-gradient(-45deg, #e6ebf2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e6ebf2 75%),
+    linear-gradient(-45deg, transparent 75%, #e6ebf2 75%);
+}
+html[data-skin='hyperos'] .border-scroll,
+html[data-skin='hyperos'] .inspector-scroll,
+html[data-skin='hyperos'] .logo-library-scroll {
+  scrollbar-color: #cfd8e3 transparent;
+  scrollbar-width: thin;
+}
+html[data-skin='hyperos'] .border-scroll,
+html[data-skin='hyperos'] .inspector-scroll,
+html[data-skin='hyperos'] .logo-library-scroll {
+  scrollbar-width: auto;
+}

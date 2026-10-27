@@ -37,7 +37,7 @@ if (Capacitor.isNativePlatform()) {
   void (async () => {
     try {
       await StatusBar.setOverlaysWebView({ overlay: false })
-      await StatusBar.setBackgroundColor({ color: '#0c0c0d' })
+      await StatusBar.setBackgroundColor({ color: '#f0f2f5' })
       // Capacitor's enum is named after the theme, not the text: Style.Dark =
       // light text for dark backgrounds.
       await StatusBar.setStyle({ style: Style.Dark })
