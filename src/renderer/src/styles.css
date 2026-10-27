@@ -7045,3 +7045,79 @@ html[data-skin='hyperos'] .inspector-foot {
 .border-library:not(.border-library-inline) .border-section-head {
   display: none;
 }
+
+/* ── 2026-10-28 左边栏可折叠：分类网格 + 品牌/系列分组 ───────── */
+.border-nav-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  height: 26px;
+  margin: 0 12px 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10.5px;
+  text-align: left;
+}
+.border-nav-toggle:hover {
+  background: var(--glass-btn);
+}
+.border-nav-toggle > span {
+  color: var(--text-2);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.border-nav-toggle > em {
+  margin-left: auto;
+  color: var(--faint);
+  font-style: normal;
+  font-size: 10px;
+}
+.border-nav-chevron {
+  flex: 0 0 auto;
+  color: var(--faint);
+  transition: transform 0.18s ease;
+}
+.border-nav-toggle-closed .border-nav-chevron {
+  transform: rotate(-90deg);
+}
+.border-category-nav-closed {
+  display: none;
+}
+
+button.border-series-head {
+  width: calc(100% - 4px);
+  align-items: center;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+.border-series-head .border-series-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.border-series-chevron {
+  color: var(--faint);
+  transition: transform 0.18s ease;
+}
+.border-series-folded .border-series-chevron {
+  transform: rotate(-90deg);
+}
+.border-series-folded > .border-grid,
+.border-series-folded > .border-series-more-row {
+  display: none;
+}
+.border-series-folded + .border-series {
+  margin-top: 6px;
+}
+button.border-series-head:focus-visible {
+  outline: 2px solid var(--accent-solid-edge);
+  outline-offset: 1px;
+}

@@ -556,6 +556,37 @@ async function main() {
   )
   check('全部 chip restores the first 8 cards of each vendor group (24 visible, 99 mounted)', true)
 
+  // Collapsible library: category grid and series groups fold without unmounting cards.
+  await page.locator('.border-nav-toggle').click()
+  await page.waitForFunction(() => document.getElementById('border-category-nav')?.getBoundingClientRect().height === 0)
+  check('分类 folds the seven-category grid away', true)
+  check('folding the category grid keeps all 175 cards mounted', (await page.locator('.tpl-card').count()) === TOTAL_CARDS)
+  await page.locator('.border-nav-toggle').click()
+  await page.waitForFunction(() => (document.getElementById('border-category-nav')?.getBoundingClientRect().height ?? 0) > 0)
+  check('分类 reopens the seven-category grid', true)
+
+  const oppoSeriesHead = page
+    .locator('.border-section[data-category="vendor"] .border-series:not(.border-series-empty) .border-series-head')
+    .first()
+  const oppoSeriesName = (await oppoSeriesHead.innerText()).trim()
+  await oppoSeriesHead.click()
+  await page.waitForFunction(
+    () =>
+      getComputedStyle(
+        document.querySelector('.border-section[data-category="vendor"] .border-series:not(.border-series-empty) .border-grid')
+      ).display === 'none'
+  )
+  check(`series group folds its cards (${oppoSeriesName})`, true)
+  check('folding a series keeps all 175 cards mounted', (await page.locator('.tpl-card').count()) === TOTAL_CARDS)
+  await oppoSeriesHead.click()
+  await page.waitForFunction(
+    () =>
+      getComputedStyle(
+        document.querySelector('.border-section[data-category="vendor"] .border-series:not(.border-series-empty) .border-grid')
+      ).display !== 'none'
+  )
+  check(`series group reopens its cards (${oppoSeriesName})`, true)
+
   // ---------------------------------------------------------------------------
   // 4. Pick 经典双行 via the border library
   // ---------------------------------------------------------------------------

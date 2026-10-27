@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { ChevronDown, Search, X } from 'lucide-react'
 import type { TemplateVariant } from '../types'
 import {
   BORDER_CATEGORIES,
@@ -144,10 +144,12 @@ function BorderSection({
   query,
   expanded,
   expandedGroups,
+  foldedGroups,
   visible,
   modal,
   onToggle,
   onToggleGroup,
+  onToggleFold,
   onPick,
   vendorChips
 }: {
@@ -157,10 +159,12 @@ function BorderSection({
   query: string
   expanded: boolean
   expandedGroups: Record<string, boolean>
+  foldedGroups: Record<string, boolean>
   visible: boolean
   modal: boolean
   onToggle: (key: BorderCategoryKey) => void
   onToggleGroup: (key: string) => void
+  onToggleFold: (key: string) => void
   onPick?: () => void
   vendorChips?: React.ReactNode
 }) {
@@ -220,15 +224,29 @@ function BorderSection({
         const peek = peekOf(group.cards, groupKey)
         const selectable = group.cards.filter(({ card }) => matchingIds.has(card.variantId))
         const groupOpen = expanded || expandedGroups[groupKey]
-        const hasMore = !searching && (selectable.length > peekLimit || selectable.length > limit)
+        const folded = !!foldedGroups[groupKey]
+        const hasMore = !searching && !expanded && (selectable.length > peekLimit || selectable.length > limit)
         const seriesHidden =
           selectable.length === 0 || (!!categoryCap && !expanded && !expandedGroups[groupKey] && shown.size === 0)
         return (
-          <div className={`border-series ${seriesHidden ? 'border-series-empty' : ''}`} key={group.key}>
-            <div className="border-series-head" aria-label={`${group.label} 系列`}>
+          <div
+            className={`border-series ${seriesHidden ? 'border-series-empty' : ''} ${folded ? 'border-series-folded' : ''}`}
+            key={group.key}
+          >
+            <button
+              className="border-series-head"
+              type="button"
+              aria-label={`${group.label} 系列`}
+              aria-expanded={!folded}
+              title={folded ? `展开 ${group.label}` : `收起 ${group.label}`}
+              onClick={() => onToggleFold(groupKey)}
+            >
               <strong>{group.label}</strong>
-              <em>{group.cards.length}</em>
-            </div>
+              <span className="border-series-meta">
+                <em>{group.cards.length}</em>
+                <ChevronDown size={12} className="border-series-chevron" />
+              </span>
+            </button>
             <div className="tpl-grid border-grid">
               {group.cards.map(({ card, variant }) => {
                 const isActive = activeId === card.variantId
@@ -263,7 +281,7 @@ function BorderSection({
                   onClick={() => onToggleGroup(groupKey)}
                   type="button"
                 >
-                  {groupOpen ? '收起这个系列' : `查看这个系列全部 ${selectable.length} 套`}
+                  {groupOpen ? `只看前 ${peekLimit} 套` : `查看这个系列全部 ${selectable.length} 套`}
                 </button>
               </div>
             ) : null}
@@ -295,7 +313,9 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
   const [brand, setBrand] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Partial<Record<BorderCategoryKey, boolean>>>({})
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
+  const [foldedGroups, setFoldedGroups] = useState<Record<string, boolean>>({})
   const [activeCategory, setActiveCategory] = useState<BorderCategoryKey>('vendor')
+  const [navOpen, setNavOpen] = useState(true)
   const [query, setQuery] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -341,7 +361,26 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
             ) : null}
           </div>
           {query.trim() ? <p className="border-search-summary">找到 {searchCount} 套</p> : null}
-          <nav className="border-category-nav" aria-label="边框分类">
+          <button
+            className={`border-nav-toggle ${navOpen ? '' : 'border-nav-toggle-closed'}`}
+            type="button"
+            aria-expanded={navOpen}
+            aria-controls="border-category-nav"
+            onClick={() => setNavOpen((prev) => !prev)}
+          >
+            <span>分类</span>
+            <em>
+              {SECTIONS.find((section) => section.key === activeCategory)?.name} ·{' '}
+              {SECTIONS.find((section) => section.key === activeCategory)?.count}
+            </em>
+            <ChevronDown size={13} className="border-nav-chevron" />
+          </button>
+          <nav
+            id="border-category-nav"
+            className={`border-category-nav ${navOpen ? '' : 'border-category-nav-closed'}`}
+            aria-label="边框分类"
+            aria-hidden={!navOpen}
+          >
             {SECTIONS.map((section) => (
               <button
                 key={section.key}
@@ -350,6 +389,7 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
                 onClick={() => jumpTo(section.key)}
                 type="button"
                 aria-current={!query.trim() && activeCategory === section.key ? 'true' : undefined}
+                tabIndex={navOpen ? 0 : -1}
               >
                 <span>{section.name}</span>
                 <em>{section.count}</em>
@@ -375,10 +415,12 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
               query={query}
               expanded={!!expanded[section.key]}
               expandedGroups={expandedGroups}
+              foldedGroups={foldedGroups}
               visible={sectionVisible}
               modal={modal}
               onToggle={(key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
               onToggleGroup={(key) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }))}
+              onToggleFold={(key) => setFoldedGroups((prev) => ({ ...prev, [key]: !prev[key] }))}
               onPick={onPick}
               vendorChips={section.key === 'vendor' ? <VendorChips brand={brand} onSelect={selectBrand} /> : null}
             />
