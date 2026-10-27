@@ -138,6 +138,19 @@ function downloadBlob(blob: Blob, name: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 3000)
 }
 
+/**
+ * Raw IPC errors (ENOTDIR/EEXIST/EACCES with an internal path) are accurate but
+ * not actionable for the user. Keep the cause class, drop the stack/path noise.
+ */
+export function friendlyExportError(message: string): string {
+  if (/ENOTDIR|EEXIST|ENOENT/.test(message)) return '输出文件夹不可用或不是一个文件夹，请在导出设置里重新选择'
+  if (/EACCES|EPERM/.test(message)) return '没有写入权限，请换一个输出文件夹'
+  if (/ENOSPC/.test(message)) return '磁盘空间不足，请清理后重试'
+  if (/示例图不可导出/.test(message)) return message
+  const clean = message.replace(/^Error invoking remote method '[^']+':s*/, '').replace(/^Error:s*/, '')
+  return clean.length > 160 ? clean.slice(0, 160) + '…' : clean
+}
+
 export async function exportOne(
   photo: PhotoAsset,
   design: Design,

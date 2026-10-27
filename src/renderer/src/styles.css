@@ -4933,3 +4933,106 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
   font-size: 10.5px;
   color: var(--muted);
 }
+
+/* ── G2′–G6′ 玻璃换皮（v4 IA；只加表面/动效，不改 DOM 与文案） ───────── */
+:root {
+  --glass-modal: rgba(11, 18, 30, 0.86);
+  --glass-scrim-strong: rgba(4, 8, 14, 0.66);
+}
+html[data-color-mode='light'] {
+  --glass-modal: rgba(250, 252, 255, 0.94);
+  --glass-scrim-strong: rgba(198, 211, 224, 0.82);
+}
+
+/* G4′ 模态可读性：导出/预设/品牌库面板不再让背后工作区文字透上来 */
+.modal.glass {
+  background: var(--glass-modal);
+  -webkit-backdrop-filter: var(--glass-filter-strong);
+  backdrop-filter: var(--glass-filter-strong);
+}
+.modal-backdrop {
+  background: var(--glass-scrim-strong);
+}
+
+/* G2′ 边框库：头部/分类导航/系列标题获得与卡片同体系的表面 */
+.border-library-head {
+  border-bottom: 1px solid var(--glass-edge);
+  background: linear-gradient(180deg, var(--glass-btn), transparent 92%);
+}
+.border-category-nav {
+  padding: 6px 10px 8px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--glass-panel) 45%, transparent));
+}
+.border-series-head {
+  margin: 2px 2px 7px;
+  padding: 5px 9px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 8px;
+  background: var(--glass-card);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.border-series:hover > .border-series-head {
+  background: var(--glass-card-hover);
+}
+.border-series {
+  animation: fmk-pane-in 0.16s ease both;
+}
+
+/* G3′ 舞台工具区：按钮已有玻璃，补一个承托面（canvas 仍 flat） */
+.stage-tools {
+  padding: 4px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: var(--glass-btn);
+}
+.stage-tools .btn.active {
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+}
+
+/* G4′ Inspector：工具切换做成一体式分段条，页签获得统一表面 */
+.inspector-tool-switch {
+  margin: 9px 10px 3px;
+  padding: 4px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 12px;
+  background: var(--glass-btn);
+}
+.inspector-tool-switch button {
+  border-color: transparent;
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.inspector-tool-switch button.active {
+  background: var(--accent-solid-soft);
+  border-color: var(--accent-solid-edge);
+}
+.editor-tabs {
+  border-bottom: 1px solid var(--glass-edge);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--glass-panel) 40%, transparent), transparent);
+}
+.editor-tabs button {
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.editor-controls-item {
+  border-radius: 10px;
+  transition: background 0.15s ease;
+}
+.editor-controls-item:hover {
+  background: color-mix(in srgb, var(--glass-card) 55%, transparent);
+}
+
+/* G6′ 手写参数面板与逐套控件同表面层级 */
+.hand-controls {
+  padding-top: 2px;
+}
+.hand-controls .section,
+.hand-controls > * {
+  animation: fmk-pane-in 0.16s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .border-series,
+  .hand-controls > * {
+    animation: none;
+  }
+}
