@@ -84,6 +84,22 @@ function seriesOf(name: string): string {
   return head || name
 }
 
+const OPPO_SERIES = ['GR', '哈苏', '个性画框', '文字水印']
+
+/** OPPO 相册自己的四类：GR / 哈苏 / 个性画框 / 文字水印。 */
+function oppoSeries(card: TaxonomyCard): string {
+  const id = card.variantId.toLowerCase()
+  const name = card.name
+  if (id.includes('gr_style') || id.includes('camerapro-gr') || name.startsWith('理光 GR')) return 'GR'
+  if (id.includes('hassel') || name.includes('哈苏')) return '哈苏'
+  if (id.includes('text_style') || name.includes('文字')) return '文字水印'
+  return '个性画框'
+}
+
+function seriesFor(brand: string | null, card: TaxonomyCard): string {
+  return brand === 'OPPO' ? oppoSeries(card) : seriesOf(card.name)
+}
+
 function cardMatches(item: LibraryCard, section: LibrarySection, query: string, brand: string | null): boolean {
   if (query) {
     const haystack = `${item.card.name} ${item.card.brand ?? ''} ${section.name}`.toLowerCase()
@@ -97,9 +113,9 @@ function groupCards(section: LibrarySection, brand: string | null, query: string
   const groups: CardGroup[] = []
   const index = new Map<string, CardGroup>()
   const by = (item: LibraryCard): string => {
-    if (query) return seriesOf(item.card.name)
+    if (query) return seriesFor(item.card.brand ?? null, item.card)
     if (section.key === 'vendor' && brand === null) return item.card.brand ?? '其他'
-    if (section.key === 'vendor') return item.card.brand === brand ? seriesOf(item.card.name) : '__other'
+    if (section.key === 'vendor') return item.card.brand === brand ? seriesFor(brand, item.card) : '__other'
     return seriesOf(item.card.name)
   }
   for (const item of section.cards) {
@@ -111,6 +127,10 @@ function groupCards(section: LibrarySection, brand: string | null, query: string
       groups.push(group)
     }
     group.cards.push(item)
+  }
+  // OPPO always presents the vendor's own four buckets in a fixed order.
+  if (section.key === 'vendor' && brand === 'OPPO') {
+    groups.sort((a, b) => OPPO_SERIES.indexOf(a.label) - OPPO_SERIES.indexOf(b.label))
   }
   // Hide the "other brand" bucket when it has no visible cards, but keep it in
   // the DOM so the 175-card invariant survives.
@@ -149,7 +169,18 @@ function BorderSection({
   const matching = section.cards.filter((item) => cardMatches(item, section, query, brand))
   const matchingIds = new Set(matching.map(({ card }) => card.variantId))
   const groups = groupCards(section, brand, query)
-  const limit = searching || (brand !== null && section.key === 'vendor') ? Number.POSITIVE_INFINITY : CARD_LIMIT
+  // Non-vendor categories share one 8-card first screen across all series;
+  // vendor groups keep 8 per brand so choosing a brand shows its series split.
+  const categoryCap =
+    !searching && section.key !== 'vendor' && !expanded
+      ? new Set(matching.slice(0, CARD_LIMIT).map(({ card }) => card.variantId))
+      : null
+  const limit =
+    searching || (section.key === 'vendor' && brand !== null)
+      ? Number.POSITIVE_INFINITY
+      : section.key === 'vendor'
+        ? CARD_LIMIT
+        : Number.POSITIVE_INFINITY
   const peekLimit = searching
     ? Number.POSITIVE_INFINITY
     : section.key === 'vendor' && brand === null
@@ -159,7 +190,12 @@ function BorderSection({
     const selectable = cards.filter(({ card }) => matchingIds.has(card.variantId))
     const all = expanded || expandedGroups[groupKey]
     const visibleCount = all ? selectable.length : Math.min(limit, selectable.length)
-    return new Set(selectable.slice(0, visibleCount).map(({ card }) => card.variantId))
+    return new Set(
+      selectable
+        .slice(0, visibleCount)
+        .map(({ card }) => card.variantId)
+        .filter((id) => !categoryCap || categoryCap.has(id))
+    )
   }
   const peekOf = (cards: LibraryCard[], groupKey: string) => {
     const selectable = cards.filter(({ card }) => matchingIds.has(card.variantId))
@@ -185,8 +221,10 @@ function BorderSection({
         const selectable = group.cards.filter(({ card }) => matchingIds.has(card.variantId))
         const groupOpen = expanded || expandedGroups[groupKey]
         const hasMore = !searching && (selectable.length > peekLimit || selectable.length > limit)
+        const seriesHidden =
+          selectable.length === 0 || (!!categoryCap && !expanded && !expandedGroups[groupKey] && shown.size === 0)
         return (
-          <div className={`border-series ${selectable.length === 0 ? 'border-series-empty' : ''}`} key={group.key}>
+          <div className={`border-series ${seriesHidden ? 'border-series-empty' : ''}`} key={group.key}>
             <div className="border-series-head" aria-label={`${group.label} 系列`}>
               <strong>{group.label}</strong>
               <em>{group.cards.length}</em>
@@ -232,7 +270,7 @@ function BorderSection({
           </div>
         )
       })}
-      {!searching && limit !== Number.POSITIVE_INFINITY && matching.length > CARD_LIMIT ? (
+      {!searching && matching.length > CARD_LIMIT && (section.key !== 'vendor' || limit !== Number.POSITIVE_INFINITY) ? (
         <div className="border-section-more-row">
           <button
             className="border-section-more glass-btn glass-spot glass-ripple glass-press"
