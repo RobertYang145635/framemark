@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Eye, ImagePlus, Loader2, Maximize2, Minus, Plus, Sparkles } from 'lucide-react'
 import type { PhotoAsset, Rect } from '../types'
 import { useAppStore } from '../store'
@@ -40,6 +40,8 @@ export function PreviewStage() {
   const [error, setError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
+  /** 滚轮缩放后要让光标下的画面点保持不动。 */
+  const wheelAnchorRef = useRef<{ x: number; y: number; fx: number; fy: number; at: number } | null>(null)
   const variant = getVariant(design.variantId)
   const selected = photos.find((p) => p.id === selectedId) ?? photos[0] ?? sample
   const isSample = !photos.length
@@ -127,19 +129,42 @@ export function PreviewStage() {
 
   const shownW = fit ? Math.round(fit.w * zoom) : null
   const shownH = fit ? Math.round(fit.h * zoom) : null
-  const clampZoom = (z: number) => Math.min(4, Math.max(0.5, Math.round(z * 100) / 100))
+  const clampZoom = (z: number) => Math.min(4, Math.max(0.5, Math.round(z * 1000) / 1000))
 
   useEffect(() => {
     const el = viewportRef.current
     if (!el) return
     const onWheel = (e: WheelEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return
+      const canvas = canvasRef.current
+      if (!canvas || !canvas.getBoundingClientRect().width) return
       e.preventDefault()
-      setZoom((z) => clampZoom(z * (e.deltaY < 0 ? 1.12 : 0.89)))
+      const rect = canvas.getBoundingClientRect()
+      wheelAnchorRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        fx: (e.clientX - rect.left) / rect.width,
+        fy: (e.clientY - rect.top) / rect.height,
+        at: performance.now()
+      }
+      const step = Math.max(-240, Math.min(240, e.deltaY))
+      setZoom((z) => clampZoom(z * Math.exp(-step * 0.0016)))
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
+
+  useLayoutEffect(() => {
+    const anchor = wheelAnchorRef.current
+    const el = viewportRef.current
+    const canvas = canvasRef.current
+    if (!anchor || !el || !canvas) return
+    wheelAnchorRef.current = null
+    // 只在滚轮触发的重绘里校正滚动；别把陈旧锚点用到按钮缩放上。
+    if (performance.now() - anchor.at > 250) return
+    const rect = canvas.getBoundingClientRect()
+    el.scrollLeft += rect.left + anchor.fx * rect.width - anchor.x
+    el.scrollTop += rect.top + anchor.fy * rect.height - anchor.y
+  }, [zoom])
 
   const sampleUrl = useMemo(() => sampleUrls[Math.floor(Math.random() * sampleUrls.length)], [])
   const addRandomSample = () => {
@@ -187,7 +212,7 @@ export function PreviewStage() {
               onClick={() => setZoom(1)}
               onDoubleClick={() => setZoom(1)}
               type="button"
-              title="适应窗口（滚轮配合 Ctrl/⌘ 缩放）"
+              title="适应窗口（画面内滚轮缩放）"
             >
               {Math.round(zoom * 100)}%
             </button>
