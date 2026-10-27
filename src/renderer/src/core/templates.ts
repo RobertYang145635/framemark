@@ -1176,8 +1176,13 @@ const brandFooter: TemplateDef = {
     // Declared rows: a blank photo keeps the same four editable ends; values typed
     // here win over EXIF, and an absent EXIF no longer removes the row itself.
     const slotValues = env.design.text.slotValues ?? {}
+    const slotSizes = env.design.text.slotSizes ?? {}
     const slotScope = env.design.variantId ?? env.design.templateId
     const slotOf = (id: string) => String(slotValues[slotScope + '#' + id] ?? '').trim()
+    // Per-row size multiplier (0.6–1.6), default 1 so untouched renders are
+    // byte-identical. Only the declared footer rows expose this control.
+    const sizeOf = (id: string) =>
+      Math.max(0.6, Math.min(1.6, pct(slotSizes[slotScope + '#' + id], 1)))
     const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
     const model = env.text.showModel
       ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)
@@ -1190,7 +1195,7 @@ const brandFooter: TemplateDef = {
     const showLeftText = !(logoPos === 'left' && env.text.showLogo) && (showBrand || showModel)
     if (showLeftText) {
       if (showBrand) {
-        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.027, theme.fg, {
+        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.027 * sizeOf('brand'), theme.fg, {
           family: FONT_UI,
           weight: 700,
           tracking: 0.03,
@@ -1198,22 +1203,12 @@ const brandFooter: TemplateDef = {
         })
       }
       if (showModel) {
-        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.02, theme.sub, {
+        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.02 * sizeOf('model'), theme.sub, {
           family: FONT_UI,
           weight: 400,
           min: S * 0.01
         })
       }
-    }
-    if (on('logo') && env.text.showLogo) {
-      const lw = W * (f.logoW ?? 0.17) * logoScale(env)
-      const lh = footer * (f.logoH ?? 0.36) * logoScale(env)
-      const centerX = W * pct(env.params.logoCenterX, 0.53)
-      let lx = centerX - lw / 2
-      if (logoPos === 'left') lx = leftX
-      else if (logoPos === 'right') lx = W * 0.96 - lw
-      if (f.logoCx !== undefined) lx = W * f.logoCx - lw / 2
-      drawBrandLogo(env, lx, footerTop + footer / 2 - lh / 2, lw, lh, theme.fg)
     }
     const rightX = W * (f.rightX ?? (logoPos === 'right' ? 0.44 : 0.72))
     const rightW = W * (f.rightW ?? (logoPos === 'right' ? 0.34 : 0.25))
@@ -1226,18 +1221,51 @@ const brandFooter: TemplateDef = {
     // No EXIF and no custom line means there is no right column; drawing its
     // divider leaves an empty column that reads as a layout bug.
     const ruleX = W * (f.ruleX ?? (logoPos === 'right' ? 0.42 : 0.7))
+    if (on('logo') && env.text.showLogo) {
+      const grow = logoScale(env)
+      const baseW = W * (f.logoW ?? 0.17)
+      const baseH = footer * (f.logoH ?? 0.36)
+      let lw = baseW * grow
+      let lh = Math.min(baseH * grow, footer * 0.9)
+      const centerX = W * pct(env.params.logoCenterX, 0.53)
+      let lx = centerX - lw / 2
+      if (logoPos === 'left') lx = leftX
+      else if (logoPos === 'right') lx = W * 0.96 - lw
+      if (f.logoCx !== undefined) lx = W * f.logoCx - lw / 2
+      // Growth must not run into the neighbouring column: clamp to the slack
+      // between the left block and the divider, and slide the mark sideways
+      // when it is centred. At scale 1 the original placement is kept so the
+      // default render stays byte-identical.
+      if (grow > 1.0001) {
+        const gap = S * 0.008
+        const leftBound = leftX + (showLeftText ? leftW : 0) + gap
+        const rightBound = (hasRightColumn ? (f.rule !== 0 ? ruleX : rightX) : W * 0.96) - gap
+        const maxW = Math.max(0, rightBound - leftBound)
+        lw = Math.min(lw, maxW)
+        if (logoPos === 'center' || f.logoCx !== undefined) {
+          const half = lw / 2
+          const cx = Math.min(Math.max(lx + half, leftBound + half), rightBound - half)
+          lx = cx - half
+        } else if (logoPos === 'left') {
+          lx = leftBound
+        } else {
+          lx = rightBound - lw
+        }
+      }
+      drawBrandLogo(env, lx, footerTop + footer / 2 - lh / 2, lw, lh, theme.fg)
+    }
     if (f.rule !== 0 && hasRightColumn) {
       line(ctx, ruleX, footerTop + footer * 0.22, ruleX, footerTop + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
     }
     if (on('exif') && ex) {
-      drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027, theme.fg, {
+      drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027 * sizeOf('exif'), theme.fg, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.012
       })
     }
     if (on('date') && dt) {
-      drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021, theme.sub, {
+      drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021 * sizeOf('date'), theme.sub, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.01

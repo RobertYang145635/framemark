@@ -43,6 +43,12 @@ const SECTIONS: LibrarySection[] = BORDER_CATEGORIES.map((category) => ({
 const VENDOR_BRANDS = BORDER_CATEGORIES.find((category) => category.key === 'vendor')?.brands ?? []
 const TOTAL_CARDS = TAXONOMY_CARDS.length
 
+/** Two top-level groups so the 7 categories read as brand watermarks vs styles. */
+const NAV_GROUPS: Partial<Record<BorderCategoryKey, string>> = {
+  vendor: '相机厂商水印',
+  text: '设计样式'
+}
+
 function VendorChips({
   brand,
   onSelect
@@ -88,7 +94,8 @@ function BorderSection({
   expanded,
   onToggle,
   onPick,
-  setSectionRef
+  setSectionRef,
+  vendorChips
 }: {
   section: LibrarySection
   activeId: string
@@ -98,6 +105,7 @@ function BorderSection({
   onToggle: (key: BorderCategoryKey) => void
   onPick?: () => void
   setSectionRef: (el: HTMLElement | null) => void
+  vendorChips?: React.ReactNode
 }) {
   const setVariant = useAppStore((s) => s.setVariant)
   const matching = section.cards.filter(
@@ -140,6 +148,7 @@ function BorderSection({
         <h3>{section.name}</h3>
         <span>{section.count}</span>
       </div>
+      {vendorChips}
       {groups.map((group) => {
         const shown = shownOf(group.cards)
         return (
@@ -186,7 +195,7 @@ function BorderSection({
             onClick={() => onToggle(section.key)}
             type="button"
           >
-            {expanded ? '收起' : `查看全部 ${matching.length}`}
+            {expanded ? '收起' : `展开全部 ${matching.length} 套`}
           </button>
         </div>
       ) : null}
@@ -252,22 +261,25 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
           </header>
           <nav className="border-category-nav" aria-label="边框分类">
             {SECTIONS.map((section) => (
-              <button
-                key={section.key}
-                className={`border-category-btn glass-ripple glass-press ${activeCategory === section.key ? 'active' : ''}`}
-                onClick={() => jumpTo(section.key)}
-                type="button"
-                aria-current={activeCategory === section.key ? 'true' : undefined}
-              >
-                <span>{section.name}</span>
-                <em>{section.count}</em>
-              </button>
+              <React.Fragment key={section.key}>
+                {NAV_GROUPS[section.key] ? (
+                  <span className="border-nav-group">{NAV_GROUPS[section.key]}</span>
+                ) : null}
+                <button
+                  className={`border-category-btn glass-ripple glass-press ${activeCategory === section.key ? 'active' : ''}`}
+                  data-category={section.key}
+                  onClick={() => jumpTo(section.key)}
+                  type="button"
+                  aria-current={activeCategory === section.key ? 'true' : undefined}
+                >
+                  <span>{section.name}</span>
+                  <em>{section.count}</em>
+                </button>
+              </React.Fragment>
             ))}
           </nav>
         </>
       ) : null}
-
-      <VendorChips brand={brand} onSelect={selectBrand} />
 
       <div className={`border-scroll ${modal ? 'border-scroll-modal' : ''}`} ref={scrollRef}>
         {SECTIONS.map((section) => (
@@ -280,6 +292,7 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
             expanded={!!expanded[section.key]}
             onToggle={(key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }))}
             onPick={onPick}
+            vendorChips={section.key === 'vendor' ? <VendorChips brand={brand} onSelect={selectBrand} /> : null}
             setSectionRef={(el) => {
               sectionRefs.current[section.key] = el
             }}

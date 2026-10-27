@@ -34,10 +34,32 @@ function logoScaleFactor(raw: unknown): number {
 /**
  * Resize a slot rect about its own centre, keeping it inside the node box with
  * a 2% inset. Only brand slots call this, so no other node geometry moves.
+ * Growth (`logoScale` > 5) is additionally clamped by the band's real slack
+ * (`free`) minus the vendor bitmap's side pad, so an enlarged logo stops short
+ * of the neighbouring text instead of covering it.
  */
-function scaleSlotRect(rect: StockRect, factor: number, box: StockRect): StockRect {
-  const w = Math.min(rect.w * factor, box.w * 0.96)
-  const h = Math.min(rect.h * factor, box.h * 0.96)
+function scaleSlotRect(
+  rect: StockRect,
+  factor: number,
+  box: StockRect,
+  free?: BrandFree,
+  gravity?: string,
+  padPx = 0
+): StockRect {
+  let w = rect.w * factor
+  let h = rect.h * factor
+  if (factor > 1 && free) {
+    const { h: ha, v: va } = gravityAnchor(gravity)
+    const slackX = ha === 'center' ? Math.min(free.left, free.right) * 2 : ha === 'left' ? free.right : free.left
+    const slackY = va === 'top' ? free.bottom : va === 'bottom' ? free.top : Math.min(free.top, free.bottom) * 2
+    const maxW = Math.min(box.w * 0.96, rect.w + Math.max(0, slackX - padPx))
+    const maxH = Math.min(box.h * 0.96, rect.h + Math.max(0, slackY - padPx))
+    const k = Math.min(1, maxW / w, maxH / h)
+    w *= k
+    h *= k
+  }
+  w = Math.min(w, box.w * 0.96)
+  h = Math.min(h, box.h * 0.96)
   const cx = rect.x + rect.w / 2
   const cy = rect.y + rect.h / 2
   const x = Math.max(box.x + box.w * 0.02, Math.min(cx - w / 2, box.x + box.w * 0.98 - w))
@@ -546,7 +568,10 @@ function paintItem(
       }
       const rect = brandSlotRect(raw, box, item.node.gravity, scaleFree(item.brandFree, k), metrics)
       const factor = logoScaleFactor(env.params.logoScale)
-      const drawRect = factor === 1 ? rect : scaleSlotRect(rect, factor, box)
+      const drawRect =
+        factor === 1
+          ? rect
+          : scaleSlotRect(rect, factor, box, scaleFree(item.brandFree, k), item.node.gravity, gapParts.padPx)
       ctx.drawImage(img, drawRect.x, drawRect.y, drawRect.w, drawRect.h)
     } else if (item.node.scale === 'contain') {
       drawContain(ctx, img, box.x, box.y, box.w, box.h)

@@ -272,6 +272,17 @@ function TextSection() {
   const lineText = t.lineText ?? {}
   const hiddenLines = new Set(t.hiddenLines ?? [])
   const slotValues = t.slotValues ?? {}
+  const slotSizes = t.slotSizes ?? {}
+  const lineSizes = t.lineSizes ?? {}
+  const [sizeKey, setSizeKey] = useState<string | null>(null)
+  const sizeFor = (row: { key: string; declared: boolean }) =>
+    row.declared ? slotSizes[row.key] ?? 1 : lineSizes[row.key] ?? 1
+  const setSize = (row: { key: string; declared: boolean }, value: number) => {
+    const next = { ...(row.declared ? slotSizes : lineSizes) }
+    if (Math.abs(value - 1) < 0.001) delete next[row.key]
+    else next[row.key] = value
+    setText(row.declared ? { slotSizes: next } : { lineSizes: next })
+  }
   const declared = declaredTextSlots(design)
   const declaredRows = declared.map((slot) => {
     const key = declaredSlotKey(design, slot.id)
@@ -347,35 +358,67 @@ function TextSection() {
               <div className="text-slot-rows">
                 {group.rows.map((row) => {
                   const token = tokenSources[row.source]
+                  const size = sizeFor(row)
                   return (
-                    <div className={`text-slot-row ${row.hidden ? 'is-hidden' : ''}`} key={row.key}>
-                      <input
-                        value={row.value}
-                        placeholder={row.placeholder || '（空）'}
-                        disabled={row.hidden}
-                        onChange={(e) =>
-                          row.declared ? setSlot(row.key, e.target.value) : setLine(row.key, e.target.value)
-                        }
-                      />
-                      {!row.declared && row.source !== 'photo' && !token ? (
-                        <span className="text-slot-readonly" title="照片信息">
-                          <em>照片信息</em>
-                        </span>
+                    <React.Fragment key={row.key}>
+                      <div className={`text-slot-row ${row.hidden ? 'is-hidden' : ''}`}>
+                        <input
+                          value={row.value}
+                          placeholder={row.placeholder || '（空）'}
+                          disabled={row.hidden}
+                          onChange={(e) =>
+                            row.declared ? setSlot(row.key, e.target.value) : setLine(row.key, e.target.value)
+                          }
+                        />
+                        {!row.declared && row.source !== 'photo' && !token ? (
+                          <span className="text-slot-readonly" title="照片信息">
+                            <em>照片信息</em>
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={`icon-btn text-slot-size ${sizeKey === row.key ? 'active' : ''}`}
+                          title="单独调整这一行的字号"
+                          onClick={() => setSizeKey(sizeKey === row.key ? null : row.key)}
+                        >
+                          <Type size={13} />
+                          <em>{Math.round(size * 100)}%</em>
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn text-slot-eye"
+                          title={row.hidden ? '恢复这一行' : '隐藏这一行'}
+                          onClick={() => {
+                            if (row.declared) toggleFlag(row.source)
+                            else if (token) toggleHidden(token)
+                            else if (row.source === 'photo') toggleLine(row.key)
+                            else toggleFlag(row.source)
+                          }}
+                        >
+                          {row.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                      {sizeKey === row.key ? (
+                        <div className="text-slot-size-panel">
+                          <span>字号</span>
+                          <input
+                            type="range"
+                            min={0.6}
+                            max={1.6}
+                            step={0.02}
+                            value={size}
+                            disabled={row.hidden}
+                            onChange={(e) => setSize(row, Number(e.target.value))}
+                          />
+                          <em>{Math.round(size * 100)}%</em>
+                          {Math.abs(size - 1) > 0.001 ? (
+                            <button type="button" className="toggle-chip" onClick={() => setSize(row, 1)}>
+                              复位
+                            </button>
+                          ) : null}
+                        </div>
                       ) : null}
-                      <button
-                        type="button"
-                        className="icon-btn text-slot-eye"
-                        title={row.hidden ? '恢复这一行' : '隐藏这一行'}
-                        onClick={() => {
-                          if (row.declared) toggleFlag(row.source)
-                          else if (token) toggleHidden(token)
-                          else if (row.source === 'photo') toggleLine(row.key)
-                          else toggleFlag(row.source)
-                        }}
-                      >
-                        {row.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
+                    </React.Fragment>
                   )
                 })}
               </div>
@@ -473,7 +516,7 @@ function EditorControlList({
   )
 }
 
-function CurrentTemplateHeader({ onOpenTemplates, onOpenReferences }: { onOpenTemplates: () => void; onOpenReferences: () => void }) {
+function CurrentTemplateHeader({ onOpenReferences }: { onOpenReferences: () => void }) {
   const design = useAppStore((s) => s.design)
   const resetVariantParams = useAppStore((s) => s.resetVariantParams)
   const def = getTemplate(design.templateId)
@@ -486,16 +529,13 @@ function CurrentTemplateHeader({ onOpenTemplates, onOpenReferences }: { onOpenTe
         <p>{variant.description ?? def.description}</p>
       </div>
       <div className="current-template-actions">
-        <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} type="button">
+        <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} title="查看这个模板对应的原版参考图" type="button">
           <Images size={14} />
-          原版
+          参考图
         </button>
         <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
           <RotateCcw size={14} />
-          恢复
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={onOpenTemplates} type="button">
-          更换
+          重置
         </button>
       </div>
     </div>
@@ -972,7 +1012,7 @@ export function Inspector({ onOpenTemplates, onOpenReferences }: { onOpenTemplat
       <div className="inspector-scroll" ref={scrollRef}>
         {tool === 'border' ? (
           <div className="inspector-pane">
-            <CurrentTemplateHeader onOpenTemplates={onOpenTemplates} onOpenReferences={onOpenReferences} />
+            <CurrentTemplateHeader onOpenReferences={onOpenReferences} />
             {/* key re-mounts the pane on tab change so the CSS enter motion actually runs */}
             <div className="editor-pane" data-editor-pane={activeTab} key={activeTab}>
               {activeTab === 'logo' ? <LogoEditor /> : null}

@@ -85,12 +85,17 @@ export function attachTextRecorder(
     const key = `${scope}#${source}#${index}`
     const text = settings.lineText?.[key] ?? raw
     const isHidden = hidden.has(key) || !text
-    const size = parseFloat(target.font) || 12
-    if (!isHidden) {
-      if (maxWidth === undefined) original.call(target, text, x, y)
-      else original.call(target, text, x, y, maxWidth)
+    const fontBefore = target.font
+    const mult = Math.max(0.6, Math.min(1.6, Number(settings.lineSizes?.[key]) || 1))
+    if (isHidden) {
+      recordTextDraw(target, { key, source, text, hidden: true }, x, y, parseFloat(fontBefore) || 12, sink)
+      return
     }
-    recordTextDraw(target, { key, source, text, hidden: isHidden }, x, y, size, sink)
+    if (mult !== 1) target.font = fontBefore.replace(/(\d+(?:\.\d+)?)px/, (_, n) => `${Number(n) * mult}px`)
+    if (maxWidth === undefined) original.call(target, text, x, y)
+    else original.call(target, text, x, y, maxWidth)
+    recordTextDraw(target, { key, source, text, hidden: false }, x, y, parseFloat(target.font) || 12, sink)
+    if (mult !== 1) target.font = fontBefore
   } as typeof target.fillText
   return () => {
     target.fillText = original

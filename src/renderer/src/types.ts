@@ -123,6 +123,10 @@ export interface TextSettings {
   hiddenLines?: string[]
   /** Declared-slot content overrides (footer rows typed without EXIF). */
   slotValues?: Record<string, string>
+  /** Per-declared-slot font multiplier (0.6–1.6), key matches `slotValues`. */
+  slotSizes?: Record<string, number>
+  /** Per-line font multiplier for captured lines, same keys as `lineText`. */
+  lineSizes?: Record<string, number>
 }
 
 export type TextToken = 'title' | 'subtitle' | 'signature' | 'customLine' | 'location'
