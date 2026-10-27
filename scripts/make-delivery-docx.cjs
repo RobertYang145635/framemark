@@ -83,7 +83,7 @@ async function main() {
     ['版本', 'FrameMark 1.0.0'],
     ['交付日期', '2026-10-27'],
     ['桌面平台', 'Windows 10/11 x64 便携版（未签名）'],
-    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；PGEM10 覆盖安装数据保留（装机 base.apk md5 与本地 APK 一致）；三次 force-stop 冷启动 395/280/238 ms、全部 LaunchState COLD，首屏即新的「导入照片」页；打包版复核移动端底栏「边框 / 水印」2×48px、边框库全屏弹窗与导出对话框均通过（W4 真机走查的选图、批量导出、系统分享见 §4.2）'],
+    ['Android', 'Android 10+ (minSdk 29)，targetSdk 34，arm64 设备安装通过；PGEM10 覆盖安装数据保留（装机 base.apk md5 与本地 APK 一致）；三次 force-stop 冷启动 244/249/236 ms、全部 LaunchState COLD，首屏即新的「导入照片」页；状态栏改为浅色底 + 深色图标（与界面同色 #F0F2F5），真机导出 1 张 JPG 成功写入 Pictures/FrameMark'],
     ['渲染方式', 'Canvas 2D 本地渲染；桌面 sharp 编码与 EXIF 回写；Android MediaStore 相册写入'],
     ['离线', '不接入云服务，不上传照片、水印或预设']
   ], [1800, 7200]))
@@ -95,6 +95,7 @@ async function main() {
   children.push(p('本版本已经把「加边框」和「加自定义水印」合并进同一个本地工作流：应用以「照片优先」启动——没有照片时显示全屏「导入照片」页（选择照片 / 使用示例照片），导入后进入工作区；边框库位于左栏（7 个互斥分类、175 卡：厂商边框 99 / 文字边框 21 / 印象边框 13 / 白边边框 12 / 卡片边框 19 / 色彩边框 6 / 简约边框 5），也可以从「更换」弹窗选择。右侧 Inspector 只有「边框」和「水印」两个工具，「边框」内分 Logo / 文字 / 布局 / 主题 四个编辑页签。可以从照片自动读取 EXIF，叠加任意透明 PNG/WebP 水印（新增画布直拖落点层），保存为预设，并通过新的「导出」对话框导出当前照片或全部 N 张。Windows 与 Android 共享同一套边框、水印和预设数据，桌面端负责写文件夹与完整格式编码，Android 端负责系统照片选择、相册写入与系统分享。'))
   children.push(p('调研结论是没有找到同时覆盖全部需求的开源项目：最接近的 time-letter 与 Qing-Fram-Shadow-web 都是 Windows Electron 项目且偏文字/Logo 水印；iOS 的 PICA、Reframe、Stamio、MatteFrame 不覆盖 Windows/Android 双端；PolarGrid 偏白边与拼贴；其余水印项目是 CLI 或脚本。详细对比见交付目录中的《FrameMark-同类开源项目调研.md》。'))
   children.push(p('需要明确的边界：JPG 叠加水印后不可能做到数学意义上的无损；本版本采用最高质量重编码并回写 EXIF/ICC。真正的无损导出使用 PNG / 桌面 TIFF / 桌面 WebP。'))
+  children.push(p('本轮界面整体重做为 OPCameraPro 风格的浅色设计（HyperOS / Miuix 语言）：统一浅灰底、白卡片、蓝色强调色，覆盖导入页、顶栏、边框库、画布、照片条、Inspector 四个页签、Logo 库、水印面板、预设 / 导出 / 失败对话框、手机底部胶囊栏与全屏边框库，并同步 Android 状态栏与导航栏的浅色底 + 深色图标。这次只换视觉层：边框渲染、导出与预设数据未改动。'))
 
   children.push(heading('二、功能清单', 1))
   children.push(table(['能力', '实现情况'], [
@@ -111,7 +112,7 @@ async function main() {
     ['桌面导出', '导出对话框：范围（当前照片 / 全部 N 张）、格式 JPG / PNG / WebP / TIFF、JPG 质量、长边限制（原始 / 4096 / 3072 / 2048 或手填）、输出文件夹（可选，默认 图片\\FrameMark）、移除 GPS；JPG 质量 100 + 4:4:4 + 原 EXIF，PNG / WebP 无损，TIFF LZW 无损'],
     ['Android 导出', '导出对话框在 Android 提供 JPG、PNG、WebP（无 TIFF）；写入系统相册 Pictures/FrameMark；JPG 回写 EXIF，PNG/WebP 不写 EXIF'],
     ['Android 分享', '单张导出完成后可直接打开系统分享面板，分享 MediaStore 中的成片'],
-    ['移动端适配', '竖屏 411×905 CSS px 实测；状态栏/底部手势区安全区；底部仅「边框 / 水印」两个 48px 工具按钮；编辑器弹层保留 Logo / 文字 / 布局 / 主题 四个页签；边框库全屏打开；Android 状态栏不覆盖（WebView 从状态栏下方开始，状态栏独立深色底 + 白图标）']
+    ['移动端适配', '竖屏 411×905 CSS px 实测；状态栏/底部手势区安全区；底部仅「边框 / 水印」两个 48px 工具按钮；编辑器弹层保留 Logo / 文字 / 布局 / 主题 四个页签；边框库全屏打开；Android 状态栏不覆盖（WebView 从状态栏下方开始，状态栏与界面同为浅色 #F0F2F5、深色图标）']
   ], [1800, 7200]))
 
   children.push(heading('二·附：厂商边框（系统相机水印）目录', 2))
@@ -132,13 +133,14 @@ async function main() {
   children.push(heading('四、实测与验收', 1))
   children.push(heading('4.1 Windows 桌面版', 2))
   children.push(table(['验收项', '环境', '结果'], [
-    ['模板库与冷启动（v4 复测）', 'Windows 打包版 exe', '复测脚本 _research/v4-delivery/verify-packaged-v4.mjs 全 PASS（24 项既有断言 + 手写面板）：导入页首屏、175 卡、七类、OPPO 47 · 小米 40 · vivo 12、编辑器四页签、边框/水印工具、去重主题、61 品牌组、Panasonic 版本页、水印落点层 1+9、导出对话框 4 格式、手机底栏 2×48px、手机边框库弹窗、零 pageerror、静态预览、文字按方位直编、每类 8 张 + 厂商系列、手写 10 卡 47 项面板（比例 01 实测 14 项）（截图 _research/v4-delivery/packaged-*.png）'],
+    ['模板库与冷启动（v4 复测）', 'Windows 打包版 exe', '复测脚本 _research/v4-delivery/verify-packaged-v4.mjs 全 PASS（25 项断言）：导入页首屏、175 卡、七类、OPPO 47 · 小米 40 · vivo 12、编辑器四页签、边框/水印工具、去重主题、61 品牌组、Panasonic 版本页、水印落点层 1+9、导出对话框 4 格式、手机底栏 2×48px、手机边框库弹窗、零 pageerror、静态预览、文字按方位直编、每类 8 张 + 厂商系列、手写 10 卡 47 项面板（比例 01 实测 14 项）（截图 _research/v4-delivery/packaged-*.png）'],
     ['全库目检（4:3，历史）', 'Windows 打包版 / 高分辨率主画布', '175 卡（系统相机 stock 107 + 手写 68）逐张出图；已修 OPPO EXIF 部件重复、侧栏裁切、文字重叠、7 处图片 fill 拉伸与卡片 canvas 拉伸'],
     ['多比例全量目检', 'Windows 打包版 / 7 种比例', '158 套（新增 2 套待补）× 3:2 / 2:3 / 16:9 / 1:1 / 4:5 / 3:4 / 9:16 共 1106 张，0 页面错误；无拉伸、裁切、重叠；固定版式按设计比例出图'],
     ['原版模板 parity 审计（W1）', 'Node + sharp 像素级测量', '47/47 原版模板通过 ≤2% 结构差 / ≤2 百分点 像素差门禁：13 套本轮独立复测，34 套与已审计批次字节级一致'],
     ['渲染与状态修复（本轮）', '源码构建 + 打包版 Playwright 复核', '修复文字/图形重叠与 realme 条带版式；恢复 wm-black 镜头行并按内容去重 EXIF；切换模板不再残留上一模板的文字开关、模糊日期改用拍摄日期；175 卡保真重导出（exports-real）0 项真实变形/重叠缺陷；打包版复核 175 卡 / 7 类 / 61 品牌组、0 pageerror'],
     ['品牌字标与厂商版式（本轮）', 'Windows 打包版 Playwright + 真机冷启动', 'DC-S1 样张下 leica-91/111 字标均为 Panasonic（非 xiaomi），leica-111 版式无散落；leica-92 焦距行重力修复后全库文字对文字绘制重叠仅余 1 处（xpan_1 厂商负行距，字形可读）；打包版复核 175 卡 / 7 类 / 61 品牌组、0 pageerror；真机覆盖安装冷启动 COLD 395/280/238 ms（3 次 force-stop）'],
     ['全流程体验审计（本轮）', 'Windows 构建 / 1440 与 418 窄屏', '基线 18 步、复审 19 步均 0 失败；修复导出失败的原始 IPC 文案（改为“输出文件夹不可用…”）与模态过透；P2 登记：无效目录残留、长边双入口、取消导出不列文件'],
+    ['界面视觉（本轮）', 'Windows 构建 / 1440 与 418 窄屏 / Android 真机', '全界面浅色 HyperOS 风格重做（导入页、顶栏、边框库、画布、照片条、Inspector、Logo 库、水印面板、对话框、手机胶囊栏）；19 步体验审计 0 失败、workflow 198/198；同构建仅换 CSS 的 6 卡真实导出 6/6 逐字节相同（渲染未受影响）；打包版 25/25；真机截图 _research/v4-delivery/fm-skin-*.png'],
     ['核心工作流回归', '打包版 Electron + Playwright', 'npm run test:workflow：198/198 断言、failed 0、defects 0、pageerror/console.error 0（隔离 --user-data-dir 连续两轮一致；覆盖 2 张批量、预设保存/重载/应用、自定义 PNG 水印、高级参数、文件名变量、JPG/PNG/WebP/TIFF、取消导出、预设 JSON 导入导出）；预设内 outputDir 跨机不互通问题已修复'],
     ['透明水印（单张 + 平铺）', 'Windows 打包版', '白色 PNG 叠加成功；平铺、透明度、宽度、九宫格位置均生效'],
     ['预设闭环', 'Windows 打包版', '保存 → 导出 JSON → 删除 → 导入 → 应用，水印与模板均恢复'],
@@ -165,14 +167,14 @@ async function main() {
     ['自定义水印（W4 复验）', '签名 APK / 透明 PNG', '—', '自定义 PNG 水印直接绘制到画布并随成片写入相册'],
     ['新厂商样式（W4 复验）', 'realme / 小米 standard 新样式', '—', '新样式正常渲染，卡片带“近似”徽章'],
     ['导出→分享（W4 复验）', '签名 APK / 系统分享面板', '—', '单张导出完成后点“分享”拉起 Android 系统选择器成功'],
-    ['最终交付包冷启动（本轮复核）', '签名 APK / PGEM10', '395 / 280 / 238 ms', '三次 force-stop，全部 LaunchState COLD；首屏即新的「导入照片」页；用户数据保留（覆盖安装未清数据，装机 base.apk md5 与本地一致）'],
+    ['最终交付包冷启动（本轮复核）', '签名 APK / PGEM10', '244 / 249 / 236 ms', '三次 force-stop，全部 LaunchState COLD；首屏即「导入照片」页；状态栏浅底深图标；覆盖安装未清数据（装机 base.apk md5 与本地一致）；真机导出 1 张 JPG 成功写入 Pictures/FrameMark'],
     ['移动端弹窗与快捷条', 'Android 发版包', '—', '已修复模板库全屏弹窗标题/关闭按钮被状态栏压住；当前模板会自动补入快捷条并居中']
   ], [2000, 2500, 1800, 2700]))
-  children.push(p('注：表内单张/批量的尺寸与耗时为上一构建的历史实测，仅作量级参考；W4 真机走查（2 张批量导出、自定义水印、新厂商样式渲染与导出后系统分享）作为历史证据保留；本轮 v4 交付包的真机复验为覆盖安装（数据保留，装机 base.apk md5 与本地一致）与三次冷启动 395/280/238 ms（全部 LaunchState COLD，首屏「导入照片」页）。', { size: 19, color: '5B5144' }))
+  children.push(p('注：表内单张/批量的尺寸与耗时为上一构建的历史实测，仅作量级参考；W4 真机走查（2 张批量导出、自定义水印、新厂商样式渲染与导出后系统分享）作为历史证据保留；本轮 v4 交付包的真机复验为覆盖安装（数据保留，装机 base.apk md5 与本地一致）、三次冷启动 244/249/236 ms（全部 LaunchState COLD，首屏「导入照片」页）与 1 张 JPG 导出落盘。', { size: 19, color: '5B5144' }))
   children.push(await image(path.join(docs, 'android-wm.jpg'), 260))
-  children.push(caption('Android 发版界面：白色透明 PNG 水印叠加在照片右下角；竖屏/安全区适配正常'))
+  children.push(caption('Android 发版界面：浅色 HyperOS 风格工作区与底部「边框 / 水印」胶囊栏；状态栏不覆盖、浅底深色图标'))
   children.push(await image(path.join(docs, 'android-release.jpg'), 260))
-  children.push(caption('Android 签名版：模板库全屏弹窗已适配状态栏安全区，标题与关闭按钮不再被遮挡'))
+  children.push(caption('Android 签名版：边框库全屏弹窗（浅色主题），状态栏安全区已适配，标题与关闭按钮不被遮挡'))
 
   children.push(new Paragraph({ children: [new PageBreak()] }))
   children.push(heading('五、已知限制', 1))
@@ -189,6 +191,7 @@ async function main() {
   children.push(bullet('106 套系统相机库存样式全部标记 approx，verified 为 0；vivo 尚有 28 套保持 blocked（其中 11 套无任何公开参考），全部 vivo 样式为 approx、verified 为 0。'))
   children.push(bullet('手写族约 927 条控件仍未逐条人工验收（比厂商族 439 条还多，疑为机械展开，待对账）；OPPO 相册哈苏档等少数厂商细节仍按 approx 标注。'))
   children.push(bullet('本项目为个人使用交付：未做任何公开发布、许可证选型或商用授权工作。'))
+  children.push(bullet('界面统一为浅色 HyperOS 风格：本轮不提供深色模式，系统切成深色时应用仍显示浅色界面；模板缩略图内的深色“衬底”是模板自身的画布边缘，不属于主题。'))
 
   children.push(heading('六、安装与使用', 1))
   children.push(heading('Windows', 2))
