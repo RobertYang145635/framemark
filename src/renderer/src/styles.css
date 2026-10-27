@@ -7053,7 +7053,7 @@ html[data-skin='hyperos'] .inspector-foot {
   align-items: center;
   gap: 6px;
   width: calc(100% - 24px);
-  height: 26px;
+  height: 28px;
   margin: 0 12px 6px;
   padding: 0 8px;
   border: 0;
@@ -7091,6 +7091,7 @@ html[data-skin='hyperos'] .inspector-foot {
 
 button.border-series-head {
   width: calc(100% - 4px);
+  min-height: 30px;
   align-items: center;
   color: inherit;
   font: inherit;
