@@ -685,7 +685,7 @@ function LayoutEditor() {
             </button>
           </div>
         ) : null}
-        {!controls.length && !isMovie && !stockMovable && !handControlsFor(design.templateId, 'layout').length ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
+        {!controls.length && !isMovie && !stockMovable && !handControlsFor(design.templateId, 'layout').length ? <p className="hint-note">这个版式没有可调的布局参数；文字内容在「文字」页调整。</p> : null}
       </Section>
 
       {(isMinimal || isFooter) ? (
@@ -892,34 +892,48 @@ function WatermarkPanel() {
             <span>推荐带透明背景的白色或黑色 Logo</span>
           </button>
         )}
-        <Switch checked={wm.enabled} onChange={(v) => setWatermark({ enabled: v })} label="启用水印" />
+        <Switch
+          checked={wm.enabled && Boolean(wm.asset)}
+          onChange={(v) => setWatermark({ enabled: v })}
+          label="启用水印"
+          hint={wm.asset ? undefined : '先选择一张水印图片'}
+          disabled={!wm.asset}
+        />
       </Section>
 
-      <Section title="位置">
-        <label className="field compact">
-          <span>叠加区域</span>
-          <Segmented
-            value={wm.target}
-            options={[
-              { value: 'photo', label: '照片内' },
-              { value: 'canvas', label: '整张画布' }
-            ]}
-            onChange={(v) => setWatermark({ target: v })}
-            compact
-          />
-        </label>
-        <AnchorGrid value={wm.anchor} onSelect={(a) => setWatermark({ anchor: a })} />
-        <Slider label="水平偏移" value={wm.offsetX} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetX: v })} />
-        <Slider label="垂直偏移" value={wm.offsetY} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetY: v })} />
-        <Slider label="宽度" value={wm.widthPct} min={2} max={60} step={0.5} suffix="%" onChange={(v) => setWatermark({ widthPct: v })} />
-        <Slider label="不透明度" value={wm.opacity} min={0.05} max={1} step={0.01} onChange={(v) => setWatermark({ opacity: v })} />
-        <Slider label="旋转" value={wm.rotation} min={-180} max={180} step={1} suffix="°" onChange={(v) => setWatermark({ rotation: v })} />
-      </Section>
+      {wm.asset && wm.enabled ? (
+        <>
+          <Section title="位置">
+            <label className="field compact">
+              <span>叠加区域</span>
+              <Segmented
+                value={wm.target}
+                options={[
+                  { value: 'photo', label: '照片内' },
+                  { value: 'canvas', label: '整张画布' }
+                ]}
+                onChange={(v) => setWatermark({ target: v })}
+                compact
+              />
+            </label>
+            <AnchorGrid value={wm.anchor} onSelect={(a) => setWatermark({ anchor: a })} />
+            <Slider label="水平偏移" value={wm.offsetX} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetX: v })} />
+            <Slider label="垂直偏移" value={wm.offsetY} min={-40} max={40} step={0.5} suffix="%" onChange={(v) => setWatermark({ offsetY: v })} />
+            <Slider label="宽度" value={wm.widthPct} min={2} max={60} step={0.5} suffix="%" onChange={(v) => setWatermark({ widthPct: v })} />
+            <Slider label="不透明度" value={wm.opacity} min={0.05} max={1} step={0.01} onChange={(v) => setWatermark({ opacity: v })} />
+            <Slider label="旋转" value={wm.rotation} min={-180} max={180} step={1} suffix="°" onChange={(v) => setWatermark({ rotation: v })} />
+          </Section>
 
-      <Section title="平铺">
-        <Switch checked={wm.tile} onChange={(v) => setWatermark({ tile: v })} label="平铺整个区域" hint="适合满屏防盗图水印" />
-        <Slider label="间距" value={wm.gapPct} min={0} max={30} step={0.5} suffix="%" onChange={(v) => setWatermark({ gapPct: v })} disabled={!wm.tile} />
-      </Section>
+          <Section title="平铺">
+            <Switch checked={wm.tile} onChange={(v) => setWatermark({ tile: v })} label="平铺整个区域" hint="适合满屏防盗图水印" />
+            <Slider label="间距" value={wm.gapPct} min={0} max={30} step={0.5} suffix="%" onChange={(v) => setWatermark({ gapPct: v })} disabled={!wm.tile} />
+          </Section>
+        </>
+      ) : (
+        <p className="hint-note">
+          {wm.asset ? '水印已关闭；打开「启用水印」后才能调整位置与透明度。' : '先选择一张水印图片；位置、透明度和平铺参数在有图之后才会出现。'}
+        </p>
+      )}
       <p className="hint-note">白色水印在白底上会不可见，黑色水印同理；按模板底色选择。</p>
     </div>
   )

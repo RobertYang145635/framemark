@@ -127,6 +127,12 @@ const ANCHOR_LABEL: Record<string, string> = {
   rightBottom: '右下'
 }
 
+/* IR 的条带键是 `b0`/`b1`…；界面上按人话说“第 N 层”。 */
+function bandLabel (band: unknown): string {
+  const m = /^b(\d+)$/.exec(String(band ?? ''))
+  return m ? `第 ${Number(m[1]) + 1} 层` : String(band ?? '')
+}
+
 export function ControlAnchorGrid ({ view, styleId, onChange }: Props) {
   const control = view.control as AnchorGridControl
   const value = typeof view.value === 'string' ? view.value : 'vendor'
@@ -140,7 +146,7 @@ export function ControlAnchorGrid ({ view, styleId, onChange }: Props) {
     <div className="fmk-anchor">
       <div className="fmk-field-head">
         <span>{control.label}</span>
-        <em className="fmk-limit">条带 {control.targetBand}</em>
+        <em className="fmk-limit">条带 {bandLabel(control.targetBand)}</em>
       </div>
       <div className="fmk-anchor-body">
         <div className="fmk-anchor-grid" role="group" aria-label="九宫格位置" style={{ opacity: movable ? 1 : 0.5 }}>
@@ -178,7 +184,7 @@ export function ControlXyOffset ({ view, onChange }: Props) {
   const d = control.domain
   return (
     <Slider
-      label={`${control.label}（条带 ${control.targetBand}）`}
+      label={`${control.label}（条带 ${bandLabel(control.targetBand)}）`}
       value={num(view.value, 0)}
       min={d.min}
       max={d.max}

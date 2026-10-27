@@ -151,7 +151,52 @@ export function controlsFor (design: Design): { record: StockStyleControls; view
   const record = loadControls(styleIdForDesign(design))
   if (!record || record.panel !== 'declared') return null
   if (record.variantScope?.length && design.variantId && !record.variantScope.includes(design.variantId)) return null
-  return { record, views: record.controls.map((control) => inspectControl(design.params, control, record.styleId)) }
+  return {
+    record,
+    views: record.controls.map((control) =>
+      inspectControl(design.params, { ...control, label: friendlyControlLabel(control.label) }, record.styleId)
+    )
+  }
+}
+
+/* Vendor control labels carry internal slot keys (`编辑「exifCompositeLine」文字`).
+   Translate them for the UI so the panel never exposes schema names. */
+const SLOT_LABEL: Record<string, string> = {
+  exifCompositeLine: '参数行',
+  exifMetricLine: '参数行',
+  brandLine: '品牌',
+  brand: '品牌',
+  cobrandWordmark: '品牌',
+  modelLine: '机型',
+  model: '机型',
+  dateLine: '日期',
+  lunarLine: '日期',
+  locationLine: '地点',
+  customLine: '自定义行',
+  signatureLine: '签名',
+  titleLine: '标题'
+}
+
+const METRIC_LABEL: Record<string, string> = {
+  focal: '焦距',
+  aperture: '光圈',
+  shutter: '快门',
+  iso: 'ISO'
+}
+
+function friendlySlotKey (key: string): string {
+  return key
+    .replace(/([A-Za-z][A-Za-z0-9]*)(?:\[([^\]]+)\])?/g, (_m, base: string, metrics?: string) => {
+      const name = SLOT_LABEL[base] ?? base
+      if (!metrics) return name
+      const list = metrics.split('+').map((m) => METRIC_LABEL[m] ?? m).join('/')
+      return `${name}（${list}）`
+    })
+    .replace(/\+/g, '、')
+}
+
+export function friendlyControlLabel (label: string): string {
+  return label.replace(/「([^」]+)」/g, (_m, key: string) => `「${friendlySlotKey(key)}」`)
 }
 
 export type { StockStyleControls, StyleControl } from './schema'

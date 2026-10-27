@@ -138,7 +138,8 @@ export function ExportDialog() {
               min={0}
               max={20000}
               step={100}
-              value={settings.longEdge}
+              value={settings.longEdge === 0 ? '' : settings.longEdge}
+              placeholder="原始"
               onChange={(e) => setExport({ longEdge: Math.max(0, Number(e.target.value) || 0) })}
               aria-label="长边像素"
             />

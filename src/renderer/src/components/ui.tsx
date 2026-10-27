@@ -126,15 +126,17 @@ export function Switch({
   checked,
   onChange,
   label,
-  hint
+  hint,
+  disabled
 }: {
   checked: boolean
   onChange: (v: boolean) => void
   label: string
   hint?: string
+  disabled?: boolean
 }) {
   return (
-    <button className="switch-row" onClick={() => onChange(!checked)} type="button">
+    <button className="switch-row" onClick={() => onChange(!checked)} type="button" disabled={disabled}>
       <span>
         <strong>{label}</strong>
         {hint ? <em>{hint}</em> : null}

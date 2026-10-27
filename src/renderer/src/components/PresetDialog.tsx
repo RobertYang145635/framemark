@@ -52,7 +52,7 @@ export function PresetDialog() {
             导出预设
           </button>
           <span className="spacer" />
-          <button className="btn btn-primary btn-sm" onClick={() => setOpen(false)} type="button">
+          <button className="btn btn-ghost btn-sm" onClick={() => setOpen(false)} type="button">
             完成
           </button>
         </div>

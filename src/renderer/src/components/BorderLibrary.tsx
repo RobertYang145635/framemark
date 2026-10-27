@@ -188,7 +188,7 @@ function BorderSection({
           </div>
         )
       })}
-      {matching.length > CARD_LIMIT ? (
+      {limit !== Number.POSITIVE_INFINITY && matching.length > CARD_LIMIT ? (
         <div className="border-section-more-row">
           <button
             className="border-section-more glass-btn glass-spot glass-ripple glass-press"

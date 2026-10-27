@@ -140,7 +140,7 @@ export function App() {
         <ImportScreen />
       ) : (
         <>
-          <TopBar />
+          <TopBar onOpenTemplates={() => setTemplatesOpen(true)} />
 
           <div className="workspace">
             <aside className="sidebar templates-panel glass">

@@ -1,9 +1,9 @@
 import React from 'react'
-import { Download, ImagePlus, Loader2, Save } from 'lucide-react'
+import { Download, Frame, ImagePlus, Loader2, Save } from 'lucide-react'
 import { useAppStore } from '../store'
 import { getVariant } from '../core/variants'
 
-export function TopBar() {
+export function TopBar({ onOpenTemplates }: { onOpenTemplates: () => void }) {
   const design = useAppStore((s) => s.design)
   const presets = useAppStore((s) => s.presets)
   const activePresetId = useAppStore((s) => s.activePresetId)
@@ -74,6 +74,10 @@ export function TopBar() {
             <span className="hide-sm">{busy ?? '导出中'}</span>
           </span>
         ) : null}
+        <button className="btn btn-ghost topbar-action topbar-templates glass-btn glass-spot glass-ripple glass-press" onClick={onOpenTemplates} type="button">
+          <Frame size={17} />
+          <span>模板</span>
+        </button>
         <button className="btn btn-ghost topbar-action glass-btn glass-spot glass-ripple glass-press" onClick={() => void pickPhotos()} type="button">
           <ImagePlus size={17} />
           <span>添加</span>
