@@ -34,6 +34,8 @@ import {
 } from '../core/editor/capabilities'
 import { Section, Segmented, Slider, Switch } from './ui'
 import { StyleControlsPanel } from './controls/StyleControlsPanel'
+import { HandControlsPanel } from './controls/HandControlsPanel'
+import { handControlsFor } from '../core/controls/hand'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: 'original', label: '原始' },
@@ -470,7 +472,12 @@ function TextEditor() {
   const hand = isHandTemplate(design)
   return (
     <>
-      {hand ? <TextSection /> : null}
+      {hand ? (
+        <>
+          <TextSection />
+          <HandControlsPanel tab="text" />
+        </>
+      ) : null}
       <EditorControlList tab="text" />
     </>
   )
@@ -583,7 +590,7 @@ function LayoutEditor() {
             </button>
           </div>
         ) : null}
-        {!controls.length && !isMovie && !stockMovable ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
+        {!controls.length && !isMovie && !stockMovable && !handControlsFor(design.templateId, 'layout').length ? <p className="hint-note">这个模板以满幅/字幕为主，可用主题、Logo 和文字控制。</p> : null}
       </Section>
 
       {(isMinimal || isFooter) ? (
@@ -709,6 +716,8 @@ function LayoutEditor() {
           />
         </Section>
       ) : null}
+
+      <HandControlsPanel tab="layout" />
 
       {/* 逐套差异化控件里归到「布局」的那部分（锚点 / 微调 / 方位）。 */}
       <EditorControlList tab="layout" />

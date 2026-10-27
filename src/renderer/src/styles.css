@@ -4911,3 +4911,25 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
 .wm-placement {
   animation: fmk-pane-in 0.16s ease both;
 }
+
+/* ── 手写族逐卡参数（47 条已核实项） ─────────────────── */
+.hand-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hand-color-row input[type='color'] {
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.hand-color-row em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
