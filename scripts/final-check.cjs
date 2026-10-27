@@ -204,11 +204,16 @@ try {
   // The detector must prove it can go red: the canary sweep has to contain a SEVERE bucket,
   // otherwise "0 overlaps" would be a vacuous pass.
   const canaryRed = (o.canary || []).some((c) => String(c.bucket).toUpperCase().includes('SEVERE'))
-  const ok = hits.length === 0 && canaryRed
+  // Coverage must be ZERO: an op that cannot be localized is a blind spot, not a pass.
+  // Ops whose clipped box is empty (fully outside the canvas) are proven ink-free and
+  // are listed separately, so they do not hide unmeasured draws.
+  const unlocalized = (o.unlocalizedOps || []).length
+  const outside = (o.outsideCanvasOps || []).length
+  const ok = hits.length === 0 && canaryRed && unlocalized === 0
   rec('T13', '叠字几何检测（175 卡 × 各档）', ok,
     `严重重叠 ${hits.length} 对${hits.length ? ' → ' + hits.slice(0, 6).map((p) => `${p.set}/${p.card} ${Math.round((p.pctOfSmaller || 0) * 100) / 100}%`).join(', ') : ''}` +
-    ` · 亚阈值 ${(o.subThreshold || []).length} · 判据自测 ${canaryRed ? '见过红' : '★没红过=恒绿判据'}` +
-    ` · 未定位 op ${(o.unlocalizedOps || []).length}`)
+    ` · 亚阈值 ${(o.subThreshold || []).length}（处置 ${(o.subThresholdDisposition || []).length} 条）· 判据自测 ${canaryRed ? '见过红' : '★没红过=恒绿判据'}` +
+    ` · 未定位 op ${unlocalized}${unlocalized ? ' ★盲区' : ''} · 画布外(无墨迹) ${outside}`)
 } catch (e) {
   rec('T13', '叠字几何检测（175 卡 × 各档）', false, `★证据文件缺失或不可读: ${String(e.message).slice(0, 120)}`)
 }
