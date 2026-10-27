@@ -119,6 +119,8 @@ export interface TextSettings {
   lineText?: Record<string, string>
   /** Per-line hidden state, same keys as `lineText`. */
   hiddenLines?: string[]
+  /** Declared-slot content overrides (footer rows typed without EXIF). */
+  slotValues?: Record<string, string>
 }
 
 export type TextToken = 'title' | 'subtitle' | 'signature' | 'customLine' | 'location'

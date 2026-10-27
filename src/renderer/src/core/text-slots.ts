@@ -1,4 +1,4 @@
-import type { Anchor, ExifData, TextSettings, TextSlot, TextToken } from '../types'
+import type { Anchor, Design, ExifData, TextSettings, TextSlot, TextToken } from '../types'
 import { exifLine, formatDateOnly, modelWithoutMake } from './exif'
 import { titleOf } from './templates'
 
@@ -175,4 +175,32 @@ export function migrateTextLineKeys(
       : {}),
     ...(text.hiddenLines ? { hiddenLines: text.hiddenLines.map(fix) } : {})
   }
+}
+
+export interface DeclaredTextSlot {
+  id: 'brand' | 'model' | 'exif' | 'date'
+  source: TextSlot['source']
+  anchor: Anchor
+  hint: string
+}
+
+/**
+ * Templates with fixed text positions that must stay editable even when the
+ * photo carries no EXIF. The classic brand footer has four: brand/model on the
+ * left, EXIF/date on the right; a blank photo should still expose all four
+ * inputs instead of collapsing to whatever happened to paint.
+ */
+export function declaredTextSlots(design: Design): DeclaredTextSlot[] {
+  if (design.templateId !== 'brandFooter') return []
+  if (String(design.params.footerMode ?? 'classic') !== 'classic') return []
+  return [
+    { id: 'brand', source: 'make', anchor: 'bottom-left', hint: '品牌行（无 EXIF 时可手填）' },
+    { id: 'model', source: 'model', anchor: 'bottom-left', hint: '机型行' },
+    { id: 'exif', source: 'exif', anchor: 'bottom-right', hint: '参数行' },
+    { id: 'date', source: 'date', anchor: 'bottom-right', hint: '日期行' }
+  ]
+}
+
+export function declaredSlotKey(design: Design, id: DeclaredTextSlot['id']): string {
+  return `${design.variantId ?? design.templateId}#${id}`
 }

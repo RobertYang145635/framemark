@@ -94,6 +94,19 @@ const darkThemes = [
   { id: 'cream', label: '米色', swatch: THEMES.cream.bg }
 ]
 
+/**
+ * Footer title without the generic camera-line placeholder. A photo with no
+ * EXIF has nothing to substitute; painting "FRAME"/"FRAMEMARK" invents content
+ * (and used to keep an empty right column visible via its divider).
+ */
+function footerTitle(env: Pick<TemplateRenderEnv, 'text' | 'exif'>): string {
+  const typed = env.text.title.trim()
+  if (typed) return typed
+  const e = env.exif
+  const hasInfo = Boolean(e.make || e.model || e.lens || e.focal || e.iso || e.dateTime)
+  return hasInfo ? titleOf(env as unknown as Parameters<typeof titleOf>[0]) : ''
+}
+
 export function titleOf(env: TemplateRenderEnv | Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>): string {
   if (env.text.hidden?.includes('title')) return ''
   const t = env.text.title.trim()
@@ -961,7 +974,7 @@ function drawBrandOverlay(env: TemplateRenderEnv): Rect {
   const logoCy = H * (f.ovLogoCenterY ?? 0.7839)
   const make = env.exif.make.trim()
   const model = modelWithoutMake(env.exif.make, env.exif.model)
-  const title = titleOf(env)
+  const title = footerTitle(env)
   const brand = ((env.text.showMake ? make : '') || model || '').trim()
   const exifLineText = exifText(env)
   const dateLine = dateText(env)
@@ -1038,7 +1051,7 @@ function drawSimpleBrandFooter(env: TemplateRenderEnv): Rect {
   const logoPos = String(env.params.logoPos ?? 'center')
   const make = env.exif.make.trim()
   const model = modelWithoutMake(env.exif.make, env.exif.model)
-  const leftText = model || make || titleOf(env)
+  const leftText = model || make || footerTitle(env)
   const rightLines = [
     env.text.showExif ? exifLine(env.exif, { separator: ' ' }) : '',
     env.text.showDate ? formatDateOnly(env.exif.dateTime) : ''
@@ -1160,9 +1173,16 @@ const brandFooter: TemplateDef = {
     const brandY = f.brandY ?? 0.42
     const modelY = f.modelY ?? 0.70
     const logoPos = String(env.params.logoPos ?? 'center')
-    const make = env.text.showMake ? env.exif.make : ''
-    const model = env.text.showModel ? modelWithoutMake(env.exif.make, env.exif.model) : ''
-    const title = titleOf(env)
+    // Declared rows: a blank photo keeps the same four editable ends; values typed
+    // here win over EXIF, and an absent EXIF no longer removes the row itself.
+    const slotValues = env.design.text.slotValues ?? {}
+    const slotScope = env.design.variantId ?? env.design.templateId
+    const slotOf = (id: string) => String(slotValues[slotScope + '#' + id] ?? '').trim()
+    const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
+    const model = env.text.showModel
+      ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)
+      : ''
+    const title = footerTitle(env)
     const makeText = (make || title).toUpperCase()
     const modelText = model || (env.text.showLens ? env.exif.lens : '')
     const showBrand = on('brand')
@@ -1195,15 +1215,20 @@ const brandFooter: TemplateDef = {
       if (f.logoCx !== undefined) lx = W * f.logoCx - lw / 2
       drawBrandLogo(env, lx, footerTop + footer / 2 - lh / 2, lw, lh, theme.fg)
     }
-    const ruleX = W * (f.ruleX ?? (logoPos === 'right' ? 0.42 : 0.7))
-    if (f.rule !== 0) {
-      line(ctx, ruleX, footerTop + footer * 0.22, ruleX, footerTop + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
-    }
     const rightX = W * (f.rightX ?? (logoPos === 'right' ? 0.44 : 0.72))
     const rightW = W * (f.rightW ?? (logoPos === 'right' ? 0.34 : 0.25))
     const exifY = f.exifY ?? 0.42
     const dateY = f.dateY ?? 0.70
-    const ex = exifText(env)
+    const ex = env.text.showExif ? slotOf('exif') || exifText(env) : ''
+    const dt = env.text.showDate ? slotOf('date') || formatDate(env.exif.dateTime) : ''
+    const custom = on('custom') ? env.text.customLine.trim() : ''
+    const hasRightColumn = Boolean((on('exif') && ex) || (on('date') && dt) || custom)
+    // No EXIF and no custom line means there is no right column; drawing its
+    // divider leaves an empty column that reads as a layout bug.
+    const ruleX = W * (f.ruleX ?? (logoPos === 'right' ? 0.42 : 0.7))
+    if (f.rule !== 0 && hasRightColumn) {
+      line(ctx, ruleX, footerTop + footer * 0.22, ruleX, footerTop + footer * 0.78, theme.line, Math.max(1, S * 0.0009))
+    }
     if (on('exif') && ex) {
       drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027, theme.fg, {
         family: FONT_MONO,
@@ -1211,7 +1236,6 @@ const brandFooter: TemplateDef = {
         min: S * 0.012
       })
     }
-    const dt = env.text.showDate ? formatDate(env.exif.dateTime) : ''
     if (on('date') && dt) {
       drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021, theme.sub, {
         family: FONT_MONO,
@@ -1219,8 +1243,8 @@ const brandFooter: TemplateDef = {
         min: S * 0.01
       })
     }
-    if (on('custom') && env.text.customLine.trim()) {
-      drawFitted(ctx, env.text.customLine, rightX, footerTop + footer * 0.88, rightW, S * 0.016, theme.accent, {
+    if (custom) {
+      drawFitted(ctx, custom, rightX, footerTop + footer * 0.88, rightW, S * 0.016, theme.accent, {
         family: FONT_MONO,
         weight: 400,
         min: S * 0.009

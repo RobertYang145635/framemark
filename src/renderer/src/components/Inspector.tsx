@@ -36,6 +36,7 @@ import { Section, Segmented, Slider, Switch } from './ui'
 import { StyleControlsPanel } from './controls/StyleControlsPanel'
 import { HandControlsPanel } from './controls/HandControlsPanel'
 import { handControlsFor } from '../core/controls/hand'
+import { declaredSlotKey, declaredTextSlots } from '../core/text-slots'
 
 const RATIO_OPTIONS: { value: Ratio; label: string }[] = [
   { value: 'original', label: '原始' },
@@ -270,6 +271,50 @@ function TextSection() {
 
   const lineText = t.lineText ?? {}
   const hiddenLines = new Set(t.hiddenLines ?? [])
+  const slotValues = t.slotValues ?? {}
+  const declared = declaredTextSlots(design)
+  const declaredRows = declared.map((slot) => {
+    const key = declaredSlotKey(design, slot.id)
+    const captured = slots.find((row) => row.source === slot.source && row.anchor === slot.anchor)
+    return {
+      key,
+      anchor: slot.anchor,
+      value: slotValues[key] ?? '',
+      slotText: captured?.text ?? '',
+      placeholder: captured?.text || slot.hint,
+      source: slot.source,
+      hidden: !t[flagOf(slot.id)],
+      declared: true
+    }
+  })
+  const declaredGroups = SLOT_ORDER.map((anchor) => ({
+    anchor,
+    rows: declaredRows.filter((row) => row.anchor === anchor)
+  })).filter((group) => group.rows.length)
+  const effectiveGroups = declaredGroups.length
+    ? declaredGroups
+    : groups.map((group) => ({
+        anchor: group.anchor,
+        rows: group.rows.map((slot) => {
+          const token = tokenSources[slot.source]
+          return {
+            key: slot.key,
+            anchor: slot.anchor,
+            value: lineText[slot.key] ?? '',
+            slotText: slot.text,
+            placeholder: slot.text || '（空）',
+            source: slot.source,
+            hidden: slot.hidden || (token ? hiddenTokens.has(token) : false),
+            declared: false
+          }
+        })
+      }))
+  const setSlot = (key: string, value: string) => {
+    const next = { ...slotValues }
+    if (value) next[key] = value
+    else delete next[key]
+    setText({ slotValues: next })
+  }
   const setLine = (key: string, value: string) => {
     const next = { ...lineText }
     if (value) next[key] = value
@@ -294,39 +339,41 @@ function TextSection() {
 
   return (
     <Section title="文字" hint="按画面位置直接编辑；照片信息从 EXIF 自动填充，不改照片">
-      {groups.length ? (
+      {effectiveGroups.length ? (
         <div className="text-slot-list">
-          {groups.map((group) => (
+          {effectiveGroups.map((group) => (
             <div className="text-slot-group" key={group.anchor}>
               <span className="text-slot-anchor">{SLOT_LABEL[group.anchor]}</span>
               <div className="text-slot-rows">
-                {group.rows.map((slot) => {
-                  const token = tokenSources[slot.source]
-                  const tokenHidden = token ? hiddenTokens.has(token) : false
-                  const lineHidden = hiddenLines.has(slot.key)
-                  const hidden = slot.hidden || tokenHidden
+                {group.rows.map((row) => {
+                  const token = tokenSources[row.source]
                   return (
-                    <div className={`text-slot-row ${hidden ? 'is-hidden' : ''}`} key={slot.key}>
+                    <div className={`text-slot-row ${row.hidden ? 'is-hidden' : ''}`} key={row.key}>
                       <input
-                        value={lineText[slot.key] ?? ''}
-                        placeholder={slot.text || '（空）'}
-                        disabled={hidden}
-                        onChange={(e) => setLine(slot.key, e.target.value)}
+                        value={row.value}
+                        placeholder={row.placeholder || '（空）'}
+                        disabled={row.hidden}
+                        onChange={(e) =>
+                          row.declared ? setSlot(row.key, e.target.value) : setLine(row.key, e.target.value)
+                        }
                       />
-                      {slot.source === 'photo' || token ? null : (
+                      {!row.declared && row.source !== 'photo' && !token ? (
                         <span className="text-slot-readonly" title="照片信息">
                           <em>照片信息</em>
                         </span>
-                      )}
+                      ) : null}
                       <button
                         type="button"
                         className="icon-btn text-slot-eye"
-                        title={hidden ? '恢复这一行' : '隐藏这一行'}
-                        onClick={() =>
-                          token ? toggleHidden(token) : slot.source === 'photo' ? toggleLine(slot.key) : toggleFlag(slot.source)
-                        }
+                        title={row.hidden ? '恢复这一行' : '隐藏这一行'}
+                        onClick={() => {
+                          if (row.declared) toggleFlag(row.source)
+                          else if (token) toggleHidden(token)
+                          else if (row.source === 'photo') toggleLine(row.key)
+                          else toggleFlag(row.source)
+                        }}
                       >
-                        {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {row.hidden ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   )
@@ -388,6 +435,15 @@ const SLOT_LABEL: Record<Anchor, string> = {
   'bottom-center': '中下',
   'bottom-right': '右下'
 }
+
+const FLAG_OF_SLOT = {
+  brand: 'showMake',
+  model: 'showModel',
+  exif: 'showExif',
+  date: 'showDate'
+} as const
+
+const flagOf = (id: keyof typeof FLAG_OF_SLOT) => FLAG_OF_SLOT[id]
 
 const TOKEN_LABEL: Record<TextToken, string> = {
   title: '标题',
