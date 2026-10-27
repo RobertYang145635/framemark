@@ -835,8 +835,18 @@ function anchorGroup(movable: PlacedBand[], photo: StockRect, W: number, H: numb
   for (const b of movable) translateBand(b, tx, ty)
 }
 
+export function stockReferenceWidth(style: StockStyle, env: Pick<StockEnv, 'pw' | 'ph'>): number {
+  // OPPO album Hasselblad 1 behaves like two design canvases: a 4:3 landscape
+  // card is laid out on 560 units (60u band = 10.7% of the photo width, matching
+  // the Find X6 Pro sample), while the 3:4 portrait card is the 360-unit design
+  // (512px band on a 3072-wide photo). Keying on orientation matches both
+  // vendor originals; every other style keeps its declared reference width.
+  if (style.id === 'oppo-gallery:hassel_style_1' && env.ph > env.pw) return 360
+  return style.referenceWidth
+}
+
 export function solveStockLayout(style: StockStyle, env: StockEnv): StockLayout {
-  const baseW = style.referenceWidth
+  const baseW = stockReferenceWidth(style, env)
   const ratio = env.ph / env.pw
   const basePhotoH = baseW * ratio
   const m = style.margins

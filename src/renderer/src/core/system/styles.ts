@@ -11,7 +11,7 @@ const HASSEL: StockStyle = {
   name: '哈苏 · 页脚',
   nameEn: 'HASSELBLAD FOOTER',
   placement: 'out',
-  referenceWidth: 360,
+  referenceWidth: 560,
   margins: { left: 0, top: 0, right: 0, bottom: 60 },
   background: '#FFFFFF',
   bands: [
@@ -102,7 +102,7 @@ const HASSEL: StockStyle = {
   },
   audit: {
     status: 'approx',
-    notes: 'Hand-authored from OPPO Gallery hassel_style_1.json; pending visual audit.'
+    notes: 'Hand-authored from OPPO Gallery hassel_style_1.json; referenceWidth 560 per the Find X6 Pro 4:3 vendor card (band 60 / 10.7% = 559.2).'
   }
 }
 

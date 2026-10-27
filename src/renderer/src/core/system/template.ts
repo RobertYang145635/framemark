@@ -1,7 +1,7 @@
 import type { TemplateDef, TemplateRenderEnv } from '../../types'
 import type { StockEnv } from './ir'
 import { prepareStockStyle } from './assets'
-import { solveStockLayout } from './layout'
+import { solveStockLayout, stockReferenceWidth } from './layout'
 import { paintStockLayout } from './paint'
 import { getStockStyle, STOCK_STYLE_LIST } from './styles'
 
@@ -36,7 +36,7 @@ export const systemCamera: TemplateDef = {
     const style = getStockStyle(String(env.params.systemStyle ?? ''))
     if (!style) return { W: env.pw, H: env.ph }
     const layout = solveStockLayout(style, env as StockEnv)
-    const k = env.pw / style.referenceWidth
+    const k = env.pw / stockReferenceWidth(style, env)
     return { W: layout.W * k, H: layout.H * k }
   },
   render(env) {
@@ -45,7 +45,7 @@ export const systemCamera: TemplateDef = {
       return { x: 0, y: 0, w: env.pw, h: env.ph }
     }
     const layout = solveStockLayout(style, env)
-    const k = env.pw / style.referenceWidth
+    const k = env.pw / stockReferenceWidth(style, env)
     return paintStockLayout(env, style, layout, k)
   }
 }

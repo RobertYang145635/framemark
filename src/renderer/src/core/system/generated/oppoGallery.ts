@@ -8,7 +8,7 @@ export const OPPO_GALLERY_STYLES = [
     "name": "哈苏 · 1",
     "nameEn": "hassel_style_1",
     "placement": "out",
-    "referenceWidth": 360,
+    "referenceWidth": 560,
     "margins": {
       "left": 0,
       "top": 0,

@@ -473,12 +473,19 @@ function convertStyle(styleId, j, bitmapFiles, dimensions) {
     name: nameOf(styleId),
     nameEn: styleId,
     placement,
-    // #65: the vendor's `baseImageSize` IS the reference width, and it is the PHOTO width
-    // (proved on the vendor's own photo pair: original 3072x4096 -> card 3244x5130 predicts
-    // 3242.7x5128.5, -0.04%/-0.03%; card-width semantics miss by +0.88%. See
-    // _research/scale-audit2/semantics-by-photo.cjs). 42 of 43 styles declare 360; only
-    // hassel_style_xpan_1 declares 291, which the old hardcoded 360 rendered 1.237x too large.
-    referenceWidth: Number(j.baseImageSize) || 360,
+    // 2026-10-28: hassel_style_1's design canvas is 560 units wide, not
+    // `baseImageSize` 360. A real Find X6 Pro 4:3 card (1920 wide, 206px band)
+    // gives 60 / (206/1920) = 559.2, and the 4:3 layout 1800x(1350+193) then
+    // matches the original canvas aspect 1.166 exactly. At 360 the band was
+    // 16.7% of the photo width instead of 10.7% (≈1.55x too thick).
+    const REFERENCE_WIDTH_OVERRIDES = { hassel_style_1: 560 }
+    // #65: for the styles without an override, the vendor's `baseImageSize` IS the
+    // reference width, and it is the PHOTO width (proved on the vendor's own photo pair:
+    // original 3072x4096 -> card 3244x5130 predicts 3242.7x5128.5, -0.04%/-0.03%;
+    // card-width semantics miss by +0.88%. See _research/scale-audit2/semantics-by-photo.cjs).
+    // 42 of 43 styles declare 360; hassel_style_xpan_1 declares 291 (the old hardcoded 360
+    // rendered 1.237x too large), and hassel_style_1 is the 560 exception above.
+    referenceWidth: REFERENCE_WIDTH_OVERRIDES[styleId] ?? (Number(j.baseImageSize) || 360),
     margins,
     background: j.background?.color ?? '#00000000',
     bands,
