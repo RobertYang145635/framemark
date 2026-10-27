@@ -32,7 +32,7 @@ const BRAND = (size: number): StockTextNode => ({
 const MODEL = (size = 30): StockTextNode => ({
   kind: 'text',
   token: { kind: 'model' },
-  font: 'sys',
+  font: 'vivo',
   size,
   weight: 500,
   colorIndex: 0,
@@ -45,7 +45,7 @@ const MODEL = (size = 30): StockTextNode => ({
 const EXIF = (size = 26): StockTextNode => ({
   kind: 'text',
   token: { kind: 'imageParams' },
-  font: 'sys',
+  font: 'vivo',
   size,
   weight: 400,
   colorIndex: 1,
@@ -58,7 +58,7 @@ const EXIF = (size = 26): StockTextNode => ({
 const DATE = (size = 24): StockTextNode => ({
   kind: 'text',
   token: { kind: 'template', value: '@time=@wm_time_yyyy_MM_dd_HH_mm' },
-  font: 'sys',
+  font: 'vivo',
   size,
   weight: 400,
   colorIndex: 1,
@@ -328,7 +328,7 @@ const TXT = (
 ): StockTextNode => ({
   kind: 'text',
   token,
-  font: 'sys',
+  font: 'vivo',
   size,
   weight,
   color,

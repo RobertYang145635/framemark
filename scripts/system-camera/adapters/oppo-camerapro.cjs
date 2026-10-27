@@ -14,8 +14,8 @@ const STYLES = [
   { file: 'gr_style_4.json', name: '理光 GR · 叠加', en: 'RICOH GR · OVERLAY', family: 'OPPO 相机' },
   { file: 'gr_style_5.json', name: '理光 GR · 参数边栏', en: 'RICOH GR · SIDEBAR', family: 'OPPO 相机' },
   { file: 'tone_frame_style_1.json', name: '色调边框 · 上', en: 'TONE FRAME · TOP', family: 'OPPO 相机' },
-  { file: 'tone_gallery_frame_style_1.json', name: '色调边框 · 页脚', en: 'TONE FRAME · FOOTER', family: 'OPPO 相机' },
-  { file: 'leica_live_moment_style_1.json', name: '徕卡动态', en: 'LEICA LIVE MOMENT', family: 'OPPO 相机' },
+  { file: 'tone_gallery_frame_style_1.json', name: '影调画框 · 页脚', en: 'TONE FRAME · FOOTER', family: 'OPPO 相机' },
+  { file: 'leica_live_moment_style_1.json', name: '徕卡 · 动态', en: 'LEICA LIVE MOMENT', family: 'OPPO 相机' },
   { file: 'liquid_glass_style_1.json', name: '液态玻璃', en: 'LIQUID GLASS', family: 'OPPO 相机' }
 ]
 

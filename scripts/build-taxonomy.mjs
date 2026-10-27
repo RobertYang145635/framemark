@@ -32,8 +32,8 @@ const EXPECTED_COUNTS = {
 }
 const EXPECTED_TOTAL = 175
 const EXPECTED_VENDOR_BRANDS = [
-  { key: 'OPPO', name: 'OPPO', count: 47 },
-  { key: '小米', name: '小米', count: 40 },
+  { key: 'OPPO', name: 'OPPO', count: 45 },
+  { key: '小米', name: '小米', count: 42 },
   { key: 'vivo', name: 'vivo', count: 12 }
 ]
 const FORBIDDEN_CARD_FLAGS = ['badge', 'recommend', 'recommended', 'recommendation', 'selected', 'approx']

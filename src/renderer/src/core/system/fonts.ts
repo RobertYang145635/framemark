@@ -4,6 +4,7 @@ export const STOCK_FONT_BUTLER = '"StockButler", "StockSysSans", "Inter", "Micro
 export const STOCK_FONT_FZ = '"StockFZ", "StockSysSans", "Microsoft YaHei", "Noto Sans CJK SC", serif'
 export const STOCK_FONT_OXANIUM = '"StockOxanium", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
 export const STOCK_FONT_MISANS = '"StockMiSans", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
+export const STOCK_FONT_VIVO = '"StockVivo", "StockSysSans", "Inter", "Microsoft YaHei", sans-serif'
 export const STOCK_FONT_LG = '"StockLG1056", "StockOxanium", "OplusSans", "Inter", serif'
 export const STOCK_FONT_ZEISS = '"Zeiss", "StockSysSans", "Inter", "Microsoft YaHei", sans-serif'
 
@@ -15,6 +16,7 @@ const FONT_FAMILIES: Record<string, string> = {
   fz: STOCK_FONT_FZ,
   oxanium: STOCK_FONT_OXANIUM,
   misans: STOCK_FONT_MISANS,
+  vivo: STOCK_FONT_VIVO,
   lg1056: STOCK_FONT_LG,
   zeiss: STOCK_FONT_ZEISS
 }
@@ -44,6 +46,9 @@ export function ensureSystemFonts(): Promise<void> {
       document.fonts.load('500 40px "StockOxanium"'),
       document.fonts.load('400 40px "StockMiSans"'),
       document.fonts.load('600 40px "StockMiSans"'),
+      document.fonts.load('400 40px "StockVivo"'),
+      document.fonts.load('500 40px "StockVivo"'),
+      document.fonts.load('700 40px "StockVivo"'),
       document.fonts.load('400 40px "StockLG1056"'),
       document.fonts.load('700 40px "Zeiss"')
     ])

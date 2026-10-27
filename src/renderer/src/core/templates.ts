@@ -4,6 +4,7 @@ import {
   FONT_UI,
   FONT_SYS,
   FONT_MISANS,
+  FONT_VIVO,
   FONT_BUTLER,
   FONT_DISPLAY,
   FONT_MONO,
@@ -1187,21 +1188,24 @@ const brandFooter: TemplateDef = {
     // byte-identical. Only the declared footer rows expose this control.
     const sizeOf = (id: string) =>
       Math.max(0.6, Math.min(1.6, pct(slotSizes[slotScope + '#' + id], 1)))
-    // Three curated typefaces for the hand-written footer; the geometry stays
+    // Four curated typefaces for the hand-written footer; the geometry stays
     // identical so only the letterforms change. 'oppo' mirrors the OPPO album
-    // Hasselblad card (OPPO Sans 700, model tracking .05), the default.
+    // Hasselblad card (OPPO Sans 700, model tracking .05), the default; Xiaomi
+    // and vivo use their own camera fonts.
     const fontStyle = String(env.params.footerFont ?? 'oppo')
     const serif = fontStyle === 'serif'
+    const vivo = fontStyle === 'vivo'
     const misans = fontStyle === 'misans'
-    const brandFont = serif ? FONT_BUTLER : misans ? FONT_MISANS : FONT_SYS
-    const bodyFont = serif ? FONT_BUTLER : misans ? FONT_MISANS : FONT_SYS
-    const brandWeight = serif ? 700 : misans ? 600 : 700
-    const modelWeight = serif ? 500 : misans ? 400 : 700
-    const bodyWeight = serif ? 500 : misans ? 400 : 600
-    const brandSize = S * (serif ? 0.03 : misans ? 0.028 : 0.031)
-    const modelSize = S * (serif ? 0.027 : misans ? 0.0255 : 0.029)
-    const brandTracking = serif ? 0.01 : misans ? 0.02 : 0.03
-    const modelTracking = serif ? 0.005 : misans ? 0.01 : 0.05
+    const modern = misans || vivo
+    const brandFont = serif ? FONT_BUTLER : vivo ? FONT_VIVO : misans ? FONT_MISANS : FONT_SYS
+    const bodyFont = serif ? FONT_BUTLER : vivo ? FONT_VIVO : misans ? FONT_MISANS : FONT_SYS
+    const brandWeight = serif ? 700 : modern ? 600 : 700
+    const modelWeight = serif ? 500 : modern ? 400 : 700
+    const bodyWeight = serif ? 500 : modern ? 400 : 600
+    const brandSize = S * (serif ? 0.03 : modern ? 0.028 : 0.031)
+    const modelSize = S * (serif ? 0.027 : modern ? 0.0255 : 0.029)
+    const brandTracking = serif ? 0.01 : modern ? 0.02 : 0.03
+    const modelTracking = serif ? 0.005 : modern ? 0.01 : 0.05
     const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
     const model = env.text.showModel
       ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)

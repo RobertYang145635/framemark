@@ -129,7 +129,7 @@ export const OPPO_CAMERAPRO_VARIANTS = [
   },
   {
     "id": "stock-oppo-camerapro-tone_gallery_frame_style_1",
-    "name": "色调边框 · 页脚",
+    "name": "影调画框 · 页脚",
     "en": "TONE FRAME · FOOTER",
     "category": "系统相机",
     "base": "systemCamera",
@@ -150,7 +150,7 @@ export const OPPO_CAMERAPRO_VARIANTS = [
   },
   {
     "id": "stock-oppo-camerapro-leica_live_moment_style_1",
-    "name": "徕卡动态",
+    "name": "徕卡 · 动态",
     "en": "LEICA LIVE MOMENT",
     "category": "系统相机",
     "base": "systemCamera",

@@ -21,6 +21,8 @@ export function ensureFonts(): Promise<void> {
       document.fonts.load('700 40px "StockAvenir"'),
       document.fonts.load('400 40px "StockMiSans"'),
       document.fonts.load('600 40px "StockMiSans"'),
+      document.fonts.load('400 40px "StockVivo"'),
+      document.fonts.load('600 40px "StockVivo"'),
       document.fonts.load('400 40px "StockSysSans"'),
       document.fonts.load('600 40px "StockSysSans"'),
       document.fonts.load('700 40px "StockSysSans"'),

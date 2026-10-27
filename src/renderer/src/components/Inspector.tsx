@@ -607,10 +607,11 @@ function FooterFontSection() {
   return (
     <Section title="字体" hint="整块水印共用；品牌、机型与参数一起变">
       <Segmented
-        value={String(design.params.footerFont ?? 'oppo') as 'oppo' | 'misans' | 'serif'}
+        value={String(design.params.footerFont ?? 'oppo') as 'oppo' | 'misans' | 'vivo' | 'serif'}
         options={[
           { value: 'oppo', label: 'OPPO', hint: 'OPPO Sans：哈苏边框机型行同款' },
-          { value: 'misans', label: '现代', hint: 'MiSans：干净的相机厂现代无衬线' },
+          { value: 'misans', label: '小米', hint: 'MiSans：小米相机水印机型行同款' },
+          { value: 'vivo', label: 'vivo', hint: 'vivo Sans：vivo 相机水印机型行同款' },
           { value: 'serif', label: '衬线', hint: 'Butler：高对比经典衬线' }
         ]}
         onChange={(v) => setParam('footerFont', v)}

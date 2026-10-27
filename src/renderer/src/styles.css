@@ -111,6 +111,16 @@
   font-display: swap;
 }
 
+/* vivo 相机 APK 自带的 vivo Sans（fonts/vivo-Regular.otf）：vivo 水印
+   的机型/参数行用它，避免退回 OPPO SysSans。只有 Regular 一个字面，
+   500/600 由 Chromium 合成粗度。 */
+@font-face {
+  font-family: 'StockVivo';
+  src: url('./assets/system/vivo/fonts/vivo-Regular.otf') format('opentype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    GLASS-UI G-0 · 液态玻璃设计 token 层
    事实源：design/index.html（2766 行 / v1.4-glass / md5 070a803af733c5752f4c95c680acbf86）

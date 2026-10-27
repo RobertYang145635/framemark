@@ -23,8 +23,8 @@ export const BORDER_CATEGORIES: BorderCategory[] = [
     name: '厂商边框',
     count: 99,
     brands: [
-      { key: 'OPPO', name: 'OPPO', count: 47 },
-      { key: '小米', name: '小米', count: 40 },
+      { key: 'OPPO', name: 'OPPO', count: 45 },
+      { key: '小米', name: '小米', count: 42 },
       { key: 'vivo', name: 'vivo', count: 12 },
     ]
   },
@@ -80,9 +80,9 @@ export const TAXONOMY_CARDS: TaxonomyCard[] = [
   { variantId: 'stock-oppo-personalize_film_realme_1', name: 'realme 胶片 · 1', category: 'vendor', brand: 'OPPO' },
   { variantId: 'stock-oppo-personalize_film_realme_2', name: 'realme 胶片 · 2', category: 'vendor', brand: 'OPPO' },
   { variantId: 'stock-oppo-camerapro-tone_frame_style_1', name: '色调边框 · 上', category: 'vendor', brand: 'OPPO' },
-  { variantId: 'stock-oppo-camerapro-tone_gallery_frame_style_1', name: '色调边框 · 页脚', category: 'vendor', brand: 'OPPO' },
+  { variantId: 'stock-oppo-camerapro-tone_gallery_frame_style_1', name: '影调画框 · 页脚', category: 'vendor', brand: '小米' },
   { variantId: 'stock-oppo-hassel_style_xpan_1', name: '哈苏 · XPAN', category: 'vendor', brand: 'OPPO' },
-  { variantId: 'stock-oppo-camerapro-leica_live_moment_style_1', name: '徕卡动态', category: 'vendor', brand: 'OPPO' },
+  { variantId: 'stock-oppo-camerapro-leica_live_moment_style_1', name: '徕卡 · 动态', category: 'vendor', brand: '小米' },
   { variantId: 'stock-oppo-camerapro-gr_style_4', name: '理光 GR · 叠加', category: 'vendor', brand: 'OPPO' },
   { variantId: 'stock-xiaomi-tag-9', name: '标签 · 9', category: 'vendor', brand: '小米' },
   { variantId: 'stock-xiaomi-tag-10', name: '标签 · 10', category: 'vendor', brand: '小米' },

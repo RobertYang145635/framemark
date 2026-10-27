@@ -8,8 +8,10 @@ export const FONT_UI = '"Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJ
 export const FONT_AVENIR = '"StockAvenir", "Avenir Next", "Inter", "Microsoft YaHei", sans-serif'
 /** OPPO Sans（SysSans 可变字体）：OPPO 相册哈苏边框机型行同款。 */
 export const FONT_SYS = '"StockSysSans", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
-/** 文字边框的“现代”字面：MiSans 有真 600 字重，比 Inter 更像相机厂排版。 */
+/** 文字边框的“小米”字面：MiSans 有真 600 字重，比 Inter 更像相机厂排版。 */
 export const FONT_MISANS = '"StockMiSans", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
+/** vivo 相机自带的 vivo Sans；只有 Regular 字面，粗度由渲染器合成。 */
+export const FONT_VIVO = '"StockVivo", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
 /** 文字边框的“衬线”字面：Butler 的高对比衬线，比 Times 更适合小字号品牌行。 */
 export const FONT_BUTLER = '"StockButler", "Butler", "Inter", "Microsoft YaHei", serif'
 export const FONT_DISPLAY = '"Bebas Neue", "Inter", "Microsoft YaHei", sans-serif'

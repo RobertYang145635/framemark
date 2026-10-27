@@ -528,13 +528,13 @@ async function main() {
   )
   check('vendor chips: 全部 / OPPO / 小米 / vivo', chips.length === 4, JSON.stringify(chips))
   check(
-    'vendor chip OPPO = 47',
-    chips.some((c) => c.name === 'OPPO' && c.count === 47),
+    'vendor chip OPPO = 45',
+    chips.some((c) => c.name === 'OPPO' && c.count === 45),
     JSON.stringify(chips)
   )
   check(
-    'vendor chip 小米 = 40',
-    chips.some((c) => c.name === '小米' && c.count === 40),
+    'vendor chip 小米 = 42',
+    chips.some((c) => c.name === '小米' && c.count === 42),
     JSON.stringify(chips)
   )
   check(
@@ -542,12 +542,41 @@ async function main() {
     chips.some((c) => c.name === 'vivo' && c.count === 12),
     JSON.stringify(chips)
   )
+  await page.locator('.border-vendor-chips button', { hasText: '小米' }).click()
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 42
+  )
+  const xiaomiGroups = (
+    await page.locator('.border-section-active .border-series:not(.border-series-empty) .border-series-head strong').allInnerTexts()
+  ).map((s) => s.trim())
+  check(
+    'Xiaomi groups include 徕卡 and 影调画框 (both moved out of CameraPro/OPPO)',
+    xiaomiGroups.includes('徕卡') && xiaomiGroups.includes('影调画框'),
+    xiaomiGroups.join(',')
+  )
+  const leicaLiveGroup = await page.evaluate(() => {
+    const card = [...document.querySelectorAll('.border-section-active .tpl-card')].find(
+      (el) => el.textContent?.includes('徕卡 · 动态') && !el.classList.contains('border-card-hidden')
+    )
+    return card?.closest('.border-series')?.querySelector('.border-series-head strong')?.textContent?.trim() ?? ''
+  })
+  check('徕卡 · 动态 sits in Xiaomi’s 徕卡 series', leicaLiveGroup === '徕卡', leicaLiveGroup)
+
   await page.locator('.border-vendor-chips button', { hasText: 'OPPO' }).click()
   await page.waitForFunction(
     () =>
-      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 47
+      document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 45
   )
-  check('OPPO chip narrows the vendor section to 47 visible cards', true)
+  const oppoGroupNames = (
+    await page.locator('.border-section-active .border-series:not(.border-series-empty) .border-series-head strong').allInnerTexts()
+  ).map((s) => s.trim())
+  check(
+    'OPPO no longer owns 徕卡/影调画框',
+    !oppoGroupNames.includes('徕卡') && !oppoGroupNames.includes('影调画框'),
+    oppoGroupNames.join(',')
+  )
+  check('OPPO chip narrows the vendor section to 45 visible cards', true)
   check('all 175 cards remain in the DOM while filtered', (await page.locator('.tpl-card').count()) === TOTAL_CARDS)
   await page.locator('.border-vendor-chips button', { hasText: '全部' }).click()
   await page.waitForFunction(

@@ -7,8 +7,8 @@
  *      the workspace replaces it (`.thumb` + `.workspace`).
  *   2. taxonomy: 175 `.tpl-card` in the DOM, ZERO `.tpl-card canvas` (cards are static
  *      previews), 7 `.border-category-nav` buttons with the exact 厂商/文字/印象/白边/
- *      卡片/色彩/简约 counts, vendor chips 全部 / OPPO 47 / 小米 40 / vivo 12 and the
- *      OPPO chip narrowing the vendor section to 47 visible cards (the tail stays in the
+ *      卡片/色彩/简约 counts, vendor chips 全部 / OPPO 45 / 小米 42 / vivo 12 and the
+ *      OPPO chip narrowing the vendor section to 45 visible cards (the tail stays in the
  *      DOM with `.border-card-hidden`, the 175-node contract is not violated).
  *   3. stock theme on 经典 · 17: the 主题 tab is the per-style themeSwatches control ONLY
  *      (0 generic `.theme-swatches`, 1 `.fmk-swatches` entry, 4 `.fmk-swatch` labelled
@@ -118,24 +118,24 @@ try {
   )
   assert.equal(chips.length, 4, `expected 4 vendor chips, got ${JSON.stringify(chips)}`)
   assert.deepEqual(chips.map((c) => c.name), ['全部', 'OPPO', '小米', 'vivo'], JSON.stringify(chips))
-  assert.equal(chips.find((c) => c.name === 'OPPO')?.count, 47, JSON.stringify(chips))
-  assert.equal(chips.find((c) => c.name === '小米')?.count, 40, JSON.stringify(chips))
+  assert.equal(chips.find((c) => c.name === 'OPPO')?.count, 45, JSON.stringify(chips))
+  assert.equal(chips.find((c) => c.name === '小米')?.count, 42, JSON.stringify(chips))
   assert.equal(chips.find((c) => c.name === 'vivo')?.count, 12, JSON.stringify(chips))
   console.log('PASS  vendor chips:', JSON.stringify(chips))
 
   // The chip filters the vendor section only; hidden cards stay in the DOM (175 contract).
   await page.locator('.border-vendor-chips button', { hasText: 'OPPO' }).click()
   await page.waitForFunction(
-    () => document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 47,
+    () => document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length === 45,
     null,
     { timeout: 15000 }
   )
   const vendorVisible = await page.evaluate(
     () => document.querySelectorAll('.border-section[data-category="vendor"] .tpl-card:not(.border-card-hidden)').length
   )
-  assert.equal(vendorVisible, 47, `OPPO chip must leave 47 vendor .tpl-card, got ${vendorVisible}`)
+  assert.equal(vendorVisible, 45, `OPPO chip must leave 45 vendor .tpl-card, got ${vendorVisible}`)
   assert.equal(await page.locator('.tpl-card').count(), 175, 'filtering must not remove cards from the DOM')
-  console.log('PASS  OPPO chip: vendor section .tpl-card visible = 47 (175 stay mounted)')
+  console.log('PASS  OPPO chip: vendor section .tpl-card visible = 45 (175 stay mounted)')
 
   await page.locator('.border-vendor-chips button', { hasText: '全部' }).click()
   await page.waitForFunction(
