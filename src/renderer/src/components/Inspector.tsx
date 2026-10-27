@@ -349,7 +349,7 @@ function TextSection() {
   }
 
   return (
-    <Section title="文字" hint="按画面位置直接编辑；照片信息从 EXIF 自动填充，不改照片">
+    <Section title="文字" hint="按画面位置直接编辑；每行可单独调字号，照片信息从 EXIF 自动填充，不改照片">
       {effectiveGroups.length ? (
         <div className="text-slot-list">
           {effectiveGroups.map((group) => (
@@ -448,15 +448,14 @@ function TextSection() {
           ))}
         </div>
       ) : null}
-      <Slider
-        label="字号缩放"
-        value={t.fontScale}
-        min={0.8}
-        max={1.4}
-        step={0.02}
-        suffix="×"
-        onChange={(v) => setText({ fontScale: v })}
-      />
+      {t.fontScale !== 1 ? (
+        <div className="text-hidden-row">
+          <em>预设整体字号</em>
+          <button className="toggle-chip" onClick={() => setText({ fontScale: 1 })} type="button">
+            ×{t.fontScale.toFixed(2)} 复位
+          </button>
+        </div>
+      ) : null}
     </Section>
   )
 }
