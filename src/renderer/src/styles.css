@@ -6337,3 +6337,249 @@ html[data-skin='hyperos'] .inspector-foot em {
     display: none;
   }
 }
+
+/* ── 2026-10-28 Inspector 细节打磨 ─────────────────────────── */
+/* 模板头：操作放眉标行，标题/说明拿满宽度，长模板名不再出现 “· 1” 孤行 */
+.current-template {
+  display: block;
+}
+.current-template-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 26px;
+}
+.current-template-top .eyebrow {
+  margin: 0;
+}
+.current-template h3 {
+  margin-top: 6px;
+}
+html[data-skin='hyperos'] .current-template {
+  padding: 4px 2px 14px;
+}
+html[data-skin='hyperos'] .current-template h3 {
+  margin: 7px 0 0;
+}
+html[data-skin='hyperos'] .current-template p {
+  margin-top: 5px;
+}
+html[data-skin='hyperos'] .current-template-actions .btn {
+  height: 26px;
+  padding: 0 8px;
+  color: var(--muted);
+}
+
+/* 小节标题更像“区标题”，提示降一档 */
+html[data-skin='hyperos'] .section-head h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+html[data-skin='hyperos'] .section-head p {
+  margin-top: 3px;
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .panel-section {
+  padding: 14px 2px;
+}
+html[data-skin='hyperos'] .panel-section:last-child {
+  padding-bottom: 4px;
+}
+
+/* 带标签的分段控件统一撑到右侧，别缩成小胶囊 */
+html[data-skin='hyperos'] .field.compact {
+  gap: 12px;
+  margin: 9px 0;
+}
+html[data-skin='hyperos'] .field.compact > .segmented {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 224px;
+  margin-left: auto;
+}
+
+/* 只有两个页签时不要各占半屏 */
+html[data-skin='hyperos'] .editor-tabs {
+  justify-content: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+html[data-skin='hyperos'] .editor-tabs button {
+  flex: 1 1 0;
+  max-width: 108px;
+}
+
+/* 文字页：方位改成分组小标题 + 细分隔线，行占满宽度 */
+html[data-skin='hyperos'] .text-slot-list {
+  gap: 14px;
+}
+html[data-skin='hyperos'] .text-slot-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html[data-skin='hyperos'] .text-slot-anchor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 0;
+  text-align: left;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .text-slot-anchor::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+html[data-skin='hyperos'] .text-slot-row {
+  gap: 6px;
+}
+html[data-skin='hyperos'] .text-slot-eye {
+  width: 30px;
+  height: 34px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .text-slot-eye:hover {
+  background: #eef2f7;
+  color: var(--text-2);
+}
+html[data-skin='hyperos'] .text-slot-size-panel {
+  gap: 6px;
+  padding: 0 1px 6px;
+}
+html[data-skin='hyperos'] .text-slot-size-panel > span {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .text-slot-size-value {
+  min-width: 40px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+html[data-skin='hyperos'] .text-slot-size-value:hover {
+  background: #eef2f7;
+  color: #1d5fc6;
+}
+
+/* 主题色卡：一格一卡，色块看得到，选中态才用蓝 */
+html[data-skin='hyperos'] .theme-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+html[data-skin='hyperos'] .theme-swatch {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .theme-swatch span {
+  width: 100%;
+  height: 34px;
+  border-radius: 7px;
+}
+html[data-skin='hyperos'] .theme-swatch em {
+  text-align: center;
+  font-size: 10.5px;
+}
+html[data-skin='hyperos'] .theme-swatch:hover {
+  border-color: #c9d8ef;
+}
+html[data-skin='hyperos'] .theme-swatch.active {
+  border-color: #2f75e5;
+  background: #eef4ff;
+  color: #1d5fc6;
+  box-shadow: inset 0 0 0 1px rgba(47, 117, 229, 0.25);
+}
+
+/* 水印空态：上传区是“可点的白卡”，不是一块灰砖 */
+html[data-skin='hyperos'] .wm-drop {
+  min-height: 96px;
+  background: #fff;
+  border: 1px dashed #c3d3ea;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .wm-drop strong {
+  color: var(--text);
+}
+html[data-skin='hyperos'] .wm-drop span {
+  color: var(--faint);
+}
+html[data-skin='hyperos'] .wm-drop:hover {
+  background: #f5f9ff;
+  border-color: #2f75e5;
+}
+
+html[data-skin='hyperos'][data-color-mode='dark'] .text-slot-eye:hover,
+html[data-skin='hyperos'][data-color-mode='dark'] .text-slot-size-value:hover {
+  background: #262b33;
+  color: #8fb6ff;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch {
+  background: #1a1d22;
+  border-color: #2c313a;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch:hover {
+  border-color: #3c4655;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch.active {
+  background: #152238;
+  border-color: #4d82e0;
+  color: #8fb6ff;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .wm-drop {
+  background: #171a1f;
+  border-color: #39434f;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .wm-drop:hover {
+  background: #1c2430;
+  border-color: #4d82e0;
+}
+html[data-skin='hyperos'] .theme-swatch span {
+  border-color: #e3e7ed;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch span {
+  border-color: #3a4250;
+}
+html[data-skin='hyperos'] .text-slot-row input::placeholder {
+  color: #7a8592;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .text-slot-row input::placeholder {
+  color: #8b95a3;
+}
+html[data-skin='hyperos'] .theme-swatch span {
+  border-color: #d5dce6;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch span {
+  border-color: #414b59;
+}
+html[data-skin='hyperos'] .border-nav-group {
+  padding: 10px 2px 3px;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+html[data-skin='hyperos'] .border-nav-group:first-child {
+  padding-top: 2px;
+}
+html[data-skin='hyperos'] .theme-swatch {
+  background: #f7f9fc;
+}
+html[data-skin='hyperos'] .theme-swatch.active {
+  background: #eef4ff;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch {
+  background: #1a1d22;
+}
+html[data-skin='hyperos'][data-color-mode='dark'] .theme-swatch.active {
+  background: #152238;
+}

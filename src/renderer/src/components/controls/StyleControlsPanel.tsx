@@ -89,17 +89,6 @@ export function StyleControlsPanel ({
     if (!list.length) return null
     return (
       <section className="panel-section fmk-style-controls editor-controls" data-style={record.styleId}>
-        <div className="editor-controls-head">
-          <button
-            className="btn btn-ghost btn-sm"
-            type="button"
-            onClick={resetVariantParams}
-            title="只清空这一套的改动，其它套不受影响"
-          >
-            <RotateCcw size={14} />
-            全部原版
-          </button>
-        </div>
         <div className="editor-controls-list">
           {list.map((view) => (
             <div

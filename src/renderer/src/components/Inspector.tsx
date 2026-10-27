@@ -21,7 +21,6 @@ import { useAppStore } from '../store'
 import { getTemplate } from '../core/templates'
 import { getVariant } from '../core/variants'
 import { LOGO_VERSION_BY_ID } from '../core/logo-catalog'
-import { DISPLAY_LOGO_BRAND_COUNT, SELECTED_LOGO_VERSION_COUNT } from '../core/logo-selection.generated'
 import { cutForVersionSurface, surfaceForDesign } from '../core/logo-compat'
 import { getStockStyle } from '../core/system/styles'
 import { controlsFor } from '../core/controls'
@@ -108,6 +107,16 @@ function ThemeSwatches() {
   )
 }
 
+/** 自动匹配来的 Logo 只有文件名（panasonic_black），别把下划线原样丢给用户。 */
+function prettyLogoName(name: string): string {
+  const base = name.replace(/\.[a-z0-9]+$/i, '').replace(/[_-]+/g, ' ').trim()
+  if (!base) return name
+  return base
+    .split(' ')
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(' ')
+}
+
 function LogoSection() {
   const design = useAppStore((s) => s.design)
   const setBrandPickerOpen = useAppStore((s) => s.setBrandPickerOpen)
@@ -129,13 +138,13 @@ function LogoSection() {
 
   const surface = surfaceForDesign(design)
   const version = design.brandVersion ? LOGO_VERSION_BY_ID[design.brandVersion.versionId] ?? null : null
-  const title = version?.name ?? design.logo?.name ?? '未选择'
+  const title = version?.name ?? (design.logo ? prettyLogoName(design.logo.name) : '未选择')
   const unavailable = Boolean(version && !cutForVersionSurface(version, surface))
 
   return (
     <Section
       title="品牌 Logo"
-      hint={`自动匹配 EXIF 品牌，或从 ${DISPLAY_LOGO_BRAND_COUNT} 个品牌 / ${SELECTED_LOGO_VERSION_COUNT} 个已选版本中选择`}
+      hint="自动匹配 EXIF 品牌，也可手动选择"
       action={
         <button className="btn btn-ghost btn-sm" onClick={() => void autoMatchLogo()} type="button">
           <Sparkles size={14} />
@@ -179,7 +188,7 @@ function LogoSection() {
         checked={design.text.showLogo}
         onChange={(v) => setText({ showLogo: v })}
         label="显示 Logo"
-        hint="选中品牌后再决定是否显示"
+        hint="关闭后保留当前选择"
       />
       <Slider
         label="Logo 大小"
@@ -351,7 +360,7 @@ function TextSection() {
   }
 
   return (
-    <Section title="文字" hint="按画面位置直接编辑；每行可单独调字号，照片信息从 EXIF 自动填充，不改照片">
+    <Section title="文字" hint="照片信息自动填充；每行可单独调字号">
       {effectiveGroups.length ? (
         <div className="text-slot-list">
           {effectiveGroups.map((group) => (
@@ -516,21 +525,21 @@ function CurrentTemplateHeader({ onOpenReferences }: { onOpenReferences: () => v
   const variant = getVariant(design.variantId)
   return (
     <div className="current-template">
-      <div>
+      <div className="current-template-top">
         <span className="eyebrow">{variant.category}</span>
-        <h3>{variant.name}</h3>
-        <p>{variant.description ?? def.description}</p>
+        <div className="current-template-actions">
+          <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} title="查看这个模板对应的原版参考图" type="button">
+            <Images size={14} />
+            参考图
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
+            <RotateCcw size={14} />
+            重置
+          </button>
+        </div>
       </div>
-      <div className="current-template-actions">
-        <button className="btn btn-ghost btn-sm" onClick={onOpenReferences} title="查看这个模板对应的原版参考图" type="button">
-          <Images size={14} />
-          参考图
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={resetVariantParams} title="恢复此模板的默认参数" type="button">
-          <RotateCcw size={14} />
-          重置
-        </button>
-      </div>
+      <h3>{variant.name}</h3>
+      <p>{variant.description ?? def.description}</p>
     </div>
   )
 }
@@ -597,6 +606,15 @@ function LayoutEditor() {
     !!getStockStyle(String(design.params.systemStyle ?? ''))?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
   // 'vendor' = the style's own committed position (pixel-identical default).
   const stockAnchor = String(design.params.stockAnchor ?? 'vendor')
+  const hasStyleLayoutControls = (controlsFor(design)?.views ?? []).some(
+    (view) => view.live && editorTabForControl(view) === 'layout'
+  )
+  const noLayoutParams =
+    !controls.length &&
+    !isMovie &&
+    !stockMovable &&
+    !hasStyleLayoutControls &&
+    !handControlsFor(design.templateId, 'layout').length
 
   return (
     <>
@@ -612,6 +630,7 @@ function LayoutEditor() {
         ) : null}
       </Section>
 
+      {!noLayoutParams ? (
       <Section title="版式参数">
         {controls.includes('margin') ? (
           <Slider label="边距" value={Number(design.params.marginPct ?? 6)} min={0} max={15} step={0.5} suffix="%" onChange={(v) => setParam('marginPct', v)} onReset={() => resetParam('marginPct')} />
@@ -682,8 +701,10 @@ function LayoutEditor() {
             </button>
           </div>
         ) : null}
-        {!controls.length && !isMovie && !stockMovable && !handControlsFor(design.templateId, 'layout').length ? <p className="hint-note">这个版式没有可调的布局参数；文字内容在「文字」页调整。</p> : null}
       </Section>
+      ) : (
+        <p className="hint-note">这个版式没有可调的布局参数；文字内容在「文字」页调整。</p>
+      )}
 
       {(isMinimal || isFooter) ? (
         <Section title="细节">
@@ -893,7 +914,7 @@ function WatermarkPanel() {
           checked={wm.enabled && Boolean(wm.asset)}
           onChange={(v) => setWatermark({ enabled: v })}
           label="启用水印"
-          hint={wm.asset ? undefined : '先选择一张水印图片'}
+          hint={wm.asset ? undefined : '添加图片后才能启用'}
           disabled={!wm.asset}
         />
       </Section>
@@ -928,7 +949,7 @@ function WatermarkPanel() {
         </>
       ) : (
         <p className="hint-note">
-          {wm.asset ? '水印已关闭；打开「启用水印」后才能调整位置与透明度。' : '先选择一张水印图片；位置、透明度和平铺参数在有图之后才会出现。'}
+          {wm.asset ? '水印已关闭；打开「启用水印」后可调整位置与透明度。' : '添加图片后才会出现位置、透明度与平铺参数。'}
         </p>
       )}
       <p className="hint-note">白色水印在白底上会不可见，黑色水印同理；按模板底色选择。</p>

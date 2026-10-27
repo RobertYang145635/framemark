@@ -277,7 +277,7 @@ export function PreviewStage() {
         ) : null}
       </div>
       <div className="stage-foot">
-        <span>拖入照片即可开始 · JPG / PNG / WebP / TIFF</span>
+        <span>{photos.length ? '滚轮缩放画面 · 单击百分比复位' : '拖入照片即可开始 · JPG / PNG / WebP / TIFF'}</span>
         <span className="stage-foot-right">sRGB · 原始分辨率优先</span>
       </div>
     </section>

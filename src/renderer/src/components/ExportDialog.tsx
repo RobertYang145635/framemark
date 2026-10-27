@@ -117,7 +117,6 @@ export function ExportDialog() {
             step={1}
             onChange={(v) => setExport({ quality: v })}
             onReset={() => setExport({ quality: DEFAULT_EXPORT.quality })}
-            hint="100 = 4:4:4 最高质量"
           />
         ) : null}
 
@@ -141,7 +140,7 @@ export function ExportDialog() {
               max={20000}
               step={100}
               value={settings.longEdge === 0 ? '' : settings.longEdge}
-              placeholder="原始"
+              placeholder="自定义"
               onChange={(e) => setExport({ longEdge: Math.max(0, Number(e.target.value) || 0) })}
               aria-label="长边像素"
             />
