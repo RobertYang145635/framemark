@@ -1,5 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core'
+import { StatusBar, Style } from '@capacitor/status-bar'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
@@ -23,6 +25,27 @@ import type { BrandVersionRef, Design, PhotoAsset, Rect, TemplateVariant } from 
 
 const THUMB_W = 480
 const THUMB_H = 360
+
+/**
+ * Android WebView reports env(safe-area-inset-top) as 0, so a page-level
+ * padding cannot keep the glass top bar out of the status bar. Stop the
+ * WebView from overlaying the status bar instead: the system then lays the app
+ * out below it (status bar gets its own dark background, light icons).
+ * No-op on web/desktop.
+ */
+if (Capacitor.isNativePlatform()) {
+  void (async () => {
+    try {
+      await StatusBar.setOverlaysWebView({ overlay: false })
+      await StatusBar.setBackgroundColor({ color: '#0c0c0d' })
+      // Capacitor's enum is named after the theme, not the text: Style.Dark =
+      // light text for dark backgrounds.
+      await StatusBar.setStyle({ style: Style.Dark })
+    } catch {
+      // Older native shells may not expose every method; layout still works.
+    }
+  })()
+}
 
 interface DebugRenderResult {
   data: string
