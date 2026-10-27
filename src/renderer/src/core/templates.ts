@@ -2,8 +2,9 @@ import type { Rect, TemplateDef, TemplateRenderEnv } from '../types'
 import { systemCamera } from './system/template'
 import {
   FONT_UI,
-  FONT_AVENIR,
-  FONT_SERIF,
+  FONT_SYS,
+  FONT_MISANS,
+  FONT_BUTLER,
   FONT_DISPLAY,
   FONT_MONO,
   FONT_HAND,
@@ -1132,6 +1133,7 @@ const brandFooter: TemplateDef = {
     footerMode: 'classic',
     footerAuto: false,
     footerTextScale: 1,
+    footerFont: 'oppo',
     slots: '',
     logoCenterX: 0.53,
     frame: ''
@@ -1185,6 +1187,21 @@ const brandFooter: TemplateDef = {
     // byte-identical. Only the declared footer rows expose this control.
     const sizeOf = (id: string) =>
       Math.max(0.6, Math.min(1.6, pct(slotSizes[slotScope + '#' + id], 1)))
+    // Three curated typefaces for the hand-written footer; the geometry stays
+    // identical so only the letterforms change. 'oppo' mirrors the OPPO album
+    // Hasselblad card (OPPO Sans 700, model tracking .05), the default.
+    const fontStyle = String(env.params.footerFont ?? 'oppo')
+    const serif = fontStyle === 'serif'
+    const misans = fontStyle === 'misans'
+    const brandFont = serif ? FONT_BUTLER : misans ? FONT_MISANS : FONT_SYS
+    const bodyFont = serif ? FONT_BUTLER : misans ? FONT_MISANS : FONT_SYS
+    const brandWeight = serif ? 700 : misans ? 600 : 700
+    const modelWeight = serif ? 500 : misans ? 400 : 700
+    const bodyWeight = serif ? 500 : misans ? 400 : 600
+    const brandSize = S * (serif ? 0.03 : misans ? 0.028 : 0.031)
+    const modelSize = S * (serif ? 0.027 : misans ? 0.0255 : 0.029)
+    const brandTracking = serif ? 0.01 : misans ? 0.02 : 0.03
+    const modelTracking = serif ? 0.005 : misans ? 0.01 : 0.05
     const make = env.text.showMake ? slotOf('brand') || env.exif.make : ''
     const model = env.text.showModel
       ? slotOf('model') || modelWithoutMake(env.exif.make, env.exif.model)
@@ -1197,18 +1214,18 @@ const brandFooter: TemplateDef = {
     const showLeftText = !(logoPos === 'left' && env.text.showLogo) && (showBrand || showModel)
     if (showLeftText) {
       if (showBrand) {
-        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, S * 0.028 * sizeOf('brand'), theme.fg, {
-          family: FONT_AVENIR,
-          weight: 600,
-          tracking: 0.02,
+        drawFitted(ctx, makeText, leftX, footerTop + footer * brandY, leftW, brandSize * sizeOf('brand'), theme.fg, {
+          family: brandFont,
+          weight: brandWeight,
+          tracking: brandTracking,
           min: S * 0.013
         })
       }
       if (showModel) {
-        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, S * 0.025 * sizeOf('model'), theme.sub, {
-          family: FONT_SERIF,
-          weight: 700,
-          tracking: 0.015,
+        drawFitted(ctx, modelText, leftX, footerTop + footer * modelY, leftW, modelSize * sizeOf('model'), theme.sub, {
+          family: bodyFont,
+          weight: modelWeight,
+          tracking: modelTracking,
           min: S * 0.01
         })
       }
@@ -1262,15 +1279,15 @@ const brandFooter: TemplateDef = {
     }
     if (on('exif') && ex) {
       drawFitted(ctx, ex, rightX, footerTop + footer * exifY, rightW, S * 0.027 * sizeOf('exif'), theme.fg, {
-        family: FONT_AVENIR,
-        weight: 500,
+        family: bodyFont,
+        weight: bodyWeight,
         tracking: 0.01,
         min: S * 0.012
       })
     }
     if (on('date') && dt) {
       drawFitted(ctx, dt, rightX, footerTop + footer * dateY, rightW, S * 0.021 * sizeOf('date'), theme.sub, {
-        family: FONT_AVENIR,
+        family: bodyFont,
         weight: 400,
         tracking: 0.01,
         min: S * 0.01
@@ -1278,8 +1295,8 @@ const brandFooter: TemplateDef = {
     }
     if (custom) {
       drawFitted(ctx, custom, rightX, footerTop + footer * 0.88, rightW, S * 0.016, theme.accent, {
-        family: FONT_AVENIR,
-        weight: 500,
+        family: bodyFont,
+        weight: bodyWeight,
         min: S * 0.009
       })
     }

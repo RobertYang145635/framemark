@@ -602,11 +602,31 @@ function LogoEditor() {
   )
 }
 
+function FooterFontSection() {
+  const design = useAppStore((s) => s.design)
+  const setParam = useAppStore((s) => s.setParam)
+  return (
+    <Section title="字体" hint="整块水印共用；品牌、机型与参数一起变">
+      <Segmented
+        value={String(design.params.footerFont ?? 'oppo') as 'oppo' | 'misans' | 'serif'}
+        options={[
+          { value: 'oppo', label: 'OPPO', hint: 'OPPO Sans：哈苏边框机型行同款' },
+          { value: 'misans', label: '现代', hint: 'MiSans：干净的相机厂现代无衬线' },
+          { value: 'serif', label: '衬线', hint: 'Butler：高对比经典衬线' }
+        ]}
+        onChange={(v) => setParam('footerFont', v)}
+      />
+    </Section>
+  )
+}
+
 function TextEditor() {
   const design = useAppStore((s) => s.design)
   // Stock cards get their own per-slot text controls; the generic title/subtitle
   // fields would be abstract, inert-looking inputs for them.
   const hand = isHandTemplate(design)
+  const footerClassic =
+    design.templateId === 'brandFooter' && String(design.params.footerMode ?? 'classic') === 'classic'
   return (
     <>
       {hand ? (
@@ -616,6 +636,7 @@ function TextEditor() {
         </>
       ) : null}
       <EditorControlList tab="text" />
+      {footerClassic ? <FooterFontSection /> : null}
     </>
   )
 }

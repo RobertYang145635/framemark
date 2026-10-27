@@ -19,6 +19,13 @@ export function ensureFonts(): Promise<void> {
       document.fonts.load('500 40px "StockAvenir"'),
       document.fonts.load('600 40px "StockAvenir"'),
       document.fonts.load('700 40px "StockAvenir"'),
+      document.fonts.load('400 40px "StockMiSans"'),
+      document.fonts.load('600 40px "StockMiSans"'),
+      document.fonts.load('400 40px "StockSysSans"'),
+      document.fonts.load('600 40px "StockSysSans"'),
+      document.fonts.load('700 40px "StockSysSans"'),
+      document.fonts.load('500 40px "StockButler"'),
+      document.fonts.load('700 40px "StockButler"'),
       document.fonts.load('700 40px Zeiss'),
       // FONT_TECH is declared as Chakra Petch 600 italic only; the exif/tech
       // lines render with a normal 600 request, so load both to avoid a cold

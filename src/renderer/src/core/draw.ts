@@ -6,8 +6,12 @@ export { modelWithoutMake }
 export const FONT_UI = '"Inter", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif'
 /** 品牌页脚的手写模板用 Avenir Next：比 Inter 更接近相机厂水印的字感。 */
 export const FONT_AVENIR = '"StockAvenir", "Avenir Next", "Inter", "Microsoft YaHei", sans-serif'
-/** 机型行可选衬线：Times New Roman 在 Windows/macOS 自带，移动端回落到通用 serif。 */
-export const FONT_SERIF = '"Times New Roman", "Nimbus Roman", "Liberation Serif", "Noto Serif", serif'
+/** OPPO Sans（SysSans 可变字体）：OPPO 相册哈苏边框机型行同款。 */
+export const FONT_SYS = '"StockSysSans", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
+/** 文字边框的“现代”字面：MiSans 有真 600 字重，比 Inter 更像相机厂排版。 */
+export const FONT_MISANS = '"StockMiSans", "OplusSans", "Inter", "Microsoft YaHei", sans-serif'
+/** 文字边框的“衬线”字面：Butler 的高对比衬线，比 Times 更适合小字号品牌行。 */
+export const FONT_BUTLER = '"StockButler", "Butler", "Inter", "Microsoft YaHei", serif'
 export const FONT_DISPLAY = '"Bebas Neue", "Inter", "Microsoft YaHei", sans-serif'
 export const FONT_MONO = '"JetBrains Mono", "SFMono-Regular", "Consolas", monospace'
 export const FONT_HAND = '"Caveat", "Segoe Script", "KaiTi", cursive'
