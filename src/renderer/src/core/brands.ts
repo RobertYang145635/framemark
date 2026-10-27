@@ -83,7 +83,7 @@ export const BRANDS: BrandDef[] = [
   def('nubia', 'nubia', '努比亚', 'phone', ['nubia_black', 'nubia_white']),
   def('apple', 'Apple', '苹果', 'phone', ['apple', 'apple_black', 'apple_white']),
   def('huawei', 'HUAWEI', '华为', 'phone', ['huawei', 'huawe_black', 'huawei_white']),
-  def('xiaomi', 'Xiaomi', '小米', 'phone', ['xiaomi', 'xiaomi_loing']),
+  def('xiaomi', 'Xiaomi', '小米', 'phone', ['xiaomi', 'xiaomi_loing', 'xiaomi_loing_white', 'xiaomi_loing_black']),
   def('oppo', 'OPPO', 'OPPO', 'phone', ['oppo_black', 'oppo_white', 'oppo_green']),
   def('vivo', 'vivo', 'vivo', 'phone', ['vivo_black', 'vivo_white', 'vivo_blue']),
   def('honor', 'HONOR', '荣耀', 'phone', ['honor', 'honor_black', 'honor_white']),

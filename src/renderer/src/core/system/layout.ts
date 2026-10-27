@@ -496,7 +496,7 @@ function placedBounds(items: PlacedItem[]): StockRect | null {
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 }
 }
 
-function fitBandItems(box: StockRect, items: PlacedItem[]): void {
+function fitBandItems(box: StockRect, items: PlacedItem[], preservePosition = false): void {
   const bounds = placedBounds(items)
   if (!bounds) return
   const padX = box.w * 0.025
@@ -506,6 +506,26 @@ function fitBandItems(box: StockRect, items: PlacedItem[]): void {
     bounds.x + bounds.w > inner.x + inner.w + 0.5 || bounds.y + bounds.h > inner.y + inner.h + 0.5
   if (!overflow) return
   const scale = Math.min(1, inner.w / Math.max(1, bounds.w), inner.h / Math.max(1, bounds.h))
+  // A vendor margin can sit just inside the 2.5/4% safety inset (standard 7 uses
+  // a 30dp bottom margin = 3.7% of an 810dp photo). The old code treated that
+  // 2.4-unit overlap as a full overflow, scaled to 1 and re-centred the whole
+  // watermark — moving a bottom-left stamp to the middle of the photo. If the
+  // content already fits the inner box, translate it back by the smallest amount
+  // instead; scaling + centring stays for genuinely oversized content.
+  if (preservePosition && scale >= 0.999) {
+    const tx = bounds.x < inner.x
+      ? inner.x - bounds.x
+      : bounds.x + bounds.w > inner.x + inner.w
+        ? inner.x + inner.w - (bounds.x + bounds.w)
+        : 0
+    const ty = bounds.y < inner.y
+      ? inner.y - bounds.y
+      : bounds.y + bounds.h > inner.y + inner.h
+        ? inner.y + inner.h - (bounds.y + bounds.h)
+        : 0
+    for (const item of items) item.box = { ...item.box, x: item.box.x + tx, y: item.box.y + ty }
+    return
+  }
   const offsetX = inner.x + (inner.w - bounds.w * scale) / 2 - bounds.x * scale
   const offsetY = inner.y + (inner.h - bounds.h * scale) / 2 - bounds.y * scale
   for (const item of items) {
@@ -614,9 +634,9 @@ function clearArtFromScaledText(items: PlacedItem[], fontScale: number): void {
   }
 }
 
-function finishBand(box: StockRect, items: PlacedItem[], fontScale = 1): void {
+function finishBand(box: StockRect, items: PlacedItem[], fontScale = 1, preservePosition = false): void {
   clearArtFromScaledText(items, fontScale)
-  fitBandItems(box, items)
+  fitBandItems(box, items, preservePosition)
   annotateBrandFree(box, items)
 }
 
@@ -645,7 +665,7 @@ function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv, bandPath:
       const y = box.y + (m?.top ?? 0) + (parts.v === 'bottom' ? contentH - size.h : parts.v === 'center' ? (contentH - size.h) / 2 : 0)
       placeNode(child, { x, y, w: size.w, h: size.h }, env, out, childPath)
     }
-    finishBand(box, out, textScaleOf(env.text?.fontScale))
+    finishBand(box, out, textScaleOf(env.text?.fontScale), band.direction === 'overlay')
     return { band, box, items: out }
   }
   // OPPO bands with multiple children are effectively a row; a single child group supplies its own orientation.
@@ -658,7 +678,7 @@ function placeBandRoot(band: StockBand, box: StockRect, env: StockEnv, bandPath:
     children: band.children
   }
   layoutChildren(root, box, env, out, paths)
-  finishBand(box, out, textScaleOf(env.text?.fontScale))
+  finishBand(box, out, textScaleOf(env.text?.fontScale), band.direction === 'overlay')
   return { band, box, items: out }
 }
 
