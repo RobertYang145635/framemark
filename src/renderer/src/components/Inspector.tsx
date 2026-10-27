@@ -661,9 +661,12 @@ function LayoutEditor() {
   // or a rotated edge strip); pure border-frame stock cards have nothing to
   // move and stay honest (no dead control). Same rule as the hidden Logo
   // controls above. See `core/system/layout.ts/solveStockLayout`.
+  const stockStyle = isSystemCamera ? getStockStyle(String(design.params.systemStyle ?? '')) : null
   const stockMovable =
     isSystemCamera &&
-    !!getStockStyle(String(design.params.systemStyle ?? ''))?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
+    !!stockStyle?.bands.some((b) => b.direction === 'overlay' || !!b.rotation)
+  const stockBanded = Boolean(stockStyle?.bands.some((b) => b.direction !== 'overlay'))
+  const stockScaleKey = stockStyle ? `stockScale:${stockStyle.id}` : ''
   // 'vendor' = the style's own committed position (pixel-identical default).
   const stockAnchor = String(design.params.stockAnchor ?? 'vendor')
   const hasStyleLayoutControls = (controlsFor(design)?.views ?? []).some(
@@ -762,9 +765,25 @@ function LayoutEditor() {
           </div>
         ) : null}
       </Section>
-      ) : (
+      ) : stockBanded ? null : (
         <p className="hint-note">这个版式没有可调的布局参数；文字内容在「文字」页调整。</p>
       )}
+
+      {stockBanded ? (
+        <Section title="边框大小" hint="100% = 厂商原版比例">
+          <Slider
+            label="整体大小"
+            hint="白边、文字、Logo 一起缩放"
+            value={Number(design.params[stockScaleKey] ?? 100)}
+            min={60}
+            max={150}
+            step={1}
+            suffix="%"
+            onChange={(v) => setParam(stockScaleKey, v)}
+            onReset={() => resetParam(stockScaleKey)}
+          />
+        </Section>
+      ) : null}
 
       {(isMinimal || isFooter) ? (
         <Section title="细节">
