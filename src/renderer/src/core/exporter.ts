@@ -226,7 +226,7 @@ export async function exportBatch(options: BatchOptions): Promise<BatchResult> {
       const r = await exportOne(photo, design, i, presetName)
       results.push(r)
     } catch (e) {
-      errors.push({ name: photo.name, message: e instanceof Error ? e.message : String(e) })
+      errors.push({ name: photo.name, message: friendlyExportError(e instanceof Error ? e.message : String(e)) })
     }
     onProgress?.(i + 1, photos.length, photo.name)
     await new Promise((r) => setTimeout(r, 16))
