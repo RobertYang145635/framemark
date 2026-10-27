@@ -6,6 +6,12 @@
 > 文档收口：2026-10-25（W0b）；交付基线时间：**2026-10-25 23:22**（ALIGN-PACKAGE 重打包，本机时区）；最近更新：2026-10-25（**ANCHOR-PACKAGE**：`ff32b4b` feat(system-camera) 3 套 OPPO 侧边条带样式支持厂商 band 旋转（`personalize_film_2` / `personalize_film_realme_2` / `personalize_masterSign_3`，仍 `approx`、待真机样张判定）与 `3b48e89` feat(system-camera) **系统相机九宫格锚点选择器**落库——stock 水印位置由 `AnchorGrid`（与自定义水印面板共用控件）+ 第 10 项「厂商原版」默认位选择，整组可动条带（含旋转条带）作为刚性整体平移到照片画布锚点位并限幅不出界，X/Y 滑块降级为水平/垂直微调；默认渲染与 rotation-verify 基线**逐字节一致**（4 张默认导出 Buffer.equals 全 true）；typecheck/build 0、e2e 164/96/4、workflow 106/106、validate-ir 90 样式 0 error、watermark-e2e 锚点选择器 `.anchor-grid button[title="右下"]` 未破坏；打包版 exe 复测 **164/96/4/62、0 pageerror 且锚点实测可用**（`anchor-packaged.json`）；真机覆盖安装冷启动 **764 ms / LaunchState COLD**（`fm-anchor-cold.png`）；交付集（zip/APK/docx/PDF/SHA256.txt）全部重签发，`sha256sum -c` **4/4 OK**；此前 **CLOSE-OUT 收口**：REPACKAGE 之后又有四个提交落库——`394ebe1` fix(vendor) 小米 FrameLayout gravity（leica-111 字标散落修复）、`549a653` feat(system-camera) 品牌字标改随照片 EXIF 品牌 / Inspector 手选、`652807f` fix(vendor) 小米 leica-92 焦距行重力、`ddd9dec` chore(previews) wm-black 预览重生成；全量重打包并刷新交付集，HEAD **`ddd9dec`**；**W1 终审 47/47 PASS**、**W2 workflow 106/106**、**W3 厂商同步（OPPO Gallery 17.10.7 + 小米 NeoHyper 17 Ultra）**、**W4 Android 真机走查四项全 PASS**、**CLOSE-OUT 打包版复测 164/96/4/62、0 pageerror，真机冷启动 365 ms / LaunchState COLD**、**打包版品牌字标抽检：DC-S1 样张下 leica-91/111 字标均为 Panasonic**；绘制级文字对文字重叠全库仅剩 1 处（`hassel_style_xpan_1` 厂商负行距，字形可读，按保真原则保留）；目录 **164 卡 = 68 手写 + 96 系统相机**，95 套 stock 全 `approx`、**0 `verified`**）。
 > **当前状态：待用户目视签字**——机器门槛（typecheck / build / e2e / workflow / validate:ir / 47 套逐套测量 / 真机走查）全绿，唯一欠项是用户对 47 套与厂商线的目视签收；签收前不宣称 pixel-perfect、不升级任何 `verified`。
 >
+> **2026-10-27 #73 焦距语义闭合（PM 报告唯一 P0）**
+> - 读取改为**优先 35mm 等效（0xA405）**，缺失时回退物理焦距；exifr 的 rational 对（如 [2300,100]）先归一化再比较。
+> - 写回安全线：`focalEquivalent` 随 fallback EXIF 传入主进程；重建 EXIF 时等效值写 `FocalLengthIn35mmFilm`（0xA405），**不再写 `FocalLength`（0x920A）**，避免污染用户照片元数据。
+> - 实测（`_research/focal/`，合成 OPPO 片：物理 4mm / 等效 23mm）：水印行印 **23mm**；导出 JPG 后 `0x920A=4`、`0xA405=23` 原样保留。
+> - 顺带修复 `friendlyExportError` 中未转义的 `s*`（此前未能剥掉 "Error:" 前缀）。
+
 > **2026-10-27 收尾轮（质量遗留 + 体验审计 + 手写控件 + 玻璃换皮）**
 > - **T13 覆盖归零**：b3 检测器用记录中的绘制矩阵归位 translate/rotate 的 op（`_research/baseline-sign2/tools/overlap-check-b3.cjs`），未定位 **66 → 0**；5 个裁剪后无墨迹的画布外 op 单列（`outsideCanvasOps`）；阈值、桶与 canary 一字未改，严重重叠仍 0；7 条 ≤0.27% 相邻 run 边接触落 `accepted-adjacent-run-edge-touch`。`final-check` T13 现要求**未定位 = 0**。
 > - **文字行覆盖键**：`<variantId>#<source>#<n>`，旧 `<source>#<n>` 在 hydrate 时迁移；验证：改字/隐藏旁源不回退、旧键迁移后仍生效、空覆盖逐像素等同。
