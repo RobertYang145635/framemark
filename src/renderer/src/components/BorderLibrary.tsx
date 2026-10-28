@@ -396,6 +396,14 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
               </button>
             ))}
           </nav>
+          {/* Level-2 vendor chips live OUTSIDE .border-scroll (same as the level-1
+              nav above) so they stay pinned: the card list is the only scroller and
+              nothing can paint behind them. Kept in-section only for the modal. */}
+          {activeCategory === 'vendor' && !query.trim() ? (
+            <div className="border-vendor-dock">
+              <VendorChips brand={brand} onSelect={selectBrand} />
+            </div>
+          ) : null}
         </>
       ) : null}
 
@@ -422,7 +430,7 @@ export function BorderLibrary({ modal = false, onPick }: { modal?: boolean; onPi
               onToggleGroup={(key) => setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }))}
               onToggleFold={(key) => setFoldedGroups((prev) => ({ ...prev, [key]: !prev[key] }))}
               onPick={onPick}
-              vendorChips={section.key === 'vendor' ? <VendorChips brand={brand} onSelect={selectBrand} /> : null}
+              vendorChips={modal && section.key === 'vendor' ? <VendorChips brand={brand} onSelect={selectBrand} /> : null}
             />
           )
         })}

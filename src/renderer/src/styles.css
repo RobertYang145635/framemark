@@ -4142,6 +4142,14 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
 }
 .templates-panel.glass {
   margin: 10px 0 12px 12px;
+  /* U3：面板自己的 20px 圆角画对了，坏在子元素 —— `.border-library-head` 的
+     `background: linear-gradient(180deg, var(--glass-btn), transparent 92%)`
+     （G2′ 头部表面）是"方"的，面板 overflow:visible ⇒ 白渐变直接盖住上面两个圆角，
+     看起来就是 90° 直角。右栏顶部没有这种贴边渐变子元素，所以圆角正常。
+     这里只把子元素裁进圆角，面板尺寸/位置/边距一律不动。
+     clip 不建滚动容器（hidden 会），旧内核回落到 hidden 也仍然是裁圆角。 */
+  overflow: hidden;
+  overflow: clip;
 }
 .sidebar.inspector-panel {
   margin: 10px 12px 12px 0;
@@ -4567,6 +4575,19 @@ html[data-color-mode='light'][data-glass-quality='flat'] {
 .border-chip.active em {
   color: inherit;
   opacity: 0.7;
+}
+/* U3：二级厂商 chips 从 `.border-scroll` 里搬出来，停在滚动区上方和一级分类并列。
+   滚动区里原来的 sticky 方案在桌面栏被 `.border-section-active …{position:static}`
+   归零、且卡片会从半透明底透上来；移到滚动容器外以后卡片没有任何路径能盖到 chips。 */
+.border-vendor-dock {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.border-vendor-dock .border-vendor-chips {
+  border-top: 0;
+  border-bottom: 0;
+  padding: 7px 12px 10px;
 }
 .border-scroll {
   flex: 1;
