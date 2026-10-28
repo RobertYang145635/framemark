@@ -585,8 +585,20 @@ export function extractPalette(env: TemplateRenderEnv, count = 5): string[] {
   }
 }
 
+/**
+ * S6a seam canary, never on by default: while set, drawGrain is a no-op for the
+ * CURRENT paint. scene.paintScene sets it around exactly one band when
+ * FRAMEMARK_SEAM_CANARY=1, so the tile gate must go red there — a canary the
+ * gate cannot see would make every later "no seam" claim meaningless.
+ */
+let grainSuppressed = false
+
+export function setGrainSuppressed(v: boolean): void {
+  grainSuppressed = v
+}
+
 export function drawGrain(env: TemplateRenderEnv, W: number, H: number, opacity: number): void {
-  if (opacity <= 0) return
+  if (opacity <= 0 || grainSuppressed) return
   const s = 128
   const tmp = document.createElement('canvas')
   tmp.width = s

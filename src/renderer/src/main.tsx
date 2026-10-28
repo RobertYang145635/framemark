@@ -77,6 +77,40 @@ interface DebugRenderOptions {
   brandVersion?: BrandVersionRef | null
   /** `false` silences every logo path (brand slots included). */
   showLogo?: boolean
+  /**
+   * Debug-only differential hook: merged into `design.params` AFTER
+   * `makeDesignFromVariant` has merged the template defaults and the variant
+   * overlay. The normal UI never passes it.
+   */
+  params?: Record<string, unknown>
+  /** Debug-only differential hook: merged into `design.text` (`text.*` controls). */
+  text?: Partial<TextSettings>
+  /**
+   * Debug-only differential hook: replaces `design.logo` after the variant's
+   * own logo resolution; a file name from the brand registry, or null to clear.
+   */
+  logoFile?: string | null
+  /** Return an FNV-1a pixel digest instead of a data URL (differential audits). */
+  hash?: boolean
+}
+
+/**
+ * FNV-1a over the RGBA bytes of a rendered canvas. Debug-only: `scripts/`
+ * differential audits hash thousands of frames, so this must not allocate a
+ * data URL or encode an image. 32 bits is plenty to catch a changed pixel.
+ */
+function pixelDigest(canvas: HTMLCanvasElement): string {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('无法读取画布像素')
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  let h = 0x811c9dc5
+  for (let i = 0; i < data.length; i += 4) {
+    h = Math.imul(h ^ data[i], 0x01000193)
+    h = Math.imul(h ^ data[i + 1], 0x01000193)
+    h = Math.imul(h ^ data[i + 2], 0x01000193)
+    h = Math.imul(h ^ data[i + 3], 0x01000193)
+  }
+  return `fnv1a:${(h >>> 0).toString(16).padStart(8, '0')}`
 }
 
 // The debug API mirrors what the gallery can actually render: every hand-written
@@ -186,6 +220,11 @@ async function renderStockPreview(id: string, opts?: DebugRenderOptions): Promis
   if (opts?.theme !== undefined) design.params.theme = opts.theme
   design.brandVersion = opts?.brandVersion ?? null
   if (opts?.showLogo === false) design.text.showLogo = false
+  if (opts?.params) Object.assign(design.params, opts.params)
+  if (opts?.text) Object.assign(design.text, opts.text)
+  if (opts?.logoFile !== undefined) {
+    design.logo = opts.logoFile ? await logoAsset(opts.logoFile) : null
+  }
   const canvas = document.createElement('canvas')
   const exportMode = Boolean(opts && (opts.ratio || opts.maxEdge))
   const rendered = await renderDesign(canvas, design, asset, image, imageW, imageH, { preview: !exportMode })
@@ -202,12 +241,22 @@ async function renderStockPreview(id: string, opts?: DebugRenderOptions): Promis
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
     ctx.drawImage(canvas, (THUMB_W - dw) / 2, (THUMB_H - dh) / 2, dw, dh)
-    return { data: out.toDataURL('image/webp', 0.86), W: rendered.W, H: rendered.H, photoRect: rendered.photoRect }
+    return {
+      data: opts?.hash ? pixelDigest(out) : out.toDataURL('image/webp', 0.86),
+      W: rendered.W,
+      H: rendered.H,
+      photoRect: rendered.photoRect
+    }
   }
   const maxEdge = Math.max(0, Math.floor(Number(opts?.maxEdge) || 0))
   const scale = maxEdge > 0 ? Math.min(1, maxEdge / Math.max(canvas.width, canvas.height)) : 1
   if (scale >= 1) {
-    return { data: canvas.toDataURL('image/png'), W: canvas.width, H: canvas.height, photoRect: rendered.photoRect }
+    return {
+      data: opts?.hash ? pixelDigest(canvas) : canvas.toDataURL('image/png'),
+      W: canvas.width,
+      H: canvas.height,
+      photoRect: rendered.photoRect
+    }
   }
   const outW = Math.max(1, Math.round(canvas.width * scale))
   const outH = Math.max(1, Math.round(canvas.height * scale))
@@ -224,7 +273,12 @@ async function renderStockPreview(id: string, opts?: DebugRenderOptions): Promis
     w: rendered.photoRect.w * scale,
     h: rendered.photoRect.h * scale
   }
-  return { data: out.toDataURL('image/png'), W: outW, H: outH, photoRect }
+  return {
+    data: opts?.hash ? pixelDigest(out) : out.toDataURL('image/png'),
+    W: outW,
+    H: outH,
+    photoRect
+  }
 }
 
 async function renderVariantPreview(
@@ -247,7 +301,12 @@ async function renderVariantPreview(
   if (opts?.theme !== undefined) design.params.theme = opts.theme
   design.brandVersion = opts?.brandVersion ?? null
   if (opts?.showLogo === false) design.text.showLogo = false
+  if (opts?.params) Object.assign(design.params, opts.params)
+  if (opts?.text) Object.assign(design.text, opts.text)
   await applyVariantLogo(design, variant, asset)
+  if (opts?.logoFile !== undefined) {
+    design.logo = opts.logoFile ? await logoAsset(opts.logoFile) : null
+  }
 
   const canvas = document.createElement('canvas')
   const exportMode = Boolean(opts && (opts.ratio || opts.maxEdge))
@@ -270,13 +329,23 @@ async function renderVariantPreview(
       canvas.width * scale,
       canvas.height * scale
     )
-    return { data: out.toDataURL('image/webp', 0.86), W: rendered.W, H: rendered.H, photoRect: rendered.photoRect }
+    return {
+      data: opts?.hash ? pixelDigest(out) : out.toDataURL('image/webp', 0.86),
+      W: rendered.W,
+      H: rendered.H,
+      photoRect: rendered.photoRect
+    }
   }
 
   const maxEdge = Math.max(0, Math.floor(Number(opts?.maxEdge) || 0))
   const scale = maxEdge > 0 ? Math.min(1, maxEdge / Math.max(canvas.width, canvas.height)) : 1
   if (scale >= 1) {
-    return { data: canvas.toDataURL('image/png'), W: canvas.width, H: canvas.height, photoRect: rendered.photoRect }
+    return {
+      data: opts?.hash ? pixelDigest(canvas) : canvas.toDataURL('image/png'),
+      W: canvas.width,
+      H: canvas.height,
+      photoRect: rendered.photoRect
+    }
   }
   const outW = Math.max(1, Math.round(canvas.width * scale))
   const outH = Math.max(1, Math.round(canvas.height * scale))
@@ -293,7 +362,12 @@ async function renderVariantPreview(
     w: rendered.photoRect.w * scale,
     h: rendered.photoRect.h * scale
   }
-  return { data: out.toDataURL('image/png'), W: outW, H: outH, photoRect }
+  return {
+    data: opts?.hash ? pixelDigest(out) : out.toDataURL('image/png'),
+    W: outW,
+    H: outH,
+    photoRect
+  }
 }
 
 interface VariantDebugApi {
@@ -328,6 +402,17 @@ interface HistoryDebugApi {
   }
 }
 
+/**
+ * S5-only: readback for the main-process runtime flags. The renderer does not
+ * consume `tile` / `seamCanary` yet; this exists so `scripts/tile-ab.cjs` can
+ * assert the env -> main -> preload -> renderer plumbing before it renders
+ * anything. Android has no preload bridge, so `window.framemark` is undefined
+ * there and `get()` returns the inert pair.
+ */
+interface FlagsDebugApi {
+  get: () => { tile: boolean; seamCanary: boolean }
+}
+
 const debugWindow = window as unknown as {
   __fmStock: {
     list: () => {
@@ -344,6 +429,7 @@ const debugWindow = window as unknown as {
   }
   __fmVariants: VariantDebugApi
   __fmHistory: HistoryDebugApi
+  __fmFlags: FlagsDebugApi
 }
 
 debugWindow.__fmStock = {
@@ -366,6 +452,15 @@ debugWindow.__fmStock = {
 debugWindow.__fmVariants = {
   list: () => RENDERABLE_VARIANTS.map((v) => ({ id: v.id, name: v.name, category: v.category })),
   render: renderVariantPreview
+}
+
+debugWindow.__fmFlags = {
+  get: () => {
+    // `window.framemark` is the preload bridge (src/preload/index.ts). The
+    // optional chain is the Android story: no bridge, both flags inert.
+    const bridge = (window as unknown as { framemark?: { flags?: { tile?: unknown; seamCanary?: unknown } } }).framemark
+    return { tile: bridge?.flags?.tile === true, seamCanary: bridge?.flags?.seamCanary === true }
+  }
 }
 
 debugWindow.__fmHistory = {

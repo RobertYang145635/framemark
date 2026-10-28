@@ -2,6 +2,7 @@ package com.framemark.app;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.view.WindowManager;
 import android.webkit.WebView;
 
 import androidx.core.content.ContextCompat;
@@ -39,6 +40,7 @@ public class ExportForegroundPlugin extends Plugin {
         if (live != null) {
             live.updateProgress(0, total, current);
             setRendererImportant(true);
+            setKeepScreenOn(true);
             resolveRunning(call, true);
             return;
         }
@@ -50,6 +52,7 @@ public class ExportForegroundPlugin extends Plugin {
             intent.putExtra(ExportService.EXTRA_CURRENT, current == null ? "" : current);
             ContextCompat.startForegroundService(getContext(), intent);
             setRendererImportant(true);
+            setKeepScreenOn(true);
             resolveRunning(call, true);
         } catch (Exception error) {
             // Never let a service failure fail the export: the batch still runs,
@@ -88,7 +91,44 @@ public class ExportForegroundPlugin extends Plugin {
             }
         }
         setRendererImportant(false);
+        setKeepScreenOn(false);
         resolveRunning(call, false);
+    }
+
+    /**
+     * S9: keep the display awake for the export window.
+     *
+     * The window flag is the smallest change: it belongs to the ACTIVITY window,
+     * so it cannot outlive the app (closing the app destroys the window and the
+     * flag with it) and it needs no permission. It is set in the same calls that
+     * start the foreground notification and cleared in the same calls that stop
+     * it — stop() is what the renderer runs on completion, cancellation and a
+     * thrown batch (store.ts `finally`), so the release path is identical.
+     */
+    private void setKeepScreenOn(final boolean on) {
+        final Activity activity = getActivity();
+        if (activity == null) return;
+        activity.runOnUiThread(() -> {
+            try {
+                if (on) {
+                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                } else {
+                    activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                }
+            } catch (Throwable ignored) {
+                // best effort: a missing window must never fail the export
+            }
+        });
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        // The activity is going away with an export still marked running (a
+        // cancelled JS side, a hot reload): leave nothing that keeps the screen
+        // on or pins the renderer priority.
+        setKeepScreenOn(false);
+        setRendererImportant(false);
+        super.handleOnDestroy();
     }
 
     /**
@@ -106,7 +146,7 @@ public class ExportForegroundPlugin extends Plugin {
                 WebView webView = bridgeActivity.getBridge().getWebView();
                 if (webView == null) return;
                 webView.setRendererPriorityPolicy(
-                        important ? WebView.RENDERER_PRIORITY_IMPORTANT : WebView.RENDERER_PRIORITY_VISIBLE,
+                        important ? WebView.RENDERER_PRIORITY_IMPORTANT : WebView.RENDERER_PRIORITY_BOUND,
                         !important);
             } catch (Throwable ignored) {
                 // older WebView: keep the default policy

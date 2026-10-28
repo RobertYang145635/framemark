@@ -4,8 +4,9 @@ import type { Design, PhotoAsset } from '../types'
 import { getTemplate } from './templates'
 import { getVariant } from './variants'
 import { loadFullBitmap } from './photos'
-import { renderDesign } from './scene'
+import { renderDesign, prepareScene, paintScene } from './scene'
 import { canvasToArrayBuffer, canvasToBlob, createCanvas } from './images'
+import { ENCODE_PROFILE, ANDROID_WEBP_LOSSY, webpBitstreamKind } from './encode-profile'
 import { formatDateOnly } from './exif'
 import { blobToBase64, GallerySaver } from './gallery'
 
@@ -135,15 +136,34 @@ async function exportAndroid(
   fullBytes: Uint8Array | undefined,
   name: string
 ): Promise<ExportResult> {
-  const format = design.export.format === 'tiff' ? 'jpeg' : design.export.format
-  const mime = format === 'jpeg' ? 'image/jpeg' : format === 'png' ? 'image/png' : 'image/webp'
-  let blob = await canvasToBlob(canvas, mime, format === 'jpeg' ? design.export.quality / 100 : 1)
-  if (format === 'jpeg') {
-    blob = await injectExifOnDevice(blob, fullBytes, photo, canvas.width, canvas.height, design.export.removeGps)
+  // S8: one policy for both ends. The numbers and their measured justification
+  // live in core/encode-profile.ts; this function only applies them.
+  const rule = ENCODE_PROFILE.formats[design.export.format]
+  if (!rule) throw new Error(`不支持的导出格式：${String(design.export.format)}`)
+  if (rule.android === 'unsupported') throw new Error(rule.androidMessage)
+  // The policy says exportOne already applied longEdge before this branch.
+  // Verify it here so a regression cannot silently export an oversized image.
+  const longEdge = Number(design.export.longEdge) || 0
+  if (ENCODE_PROFILE.longEdge.appliedBeforeEncode && longEdge > 0 && Math.max(canvas.width, canvas.height) > longEdge) {
+    throw new Error('长边限制未在编码前应用（内部错误）')
+  }
+  const quality =
+    rule.androidQuality === 'design'
+      ? Math.min(1, Math.max(0, design.export.quality / 100))
+      : rule.androidQuality ?? undefined
+  let blob = await canvasToBlob(canvas, rule.mime, quality)
+  if (rule.lossless && rule.mime === 'image/webp') {
+    // Measured VP8L at quality 1, but the device's WebView is not this
+    // Chromium. Refuse a lossy bitstream instead of shipping it silently.
+    if ((await webpBitstreamKind(blob)) === 'lossy') throw new Error(ANDROID_WEBP_LOSSY)
+  }
+  if (rule.exif) {
+    const removeGps =
+      typeof design.export.removeGps === 'boolean' ? design.export.removeGps : ENCODE_PROFILE.gps.removeByDefault
+    blob = await injectExifOnDevice(blob, fullBytes, photo, canvas.width, canvas.height, removeGps)
   }
   const base64 = await blobToBase64(blob)
-  const ext = extension(format)
-  const result = await GallerySaver.saveImage({ base64, fileName: `${name}${ext}`, mimeType: mime })
+  const result = await GallerySaver.saveImage({ base64, fileName: `${name}${rule.extension}`, mimeType: rule.mime })
   return { path: result.uri, width: canvas.width, height: canvas.height, bytes: blob.size }
 }
 
@@ -171,6 +191,175 @@ export function friendlyExportError(message: string): string {
   return clean.length > 160 ? clean.slice(0, 160) + '…' : clean
 }
 
+type RenderOut = Awaited<ReturnType<typeof renderDesign>>
+
+const BAND_MIN = 256
+const BAND_MAX = 8192
+
+/**
+ * S6b overlap margin: each band is painted into a strip that also holds M extra
+ * rows above and below it; only the band's own rows are copied into the full
+ * canvas. M=64 is 5x the widest boundary-local footprint measured in
+ * _research/s6b/mech-probe (white-2's 4-px path edge at row 2048, which spans 6
+ * rows either side of the seam): with M=64 white-2 went from 38 maxAbs to 0.
+ * It costs 2*M extra rows per strip.
+ *
+ * It does NOT help the surface-height-dependent classes (see BAND_UNSAFE_IDS):
+ * those differ over the whole affected draw, not only at the seam, and stay
+ * different at M = 0..256.
+ */
+const BAND_MARGIN = 64
+
+/**
+ * S6b: templates that must be painted in ONE full-stage pass.
+ *
+ * The S6a inventory split the seams into three classes; the S6b mechanism
+ * probes (_research/s6b/mech-probe/result*.json) showed two of them are the
+ * same Chromium property: canvas2d rasterizer output depends on the HEIGHT of
+ * the destination surface, over the whole affected draw, not just at the seam.
+ *   - ctx.filter = blur(...) : 5M of 12M px differ at band 512, rows 0..H;
+ *                              a full-height pre-paint matches exactly, a
+ *                              band-sized surface never does (default OR
+ *                              willReadFrequently).
+ *   - shadow* on a drawImage : ±1 over the whole shadowed image (21k-45k px),
+ *                              unchanged by M = 0..256.
+ *   - clip + drawImage AA    : ±1 over the clipped image area (ticket-1,
+ *                              stock IR), unchanged by M.
+ * The third class, a 1-px AA pair ON a seam (white-2), IS absorbed by M=64 and
+ * stays banded.
+ *
+ * The opt-in field is TemplateDef.bandUnsafe; the ids below cover templates
+ * declared in core/templates.ts (S6b may only touch its blur blocks) and the
+ * stock painter in core/system/template.ts (out of scope). Both are checked.
+ */
+const BAND_UNSAFE_IDS = new Set<string>([
+  'blur', // draw.ts drawBlurredBackdrop: ctx.filter = blur()
+  'glass', // templates.ts:3211 clipped card, ctx.filter = blur()
+  'glassPalettePortrait', // templates.ts:3466 clipped panel, ctx.filter = blur()
+  'glassSideCard', // drawBlurredBackdrop (same filter class as blur)
+  'profileFrame', // shadow gradient around the photo, ±1..6 across its full width
+  'sideTicket', // clipped photo + card shadow: ±1 over the whole card
+  'film', // sprocket-hole / glyph edges, maxAbs 28, away from any seam
+  'systemCamera' // stock IR painter: clipped crop/path ops the rasterizer varies
+])
+
+/** S6a: `flags.band` (preload, from FRAMEMARK_BAND), default 1024, clamp 256..8192. */
+function bandHeightOf(flags: { band?: unknown } | undefined): number {
+  const raw = Number(flags?.band)
+  if (!Number.isFinite(raw) || raw <= 0) return 1024
+  return Math.min(BAND_MAX, Math.max(BAND_MIN, Math.round(raw)))
+}
+
+/** The S5 harness's in-page op recorder (`window.__fmOps`), when it is installed. */
+interface OpRecorder {
+  reset(opts: { yOffset: number }): void
+  stop?: () => void
+}
+
+/**
+ * S6a banded paint of ONE export: prepare once, then paint ceil(H/band) strips
+ * into their own canvases and copy each into the full-size canvas. The caller
+ * gets back the same shape `renderDesign` returns, so the longEdge path below
+ * cannot tell the two apart. Every strip is released (1x1) right after the copy.
+ *
+ * `seamCanary` drops the grain overlay in exactly one band (index 1). It exists
+ * only to prove the gate can see a seam; it is never enabled by default.
+ */
+async function paintBanded(
+  canvas: HTMLCanvasElement,
+  design: Design,
+  photo: PhotoAsset,
+  image: CanvasImageSource,
+  imageW: number,
+  imageH: number,
+  flags: { seamCanary?: unknown; band?: unknown }
+): Promise<RenderOut> {
+  const scene = await prepareScene(design, photo, image, imageW, imageH, { preview: false })
+  // S6b: a template whose painter is not surface-size invariant is painted in
+  // ONE pass over the whole canvas. Pixel-identical or not banded — no tolerance.
+  if (scene.template.bandUnsafe === true || BAND_UNSAFE_IDS.has(scene.template.id)) {
+    const painted = paintScene(canvas, scene)
+    console.info(
+      `[framemark band] ${scene.W}x${scene.H} bandUnsafe template=${scene.template.id} -> single pass`
+    )
+    const dbg = window as unknown as { __fmBandLog?: unknown[] }
+    dbg.__fmBandLog = [
+      ...(Array.isArray(dbg.__fmBandLog) ? dbg.__fmBandLog : []),
+      { W: scene.W, H: scene.H, bandUnsafe: true, template: scene.template.id }
+    ].slice(-50)
+    return painted
+  }
+  const band = bandHeightOf(flags)
+  canvas.width = scene.W
+  canvas.height = scene.H
+  const fullCtx = canvas.getContext('2d', { alpha: false })
+  if (!fullCtx) throw new Error('无法创建画布')
+  fullCtx.imageSmoothingEnabled = true
+  fullCtx.imageSmoothingQuality = 'high'
+  const canaryBand = flags.seamCanary === true ? 1 : -1
+  // The op recorder may be absent (normal app run); when present, its stream is
+  // band-local until it is told the band's origin, hence the reset per band.
+  const recorder = (window as unknown as { __fmOps?: OpRecorder }).__fmOps
+  const ys: number[] = []
+  let photoRect: RenderOut['photoRect'] | null = null
+  const textSlots: RenderOut['textSlots'] = []
+  let resetCount = 0
+  for (let y = 0; y < scene.H; y += band) {
+    const h = Math.min(band, scene.H - y)
+    // S6b overlap: the strip also holds M rows above/below the band so a
+    // boundary-local effect (clip/path AA) is painted with its real neighbours.
+    // Clamped at the canvas edges — there the unbanded pass has the same edge.
+    const index = ys.length
+    // The seam canary takes the overlap margin away from EVERY band: that is
+    // exactly the boundary-AA defect M=64 exists to absorb (white-2: 4 px,
+    // maxAbs 38 at the seam), so a green gate with the canary on would mean the
+    // gate is blind. Grain suppression rides along on ONE band for templates
+    // that draw the grain overlay (the original S6a canary).
+    const canary = canaryBand >= 0
+    const margin = canary ? 0 : BAND_MARGIN
+    const s = Math.max(0, y - margin)
+    const e = Math.min(scene.H, y + h + margin)
+    ys.push(y)
+    if (recorder && typeof recorder.reset === 'function') {
+      // The strip's canvas origin is `s`, so its local y + s is the stage y.
+      recorder.reset({ yOffset: s })
+      resetCount++
+    }
+    const strip = document.createElement('canvas')
+    const painted = paintScene(strip, scene, {
+      band: { y: s, h: e - s },
+      suppressGrain: canary && index === canaryBand
+    })
+    // Copy ONLY the band's own rows: the overlap rows belong to the neighbour
+    // band, which paints them with its own (equally complete) neighbourhood.
+    fullCtx.drawImage(strip, 0, y - s, scene.W, h, 0, y, scene.W, h)
+    strip.width = 1
+    strip.height = 1
+    photoRect = painted.photoRect
+    for (const slot of painted.textSlots) {
+      if (!textSlots.some((s) => s.key === slot.key)) textSlots.push(slot)
+    }
+  }
+  if (resetCount > 0 && recorder?.stop) recorder.stop()
+  const entry = {
+    W: scene.W,
+    H: scene.H,
+    band,
+    bands: ys.length,
+    ys,
+    canaryBand,
+    margin: canaryBand >= 0 ? 0 : BAND_MARGIN
+  }
+  // Evidence hook for _research/s6a (and a human reading devtools). Last 50
+  // exports only: a batch of 200 photos must not accumulate a log forever.
+  const dbg = window as unknown as { __fmBandLog?: unknown[] }
+  dbg.__fmBandLog = [...(Array.isArray(dbg.__fmBandLog) ? dbg.__fmBandLog : []), entry].slice(-50)
+  console.info(
+    `[framemark band] ${scene.W}x${scene.H} band=${band} bands=${ys.length} margin=${canaryBand >= 0 ? 0 : BAND_MARGIN} ys=${ys.join(',')}${canaryBand >= 0 ? ` canary=band${canaryBand}(margin off)` : ''}`
+  )
+  return { W: scene.W, H: scene.H, photoRect: photoRect ?? { x: 0, y: 0, w: scene.W, h: scene.H }, textSlots }
+}
+
 export async function exportOne(
   photo: PhotoAsset,
   design: Design,
@@ -181,7 +370,18 @@ export async function exportOne(
   const full = await loadFullBitmap(photo)
   try {
     const canvas = document.createElement('canvas')
-    const rendered = await renderDesign(canvas, design, photo, full.image, full.width, full.height, { preview: false })
+    // S6a: banded painting is opt-in and desktop-only (Android never runs the
+    // preload, so `flags` is undefined there). With the flag off this is the
+    // exact call it always was — renderDesign keeps its signature and output.
+    const flags = (
+      window as unknown as {
+        framemark?: { flags?: { tile?: unknown; seamCanary?: unknown; band?: unknown } }
+      }
+    ).framemark?.flags
+    const rendered =
+      flags?.tile === true && !isAndroid
+        ? await paintBanded(canvas, design, photo, full.image, full.width, full.height, flags)
+        : await renderDesign(canvas, design, photo, full.image, full.width, full.height, { preview: false })
     let out = canvas
     const longEdge = Number(design.export.longEdge) || 0
     if (longEdge > 0 && Math.max(rendered.W, rendered.H) > longEdge) {

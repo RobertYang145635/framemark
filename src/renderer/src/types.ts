@@ -308,6 +308,17 @@ export interface TemplateDef {
   prepare?: (env: TemplatePrepareEnv) => Promise<{ images?: Record<string, HTMLImageElement> }>
   layout: (env: Omit<TemplateRenderEnv, 'ctx' | 'W' | 'H' | 'photo' | 'design' | 'isPreview'>) => TemplateLayout
   render: (env: TemplateRenderEnv) => Rect
+  /**
+   * S6b: this template cannot be painted in horizontal bands and still be
+   * byte-identical to a single full-stage pass. Chromium's canvas2d rasterizer
+   * output depends on the SURFACE HEIGHT for `ctx.filter`, `shadow*` on a
+   * drawImage, and clipped-image AA (measured, see _research/s6b/mech-probe),
+   * so no overlap margin can absorb it. `paintBanded()` paints such a template
+   * in ONE pass over the whole canvas instead of accepting a tolerance.
+   * Feature-detect it here when a new painter opts in; the same decision is
+   * also enforced by id in exporter.ts for templates defined outside this file.
+   */
+  bandUnsafe?: boolean
 }
 
 export type ExportJob = {

@@ -114,7 +114,7 @@ export function ExportOverlay() {
               <span className="progress-num">{pct}%</span>
             </div>
             {Capacitor.isNativePlatform() ? (
-              <span className="hint-note">锁屏或切到后台时导出可能变慢，但不会中断</span>
+              <span className="hint-note">导出期间请保持应用在前台；切到后台会被系统冻结，导出会暂停</span>
             ) : null}
           </>
         ) : (

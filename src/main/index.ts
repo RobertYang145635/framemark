@@ -21,6 +21,27 @@ async function getSrgbPath(): Promise<string> {
   return srgbPath
 }
 
+/**
+ * S8: the desktop half of the ONE encode policy. Mirrors
+ * `src/renderer/src/core/encode-profile.ts` → ENCODE_PROFILE (the renderer and
+ * the main process are separate bundles with no shared import here, so the
+ * values are duplicated). `scripts/_s8-policy-check.cjs` parses both marker
+ * blocks and fails on drift; the measured basis is
+ * `_research/s8/encoder-facts.json`.
+ *
+ * Do not tune these numbers to chase byte equality with Android: at q100 the
+ * JPEG scan is already byte-identical; the remaining differences are metadata
+ * and Chromium's own choices (see _research/handoff/S8.md GAP list).
+ */
+/* S8-POLICY-BEGIN */
+const EXPORT_ENCODE = {
+  jpeg: { quality: 'design', subsampling: '4:4:4', subsamplingAndroid: 'chromium-uncontrolled', lossless: false, icc: 'sRGB', iccAndroid: 'embedded-by-encoder' },
+  png: { quality: null, subsampling: 'none', subsamplingAndroid: 'none', lossless: true, icc: 'sRGB', iccAndroid: 'absent', compressionLevel: 9, adaptiveFiltering: true },
+  webp: { quality: null, subsampling: 'none', subsamplingAndroid: 'none', lossless: true, icc: 'sRGB', iccAndroid: 'embedded-by-encoder', effort: 5 },
+  tiff: { quality: null, subsampling: 'none', subsamplingAndroid: 'none', lossless: true, icc: 'sRGB', iccAndroid: 'n/a', compression: 'lzw', predictor: 'horizontal' }
+} as const
+/* S8-POLICY-END */
+
 function isImage(file: string): boolean {
   return IMAGE_EXT.has(path.extname(file).toLowerCase())
 }
@@ -63,6 +84,28 @@ const IMPORT_MAX_FILES_DEFAULT = 5000
 const IMPORT_MAX_DEPTH_DEFAULT = 8
 /** Safety valve for pathological trees: stop walking after this many directory entries. */
 const SCAN_ENTRY_GUARD = 200_000
+
+/**
+ * Runtime feature flags (S5 tiling gate).
+ *
+ * Same shape as the import ceilings above: the main process is the only place
+ * that reads the environment, at module load, and the preload mirrors the result
+ * into `window.framemark.flags`. `'1'` is the only truthy spelling — every other
+ * value (unset, `''`, `'0'`, `'true'`) reads as off, so an A run can prove that
+ * a non-`'1'` value really is inert.
+ *
+ * `tile`       — S6 will paint the export canvas in horizontal bands.
+ * `seamCanary` — S6 must deliberately skip the grain overlay (draw.ts:588) on
+ *                one band so the S5 gate can prove it goes red.
+ *
+ * Neither flag is consumed by the renderer yet (S5 is the instrument only). On
+ * Android there is no preload bridge at all, so `window.framemark` is undefined
+ * and both flags are inert there by construction.
+ */
+const RUNTIME_FLAGS = {
+  tile: process.env['FRAMEMARK_TILE'] === '1',
+  seamCanary: process.env['FRAMEMARK_SEAM_CANARY'] === '1'
+}
 
 interface ImportOptions {
   maxFiles?: number
@@ -259,6 +302,13 @@ async function createWindow(): Promise<void> {
 }
 
 function registerIpc(): void {
+  // Synchronous by design: the preload has to expose `flags` as a plain object
+  // at load time. Two booleans cannot deadlock, and the handler is registered
+  // in `app.whenReady()` before any window (hence any preload) exists.
+  ipcMain.on('app:flags', (e) => {
+    e.returnValue = RUNTIME_FLAGS
+  })
+
   ipcMain.handle('dialog:pickImages', async () => {
     const r = await dialog.showOpenDialog({
       title: '选择照片',
@@ -382,7 +432,7 @@ function registerIpc(): void {
       let ext = '.jpg'
       let encoded: Buffer
       if (args.format === 'jpeg') {
-        const r = await pipeline.jpeg({ quality: Math.round(args.quality), chromaSubsampling: '4:4:4' }).toBuffer({ resolveWithObject: true })
+        const r = await pipeline.jpeg({ quality: Math.round(args.quality), chromaSubsampling: EXPORT_ENCODE.jpeg.subsampling }).toBuffer({ resolveWithObject: true })
         encoded = r.data
         ext = '.jpg'
         let source: Buffer | null = null
@@ -398,13 +448,17 @@ function registerIpc(): void {
         }
         encoded = injectJpegExif(encoded, source, args.fallbackExif ?? {}, r.info.width, r.info.height, args.removeGps !== false)
       } else if (args.format === 'png') {
-        encoded = await pipeline.png({ compressionLevel: 9, adaptiveFiltering: true }).toBuffer()
+        encoded = await pipeline
+          .png({ compressionLevel: EXPORT_ENCODE.png.compressionLevel, adaptiveFiltering: EXPORT_ENCODE.png.adaptiveFiltering })
+          .toBuffer()
         ext = '.png'
       } else if (args.format === 'webp') {
-        encoded = await pipeline.webp({ lossless: true, effort: 5 }).toBuffer()
+        encoded = await pipeline.webp({ lossless: EXPORT_ENCODE.webp.lossless, effort: EXPORT_ENCODE.webp.effort }).toBuffer()
         ext = '.webp'
       } else {
-        encoded = await pipeline.tiff({ compression: 'lzw', predictor: 'horizontal' }).toBuffer()
+        encoded = await pipeline
+          .tiff({ compression: EXPORT_ENCODE.tiff.compression, predictor: EXPORT_ENCODE.tiff.predictor })
+          .toBuffer()
         ext = '.tiff'
       }
       const outDir = args.outputDir || path.join(app.getPath('pictures'), 'FrameMark')

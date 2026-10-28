@@ -19,7 +19,7 @@ import type {
   WatermarkSettings
 } from './types'
 import { getTemplate } from './core/templates'
-import { getVariant } from './core/variants'
+import { getVariant, VARIANT_MAP } from './core/variants'
 import { autoLogo, logoAsset, logoCutForFile, matchBrand } from './core/brands'
 import { LOGO_VERSION_BY_ID, versionForAssetKey } from './core/logo-catalog'
 import {
@@ -391,10 +391,51 @@ async function reconcileLogo (txn?: number): Promise<void> {
   }
 }
 
+/**
+ * Keep the `design.logo` display mirror in step with an explicit
+ * `params.brandLogoFile` pick (S9).
+ *
+ * The renderers resolve the PICK (`scene.ts` hand cards, `assets.ts` stock
+ * slots), not the mirror; the mirror exists for the Inspector thumbnail and for
+ * saved presets. It must follow the pick anyway, because the hand renderer uses
+ * it as the pick when no explicit key is present — a bitmap left over from the
+ * previous brand would then outlive its own pick. Writes are absorbed into the
+ * caller's undo step (or applied only, once that step is closed).
+ */
+async function mirrorDesignLogo (txn?: number): Promise<void> {
+  const { design } = useAppStore.getState()
+  const pick = typeof design.params.brandLogoFile === 'string' ? design.params.brandLogoFile.trim() : ''
+  if (!pick) return
+  let asset
+  try {
+    asset = await logoAsset(pick)
+  } catch {
+    return
+  }
+  // A newer pick landed while the bitmap decoded: it owns the mirror now.
+  if (useAppStore.getState().design.params.brandLogoFile !== design.params.brandLogoFile) return
+  commitDesign((d) => ({ ...d, logo: asset }), { label: 'Logo 预览', key: 'logo', absorb: txn })
+}
+
+/** The version pointer that matches a raw `brandLogoFile` pick (or null). */
+function brandRefForPick (file: string): BrandVersionRef | null {
+  const pick = file.trim()
+  if (!pick) return null
+  return refFromAssetKey(pick, surfaceForDesign(useAppStore.getState().design))
+}
+
 async function autoApplyLogo(photo: PhotoAsset | undefined): Promise<void> {
   if (!photo) return
   const state = useAppStore.getState()
   if (state.design.logo) return
+  // S9: `design.logo` is an INPUT to the hand renderer's brand resolution now
+  // (scene.ts routes it into `params.brandLogoFile`), so an EXIF match must
+  // never seed a card whose variant declares its own wordmark: that is exactly
+  // how a 哈苏 card used to end up showing the photo's Canon mark before
+  // FIX #64. Logo-less cards (no declared brand slot) keep the old behaviour —
+  // the mirror is only ever read on cards that own a brand slot.
+  const variant = state.design.variantId ? VARIANT_MAP[state.design.variantId] : undefined
+  if (variant && (variant.vendorLogo || variant.autoLogo)) return
   const dark = ['ink', 'black'].includes(String(state.design.params.theme))
   const brand = autoLogo(photo.exif.make, photo.exif.model, dark)
   if (!brand) return
@@ -657,6 +698,24 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setParam: (key, value) => {
+    // S9: `params.brandLogoFile` is the ONE carrier both renderers resolve
+    // (scene.ts `styleBrandFile`, assets.ts `resolveBrandSlot`). The per-style
+    // brand select writes here directly, so the catalog pointer has to follow
+    // it: a version pinned in the Logo Library would otherwise keep winning and
+    // the select would look dead. Same shape as `theme` below — one undo step,
+    // the bitmap mirror decoded inside it.
+    if (key === 'brandLogoFile') {
+      const file = typeof value === 'string' ? value : ''
+      const ref = brandRefForPick(file)
+      const txn = history.openTxn()
+      commitDesign((design) => ({ ...writeParam(design, key, value), brandVersion: ref }), {
+        label: '品牌 Logo',
+        key: 'logo'
+      })
+      void mirrorDesignLogo(txn)
+      history.closeTxn(txn)
+      return
+    }
     commitDesign((design) => writeParam(design, key, value), {
       label: `参数 ${key}`,
       key: `param:${key}`
@@ -818,13 +877,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     // absorbs anything the same pick triggers afterwards.
     const txn = history.openTxn()
     try {
-      let asset
-      try {
-        asset = await logoAsset(cut.assetKey)
-      } catch {
-        get().showToast('Logo 载入失败', 'error')
-        return
-      }
       const ref: BrandVersionRef = {
         brandKey: version.brandKey,
         versionId: version.id,
@@ -834,6 +886,25 @@ export const useAppStore = create<AppState>((set, get) => ({
         ink: cut.ink,
         surface: cut.surface,
         name: version.name
+      }
+      let asset
+      try {
+        asset = await logoAsset(cut.assetKey)
+      } catch {
+        // S9: the PICK is the user's choice and the renderer resolves it
+        // (`scene.ts` -> `styleBrandFile`); record it even without a bitmap, so
+        // the slot renders empty instead of silently keeping the old brand.
+        // Same contract `setLogoFromBrand` already documents for a failed load.
+        commitDesign(
+          (design) => ({
+            ...writeParam(design, 'brandLogoFile', cut.assetKey),
+            brandVersion: ref,
+            logo: null
+          }),
+          { label: 'Logo 版本', key: 'logo' }
+        )
+        get().showToast('Logo 载入失败', 'error')
+        return
       }
       lastMissingLogoWarnKey = ''
       commitDesign(
