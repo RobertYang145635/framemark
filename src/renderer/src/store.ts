@@ -496,7 +496,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addFiles: async (files) => {
-    const images = files.filter((f) => f.type.startsWith('image/') || /\.(jpe?g|png|webp|tiff?|heic|heif)$/i.test(f.name))
+    // A3: TIFF is desktop-only (Chromium cannot decode it, and only the desktop
+    // main process transcodes it for export). Android/web must not accept it
+    // through drag/drop or the picker: the extension list alone is not enough
+    // because a TIFF also matches `type.startsWith('image/')`.
+    const isTiffFile = (f: File) => f.type === 'image/tiff' || /\.tiff?$/i.test(f.name)
+    const images = files.filter(
+      (f) => (f.type.startsWith('image/') || /\.(jpe?g|png|webp|tiff?|heic|heif)$/i.test(f.name)) && (isDesktop || !isTiffFile(f))
+    )
     if (!images.length) return
     set({
       busy: `正在读取 ${images.length} 张照片…`,

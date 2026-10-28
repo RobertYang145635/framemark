@@ -89,7 +89,11 @@ export const ENCODE_PROFILE = {
       icc: 'sRGB',
       iccAndroid: 'n/a',
       android: 'unsupported',
-      androidMessage: '安卓端不支持 TIFF 导出（TIFF 仅桌面版提供，LZW 无损）。请改用 PNG 无损导出。',
+      /**
+       * A3: also thrown by the plain-web branch (core/exporter.ts) when a TIFF
+       * export reaches it, so the wording names no single platform.
+       */
+      androidMessage: '当前平台不支持 TIFF 导出（TIFF 仅桌面版提供，LZW 无损）。请改用 PNG 无损导出。',
       exif: false
     }
   },

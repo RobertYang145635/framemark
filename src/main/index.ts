@@ -360,6 +360,15 @@ function registerIpc(): void {
     if (typeof filePath !== 'string' || !filePath) throw new Error('无效路径')
     const stat = await fs.stat(filePath)
     if (stat.size > 400 * 1024 * 1024) throw new Error('文件超过 400MB')
+    // A3: Chromium's createImageBitmap cannot decode TIFF, so exporting a photo
+    // that was imported from a .tif/.tiff failed before this branch existed. Only
+    // the TIFF case is transcoded (lossless PNG, EXIF orientation baked in); every
+    // other format still returns its exact original bytes.
+    const ext = path.extname(filePath).toLowerCase()
+    if (ext === '.tif' || ext === '.tiff') {
+      const png = await sharp(filePath).rotate().toColourspace('srgb').png().toBuffer()
+      return { data: new Uint8Array(png), name: path.basename(filePath), transcoded: 'png' as const }
+    }
     const data = await fs.readFile(filePath)
     return { data: new Uint8Array(data), name: path.basename(filePath) }
   })

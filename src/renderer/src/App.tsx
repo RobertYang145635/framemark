@@ -344,7 +344,11 @@ export function App() {
         id="framemark-file-input"
         className="visually-hidden"
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/tiff,image/heic,image/heif"
+        accept={
+          window.framemark
+            ? 'image/jpeg,image/png,image/webp,image/tiff,image/heic,image/heif'
+            : 'image/jpeg,image/png,image/webp,image/heic,image/heif'
+        }
         multiple
         onChange={(e) => {
           const files = Array.from(e.target.files ?? [])

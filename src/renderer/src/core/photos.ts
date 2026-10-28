@@ -123,6 +123,32 @@ export async function photoFromUrl(url: string, name: string): Promise<PhotoAsse
   return photoFromFile(file)
 }
 
+const TIFF_NAME = /\.tiff?$/i
+
+/**
+ * A3: a TIFF source is decodable on desktop only, and only through the main
+ * process (`image:read` transcodes it to PNG). Chromium's createImageBitmap has
+ * no TIFF decoder, so every renderer-side attempt fails with a raw
+ * `InvalidStateError: The source image could not be decoded.` — that is not a
+ * message a user can act on. These texts replace it.
+ */
+const TIFF_NO_PLATFORM =
+  '当前平台不支持 TIFF 照片（TIFF 仅桌面版支持），请改用 JPG/PNG 重新导入后再导出。'
+const TIFF_DROPPED =
+  '拖入的 TIFF 照片无法解码，请用桌面「选择照片」或「从文件夹导入」（会自动转为 PNG），或改用 JPG/PNG。'
+const TIFF_TRANSCODE_FAILED =
+  '这张 TIFF 无法在导出前转码为 PNG，请用桌面「选择照片」或「从文件夹导入」重新添加，或改用 JPG/PNG。'
+
+/** TIFF starts with II*\0 / MM\0* (classic) or II+\0 / MM\0+ (BigTIFF). */
+function looksLikeTiff(bytes: Uint8Array): boolean {
+  if (bytes.length < 4) return false
+  const classicOrBig = (v: number) => v === 0x2a || v === 0x2b
+  return (
+    (bytes[0] === 0x49 && bytes[1] === 0x49 && classicOrBig(bytes[2]) && bytes[3] === 0x00) ||
+    (bytes[0] === 0x4d && bytes[1] === 0x4d && bytes[2] === 0x00 && classicOrBig(bytes[3]))
+  )
+}
+
 export async function loadFullBitmap(asset: PhotoAsset): Promise<{
   image: ImageBitmap
   width: number
@@ -130,19 +156,34 @@ export async function loadFullBitmap(asset: PhotoAsset): Promise<{
   bytes?: Uint8Array
 }> {
   let bytes: Uint8Array
+  let tiff = TIFF_NAME.test(asset.name)
   if (asset.source.kind === 'path') {
-    if (!window.framemark) throw new Error('桌面文件接口不可用')
+    if (!window.framemark) {
+      if (tiff) throw new Error(TIFF_NO_PLATFORM)
+      throw new Error('桌面文件接口不可用')
+    }
+    if (TIFF_NAME.test(asset.source.path)) tiff = true
+    // The main process transcodes TIFF to PNG (src/main/index.ts image:read);
+    // every other extension comes back byte-for-byte.
     const r = await window.framemark.readImage(asset.source.path)
     bytes = r.data
   } else if (asset.source.kind === 'file') {
     bytes = new Uint8Array(await asset.source.file.arrayBuffer())
+    if (looksLikeTiff(bytes)) tiff = true
+    if (tiff) throw new Error(window.framemark ? TIFF_DROPPED : TIFF_NO_PLATFORM)
   } else {
     throw new Error('示例图不可导出，请先添加照片')
   }
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)
   const blob = new Blob([copy.buffer as ArrayBuffer])
-  const image = await createImageBitmap(blob, { imageOrientation: 'from-image' })
+  let image: ImageBitmap
+  try {
+    image = await createImageBitmap(blob, { imageOrientation: 'from-image' })
+  } catch (e) {
+    if (tiff) throw new Error(window.framemark ? TIFF_TRANSCODE_FAILED : TIFF_NO_PLATFORM)
+    throw e
+  }
   return { image, width: image.width, height: image.height, bytes: copy }
 }
 

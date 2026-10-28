@@ -8,7 +8,10 @@ import { Modal, Segmented, Slider, Switch } from './ui'
 const FORMAT_OPTIONS: { value: Design['export']['format']; label: string; hint: string }[] = [
   { value: 'jpeg', label: 'JPG', hint: '质量最高、回写 EXIF，日常首选' },
   { value: 'png', label: 'PNG', hint: '无损；不写 EXIF，体积较大' },
-  { value: 'webp', label: 'WebP', hint: '无损（桌面）/ 高质量（手机）' },
+  // A3: Android WebP is VP8L lossless too (measured, S8); the old
+  // 「无损（桌面）/ 高质量（手机）」 label advertised a lossy phone path that
+  // no longer exists.
+  { value: 'webp', label: 'WebP', hint: '无损（VP8L），桌面与手机相同' },
   { value: 'tiff', label: 'TIFF', hint: '仅桌面：LZW 无损归档' }
 ]
 
@@ -28,6 +31,7 @@ export function ExportDialog() {
   const exportAll = useAppStore((s) => s.exportAll)
   const showToast = useAppStore((s) => s.showToast)
   const [draftScope, setDraftScope] = useState<ExportScope>('current')
+  const [autoSwitchedToJpeg, setAutoSwitchedToJpeg] = useState(false)
 
   const desktop = Boolean(window.framemark)
   const open = scope !== null
@@ -35,6 +39,24 @@ export function ExportDialog() {
   useEffect(() => {
     if (scope) setDraftScope(scope)
   }, [scope])
+
+  /**
+   * A3: TIFF is desktop-only. The old dialog only LIED in the segmented control
+   * (`value` showed JPG while `design.export.format` stayed 'tiff'), so the
+   * export still ran the tiff branch and either threw (Android) or wrote a
+   * WebP-in-.tiff (web). Write the unsupported choice back into the design
+   * once, when the dialog opens, and say so in one line.
+   */
+  useEffect(() => {
+    if (!scope) {
+      setAutoSwitchedToJpeg(false)
+      return
+    }
+    if (!desktop && design.export.format === 'tiff') {
+      setExport({ format: 'jpeg' })
+      setAutoSwitchedToJpeg(true)
+    }
+  }, [scope, desktop, design.export.format, setExport])
 
   const selected = photos.find((p) => p.id === selectedId) ?? photos[0] ?? null
   const targetCount = draftScope === 'all' ? photos.length : selected ? 1 : 0
@@ -102,10 +124,18 @@ export function ExportDialog() {
         <label className="field">
           <span>格式</span>
           <Segmented
-            value={settings.format === 'tiff' && !desktop ? 'jpeg' : settings.format}
+            value={settings.format}
             options={formatOptions}
-            onChange={(v) => setExport({ format: v })}
+            onChange={(v) => {
+              setExport({ format: v })
+              setAutoSwitchedToJpeg(false)
+            }}
           />
+          {autoSwitchedToJpeg ? (
+            <em className="field-hint" role="status">
+              当前平台不支持 TIFF，已改为 JPG 导出。
+            </em>
+          ) : null}
         </label>
 
         {settings.format === 'jpeg' ? (
@@ -118,6 +148,12 @@ export function ExportDialog() {
             onChange={(v) => setExport({ quality: v })}
             onReset={() => setExport({ quality: DEFAULT_EXPORT.quality })}
           />
+        ) : null}
+        {/* A3: measured (S8 + A2): Chromium JPEG switches to 4:2:0 for every
+            quality below 100, desktop sharp stays 4:4:4. The slider stays fully
+            usable — this only states the consequence. */}
+        {!desktop && settings.format === 'jpeg' && settings.quality < 100 ? (
+          <em className="field-hint">低于 100 会降低颜色精度（与桌面不同）</em>
         ) : null}
 
         <label className="field">

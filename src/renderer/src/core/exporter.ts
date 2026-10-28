@@ -420,6 +420,11 @@ export async function exportOne(
     if (isAndroid) {
       return await exportAndroid(out, photo, design, full.bytes, baseName)
     }
+    // A3: the plain-web branch has no TIFF encoder either. It used to fall
+    // through to WebP while `extension()` kept `.tiff`, so the user got a WebP
+    // file wearing a .tiff name. Refuse with the same explicit text the Android
+    // policy uses instead of silently changing the format.
+    if (design.export.format === 'tiff') throw new Error(ENCODE_PROFILE.formats.tiff.androidMessage)
     const mime = design.export.format === 'jpeg' ? 'image/jpeg' : design.export.format === 'png' ? 'image/png' : 'image/webp'
     const blob = await canvasToBlob(out, mime, design.export.quality / 100)
     const name = `${baseName}${extension(design.export.format)}`
