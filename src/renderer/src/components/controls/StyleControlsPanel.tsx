@@ -8,11 +8,14 @@
 import './controls.css'
 import { ChevronDown, RotateCcw, ShieldAlert } from 'lucide-react'
 import { useState } from 'react'
-import type { ParamValue } from '../../types'
+import type { EditorTab, ParamValue } from '../../types'
 import { controlsFor, paramKeyOf, styleIdForDesign } from '../../core/controls'
 import type { ControlView } from '../../core/controls'
 import type { ControlGroup, ControlProvenance } from '../../core/controls/schema'
+import { getStockStyle } from '../../core/system/styles'
+import type { StockNode, StockStyle } from '../../core/system/ir'
 import { useAppStore } from '../../store'
+import { Slider } from '../ui'
 import {
   ControlAnchorGrid,
   ControlBrandPicker,
@@ -38,6 +41,58 @@ const GROUP_LABEL: Record<ControlGroup, string> = {
 
 const GROUP_ORDER: ControlGroup[] = ['content', 'layout', 'detail']
 
+/**
+ * U1 · IR paths of every text node that actually paints the 机型 slot, using
+ * the exact path grammar `core/system/layout.ts` builds (`b<i>` → `<dir><j>` →
+ * `/g<k>`). The controls layer keys its rows by the same paths, so the model
+ * row is found by `targetNode` instead of by label text.
+ */
+function modelTextPaths (style: StockStyle | null): Set<string> {
+  const paths = new Set<string>()
+  if (!style) return paths
+  const walk = (nodes: StockNode[], pathOf: (i: number) => string): void => {
+    nodes.forEach((node, i) => {
+      const path = pathOf(i)
+      if (node.kind === 'text' && node.token?.kind === 'model') paths.add(path)
+      else if (node.kind === 'group') walk(node.children, (j) => `${path}/g${j}`)
+    })
+  }
+  style.bands.forEach((band, bi) => {
+    walk(band.children, (i) => `b${bi}/${band.direction}${i}`)
+  })
+  return paths
+}
+
+function targetNodeOf (view: ControlView): string {
+  const node = (view.control as { targetNode?: string }).targetNode
+  return typeof node === 'string' ? node : ''
+}
+
+/**
+ * U1 · 机型行字号乘子. Only rendered for a stock style whose IR really paints a
+ * `model` text node, and only on the 文字 tab. The value lives in
+ * `design.text.lineSizes` under `<styleId>#model`, so `setText` → `commitDesign`
+ * gives presets and undo for free (one drag = one step via the app's range
+ * gesture seal); 100% is deleted so untouched designs keep a clean text object.
+ */
+function ModelSizeRow ({ value, onChange }: { value: number; onChange: (percent: number) => void }) {
+  return (
+    <div className="model-size-row">
+      <Slider
+        label="机型大小"
+        hint="100% = 原版"
+        value={value}
+        min={60}
+        max={160}
+        step={2}
+        suffix="%"
+        onChange={onChange}
+        onReset={() => onChange(100)}
+      />
+    </div>
+  )
+}
+
 function renderView (view: ControlView, styleId: string, onChange: (key: string, value: ParamValue) => void) {
   const props = { view, styleId, onChange }
   switch (view.control.kind) {
@@ -60,15 +115,19 @@ function Provenance ({ value }: { value: ControlProvenance }) {
 
 export function StyleControlsPanel ({
   filter,
-  compact = false
+  compact = false,
+  tab
 }: {
   /** Optional allow-list (Phase 3 tabs). Only applied in compact mode. */
   filter?: (view: ControlView) => boolean
   /** Flat, live-only rendering for the Logo/文字/布局/主题 editor tabs. */
   compact?: boolean
+  /** Which editor tab is rendering this list (U1: the 机型 slider is 文字-only). */
+  tab?: EditorTab
 } = {}) {
   const design = useAppStore((s) => s.design)
   const setParam = useAppStore((s) => s.setParam)
+  const setText = useAppStore((s) => s.setText)
   const resetVariantParams = useAppStore((s) => s.resetVariantParams)
   const [open, setOpen] = useState<Record<string, boolean>>({ content: true, layout: true, detail: false })
 
@@ -87,18 +146,43 @@ export function StyleControlsPanel ({
     // tab never shows a fake control row.
     const list = views.filter((v) => v.live && (!filter || filter(v)))
     if (!list.length) return null
+    // U1: the 机型 size multiplier exists only when this style's IR paints a
+    // model slot, and only on the 文字 tab. It sits after the model row when the
+    // controls layer exposes one, otherwise at the end of the text list.
+    const modelPaths = tab === 'text' ? modelTextPaths(getStockStyle(record.styleId)) : new Set<string>()
+    const modelKey = `${record.styleId}#model`
+    const lineSizes = design.text.lineSizes ?? {}
+    const storedModel = Number(lineSizes[modelKey])
+    const modelPercent = Number.isFinite(storedModel)
+      ? Math.round(Math.min(1.6, Math.max(0.6, storedModel)) * 100)
+      : 100
+    const setModelPercent = (percent: number) => {
+      const next = { ...lineSizes }
+      if (percent === 100) delete next[modelKey]
+      else next[modelKey] = percent / 100
+      setText({ lineSizes: next })
+    }
+    const modelRow = modelPaths.size ? (
+      <ModelSizeRow value={modelPercent} onChange={setModelPercent} />
+    ) : null
+    const modelAt =
+      modelPaths.size && tab === 'text'
+        ? list.findIndex((view) => modelPaths.has(targetNodeOf(view)))
+        : -1
     return (
       <section className="panel-section fmk-style-controls editor-controls" data-style={record.styleId}>
         <div className="editor-controls-list">
-          {list.map((view) => (
+          {list.map((view, index) => (
             <div
               className="editor-controls-item"
               key={`${view.control.id}:${paramKeyOf(view.control)}`}
               data-control-id={view.control.id}
             >
               {renderView(view, styleId, onChange)}
+              {index === modelAt ? modelRow : null}
             </div>
           ))}
+          {modelRow && modelAt < 0 ? <div className="editor-controls-item">{modelRow}</div> : null}
         </div>
       </section>
     )

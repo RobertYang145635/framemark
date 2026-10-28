@@ -117,7 +117,13 @@ export interface TextSettings {
   fontScale: number
   /** User-hidden text tokens (v4 text-by-position editor). */
   hidden?: TextToken[]
-  /** Per-line text overrides, keyed by `<source>#<occurrence>` from the render probe. */
+  /**
+   * Per-line text overrides. Hand cards key `<source>#<occurrence>` as returned
+   * by the render probe; IR stock styles key the 机型 line `<styleId>#model`
+   * (`params.systemStyle`), which is where the 文字 tab's model input writes.
+   * A stock model key that is ABSENT means "derive from EXIF"; a key holding
+   * `''` means the user blanked the line on purpose and EXIF must not come back.
+   */
   lineText?: Record<string, string>
   /** Per-line hidden state, same keys as `lineText`. */
   hiddenLines?: string[]
@@ -125,7 +131,9 @@ export interface TextSettings {
   slotValues?: Record<string, string>
   /** Per-declared-slot font multiplier (0.6–1.6), key matches `slotValues`. */
   slotSizes?: Record<string, number>
-  /** Per-line font multiplier for captured lines, same keys as `lineText`. */
+  /** Per-line font multiplier for captured lines, same keys as `lineText`.
+   *  IR stock styles (no capture) use `<styleId>#model` for the 机型 row — see
+   *  `core/system/paint.ts/modelScaleOf`. */
   lineSizes?: Record<string, number>
 }
 

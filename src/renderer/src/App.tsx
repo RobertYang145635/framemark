@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { App as NativeApp } from '@capacitor/app'
 import { useAppStore } from './store'
@@ -61,6 +62,89 @@ paintGlassChromeBeforeFirstFrame()
 
 const BORDER_MODAL_SUBTITLE = `${BORDER_CATEGORIES.length} 类 · ${TAXONOMY_CARDS.length} 套`
 
+/* ── U1 · desktop side rails ───────────────────────────────
+ * The three-column shell (border library / stage / editor) used to be a fixed
+ * `292px minmax(0,1fr) 356px` grid. Its two side tracks are now driven by
+ * `--rail-left` / `--rail-right` from this state, so a 700px media query can
+ * keep overriding the whole template on phones without inheriting handles.
+ * Defaults below mirror the old 1340px breakpoint, so an untouched install
+ * boots byte-identically wide or narrow.
+ */
+const LAYOUT_KEY = 'framemark.layout.v1'
+const RAIL_LEFT = { min: 220, max: 460 }
+const RAIL_RIGHT = { min: 280, max: 560 }
+const STAGE_MIN = 420
+
+interface RailLayout {
+  left: number
+  right: number
+  leftCollapsed: boolean
+  rightCollapsed: boolean
+}
+
+function railDefaults (width: number): { left: number; right: number } {
+  return width > 1340 ? { left: 292, right: 356 } : { left: 260, right: 332 }
+}
+
+/**
+ * A restored width must never squeeze the stage below STAGE_MIN at the current
+ * window. Below 1121px the border library is display:none, so it does not count
+ * against the right panel's budget there.
+ */
+function clampRails (layout: RailLayout, width: number): RailLayout {
+  const hiddenLeft = width <= 1120 || layout.leftCollapsed
+  let left = Math.min(RAIL_LEFT.max, Math.max(RAIL_LEFT.min, layout.left))
+  let right = Math.min(RAIL_RIGHT.max, Math.max(RAIL_RIGHT.min, layout.right))
+  const maxLeft = Math.max(RAIL_LEFT.min, width - (layout.rightCollapsed ? 0 : right) - STAGE_MIN)
+  left = Math.min(left, maxLeft)
+  const maxRight = Math.max(RAIL_RIGHT.min, width - (hiddenLeft ? 0 : left) - STAGE_MIN)
+  right = Math.min(right, maxRight)
+  return { ...layout, left, right }
+}
+
+function loadRailLayout (width: number): RailLayout {
+  const d = railDefaults(width)
+  let stored: Partial<RailLayout> | null = null
+  try {
+    stored = JSON.parse(window.localStorage.getItem(LAYOUT_KEY) ?? 'null')
+  } catch {
+    stored = null
+  }
+  const num = (value: unknown, fallback: number): number =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  return clampRails(
+    {
+      left: num(stored?.left, d.left),
+      right: num(stored?.right, d.right),
+      leftCollapsed: stored?.leftCollapsed === true,
+      rightCollapsed: stored?.rightCollapsed === true
+    },
+    width
+  )
+}
+
+/** Did the user ever touch a rail? Only then do we persist (and stop following breakpoints). */
+function hasStoredRailLayout (): boolean {
+  try {
+    return window.localStorage.getItem(LAYOUT_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
+/** Live `matchMedia` — mobile must never mount a rail in the DOM. */
+function useMedia (query: string): boolean {
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setMatches(mq.matches)
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [query])
+  return matches
+}
+
 export function App() {
   const init = useAppStore((s) => s.init)
   const initialized = useAppStore((s) => s.initialized)
@@ -71,6 +155,117 @@ export function App() {
   const [dragging, setDragging] = useState(false)
   const dragDepth = useRef(0)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // Desktop side rails (U1). `desktop` gates mounting; `wide` also gates the
+  // border-library rail, which CSS hides below 1121px.
+  const desktop = useMedia('(min-width: 701px)')
+  const wide = useMedia('(min-width: 1121px)')
+  const [rails, setRails] = useState<RailLayout>(() => loadRailLayout(window.innerWidth))
+  const railsRef = useRef(rails)
+  railsRef.current = rails
+  /** false = still the breakpoint defaults; nothing is persisted until touched. */
+  const railCustom = useRef(hasStoredRailLayout())
+  const [railDrag, setRailDrag] = useState<'left' | 'right' | null>(null)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+  const railDragRef = useRef<{
+    side: 'left' | 'right'
+    startX: number
+    startWidth: number
+    otherWidth: number
+    available: number
+  } | null>(null)
+
+  const availableWidth = () => workspaceRef.current?.clientWidth || window.innerWidth
+
+  // Persist every committed width/collapse state (drag moves included: the key
+  // is tiny, and a crash mid-drag must still restore where the user left it).
+  // An untouched layout is NOT written: that keeps the 1340px breakpoint
+  // defaults live on resize, exactly as the pre-U1 CSS behaved.
+  useEffect(() => {
+    if (!railCustom.current) return
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(rails))
+    } catch {
+      /* private mode / quota: the session still works, it just won't restore */
+    }
+  }, [rails])
+
+  // A stored width that no longer fits (window narrowed) is pulled back so the
+  // stage keeps STAGE_MIN — only the side tracks move, the stage is `1fr`.
+  useEffect(() => {
+    const onResize = () => {
+      // Phones use the stacked bottom-sheet layout; the rails are not laid out
+      // there, so never rewrite (or persist) the desktop widths on mobile.
+      if (window.innerWidth <= 700) return
+      setRails((prev) => {
+        const width = availableWidth()
+        if (!railCustom.current) {
+          const d = railDefaults(window.innerWidth)
+          const next = clampRails({ ...prev, ...d }, width)
+          return next.left === prev.left && next.right === prev.right ? prev : next
+        }
+        const next = clampRails(prev, width)
+        return next.left === prev.left && next.right === prev.right ? prev : next
+      })
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+    // availableWidth only reads refs/DOM
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const beginRailDrag = (side: 'left' | 'right') => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || (e.target as Element).closest('button')) return
+    const current = railsRef.current
+    const rightShown = !current.rightCollapsed
+    const leftShown = !current.leftCollapsed && window.innerWidth > 1120
+    railDragRef.current = {
+      side,
+      startX: e.clientX,
+      startWidth: side === 'left' ? current.left : current.right,
+      otherWidth: side === 'left' ? (rightShown ? current.right : 0) : leftShown ? current.left : 0,
+      available: availableWidth()
+    }
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setRailDrag(side)
+  }
+
+  const moveRailDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = railDragRef.current
+    if (!drag) return
+    const spec = drag.side === 'left' ? RAIL_LEFT : RAIL_RIGHT
+    const max = Math.max(spec.min, drag.available - drag.otherWidth - STAGE_MIN)
+    const delta = e.clientX - drag.startX
+    const raw = drag.side === 'left' ? drag.startWidth + delta : drag.startWidth - delta
+    const value = Math.round(Math.min(max, Math.max(spec.min, raw)))
+    if (value === (drag.side === 'left' ? railsRef.current.left : railsRef.current.right)) return
+    railCustom.current = true
+    setRails((prev) => (drag.side === 'left' ? { ...prev, left: value } : { ...prev, right: value }))
+  }
+
+  const endRailDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!railDragRef.current) return
+    railDragRef.current = null
+    setRailDrag(null)
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+
+  /** Double-click on a divider = that panel back to its stock width. */
+  const resetRail = (side: 'left' | 'right') => {
+    railCustom.current = true
+    setRails((prev) => {
+      const d = railDefaults(window.innerWidth)
+      return clampRails({ ...prev, [side]: side === 'left' ? d.left : d.right }, availableWidth())
+    })
+  }
+
+  const setRailCollapsed = (side: 'left' | 'right', collapsed: boolean) => {
+    railCustom.current = true
+    setRails((prev) =>
+      side === 'left' ? { ...prev, leftCollapsed: collapsed } : { ...prev, rightCollapsed: collapsed }
+    )
+  }
 
   useEffect(() => {
     void init()
@@ -293,6 +488,12 @@ export function App() {
   return (
     <div
       className={`app-shell ${initialized ? 'ready' : ''}`}
+      style={
+        {
+          '--rail-left': `${rails.leftCollapsed ? 0 : rails.left}px`,
+          '--rail-right': `${rails.rightCollapsed ? 0 : rails.right}px`
+        } as React.CSSProperties
+      }
       onDragEnter={onDragEnter}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -306,15 +507,90 @@ export function App() {
         <>
           <TopBar onOpenTemplates={() => setTemplatesOpen(true)} />
 
-          <div className="workspace">
+          <div
+            className={`workspace ${rails.leftCollapsed ? 'left-collapsed' : ''} ${
+              rails.rightCollapsed ? 'right-collapsed' : ''
+            }`}
+            ref={workspaceRef}
+          >
             <aside className="sidebar templates-panel glass">
               <BorderLibrary />
             </aside>
             <main className="center-column">
+              {desktop && wide && rails.leftCollapsed ? (
+                <button
+                  type="button"
+                  className="rail-restore rail-restore-left"
+                  onClick={() => setRailCollapsed('left', false)}
+                  title="展开边框库"
+                  aria-label="展开边框库"
+                >
+                  <ChevronRight size={13} />
+                </button>
+              ) : null}
+              {desktop && rails.rightCollapsed ? (
+                <button
+                  type="button"
+                  className="rail-restore rail-restore-right"
+                  onClick={() => setRailCollapsed('right', false)}
+                  title="展开编辑面板"
+                  aria-label="展开编辑面板"
+                >
+                  <ChevronLeft size={13} />
+                </button>
+              ) : null}
               <PreviewStage />
               <Filmstrip />
             </main>
             <Inspector onOpenTemplates={() => setTemplatesOpen(true)} onOpenReferences={() => setReferenceOpen(true)} />
+            {desktop && wide && !rails.leftCollapsed ? (
+              <div
+                className={`workspace-rail workspace-rail-left ${railDrag === 'left' ? 'is-dragging' : ''}`}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="调整边框库宽度"
+                title="拖动调整宽度 · 双击复位"
+                onPointerDown={beginRailDrag('left')}
+                onPointerMove={moveRailDrag}
+                onPointerUp={endRailDrag}
+                onPointerCancel={endRailDrag}
+                onDoubleClick={() => resetRail('left')}
+              >
+                <button
+                  type="button"
+                  className="workspace-rail-toggle"
+                  onClick={() => setRailCollapsed('left', true)}
+                  title="收起边框库"
+                  aria-label="收起边框库"
+                >
+                  <ChevronLeft size={12} />
+                </button>
+              </div>
+            ) : null}
+            {desktop && !rails.rightCollapsed ? (
+              <div
+                className={`workspace-rail workspace-rail-right ${railDrag === 'right' ? 'is-dragging' : ''}`}
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="调整编辑面板宽度"
+                title="拖动调整宽度 · 双击复位"
+                onPointerDown={beginRailDrag('right')}
+                onPointerMove={moveRailDrag}
+                onPointerUp={endRailDrag}
+                onPointerCancel={endRailDrag}
+                onDoubleClick={() => resetRail('right')}
+              >
+                <button
+                  type="button"
+                  className="workspace-rail-toggle"
+                  onClick={() => setRailCollapsed('right', true)}
+                  title="收起编辑面板"
+                  aria-label="收起编辑面板"
+                >
+                  <ChevronRight size={12} />
+                </button>
+              </div>
+            ) : null}
           </div>
         </>
       )}

@@ -23,6 +23,8 @@ import { getVariant } from '../core/variants'
 import { LOGO_VERSION_BY_ID } from '../core/logo-catalog'
 import { cutForVersionSurface, surfaceForDesign } from '../core/logo-compat'
 import { getStockStyle } from '../core/system/styles'
+import type { StockNode, StockStyle } from '../core/system/ir'
+import { derivedModelText, stockModelKey } from '../core/system/tokens'
 import { controlsFor } from '../core/controls'
 import type { ControlView } from '../core/controls'
 import {
@@ -513,6 +515,7 @@ function EditorControlList({
   return (
     <StyleControlsPanel
       compact
+      tab={tab}
       filter={(view) => editorTabForControl(view) === tab && (!filter || filter(view))}
     />
   )
@@ -623,6 +626,86 @@ function FooterFontSection() {
   )
 }
 
+/**
+ * U2 · does this style actually paint the 机型 token? Same capability rule as
+ * the U1 机型 size slider (`StyleControlsPanel.modelTextPaths`): walk the IR for
+ * a text node whose token kind is `model`, instead of trusting the controls
+ * record — most styles that paint a model have no model row of their own.
+ */
+function stockPaintsModel(style: StockStyle | null): boolean {
+  if (!style) return false
+  let hit = false
+  const walk = (nodes: StockNode[]): void => {
+    for (const node of nodes) {
+      if (hit) return
+      if (node.kind === 'text' && node.token?.kind === 'model') hit = true
+      else if (node.kind === 'group') walk(node.children)
+    }
+  }
+  for (const band of style.bands) walk(band.children)
+  return hit
+}
+
+/**
+ * U2 · 机型 line input for IR stock cards, next to the style's own show/hide
+ * toggle. The value lives in `design.text.lineText[<styleId>#model]` — the same
+ * key convention as the 机型 size slider — so `setText` → `commitDesign` gives
+ * undo, presets and reload for free (App.tsx seals a typing gesture on focus,
+ * so one editing session is one undo step).
+ *   - no key      ⇒ the input shows the EXIF-derived text and nothing is stored;
+ *   - cleared     ⇒ stores `''`: deliberately blank, EXIF must not come back;
+ *   - 恢复        ⇒ removes the key, so the line returns to the EXIF value (or
+ *                   stays empty when the photo has none).
+ */
+function StockModelSection() {
+  const design = useAppStore((s) => s.design)
+  const setText = useAppStore((s) => s.setText)
+  const photo = useAppStore((s) => s.photos.find((p) => p.id === s.selectedId) ?? null)
+  const style = getStockStyle(String(design.params.systemStyle ?? ''))
+  if (!stockPaintsModel(style) || !style) return null
+  const key = stockModelKey(style.id)
+  const lineText = design.text.lineText ?? {}
+  const overridden = key in lineText
+  const derived = derivedModelText(photo?.exif ?? { make: '', model: '' })
+  const value = overridden ? lineText[key] : derived
+  const write = (next: string) => {
+    const map = { ...lineText }
+    // Typing the derived text back is not an override any more: drop the key so
+    // the design stays sparse and a later EXIF change still lands.
+    if (next === derived) delete map[key]
+    else map[key] = next
+    setText({ lineText: map })
+  }
+  const restore = () => {
+    const map = { ...lineText }
+    delete map[key]
+    setText({ lineText: map })
+  }
+  return (
+    <Section
+      title="机型"
+      hint={overridden ? '自定义机型；恢复可回到照片 EXIF' : '照片信息自动填充；没有 EXIF 机型时留空可填'}
+    >
+      <div className="text-slot-row">
+        <input value={value} placeholder="输入机型" aria-label="机型" onChange={(e) => write(e.target.value)} />
+      </div>
+      {overridden ? (
+        <div className="text-hidden-row">
+          <em>已自定义</em>
+          <button
+            className="toggle-chip"
+            type="button"
+            title="删掉自定义机型，回到照片 EXIF（没有 EXIF 就留空）"
+            onClick={restore}
+          >
+            恢复 ↺
+          </button>
+        </div>
+      ) : null}
+    </Section>
+  )
+}
+
 function TextEditor() {
   const design = useAppStore((s) => s.design)
   // Stock cards get their own per-slot text controls; the generic title/subtitle
@@ -637,7 +720,9 @@ function TextEditor() {
           <TextSection />
           <HandControlsPanel tab="text" />
         </>
-      ) : null}
+      ) : (
+        <StockModelSection />
+      )}
       <EditorControlList tab="text" />
       {footerClassic ? <FooterFontSection /> : null}
     </>

@@ -482,6 +482,22 @@ function slotAlphaMultiplier (env: TemplateRenderEnv, path: string | undefined):
   return Math.min(1, Math.max(0, n))
 }
 
+/**
+ * U1 · 机型行字号乘子 (0.6–1.6). Stored inside `design.text.lineSizes` exactly
+ * like the hand-card per-line sizes, under the per-style key
+ * `<styleId>#model` — so presets and the existing `setText` → `commitDesign`
+ * undo path carry it with no new write path. Absent / non-numeric / 1 ⇒
+ * exactly 1, and the scaling branch in `paintItem` is skipped entirely, which
+ * is what keeps every existing card byte-identical.
+ */
+function modelScaleOf (env: TemplateRenderEnv, styleId: string): number {
+  const raw = env.text?.lineSizes?.[`${styleId}#model`]
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return 1
+  const clamped = Math.max(0.6, Math.min(1.6, n))
+  return Math.abs(clamped - 1) < 0.001 ? 1 : clamped
+}
+
 function paintItem(
   env: TemplateRenderEnv,
   item: PlacedItem,
@@ -494,7 +510,10 @@ function paintItem(
   // coordinate space: the on-canvas clamp below compares against the WRONG
   // axis there (a ±90° band's text runs along the photo's long edge), so it is
   // skipped — `fitBandItems()` already keeps the content inside the band.
-  inRotatedBand = false
+  inRotatedBand = false,
+  // U1 · 机型 row multiplier (1 = untouched). Only text nodes whose token is
+  // `model` consume it; every other item keeps its solved box verbatim.
+  modelScale = 1
 ): void {
   const ctx = env.ctx
   let box = scaleRect(item.box, k)
@@ -594,6 +613,12 @@ function paintItem(
 
   // text
   const node = item.node
+  // U1 · 机型行: scale only this line. The multiplier reaches the font size,
+  // the line height, the tracking (a multiple of the size), outline/shadow and
+  // the item's own box — all about its text anchor, so no sibling box and no
+  // band geometry changes. Any other token (or scale 1) leaves every value
+  // exactly as the pre-U1 painter computed it.
+  const lineScale = node.token?.kind === 'model' ? modelScale : 1
   ctx.save()
   ctx.globalAlpha = item.alpha * slotAlphaMultiplier(env, item.path)
   const themed = node.colorIndex != null ? foreground[node.colorIndex] : undefined
@@ -620,12 +645,24 @@ function paintItem(
     box.x = Math.max(pad, Math.min(box.x, env.W - pad - box.w))
     box.y = Math.max(pad, Math.min(box.y, env.H - pad - box.h))
   }
+  if (lineScale !== 1) {
+    // Grow/shrink the line's own layout box about its text anchor (left edge /
+    // centre / right edge) and its vertical centre, so the ink expands in place
+    // instead of drifting. Only this item's local box is touched — `item.box`,
+    // the band and every sibling keep their solved values.
+    const anchorX =
+      item.align === 'center' ? box.x + box.w / 2 : item.align === 'right' ? box.x + box.w : box.x
+    const anchorY = box.y + box.h / 2
+    box = { ...box, w: box.w * lineScale, h: box.h * lineScale }
+    box.x = item.align === 'center' ? anchorX - box.w / 2 : item.align === 'right' ? anchorX - box.w : anchorX
+    box.y = anchorY - box.h / 2
+  }
   if (node.outline && node.outline.strokeWidth > 0) {
     const stroke = node.outline.strokeColorIndex != null
       ? foreground[node.outline.strokeColorIndex]
       : node.outline.strokeColor
     if (stroke) {
-      const lw = node.outline.strokeWidth * k * fit
+      const lw = node.outline.strokeWidth * k * fit * lineScale
       const inset = lw / 2
       const radius = Math.min(node.outline.radius ?? 0, Math.min(box.w, box.h) / 2)
       ctx.strokeStyle = cssColor(stroke)
@@ -637,14 +674,14 @@ function paintItem(
   }
   if (node.shadow) {
     ctx.shadowColor = node.shadow.color
-    ctx.shadowBlur = node.shadow.blur * k * fit
-    ctx.shadowOffsetX = node.shadow.x * k * fit
-    ctx.shadowOffsetY = node.shadow.y * k * fit
+    ctx.shadowBlur = node.shadow.blur * k * fit * lineScale
+    ctx.shadowOffsetX = node.shadow.x * k * fit * lineScale
+    ctx.shadowOffsetY = node.shadow.y * k * fit * lineScale
   }
-  setTracking(ctx, item.tracking * k * fit)
-  setFont(ctx, item.fontSize * k * fit, item.family, node.weight)
+  setTracking(ctx, item.tracking * k * fit * lineScale)
+  setFont(ctx, item.fontSize * k * fit * lineScale, item.family, node.weight)
   const x = item.align === 'center' ? box.x + box.w / 2 : item.align === 'right' ? box.x + box.w : box.x
-  const lh = item.lineHeight * k * fit
+  const lh = item.lineHeight * k * fit * lineScale
   const top = box.y + (box.h - lh * item.lines.length) / 2
   item.lines.forEach((line, i) => {
     ctx.fillText(line, x, top + lh * (i + 0.5))
@@ -662,6 +699,9 @@ export function paintStockLayout(
   const ctx = env.ctx
   const theme = style.themes?.find((t) => t.id === String(env.params.theme ?? style.defaultTheme))
   const fg = theme?.foreground ?? []
+  // U1 · one read per paint; every band passes it down so a style with a model
+  // node in a rotated strip behaves the same as a footer one.
+  const modelScale = modelScaleOf(env, style.id)
   // brand wordmarks come in a light and a dark cut; pick the one that reads on this card
   const brandDark = !lightSurface(theme?.background ?? style.background)
   if (!style.transparentBackground) {
@@ -697,7 +737,7 @@ export function paintStockLayout(
       ctx.restore()
     }
     const onLightSurface = false
-    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface, brandDark, rotated)
+    for (const item of band.items) paintItem(env, item, scale, fg, theme?.id, onLightSurface, brandDark, rotated, modelScale)
     ctx.restore()
   }
 

@@ -665,10 +665,15 @@ button:disabled {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 292px minmax(0, 1fr) 356px;
+  position: relative;
+  /* U1: side tracks come from App state (`--rail-left` / `--rail-right` on
+     .app-shell). The stage stays the flexible middle track; the fallbacks keep
+     the pre-U1 widths if the vars are ever absent. */
+  grid-template-columns: var(--rail-left, 292px) minmax(0, 1fr) var(--rail-right, 356px);
 }
 .sidebar {
   min-height: 0;
+  min-width: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), transparent 180px), var(--glass-panel);
   /* 成对前缀（G-0 遗留 10 处缺 -webkit- 之一） */
   -webkit-backdrop-filter: var(--glass-filter-panel);
@@ -687,11 +692,145 @@ button:disabled {
 .center-column {
   min-width: 0;
   min-height: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   background:
     radial-gradient(700px 400px at 50% 0%, rgba(255, 255, 255, 0.022), transparent 70%),
     var(--bg-2);
+}
+
+/* ── U1 · resizable desk rails ─────────────────────────────
+   The drag strips and panel collapse/restore controls exist only in the
+   desktop shell (rendered from matchMedia >700px); the rules below are the
+   visual layer. Collapsed panels get a 0px grid track, so there is no gap and
+   the stage takes the whole width. */
+.workspace-rail {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 11px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.workspace-rail-left {
+  left: var(--rail-left, 292px);
+  margin-left: -5px;
+}
+.workspace-rail-right {
+  right: var(--rail-right, 356px);
+  margin-right: -5px;
+}
+.workspace-rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.workspace-rail:hover::before,
+.workspace-rail.is-dragging::before {
+  background: var(--accent-line-strong);
+}
+.workspace-rail-toggle {
+  position: relative;
+  z-index: 1;
+  width: 17px;
+  height: 38px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--glass-panel);
+  color: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.workspace-rail:hover .workspace-rail-toggle,
+.workspace-rail-toggle:hover,
+.workspace-rail-toggle:focus-visible {
+  opacity: 1;
+  color: var(--text);
+}
+.rail-restore {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9;
+  width: 16px;
+  height: 52px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--glass-panel);
+  color: var(--faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.rail-restore:hover {
+  color: var(--text);
+}
+.rail-restore-left {
+  left: 3px;
+}
+.rail-restore-right {
+  right: 3px;
+}
+@media (min-width: 701px) {
+  .workspace.left-collapsed .templates-panel,
+  .workspace.right-collapsed .inspector-panel {
+    display: none;
+  }
+}
+@media (min-width: 1121px) {
+  /* Explicit placement: a collapsed panel is display:none, and without an
+     explicit `grid-column` the stage would auto-place into the 0px left track. */
+  .workspace > .templates-panel {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .workspace > .center-column {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .workspace > .inspector-panel {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+@media (min-width: 701px) and (max-width: 1120px) {
+  /* Two-track tablet layout: the editor takes the second slot. */
+  .workspace > .center-column {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .workspace > .inspector-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+/* Mobile must never see a rail, even if a desktop collapse state is restored. */
+@media (max-width: 700px) {
+  .workspace-rail,
+  .rail-restore {
+    display: none !important;
+  }
 }
 
 /* ── template gallery ────────────────────────────────────── */
@@ -2920,7 +3059,7 @@ button:disabled {
 /* ── responsive ──────────────────────────────────────────── */
 @media (max-width: 1340px) {
   .workspace {
-    grid-template-columns: 260px minmax(0, 1fr) 332px;
+    grid-template-columns: var(--rail-left, 260px) minmax(0, 1fr) var(--rail-right, 332px);
   }
   .tpl-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2934,9 +3073,10 @@ button:disabled {
 }
 @media (max-width: 1120px) {
   /* Tablet / narrow desktop: keep the stage and inspector side by side; the
-     border library becomes a top-bar modal (the side rail is hidden). */
+     border library becomes a top-bar modal (the side rail is hidden). The
+     editor track still honours the user's rail width (U1). */
   .workspace {
-    grid-template-columns: minmax(0, 1fr) 332px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-right, 332px);
   }
   .templates-panel {
     display: none;

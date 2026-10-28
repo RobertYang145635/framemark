@@ -265,3 +265,15 @@
   border-color: rgba(120, 170, 255, 0.8);
   background: rgba(90, 140, 255, 0.16);
 }
+
+/* U1 · 机型行字号乘子（仅 IR 真有 model 槽位的样式、仅「文字」页出现） */
+.model-size-row {
+  margin: 2px 0 6px;
+  padding: 6px 9px 2px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+.model-size-row .slider-row {
+  margin: 2px 0 3px;
+}

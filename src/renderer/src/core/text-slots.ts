@@ -172,7 +172,7 @@ export function migrateTextLineKeys(
 ): TextSettings {
   if (!text.lineText && !text.hiddenLines) return text
   const prefix = `${scope}#`
-  const fix = (key: string) => (key.startsWith(prefix) ? key : `${prefix}${key}`)
+  const fix = (key: string) => (key.startsWith(prefix) || isStockStyleKey(key) ? key : `${prefix}${key}`)
   return {
     ...text,
     ...(text.lineText
@@ -180,6 +180,18 @@ export function migrateTextLineKeys(
       : {}),
     ...(text.hiddenLines ? { hiddenLines: text.hiddenLines.map(fix) } : {})
   }
+}
+
+/**
+ * U2 · IR stock styles key their 机型 override by the STYLE id (`<styleId>#model`,
+ * see `core/system/tokens.ts/stockModelOverride`), not by the template variant:
+ * one `systemCamera` variant can switch styles, so the variant prefix would both
+ * misfile the key and silently drop the user's text on hydrate. Stock style ids
+ * are namespaced (`vendor:style`), and no `<source>#<n>` key ever ends in
+ * `#model`, so a colon before that suffix is the discriminator.
+ */
+function isStockStyleKey(key: string): boolean {
+  return key.includes(':') && key.endsWith('#model')
 }
 
 export interface DeclaredTextSlot {

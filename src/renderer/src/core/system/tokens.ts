@@ -1,12 +1,61 @@
 import type { StockEnv } from './ir'
+import type { ExifData } from '../../types'
 import { formatAperture, formatDateOnly, formatShutter, modelWithoutMake } from '../exif'
 import type { StockToken } from './ir'
 
+/**
+ * U2 · 机型 override key. Identical convention to the U1 size multiplier
+ * (`paint.ts/modelScaleOf`): `design.text.lineText[<styleId>#model]`, where
+ * `<styleId>` is the value `params.systemStyle` selects. Hand cards keep their
+ * own `<source>#<occurrence>` keys in the same map; stock style ids are
+ * namespaced (`vendor:style`), so the two key spaces cannot collide.
+ */
+export function stockModelKey(styleId: string): string {
+  return `${styleId}#model`
+}
+
+/** The style the stock env renders ('' when the design is not a stock card). */
+function stockStyleId(env: StockEnv): string {
+  const id = env.params?.systemStyle
+  return typeof id === 'string' ? id : ''
+}
+
+/**
+ * The user's own 机型 text, if they ever typed one:
+ *   - key absent  ⇒ `undefined` ⇒ the line is derived from EXIF;
+ *   - key present ⇒ that string wins over EXIF verbatim, and `''` means
+ *     "deliberately blank" — the line disappears and EXIF must NOT come back.
+ * The distinction is the whole point: `undefined` and `''` paint differently
+ * (derived vs empty), so the key is probed, never defaulted.
+ */
+export function stockModelOverride(env: StockEnv): string | undefined {
+  const styleId = stockStyleId(env)
+  const text = env.text?.lineText
+  if (!styleId || !text) return undefined
+  const key = stockModelKey(styleId)
+  if (!(key in text)) return undefined
+  const raw = text[key]
+  return typeof raw === 'string' ? raw : undefined
+}
+
+/**
+ * What the 机型 line shows when no override is set: EXIF make + model, with the
+ * make prefix stripped from the model when the camera repeats it. Empty when
+ * the photo carries neither — there is deliberately NO title fallback any more
+ * (U2), because a title is not a model: an EXIF-less photo must leave the line
+ * blank and let the user type one instead.
+ */
+export function derivedModelText(exif: Pick<ExifData, 'make' | 'model'>): string {
+  const make = String(exif.make ?? '').trim()
+  const model = modelWithoutMake(make, exif.model ?? '').trim()
+  return [make, model].filter(Boolean).join(' ')
+}
+
 function stockModel(env: StockEnv): string {
   if (!env.text.showModel) return ''
-  const make = env.exif.make.trim()
-  const model = modelWithoutMake(make, env.exif.model).trim()
-  return [make, model].filter(Boolean).join(' ') || env.text.title.trim()
+  const override = stockModelOverride(env)
+  if (override !== undefined) return override.trim() ? override : ''
+  return derivedModelText(env.exif)
 }
 
 function stockImageParams(env: StockEnv): string {
@@ -30,9 +79,29 @@ function shutterPart(value: number | null): string {
   return `1/${Math.round(1 / value)}`
 }
 
+/**
+ * The split path (`@{series}`, `@{versionNumber}`, `@{versionName}`) must agree
+ * with `stockModel()`: when the user typed an override, the split is taken from
+ * that string, not from EXIF. The invariant is `[make, model].join(' ')` ===
+ * what the model token paints — the typed line is split around the EXIF make
+ * only when it actually starts with it, otherwise the whole line is the model
+ * part (typing a line must never be re-prefixed with a brand the user dropped).
+ */
 function modelParts(env: StockEnv): { make: string; model: string; number: string; name: string } {
-  const make = env.exif.make.trim()
-  const model = modelWithoutMake(make, env.exif.model).trim()
+  const override = env.text.showModel ? stockModelOverride(env) : undefined
+  let make: string
+  let model: string
+  if (override !== undefined) {
+    const full = override.trim()
+    if (!full) return { make: '', model: '', number: '', name: '' }
+    const exifMake = env.exif.make.trim()
+    const rest = modelWithoutMake(exifMake, full)
+    make = rest === full ? '' : exifMake
+    model = rest
+  } else {
+    make = env.exif.make.trim()
+    model = modelWithoutMake(make, env.exif.model).trim()
+  }
   const m = /^([A-Za-z]*\d+[A-Za-z0-9]*)(?:\s+(.+))?$/.exec(model)
   return {
     make,
