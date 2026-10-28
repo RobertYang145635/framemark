@@ -1,18 +1,57 @@
-import React from 'react'
-import { Download, FolderOpen, ImagePlus, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { Download, FolderOpen, ImagePlus, Images, X } from 'lucide-react'
 import { useAppStore } from '../store'
-import { IconButton } from './ui'
+import { renderStyledThumb } from '../core/batch-preview'
+import type { Design, PhotoAsset } from '../types'
+
+const THUMB_W = 152
+const THUMB_H = 116
+
+/**
+ * Styled thumbnails for the strip. Rendered one photo at a time (the selected
+ * one first) so a 50-photo folder never blocks the editor; `renderStyledThumb`
+ * caches per design + photo, so an unchanged design costs nothing.
+ */
+function useStyledThumbs(photos: PhotoAsset[], design: Design, selectedId: string | null) {
+  const [thumbs, setThumbs] = useState<Record<string, string>>({})
+  useEffect(() => {
+    let cancelled = false
+    const order = [...photos].sort((a, b) => (a.id === selectedId ? -1 : b.id === selectedId ? 1 : 0))
+    const timer = window.setTimeout(async () => {
+      for (const photo of order) {
+        if (cancelled) return
+        try {
+          const url = await renderStyledThumb(photo, design, THUMB_W, THUMB_H)
+          if (cancelled) return
+          setThumbs((prev) => (prev[photo.id] === url ? prev : { ...prev, [photo.id]: url }))
+        } catch {
+          // fall back to the original thumbnail for this photo
+        }
+      }
+    }, 220)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [photos, design, selectedId])
+  return thumbs
+}
 
 export function Filmstrip() {
   const photos = useAppStore((s) => s.photos)
   const selectedId = useAppStore((s) => s.selectedId)
+  const design = useAppStore((s) => s.design)
   const selectPhoto = useAppStore((s) => s.selectPhoto)
   const removePhoto = useAppStore((s) => s.removePhoto)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
   const addFolder = useAppStore((s) => s.addFolder)
   const openExportDialog = useAppStore((s) => s.openExportDialog)
+  const openBatchPreview = useAppStore((s) => s.openBatchPreview)
   const job = useAppStore((s) => s.job)
   const desktop = Boolean(window.framemark)
+  const thumbs = useStyledThumbs(photos, design, selectedId)
+
+  const selectedIndex = Math.max(0, photos.findIndex((p) => p.id === selectedId))
 
   return (
     <section className="filmstrip glass">
@@ -35,6 +74,17 @@ export function Filmstrip() {
           </button>
           {photos.length > 1 ? (
             <button
+              className="btn btn-ghost btn-sm glass-btn glass-ripple glass-press"
+              onClick={() => openBatchPreview(selectedIndex)}
+              type="button"
+              title={`按当前模板逐张预览全部 ${photos.length} 张`}
+            >
+              <Images size={15} />
+              全部预览
+            </button>
+          ) : null}
+          {photos.length > 1 ? (
+            <button
               className="btn btn-ghost btn-sm glass-btn glass-spot glass-ripple glass-press"
               onClick={() => openExportDialog('all')}
               type="button"
@@ -50,7 +100,12 @@ export function Filmstrip() {
         {photos.map((p, i) => (
           <div key={p.id} className={`thumb ${p.id === selectedId ? 'active' : ''}`}>
             <button className="thumb-main glass-press" onClick={() => selectPhoto(p.id)} title={p.name} type="button">
-              <img src={p.previewUrl} alt={p.name} loading="lazy" />
+              <img
+                className={thumbs[p.id] ? 'is-styled' : undefined}
+                src={thumbs[p.id] ?? p.previewUrl}
+                alt={p.name}
+                loading="lazy"
+              />
               <span className="thumb-index">{String(i + 1).padStart(2, '0')}</span>
             </button>
             <button

@@ -12,6 +12,7 @@ import { BrandPicker } from './components/BrandPicker'
 import { PresetDialog } from './components/PresetDialog'
 import { ReferenceGallery } from './components/ReferenceGallery'
 import { ExportDialog } from './components/ExportDialog'
+import { BatchPreview } from './components/BatchPreview'
 import { ExportOverlay } from './components/ExportOverlay'
 import { ImportProgressOverlay } from './components/ImportProgressOverlay'
 import { Toast } from './components/Toast'
@@ -20,6 +21,35 @@ import { Modal } from './components/ui'
 import { mountGlassChrome, paintGlassChromeBeforeFirstFrame } from './components/glass/glassBoot'
 import { BORDER_CATEGORIES, TAXONOMY_CARDS } from './core/taxonomy.generated'
 import { ensureFonts } from './core/fonts'
+import * as history from './core/history'
+
+/**
+ * S2 red/green switch. `true` in shipped code; the gate flips it to `false` for
+ * one throw-away build to prove the gesture seal — not the 600 ms window — is
+ * what keeps a long slider drag in ONE undo step.
+ */
+const GESTURE_SEAL = true
+
+/**
+ * Does this element own a native text undo stack? Only text-entry controls do,
+ * so Ctrl+Z inside them must not touch the design (the browser reverts the
+ * text). Range/checkbox/button inputs have no text undo, so the design
+ * shortcut keeps working while they are focused (e.g. right after a drag).
+ */
+function isTextEntryTarget (target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  if (target instanceof HTMLTextAreaElement) return true
+  if (target instanceof HTMLInputElement) {
+    return !['range', 'checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'color', 'image'].includes(
+      target.type
+    )
+  }
+  return false
+}
+
+/** Keys a focused range slider turns into value changes (keyboard-driven sliders). */
+const RANGE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'])
 
 /**
  * GLASS-UI G-1 · 玻璃外壳挂载（G-0 交付机制、本批接调用点）。
@@ -62,6 +92,139 @@ export function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  /**
+   * S2 · global undo/redo shortcuts (ONE listener):
+   *   Ctrl/Cmd+Z          undo
+   *   Ctrl/Cmd+Shift+Z    redo
+   *   Ctrl+Y              redo (Windows muscle memory)
+   * Rules:
+   *   - text-entry controls (text-like input / textarea / contenteditable) keep
+   *     their native undo: never intercept while one of them has focus;
+   *   - focus inside an open `role="dialog"` is a separate context (the design
+   *     behind the scrim is partly hidden and dialogs own their own state), so
+   *     the shortcut is ignored there too — close the dialog to undo the design;
+   *   - AltGr (Ctrl+Alt) is not a shortcut, and IME composition is left alone.
+   */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing || e.altKey) return
+      if (!e.ctrlKey && !e.metaKey) return
+      const key = e.key.toLowerCase()
+      if (key !== 'z' && key !== 'y') return
+      const active = document.activeElement
+      if (isTextEntryTarget(active)) return
+      if (active instanceof Element && active.closest('[role="dialog"]')) return
+      e.preventDefault()
+      if (key === 'y' || e.shiftKey) useAppStore.getState().redoDesign()
+      else useAppStore.getState().undoDesign()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  /**
+   * S2 · gesture sealing. history.ts merges same-key writes only inside a 600 ms
+   * window, but a slow drag can pause longer than that and still be ONE user
+   * gesture. These capture-phase listeners at the app root bracket the gesture:
+   *   - pointerdown/up/cancel on `input[type=range]` (mouse + touch + pen);
+   *   - focusin/focusout on text-entry fields (typing is a gesture too);
+   *   - arrow/Home/End keys on a focused range, ended 350 ms after the last key
+   *     so a keyboard-driven slider burst (key repeat included) is one step.
+   * Sources are counted independently, so focus moving out of a text field while
+   * a slider is being dragged cannot close the drag's gesture.
+   */
+  useEffect(() => {
+    const pointers = new Set<number>()
+    let focusEl: HTMLElement | null = null
+    let rangeKeyOpen = false
+    let rangeKeyTimer: number | null = null
+
+    const begin = () => {
+      if (GESTURE_SEAL) history.beginGesture()
+    }
+    const end = () => {
+      if (GESTURE_SEAL) history.endGesture()
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest('input[type="range"]')) return
+      if (pointers.has(e.pointerId)) return
+      pointers.add(e.pointerId)
+      begin()
+    }
+    const onPointerEnd = (e: PointerEvent) => {
+      if (!pointers.delete(e.pointerId)) return
+      end()
+    }
+    const onWindowBlur = () => {
+      const open = pointers.size
+      pointers.clear()
+      for (let i = 0; i < open; i++) end()
+    }
+    const onFocusIn = (e: FocusEvent) => {
+      if (!isTextEntryTarget(e.target) || e.target === focusEl) return
+      if (focusEl) end()
+      focusEl = e.target as HTMLElement
+      begin()
+    }
+    const onFocusOut = (e: FocusEvent) => {
+      if (e.target !== focusEl) return
+      focusEl = null
+      end()
+    }
+    const endRangeKeys = () => {
+      if (rangeKeyTimer !== null) {
+        window.clearTimeout(rangeKeyTimer)
+        rangeKeyTimer = null
+      }
+      if (!rangeKeyOpen) return
+      rangeKeyOpen = false
+      end()
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest('input[type="range"]')) return
+      if (!RANGE_KEYS.has(e.key)) return
+      if (!rangeKeyOpen) {
+        rangeKeyOpen = true
+        begin()
+      }
+      if (rangeKeyTimer !== null) window.clearTimeout(rangeKeyTimer)
+      rangeKeyTimer = window.setTimeout(endRangeKeys, 350)
+    }
+    const onRangeFocusOut = (e: FocusEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest('input[type="range"]')) return
+      endRangeKeys()
+    }
+
+    window.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('pointerup', onPointerEnd, true)
+    window.addEventListener('pointercancel', onPointerEnd, true)
+    window.addEventListener('blur', onWindowBlur)
+    document.addEventListener('focusin', onFocusIn, true)
+    document.addEventListener('focusout', onFocusOut, true)
+    document.addEventListener('focusout', onRangeFocusOut, true)
+    document.addEventListener('keydown', onKeyDown, true)
+
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('pointerup', onPointerEnd, true)
+      window.removeEventListener('pointercancel', onPointerEnd, true)
+      window.removeEventListener('blur', onWindowBlur)
+      document.removeEventListener('focusin', onFocusIn, true)
+      document.removeEventListener('focusout', onFocusOut, true)
+      document.removeEventListener('focusout', onRangeFocusOut, true)
+      document.removeEventListener('keydown', onKeyDown, true)
+      const openPointers = pointers.size
+      pointers.clear()
+      for (let i = 0; i < openPointers; i++) end()
+      if (focusEl) {
+        focusEl = null
+        end()
+      }
+      endRangeKeys()
+    }
   }, [])
 
   useEffect(() => {
@@ -171,6 +334,7 @@ export function App() {
       <BrandPicker />
       <PresetDialog />
       <ExportDialog />
+      <BatchPreview />
       <ExportOverlay />
       <ImportProgressOverlay />
       <Toast />

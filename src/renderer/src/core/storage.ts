@@ -1,8 +1,12 @@
 import type { Design, Preset } from '../types'
+import type { ExportTask } from './jobs'
 
 const DB_NAME = 'framemark'
-const DB_VERSION = 1
+/** v2 (S3): adds the `jobs` export-history store; `presets` is untouched. */
+const DB_VERSION = 2
 const STORE = 'presets'
+const JOBS = 'jobs'
+const JOBS_INDEX = 'createdAt'
 const LAST_KEY = 'framemark.lastDesign.v1'
 
 function openDb(): Promise<IDBDatabase> {
@@ -10,7 +14,12 @@ function openDb(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
+      // Only CREATE what is missing: an existing v1 database keeps its presets.
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(JOBS)) {
+        const jobs = db.createObjectStore(JOBS, { keyPath: 'id' })
+        jobs.createIndex(JOBS_INDEX, 'createdAt')
+      }
     }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(req.error ?? new Error('IndexedDB 打开失败'))
@@ -46,6 +55,60 @@ export async function removePreset(id: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite')
     tx.objectStore(STORE).delete(id)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+// ---------------------------------------------------------------------------
+// S3 export history (`jobs`)
+// ---------------------------------------------------------------------------
+
+export async function putJob(job: ExportTask): Promise<void> {
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(JOBS, 'readwrite')
+    tx.objectStore(JOBS).put(job)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function getJob(id: string): Promise<ExportTask | null> {
+  try {
+    const db = await openDb()
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(JOBS, 'readonly')
+      const req = tx.objectStore(JOBS).get(id)
+      req.onsuccess = () => resolve(((req.result as ExportTask) ?? null))
+      req.onerror = () => reject(req.error)
+    })
+  } catch {
+    return null
+  }
+}
+
+/** Newest first — IndexedDB `getAll` on this store is unsorted, so sort explicitly. */
+export async function listJobs(): Promise<ExportTask[]> {
+  try {
+    const db = await openDb()
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(JOBS, 'readonly')
+      const req = tx.objectStore(JOBS).getAll()
+      req.onsuccess = () =>
+        resolve(((req.result as ExportTask[]) ?? []).sort((a, b) => b.createdAt - a.createdAt))
+      req.onerror = () => reject(req.error)
+    })
+  } catch {
+    return []
+  }
+}
+
+export async function deleteJob(id: string): Promise<void> {
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(JOBS, 'readwrite')
+    tx.objectStore(JOBS).delete(id)
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })

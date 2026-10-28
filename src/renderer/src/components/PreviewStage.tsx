@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Eye, ImagePlus, Loader2, Maximize2, Minus, Plus, Sparkles } from 'lucide-react'
+import { Eye, ImagePlus, Images, Loader2, Maximize2, Minus, Plus, Sparkles } from 'lucide-react'
 import type { PhotoAsset, Rect } from '../types'
 import { useAppStore } from '../store'
 import { getSampleAsset } from '../core/sample'
@@ -25,6 +25,7 @@ export function PreviewStage() {
   const addSample = useAppStore((s) => s.addSample)
   const setPreviewMeta = useAppStore((s) => s.setPreviewMeta)
   const pickPhotos = useAppStore((s) => s.pickPhotos)
+  const openBatchPreview = useAppStore((s) => s.openBatchPreview)
   const [sample, setSample] = useState<PhotoAsset | null>(null)
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [fontReady, setFontReady] = useState(false)
@@ -45,6 +46,7 @@ export function PreviewStage() {
   const wheelAnchorRef = useRef<{ x: number; y: number; fx: number; fy: number; at: number } | null>(null)
   const variant = getVariant(design.variantId)
   const selected = photos.find((p) => p.id === selectedId) ?? photos[0] ?? sample
+  const selectedIndex = Math.max(0, photos.findIndex((p) => p.id === selectedId))
   const isSample = !photos.length
 
   useEffect(() => {
@@ -238,6 +240,20 @@ export function PreviewStage() {
             </button>
           </div>
         </div>
+        {/* Mobile-only 1/N entry: the desktop keeps the 全部预览 button in the
+            filmstrip header, which CSS hides at <=700px. */}
+        {photos.length > 1 ? (
+          <button
+            className="stage-batch-chip btn btn-ghost btn-sm glass-btn glass-ripple glass-press"
+            onClick={() => openBatchPreview(selectedIndex)}
+            type="button"
+            title={`按当前模板逐张预览全部 ${photos.length} 张`}
+            aria-label={`全部预览，共 ${photos.length} 张`}
+          >
+            <Images size={14} />
+            <span>全部 {photos.length} 张</span>
+          </button>
+        ) : null}
       </div>
 
       <div ref={viewportRef} className={`canvas-viewport ${zoom > 1 ? "zoomed" : ""}`}>

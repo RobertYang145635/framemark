@@ -22,7 +22,25 @@ export interface BatchOptions {
   photos: PhotoAsset[]
   design: Design
   presetName?: string
+  /**
+   * S3: task keys parallel to `photos` (one per photo). When present the batch
+   * reports per-item outcomes so the caller can persist a resumable task.
+   */
+  keys?: string[]
+  /**
+   * S3: keys the persisted task already finished. Those photos are never
+   * re-exported (a re-export would land as `(1)`), but they still advance
+   * `onProgress` so the bar covers the whole task.
+   */
+  skip?: Set<string>
   onProgress?: (done: number, total: number, current: string) => void
+  /**
+   * Awaited when it returns a promise: the caller persists the per-item outcome
+   * BEFORE the next photo starts, so a kill cannot leave a written file without
+   * its history row (which would re-export as `(1)`).
+   */
+  onItemDone?: (key: string, result: ExportResult) => void | Promise<void>
+  onItemError?: (key: string, message: string) => void | Promise<void>
   isCancelled?: () => boolean
 }
 
@@ -30,6 +48,8 @@ export interface BatchResult {
   results: ExportResult[]
   errors: { name: string; message: string }[]
   cancelled: boolean
+  /** Items recognised as already exported and therefore not written again. */
+  skipped: number
 }
 
 function pad(n: number, len = 2): string {
@@ -211,27 +231,39 @@ export async function exportOne(
 }
 
 export async function exportBatch(options: BatchOptions): Promise<BatchResult> {
-  const { photos, design, presetName, onProgress, isCancelled } = options
+  const { photos, design, presetName, keys, skip, onProgress, onItemDone, onItemError, isCancelled } = options
   const results: ExportResult[] = []
   const errors: { name: string; message: string }[] = []
   let cancelled = false
+  let skipped = 0
   for (let i = 0; i < photos.length; i++) {
     if (isCancelled?.()) {
       cancelled = true
       break
     }
     const photo = photos[i]
+    const key = keys?.[i]
+    if (key && skip?.has(key)) {
+      // Already exported by an earlier run of this task: counting it as progress
+      // but not calling exportOne keeps the output folder free of `(1)` copies.
+      skipped++
+      onProgress?.(i + 1, photos.length, photo.name)
+      continue
+    }
     onProgress?.(i, photos.length, photo.name)
     try {
       const r = await exportOne(photo, design, i, presetName)
       results.push(r)
+      if (key) await onItemDone?.(key, r)
     } catch (e) {
-      errors.push({ name: photo.name, message: friendlyExportError(e instanceof Error ? e.message : String(e)) })
+      const message = friendlyExportError(e instanceof Error ? e.message : String(e))
+      errors.push({ name: photo.name, message })
+      if (key) await onItemError?.(key, message)
     }
     onProgress?.(i + 1, photos.length, photo.name)
     await new Promise((r) => setTimeout(r, 16))
   }
-  return { results, errors, cancelled }
+  return { results, errors, cancelled, skipped }
 }
 
 export function exportDateLabel(design: Design): string {

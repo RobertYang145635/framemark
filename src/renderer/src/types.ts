@@ -318,6 +318,10 @@ export type ExportJob = {
   cancelled: boolean
   errors: { name: string; message: string }[]
   lastPath?: string
+  /** S3: the persisted export-history task this run belongs to (retry / 新建任务). */
+  taskId?: string
+  /** S3: photos skipped because the same photo was already exported before. */
+  skipped?: number
 }
 
 export type InspectorTab = 'template' | 'watermark' | 'export'

@@ -1185,6 +1185,10 @@ button:disabled {
 .stage-foot-right {
   color: #59564f;
 }
+/* 手机端「全部预览」入口：桌面端已有胶片条头部按钮，这里默认不渲染。 */
+.stage-batch-chip {
+  display: none;
+}
 
 /* ── filmstrip ───────────────────────────────────────────── */
 /* G-1：胶片条外壳＝.glass 基元（Filmstrip.tsx 挂的类），这里只留布局 */
@@ -3054,6 +3058,7 @@ button:disabled {
     padding: 2px 8px 0;
   }
   .stage-topline {
+    position: relative;
     padding: 0 2px 4px;
     align-items: center;
   }
@@ -3076,6 +3081,21 @@ button:disabled {
   }
   .stage-tools .btn span {
     display: none;
+  }
+  /* 预览舞台左上角的「全部 N 张」：挂在 top-line 下沿，避开右上角对比/缩放。
+     绝对定位在 .stage-topline 上，缩放到 1:1 滚动时也不会跟着画布滚走。
+     用子选择器压过后面 .glass-btn 的 `position: relative`（同特异性、后置会赢）。 */
+  .stage-topline > .stage-batch-chip {
+    position: absolute;
+    z-index: 8;
+    top: calc(100% + 6px);
+    left: 0;
+    display: inline-flex;
+    height: 28px;
+    padding: 0 10px;
+    gap: 5px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
   }
   .canvas-viewport {
     border-radius: 12px;
@@ -7237,5 +7257,139 @@ button.border-series-head:focus-visible {
   .import-progress-track span,
   .import-progress-track span::after {
     animation: none;
+  }
+}
+
+/* 批量预览（追差距 1/6）：缩略图显示套用后的结果，整图用 contain 保留边框 */
+.thumb-main img.is-styled {
+  object-fit: contain;
+  background: #0b0b0c;
+}
+.batch-preview-modal {
+  height: min(88vh, 980px);
+}
+.batch-preview-modal .modal-body {
+  padding: 0;
+  display: flex;
+}
+.batch-preview-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0b0c;
+}
+.batch-preview-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: opacity var(--dur-pop) var(--ease-spring);
+}
+.batch-preview-stage img.is-busy {
+  opacity: 0.55;
+}
+.batch-preview-hint {
+  color: var(--faint);
+  font-size: 12px;
+}
+.batch-preview-nav {
+  position: absolute;
+  bottom: 14px;
+  display: flex;
+  gap: 8px;
+}
+.batch-preview-modal .modal-foot .btn-primary {
+  margin-left: auto;
+}
+/* Mobile strip: hidden on desktop, rendered under the stage on phones. */
+.batch-preview-strip {
+  display: none;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  background: #0b0b0c;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.batch-preview-strip::-webkit-scrollbar {
+  display: none;
+}
+.batch-preview-strip-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: #141416;
+}
+.batch-preview-strip-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #0b0b0c;
+}
+.batch-preview-strip-item.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.batch-preview-strip-item span {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* 手机端批量预览：整屏、图片占满宽度、底部缩略图条（桌面布局不变） */
+@media (max-width: 480px) {
+  .batch-preview-modal {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+  .batch-preview-modal .modal-head {
+    padding: 10px 14px 8px;
+  }
+  .batch-preview-modal .modal-head h2 {
+    font-size: 16px;
+  }
+  .batch-preview-modal .modal-body {
+    flex-direction: column;
+  }
+  .batch-preview-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .batch-preview-stage img {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+  }
+  .batch-preview-nav {
+    bottom: 10px;
+  }
+  .batch-preview-strip {
+    display: flex;
+  }
+  .batch-preview-modal .modal-foot {
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .batch-preview-modal .modal-foot .modal-note {
+    display: none;
   }
 }

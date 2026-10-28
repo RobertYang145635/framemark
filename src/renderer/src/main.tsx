@@ -21,7 +21,9 @@ import { autoLogo, logoAsset } from './core/brands'
 import { TEMPLATE_VARIANTS } from './core/variants'
 import { STOCK_STYLE_LIST } from './core/system/styles'
 import { collectBrandNodes } from './core/system/assets'
-import type { BrandVersionRef, Design, PhotoAsset, Rect, TemplateVariant } from './types'
+import * as history from './core/history'
+import { useAppStore } from './store'
+import type { BrandVersionRef, Design, ParamValue, PhotoAsset, Ratio, Rect, TemplateVariant, TextSettings } from './types'
 
 const THUMB_W = 480
 const THUMB_H = 360
@@ -299,6 +301,33 @@ interface VariantDebugApi {
   render: (id: string, opts?: DebugRenderOptions) => Promise<DebugRenderResult>
 }
 
+/**
+ * Debug-only undo/redo surface (S1). Mirrors the store, never rendered: the undo
+ * button/shortcut wiring is a later slice, and any UI would have to go through
+ * the same store actions anyway.
+ *
+ * `act` and `design` are probe-only: the headline gate has to fire the same
+ * store actions a control fires (e.g. 10 rapid `setParam('marginPct')`) and
+ * compare whole designs as JSON, which no DOM path exposes.
+ */
+interface HistoryDebugApi {
+  size: () => number
+  labels: () => string[]
+  undo: () => void
+  redo: () => void
+  clear: () => void
+  design: () => Design
+  act: {
+    setParam: (key: string, value: ParamValue) => void
+    setText: (patch: Partial<TextSettings>) => void
+    setRatio: (ratio: Ratio) => void
+    setLogoVersion: (versionId: string, cutId?: string) => Promise<void>
+    savePreset: (name: string) => Promise<string | null>
+    applyPreset: (id: string) => void
+    setVariant: (id: string) => void
+  }
+}
+
 const debugWindow = window as unknown as {
   __fmStock: {
     list: () => {
@@ -314,6 +343,7 @@ const debugWindow = window as unknown as {
     render: (id: string, opts?: DebugRenderOptions) => Promise<DebugRenderResult>
   }
   __fmVariants: VariantDebugApi
+  __fmHistory: HistoryDebugApi
 }
 
 debugWindow.__fmStock = {
@@ -336,6 +366,27 @@ debugWindow.__fmStock = {
 debugWindow.__fmVariants = {
   list: () => RENDERABLE_VARIANTS.map((v) => ({ id: v.id, name: v.name, category: v.category })),
   render: renderVariantPreview
+}
+
+debugWindow.__fmHistory = {
+  size: () => history.size(),
+  labels: () => history.labels(),
+  undo: () => useAppStore.getState().undoDesign(),
+  redo: () => useAppStore.getState().redoDesign(),
+  clear: () => history.clear(),
+  design: () => useAppStore.getState().design,
+  act: {
+    setParam: (key, value) => useAppStore.getState().setParam(key, value),
+    setText: (patch) => useAppStore.getState().setText(patch),
+    setRatio: (ratio) => useAppStore.getState().setRatio(ratio),
+    setLogoVersion: (versionId, cutId) => useAppStore.getState().setLogoVersion(versionId, cutId),
+    savePreset: async (name) => {
+      await useAppStore.getState().savePreset(name)
+      return useAppStore.getState().activePresetId
+    },
+    applyPreset: (id) => useAppStore.getState().applyPreset(id),
+    setVariant: (id) => useAppStore.getState().setVariant(id)
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

@@ -1924,8 +1924,10 @@ const paramStack: TemplateDef = {
     const aperture = formatAperture(env.exif.aperture)
     const shutter = formatShutter(env.exif.shutter).replace(/s$/, '')
     const iso = env.exif.iso ? `ISO ${env.exif.iso}` : ''
-    const fallback = env.isPreview ? ['28mm', 'F2.8', '1/125', 'ISO 100'] : []
-    const lines = [focal, aperture, shutter, iso].map((t, i) => t || fallback[i] || '').filter(Boolean)
+    // Never invent camera parameters: a preview-only placeholder made
+    // `lines.length` (and therefore blockH / the text anchor) differ from the
+    // export, so a no-EXIF photo previewed a layout that could not be exported.
+    const lines = [focal, aperture, shutter, iso].filter(Boolean)
     if (!lines.length) return { x: 0, y: 0, w: W, h: H }
     const blockH = lines.length * size + (lines.length - 1) * gap
     const x = right ? W - padX : padX

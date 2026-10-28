@@ -30,3 +30,6 @@ android/app/src/main/assets/public/
 # Logs / OS cruft
 *.log
 .DS_Store
+
+# Research evidence / agent handoffs (local, not part of the build)
+/_research/

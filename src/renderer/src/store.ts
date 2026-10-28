@@ -44,9 +44,22 @@ import {
   portablePresetDesign,
   pruneOverrides
 } from './core/presets'
-import { getAllPresets, putPreset, removePreset, loadLastDesign, saveLastDesign, downloadJson, readJsonFile } from './core/storage'
+import { getAllPresets, putPreset, removePreset, loadLastDesign, saveLastDesign, downloadJson, readJsonFile, getJob, listJobs, putJob } from './core/storage'
 import { exportBatch } from './core/exporter'
+import { startExportForeground, stopExportForeground, updateExportForeground } from './core/foreground'
+import {
+  exportDesignKey,
+  isResumable,
+  makeTask,
+  newestTaskFor,
+  reconcile,
+  resolveStatus,
+  seedFromHistory,
+  taskSummary,
+  type ExportTask
+} from './core/jobs'
 import { saveTextDocument } from './core/gallery'
+import * as history from './core/history'
 import type { FolderScanResult } from './global'
 
 interface Toast {
@@ -97,6 +110,11 @@ interface AppState {
   /** Visible import progress for picker/drop/folder imports (null = idle). */
   importProgress: ImportProgress | null
   job: ExportJob | null
+  /**
+   * S3: an unfinished persisted export for the CURRENT photos (crash/cancel),
+   * shown as 「上次导到 X/Y，可继续」 by the ExportOverlay.
+   */
+  resumable: { id: string; done: number; total: number } | null
   /** Text lines captured from the last hand-template render (v4 文字 pane). */
   textSlots: TextSlot[]
   /** Output pixel size of the current preview (shown in the Inspector dock). */
@@ -110,6 +128,8 @@ interface AppState {
   presetDialogOpen: boolean
   /** Phase 4 export dialog; null = closed, otherwise the scope it opened with. */
   exportDialog: ExportScope | null
+  /** 1/N batch viewer: index into `photos`, null = closed. */
+  batchPreviewIndex: number | null
   galleryQuery: string
   toast: Toast | null
   init: () => Promise<void>
@@ -146,9 +166,15 @@ interface AppState {
   setPresetDialogOpen: (open: boolean) => void
   openExportDialog: (scope: ExportScope) => void
   closeExportDialog: () => void
+  openBatchPreview: (index: number) => void
+  closeBatchPreview: () => void
+  stepBatchPreview: (delta: number) => void
   setGalleryQuery: (q: string) => void
   savePreset: (name: string) => Promise<void>
   applyPreset: (id: string) => void
+  /** Undo/redo over design fields only (S1). Template/variant switches clear it. */
+  undoDesign: () => void
+  redoDesign: () => void
   deletePreset: (id: string) => Promise<void>
   importPresetFile: (file: File) => Promise<void>
   exportPresetFile: () => void
@@ -156,6 +182,14 @@ interface AppState {
   exportAll: () => Promise<void>
   cancelExport: () => void
   closeJob: () => void
+  /** S3: newest unfinished (running/paused) task that shares a photo with `photos`. */
+  findResumable: (photos: PhotoAsset[]) => Promise<ExportTask | null>
+  /** S3: continue a persisted task; finished photos are skipped, not re-written. */
+  resumeExport: (id: string) => Promise<void>
+  /** S3: re-export only the keys that recorded an error. */
+  retryFailed: (id: string) => Promise<void>
+  /** S3: 新建任务 — retire the current record so the same photos can export again. */
+  dismissJob: () => Promise<void>
   showToast: (message: string, type?: Toast['type']) => void
 }
 
@@ -163,6 +197,24 @@ const isDesktop = typeof window !== 'undefined' && Boolean(window.framemark)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 /** Dedupes the "no version for this surface" warning to once per version+surface. */
 let lastMissingLogoWarnKey = ''
+
+/**
+ * What one recorded design write is called (S1 undo/redo).
+ *   - `key`    coalescing identity: two writes with the same key inside 600 ms
+ *              (or anywhere inside an open gesture) become ONE undo step.
+ *   - `absorb` an async follow-up write that belongs to the step that opened the
+ *              transaction; see core/history.ts openTxn/isOpenTxn.
+ */
+interface CommitOptions {
+  label: string
+  key: string
+  absorb?: number
+}
+
+/** `{a,b}` -> `a+b`: patch identity so different fields never merge by accident. */
+function patchKey(patch: object): string {
+  return Object.keys(patch).sort().join('+')
+}
 
 /**
  * Write one param for the style the design currently points at.
@@ -238,6 +290,107 @@ function normalizeBrandVersion (design: Design): Design {
   return rest
 }
 
+/**
+ * THE write path for `design` (S1 undo/redo). Every user-facing design edit goes
+ * through here so one user action produces exactly one history step:
+ *   - the snapshot recorded is the design BEFORE the write; undo() takes the
+ *     live design from the store, so a follow-up async write inside the same
+ *     step is still covered by the step's redo entry;
+ *   - `absorb` writes (async logo reconciliation) always apply, but never push:
+ *     while their transaction is open they belong to the step that opened it,
+ *     and once it is closed they are a stale follow-up that must not open one.
+ */
+function commitDesign (producer: (design: Design) => Design, opts: CommitOptions): void {
+  const before = useAppStore.getState().design
+  const next = producer(before)
+  if (next === before) return
+  useAppStore.setState({ design: next, activePresetId: null })
+  if (opts.absorb !== undefined) {
+    // Both branches push nothing, kept explicit because they mean different things:
+    if (!history.isOpenTxn(opts.absorb)) return // stale follow-up: apply only
+    return // still inside the open step: already part of it
+  }
+  history.push({ label: opts.label, key: opts.key, before })
+}
+
+/**
+ * Background logo reconciliation. Lives outside the actions so it can be handed
+ * a transaction id: it must never call the public `setParam` (that would push a
+ * second undo step for one theme click).
+ */
+async function reconcileLogo (txn?: number): Promise<void> {
+  const { design } = useAppStore.getState()
+  const current = design.brandVersion
+  if (!current) return
+  const surface = surfaceForDesign(design)
+  const version = LOGO_VERSION_BY_ID[current.versionId]
+  if (!version) return
+
+  const cut = cutForVersionSurface(version, surface)
+  if (cut) {
+    if (cut.id === current.cutId && cut.assetKey === current.assetKey) return
+    let asset
+    try {
+      asset = await logoAsset(cut.assetKey)
+    } catch {
+      return
+    }
+    const next = refForVersion(version, surface)
+    if (!next) return
+    lastMissingLogoWarnKey = ''
+    commitDesign(
+      (d) =>
+        d.brandVersion?.versionId === version.id
+          ? {
+              ...writeParam(d, 'brandLogoFile', cut.assetKey),
+              brandVersion: next,
+              logo: asset,
+              text: { ...d.text, showLogo: true }
+            }
+          : d,
+      { label: 'Logo 适配', key: 'logo', absorb: txn }
+    )
+    useAppStore.getState().showToast(`已换成${surface === 'dark' ? '白' : '黑'}版 Logo`, 'info')
+    return
+  }
+
+  const fallback = fallbackVersionForSurface(version, surface)
+  const nextRef = fallback ? refForVersion(fallback, surface) : null
+  if (fallback && nextRef) {
+    let asset
+    try {
+      asset = await logoAsset(nextRef.assetKey)
+    } catch {
+      return
+    }
+    lastMissingLogoWarnKey = ''
+    commitDesign(
+      (d) =>
+        d.brandVersion?.versionId === version.id
+          ? {
+              ...writeParam(d, 'brandLogoFile', nextRef.assetKey),
+              brandVersion: nextRef,
+              logo: asset,
+              text: { ...d.text, showLogo: true }
+            }
+          : d,
+      { label: 'Logo 适配', key: 'logo', absorb: txn }
+    )
+    useAppStore.getState().showToast(`已换成同款的${surface === 'dark' ? '深' : '浅'}底版本`, 'info')
+    return
+  }
+
+  // No version can live on this surface. Keep `brandVersion`/`logo` intact in
+  // this slice (renderer enforcement comes next); warn once per theme change.
+  const warnKey = `${version.id}:${surface}`
+  if (lastMissingLogoWarnKey !== warnKey) {
+    lastMissingLogoWarnKey = warnKey
+    useAppStore
+      .getState()
+      .showToast(`这个 Logo 没有${surface === 'dark' ? '深色' : '浅色'}底版本，导出时不会显示`, 'error')
+  }
+}
+
 async function autoApplyLogo(photo: PhotoAsset | undefined): Promise<void> {
   if (!photo) return
   const state = useAppStore.getState()
@@ -264,6 +417,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   busy: null,
   importProgress: null,
   job: null,
+  resumable: null,
   textSlots: [],
   previewMeta: null,
   tab: 'template',
@@ -272,6 +426,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   brandPickerOpen: false,
   presetDialogOpen: false,
   exportDialog: null,
+  batchPreviewIndex: null,
   galleryQuery: '',
   toast: null,
 
@@ -322,6 +477,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     await autoApplyLogo(added[0])
     if (added.length) get().showToast(`已添加 ${added.length} 张照片`, 'success')
     if (failed) get().showToast(`${failed} 张照片读取失败`, 'error')
+    void refreshResumable()
   },
 
   addPaths: async (paths) => {
@@ -358,6 +514,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     await autoApplyLogo(added[0])
     if (added.length) get().showToast(`已添加 ${added.length} 张照片`, 'success')
     if (failed) get().showToast(`${failed} 张照片读取失败`, 'error')
+    void refreshResumable()
     return { added: added.length, failed }
   },
 
@@ -367,6 +524,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const asset = await photoFromUrl(url, name)
       set((s) => ({ photos: [...s.photos, asset], selectedId: s.selectedId ?? asset.id, busy: null }))
       get().showToast('示例已载入', 'success')
+      void refreshResumable()
     } catch (e) {
       set({ busy: null })
       get().showToast(e instanceof Error ? e.message : '载入示例失败', 'error')
@@ -420,12 +578,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       const selectedId = s.selectedId === id ? photos[0]?.id ?? null : s.selectedId
       return { photos, selectedId }
     })
+    void refreshResumable()
   },
 
   selectPhoto: (id) => set({ selectedId: id }),
 
   setVariant: (id) => {
     const variant = getVariant(id)
+    // Switching template/variant is NOT an undoable edit (S1 scope): the whole
+    // history belongs to the previous card, so it is dropped here, not recorded.
+    history.clear()
     set((s) => {
       const previous = getVariant(s.design.variantId)
       const previousIsDefault = !s.design.text.title || s.design.text.title === previous.text?.title
@@ -495,74 +657,107 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setParam: (key, value) => {
-    set((s) => ({ design: writeParam(s.design, key, value), activePresetId: null }))
+    commitDesign((design) => writeParam(design, key, value), {
+      label: `参数 ${key}`,
+      key: `param:${key}`
+    })
     // A theme flip can make the picked logo cut unreadable (black mark on a dark
-    // card). Reconcile in the background so typing/sliders never block on a decode.
-    if (key === 'theme') void get().ensureLogoCompatibility()
+    // card). Reconcile in the background so typing/sliders never block on a decode,
+    // but never let that second write become a second undo step: the open txn
+    // keeps it inside the step just recorded above.
+    if (key === 'theme') {
+      const txn = history.openTxn()
+      void reconcileLogo(txn).finally(() => history.closeTxn(txn))
+    }
   },
 
   resetVariantParams: () => {
-    const s = get()
-    const variant = getVariant(s.design.variantId)
+    const variant = getVariant(get().design.variantId)
     const base = getTemplate(variant.base)
     const declared = { ...base.defaults, ...(variant.params ?? {}) } as Params
-    const bucket = paramBucketKey(s.design)
-    // "恢复此模板的默认参数" means THIS style's overrides go away; other styles keep theirs.
-    const others: ParamOverrides = { ...(s.design.paramOverrides ?? {}) }
-    delete others[bucket]
-    set({
-      design: {
-        ...s.design,
-        params: declared,
-        paramOverrides: Object.keys(others).length ? others : undefined
+    // S2: the Inspector's 「重置」 is a user edit and must be undoable, so it goes
+    // through commitDesign like every other design write (label 重置参数).
+    commitDesign(
+      (design) => {
+        const bucket = paramBucketKey(design)
+        // "恢复此模板的默认参数" means THIS style's overrides go away; other styles keep theirs.
+        const others: ParamOverrides = { ...(design.paramOverrides ?? {}) }
+        delete others[bucket]
+        const unchanged =
+          !design.paramOverrides?.[bucket] &&
+          JSON.stringify(design.params) === JSON.stringify(declared)
+        // A reset on an untouched style is a no-op: record no empty undo step.
+        if (unchanged) return design
+        return {
+          ...design,
+          params: { ...declared },
+          paramOverrides: Object.keys(others).length ? others : undefined
+        }
       },
-      activePresetId: null
-    })
+      { label: '重置参数', key: 'reset:variant' }
+    )
   },
 
   resetParam: (key) => {
-    const s = get()
-    const value = declaredParams(s.design)[key]
-    set({
-      design: value === undefined ? dropParam(s.design, key) : writeParam(s.design, key, value),
-      activePresetId: null
+    const value = declaredParams(get().design)[key]
+    commitDesign((design) => (value === undefined ? dropParam(design, key) : writeParam(design, key, value)), {
+      label: `重置 ${key}`,
+      key: `param:${key}`
     })
-    if (key === 'theme') void get().ensureLogoCompatibility()
+    if (key === 'theme') {
+      const txn = history.openTxn()
+      void reconcileLogo(txn).finally(() => history.closeTxn(txn))
+    }
   },
 
-  setText: (patch) =>
-    set((s) => ({ design: { ...s.design, text: { ...s.design.text, ...patch } }, activePresetId: null })),
+  setText: (patch) => {
+    commitDesign((design) => ({ ...design, text: { ...design.text, ...patch } }), {
+      label: '文字',
+      key: `text:${patchKey(patch)}`
+    })
+  },
 
-  setWatermark: (patch) =>
-    set((s) => ({
-      design: { ...s.design, watermark: { ...s.design.watermark, ...patch } },
-      activePresetId: null
-    })),
+  setWatermark: (patch) => {
+    commitDesign((design) => ({ ...design, watermark: { ...design.watermark, ...patch } }), {
+      label: '水印',
+      key: `watermark:${patchKey(patch)}`
+    })
+  },
 
   setWatermarkFile: async (file) => {
     try {
       const asset = await imageAssetFromFile(file)
-      set((s) => ({
-        design: {
-          ...s.design,
-          watermark: { ...s.design.watermark, asset, enabled: true, target: 'photo' }
-        },
-        activePresetId: null
-      }))
+      commitDesign(
+        (design) => ({
+          ...design,
+          watermark: { ...design.watermark, asset, enabled: true, target: 'photo' }
+        }),
+        { label: '水印图片', key: 'watermark:file' }
+      )
       get().showToast('水印已载入', 'success')
     } catch {
       get().showToast('水印图读取失败', 'error')
     }
   },
 
-  setExport: (patch) =>
-    set((s) => ({ design: { ...s.design, export: { ...s.design.export, ...patch } } })),
+  setExport: (patch) => {
+    // Export settings never detached the active preset before this slice; keep
+    // that behaviour (commitDesign clears it like every other edit).
+    const presetId = get().activePresetId
+    commitDesign((design) => ({ ...design, export: { ...design.export, ...patch } }), {
+      label: '导出设置',
+      key: `export:${patchKey(patch)}`
+    })
+    if (presetId !== null) set({ activePresetId: presetId })
+  },
 
   setTextSlots: (slots) => set({ textSlots: slots }),
 
   setPreviewMeta: (previewMeta) => set({ previewMeta }),
 
-  setRatio: (ratio) => set((s) => ({ design: { ...s.design, ratio }, activePresetId: null })),
+  setRatio: (ratio) => {
+    commitDesign((design) => ({ ...design, ratio }), { label: '画幅', key: 'ratio' })
+  },
 
   setLogoFromBrand: async (file) => {
     // `params.brandLogoFile` mirrors the Inspector pick into params so the
@@ -579,23 +774,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     // effect only. `brandLogoFile`/`logo` semantics and legacy picker behavior
     // are unchanged; an un-catalogued (hand-dropped) file clears the pointer.
     const ref = refFromAssetKey(file, surfaceForDesign(get().design))
+    // The awaited write below IS the step; the txn exists so any write that a
+    // follow-up of the same pick might do lands inside it instead of opening a
+    // second step (none today — kept so the contract is uniform with `theme`).
+    const txn = history.openTxn()
     try {
       const asset = await logoAsset(file)
-      set((s) => ({
-        design: {
-          ...writeParam(s.design, 'brandLogoFile', file),
+      commitDesign(
+        (design) => ({
+          ...writeParam(design, 'brandLogoFile', file),
           logo: asset,
-          text: { ...s.design.text, showLogo: true },
+          text: { ...design.text, showLogo: true },
           brandVersion: ref
-        },
-        activePresetId: null
-      }))
+        }),
+        { label: '品牌 Logo', key: 'logo' }
+      )
       get().showToast('Logo 已应用', 'success')
     } catch {
-      set((s) => ({
-        design: { ...writeParam(s.design, 'brandLogoFile', file), brandVersion: ref }
-      }))
+      commitDesign((design) => ({ ...writeParam(design, 'brandLogoFile', file), brandVersion: ref }), {
+        label: '品牌 Logo',
+        key: 'logo'
+      })
       get().showToast('Logo 载入失败', 'error')
+    } finally {
+      history.closeTxn(txn)
     }
   },
 
@@ -612,108 +814,45 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().showToast(`这个版本只适用于${surface === 'dark' ? '深色' : '浅色'}底`, 'error')
       return
     }
-    let asset
+    // Same contract as setLogoFromBrand: the awaited write is the step, the txn
+    // absorbs anything the same pick triggers afterwards.
+    const txn = history.openTxn()
     try {
-      asset = await logoAsset(cut.assetKey)
-    } catch {
-      get().showToast('Logo 载入失败', 'error')
-      return
-    }
-    const ref: BrandVersionRef = {
-      brandKey: version.brandKey,
-      versionId: version.id,
-      cutId: cut.id,
-      assetKey: cut.assetKey,
-      file: cut.assetKey,
-      ink: cut.ink,
-      surface: cut.surface,
-      name: version.name
-    }
-    lastMissingLogoWarnKey = ''
-    set((s) => ({
-      design: {
-        ...writeParam(s.design, 'brandLogoFile', cut.assetKey),
-        brandVersion: ref,
-        logo: asset,
-        text: { ...s.design.text, showLogo: true }
-      },
-      activePresetId: null
-    }))
-  },
-
-  ensureLogoCompatibility: async () => {
-    const { design } = get()
-    const current = design.brandVersion
-    if (!current) return
-    const surface = surfaceForDesign(design)
-    const version = LOGO_VERSION_BY_ID[current.versionId]
-    if (!version) return
-
-    const cut = cutForVersionSurface(version, surface)
-    if (cut) {
-      if (cut.id === current.cutId && cut.assetKey === current.assetKey) return
       let asset
       try {
         asset = await logoAsset(cut.assetKey)
       } catch {
+        get().showToast('Logo 载入失败', 'error')
         return
       }
-      const next = refForVersion(version, surface)
-      if (!next) return
-      lastMissingLogoWarnKey = ''
-      set((s) =>
-        s.design.brandVersion?.versionId === version.id
-          ? {
-              design: {
-                ...writeParam(s.design, 'brandLogoFile', cut.assetKey),
-                brandVersion: next,
-                logo: asset,
-                text: { ...s.design.text, showLogo: true }
-              }
-            }
-          : {}
-      )
-      get().showToast(`已换成${surface === 'dark' ? '白' : '黑'}版 Logo`, 'info')
-      return
-    }
-
-    const fallback = fallbackVersionForSurface(version, surface)
-    const next = fallback ? refForVersion(fallback, surface) : null
-    if (fallback && next) {
-      let asset
-      try {
-        asset = await logoAsset(next.assetKey)
-      } catch {
-        return
+      const ref: BrandVersionRef = {
+        brandKey: version.brandKey,
+        versionId: version.id,
+        cutId: cut.id,
+        assetKey: cut.assetKey,
+        file: cut.assetKey,
+        ink: cut.ink,
+        surface: cut.surface,
+        name: version.name
       }
       lastMissingLogoWarnKey = ''
-      set((s) =>
-        s.design.brandVersion?.versionId === version.id
-          ? {
-              design: {
-                ...writeParam(s.design, 'brandLogoFile', next.assetKey),
-                brandVersion: next,
-                logo: asset,
-                text: { ...s.design.text, showLogo: true }
-              }
-            }
-          : {}
+      commitDesign(
+        (design) => ({
+          ...writeParam(design, 'brandLogoFile', cut.assetKey),
+          brandVersion: ref,
+          logo: asset,
+          text: { ...design.text, showLogo: true }
+        }),
+        { label: 'Logo 版本', key: 'logo' }
       )
-      get().showToast(`已换成同款的${surface === 'dark' ? '深' : '浅'}底版本`, 'info')
-      return
-    }
-
-    // No version can live on this surface. Keep `brandVersion`/`logo` intact in
-    // this slice (renderer enforcement comes next); warn once per theme change.
-    const warnKey = `${version.id}:${surface}`
-    if (lastMissingLogoWarnKey !== warnKey) {
-      lastMissingLogoWarnKey = warnKey
-      get().showToast(
-        `这个 Logo 没有${surface === 'dark' ? '深色' : '浅色'}底版本，导出时不会显示`,
-        'error'
-      )
+    } finally {
+      history.closeTxn(txn)
     }
   },
+
+  // Kept as a public action for callers outside the theme flow; the theme flow
+  // calls `reconcileLogo(txn)` directly so its write is absorbed into that step.
+  ensureLogoCompatibility: () => reconcileLogo(),
 
   autoMatchLogo: async () => {
     const s = get()
@@ -754,25 +893,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().showToast('已按 EXIF 匹配品牌 Logo', 'success')
   },
 
-  clearLogo: () =>
-    set((s) => ({
-      // dropParam clears the key from the flat object AND from this style's bucket,
-      // so "no explicit pick" (⇒ auto-match from EXIF) is restored consistently.
-      design: { ...dropParam(s.design, 'brandLogoFile'), logo: null, brandVersion: null },
-      activePresetId: null
-    })),
+  clearLogo: () => {
+    // dropParam clears the key from the flat object AND from this style's bucket,
+    // so "no explicit pick" (⇒ auto-match from EXIF) is restored consistently.
+    commitDesign((design) => ({ ...dropParam(design, 'brandLogoFile'), logo: null, brandVersion: null }), {
+      label: '清除 Logo',
+      key: 'logo'
+    })
+  },
 
   setAvatarFile: async (file) => {
     try {
       const avatar = await imageAssetFromFile(file)
-      set((s) => ({ design: { ...s.design, avatar }, activePresetId: null }))
+      commitDesign((design) => ({ ...design, avatar }), { label: '头像', key: 'avatar:file' })
       get().showToast('头像已载入', 'success')
     } catch {
       get().showToast('头像读取失败', 'error')
     }
   },
 
-  clearAvatar: () => set((s) => ({ design: { ...s.design, avatar: null }, activePresetId: null })),
+  clearAvatar: () => {
+    commitDesign((design) => ({ ...design, avatar: null }), { label: '清除头像', key: 'avatar' })
+  },
 
   setTab: (tab) => set({ tab }),
   setTool: (tool) => set({ tool }),
@@ -781,6 +923,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPresetDialogOpen: (open) => set({ presetDialogOpen: open }),
   openExportDialog: (scope) => set({ exportDialog: scope }),
   closeExportDialog: () => set({ exportDialog: null }),
+  openBatchPreview: (index) => set({ batchPreviewIndex: index }),
+  closeBatchPreview: () => set({ batchPreviewIndex: null }),
+  stepBatchPreview: (delta) =>
+    set((s) => {
+      if (s.batchPreviewIndex === null || !s.photos.length) return {}
+      const n = s.photos.length
+      return { batchPreviewIndex: (((s.batchPreviewIndex + delta) % n) + n) % n }
+    }),
   setGalleryQuery: (q) => set({ galleryQuery: q }),
 
   savePreset: async (name) => {
@@ -807,8 +957,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     design.export = { ...design.export, outputDir: liveOutputDir }
     // Upgrades a preset saved before the catalog (or with a partial pointer) to a
     // version ref derived from its own pick; purely additive metadata.
-    set({ design: normalizeBrandVersion(design), activePresetId: preset.id, tab: 'template' })
+    const next = normalizeBrandVersion(design)
+    commitDesign(() => next, { label: `预设 ${preset.name}`, key: `preset:${preset.id}` })
+    // Applying a preset IS the preset: activePresetId points at it again.
+    set({ activePresetId: preset.id, tab: 'template' })
     get().showToast(`已应用「${preset.name}」`, 'success')
+  },
+
+  undoDesign: () => {
+    const restored = history.undo(get().design)
+    if (!restored) return
+    set({ design: restored, activePresetId: null })
+  },
+
+  redoDesign: () => {
+    const restored = history.redo(get().design)
+    if (!restored) return
+    set({ design: restored, activePresetId: null })
   },
 
   deletePreset: async (id) => {
@@ -899,6 +1064,57 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   closeJob: () => set({ job: null }),
 
+  findResumable: async (photos) => {
+    if (!photos.length) {
+      set({ resumable: null })
+      return null
+    }
+    const tasks = await listJobs()
+    // S3b: a task is resumable only for the SAME photo set AND the same design.
+    // A changed template / margin / export setting is a new job, never a resume.
+    const currentKey = exportDesignKey(get().design)
+    const task = newestTaskFor(tasks, photos, (t) => isResumable(t) && t.designKey === currentKey)
+    set({ resumable: task ? taskSummary(task) : null })
+    return task
+  },
+
+  resumeExport: async (id) => {
+    const task = await getJob(id)
+    if (!task) {
+      get().showToast('找不到这次导出的记录', 'error')
+      return
+    }
+    await resumeTask(task)
+  },
+
+  retryFailed: async (id) => {
+    const task = await getJob(id)
+    if (!task) {
+      get().showToast('找不到这次导出的记录', 'error')
+      return
+    }
+    await retryTask(task)
+  },
+
+  dismissJob: async () => {
+    const job = get().job
+    if (job?.running) return
+    const id = job?.taskId ?? get().resumable?.id ?? null
+    set({ job: null, resumable: null })
+    if (!id) return
+    try {
+      const task = await getJob(id)
+      if (!task) return
+      // 新建任务: the record is retired (not deleted) so these photos export again.
+      // `cancelled` is terminal: it is neither resumable nor used as history.
+      task.status = 'cancelled'
+      task.updatedAt = Date.now()
+      await putJob(task)
+    } catch {
+      // history is best-effort; the overlay still closes
+    }
+  },
+
   showToast: (message, type = 'info') => {
     if (toastTimer) clearTimeout(toastTimer)
     const id = Date.now()
@@ -908,6 +1124,153 @@ export const useAppStore = create<AppState>((set, get) => ({
     }, 3400)
   }
 }))
+
+/** Recompute the 「上次导到 X/Y」 notice for whatever is imported right now. */
+async function refreshResumable(): Promise<void> {
+  const { photos, findResumable } = useAppStore.getState()
+  await findResumable(photos).catch(() => undefined)
+}
+
+/**
+ * One live run of a persisted task. 导出 / 继续 / 重试失败项 all funnel through
+ * here so the IndexedDB row is written before the first item and refreshed after
+ * every item. Write errors are swallowed (the export never fails because of the
+ * history), but the write is awaited per item — see `persist` below.
+ */
+async function executeTask(
+  task: ExportTask,
+  plan: { photos: PhotoAsset[]; keys: string[]; skip: Set<string> }
+): Promise<void> {
+  const total = plan.photos.length
+  task.status = 'running'
+  task.updatedAt = Date.now()
+  // Awaited: from the first item onwards a kill/restart can find this row.
+  await putJob(task).catch(() => undefined)
+  useAppStore.setState({
+    job: {
+      running: true,
+      taskId: task.id,
+      total,
+      done: 0,
+      skipped: 0,
+      current: plan.photos[0]?.name ?? '',
+      cancelled: false,
+      errors: []
+    },
+    resumable: null
+  })
+  // S4: on Android this raises a dataSync foreground service + wake lock so the
+  // WebView keeps running with the screen off. No-op on desktop; never throws.
+  startExportForeground(total, plan.photos[0]?.name ?? '')
+  // Fire-and-forget by contract (errors are swallowed), but returned to the
+  // exporter so the row is committed before the next photo starts: a kill must
+  // never leave an exported file without its history entry.
+  const persist = (): Promise<void> => {
+    task.updatedAt = Date.now()
+    return putJob(task).then(
+      () => undefined,
+      () => undefined
+    )
+  }
+  let result: Awaited<ReturnType<typeof exportBatch>>
+  try {
+    result = await exportBatch({
+      photos: plan.photos,
+      design: task.design,
+      presetName: task.presetName || undefined,
+      keys: plan.keys,
+      skip: plan.skip,
+      onProgress: (done, t, current) => {
+        const job = useAppStore.getState().job
+        if (job) useAppStore.setState({ job: { ...job, done, total: t, current } })
+        // S4: mirrors the same progress into the ongoing notification.
+        updateExportForeground(done, t, current)
+      },
+      onItemDone: (key, r) => {
+        task.results[key] = { path: r.path, bytes: r.bytes, w: r.width, h: r.height }
+        delete task.errors[key]
+        return persist()
+      },
+      onItemError: (key, message) => {
+        task.errors[key] = message
+        return persist()
+      },
+      isCancelled: () => useAppStore.getState().job?.cancelled === true
+    })
+  } finally {
+    // S4: completion, cancellation, or a thrown batch all end the foreground
+    // service — leave no ongoing notification and no wake lock behind.
+    stopExportForeground()
+  }
+  task.status = resolveStatus(task)
+  task.updatedAt = Date.now()
+  await putJob(task).catch(() => undefined)
+
+  const success = result.results.length
+  const last = result.results[result.results.length - 1]
+  useAppStore.setState({
+    job: {
+      running: false,
+      taskId: task.id,
+      total,
+      done: success + result.errors.length + result.skipped,
+      skipped: result.skipped,
+      current: '',
+      cancelled: result.cancelled,
+      errors: result.errors,
+      lastPath: last?.path
+    }
+  })
+  const toast = useAppStore.getState().showToast
+  if (result.errors.length) {
+    toast(`导出完成：成功 ${success}，失败 ${result.errors.length}`, 'error')
+  } else if (result.cancelled) {
+    toast('已取消导出', 'info')
+  } else if (result.skipped === total && total > 0) {
+    toast(`这 ${total} 张之前已经导出过，本次没有重复写入`, 'info')
+  } else if (success === 1 && !result.skipped) {
+    toast(`导出完成：${last?.path ?? ''}`, 'success')
+  } else {
+    toast(`已导出 ${success} 张${result.skipped ? `，跳过 ${result.skipped} 张` : ''}`, 'success')
+  }
+  await refreshResumable()
+}
+
+/** Continue a task: finished keys are skipped, every other key is attempted. */
+async function resumeTask(task: ExportTask): Promise<void> {
+  const photos = useAppStore.getState().photos
+  const { todo, skipped } = reconcile(task, photos)
+  const byKey = new Map([...todo, ...skipped].map((m) => [m.key, m.photo]))
+  const keys = task.order.filter((k) => byKey.has(k))
+  if (!keys.length) {
+    useAppStore.getState().showToast('这批照片都已经导出过了', 'info')
+    await refreshResumable()
+    return
+  }
+  await executeTask(task, {
+    photos: keys.map((k) => byKey.get(k)!),
+    keys,
+    skip: new Set(skipped.map((m) => m.key))
+  })
+}
+
+/** Re-export only the keys that recorded an error; every other key is skipped. */
+async function retryTask(task: ExportTask): Promise<void> {
+  const photos = useAppStore.getState().photos
+  const { todo, skipped } = reconcile(task, photos)
+  const byKey = new Map([...todo, ...skipped].map((m) => [m.key, m.photo]))
+  const keys = task.order.filter((k) => byKey.has(k))
+  const failed = new Set(keys.filter((k) => !task.results[k] && task.errors[k]))
+  if (!failed.size) {
+    useAppStore.getState().showToast('没有失败的项', 'info')
+    return
+  }
+  await executeTask(task, {
+    photos: keys.map((k) => byKey.get(k)!),
+    keys,
+    skip: new Set(keys.filter((k) => !failed.has(k)))
+  })
+}
 
 async function runExport(targets: PhotoAsset[], design: Design, state: AppState): Promise<void> {
   let currentDesign = design
@@ -922,43 +1285,42 @@ async function runExport(targets: PhotoAsset[], design: Design, state: AppState)
   const presetName =
     state.presets.find((p) => p.id === state.activePresetId)?.name ??
     (currentDesign.variantId ? getVariant(currentDesign.variantId).name : getTemplate(currentDesign.templateId).name)
-  useAppStore.setState({
-    job: { running: true, total: targets.length, done: 0, current: targets[0]?.name ?? '', cancelled: false, errors: [] }
-  })
-  const result = await exportBatch({
-    photos: targets,
-    design: currentDesign,
-    presetName,
-    onProgress: (done, total, current) => {
-      const job = useAppStore.getState().job
-      if (job) useAppStore.setState({ job: { ...job, done, total, current } })
-    },
-    isCancelled: () => useAppStore.getState().job?.cancelled === true
-  })
-  const last = result.results[result.results.length - 1]
-  const job = useAppStore.getState().job
-  useAppStore.setState({
-    job: {
-      running: false,
-      total: targets.length,
-      done: result.results.length + result.errors.length,
-      current: '',
-      cancelled: result.cancelled,
-      errors: result.errors,
-      lastPath: last?.path
-    }
-  })
-  if (result.errors.length) {
-    useAppStore.getState().showToast(`导出完成：成功 ${result.results.length}，失败 ${result.errors.length}`, 'error')
-  } else if (result.cancelled) {
-    useAppStore.getState().showToast('已取消导出', 'info')
-  } else {
-    useAppStore.getState().showToast(
-      result.results.length === 1 ? `导出完成：${last?.path ?? ''}` : `已导出 ${result.results.length} 张`,
-      'success'
-    )
+
+  const tasks = await listJobs()
+  // S3b identity: photo set + design. The key folds long base64 payloads and is
+  // stable across a restart (`exportDesignKey` drops the re-derived brandVersion).
+  const currentKey = exportDesignKey(currentDesign)
+
+  // 1. An unfinished task for these photos AND this design is continued, not
+  //    duplicated: this is what makes 开始导出 after a crash behave like 继续.
+  //    An unfinished task with a DIFFERENT design is ignored (new job below).
+  const live = newestTaskFor(tasks, targets, (t) => isResumable(t) && t.designKey === currentKey)
+  if (live) {
+    await resumeTask(live)
+    return
   }
-  if (!job) useAppStore.setState({ job: null })
+
+  // 2. Finished history: skip only photos this exact design already exported.
+  //    A new design on the same photos must produce new files (the trap this
+  //    slice fixes), so a design mismatch creates a task without seeding.
+  //    Only the NEWEST record for THIS design counts: 新建任务 marks it
+  //    `cancelled`, and that must switch the history off instead of falling
+  //    back to an older row.
+  const latest = newestTaskFor(tasks, targets, (t) => t.designKey === currentKey)
+  const history = latest && latest.status === 'done' ? latest : null
+  const task = makeTask({
+    design: currentDesign,
+    photos: targets,
+    presetName,
+    outputDir: currentDesign.export.outputDir
+  })
+  if (history) seedFromHistory(task, history, targets)
+  const { skipped } = reconcile(task, targets)
+  await executeTask(task, {
+    photos: targets,
+    keys: targets.map((_, i) => `k${i + 1}`),
+    skip: new Set(skipped.map((m) => m.key))
+  })
 }
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null
