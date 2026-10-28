@@ -67,7 +67,9 @@ export function ImportScreen() {
         <div className="import-panel glass">
           <div className={`import-visual ${sample ? 'has-sample' : ''}`}>
             {sample ? <img src={sample.previewUrl} alt="示例照片预览" /> : <span className="import-visual-empty" />}
-            <span className="import-format">JPG / PNG / WebP / TIFF · 可多选</span>
+            <span className="import-format">
+              {hasDesktop ? 'JPG / PNG / WebP / TIFF · 可多选' : 'JPG / PNG / WebP · 可多选'}
+            </span>
           </div>
 
           <div className="import-copy">
@@ -107,7 +109,7 @@ export function ImportScreen() {
               </div>
             </div>
 
-            <p className="import-hint">也可以把照片直接拖进窗口</p>
+            {hasDesktop ? <p className="import-hint">也可以把照片直接拖进窗口</p> : null}
           </div>
         </div>
       </div>
