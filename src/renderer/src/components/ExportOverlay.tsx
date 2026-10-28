@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
-import { AlertTriangle, Check, Download, FolderOpen, Loader2, RotateCcw, Share2, X } from 'lucide-react'
+import { AlertTriangle, Check, Download, FolderOpen, Loader2, Play, RotateCcw, Share2, X } from 'lucide-react'
 import { useAppStore } from '../store'
 import { GallerySaver } from '../core/gallery'
 
@@ -19,18 +19,30 @@ export function ExportOverlay() {
   const retryFailed = useAppStore((s) => s.retryFailed)
   const dismissJob = useAppStore((s) => s.dismissJob)
   const showToast = useAppStore((s) => s.showToast)
-  // 「稍后」 only hides THIS card; the task itself stays persisted and resumable.
+  const resumeNoticeSeq = useAppStore((s) => s.resumeNoticeSeq)
+  const exportDialogOpen = useAppStore((s) => s.exportDialog !== null)
+  // 「稍后」 only hides THIS notice; the task itself stays persisted and resumable.
+  // Opening 导出 bumps `resumeNoticeSeq`, which brings the notice back (store.ts),
+  // so the 「上次导到 X/Y，可继续」 affordance is never lost by dismissing it.
   const [hiddenResumeId, setHiddenResumeId] = useState<string | null>(null)
+  useEffect(() => {
+    setHiddenResumeId(null)
+  }, [resumeNoticeSeq])
 
+  // A persisted unfinished export MUST NOT re-open as a blocking modal: a cancel
+  // would then steal the next click (S10). It is a corner notice instead — the
+  // wrapper is pointer-transparent, only the card itself takes pointer events —
+  // and it is lifted above the modal layer only while the export dialog is open,
+  // so it stays readable next to the dialog without covering its actions.
   if (!job) {
     if (!resumable || resumable.id === hiddenResumeId) return null
     const resumePct = resumable.total ? Math.round((resumable.done / resumable.total) * 100) : 0
     return (
-      <div className="export-overlay">
-        <div className="export-card glass">
+      <div className={`resume-notice${exportDialogOpen ? ' above-modal' : ''}`} role="status" aria-live="polite">
+        <div className="resume-notice-card glass">
           <div className="export-card-head">
             <span className="export-icon">
-              <Download size={22} />
+              <Download size={20} />
             </span>
             <div>
               <h3>有未完成的导出</h3>
@@ -38,28 +50,32 @@ export function ExportOverlay() {
                 上次导到 {resumable.done}/{resumable.total}，可继续
               </p>
             </div>
-            <button className="icon-btn" onClick={() => setHiddenResumeId(resumable.id)} title="稍后">
-              <X size={18} />
+            <button className="icon-btn" onClick={() => setHiddenResumeId(resumable.id)} title="稍后" type="button">
+              <X size={16} />
             </button>
           </div>
           <div className="progress-track">
             <span style={{ width: `${Math.max(4, resumePct)}%` }} />
           </div>
-          <div className="export-card-actions">
+          <div className="resume-notice-actions">
             <button
-              className="btn btn-primary glass-btn glass-spot glass-ripple glass-press"
+              className="btn btn-primary btn-sm glass-btn glass-spot glass-ripple glass-press"
               onClick={() => void resumeExport(resumable.id)}
               type="button"
             >
+              <Play size={14} />
               继续
             </button>
             <span className="spacer" />
+            {/* 新建任务 retires the record (status `cancelled`, never deleted) so
+                the same photos can be exported again as a fresh batch. */}
             <button
-              className="btn btn-ghost glass-btn glass-ripple glass-press"
-              onClick={() => setHiddenResumeId(resumable.id)}
+              className="btn btn-ghost btn-sm glass-btn glass-ripple glass-press"
+              onClick={() => void dismissJob()}
               type="button"
+              title="这笔记录作废（不删除），下次导出会重新写文件"
             >
-              稍后
+              新建任务
             </button>
           </div>
         </div>
@@ -79,6 +95,9 @@ export function ExportOverlay() {
   const failed = job.errors.length > 0
   const skipped = job.skipped ?? 0
   const success = Math.max(0, job.done - job.errors.length - skipped)
+  // 已取消 with items left is persisted as `paused`; offer 继续 inside the card
+  // that is already open instead of letting a second modal take over later.
+  const resumeTarget = job.cancelled && resumable && resumable.id === job.taskId ? resumable : null
   return (
     <div className="export-overlay">
       <div className="export-card glass">
@@ -127,6 +146,21 @@ export function ExportOverlay() {
                     <span>{e.message}</span>
                   </div>
                 ))}
+              </div>
+            ) : null}
+            {resumeTarget ? (
+              <div className="export-resume-row">
+                <span>
+                  已导到 {resumeTarget.done}/{resumeTarget.total}，可继续（已完成的不重复写入）
+                </span>
+                <button
+                  className="btn btn-primary btn-sm glass-btn glass-spot glass-ripple glass-press"
+                  onClick={() => void resumeExport(resumeTarget.id)}
+                  type="button"
+                >
+                  <Play size={13} />
+                  继续
+                </button>
               </div>
             ) : null}
             <div className="export-card-actions">

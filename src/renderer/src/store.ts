@@ -115,6 +115,13 @@ interface AppState {
    * shown as 「上次导到 X/Y，可继续」 by the ExportOverlay.
    */
   resumable: { id: string; done: number; total: number } | null
+  /**
+   * Bumped every time the export dialog opens. The 「上次导到 X/Y」 notice is
+   * non-blocking and can be dismissed with 稍后, which only hides it locally;
+   * this counter re-arms it, so the resume affordance is still reachable from
+   * the export dialog (the task itself is never touched by a dismissal).
+   */
+  resumeNoticeSeq: number
   /** Text lines captured from the last hand-template render (v4 文字 pane). */
   textSlots: TextSlot[]
   /** Output pixel size of the current preview (shown in the Inspector dock). */
@@ -459,6 +466,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   importProgress: null,
   job: null,
   resumable: null,
+  resumeNoticeSeq: 0,
   textSlots: [],
   previewMeta: null,
   tab: 'template',
@@ -992,7 +1000,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   setEditorTab: (editorTab) => set({ editorTab }),
   setBrandPickerOpen: (open) => set({ brandPickerOpen: open }),
   setPresetDialogOpen: (open) => set({ presetDialogOpen: open }),
-  openExportDialog: (scope) => set({ exportDialog: scope }),
+  openExportDialog: (scope) => {
+    // Re-arm the dismissed resume notice and refresh X/Y against the CURRENT
+    // photos + design, so opening 导出 always shows what can be continued.
+    set((s2) => ({ exportDialog: scope, resumeNoticeSeq: s2.resumeNoticeSeq + 1 }))
+    void refreshResumable()
+  },
   closeExportDialog: () => set({ exportDialog: null }),
   openBatchPreview: (index) => set({ batchPreviewIndex: index }),
   closeBatchPreview: () => set({ batchPreviewIndex: null }),

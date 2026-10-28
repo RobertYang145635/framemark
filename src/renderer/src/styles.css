@@ -2746,6 +2746,85 @@ button:disabled {
 .export-errors span {
   color: var(--muted);
 }
+/* ── S10 · resume notice (non-blocking) ──────────────────────
+   A cancelled partial batch stays resumable (`paused`). It used to come back as
+   a full .export-overlay modal on its own, which then swallowed the next click
+   anywhere in the app. The affordance is now a corner notice: the wrapper is
+   pointer-transparent (only the card itself takes clicks), it sits below the
+   modal layer, and it is lifted above it ONLY while the export dialog is open so
+   「上次导到 X/Y，可继续」 stays readable next to the dialog — never on top of
+   its 取消 / 开始导出 buttons. */
+.resume-notice {
+  position: fixed;
+  left: 16px;
+  /* 左下角 notice：只要它出现期间才占这块角落，关掉即消失 */
+  bottom: 16px;
+  z-index: 95;
+  width: min(300px, calc(100vw - 32px));
+  /* 不抢点击：底下的工作区照常可点，只有卡片本身可交互 */
+  pointer-events: none;
+}
+.resume-notice.above-modal {
+  z-index: 130;
+}
+.resume-notice-card {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-summary);
+  box-shadow: var(--glass-edge-hi), var(--glass-edge-lo), var(--glass-shadow-lg);
+  animation: glass-enter var(--dur-enter) var(--ease-spring) both;
+  pointer-events: auto;
+}
+.resume-notice-card .export-card-head h3 {
+  font-size: 13px;
+}
+.resume-notice-card .export-card-head p {
+  white-space: normal;
+  font-size: 10.5px;
+}
+.resume-notice-card .export-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.resume-notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+}
+/* 已取消卡片里的同一提示：就地继续，不再开第二个弹窗 */
+.export-resume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  padding: 7px 9px;
+  border: 1px solid var(--accent-line);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+.export-resume-row > span {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  /* 手机上没有并排空间：挪到顶栏下方，仍然只占卡片自己的命中区 */
+  .resume-notice {
+    left: 10px;
+    right: 10px;
+    top: 74px;
+    bottom: auto;
+    width: auto;
+  }
+  .resume-notice-card {
+    max-width: 340px;
+  }
+}
+
 /* G-1 · Toast 玻璃皮 + 进出动画（04-B7）。居中改用 inset + margin-inline，把 transform
    让给 glass-enter / glass-exit 关键帧；时长与曲线全部走令牌，不写死。 */
 .toast {

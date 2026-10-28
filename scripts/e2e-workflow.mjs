@@ -281,7 +281,13 @@ async function idbSummary(page) {
     let db
     try {
       db = await new Promise((resolve, reject) => {
-        const req = indexedDB.open('framemark', 1)
+        // Storage is at v2 since S3 (S10 caught this): 'presets' grew a sibling
+        // 'jobs' store. Opening a v2 database with a hard-coded version 1 is a
+        // DOWNGRADE — the open rejects with VersionError, every read below fell
+        // back to [] and 12 preset assertions failed without those assertions
+        // being wrong. Open the CURRENT version (the app has already created the
+        // schema at launch); onupgradeneeded still covers a database we create.
+        const req = indexedDB.open('framemark')
         req.onupgradeneeded = () => {
           const d = req.result
           if (!d.objectStoreNames.contains('presets')) d.createObjectStore('presets', { keyPath: 'id' })
@@ -329,6 +335,43 @@ async function idbSummary(page) {
           : null,
         footerPct: p.design?.params?.footerPct
       }))
+    }
+  })
+}
+
+/**
+ * Read the S3 export jobs (storage v2). `status` is what the resume affordance
+ * keys on: a cancelled partial run stays `paused` and must survive a 稍后.
+ */
+async function idbJobs(page) {
+  return page.evaluate(async () => {
+    let db
+    try {
+      db = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('framemark')
+        req.onsuccess = () => resolve(req.result)
+        req.onerror = () => reject(req.error)
+      })
+    } catch {
+      return []
+    }
+    try {
+      const rows = await new Promise((resolve, reject) => {
+        const tx = db.transaction('jobs', 'readonly')
+        const req = tx.objectStore('jobs').getAll()
+        req.onsuccess = () => resolve(req.result ?? [])
+        req.onerror = () => reject(req.error)
+      })
+      return rows.map((r) => ({
+        id: r.id,
+        status: r.status,
+        results: Object.keys(r.results ?? {}).length,
+        total: (r.order ?? []).length
+      }))
+    } catch {
+      return []
+    } finally {
+      db.close()
     }
   })
 }
@@ -1115,6 +1158,22 @@ async function main() {
   await page.screenshot({ path: path.join(artDir, '04-cancelled.png') })
   await closeExportOverlay(page)
   check('export overlay closed after cancel', (await page.locator('.export-card').count()) === 0)
+  // S10 contract: an unfinished (paused) export is a NON-BLOCKING notice, never
+  // a modal that re-opens by itself and swallows the next click. The 预设 click
+  // in the next step is the interactivity proof.
+  check('no blocking export overlay after cancel', (await page.locator('.export-overlay').count()) === 0)
+  const resumeNotice = page.locator('.resume-notice')
+  await resumeNotice.waitFor({ state: 'visible', timeout: 15000 })
+  const noticeText = (await resumeNotice.innerText()).replace(/[\r\n]+/g, ' | ')
+  check('cancelled batch leaves a resumable notice', (await resumeNotice.count()) === 1, noticeText)
+  check('notice offers 上次导到 X/Y，可继续', /上次导到\s*\d+\/\d+，可继续/.test(noticeText), noticeText)
+  check(
+    'notice offers 继续 and 新建任务',
+    (await resumeNotice.locator('button', { hasText: '继续' }).count()) === 1 &&
+      (await resumeNotice.locator('button', { hasText: '新建任务' }).count()) === 1,
+    noticeText
+  )
+  await page.screenshot({ path: path.join(artDir, '04b-resume-notice.png') })
 
   // ---------------------------------------------------------------------------
   // 14. Preset JSON export / delete / import roundtrip (no native dialogs)
@@ -1181,6 +1240,26 @@ async function main() {
   await page.locator('.modal-foot button', { hasText: '完成' }).click()
   await page.waitForSelector('.preset-save-box', { state: 'detached', timeout: 10000 })
   check('preset dialog closed via 完成', true)
+
+  // ---------------------------------------------------------------------------
+  // 14b. Resume notice contract: 稍后 only hides it (the task survives), and
+  //      opening 导出 brings 「上次导到 X/Y」 back.
+  // ---------------------------------------------------------------------------
+  console.log('\n--- resume notice contract ---')
+  const pausedBefore = (await idbJobs(page)).filter((t) => t.status === 'paused')
+  check('cancel left exactly one paused task', pausedBefore.length === 1, JSON.stringify(pausedBefore))
+  await page.locator('.resume-notice button[title="稍后"]').click()
+  await page.locator('.resume-notice').waitFor({ state: 'detached', timeout: 10000 }).catch(() => undefined)
+  check('稍后 hides the notice', (await page.locator('.resume-notice').count()) === 0)
+  const pausedAfter = (await idbJobs(page)).find((t) => t.id === pausedBefore[0]?.id)
+  check('稍后 keeps the paused task (not deleted)', pausedAfter?.status === 'paused', JSON.stringify(pausedAfter))
+  await openExportDialog(page)
+  await page.waitForSelector('.resume-notice', { timeout: 15000 })
+  const reopened = (await page.locator('.resume-notice').innerText()).replace(/[\r\n]+/g, ' | ')
+  check('opening 导出 brings the notice back with 上次导到 X/Y', /上次导到\s*\d+\/\d+/.test(reopened), reopened)
+  check('the export dialog is really open underneath', (await page.locator('.export-dialog').count()) === 1)
+  await page.screenshot({ path: path.join(artDir, '04c-resume-in-export-dialog.png') })
+  await closeExportDialog(page)
 
   // ---------------------------------------------------------------------------
   // 15. Zero pageerror / console error
