@@ -783,6 +783,12 @@ async function main () {
       const gradleIsolationScript = path.join(tmpRoot, 'gradle-isolated-output.init.gradle')
       writeGradleIsolationScript(gradleIsolationScript)
       const gradleArgs = ['-Dorg.gradle.appname=gradle', '-classpath', gradleLibs, 'org.gradle.launcher.GradleMain', '--no-daemon', '--project-cache-dir', path.join(tmpRoot, 'gradle-project-cache'), '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
+      // Kotlin's incremental path converter cannot relativize generated sources
+      // across Windows drive roots. This is an isolated full build anyway; avoid
+      // a reproducible daemon failure/fallback when sources and outputs differ.
+      if (process.platform === 'win32' && path.parse(UI).root.toLowerCase() !== path.parse(gradleOutputRoot).root.toLowerCase()) {
+        gradleArgs.push('-Pkotlin.incremental=false')
+      }
       if (options.releaseQa) gradleArgs.push(`-PframemarkQaReleaseSuffix=${options.qaReleaseSuffix}`)
       gradleArgs.push(...gradleTasks)
       if (options.release) gradleArgs.push('--stacktrace')
@@ -898,7 +904,8 @@ async function verifyApk (id, apk, tools, step, expectedApplicationId = 'com.fra
 async function verifyQaSignature (apk, tools, step) {
   const apksignerJar = path.join(tools.androidSdk, 'build-tools', CONFIG.versions.androidBuildTools, 'lib', 'apksigner.jar')
   const verification = await step('verify-release-qa-signature', 'Verify isolated QA release signature', (logFile) => runProcess(tools.java, ['-jar', apksignerJar, 'verify', '--verbose', '--print-certs', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
-  const debugCertificate = /certificate DN:\s*CN=Android Debug(?:,|$)/im.test(verification.stdout)
+  const subjects = [...verification.stdout.matchAll(/^Signer #\d+ certificate DN:\s*([^\r\n]+)$/gm)]
+  const debugCertificate = subjects.length === 1 && subjects[0][1].split(',').some((part) => part.trim() === 'CN=Android Debug')
   return requiredCheck(
     'release-qa-debug-signature',
     verification.status === 'PASS' && debugCertificate ? 'PASS' : 'FAIL',

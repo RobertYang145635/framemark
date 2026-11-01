@@ -24,6 +24,12 @@ archives. The Cargo build uses repository Cargo.lock files and writes Cargo
 targets, staged static libraries, logs, and JSON reports under
 `_research/acceptance-dual-20261101/execution-20261102/build-release/`. Set
 `FM_BUILD_ARTIFACT_ROOT` to override that output root with another absolute path.
+Use a short output path on Windows: the source build of libwebp invokes MSVC,
+whose object-file path can hit the traditional 260-character limit. The isolated
+build driver disables Kotlin incremental compilation only when the source and
+generated-output directories have different Windows drive roots; the full
+compiler still runs. This avoids a reproduced incremental-cache path-conversion
+failure without changing product code or compiler versions.
 
 The current driver builds all three Windows executables (`e2b`, `e4hand`, and
 `e5-worker`) from their repository Cargo sources. `e4hand` reuses the isolated

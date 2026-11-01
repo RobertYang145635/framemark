@@ -165,13 +165,18 @@ fun PhoneShell() {
     /** Rebuilds the visible strip from the project; only when the set really changed. */
     fun syncTray() {
         val paths = store.photos.map { it.path }.filter { it.isNotBlank() }
+        val displayNamesByPath = store.photos
+            .filter { it.path.isNotBlank() }
+            .associate { it.path to it.displayName }
         val hasSample = store.photos.any { it.path.isBlank() }
         val wanted = paths.toSet() + if (hasSample) setOf<String?>(null) else emptySet<String?>()
         val shown = tray.items.map { it.path }.toSet()
         if (wanted != shown) {
             tray.clear()
-            if (paths.isNotEmpty()) tray.adopt(paths, null)
+            if (paths.isNotEmpty()) tray.adopt(paths, null, displayNamesByPath)
             if (hasSample) tray.addSample()
+        } else {
+            tray.updateDisplayNames(displayNamesByPath)
         }
         val active = store.activePhoto
         if (active != null) {
