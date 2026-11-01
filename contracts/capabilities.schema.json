@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://framemark.local/contracts/capabilities.schema.json",
+  "title": "FrameMark capabilities v1",
+  "description": "Per-card inspector capability description. The UI renders sections and controls from this document only: no Layout/Composable is allowed to be authored per card, and no schema key may appear as user-visible text. Controls the backend has disabled carry gated=true and stay hidden by default (244 such controls exist today); visible=false hides a control the design intentionally omits.",
+  "type": "object",
+  "required": ["schemaVersion", "cards"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string" },
+    "cards": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/card" }
+    }
+  },
+  "$defs": {
+    "card": {
+      "type": "object",
+      "required": ["styleId", "sections"],
+      "additionalProperties": false,
+      "properties": {
+        "styleId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "description": "Matches taxonomy/card id. Unique across the document."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/section" }
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "label", "controls"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "collapsible": { "type": "boolean" },
+        "defaultCollapsed": { "type": "boolean" },
+        "controls": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/control" }
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "required": ["id", "type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9_]*$",
+          "description": "Design field key written by the control; unique within the card."
+        },
+        "type": {
+          "enum": ["slider", "toggle", "segmented", "select", "color", "text", "number", "stepper"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User-visible text. Must be human copy, never a schema key or field id."
+        },
+        "default": {},
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "unit": { "type": "string" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/option" }
+        },
+        "placeholder": { "type": "string" },
+        "help": { "type": "string" },
+        "gated": {
+          "type": "boolean",
+          "description": "Backend-disabled capability. Hidden by default; may surface only behind an explicit capability toggle."
+        },
+        "visible": {
+          "type": "boolean",
+          "description": "Design-level visibility. false = intentionally omitted for this card."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["slider", "number", "stepper"] } } },
+          "then": { "required": ["default", "min", "max"] }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "const": "slider" } } },
+          "then": { "required": ["step"] }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["segmented", "select"] } } },
+          "then": { "required": ["options"] }
+        },
+        {
+          "if": { "required": ["type"], "properties": { "type": { "enum": ["segmented", "color", "text", "toggle"] } } },
+          "then": { "required": ["default"] }
+        },
+        {
+          "not": {
+            "required": ["gated", "visible"],
+            "properties": { "gated": { "const": true }, "visible": { "const": true } }
+          }
+        }
+      ]
+    },
+    "option": {
+      "type": "object",
+      "required": ["value", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["string", "number", "boolean"] },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

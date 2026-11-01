@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/preview/pair-07.png", "w": 320, "h": 213 },
+  "photoRect": { "x": 6, "y": 6, "w": 308, "h": 201 },
+  "textSlots": [
+    { "id": "title", "text": "Vivo X200", "x": 24, "y": 172, "w": 96, "h": 12, "fontSize": 10, "lines": 1 }
+  ],
+  "ms": 9.3,
+  "engine": "fake"
+}

@@ -1,0 +1,96 @@
+{
+  "id": "oppo-gallery:lumo_text_style_2",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "LUMO 文字 · 2",
+  "nameEn": "lumo_text_style_2",
+  "placement": "in",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 36,
+      "offset": {
+        "x": 20,
+        "y": 20
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "gravity": "topHorCenter",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 11,
+              "weight": 500,
+              "color": "#FFFFFF",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 13,
+              "align": "left",
+              "gravity": "verticalCenter",
+              "margins": {},
+              "optional": false,
+              "shadow": {
+                "color": "#65000000",
+                "blur": 3.3000000000000003,
+                "x": 1,
+                "y": 0
+              }
+            },
+            {
+              "kind": "shape",
+              "shape": "rect",
+              "width": 1.4,
+              "height": 7.5,
+              "color": "#FFFFFF",
+              "gravity": "verticalCenter",
+              "margins": {
+                "left": 8,
+                "top": 1.8,
+                "right": 8
+              }
+            },
+            {
+              "kind": "image",
+              "asset": "lumo_text_watermark_logo",
+              "width": 33,
+              "height": 9.33,
+              "scale": "contain",
+              "gravity": "verticalCenter",
+              "margins": {
+                "top": 1.8
+              },
+              "alpha": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "lumo_text_watermark_logo": {
+      "file": "lumo_text_watermark_logo.webp",
+      "width": 428,
+      "height": 121
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

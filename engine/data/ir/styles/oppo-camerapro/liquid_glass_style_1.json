@@ -1,0 +1,146 @@
+{
+  "id": "oppo-camerapro:liquid_glass_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相机",
+  "name": "液态玻璃",
+  "nameEn": "LIQUID GLASS",
+  "placement": "overlay",
+  "referenceWidth": 360,
+  "referenceWidthMode": "shortEdge",
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 46,
+      "width": 326,
+      "gravity": "centerBottom",
+      "offset": {
+        "x": 0,
+        "y": 16
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 120,
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 17
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 9.5,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 0.96,
+              "tracking": 0.01,
+              "lineHeight": 12,
+              "align": "left",
+              "gravity": "leftVerticalCenter",
+              "margins": {},
+              "optional": true,
+              "shadow": {
+                "color": "#59000000",
+                "blur": 3,
+                "x": 1,
+                "y": 0
+              }
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 170,
+          "gravity": "rightVerticalCenter",
+          "margins": {
+            "right": 17
+          },
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "rightTop",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "sys",
+                  "size": 6.8,
+                  "weight": 500,
+                  "color": "#FFFFFF",
+                  "alpha": 0.94,
+                  "tracking": 0.01,
+                  "lineHeight": 8.5,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": true,
+                  "shadow": {
+                    "color": "#59000000",
+                    "blur": 3,
+                    "x": 1,
+                    "y": 0
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "time"
+              },
+              "font": "sys",
+              "size": 6.5,
+              "weight": 400,
+              "color": "#FFFFFF",
+              "alpha": 0.9,
+              "tracking": 0.02,
+              "lineHeight": 8,
+              "align": "left",
+              "gravity": "rightTop",
+              "margins": {
+                "top": 2
+              },
+              "optional": true,
+              "shadow": {
+                "color": "#59000000",
+                "blur": 3,
+                "x": 1,
+                "y": 0
+              }
+            }
+          ]
+        }
+      ],
+      "background": "rgba(255,255,255,0.168)",
+      "radius": 23
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "unsupported": [
+      "liquid glass blur/refraction approximated by translucent rounded fill"
+    ],
+    "notes": "Auto-converted from OPPO CameraPro config; pending visual audit."
+  }
+}

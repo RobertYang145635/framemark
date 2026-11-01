@@ -1,0 +1,125 @@
+{
+  "id": "oppo-gallery:hassel_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏 · 页脚",
+  "nameEn": "HASSELBLAD FOOTER",
+  "placement": "out",
+  "referenceWidth": 560,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 60
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 60,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 560,
+          "height": 60,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "width": 190,
+              "gravity": "leftVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "model"
+                  },
+                  "font": "sys",
+                  "size": 13,
+                  "weight": 700,
+                  "color": "#000000",
+                  "tracking": 0.05,
+                  "lineHeight": 15.24,
+                  "align": "left",
+                  "margins": {
+                    "left": 24
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "width": 148,
+              "gravity": "rightVerticalCenter",
+              "margins": {
+                "right": 24
+              },
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "hasselblad_watermark_dark",
+                  "width": 112.8,
+                  "height": 8.96,
+                  "scale": "contain",
+                  "gravity": "rightTop"
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "gravity": "rightBottom",
+                  "margins": {
+                    "top": 8.94
+                  },
+                  "children": [
+                    {
+                      "kind": "shape",
+                      "shape": "circle",
+                      "width": 7.2,
+                      "height": 7.2,
+                      "color": "#FF8933"
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "imageParams"
+                      },
+                      "font": "sys",
+                      "size": 7.2,
+                      "weight": 700,
+                      "color": "#000000",
+                      "alpha": 0.7,
+                      "tracking": 0.03,
+                      "lineHeight": 8.44,
+                      "align": "left",
+                      "margins": {
+                        "left": 6.6
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "hasselblad_watermark_dark": {
+      "file": "hasselblad_watermark_dark.webp",
+      "width": 831,
+      "height": 73
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Hand-authored from OPPO Gallery hassel_style_1.json; referenceWidth 560 per the Find X6 Pro 4:3 vendor card (band 60 / 10.7% = 559.2)."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "id": "vivo-border-photo:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "个性 · 色卡边框",
+  "nameEn": "BORDER PHOTO",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 260
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 260,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1360,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "custom"
+              },
+              "font": "vivo",
+              "size": 40,
+              "weight": 400,
+              "color": "#1A1A1A",
+              "tracking": 0.06,
+              "lineHeight": 54,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "rightVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "vivo",
+                  "size": 28,
+                  "weight": 500,
+                  "color": "#1A1A1A",
+                  "tracking": 0.06,
+                  "lineHeight": 37.800000000000004,
+                  "align": "right",
+                  "optional": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "timeLocation"
+                  },
+                  "font": "vivo",
+                  "size": 24,
+                  "weight": 400,
+                  "color": "#666666",
+                  "tracking": 0.06,
+                  "lineHeight": 32.400000000000006,
+                  "align": "right",
+                  "optional": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Personalized border (个性边框); white bottom band with the photographer signature left and exposure params + date·location right, per the official preview card (personalized_border_colorcard.jpg) and temp.json mappings (left logo/brand, right 3A+时间+地点).",
+    "unsupported": [
+      "photo-extracted colour-card strip along the band top is generated dynamically from the image; cannot reproduce, omitted",
+      "lens/brand icon (Zeiss/AURA LIGHT/iQOO) is a vector or dynamic asset; omitted",
+      "the \"Photographer\" line is the user signature, approximated by the custom-text token"
+    ]
+  }
+}

@@ -1,0 +1,397 @@
+{
+  "schemaVersion": "framemark-hand/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "sources": [
+    {
+      "role": "hand:templates",
+      "path": "src/renderer/src/core/templates.ts",
+      "bytes": 171977,
+      "sha256": "0d1cedba5d297367967105123ac1b8ce8327f467934ef4904856b66ffdd0c9a7"
+    },
+    {
+      "role": "hand:variants",
+      "path": "src/renderer/src/core/variants.ts",
+      "bytes": 35699,
+      "sha256": "417030e8518e7039c4a9b9c3655f71bad3efe43536a7dc11b217f1a7468b2546"
+    },
+    {
+      "role": "hand:text-slots",
+      "path": "src/renderer/src/core/text-slots.ts",
+      "bytes": 8424,
+      "sha256": "5cbcf63ba762d5c506c7b6242937e97726b867ec271c658263c5ec8d469efb61"
+    },
+    {
+      "role": "hand:draw",
+      "path": "src/renderer/src/core/draw.ts",
+      "bytes": 26063,
+      "sha256": "17894c960b3ee7ed5386162208ca988cbdd01866f2d0aa7202bf4f6495c8665f"
+    },
+    {
+      "role": "hand:presets",
+      "path": "src/renderer/src/core/presets.ts",
+      "bytes": 9632,
+      "sha256": "9f168c3f01ec6da95cfaa79e552c235fefa71711af71c058d495f587067b1d83"
+    },
+    {
+      "role": "hand:types",
+      "path": "src/renderer/src/types.ts",
+      "bytes": 10584,
+      "sha256": "f747ce29b32eea56b87c800d67b94825b0da027d77500cafd3fd65680237ed6f"
+    }
+  ],
+  "counts": {
+    "templateDefs": 39,
+    "handTemplateDefs": 38,
+    "systemCameraDefs": 1,
+    "handVariants": 69,
+    "taskBookHandTemplates": 76,
+    "delta": 7,
+    "why": "76 is a stale task-book/HANDOFF figure for the historical systemCamera approx set; the frozen source has 175 cards = 106 stock (systemCamera) + 69 hand cards, backed by 38 hand TemplateDefs (+1 systemCamera def)",
+    "templatesWithDefaults": 39,
+    "defaultsKeys": 331,
+    "themes": 6,
+    "textSlotCards": 69,
+    "textSlotWithSlots": 62,
+    "textSlotEmpty": 7,
+    "textSlotLines": 204
+  },
+  "discrepancy76": {
+    "taskBook": 76,
+    "sourceHandCards": 69,
+    "sourceHandTemplateDefs": 38,
+    "sourceTemplateDefsInclSystemCamera": 39,
+    "delta": 7,
+    "explanation": "76 does not appear anywhere in the frozen source as a hand-template count. It is the historical approx systemCamera set quoted in HANDOFF (2026-10-26). The authoritative frozen split is 175 cards = 106 stock (systemCamera / IR) + 69 hand cards; the 69 cards are rendered by 38 hand TemplateDefs plus the shared systemCamera def. There is no 7th variant in source: 68 are declared through V(...) and oppo-polaroid is pushed separately. Counted from TEMPLATE_VARIANTS (base !== systemCamera) — 69."
+  },
+  "deferredToE4": {
+    "functionBodies": {
+      "layout": 39,
+      "render": 39,
+      "prepare": 3,
+      "ofWhichHandE4": {
+        "layout": 38,
+        "render": 38,
+        "prepare": 2
+      }
+    },
+    "note": "TemplateDef.layout/render/prepare are canvas+EXIF closures; they cannot be serialized as JSON. templates.json carries name/sha/bytes/lines fingerprints per function. E4 re-implements them per template.",
+    "helperFunctions": [
+      {
+        "name": "choosePolaroidFrame",
+        "line": 76,
+        "exported": false
+      },
+      {
+        "name": "footerTitle",
+        "line": 106,
+        "exported": false
+      },
+      {
+        "name": "titleOf",
+        "line": 114,
+        "exported": true
+      },
+      {
+        "name": "subLine",
+        "line": 127,
+        "exported": false
+      },
+      {
+        "name": "exifText",
+        "line": 131,
+        "exported": false
+      },
+      {
+        "name": "dateText",
+        "line": 135,
+        "exported": false
+      },
+      {
+        "name": "logoScale",
+        "line": 139,
+        "exported": false
+      },
+      {
+        "name": "metaColor",
+        "line": 143,
+        "exported": false
+      },
+      {
+        "name": "inkTops",
+        "line": 171,
+        "exported": false
+      },
+      {
+        "name": "measureFitted",
+        "line": 182,
+        "exported": false
+      },
+      {
+        "name": "footerFrame",
+        "line": 918,
+        "exported": false
+      },
+      {
+        "name": "footerSlots",
+        "line": 935,
+        "exported": false
+      },
+      {
+        "name": "overlayLensLine",
+        "line": 949,
+        "exported": false
+      },
+      {
+        "name": "drawBrandOverlay",
+        "line": 963,
+        "exported": false
+      },
+      {
+        "name": "drawSimpleBrandFooter",
+        "line": 1047,
+        "exported": false
+      },
+      {
+        "name": "aspectCanvas",
+        "line": 1873,
+        "exported": false
+      },
+      {
+        "name": "profileName",
+        "line": 1960,
+        "exported": false
+      },
+      {
+        "name": "avatarRadius",
+        "line": 1964,
+        "exported": false
+      },
+      {
+        "name": "avatarNameSize",
+        "line": 1969,
+        "exported": false
+      },
+      {
+        "name": "measureProfileName",
+        "line": 1974,
+        "exported": false
+      },
+      {
+        "name": "avatarChipWidth",
+        "line": 1983,
+        "exported": false
+      },
+      {
+        "name": "drawAvatarChip",
+        "line": 1987,
+        "exported": false
+      },
+      {
+        "name": "techExifLine",
+        "line": 2049,
+        "exported": false
+      },
+      {
+        "name": "classicExifLine",
+        "line": 2059,
+        "exported": false
+      },
+      {
+        "name": "drawTechText",
+        "line": 2069,
+        "exported": false
+      },
+      {
+        "name": "drawTechExif",
+        "line": 2102,
+        "exported": false
+      },
+      {
+        "name": "photoWindowOf",
+        "line": 2208,
+        "exported": false
+      },
+      {
+        "name": "getTemplate",
+        "line": 4543,
+        "exported": true
+      }
+    ],
+    "templateConsts": [
+      {
+        "name": "minimal",
+        "line": 203
+      },
+      {
+        "name": "sideCard",
+        "line": 289
+      },
+      {
+        "name": "specFooter",
+        "line": 463
+      },
+      {
+        "name": "splitReveal",
+        "line": 554
+      },
+      {
+        "name": "sideTicket",
+        "line": 630
+      },
+      {
+        "name": "poetryCard",
+        "line": 748
+      },
+      {
+        "name": "gallery",
+        "line": 828
+      },
+      {
+        "name": "brandFooter",
+        "line": 1120
+      },
+      {
+        "name": "gradFooter",
+        "line": 1323
+      },
+      {
+        "name": "personalBorder",
+        "line": 1394
+      },
+      {
+        "name": "vendorFooter",
+        "line": 1494
+      },
+      {
+        "name": "xiaomiLeica",
+        "line": 1782
+      },
+      {
+        "name": "paramStack",
+        "line": 1881
+      },
+      {
+        "name": "matteOverlay",
+        "line": 2116
+      },
+      {
+        "name": "logoFooter",
+        "line": 2219
+      },
+      {
+        "name": "matteFooter",
+        "line": 2277
+      },
+      {
+        "name": "profileFrame",
+        "line": 2366
+      },
+      {
+        "name": "overlay",
+        "line": 2520
+      },
+      {
+        "name": "bareCover",
+        "line": 2595
+      },
+      {
+        "name": "vertical",
+        "line": 2617
+      },
+      {
+        "name": "blur",
+        "line": 2674
+      },
+      {
+        "name": "palette",
+        "line": 2760
+      },
+      {
+        "name": "film",
+        "line": 2845
+      },
+      {
+        "name": "polaroid",
+        "line": 2925
+      },
+      {
+        "name": "editorial",
+        "line": 2996
+      },
+      {
+        "name": "glass",
+        "line": 3137
+      },
+      {
+        "name": "glassPalettePortrait",
+        "line": 3415
+      },
+      {
+        "name": "glassSideCard",
+        "line": 3534
+      },
+      {
+        "name": "ticket",
+        "line": 3697
+      },
+      {
+        "name": "portraitTicket",
+        "line": 3804
+      },
+      {
+        "name": "locationCard",
+        "line": 3922
+      },
+      {
+        "name": "paletteCard",
+        "line": 3973
+      },
+      {
+        "name": "polaroidFrame",
+        "line": 4017
+      },
+      {
+        "name": "xiaomiStandard",
+        "line": 4077
+      },
+      {
+        "name": "movie",
+        "line": 4190
+      },
+      {
+        "name": "ratioBlock",
+        "line": 4304
+      },
+      {
+        "name": "ratioMatte",
+        "line": 4374
+      },
+      {
+        "name": "ratioBlurSquare",
+        "line": 4466
+      }
+    ]
+  },
+  "files": {
+    "templates": {
+      "path": "engine/data/hand/templates.json",
+      "bytes": 85722,
+      "sha256": "0fd2c110d9e5a416979bdb3c0fbd094a15009ee6ad4f058fe732064a89217887"
+    },
+    "variants": {
+      "path": "engine/data/hand/variants.json",
+      "bytes": 113849,
+      "sha256": "9f615b16bffd343c3540b45f40717aa487bfdc99a366655c2522eb5b787f7a77"
+    },
+    "themes": {
+      "path": "engine/data/hand/themes.json",
+      "bytes": 1928,
+      "sha256": "52dbece79f06d1c3e5c2842f0ccd358445f16d401db9c83a7274f1c11dcbcba8"
+    },
+    "textSlots": {
+      "path": "engine/data/hand/text-slots.json",
+      "bytes": 94358,
+      "sha256": "eed19c1b0f827ab5f484895b6163e254823c2e3ce1760789eb5fc12218bca9e6"
+    }
+  }
+}

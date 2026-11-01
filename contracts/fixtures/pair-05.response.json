@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/preview/pair-05.png", "w": 600, "h": 800 },
+  "photoRect": { "x": 0, "y": 0, "w": 600, "h": 800 },
+  "textSlots": [],
+  "ms": 22.1,
+  "engine": "fake"
+}

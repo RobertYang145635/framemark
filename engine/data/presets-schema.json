@@ -1,0 +1,611 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://framemark.local/schema/presets-schema.json",
+  "title": "FrameMark Preset and Design (frozen TS app)",
+  "description": "Read-only schema of the frozen Electron/TS app Design and Preset carriers. It describes what hydrateDesign/defaultDesign/makeDesignFromVariant read and write; the frozen app itself validates only templateId:string + params:object (isValidDesign) and fills every missing field from DEFAULT_TEXT/DEFAULT_WATERMARK/DEFAULT_EXPORT + template defaults.",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Design"
+    },
+    {
+      "$ref": "#/$defs/Preset"
+    }
+  ],
+  "x-framemark": {
+    "schemaVersion": "framemark-presets-schema/v1",
+    "generatedAt": "2026-10-31T17:16:16.978Z",
+    "frozenApp": {
+      "commit": {
+        "head": "8323aac806ef82f7a80b1b13d8d9b2a88f3dfd31",
+        "headShort": "8323aac",
+        "branch": "master"
+      },
+      "sources": [
+        {
+          "role": "schema:types",
+          "path": "src/renderer/src/types.ts",
+          "bytes": 10584,
+          "sha256": "f747ce29b32eea56b87c800d67b94825b0da027d77500cafd3fd65680237ed6f"
+        },
+        {
+          "role": "schema:presets",
+          "path": "src/renderer/src/core/presets.ts",
+          "bytes": 9632,
+          "sha256": "9f168c3f01ec6da95cfaa79e552c235fefa71711af71c058d495f587067b1d83"
+        },
+        {
+          "role": "schema:storage",
+          "path": "src/renderer/src/core/storage.ts",
+          "bytes": 5022,
+          "sha256": "d38ffaebd929568c0ab366dede6337ca48b45cb33e0ae49d1c479b7749cdc5ab"
+        },
+        {
+          "role": "schema:templates",
+          "path": "src/renderer/src/core/templates.ts",
+          "bytes": 171977,
+          "sha256": "0d1cedba5d297367967105123ac1b8ce8327f467934ef4904856b66ffdd0c9a7"
+        }
+      ],
+      "versions": {
+        "lastDesignKey": "framemark.lastDesign.v1",
+        "indexedDb": {
+          "name": "framemark",
+          "version": 2,
+          "stores": {
+            "presets": {
+              "keyPath": "id"
+            },
+            "jobs": {
+              "keyPath": "id",
+              "indexes": [
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "presetSchemaVersionField": null,
+        "note": "Neither Design nor Preset carries a schemaVersion field in the frozen app; versions live in the storage key/DB version and in this file."
+      }
+    },
+    "defaults": {
+      "text": {
+        "title": "",
+        "subtitle": "",
+        "signature": "",
+        "customLine": "",
+        "location": "",
+        "showMake": true,
+        "showModel": true,
+        "showLens": true,
+        "showExif": true,
+        "showDate": true,
+        "showLogo": true,
+        "fontScale": 1
+      },
+      "watermark": {
+        "enabled": false,
+        "asset": null,
+        "anchor": "bottom-right",
+        "offsetX": 3,
+        "offsetY": 3,
+        "widthPct": 14,
+        "opacity": 0.9,
+        "rotation": 0,
+        "tile": false,
+        "gapPct": 4,
+        "target": "photo"
+      },
+      "export": {
+        "format": "jpeg",
+        "quality": 100,
+        "longEdge": 0,
+        "removeGps": true,
+        "filenamePattern": "{name}-{template}",
+        "outputDir": ""
+      }
+    },
+    "canonical": {
+      "designKeys": [
+        "templateId",
+        "variantId",
+        "ratio",
+        "params",
+        "paramOverrides",
+        "text",
+        "watermark",
+        "logo",
+        "avatar",
+        "brandVersion",
+        "export"
+      ],
+      "textKeys": [
+        "title",
+        "subtitle",
+        "signature",
+        "customLine",
+        "location",
+        "showMake",
+        "showModel",
+        "showLens",
+        "showExif",
+        "showDate",
+        "showLogo",
+        "fontScale"
+      ],
+      "watermarkKeys": [
+        "enabled",
+        "asset",
+        "anchor",
+        "offsetX",
+        "offsetY",
+        "widthPct",
+        "opacity",
+        "rotation",
+        "tile",
+        "gapPct",
+        "target"
+      ],
+      "exportKeys": [
+        "format",
+        "quality",
+        "longEdge",
+        "removeGps",
+        "filenamePattern",
+        "outputDir"
+      ],
+      "note": "Every object the frozen app emits (defaultDesign/makeDesignFromVariant/setVariant + hydrateDesign) carries all canonical keys above except the optional paramOverrides/brandVersion/avatar additions, which are omitted when null/absent."
+    },
+    "readerTolerance": {
+      "design": "hydrateDesign accepts any object with templateId:string + params:object; ratio→original, text/watermark/export merged with defaults, logo/avatar→null, variantId→default variant.",
+      "preset": "Preset rows come from IndexedDB store `presets`; missing builtin is false.",
+      "notes": "This schema therefore requires only the fields the frozen app cannot default; all other properties are typed but optional. Unknown properties are preserved by JSON round-trip and ignored on read."
+    }
+  },
+  "$defs": {
+    "Params": {
+      "type": "object",
+      "description": "Flat parameter bag; values are scalar. Keys are declared per template defaults and per variant params (see engine/data/hand).",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
+    },
+    "ParamOverrides": {
+      "type": "object",
+      "description": "Sparse per-style buckets: key = variantId || templateId; absent means nothing overridden.",
+      "additionalProperties": {
+        "$ref": "#/$defs/Params"
+      }
+    },
+    "ImageAsset": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "dataUrl",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "dataUrl": {
+          "type": "string",
+          "description": "data:image/...;base64,..."
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BrandVersionRef": {
+      "type": "object",
+      "required": [
+        "brandKey",
+        "versionId",
+        "cutId",
+        "assetKey",
+        "file",
+        "ink"
+      ],
+      "properties": {
+        "brandKey": {
+          "type": "string"
+        },
+        "versionId": {
+          "type": "string"
+        },
+        "cutId": {
+          "type": "string"
+        },
+        "assetKey": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "ink": {
+          "enum": [
+            "dark",
+            "light",
+            "color",
+            "ambiguous"
+          ]
+        },
+        "surface": {
+          "enum": [
+            "light",
+            "dark",
+            "both",
+            "none"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TextSettings": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "default": ""
+        },
+        "subtitle": {
+          "type": "string",
+          "default": ""
+        },
+        "signature": {
+          "type": "string",
+          "default": ""
+        },
+        "customLine": {
+          "type": "string",
+          "default": ""
+        },
+        "location": {
+          "type": "string",
+          "default": ""
+        },
+        "showMake": {
+          "type": "boolean",
+          "default": true
+        },
+        "showModel": {
+          "type": "boolean",
+          "default": true
+        },
+        "showLens": {
+          "type": "boolean",
+          "default": true
+        },
+        "showExif": {
+          "type": "boolean",
+          "default": true
+        },
+        "showDate": {
+          "type": "boolean",
+          "default": true
+        },
+        "showLogo": {
+          "type": "boolean",
+          "default": true
+        },
+        "fontScale": {
+          "type": "number",
+          "default": 1,
+          "description": "clamped to 0.5–2 by textScaleOf; 1 is the default"
+        },
+        "hidden": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "title",
+              "subtitle",
+              "signature",
+              "customLine",
+              "location"
+            ]
+          }
+        },
+        "lineText": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "hand keys <source>#<n>; IR key <styleId>#model"
+        },
+        "hiddenLines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "slotValues": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "slotSizes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "lineSizes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "WatermarkSettings": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "asset": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ImageAsset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "anchor": {
+          "enum": [
+            "top-left",
+            "top-center",
+            "top-right",
+            "middle-left",
+            "center",
+            "middle-right",
+            "bottom-left",
+            "bottom-center",
+            "bottom-right"
+          ]
+        },
+        "offsetX": {
+          "type": "number",
+          "default": 3
+        },
+        "offsetY": {
+          "type": "number",
+          "default": 3
+        },
+        "widthPct": {
+          "type": "number",
+          "default": 14
+        },
+        "opacity": {
+          "type": "number",
+          "default": 0.9,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0
+        },
+        "tile": {
+          "type": "boolean",
+          "default": false
+        },
+        "gapPct": {
+          "type": "number",
+          "default": 4
+        },
+        "target": {
+          "enum": [
+            "photo",
+            "canvas"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "ExportSettings": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "enum": [
+            "jpeg",
+            "png",
+            "webp",
+            "tiff"
+          ]
+        },
+        "quality": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 100
+        },
+        "longEdge": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "removeGps": {
+          "type": "boolean",
+          "default": true
+        },
+        "filenamePattern": {
+          "type": "string",
+          "default": "{name}-{template}"
+        },
+        "outputDir": {
+          "type": "string",
+          "default": "",
+          "description": "machine-specific; portablePresetDesign blanks it on save"
+        }
+      },
+      "additionalProperties": true
+    },
+    "Design": {
+      "type": "object",
+      "required": [
+        "templateId",
+        "params"
+      ],
+      "description": "Exactly the frozen app Design interface (src/renderer/src/types.ts:186). Canonical emitted keys are listed in x-framemark.canonical.",
+      "properties": {
+        "templateId": {
+          "enum": [
+            "minimal",
+            "gallery",
+            "sideCard",
+            "specFooter",
+            "splitReveal",
+            "sideTicket",
+            "portraitTicket",
+            "poetryCard",
+            "locationCard",
+            "paletteCard",
+            "polaroidFrame",
+            "xiaomiStandard",
+            "brandFooter",
+            "gradFooter",
+            "personalBorder",
+            "vendorFooter",
+            "xiaomiLeica",
+            "paramStack",
+            "matteOverlay",
+            "logoFooter",
+            "matteFooter",
+            "profileFrame",
+            "overlay",
+            "bareCover",
+            "vertical",
+            "blur",
+            "palette",
+            "film",
+            "polaroid",
+            "editorial",
+            "glass",
+            "glassSideCard",
+            "glassPalettePortrait",
+            "ticket",
+            "movie",
+            "ratio",
+            "ratioMatte",
+            "ratioBlurSquare",
+            "systemCamera"
+          ]
+        },
+        "variantId": {
+          "type": "string"
+        },
+        "ratio": {
+          "enum": [
+            "original",
+            "1:1",
+            "4:5",
+            "16:9",
+            "3:2"
+          ],
+          "default": "original"
+        },
+        "params": {
+          "$ref": "#/$defs/Params"
+        },
+        "paramOverrides": {
+          "$ref": "#/$defs/ParamOverrides"
+        },
+        "text": {
+          "$ref": "#/$defs/TextSettings"
+        },
+        "watermark": {
+          "$ref": "#/$defs/WatermarkSettings"
+        },
+        "logo": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ImageAsset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "avatar": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ImageAsset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "brandVersion": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/BrandVersionRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "export": {
+          "$ref": "#/$defs/ExportSettings"
+        }
+      },
+      "additionalProperties": true
+    },
+    "Preset": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "design",
+        "createdAt",
+        "updatedAt"
+      ],
+      "description": "Exactly the frozen app Preset interface (src/renderer/src/types.ts:211); IndexedDB `framemark` v2 store `presets`, keyPath id.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "design": {
+          "$ref": "#/$defs/Design"
+        },
+        "createdAt": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "integer"
+        },
+        "builtin": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

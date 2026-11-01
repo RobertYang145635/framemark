@@ -1,0 +1,163 @@
+{
+  "id": "xiaomi-leica:111",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "徕卡 · 111",
+  "nameEn": "leica_111",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FF141414",
+        "#FFE6A54F",
+        "E6A54F",
+        "#BFE6A54F"
+      ]
+    }
+  ],
+  "defaultTheme": "black",
+  "assets": {
+    "leica-111-leica": {
+      "file": "xiaomi/leica/111/leica.webp",
+      "width": 240,
+      "height": 240
+    },
+    "leica-111-logo-xiaomi_E6A54F": {
+      "file": "xiaomi/leica/111/xiaomi_E6A54F.webp",
+      "width": 673,
+      "height": 160
+    }
+  },
+  "placement": "with",
+  "margins": {
+    "left": 80,
+    "top": 80,
+    "right": 80,
+    "bottom": 302
+  },
+  "background": "#FF141414",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 302,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "height": 302,
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "image",
+              "asset": "leica-111-leica",
+              "width": 74,
+              "height": 74,
+              "scale": "contain",
+              "isBrandLogo": false,
+              "gravity": "topHorCenter",
+              "margins": {
+                "top": 50
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "topHorCenter",
+              "margins": {
+                "top": 33.5
+              },
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "leica-111-logo-xiaomi_E6A54F",
+                  "themeAssets": {
+                    "black": "leica-111-logo-xiaomi_E6A54F"
+                  },
+                  "colorIndex": 2,
+                  "width": 117.77499999999999,
+                  "height": 28,
+                  "scale": "contain",
+                  "isBrandLogo": true,
+                  "margins": {
+                    "right": 8
+                  }
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionNumber}"
+                  },
+                  "font": "misans",
+                  "size": 25,
+                  "weight": 500,
+                  "colorIndex": 1,
+                  "alpha": 1,
+                  "tracking": 0,
+                  "align": "left",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionName}"
+                  },
+                  "font": "misans",
+                  "size": 16,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "alpha": 1,
+                  "tracking": 0.032,
+                  "align": "center",
+                  "outline": {
+                    "paddingX": 6,
+                    "height": 23,
+                    "radius": 5.6,
+                    "strokeWidth": 1.8,
+                    "strokeColorIndex": 3
+                  },
+                  "margins": {},
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+              },
+              "font": "lg1056",
+              "size": 17,
+              "weight": 400,
+              "color": "#66E6A54F",
+              "alpha": 1,
+              "tracking": 0.2,
+              "align": "left",
+              "margins": {
+                "top": 9.5
+              },
+              "optional": false,
+              "gravity": "topHorCenter"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit."
+  }
+}

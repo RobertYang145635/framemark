@@ -1,0 +1,125 @@
+{
+  "id": "oppo-gallery:hassel_style_xpan_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏 · XPAN",
+  "nameEn": "hassel_style_xpan_1",
+  "placement": "with",
+  "referenceWidth": 291,
+  "margins": {
+    "left": 15,
+    "top": 95,
+    "right": 15,
+    "bottom": 95
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 95,
+      "offset": {
+        "x": 0,
+        "y": 95
+      },
+      "gravity": "leftVerticalCenter",
+      "children": [
+        {
+          "kind": "image",
+          "asset": "xpan_watermark_dark",
+          "width": 86,
+          "height": 35,
+          "scale": "contain",
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 25.5
+          },
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 95,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [
+        {
+          "kind": "image",
+          "asset": "hasselblad_watermark_dark",
+          "width": 117.15,
+          "height": 9.31,
+          "scale": "fill",
+          "gravity": "rightVerticalCenter",
+          "margins": {
+            "top": 4.58,
+            "right": 26
+          },
+          "alpha": 1
+        },
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 24
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "avenir",
+              "size": 13.86,
+              "weight": 500,
+              "color": "#000000",
+              "alpha": 1,
+              "tracking": 0,
+              "lineHeight": 16.82,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "imageParams"
+              },
+              "font": "avenir",
+              "size": 9.9,
+              "weight": 400,
+              "color": "#99000000",
+              "alpha": 1,
+              "tracking": 0,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "top": -3
+              },
+              "optional": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "xpan_watermark_dark": {
+      "file": "xpan_watermark_dark.webp",
+      "width": 345,
+      "height": 140
+    },
+    "hasselblad_watermark_dark": {
+      "file": "hasselblad_watermark_dark.webp",
+      "width": 1475,
+      "height": 118
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

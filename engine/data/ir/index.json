@@ -1,0 +1,4776 @@
+{
+  "schemaVersion": "framemark-ir/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "source": {
+    "commit": {
+      "head": "8323aac806ef82f7a80b1b13d8d9b2a88f3dfd31",
+      "headShort": "8323aac",
+      "branch": "master"
+    },
+    "driverModule": "src/renderer/src/core/system/styles.ts",
+    "sources": [
+      {
+        "role": "ir:types",
+        "path": "src/renderer/src/core/system/ir.ts",
+        "bytes": 6624,
+        "sha256": "54cb2fac5702c042e778ff25f7bb87217531501b4d5622f84f591f6897e85439"
+      },
+      {
+        "role": "ir:gallery",
+        "path": "src/renderer/src/core/system/generated/oppoGallery.ts",
+        "bytes": 171503,
+        "sha256": "7cdcb9ec9931739cbeb715ca4ab975c17308f131df0c7e834da9d6866761aa52"
+      },
+      {
+        "role": "ir:camerapro",
+        "path": "src/renderer/src/core/system/generated/oppoCameraPro.ts",
+        "bytes": 53873,
+        "sha256": "64400d9db79ae1cdaef1b0a7b11295a6dc183bdd1c623fdeaa7c10efbee8eb05"
+      },
+      {
+        "role": "ir:xiaomi",
+        "path": "src/renderer/src/core/system/generated/xiaomiStyles.ts",
+        "bytes": 296113,
+        "sha256": "8a8018f3fcbe1d7cb0df777b3b79af5613765dacaecd71809511b2859e99f8bf"
+      },
+      {
+        "role": "ir:vivo-manual",
+        "path": "src/renderer/src/core/system/vivoManual.ts",
+        "bytes": 34282,
+        "sha256": "a8ce1468a34f439a2f08b5bd0d415d64e56d6c8838468b63582730d482ea87fc"
+      },
+      {
+        "role": "ir:styles",
+        "path": "src/renderer/src/core/system/styles.ts",
+        "bytes": 22173,
+        "sha256": "e290505335c6e75ffe53fff1f4274daa5a129b6e21ba43ba7134902476aa8ead"
+      },
+      {
+        "role": "ir:layout",
+        "path": "src/renderer/src/core/system/layout.ts",
+        "bytes": 40261,
+        "sha256": "e552efd863f93fc7cc5b6046920ed1cef133ff0ca82df25f0ea33a696e0573c3"
+      },
+      {
+        "role": "ir:paint",
+        "path": "src/renderer/src/core/system/paint.ts",
+        "bytes": 33511,
+        "sha256": "5ef21b809e4b799d15bb1061ce0ebffcc3f5b64d677fe29a95b306e4ea5a8a02"
+      },
+      {
+        "role": "ir:tokens",
+        "path": "src/renderer/src/core/system/tokens.ts",
+        "bytes": 8734,
+        "sha256": "0868ca4a491a2de41bce6b2e11cfd997ea19da41006bd745d35b27ac517b9a1b"
+      },
+      {
+        "role": "p2b1:stock-styles",
+        "path": "../_research/native/designs/_stock-styles.json",
+        "bytes": 94372,
+        "sha256": "1af2c36f87d856aa08cd497c2cd535c04a074ba08496c03027b5bff9d0bd10a2"
+      }
+    ]
+  },
+  "counts": {
+    "styles": 111,
+    "uniqueIds": 111,
+    "byVendor": {
+      "oppo": 52,
+      "xiaomi": 40,
+      "vivo": 19
+    },
+    "bands": 133,
+    "nodes": 974,
+    "nodeKinds": {
+      "group": 320,
+      "text": 431,
+      "space": 58,
+      "image": 133,
+      "shape": 32
+    },
+    "tokenKinds": {
+      "model": 62,
+      "imageParams": 30,
+      "literal": 78,
+      "template": 198,
+      "time": 11,
+      "timeLocation": 6,
+      "location": 38,
+      "custom": 8
+    },
+    "bandDirections": {
+      "bottom": 63,
+      "top": 18,
+      "overlay": 42,
+      "right": 10
+    },
+    "assetRefs": 155,
+    "stylesWithThemes": 43,
+    "stylesWithDefaultTheme": 46,
+    "transparentBackground": 17,
+    "placements": {
+      "out": 46,
+      "with": 33,
+      "in": 29,
+      "overlay": 3
+    },
+    "audit": {
+      "approx": 111
+    }
+  },
+  "generated": {
+    "counts": {
+      "oppoGallery": 43,
+      "oppoCameraPro": 9,
+      "xiaomiStyles": 38,
+      "vivoManual": 19
+    },
+    "total": 109,
+    "generatedUnique": 109,
+    "replaced": [
+      "oppo-gallery:hassel_style_1",
+      "oppo-gallery:lumo_style_1",
+      "oppo-gallery:personalize_retroCamera_5",
+      "oppo-camerapro:gr_style_5",
+      "xiaomi-film:15"
+    ],
+    "added": [
+      "xiaomi-classic:22",
+      "xiaomi-classic:99"
+    ],
+    "moduleCounts": {
+      "oppoGallery": 43,
+      "oppoCameraPro": 9,
+      "xiaomiStyles": 38,
+      "vivoManual": 19
+    },
+    "finalEquation": "43 gallery + 9 CameraPro + 38 Xiaomi + 19 vivo = 109 generated; −5 replaced by audited overrides +2 hand-authored Xiaomi sidebar styles +5 vivo Disney = 111"
+  },
+  "p2b1CrossCheck": {
+    "sourceSha256": "1af2c36f87d856aa08cd497c2cd535c04a074ba08496c03027b5bff9d0bd10a2",
+    "styles": 106,
+    "scalarsCompared": 106,
+    "note": "P2b-1 file is a 14-field projection (no bands/assets); D1 re-derived from TS, scalars match 106/106"
+  },
+  "files": {
+    "styles": {
+      "path": "engine/data/ir/styles.json",
+      "bytes": 584167,
+      "sha256": "e7b27878cdf4d622052b901e1b76dc48780158af1c1cd6a72d54d833455fe4d1"
+    },
+    "perStyle": {
+      "dir": "engine/data/ir/styles",
+      "files": 111,
+      "bytes": 545479,
+      "combinedSha256": "60edaa26a6ef264625ce4663db9605c046a447221d30c916c61a9fed8a62b21d"
+    }
+  },
+  "rows": [
+    {
+      "id": "oppo-gallery:hassel_style_1",
+      "order": 0,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 页脚",
+      "nameEn": "HASSELBLAD FOOTER",
+      "placement": "out",
+      "referenceWidth": 560,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 4,
+        "text": 2,
+        "space": 1,
+        "image": 1,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "audited-override-of-generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_1.json",
+      "sha256": "f9872664f4a21a6cc28290b4a5235beca0145698e8008d9d19446b11310c3b5e",
+      "bytes": 3420
+    },
+    {
+      "id": "oppo-gallery:hassel_style_2",
+      "order": 1,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 2",
+      "nameEn": "hassel_style_2",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 68
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_2.json",
+      "sha256": "f187207d0ca246074f39684526a6e9371d3ebc12b0cfd809a85c36d9eb2b1510",
+      "bytes": 2347
+    },
+    {
+      "id": "oppo-gallery:hassel_style_3",
+      "order": 2,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 3",
+      "nameEn": "hassel_style_3",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 111
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_3.json",
+      "sha256": "8756b6c160ab0824cf7e38f09d948b45f2a507527baa79baa5989c0d6c64668c",
+      "bytes": 2306
+    },
+    {
+      "id": "oppo-gallery:hassel_style_4",
+      "order": 3,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 4",
+      "nameEn": "hassel_style_4",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 14,
+      "nodeKinds": {
+        "image": 1,
+        "group": 3,
+        "text": 10
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 5,
+        "template": 4
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+      "sha256": "01520ed6c70d214d556cd8d89058880562c4fec8fbb32637a495ab81b489667a",
+      "bytes": 8788
+    },
+    {
+      "id": "oppo-gallery:hassel_style_master_mode_1",
+      "order": 4,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · 大师模式",
+      "nameEn": "hassel_style_master_mode_1",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 29,
+      "nodeKinds": {
+        "image": 9,
+        "group": 2,
+        "text": 10,
+        "shape": 8
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 9
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 9,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_master_mode_1.json",
+      "sha256": "eca2804ec46262ab71954a0c22a61bfab8236a85ffe3d2209dadfa9191b50311",
+      "bytes": 15239
+    },
+    {
+      "id": "oppo-gallery:hassel_style_xpan_1",
+      "order": 5,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏 · XPAN",
+      "nameEn": "hassel_style_xpan_1",
+      "placement": "with",
+      "referenceWidth": 291,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 15,
+        "top": 95,
+        "right": 15,
+        "bottom": 95
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 5,
+      "nodeKinds": {
+        "image": 2,
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_style_xpan_1.json",
+      "sha256": "7da9482f9154c5332065ad6643e71744a256efc3365809345680b46b17b64c3e",
+      "bytes": 2856
+    },
+    {
+      "id": "oppo-gallery:hassel_text_style_1",
+      "order": 6,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 1",
+      "nameEn": "hassel_text_style_1",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "space": 1,
+        "image": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_text_style_1.json",
+      "sha256": "a00a566212c22e189ee893171bc7043952f2e4b48b8b6143e541990bcb578a41",
+      "bytes": 2057
+    },
+    {
+      "id": "oppo-gallery:hassel_text_style_2",
+      "order": 7,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 2",
+      "nameEn": "hassel_text_style_2",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "text": 1,
+        "shape": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/hassel_text_style_2.json",
+      "sha256": "28b57e0992a7482986ddbf5541e654dd6d76c4d4ce79aff9bd539282752eda90",
+      "bytes": 2323
+    },
+    {
+      "id": "oppo-gallery:lumo_style_1",
+      "order": 8,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 页脚",
+      "nameEn": "LUMO FOOTER",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 6,
+      "nodeKinds": {
+        "group": 2,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "audited-override-of-generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_style_1.json",
+      "sha256": "888ecfc04fe862abd37d05c6708d8890b7e821a8486989e1cd3584d339bc7fb2",
+      "bytes": 2454
+    },
+    {
+      "id": "oppo-gallery:lumo_style_2",
+      "order": 9,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 2",
+      "nameEn": "lumo_style_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 111
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_style_2.json",
+      "sha256": "f0c2f0a13ddcec10f052091720a1f9fb6be33ca3779cc7d025b64b6fa6421ff4",
+      "bytes": 2321
+    },
+    {
+      "id": "oppo-gallery:lumo_style_3",
+      "order": 10,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 3",
+      "nameEn": "lumo_style_3",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 4,
+      "nodeKinds": {
+        "image": 1,
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_style_3.json",
+      "sha256": "a05910a6fc7c7ba3c6e3f276b559ccf45e39beabaae919108dea328946067a6c",
+      "bytes": 2375
+    },
+    {
+      "id": "oppo-gallery:lumo_style_master_mode_1",
+      "order": 11,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO · 大师模式",
+      "nameEn": "lumo_style_master_mode_1",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 29,
+      "nodeKinds": {
+        "image": 9,
+        "group": 2,
+        "text": 10,
+        "shape": 8
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 9
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 9,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_style_master_mode_1.json",
+      "sha256": "4def55f99a6475d71127b0533c7f1939a9f5549d26dbd8869a608d8ce7c9db36",
+      "bytes": 15199
+    },
+    {
+      "id": "oppo-gallery:lumo_text_style_1",
+      "order": 12,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO 文字 · 1",
+      "nameEn": "lumo_text_style_1",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "space": 1,
+        "image": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_text_style_1.json",
+      "sha256": "0d37b38d691a3617b851a130b0189431fe23c5f623eec36f04aaeb8205c93e1e",
+      "bytes": 2053
+    },
+    {
+      "id": "oppo-gallery:lumo_text_style_2",
+      "order": 13,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "LUMO 文字 · 2",
+      "nameEn": "lumo_text_style_2",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "text": 1,
+        "shape": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/lumo_text_style_2.json",
+      "sha256": "7604bcbef51c482c84534090a72595edd248e06d5145dae3340a059ced604afd",
+      "bytes": 2288
+    },
+    {
+      "id": "oppo-gallery:personalize_brand_1",
+      "order": 14,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 1",
+      "nameEn": "personalize_brand_1",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 4,
+      "nodeKinds": {
+        "image": 1,
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_brand_1.json",
+      "sha256": "bdf3e3f807465d76af3f810dabb9fcb6f6c3544de0d854380c53f5dc3cc59186",
+      "bytes": 2380
+    },
+    {
+      "id": "oppo-gallery:personalize_brand_2",
+      "order": 15,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 2",
+      "nameEn": "personalize_brand_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 162,
+        "bottom": 10
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 3
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_brand_2.json",
+      "sha256": "a736cfd3326c8b91f56083c54d728e2eddf9698dc3e2da2e4c73bc212adea1ce",
+      "bytes": 2765
+    },
+    {
+      "id": "oppo-gallery:personalize_brand_5",
+      "order": 16,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 5",
+      "nameEn": "personalize_brand_5",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 111
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_brand_5.json",
+      "sha256": "90368bc072445cea0eba5d9939bfc8be37fa2a1b4055d0492dc12920e0d81647",
+      "bytes": 2279
+    },
+    {
+      "id": "oppo-gallery:personalize_brand_6",
+      "order": 17,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "品牌 · 6",
+      "nameEn": "personalize_brand_6",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_brand_6.json",
+      "sha256": "90a8cc1357dcb9e45d4afccc2ba6fd473f13e4f469c0f3bd39c632fdbae00c6b",
+      "bytes": 2338
+    },
+    {
+      "id": "oppo-gallery:personalize_film_1",
+      "order": 18,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "胶片 · 1",
+      "nameEn": "personalize_film_1",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_film_1.json",
+      "sha256": "1527ef285d1a4b38e0e184ccd93101a32cd4eccf8b5b7f8817940173463da4ec",
+      "bytes": 2348
+    },
+    {
+      "id": "oppo-gallery:personalize_film_2",
+      "order": 19,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "胶片 · 2",
+      "nameEn": "personalize_film_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 50,
+        "bottom": 0
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 3,
+      "nodeKinds": {
+        "text": 2,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_film_2.json",
+      "sha256": "dd01eb208834a66a2ced85e02be4e762760574bf862c36a7fc072606f89c05d9",
+      "bytes": 1974
+    },
+    {
+      "id": "oppo-gallery:personalize_film_realme_1",
+      "order": 20,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 胶片 · 1",
+      "nameEn": "personalize_film_realme_1",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_film_realme_1.json",
+      "sha256": "6fbdd799030ea04ba800cfca84b77ca9a87deabd22414225df7e4dbcd6e92723",
+      "bytes": 2375
+    },
+    {
+      "id": "oppo-gallery:personalize_film_realme_2",
+      "order": 21,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 胶片 · 2",
+      "nameEn": "personalize_film_realme_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 50,
+        "bottom": 0
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_film_realme_2.json",
+      "sha256": "a30ec7d200ea4a45fc6937a6d2edc27a99a185825d086b28519c4dd161d5bd3c",
+      "bytes": 2367
+    },
+    {
+      "id": "oppo-gallery:personalize_masterSign_1",
+      "order": 22,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 1",
+      "nameEn": "personalize_masterSign_1",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 79,
+        "right": 10,
+        "bottom": 79
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 4,
+      "nodeKinds": {
+        "image": 1,
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_1.json",
+      "sha256": "3399f0b4576db17566cffec291b77204642f9c3bca043d7c625055aef1a0e0a4",
+      "bytes": 2363
+    },
+    {
+      "id": "oppo-gallery:personalize_masterSign_2",
+      "order": 23,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 2",
+      "nameEn": "personalize_masterSign_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 136
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 18,
+      "nodeKinds": {
+        "group": 6,
+        "image": 1,
+        "text": 8,
+        "shape": 3
+      },
+      "tokenKinds": {
+        "template": 4,
+        "literal": 4
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_2.json",
+      "sha256": "c87ad89fd28d59054a6c62c98439e513fc5b6c5dd597674d0496aada63a1e47f",
+      "bytes": 9007
+    },
+    {
+      "id": "oppo-gallery:personalize_masterSign_3",
+      "order": 24,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 3",
+      "nameEn": "personalize_masterSign_3",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 50,
+        "bottom": 0
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 3,
+      "nodeKinds": {
+        "text": 2,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_3.json",
+      "sha256": "5b9d4349551bac16106bf7111001f97eecfb74ab6e84e92084c9ac2e67716e37",
+      "bytes": 1971
+    },
+    {
+      "id": "oppo-gallery:personalize_masterSign_4",
+      "order": 25,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "大师签名 · 4",
+      "nameEn": "personalize_masterSign_4",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_4.json",
+      "sha256": "9b842081abf83e897445af5ea81a50af51ec96bced1352e1607e847a4907175b",
+      "bytes": 2370
+    },
+    {
+      "id": "oppo-gallery:personalize_retroCamera_1",
+      "order": 26,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 1",
+      "nameEn": "personalize_retroCamera_1",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 111
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_1.json",
+      "sha256": "d60a316ed4511711b52ecd8aaa4fdb93b03126c73ae8af03f2dbe0a389eff893",
+      "bytes": 2312
+    },
+    {
+      "id": "oppo-gallery:personalize_retroCamera_2",
+      "order": 27,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 2",
+      "nameEn": "personalize_retroCamera_2",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 10,
+        "bottom": 95
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_2.json",
+      "sha256": "ca7b515659eb892efc15b2178a2e5812a516f932e626f3a3b51ba21bf68d1545",
+      "bytes": 3398
+    },
+    {
+      "id": "oppo-gallery:personalize_retroCamera_3",
+      "order": 28,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 3",
+      "nameEn": "personalize_retroCamera_3",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_3.json",
+      "sha256": "de042eac2f7c7237ac7f6400ae9f9b8f2dfa972cfe3e3076eb4cf1fe17fc83c8",
+      "bytes": 2378
+    },
+    {
+      "id": "oppo-gallery:personalize_retroCamera_4",
+      "order": 29,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 4",
+      "nameEn": "personalize_retroCamera_4",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 220,
+        "bottom": 10
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 3
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_4.json",
+      "sha256": "634352464fab0e5054024fb0ce43685743b4f094fe9e7f5819342c315d42e864",
+      "bytes": 2803
+    },
+    {
+      "id": "oppo-gallery:personalize_retroCamera_5",
+      "order": 30,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "复古相机 · 5",
+      "nameEn": "personalize_retroCamera_5",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 10,
+        "top": 10,
+        "right": 162,
+        "bottom": 10
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 15,
+      "nodeKinds": {
+        "group": 5,
+        "text": 8,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "literal": 4
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "audited-override-of-generated",
+      "file": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_5.json",
+      "sha256": "b8807e0ba5dc96985a2001dd58dfb2b6c6729b4b4a4ba482e20a3f5486e57b45",
+      "bytes": 6318
+    },
+    {
+      "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_1",
+      "order": 31,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 1",
+      "nameEn": "realme_brand_imprint_inspirationPhoto_1",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 6,
+      "nodeKinds": {
+        "group": 2,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_1.json",
+      "sha256": "48b0a501e50126ff883145dd2e08f16af0f06c3af278eaf3317b92b31371cd5c",
+      "bytes": 2617
+    },
+    {
+      "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_2",
+      "order": 32,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 2",
+      "nameEn": "realme_brand_imprint_inspirationPhoto_2",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_2.json",
+      "sha256": "c0e4fc969a32edc82da74e821bd3ceff4c9f0adf1fd3ed0c910c9d4ceed0918c",
+      "bytes": 2324
+    },
+    {
+      "id": "oppo-gallery:realme_brand_imprint_inspirationPhoto_3",
+      "order": 33,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "realme 品牌印记 · 3",
+      "nameEn": "realme_brand_imprint_inspirationPhoto_3",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_3.json",
+      "sha256": "4b40724507aa0bc608592ff2a682b079fddbf8f37612b6cb08a475e10f521e7e",
+      "bytes": 2383
+    },
+    {
+      "id": "oppo-gallery:restrict_local_songkran_holiday_2025_style_1",
+      "order": 34,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "宋干节 · 1",
+      "nameEn": "restrict_local_songkran_holiday_2025_style_1",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 60
+      },
+      "background": "#D4EFE5",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/restrict_local_songkran_holiday_2025_style_1.json",
+      "sha256": "b2bd45db032c6b4eab7a157fc96f16b4c7d7dc3ab8a815f6c5d7686bbd71a00b",
+      "bytes": 2416
+    },
+    {
+      "id": "oppo-gallery:text_style_1",
+      "order": 35,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 1",
+      "nameEn": "text_style_1",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "image": 1,
+        "group": 2,
+        "text": 3,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/text_style_1.json",
+      "sha256": "b288893c00a9e1b35a033168472ea15e1fe138509454119e73efd851c7994458",
+      "bytes": 4029
+    },
+    {
+      "id": "oppo-gallery:text_style_2",
+      "order": 36,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 2",
+      "nameEn": "text_style_2",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "text": 3,
+        "group": 1,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/text_style_2.json",
+      "sha256": "9382286b462a9dba3edc85bda64ce855bc6c58ecdbfbdbd3399ed6efa8e50128",
+      "bytes": 3042
+    },
+    {
+      "id": "oppo-gallery:text_style_3",
+      "order": 37,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 3",
+      "nameEn": "text_style_3",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 8,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "shape": 1,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/text_style_3.json",
+      "sha256": "d9c2fd023d5011545c5ef1eaf7e0c6bb5241f57bd7fb2c71174715bc07e081d7",
+      "bytes": 4073
+    },
+    {
+      "id": "oppo-gallery:video_hassel_text_style_1",
+      "order": 38,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 视频 · 1",
+      "nameEn": "video_hassel_text_style_1",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "space": 1,
+        "image": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/video_hassel_text_style_1.json",
+      "sha256": "91f70809e9868850d13df97ddad1ee8fd5ad81f54ea12f3bf11e2c64cc313e70",
+      "bytes": 2078
+    },
+    {
+      "id": "oppo-gallery:video_hassel_text_style_2",
+      "order": 39,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "哈苏文字 · 视频 · 2",
+      "nameEn": "video_hassel_text_style_2",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "text": 1,
+        "shape": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/video_hassel_text_style_2.json",
+      "sha256": "5ff9e9f1398338ab507f7e3eb3ee81fac6d5cdc37083813ffdc81d00764e4edd",
+      "bytes": 2350
+    },
+    {
+      "id": "oppo-gallery:video_text_style_1",
+      "order": 40,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 1",
+      "nameEn": "video_text_style_1",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "image": 1,
+        "group": 2,
+        "text": 3,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/video_text_style_1.json",
+      "sha256": "3f67e94ef0c12c453b13abf26bb5d230532b5a4c876e2ebbaa385d408849a4c1",
+      "bytes": 4020
+    },
+    {
+      "id": "oppo-gallery:video_text_style_2",
+      "order": 41,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 2",
+      "nameEn": "video_text_style_2",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "text": 3,
+        "group": 1,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/video_text_style_2.json",
+      "sha256": "d6954306cdb899c3a70e55387af764573c6fba66ee51ebe5152ce4e796430c46",
+      "bytes": 3064
+    },
+    {
+      "id": "oppo-gallery:video_text_style_3",
+      "order": 42,
+      "vendor": "oppo",
+      "family": "OPPO 相册",
+      "name": "文字 · 视频 · 3",
+      "nameEn": "video_text_style_3",
+      "placement": "in",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 8,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "shape": 1,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "location": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-gallery/video_text_style_3.json",
+      "sha256": "00bf7f903ec9cd0b9c73c94c2b6cf4bdc956fb662db4ed121a40db3fad79ec0b",
+      "bytes": 4095
+    },
+    {
+      "id": "oppo-camerapro:gr_style_1",
+      "order": 43,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 上框",
+      "nameEn": "RICOH GR · TOP",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 8,
+        "top": 95,
+        "right": 8,
+        "bottom": 70
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 3,
+      "nodeKinds": {
+        "group": 1,
+        "text": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/gr_style_1.json",
+      "sha256": "7900c8e83f54ca2001d9a8b624fc48b9f2ee047e2994a60657a40c8a49aae316",
+      "bytes": 1824
+    },
+    {
+      "id": "oppo-camerapro:gr_style_2",
+      "order": 44,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 页脚",
+      "nameEn": "RICOH GR · FOOTER",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 8,
+        "top": 8,
+        "right": 8,
+        "bottom": 70
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 2,
+        "image": 1,
+        "space": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/gr_style_2.json",
+      "sha256": "6ab537ced02ebe68672c8ba83ddcd1a010e41162712a5c2ee00007b0cf39a88e",
+      "bytes": 2257
+    },
+    {
+      "id": "oppo-camerapro:gr_style_3",
+      "order": 45,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 下框",
+      "nameEn": "RICOH GR · BOTTOM",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 90
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 3,
+      "nodeKinds": {
+        "group": 1,
+        "image": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/gr_style_3.json",
+      "sha256": "95dcdadf03154272e932e43c8cdbe848f71583fc41a49066be68760f725b8980",
+      "bytes": 1820
+    },
+    {
+      "id": "oppo-camerapro:gr_style_4",
+      "order": 46,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 叠加",
+      "nameEn": "RICOH GR · OVERLAY",
+      "placement": "overlay",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "space": 1,
+        "image": 1,
+        "text": 1
+      },
+      "tokenKinds": {
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/gr_style_4.json",
+      "sha256": "479c19324ae8c513651a6cca7f9fc0ed624ff081ff9db63075db295e54f709f3",
+      "bytes": 2186
+    },
+    {
+      "id": "oppo-camerapro:gr_style_5",
+      "order": 47,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "理光 GR · 参数边栏",
+      "nameEn": "RICOH GR · SIDEBAR",
+      "placement": "with",
+      "referenceWidth": 360,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 6,
+        "top": 6,
+        "right": 120,
+        "bottom": 6
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 49,
+      "nodeKinds": {
+        "group": 13,
+        "text": 23,
+        "space": 12,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 22
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "audited-override-of-generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/gr_style_5.json",
+      "sha256": "e2b277b8885ca1835ad7685514e40d931619cb71ac4e4af470cb6e79da211307",
+      "bytes": 17514
+    },
+    {
+      "id": "oppo-camerapro:tone_frame_style_1",
+      "order": 48,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "色调边框 · 上",
+      "nameEn": "TONE FRAME · TOP",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 0,
+        "top": 210,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#425A66",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 3,
+      "nodeKinds": {
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "literal": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "top": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/tone_frame_style_1.json",
+      "sha256": "33bb30171c87727ca023e1eda850fd59ea6fa0173f2643b677270f3414c973cb",
+      "bytes": 1847
+    },
+    {
+      "id": "oppo-camerapro:tone_gallery_frame_style_1",
+      "order": 49,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "影调画框 · 页脚",
+      "nameEn": "TONE FRAME · FOOTER",
+      "placement": "out",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 144
+      },
+      "background": "#436A62",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 12,
+      "nodeKinds": {
+        "group": 3,
+        "text": 9
+      },
+      "tokenKinds": {
+        "literal": 5,
+        "model": 1,
+        "template": 3
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/tone_gallery_frame_style_1.json",
+      "sha256": "1273fd9393b052616c1d9dbba855ddd306b5eb31429f5a987964698ee11f68af",
+      "bytes": 6610
+    },
+    {
+      "id": "oppo-camerapro:leica_live_moment_style_1",
+      "order": 50,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "徕卡 · 动态",
+      "nameEn": "LEICA LIVE MOMENT",
+      "placement": "overlay",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 8,
+      "nodeKinds": {
+        "group": 2,
+        "image": 3,
+        "text": 3
+      },
+      "tokenKinds": {
+        "literal": 1,
+        "imageParams": 1,
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/leica_live_moment_style_1.json",
+      "sha256": "fe1803fe31bf1112e170c664bc3459bb4558e724a5fe74fb55fc4dd8e2b34c6b",
+      "bytes": 4961
+    },
+    {
+      "id": "oppo-camerapro:liquid_glass_style_1",
+      "order": 51,
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "name": "液态玻璃",
+      "nameEn": "LIQUID GLASS",
+      "placement": "overlay",
+      "referenceWidth": 360,
+      "referenceWidthMode": "shortEdge",
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 3,
+        "text": 3,
+        "space": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1,
+        "time": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/oppo-camerapro/liquid_glass_style_1.json",
+      "sha256": "c859f95f783df3301739ce34528d9786bc190ef78949223082b8111b7e055619",
+      "bytes": 3683
+    },
+    {
+      "id": "xiaomi-classic:17",
+      "order": 52,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 17",
+      "nameEn": "classic_17",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 128
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 8
+      },
+      "tokenKinds": {
+        "template": 7,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/17.json",
+      "sha256": "ecac99fbd637a83d21838a17d87f977917c3aaa357c4611af0dc65e2e0b91f49",
+      "bytes": 9109
+    },
+    {
+      "id": "xiaomi-classic:18",
+      "order": 53,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 18",
+      "nameEn": "classic_18",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 48,
+        "bottom": 124
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 8
+      },
+      "tokenKinds": {
+        "template": 7,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/18.json",
+      "sha256": "b1c5f5b693a04826195e250e697f6055464924ea08849a4ae7229959766b970d",
+      "bytes": 9029
+    },
+    {
+      "id": "xiaomi-classic:19",
+      "order": 54,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 19",
+      "nameEn": "classic_19",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 13,
+      "nodeKinds": {
+        "group": 6,
+        "text": 5,
+        "image": 1,
+        "space": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/19.json",
+      "sha256": "ae7c03490a155358279a12fe3a7ceeafc122ae54f0b727098f114b970fb6de1b",
+      "bytes": 7152
+    },
+    {
+      "id": "xiaomi-classic:20",
+      "order": 55,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 20",
+      "nameEn": "classic_20",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 147
+      },
+      "background": "#FF141414",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "black",
+      "bands": 1,
+      "nodes": 11,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/20.json",
+      "sha256": "1ffe1a240d344a21ac72b8d554b825e0b1c359d19416e902869a24ccd6f703b8",
+      "bytes": 6628
+    },
+    {
+      "id": "xiaomi-classic:21",
+      "order": 56,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 21",
+      "nameEn": "classic_21",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 136
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 17,
+      "nodeKinds": {
+        "group": 10,
+        "space": 1,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/21.json",
+      "sha256": "9ad39b89d9c9ef6ada10560c506c0a8b643eea9f9691c1bb7043e4143a4cf4bc",
+      "bytes": 9879
+    },
+    {
+      "id": "xiaomi-classic:23",
+      "order": 57,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 23",
+      "nameEn": "classic_23",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 32,
+        "top": 32,
+        "right": 32,
+        "bottom": 136
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 17,
+      "nodeKinds": {
+        "group": 10,
+        "space": 1,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/23.json",
+      "sha256": "d1840e6c15580bee972b554a4973de21a4123926b5514181ee8c87e6c3f8c28b",
+      "bytes": 9798
+    },
+    {
+      "id": "xiaomi-classic:71",
+      "order": 58,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 71",
+      "nameEn": "classic_71",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 13,
+      "nodeKinds": {
+        "group": 6,
+        "text": 5,
+        "image": 1,
+        "space": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/71.json",
+      "sha256": "da66007f967b2c64bff8fd4dc15ce7cd7baab7fde098937ebba2bc6ebe23669e",
+      "bytes": 7152
+    },
+    {
+      "id": "xiaomi-classic:72",
+      "order": 59,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 72",
+      "nameEn": "classic_72",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 147
+      },
+      "background": "#FF141414",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "black",
+      "bands": 1,
+      "nodes": 11,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/72.json",
+      "sha256": "9467483a6aa89d2cc6ca640396eb5cbcedb3d0a60e6d0f4f53c8465c91a88d16",
+      "bytes": 6628
+    },
+    {
+      "id": "xiaomi-classic:95",
+      "order": 60,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 95",
+      "nameEn": "classic_95",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 122
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 8
+      },
+      "tokenKinds": {
+        "template": 7,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/95.json",
+      "sha256": "7f51234b3c2dbae352e79dc7951cb6ba95a2b28f2cfca6887cbd149faf9b4b9c",
+      "bytes": 9127
+    },
+    {
+      "id": "xiaomi-classic:96",
+      "order": 61,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 96",
+      "nameEn": "classic_96",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 48,
+        "bottom": 122
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 8
+      },
+      "tokenKinds": {
+        "template": 7,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/96.json",
+      "sha256": "383453ae88a5e1824d3cc2dc0a0d5e1a4a2a5e19e4771e83b143aa45712ce9a9",
+      "bytes": 9046
+    },
+    {
+      "id": "xiaomi-classic:97",
+      "order": 62,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 97",
+      "nameEn": "classic_97",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 13,
+      "nodeKinds": {
+        "group": 6,
+        "text": 5,
+        "image": 1,
+        "space": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/97.json",
+      "sha256": "242b1eb8fe067be9bd63de1e4342b8be9b762335c385218498b7ca08eece28df",
+      "bytes": 7171
+    },
+    {
+      "id": "xiaomi-classic:98",
+      "order": 63,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 98",
+      "nameEn": "classic_98",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 148
+      },
+      "background": "#FF141414",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "black",
+      "bands": 1,
+      "nodes": 11,
+      "nodeKinds": {
+        "group": 5,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-classic/98.json",
+      "sha256": "cf9e42e5a3b4249dd2066c8ae203f7d6cea246e684a2bbe6855a4cc0cfec77b4",
+      "bytes": 6641
+    },
+    {
+      "id": "xiaomi-disney:31",
+      "order": 64,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "迪士尼 · 31",
+      "nameEn": "disney_31",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 10,
+      "nodeKinds": {
+        "group": 4,
+        "image": 3,
+        "text": 3
+      },
+      "tokenKinds": {
+        "template": 2,
+        "literal": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-disney/31.json",
+      "sha256": "7c7f3698040837e9ec067d0920cdc1693b5af5ec314737f35a6909d48740e676",
+      "bytes": 6088
+    },
+    {
+      "id": "xiaomi-disney:32",
+      "order": 65,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "迪士尼 · 32",
+      "nameEn": "disney_32",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 10,
+      "nodeKinds": {
+        "group": 4,
+        "image": 3,
+        "text": 3
+      },
+      "tokenKinds": {
+        "template": 2,
+        "literal": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-disney/32.json",
+      "sha256": "3bb03d6686a1eea00cf4be5d4e80a162e88e1b1345ff5de97b42b7af549ab37e",
+      "bytes": 6088
+    },
+    {
+      "id": "xiaomi-disney:33",
+      "order": 66,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "迪士尼 · 33",
+      "nameEn": "disney_33",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 10,
+      "nodeKinds": {
+        "group": 5,
+        "image": 2,
+        "text": 3
+      },
+      "tokenKinds": {
+        "template": 3
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-disney/33.json",
+      "sha256": "7b35b73fdc4d09406a0560e32c952047d24a70f4c980e0efb01d2e0ee73432ef",
+      "bytes": 6001
+    },
+    {
+      "id": "xiaomi-film:12",
+      "order": 67,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 12",
+      "nameEn": "film_12",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 186,
+        "right": 0,
+        "bottom": 282
+      },
+      "background": "#FF121212",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "transparent",
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 4,
+        "image": 1
+      },
+      "tokenKinds": {
+        "template": 4
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/12.json",
+      "sha256": "07ec031f942db4249563cb4c7b4dc2bebef3b6f70d1ddd7cbf4c0c9b3922d435",
+      "bytes": 4933
+    },
+    {
+      "id": "xiaomi-film:13",
+      "order": 68,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 13",
+      "nameEn": "film_13",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 74,
+        "top": 76,
+        "right": 74,
+        "bottom": 322
+      },
+      "background": "#FF1C1D1F",
+      "transparentBackground": false,
+      "themes": 9,
+      "defaultTheme": "texture_black",
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 2,
+        "image": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "template": 2
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/13.json",
+      "sha256": "df0bd49c33eaa7447a6c934de56dbe42169a641ebd3b1cb9044a94eb62df6886",
+      "bytes": 6097
+    },
+    {
+      "id": "xiaomi-film:14",
+      "order": 69,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 14",
+      "nameEn": "film_14",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 30,
+        "top": 109,
+        "right": 30,
+        "bottom": 120
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "gradient_color_red",
+      "bands": 2,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 3,
+        "text": 5,
+        "image": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/14.json",
+      "sha256": "99a8b07039cd7f88b3686be50ed3f886d999bfc6b314492ca9fde457972e7cd0",
+      "bytes": 5718
+    },
+    {
+      "id": "xiaomi-film:15",
+      "order": 70,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 15",
+      "nameEn": "film_15",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 80,
+        "top": 80,
+        "right": 80,
+        "bottom": 80
+      },
+      "background": "#141414",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 10,
+      "nodeKinds": {
+        "group": 3,
+        "image": 2,
+        "text": 5
+      },
+      "tokenKinds": {
+        "location": 1,
+        "template": 4
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "audited-override-of-generated",
+      "file": "engine/data/ir/styles/xiaomi-film/15.json",
+      "sha256": "ba22866a1c99a7dfd76a126a59631f4d4746546283aecde152564c648b9a54fa",
+      "bytes": 4805
+    },
+    {
+      "id": "xiaomi-film:16",
+      "order": 71,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 16",
+      "nameEn": "film_16",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 60,
+        "top": 60,
+        "right": 60,
+        "bottom": 240
+      },
+      "background": "#FF141414",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "transparent_black",
+      "bands": 1,
+      "nodes": 11,
+      "nodeKinds": {
+        "group": 4,
+        "image": 1,
+        "text": 6
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1,
+        "custom": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/16.json",
+      "sha256": "2a3025b8c0a783b260f6f7404b66b0acc6be4c0b0ae077d41d6994b642241473",
+      "bytes": 7100
+    },
+    {
+      "id": "xiaomi-film:73",
+      "order": 72,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 73",
+      "nameEn": "film_73",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 30,
+        "top": 109,
+        "right": 30,
+        "bottom": 120
+      },
+      "background": "#00000000",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "gradient_color_yellow",
+      "bands": 2,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 3,
+        "text": 5,
+        "image": 1
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/73.json",
+      "sha256": "2696ab22185d72f3bd0e04e8c5533b8092f482724b4d9d38a1ea25571e0037b2",
+      "bytes": 5862
+    },
+    {
+      "id": "xiaomi-film:103",
+      "order": 73,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "胶片 · 103",
+      "nameEn": "film_103",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 186,
+        "right": 0,
+        "bottom": 282
+      },
+      "background": "#FF121212",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "transparent",
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 4,
+        "image": 1
+      },
+      "tokenKinds": {
+        "template": 4
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-film/103.json",
+      "sha256": "d67bb7bbe58cd6ee6cd7c87cdf69c9bd5d112d082b466fa1f3f54a44650b4279",
+      "bytes": 4953
+    },
+    {
+      "id": "xiaomi-leica:1",
+      "order": 74,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 1",
+      "nameEn": "leica_1",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 144
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 13,
+      "nodeKinds": {
+        "group": 6,
+        "image": 2,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/1.json",
+      "sha256": "97fb7fda2bfa45c7fb4e2afcc88b93e0b254e722a923fb9744d04489ac8e0a5d",
+      "bytes": 8478
+    },
+    {
+      "id": "xiaomi-leica:2",
+      "order": 75,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 2",
+      "nameEn": "leica_2",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 80,
+        "top": 80,
+        "right": 80,
+        "bottom": 258
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "white",
+      "bands": 2,
+      "nodes": 11,
+      "nodeKinds": {
+        "group": 4,
+        "image": 2,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/2.json",
+      "sha256": "8014aeeb216871414d8b977db509d85a1b25fcb1771e91a1a55aac93da0db645",
+      "bytes": 6509
+    },
+    {
+      "id": "xiaomi-leica:3",
+      "order": 76,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 3",
+      "nameEn": "leica_3",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 48,
+        "bottom": 214
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 22,
+      "nodeKinds": {
+        "group": 9,
+        "image": 2,
+        "text": 10,
+        "space": 1
+      },
+      "tokenKinds": {
+        "template": 6,
+        "literal": 4
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/3.json",
+      "sha256": "a20af2ae50615714fabc7bca25ce49cbe4b6ca3239634e0126fdb4ed43b6e1b9",
+      "bytes": 13336
+    },
+    {
+      "id": "xiaomi-leica:4",
+      "order": 77,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 4",
+      "nameEn": "leica_4",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 48,
+        "bottom": 356
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 12,
+      "nodeKinds": {
+        "group": 4,
+        "image": 2,
+        "text": 6
+      },
+      "tokenKinds": {
+        "template": 6
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/4.json",
+      "sha256": "a4f1d81ec9002eb093ca416be5f8fd0ad86c99d9f97586bb0af81a13db89fc4a",
+      "bytes": 8235
+    },
+    {
+      "id": "xiaomi-leica:90",
+      "order": 78,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 90",
+      "nameEn": "leica_90",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 480
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 16,
+      "nodeKinds": {
+        "group": 6,
+        "image": 2,
+        "text": 8
+      },
+      "tokenKinds": {
+        "template": 7,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/90.json",
+      "sha256": "c0d1b73d592d5f13d5da2171850d584695c32dc0fcbd60598c316f2f0934cc85",
+      "bytes": 9490
+    },
+    {
+      "id": "xiaomi-leica:91",
+      "order": 79,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 91",
+      "nameEn": "leica_91",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 18,
+      "nodeKinds": {
+        "group": 9,
+        "image": 2,
+        "text": 7
+      },
+      "tokenKinds": {
+        "template": 6,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/91.json",
+      "sha256": "14b42e6f766bd67d6e8f23ab583636c13e9d636df7905c054aeb88302b052f0d",
+      "bytes": 9956
+    },
+    {
+      "id": "xiaomi-leica:92",
+      "order": 80,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 92",
+      "nameEn": "leica_92",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 188,
+        "right": 0,
+        "bottom": 194
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "white",
+      "bands": 2,
+      "nodes": 26,
+      "nodeKinds": {
+        "group": 12,
+        "image": 2,
+        "text": 11,
+        "space": 1
+      },
+      "tokenKinds": {
+        "template": 7,
+        "literal": 3,
+        "location": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/92.json",
+      "sha256": "b842ce84d0925c6bf8a1db7ee6a31d432323796896d5ee73d055d8c2c43a33ad",
+      "bytes": 14311
+    },
+    {
+      "id": "xiaomi-leica:104",
+      "order": 81,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 104",
+      "nameEn": "leica_104",
+      "placement": "out",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 136
+      },
+      "background": "#FFFFFFFF",
+      "transparentBackground": false,
+      "themes": 4,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 13,
+      "nodeKinds": {
+        "group": 6,
+        "image": 2,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/104.json",
+      "sha256": "fc7f99d31e62b074984904b64c9b9b0d18cede9e367a8b90c93ea27ae7fbed9a",
+      "bytes": 8546
+    },
+    {
+      "id": "xiaomi-leica:111",
+      "order": 82,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "徕卡 · 111",
+      "nameEn": "leica_111",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 80,
+        "top": 80,
+        "right": 80,
+        "bottom": 302
+      },
+      "background": "#FF141414",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "black",
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "image": 2,
+        "text": 3
+      },
+      "tokenKinds": {
+        "template": 3
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-leica/111.json",
+      "sha256": "bd9aac3532e242f1e2d743b41b4ce05d34c50786cc8ddfdade6de7a9f9a1741f",
+      "bytes": 4363
+    },
+    {
+      "id": "xiaomi-standard:6",
+      "order": 83,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "小米标准 · 6",
+      "nameEn": "standard_6",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 12,
+      "nodeKinds": {
+        "group": 6,
+        "space": 1,
+        "image": 1,
+        "text": 4
+      },
+      "tokenKinds": {
+        "template": 3,
+        "custom": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-standard/6.json",
+      "sha256": "58f1cb96a5f8ab3b3fcea4cbbd68afbcd5a7b7ebf8561c5741a2ddc611de5514",
+      "bytes": 6530
+    },
+    {
+      "id": "xiaomi-standard:7",
+      "order": 84,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "小米标准 · 7",
+      "nameEn": "standard_7",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "image": 1,
+        "text": 4
+      },
+      "tokenKinds": {
+        "template": 3,
+        "custom": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-standard/7.json",
+      "sha256": "44ff70686ca803a7fc1a8edb0e9465ed49c9c8d6b4e7c6b82b295dc2a0fb0d65",
+      "bytes": 4443
+    },
+    {
+      "id": "xiaomi-standard:8",
+      "order": 85,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "小米标准 · 8",
+      "nameEn": "standard_8",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 8,
+      "nodeKinds": {
+        "group": 2,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-standard/8.json",
+      "sha256": "77374fe9c878ce6323d0d741c6ff55fe28e0fd1d4bae46d432f03dac4ea3caed",
+      "bytes": 4995
+    },
+    {
+      "id": "xiaomi-standard:107",
+      "order": 86,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "小米标准 · 107",
+      "nameEn": "standard_107",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 1,
+      "defaultTheme": "transparent_white",
+      "bands": 1,
+      "nodes": 12,
+      "nodeKinds": {
+        "group": 6,
+        "space": 1,
+        "image": 1,
+        "text": 4
+      },
+      "tokenKinds": {
+        "template": 3,
+        "custom": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-standard/107.json",
+      "sha256": "3f201f247605006135e83ff7cb672b510cb232ce4773f307f4726be54acc8168",
+      "bytes": 6550
+    },
+    {
+      "id": "xiaomi-tag:9",
+      "order": 87,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "标签 · 9",
+      "nameEn": "tag_9",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": "default",
+      "bands": 1,
+      "nodes": 8,
+      "nodeKinds": {
+        "group": 4,
+        "text": 4
+      },
+      "tokenKinds": {
+        "template": 4
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-tag/9.json",
+      "sha256": "cac8d38d160e8b05d7380d1b392ece5a77f655deb4aeb8bcf58e268cd6ce81f9",
+      "bytes": 4515
+    },
+    {
+      "id": "xiaomi-tag:10",
+      "order": 88,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "标签 · 10",
+      "nameEn": "tag_10",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": "default",
+      "bands": 1,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 4,
+        "text": 5
+      },
+      "tokenKinds": {
+        "literal": 1,
+        "template": 4
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-tag/10.json",
+      "sha256": "453b3be039afce4f144f6789c99ab17f8dbd2381601dc1e8cf1d1ea200e80122",
+      "bytes": 5262
+    },
+    {
+      "id": "xiaomi-tag:11",
+      "order": 89,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "标签 · 11",
+      "nameEn": "tag_11",
+      "placement": "in",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": "default",
+      "bands": 1,
+      "nodes": 10,
+      "nodeKinds": {
+        "group": 5,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 5
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/xiaomi-tag/11.json",
+      "sha256": "dc3a6b5b6950da1d08cb6ae51258149c9a4c8d7dd86aa1ac02ed12fdaf0870cd",
+      "bytes": 6041
+    },
+    {
+      "id": "vivo-zeiss:border_top",
+      "order": 90,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 上框",
+      "nameEn": "ZEISS TOP",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 21,
+        "top": 305,
+        "right": 21,
+        "bottom": 220
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "white",
+      "bands": 2,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 2,
+        "text": 5,
+        "space": 2
+      },
+      "tokenKinds": {
+        "literal": 2,
+        "model": 1,
+        "imageParams": 1,
+        "template": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-zeiss/border_top.json",
+      "sha256": "a1d174c3b37cd153be43627fbdaba4db68d17bbe1878aa25e2f47b5843e669ad",
+      "bytes": 6039
+    },
+    {
+      "id": "vivo-zeiss:up_down",
+      "order": 91,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 上下框",
+      "nameEn": "ZEISS UP / DOWN",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 14,
+        "top": 220,
+        "right": 14,
+        "bottom": 220
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 3,
+      "defaultTheme": "glass",
+      "bands": 2,
+      "nodes": 14,
+      "nodeKinds": {
+        "group": 5,
+        "image": 2,
+        "text": 5,
+        "space": 2
+      },
+      "tokenKinds": {
+        "literal": 2,
+        "model": 1,
+        "imageParams": 1,
+        "template": 1
+      },
+      "bandDirections": {
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 3,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-zeiss/up_down.json",
+      "sha256": "d78b3aabef2c23bc7fa323ec3d5b7892000dc3b4214e134b248dd7cfaee85ce8",
+      "bytes": 5939
+    },
+    {
+      "id": "vivo-zeiss:inside",
+      "order": 92,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "蔡司 · 内嵌",
+      "nameEn": "ZEISS INSIDE",
+      "placement": "in",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 6,
+      "nodeKinds": {
+        "group": 2,
+        "image": 1,
+        "text": 3
+      },
+      "tokenKinds": {
+        "literal": 1,
+        "model": 1,
+        "imageParams": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-zeiss/inside.json",
+      "sha256": "9bc457017e3366c4dcec4a5cb60921d87a2104fbc70516460608e0f0b641ecad",
+      "bytes": 3022
+    },
+    {
+      "id": "vivo-polaroid:frame",
+      "order": 93,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "拍立得 · 签名框",
+      "nameEn": "POLAROID",
+      "placement": "out",
+      "referenceWidth": 1497,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 39,
+        "top": 39,
+        "right": 39,
+        "bottom": 271
+      },
+      "background": "#000000",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 6,
+      "nodeKinds": {
+        "image": 1,
+        "group": 1,
+        "text": 3,
+        "space": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "template": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-polaroid/frame.json",
+      "sha256": "e1fa52f4c814b9c58141797e27ea0dc8d2c0d298571c4de8a3208ac795c5df4a",
+      "bytes": 2973
+    },
+    {
+      "id": "vivo-stamp:frame",
+      "order": 94,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "邮票 · 齿孔框",
+      "nameEn": "STAMP",
+      "placement": "out",
+      "referenceWidth": 1497,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 119,
+        "top": 175,
+        "right": 119,
+        "bottom": 237
+      },
+      "background": "#D9D9D9",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 3,
+      "nodes": 9,
+      "nodeKinds": {
+        "image": 1,
+        "group": 2,
+        "text": 4,
+        "space": 2
+      },
+      "tokenKinds": {
+        "time": 1,
+        "template": 1,
+        "model": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1,
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-stamp/frame.json",
+      "sha256": "ed3bdde40a469bada83f24f140627794fe4aa45d6b2f0bc54b74b14f61b3cbb7",
+      "bytes": 3869
+    },
+    {
+      "id": "vivo-tone:frame",
+      "order": 95,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "色调 · 右侧栏",
+      "nameEn": "TONE",
+      "placement": "out",
+      "referenceWidth": 1497,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 226,
+        "bottom": 0
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 2,
+      "nodes": 4,
+      "nodeKinds": {
+        "image": 1,
+        "group": 1,
+        "text": 2
+      },
+      "tokenKinds": {
+        "literal": 1,
+        "model": 1
+      },
+      "bandDirections": {
+        "overlay": 1,
+        "right": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-tone/frame.json",
+      "sha256": "4c8a27cd43766fd41828aa6b655c069bd10d0f50e966e39a3075da29055e3499",
+      "bytes": 2234
+    },
+    {
+      "id": "vivo-geographic:overlay",
+      "order": 96,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "地理 · 信息叠加",
+      "nameEn": "GEOGRAPHIC",
+      "placement": "in",
+      "referenceWidth": 1497,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 5,
+      "nodeKinds": {
+        "group": 1,
+        "text": 4
+      },
+      "tokenKinds": {
+        "model": 1,
+        "template": 1,
+        "custom": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-geographic/overlay.json",
+      "sha256": "e3168097c5ec87ec6c57706096450687c9aed08757a71c6414b29e014d02181a",
+      "bytes": 2780
+    },
+    {
+      "id": "vivo-postcard:frame",
+      "order": 97,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "明信片 · 邮戳框",
+      "nameEn": "POST CARD",
+      "placement": "out",
+      "referenceWidth": 1497,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 92,
+        "top": 92,
+        "right": 92,
+        "bottom": 281
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 4,
+      "nodes": 12,
+      "nodeKinds": {
+        "image": 1,
+        "group": 3,
+        "text": 5,
+        "space": 2,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "literal": 1,
+        "template": 1,
+        "location": 1,
+        "custom": 1
+      },
+      "bandDirections": {
+        "overlay": 2,
+        "top": 1,
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-postcard/frame.json",
+      "sha256": "e133fe00dec8cd94bc9d91d10ea7d93e3811d86630760323f362f44b42918530",
+      "bytes": 5050
+    },
+    {
+      "id": "vivo-chinoiserie-loc:frame",
+      "order": 98,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 地点印章",
+      "nameEn": "CHINOISERIES LOC",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 250
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1,
+        "image": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "template": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-chinoiserie-loc/frame.json",
+      "sha256": "79105e5d94d9f3a2a40258e952bc8ec66b8f826745939a8f0cea841f752f5f35",
+      "bytes": 3672
+    },
+    {
+      "id": "vivo-chinoiserie-signet:frame",
+      "order": 99,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 文字印章",
+      "nameEn": "CHINOISERIES SIGNET",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 250
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "template": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-chinoiserie-signet/frame.json",
+      "sha256": "bf94bba3e38d8a742de160f39f03e08c9aa9d10f5f6abdb7215904a7c7afc28c",
+      "bytes": 3266
+    },
+    {
+      "id": "vivo-chinoiserie-ink:frame",
+      "order": 100,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "国风 · 水墨印章",
+      "nameEn": "CHINOISERIES INK",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 250
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 7,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1,
+        "shape": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "template": 1,
+        "location": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-chinoiserie-ink/frame.json",
+      "sha256": "18907f47723bd3bbb12069dde654cc9c279d2a91ec53250fe03fcd27747ca8aa",
+      "bytes": 3165
+    },
+    {
+      "id": "vivo-signature:overlay",
+      "order": 101,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "艺术 · 手写签名",
+      "nameEn": "SIGNATURE",
+      "placement": "in",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0
+      },
+      "background": "#00000000",
+      "transparentBackground": true,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 4,
+      "nodeKinds": {
+        "group": 1,
+        "text": 3
+      },
+      "tokenKinds": {
+        "custom": 1,
+        "model": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-signature/overlay.json",
+      "sha256": "f34e86823cbc233701bd72cd4c61182130c9dc8a97e90f842f0d0c5db11cc008",
+      "bytes": 3134
+    },
+    {
+      "id": "vivo-border-photo:frame",
+      "order": 102,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "个性 · 色卡边框",
+      "nameEn": "BORDER PHOTO",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 260
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 6,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1
+      },
+      "tokenKinds": {
+        "custom": 1,
+        "imageParams": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-border-photo/frame.json",
+      "sha256": "91abecafb055a66514233da3966f91efc52325775c8efb7989237aac2b3ca818",
+      "bytes": 2836
+    },
+    {
+      "id": "vivo-feature-photo:frame",
+      "order": 103,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "功能 · 参数边框",
+      "nameEn": "FEATURE PHOTO",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 260
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 0,
+      "defaultTheme": null,
+      "bands": 1,
+      "nodes": 6,
+      "nodeKinds": {
+        "group": 2,
+        "text": 3,
+        "space": 1
+      },
+      "tokenKinds": {
+        "model": 1,
+        "imageParams": 1,
+        "timeLocation": 1
+      },
+      "bandDirections": {
+        "bottom": 1
+      },
+      "assetRefs": 0,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-feature-photo/frame.json",
+      "sha256": "00b74cc28ea9184cc5c91b3ddeda2f2d0a342292ee3251ba3fd0d06ec22b9c89",
+      "bytes": 2782
+    },
+    {
+      "id": "vivo-disney:mickey",
+      "order": 104,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "迪士尼 · 米奇",
+      "nameEn": "DISNEY MICKEY",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 154
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 1,
+      "nodeKinds": {
+        "image": 1
+      },
+      "tokenKinds": {},
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-disney/mickey.json",
+      "sha256": "acab7d176d562b29d4cf464e25a3f4a7f27e948c3887b9c482b9a3918ae66f9b",
+      "bytes": 1939
+    },
+    {
+      "id": "vivo-disney:pluto",
+      "order": 105,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "迪士尼 · 布鲁托",
+      "nameEn": "DISNEY PLUTO",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 154
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 1,
+      "nodeKinds": {
+        "image": 1
+      },
+      "tokenKinds": {},
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-disney/pluto.json",
+      "sha256": "6b40fe211cda26b1bcdd569ddb69f6523888edb4a2bb335b79c2410b37fc882a",
+      "bytes": 1937
+    },
+    {
+      "id": "vivo-disney:judy",
+      "order": 106,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "迪士尼 · 朱迪",
+      "nameEn": "DISNEY JUDY",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 154
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 1,
+      "nodeKinds": {
+        "image": 1
+      },
+      "tokenKinds": {},
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-disney/judy.json",
+      "sha256": "fd50a6b1b1663ce1a7559725f627db54aee642b337cbee9bcdcb86c5891e3c3c",
+      "bytes": 1929
+    },
+    {
+      "id": "vivo-disney:chip_dale",
+      "order": 107,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "迪士尼 · 奇奇蒂蒂",
+      "nameEn": "DISNEY CHIP DALE",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 154
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 1,
+      "nodeKinds": {
+        "image": 1
+      },
+      "tokenKinds": {},
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-disney/chip_dale.json",
+      "sha256": "ab9b3447338c2d0ccaa0cf3105b76c114dda9687722d4c7854ab0c0922498a0f",
+      "bytes": 1960
+    },
+    {
+      "id": "vivo-disney:donald_duck",
+      "order": 108,
+      "vendor": "vivo",
+      "family": "vivo 相机",
+      "name": "迪士尼 · 唐老鸭",
+      "nameEn": "DISNEY DONALD DUCK",
+      "placement": "out",
+      "referenceWidth": 1440,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 154
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 1,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 1,
+      "nodeKinds": {
+        "image": 1
+      },
+      "tokenKinds": {},
+      "bandDirections": {
+        "overlay": 1
+      },
+      "assetRefs": 1,
+      "auditStatus": "approx",
+      "sourceKind": "generated",
+      "file": "engine/data/ir/styles/vivo-disney/donald_duck.json",
+      "sha256": "36a0220bd4510e25da837954ed372c0d487720b555426e7cd30b649d95a46573",
+      "bytes": 1967
+    },
+    {
+      "id": "xiaomi-classic:22",
+      "order": 109,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 22",
+      "nameEn": "classic_22",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 560,
+        "bottom": 48
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 3,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "hand-authored",
+      "file": "engine/data/ir/styles/xiaomi-classic/22.json",
+      "sha256": "3d4563110802e0fcfbf94bd126c960da1519e3ff6882aa7f239dc022aa75d843",
+      "bytes": 5731
+    },
+    {
+      "id": "xiaomi-classic:99",
+      "order": 110,
+      "vendor": "xiaomi",
+      "family": "小米相机",
+      "name": "经典 · 99",
+      "nameEn": "classic_99",
+      "placement": "with",
+      "referenceWidth": 1080,
+      "referenceWidthMode": null,
+      "margins": {
+        "left": 48,
+        "top": 48,
+        "right": 560,
+        "bottom": 48
+      },
+      "background": "#FFFFFF",
+      "transparentBackground": false,
+      "themes": 2,
+      "defaultTheme": "white",
+      "bands": 1,
+      "nodes": 9,
+      "nodeKinds": {
+        "group": 3,
+        "image": 1,
+        "text": 5
+      },
+      "tokenKinds": {
+        "template": 4,
+        "location": 1
+      },
+      "bandDirections": {
+        "right": 1
+      },
+      "assetRefs": 2,
+      "auditStatus": "approx",
+      "sourceKind": "hand-authored",
+      "file": "engine/data/ir/styles/xiaomi-classic/99.json",
+      "sha256": "6ed4270190825de8acb45f3502615f043f2abce4afc03ce4ad5796aefc3c5b60",
+      "bytes": 5725
+    }
+  ]
+}

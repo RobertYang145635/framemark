@@ -1,0 +1,156 @@
+{
+  "id": "vivo-stamp:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "邮票 · 齿孔框",
+  "nameEn": "STAMP",
+  "placement": "out",
+  "referenceWidth": 1497,
+  "margins": {
+    "left": 119,
+    "top": 175,
+    "right": 119,
+    "bottom": 237
+  },
+  "background": "#D9D9D9",
+  "bands": [
+    {
+      "direction": "overlay",
+      "width": 1497,
+      "thickness": 1356,
+      "offset": {
+        "x": -119,
+        "y": -175
+      },
+      "drawFirst": true,
+      "children": [
+        {
+          "kind": "image",
+          "asset": "vivo-stamp-card",
+          "width": 1497,
+          "height": 1356,
+          "scale": "fill",
+          "gravity": "leftTop"
+        }
+      ]
+    },
+    {
+      "direction": "top",
+      "thickness": 175,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1497,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "time"
+              },
+              "font": "vivo",
+              "size": 30,
+              "weight": 500,
+              "color": "#333333",
+              "tracking": 0.06,
+              "lineHeight": 40.5,
+              "align": "left",
+              "margins": {
+                "left": 40
+              }
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 400,
+              "color": "#555555",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "right",
+              "margins": {
+                "right": 40
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 237,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1497,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 30,
+              "weight": 500,
+              "color": "#333333",
+              "tracking": 0.06,
+              "lineHeight": 40.5,
+              "align": "left",
+              "margins": {
+                "left": 40
+              }
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "location"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 400,
+              "color": "#555555",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "right",
+              "margins": {
+                "right": 40
+              },
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-stamp-card": {
+      "file": "vivo/batch1/stamp-card.png",
+      "width": 1497,
+      "height": 1356
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Stamp frame; photo hole 119/175/119/237 measured from settled stamp_photo/4_3_540_q PAG frame. Perforated stamp border and mini-stamp are the vendor PAG raster (no redraw). Text slots (time top-left, model bottom-left, time text top-right, location bottom-right) from temp.json mappings 1-4; exact host text metrics unknown.",
+    "unsupported": [
+      "DAY/WEEK special time format approximated by the plain date token"
+    ]
+  }
+}

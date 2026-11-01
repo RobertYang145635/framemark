@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "xiaomi-frame-21",
+    "canvas": { "w": 2048, "h": 1152 },
+    "elements": [
+      { "kind": "frame", "inset": 24 },
+      { "kind": "text", "slot": "title", "value": "WIDE" },
+      { "kind": "text", "slot": "caption", "value": "16:9" }
+    ]
+  },
+  "photo": { "path": "D:/photos/DSC_3300.jpg", "w": 2048, "h": 1152 },
+  "mode": "preview",
+  "maxEdge": 2048
+}

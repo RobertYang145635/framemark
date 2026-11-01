@@ -1,0 +1,4407 @@
+{
+  "schemaVersion": "framemark-hand-variants/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "source": {
+    "role": "hand:variants",
+    "path": "src/renderer/src/core/variants.ts",
+    "bytes": 35699,
+    "sha256": "417030e8518e7039c4a9b9c3655f71bad3efe43536a7dc11b217f1a7468b2546"
+  },
+  "note": "The 69 hand cards that are not systemCamera, fields verbatim. `_derived` is computed exactly like presets.ts makeDesignFromVariant (template defaults ⊕ variant params, DEFAULT_TEXT ⊕ variant text).",
+  "counts": {
+    "handVariants": 69,
+    "uniqueIds": 69,
+    "withParams": 69,
+    "withText": 41
+  },
+  "variants": [
+    {
+      "id": "blur-classic",
+      "name": "经典模式",
+      "en": "BLUR-CLASSIC",
+      "category": "背景模糊",
+      "base": "blur",
+      "params": {
+        "theme": "paper",
+        "marginPct": 3.5,
+        "radiusPct": 2,
+        "shadow": 6,
+        "footerPct": 11,
+        "blur": 26,
+        "logoPos": "right"
+      },
+      "renderedPreview": "../assets/previews/rendered/blur-classic.webp",
+      "badge": "原版",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "blur",
+        "declaredParams": {
+          "marginPct": 3.5,
+          "radiusPct": 2,
+          "shadow": 6,
+          "footerPct": 11,
+          "blur": 26,
+          "theme": "paper",
+          "logoScale": 5,
+          "minimalFooter": false,
+          "logoPos": "right"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "footerPct",
+          "blur",
+          "logoPos"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "blur-date",
+      "name": "简约日期",
+      "en": "BLUR-DATE",
+      "category": "背景模糊",
+      "base": "blur",
+      "params": {
+        "theme": "ink",
+        "marginPct": 3,
+        "radiusPct": 1.5,
+        "shadow": 5,
+        "footerPct": 9,
+        "blur": 30,
+        "minimalFooter": true
+      },
+      "renderedPreview": "../assets/previews/rendered/blur-date.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "blur",
+        "declaredParams": {
+          "marginPct": 3,
+          "radiusPct": 1.5,
+          "shadow": 5,
+          "footerPct": 9,
+          "blur": 30,
+          "theme": "ink",
+          "logoScale": 5,
+          "minimalFooter": true
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "footerPct",
+          "blur",
+          "minimalFooter"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "vendor-hasselblad",
+      "name": "哈苏 · 白底",
+      "en": "VENDOR-HASSELBLAD",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "hasselblad",
+        "footerPct": 16.67
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-hasselblad.webp",
+      "badge": "官方规格",
+      "vendorLogo": "hasu_long_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "hasselblad",
+          "footerPct": 16.67,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "footerPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-hasselblad-dark",
+      "name": "哈苏 · 黑底",
+      "en": "VENDOR-HASSELBLAD-DARK",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "black",
+        "vendor": "hasselblad",
+        "footerPct": 16.67
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-hasselblad-dark.webp",
+      "badge": "官方规格",
+      "vendorLogo": "hasu_long_white",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "black",
+          "vendor": "hasselblad",
+          "footerPct": 16.67,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "footerPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-hasselblad-h",
+      "name": "哈苏 · H 标",
+      "en": "VENDOR-HASSELBLAD-H",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "hasselblad",
+        "vendorStyle": "h2",
+        "footerPct": 18.89
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-hasselblad-h.webp",
+      "badge": "官方规格",
+      "vendorLogo": "hassel_h_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "hasselblad",
+          "footerPct": 18.89,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "h2"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle",
+          "footerPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-hasselblad-frame",
+      "name": "哈苏 · 白框",
+      "en": "VENDOR-HASSELBLAD-FRAME",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "hasselblad",
+        "vendorStyle": "h3",
+        "footerPct": 30.83,
+        "sidePadPct": 2.78
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-hasselblad-frame.webp",
+      "badge": "官方规格",
+      "vendorLogo": "hassel_h_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "hasselblad",
+          "footerPct": 30.83,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "h3",
+          "sidePadPct": 2.78
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle",
+          "footerPct",
+          "sidePadPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-hasselblad-matte",
+      "name": "哈苏 · 宽白边",
+      "en": "VENDOR-HASSELBLAD-MATTE",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "hasselblad",
+        "vendorStyle": "h4",
+        "footerPct": 21.94,
+        "topPadPct": 21.94,
+        "sidePadPct": 2.78
+      },
+      "text": {
+        "showDate": false,
+        "showExif": true
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-hasselblad-matte.webp",
+      "badge": "官方规格",
+      "vendorLogo": "hassel_wordmark_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "hasselblad",
+          "footerPct": 21.94,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "h4",
+          "topPadPct": 21.94,
+          "sidePadPct": 2.78
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle",
+          "footerPct",
+          "topPadPct",
+          "sidePadPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-lumo",
+      "name": "一加 · LUMO",
+      "en": "VENDOR-LUMO",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "lumo",
+        "vendorStyle": "l1"
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-lumo.webp",
+      "badge": "官方规格",
+      "vendorLogo": "lumo_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "lumo",
+          "footerPct": 16.67,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "l1"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-lumo-frame",
+      "name": "一加 · LUMO 白框",
+      "en": "VENDOR-LUMO-FRAME",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "lumo",
+        "vendorStyle": "l2",
+        "footerPct": 30.83,
+        "sidePadPct": 2.78
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-lumo-frame.webp",
+      "badge": "官方规格",
+      "vendorLogo": "lumo_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "lumo",
+          "footerPct": 30.83,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "l2",
+          "sidePadPct": 2.78
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle",
+          "footerPct",
+          "sidePadPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-lumo-matte",
+      "name": "一加 · LUMO 宽白边",
+      "en": "VENDOR-LUMO-MATTE",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "lumo",
+        "vendorStyle": "l3",
+        "footerPct": 21.94,
+        "topPadPct": 21.94,
+        "sidePadPct": 2.78
+      },
+      "text": {
+        "showDate": true,
+        "showExif": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-lumo-matte.webp",
+      "badge": "官方规格",
+      "vendorLogo": "lumo_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "lumo",
+          "footerPct": 21.94,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0,
+          "vendorStyle": "l3",
+          "topPadPct": 21.94,
+          "sidePadPct": 2.78
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "vendorStyle",
+          "footerPct",
+          "topPadPct",
+          "sidePadPct"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-zeiss",
+      "name": "蔡司 · 白底",
+      "en": "VENDOR-ZEISS",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "zeiss",
+        "footerPct": 12
+      },
+      "text": {
+        "showDate": false
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-zeiss.webp",
+      "badge": "官方素材",
+      "vendorLogo": "zeiss",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "zeiss",
+          "footerPct": 12,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "footerPct"
+        ],
+        "textKeys": [
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "vendor-leica",
+      "name": "徕卡 · 白底",
+      "en": "VENDOR-LEICA",
+      "category": "厂商水印",
+      "base": "vendorFooter",
+      "params": {
+        "theme": "white",
+        "vendor": "leica",
+        "footerPct": 14.8
+      },
+      "text": {
+        "showDate": true
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-leica.webp",
+      "badge": "复刻",
+      "vendorLogo": "laika_long",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "vendorFooter",
+        "declaredParams": {
+          "theme": "white",
+          "vendor": "leica",
+          "footerPct": 14.8,
+          "logoScale": 5,
+          "logoPos": "right",
+          "shadow": 0,
+          "radiusPct": 0
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "vendor",
+          "footerPct"
+        ],
+        "textKeys": [
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "vendor-xiaomi",
+      "name": "小米 · 徕卡",
+      "en": "VENDOR-XIAOMI",
+      "category": "厂商水印",
+      "base": "xiaomiLeica",
+      "params": {
+        "theme": "white"
+      },
+      "text": {
+        "showDate": true,
+        "showExif": true
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-xiaomi.webp",
+      "badge": "官方规格",
+      "vendorLogo": "laika",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "xiaomiLeica",
+        "declaredParams": {
+          "theme": "white",
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "right"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "vendor-xiaomi-single",
+      "name": "小米 · 徕卡单行",
+      "en": "VENDOR-XIAOMI-SINGLE",
+      "category": "厂商水印",
+      "base": "xiaomiLeica",
+      "params": {
+        "theme": "white"
+      },
+      "text": {
+        "showDate": false,
+        "showExif": true
+      },
+      "renderedPreview": "../assets/previews/rendered/vendor-xiaomi-single.webp",
+      "badge": "官方规格",
+      "vendorLogo": "laika",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "xiaomiLeica",
+        "declaredParams": {
+          "theme": "white",
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "right"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme"
+        ],
+        "textKeys": [
+          "showDate",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "personal-simple",
+      "name": "个人签名",
+      "en": "PERSONAL-SIMPLE",
+      "category": "个人边框",
+      "base": "personalBorder",
+      "params": {
+        "theme": "white",
+        "borderPct": 2,
+        "footerPct": 9.5,
+        "signature": "FrameMark"
+      },
+      "text": {
+        "showDate": false
+      },
+      "renderedPreview": "../assets/previews/rendered/personal-simple.webp",
+      "badge": "实测",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "personalBorder",
+        "declaredParams": {
+          "marginPct": 2,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 9.5,
+          "borderPct": 2,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "signature": "FrameMark"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "borderPct",
+          "footerPct",
+          "signature"
+        ],
+        "textKeys": [
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "wm-classic",
+      "name": "经典双行",
+      "en": "WM-CLASSIC",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "center",
+        "footerPct": 11.1,
+        "logoCenterX": 0.594,
+        "slots": "brand,model,logo,exif,date",
+        "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
+      },
+      "preview": "../assets/previews/new_watermark1.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-classic.webp",
+      "badge": "热门",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 11.1,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "classic",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "brand,model,logo,exif,date",
+          "logoCenterX": 0.594,
+          "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "logoCenterX",
+          "slots",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "wm-simple",
+      "name": "简约单行",
+      "en": "WM-SIMPLE",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "center",
+        "footerMode": "simple",
+        "footerAuto": true
+      },
+      "text": {
+        "showDate": false
+      },
+      "renderedPreview": "../assets/previews/rendered/wm-simple.webp",
+      "badge": "实测",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 7.5,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "simple",
+          "footerAuto": true,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "",
+          "logoCenterX": 0.53,
+          "frame": ""
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerMode",
+          "footerAuto"
+        ],
+        "textKeys": [
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "wm-black",
+      "name": "黑底日期",
+      "en": "WM-BLACK",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "black",
+        "logoPos": "center",
+        "footerPct": 0,
+        "footerMode": "overlay",
+        "slots": "title,logo,brand,exif,lens,date",
+        "lensRowMode": "reference",
+        "frame": "{\"ovLeftX\":0.0913,\"ovTextX\":0.1293,\"ovLogoW\":0.0323,\"ovLogoH\":0.0519,\"ovLogoCenterY\":0.7839,\"ovTitleY\":0.7637,\"ovBrandY\":0.7968,\"ovRightCenterX\":0.749,\"ovExifY\":0.7507,\"ovLensY\":0.7925,\"ovDateY\":0.8285}"
+      },
+      "preview": "../assets/previews/new-watermark2.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-black.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "black",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "overlay",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "title,logo,brand,exif,lens,date",
+          "logoCenterX": 0.53,
+          "frame": "{\"ovLeftX\":0.0913,\"ovTextX\":0.1293,\"ovLogoW\":0.0323,\"ovLogoH\":0.0519,\"ovLogoCenterY\":0.7839,\"ovTitleY\":0.7637,\"ovBrandY\":0.7968,\"ovRightCenterX\":0.749,\"ovExifY\":0.7507,\"ovLensY\":0.7925,\"ovDateY\":0.8285}",
+          "lensRowMode": "reference"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "footerMode",
+          "slots",
+          "lensRowMode",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "wm-canon",
+      "name": "经典单行",
+      "en": "WM-CANON",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "center",
+        "footerPct": 11.1,
+        "logoCenterX": 0.594,
+        "slots": "brand,model,logo,exif,date",
+        "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
+      },
+      "preview": "../assets/previews/watermark1.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-canon.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 11.1,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "classic",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "brand,model,logo,exif,date",
+          "logoCenterX": 0.594,
+          "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "logoCenterX",
+          "slots",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "wm-left",
+      "name": "左标双行",
+      "en": "WM-LEFT",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "center",
+        "footerPct": 11.13,
+        "logoCenterX": 0.5,
+        "slots": "model,logo,exif",
+        "frame": "{\"logoW\":0.11,\"rule\":0,\"bandRule\":0,\"rightX\":0.7383,\"rightW\":0.25,\"modelY\":0.48,\"exifY\":0.48}"
+      },
+      "preview": "../assets/previews/watermark2.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-left.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 11.13,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "classic",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "model,logo,exif",
+          "logoCenterX": 0.5,
+          "frame": "{\"logoW\":0.11,\"rule\":0,\"bandRule\":0,\"rightX\":0.7383,\"rightW\":0.25,\"modelY\":0.48,\"exifY\":0.48}"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "logoCenterX",
+          "slots",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "wm-wide",
+      "name": "白边双行",
+      "en": "WM-WIDE",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "center",
+        "footerPct": 11.13,
+        "logoCenterX": 0.5,
+        "slots": "logo",
+        "frame": "{\"logoW\":0.11,\"rule\":0,\"bandRule\":0}"
+      },
+      "preview": "../assets/previews/watermark3.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-wide.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 11.13,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "center",
+          "footerMode": "classic",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "logo",
+          "logoCenterX": 0.5,
+          "frame": "{\"logoW\":0.11,\"rule\":0,\"bandRule\":0}"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "logoCenterX",
+          "slots",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "wm-right",
+      "name": "右标双行",
+      "en": "WM-RIGHT",
+      "category": "水印边框",
+      "base": "brandFooter",
+      "params": {
+        "theme": "white",
+        "logoPos": "right",
+        "footerPct": 8.6,
+        "slots": "brand,logo,exif",
+        "frame": "{\"borderPct\":1.32,\"borderTopPct\":0.88,\"logoW\":0.068,\"logoCx\":0.6304,\"leftX\":0.0596,\"ruleX\":0.6738,\"rightX\":0.6924,\"rightW\":0.30,\"brandY\":0.58,\"exifY\":0.58,\"bandRule\":0}"
+      },
+      "preview": "../assets/previews/watermark4.webp",
+      "renderedPreview": "../assets/previews/rendered/wm-right.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "brandFooter",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 8.6,
+          "theme": "white",
+          "logoScale": 5,
+          "logoPos": "right",
+          "footerMode": "classic",
+          "footerAuto": false,
+          "footerTextScale": 1,
+          "footerFont": "auto",
+          "slots": "brand,logo,exif",
+          "logoCenterX": 0.53,
+          "frame": "{\"borderPct\":1.32,\"borderTopPct\":0.88,\"logoW\":0.068,\"logoCx\":0.6304,\"leftX\":0.0596,\"ruleX\":0.6738,\"rightX\":0.6924,\"rightW\":0.30,\"brandY\":0.58,\"exifY\":0.58,\"bandRule\":0}"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "logoPos",
+          "footerPct",
+          "slots",
+          "frame"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "white-1",
+      "name": "纯白 01",
+      "en": "WHITE-1",
+      "category": "留白",
+      "base": "matteOverlay",
+      "params": {
+        "theme": "white",
+        "marginPct": 4.3,
+        "marginTopPct": 3.47,
+        "marginBottomPct": 4.44,
+        "radiusPct": 2,
+        "overlayMode": "brand",
+        "brandWidthPct": 26.4,
+        "brandOffsetPct": 5.6,
+        "overlayBrand": "HASSELBLAD"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/whiteborder1.webp",
+      "renderedPreview": "../assets/previews/rendered/white-1.webp",
+      "badge": "热门",
+      "vendorLogo": "hasu_long_white",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteOverlay",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 4.3,
+          "radiusPct": 2,
+          "overlayMode": "brand",
+          "overlayBrand": "HASSELBLAD",
+          "exifAlign": "center",
+          "brandWidthPct": 26.4,
+          "brandOffsetPct": 5.6,
+          "exifWidthPct": 42,
+          "exifSizePct": 1.55,
+          "exifOffsetPct": 5,
+          "avatarPct": 4,
+          "nameSizePct": 2.3,
+          "footerTextScale": 100,
+          "shadow": 0,
+          "logoScale": 5,
+          "logoPos": "none",
+          "marginTopPct": 3.47,
+          "marginBottomPct": 4.44
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "marginTopPct",
+          "marginBottomPct",
+          "radiusPct",
+          "overlayMode",
+          "brandWidthPct",
+          "brandOffsetPct",
+          "overlayBrand"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "white-2",
+      "name": "纯白 02",
+      "en": "WHITE-2",
+      "category": "留白",
+      "base": "matteOverlay",
+      "params": {
+        "theme": "white",
+        "marginPct": 4.29,
+        "marginTopPct": 3.32,
+        "radiusPct": 2,
+        "overlayMode": "brand-exif",
+        "brandWidthPct": 31,
+        "brandOffsetPct": 10,
+        "exifWidthPct": 36,
+        "exifSizePct": 1.8,
+        "exifScaleX": 1.47,
+        "exifOffsetPct": 5.3,
+        "overlayBrand": "FUJIFILM",
+        "exifAlign": "center"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/whiteborder2.webp",
+      "renderedPreview": "../assets/previews/rendered/white-2.webp",
+      "badge": "原版",
+      "vendorLogo": "fushi_white",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteOverlay",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 4.29,
+          "radiusPct": 2,
+          "overlayMode": "brand-exif",
+          "overlayBrand": "FUJIFILM",
+          "exifAlign": "center",
+          "brandWidthPct": 31,
+          "brandOffsetPct": 10,
+          "exifWidthPct": 36,
+          "exifSizePct": 1.8,
+          "exifOffsetPct": 5.3,
+          "avatarPct": 4,
+          "nameSizePct": 2.3,
+          "footerTextScale": 100,
+          "shadow": 0,
+          "logoScale": 5,
+          "logoPos": "none",
+          "marginTopPct": 3.32,
+          "exifScaleX": 1.47
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "marginTopPct",
+          "radiusPct",
+          "overlayMode",
+          "brandWidthPct",
+          "brandOffsetPct",
+          "exifWidthPct",
+          "exifSizePct",
+          "exifScaleX",
+          "exifOffsetPct",
+          "overlayBrand",
+          "exifAlign"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "white-3",
+      "name": "纯白 03",
+      "en": "WHITE-3",
+      "category": "留白",
+      "base": "matteOverlay",
+      "params": {
+        "theme": "white",
+        "marginPct": 4.29,
+        "marginTopPct": 3.46,
+        "radiusPct": 1.8,
+        "overlayMode": "exif",
+        "exifWidthPct": 38,
+        "exifSizePct": 2.03,
+        "exifScaleX": 1.49,
+        "exifOffsetPct": 5,
+        "exifAlign": "center"
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/whiteborder3.webp",
+      "renderedPreview": "../assets/previews/rendered/white-3.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteOverlay",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 4.29,
+          "radiusPct": 1.8,
+          "overlayMode": "exif",
+          "overlayBrand": "HASSELBLAD",
+          "exifAlign": "center",
+          "brandWidthPct": 26.8,
+          "brandOffsetPct": 4.5,
+          "exifWidthPct": 38,
+          "exifSizePct": 2.03,
+          "exifOffsetPct": 5,
+          "avatarPct": 4,
+          "nameSizePct": 2.3,
+          "footerTextScale": 100,
+          "shadow": 0,
+          "logoScale": 5,
+          "logoPos": "none",
+          "marginTopPct": 3.46,
+          "exifScaleX": 1.49
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "marginTopPct",
+          "radiusPct",
+          "overlayMode",
+          "exifWidthPct",
+          "exifSizePct",
+          "exifScaleX",
+          "exifOffsetPct",
+          "exifAlign"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "white-4",
+      "name": "米白 04",
+      "en": "WHITE-4",
+      "category": "留白",
+      "base": "matteOverlay",
+      "params": {
+        "theme": "white",
+        "marginPct": 2.14,
+        "marginTopPct": 1.74,
+        "marginBottomPct": 2.55,
+        "radiusPct": 1.3,
+        "overlayMode": "none"
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/whiteborder4.webp",
+      "renderedPreview": "../assets/previews/rendered/white-4.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteOverlay",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 2.14,
+          "radiusPct": 1.3,
+          "overlayMode": "none",
+          "overlayBrand": "HASSELBLAD",
+          "exifAlign": "center",
+          "brandWidthPct": 26.8,
+          "brandOffsetPct": 4.5,
+          "exifWidthPct": 42,
+          "exifSizePct": 1.55,
+          "exifOffsetPct": 5,
+          "avatarPct": 4,
+          "nameSizePct": 2.3,
+          "footerTextScale": 100,
+          "shadow": 0,
+          "logoScale": 5,
+          "logoPos": "none",
+          "marginTopPct": 1.74,
+          "marginBottomPct": 2.55
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "marginTopPct",
+          "marginBottomPct",
+          "radiusPct",
+          "overlayMode"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "simple-1",
+      "name": "极简 01",
+      "en": "SIMPLE-1",
+      "category": "参数",
+      "base": "paramStack",
+      "params": {
+        "theme": "ink",
+        "corner": "tl",
+        "canvasAspect": 1.3045
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/simple1.webp",
+      "renderedPreview": "../assets/previews/rendered/simple-1.webp",
+      "badge": "热门",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paramStack",
+        "declaredParams": {
+          "theme": "ink",
+          "corner": "tl",
+          "canvasAspect": 1.3045,
+          "paramPadPct": 3,
+          "paramSizePct": 5.4,
+          "paramGapPct": 20,
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "none"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "corner",
+          "canvasAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "simple-2",
+      "name": "极简 02",
+      "en": "SIMPLE-2",
+      "category": "参数",
+      "base": "paramStack",
+      "params": {
+        "theme": "ink",
+        "corner": "bl",
+        "canvasAspect": 1.3045
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/simple2.webp",
+      "renderedPreview": "../assets/previews/rendered/simple-2.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paramStack",
+        "declaredParams": {
+          "theme": "ink",
+          "corner": "bl",
+          "canvasAspect": 1.3045,
+          "paramPadPct": 3,
+          "paramSizePct": 5.4,
+          "paramGapPct": 20,
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "none"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "corner",
+          "canvasAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "simple-3",
+      "name": "极简 03",
+      "en": "SIMPLE-3",
+      "category": "参数",
+      "base": "paramStack",
+      "params": {
+        "theme": "ink",
+        "corner": "tr",
+        "paramPadXPct": 5.2,
+        "paramPadYPct": 4.45
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/simple3.webp",
+      "renderedPreview": "../assets/previews/rendered/simple-3.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paramStack",
+        "declaredParams": {
+          "theme": "ink",
+          "corner": "tr",
+          "canvasAspect": 0,
+          "paramPadPct": 3,
+          "paramSizePct": 5.4,
+          "paramGapPct": 20,
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "none",
+          "paramPadXPct": 5.2,
+          "paramPadYPct": 4.45
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "corner",
+          "paramPadXPct",
+          "paramPadYPct"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "simple-4",
+      "name": "极简 04",
+      "en": "SIMPLE-4",
+      "category": "参数",
+      "base": "paramStack",
+      "params": {
+        "theme": "ink",
+        "corner": "br",
+        "canvasAspect": 1.3045
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/simple4.webp",
+      "renderedPreview": "../assets/previews/rendered/simple-4.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paramStack",
+        "declaredParams": {
+          "theme": "ink",
+          "corner": "br",
+          "canvasAspect": 1.3045,
+          "paramPadPct": 3,
+          "paramSizePct": 5.4,
+          "paramGapPct": 20,
+          "shadow": 0,
+          "radiusPct": 0,
+          "logoScale": 5,
+          "logoPos": "none"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "corner",
+          "canvasAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "card-1",
+      "name": "卡片 01",
+      "en": "CARD-1",
+      "category": "卡片",
+      "base": "logoFooter",
+      "params": {
+        "theme": "white",
+        "insetPct": 1.13,
+        "footerPct": 14.79,
+        "logoPct": 5.64,
+        "exifSizePct": 2.3,
+        "exifWidthPct": 29
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/card1.webp",
+      "renderedPreview": "../assets/previews/rendered/card-1.webp",
+      "badge": "原版",
+      "vendorLogo": "laika",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "logoFooter",
+        "declaredParams": {
+          "theme": "white",
+          "insetPct": 1.13,
+          "footerPct": 14.79,
+          "radiusPct": 0,
+          "shadow": 0,
+          "logoPct": 5.64,
+          "exifSizePct": 2.3,
+          "exifWidthPct": 29,
+          "logoScale": 5,
+          "logoPos": "center"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "insetPct",
+          "footerPct",
+          "logoPct",
+          "exifSizePct",
+          "exifWidthPct"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "card-2",
+      "name": "卡片 02",
+      "en": "CARD-2",
+      "category": "卡片",
+      "base": "logoFooter",
+      "params": {
+        "theme": "white",
+        "insetPct": 1.1,
+        "footerPct": 10.84,
+        "logoPct": 5.36,
+        "photoAspect": 1.2832
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/card2.webp",
+      "renderedPreview": "../assets/previews/rendered/card-2.webp",
+      "badge": "原版",
+      "vendorLogo": "laika",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "logoFooter",
+        "declaredParams": {
+          "theme": "white",
+          "insetPct": 1.1,
+          "footerPct": 10.84,
+          "radiusPct": 0,
+          "shadow": 0,
+          "logoPct": 5.36,
+          "exifSizePct": 2.3,
+          "exifWidthPct": 29.5,
+          "logoScale": 5,
+          "logoPos": "center",
+          "photoAspect": 1.2832
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "insetPct",
+          "footerPct",
+          "logoPct",
+          "photoAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "card-3",
+      "name": "卡片 03",
+      "en": "CARD-3",
+      "category": "卡片",
+      "base": "matteFooter",
+      "params": {
+        "theme": "white",
+        "marginPct": 1.13,
+        "footerPct": 9.58,
+        "exifSizePct": 2.15,
+        "exifWidthPct": 28.3,
+        "overlayBrand": "",
+        "photoAspect": 1.2686
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/card3.webp",
+      "renderedPreview": "../assets/previews/rendered/card-3.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteFooter",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 1.13,
+          "footerPct": 9.58,
+          "footerOffsetPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "logoPct": 5,
+          "brandTextSizePct": 2.6,
+          "exifSizePct": 2.15,
+          "exifWidthPct": 28.3,
+          "logoScale": 5,
+          "logoPos": "center",
+          "overlayBrand": "",
+          "photoAspect": 1.2686
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "footerPct",
+          "exifSizePct",
+          "exifWidthPct",
+          "overlayBrand",
+          "photoAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "card-4",
+      "name": "卡片 04",
+      "en": "CARD-4",
+      "category": "卡片",
+      "base": "matteFooter",
+      "params": {
+        "theme": "white",
+        "marginPct": 1.41,
+        "footerPct": 10.9,
+        "footerOffsetPct": -0.15,
+        "logoPct": 5.5,
+        "brandTextSizePct": 2.95,
+        "overlayBrand": "Leica",
+        "photoAspect": 1.2846
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/card4.webp",
+      "renderedPreview": "../assets/previews/rendered/card-4.webp",
+      "badge": "原版",
+      "vendorLogo": "laika",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "matteFooter",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 1.41,
+          "footerPct": 10.9,
+          "footerOffsetPct": -0.15,
+          "radiusPct": 0,
+          "shadow": 0,
+          "logoPct": 5.5,
+          "brandTextSizePct": 2.95,
+          "exifSizePct": 1.9,
+          "exifWidthPct": 28.3,
+          "logoScale": 5,
+          "logoPos": "center",
+          "overlayBrand": "Leica",
+          "photoAspect": 1.2846
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "footerPct",
+          "footerOffsetPct",
+          "logoPct",
+          "brandTextSizePct",
+          "overlayBrand",
+          "photoAspect"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "person-1",
+      "name": "人物 01",
+      "en": "PERSON-1",
+      "category": "人物",
+      "base": "profileFrame",
+      "params": {
+        "theme": "white",
+        "profileMode": "header",
+        "profileName": "鹤羽轻风",
+        "marginPct": 4.13,
+        "headerPct": 11.57,
+        "footerPct": 11.29,
+        "radiusPct": 1.4,
+        "shadow": 0.8,
+        "avatarPct": 5.6,
+        "nameSizePct": 2.44,
+        "brandCenterPct": 4.75,
+        "brandWidthPct": 33.6,
+        "overlayBrand": "HASSELBLAD"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/person1.webp",
+      "renderedPreview": "../assets/previews/rendered/person-1.webp",
+      "badge": "原版",
+      "vendorLogo": "hasu_long_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "profileFrame",
+        "declaredParams": {
+          "theme": "white",
+          "profileMode": "header",
+          "profileName": "鹤羽轻风",
+          "marginPct": 4.13,
+          "headerPct": 11.57,
+          "footerPct": 11.29,
+          "radiusPct": 1.4,
+          "shadow": 0.8,
+          "brandPlacement": "footer",
+          "brandOffsetPct": 8.2,
+          "brandCenterPct": 4.75,
+          "chipTopPct": 4.5,
+          "exifAlign": "center",
+          "avatarPct": 5.6,
+          "nameSizePct": 2.44,
+          "brandWidthPct": 33.6,
+          "exifWidthPct": 40,
+          "exifSizePct": 1.55,
+          "exifOffsetPct": 3.9,
+          "modelSizePct": 2.6,
+          "footerLogoPct": 13.7,
+          "overlayBrand": "HASSELBLAD",
+          "logoScale": 5,
+          "logoPos": "center"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "profileMode",
+          "profileName",
+          "marginPct",
+          "headerPct",
+          "footerPct",
+          "radiusPct",
+          "shadow",
+          "avatarPct",
+          "nameSizePct",
+          "brandCenterPct",
+          "brandWidthPct",
+          "overlayBrand"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "person-2",
+      "name": "人物 02",
+      "en": "PERSON-2",
+      "category": "人物",
+      "base": "profileFrame",
+      "params": {
+        "theme": "white",
+        "profileMode": "header",
+        "profileName": "鹤羽轻风",
+        "marginPct": 4.9,
+        "headerPct": 12.43,
+        "footerPct": 12.43,
+        "radiusPct": 1.7,
+        "shadow": 0.9,
+        "avatarPct": 5,
+        "nameSizePct": 2.6,
+        "brandCenterPct": 5.74,
+        "brandWidthPct": 34,
+        "exifWidthPct": 32,
+        "exifSizePct": 2.06,
+        "exifScaleX": 1.285,
+        "exifOffsetPct": 4.2,
+        "overlayBrand": "HASSELBLAD"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/person2.webp",
+      "renderedPreview": "../assets/previews/rendered/person-2.webp",
+      "badge": "原版",
+      "vendorLogo": "hasu_long_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "profileFrame",
+        "declaredParams": {
+          "theme": "white",
+          "profileMode": "header",
+          "profileName": "鹤羽轻风",
+          "marginPct": 4.9,
+          "headerPct": 12.43,
+          "footerPct": 12.43,
+          "radiusPct": 1.7,
+          "shadow": 0.9,
+          "brandPlacement": "footer",
+          "brandOffsetPct": 8.2,
+          "brandCenterPct": 5.74,
+          "chipTopPct": 4.5,
+          "exifAlign": "center",
+          "avatarPct": 5,
+          "nameSizePct": 2.6,
+          "brandWidthPct": 34,
+          "exifWidthPct": 32,
+          "exifSizePct": 2.06,
+          "exifOffsetPct": 4.2,
+          "modelSizePct": 2.6,
+          "footerLogoPct": 13.7,
+          "overlayBrand": "HASSELBLAD",
+          "logoScale": 5,
+          "logoPos": "center",
+          "exifScaleX": 1.285
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "profileMode",
+          "profileName",
+          "marginPct",
+          "headerPct",
+          "footerPct",
+          "radiusPct",
+          "shadow",
+          "avatarPct",
+          "nameSizePct",
+          "brandCenterPct",
+          "brandWidthPct",
+          "exifWidthPct",
+          "exifSizePct",
+          "exifScaleX",
+          "exifOffsetPct",
+          "overlayBrand"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "person-3",
+      "name": "人物 03",
+      "en": "PERSON-3",
+      "category": "人物",
+      "base": "profileFrame",
+      "params": {
+        "theme": "white",
+        "profileMode": "chip",
+        "profileName": "鹤羽轻风",
+        "marginPct": 3.1,
+        "marginBottomPct": 0,
+        "chipTopPct": 5.7,
+        "footerPct": 11.35,
+        "radiusPct": 1.35,
+        "shadow": 0,
+        "brandPlacement": "footer",
+        "brandCenterPct": 5.4,
+        "avatarPct": 4.75,
+        "nameSizePct": 2.05,
+        "brandWidthPct": 30,
+        "exifWidthPct": 34.3,
+        "exifSizePct": 2.3,
+        "exifScaleX": 1.09,
+        "exifOffsetPct": 3.8,
+        "exifAlign": "center",
+        "overlayBrand": "HASSELBLAD"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/person3.webp",
+      "renderedPreview": "../assets/previews/rendered/person-3.webp",
+      "badge": "原版",
+      "vendorLogo": "hasu_long_black",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "profileFrame",
+        "declaredParams": {
+          "theme": "white",
+          "profileMode": "chip",
+          "profileName": "鹤羽轻风",
+          "marginPct": 3.1,
+          "headerPct": 11.7,
+          "footerPct": 11.35,
+          "radiusPct": 1.35,
+          "shadow": 0,
+          "brandPlacement": "footer",
+          "brandOffsetPct": 8.2,
+          "brandCenterPct": 5.4,
+          "chipTopPct": 5.7,
+          "exifAlign": "center",
+          "avatarPct": 4.75,
+          "nameSizePct": 2.05,
+          "brandWidthPct": 30,
+          "exifWidthPct": 34.3,
+          "exifSizePct": 2.3,
+          "exifOffsetPct": 3.8,
+          "modelSizePct": 2.6,
+          "footerLogoPct": 13.7,
+          "overlayBrand": "HASSELBLAD",
+          "logoScale": 5,
+          "logoPos": "center",
+          "marginBottomPct": 0,
+          "exifScaleX": 1.09
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "profileMode",
+          "profileName",
+          "marginPct",
+          "marginBottomPct",
+          "chipTopPct",
+          "footerPct",
+          "radiusPct",
+          "shadow",
+          "brandPlacement",
+          "brandCenterPct",
+          "avatarPct",
+          "nameSizePct",
+          "brandWidthPct",
+          "exifWidthPct",
+          "exifSizePct",
+          "exifScaleX",
+          "exifOffsetPct",
+          "exifAlign",
+          "overlayBrand"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "person-4",
+      "name": "人物 04",
+      "en": "PERSON-4",
+      "category": "人物",
+      "base": "profileFrame",
+      "params": {
+        "theme": "white",
+        "profileMode": "chip",
+        "profileName": "鹤羽轻风",
+        "marginPct": 2.5,
+        "chipTopPct": 5.1,
+        "radiusPct": 1.1,
+        "shadow": 0,
+        "brandPlacement": "inside",
+        "brandOffsetPct": 8.3,
+        "avatarPct": 4.5,
+        "nameSizePct": 2.3,
+        "brandWidthPct": 25.6,
+        "exifWidthPct": 28.1,
+        "exifSizePct": 1.7,
+        "exifScaleX": 1.33,
+        "exifOffsetPct": 3.4,
+        "exifAlign": "center",
+        "overlayBrand": "HASSELBLAD"
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/person4.webp",
+      "renderedPreview": "../assets/previews/rendered/person-4.webp",
+      "badge": "原版",
+      "vendorLogo": "hasu_long_white",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "profileFrame",
+        "declaredParams": {
+          "theme": "white",
+          "profileMode": "chip",
+          "profileName": "鹤羽轻风",
+          "marginPct": 2.5,
+          "headerPct": 11.7,
+          "footerPct": 11.3,
+          "radiusPct": 1.1,
+          "shadow": 0,
+          "brandPlacement": "inside",
+          "brandOffsetPct": 8.3,
+          "brandCenterPct": 0,
+          "chipTopPct": 5.1,
+          "exifAlign": "center",
+          "avatarPct": 4.5,
+          "nameSizePct": 2.3,
+          "brandWidthPct": 25.6,
+          "exifWidthPct": 28.1,
+          "exifSizePct": 1.7,
+          "exifOffsetPct": 3.4,
+          "modelSizePct": 2.6,
+          "footerLogoPct": 13.7,
+          "overlayBrand": "HASSELBLAD",
+          "logoScale": 5,
+          "logoPos": "center",
+          "exifScaleX": 1.33
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "profileMode",
+          "profileName",
+          "marginPct",
+          "chipTopPct",
+          "radiusPct",
+          "shadow",
+          "brandPlacement",
+          "brandOffsetPct",
+          "avatarPct",
+          "nameSizePct",
+          "brandWidthPct",
+          "exifWidthPct",
+          "exifSizePct",
+          "exifScaleX",
+          "exifOffsetPct",
+          "exifAlign",
+          "overlayBrand"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "person-5",
+      "name": "人物 05",
+      "en": "PERSON-5",
+      "category": "人物",
+      "base": "profileFrame",
+      "params": {
+        "theme": "white",
+        "profileMode": "footer",
+        "profileName": "鹤羽轻风",
+        "marginPct": 2.99,
+        "footerPct": 9.9,
+        "radiusPct": 1.35,
+        "shadow": 0,
+        "avatarPct": 5.4,
+        "nameSizePct": 2.25,
+        "exifWidthPct": 34.5,
+        "exifSizePct": 1.9,
+        "modelSizePct": 2.1,
+        "footerLogoPct": 10
+      },
+      "text": {
+        "showLogo": true,
+        "showExif": true,
+        "showDate": false
+      },
+      "preview": "../assets/previews/person5.webp",
+      "renderedPreview": "../assets/previews/rendered/person-5.webp",
+      "badge": "原版",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "profileFrame",
+        "declaredParams": {
+          "theme": "white",
+          "profileMode": "footer",
+          "profileName": "鹤羽轻风",
+          "marginPct": 2.99,
+          "headerPct": 11.7,
+          "footerPct": 9.9,
+          "radiusPct": 1.35,
+          "shadow": 0,
+          "brandPlacement": "footer",
+          "brandOffsetPct": 8.2,
+          "brandCenterPct": 0,
+          "chipTopPct": 4.5,
+          "exifAlign": "center",
+          "avatarPct": 5.4,
+          "nameSizePct": 2.25,
+          "brandWidthPct": 33.7,
+          "exifWidthPct": 34.5,
+          "exifSizePct": 1.9,
+          "exifOffsetPct": 3.9,
+          "modelSizePct": 2.1,
+          "footerLogoPct": 10,
+          "overlayBrand": "HASSELBLAD",
+          "logoScale": 5,
+          "logoPos": "center"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "profileMode",
+          "profileName",
+          "marginPct",
+          "footerPct",
+          "radiusPct",
+          "shadow",
+          "avatarPct",
+          "nameSizePct",
+          "exifWidthPct",
+          "exifSizePct",
+          "modelSizePct",
+          "footerLogoPct"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "glass-white-1",
+      "name": "玻璃 01",
+      "en": "GLASS-WHITE-1",
+      "category": "液态玻璃",
+      "base": "sideCard",
+      "params": {
+        "theme": "white",
+        "sideLayout": "text-left",
+        "marginPct": 5.56,
+        "radiusPct": 2,
+        "shadow": 0.8,
+        "cardAspect": 0.692,
+        "rowGap": 6.5,
+        "rowsX": 14.16
+      },
+      "preview": "../assets/previews/glass1.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-white-1.webp",
+      "badge": "热门",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "sideCard",
+        "declaredParams": {
+          "theme": "white",
+          "sideLayout": "text-left",
+          "marginPct": 5.56,
+          "radiusPct": 2,
+          "shadow": 0.8,
+          "cardAspect": 0.692,
+          "rowGap": 6.5,
+          "rowsX": 14.16
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "sideLayout",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "cardAspect",
+          "rowGap",
+          "rowsX"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-white-2",
+      "name": "玻璃 02",
+      "en": "GLASS-WHITE-2",
+      "category": "液态玻璃",
+      "base": "sideCard",
+      "params": {
+        "theme": "white",
+        "sideLayout": "text-right",
+        "marginPct": 5.56,
+        "radiusPct": 2,
+        "shadow": 0.8,
+        "cardAspect": 0.692,
+        "rowGap": 6.5,
+        "rowsX": 67.48
+      },
+      "preview": "../assets/previews/glass2.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-white-2.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "sideCard",
+        "declaredParams": {
+          "theme": "white",
+          "sideLayout": "text-right",
+          "marginPct": 5.56,
+          "radiusPct": 2,
+          "shadow": 0.8,
+          "cardAspect": 0.692,
+          "rowGap": 6.5,
+          "rowsX": 67.48
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "sideLayout",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "cardAspect",
+          "rowGap",
+          "rowsX"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-white-3",
+      "name": "玻璃 03",
+      "en": "GLASS-WHITE-3",
+      "category": "液态玻璃",
+      "base": "sideCard",
+      "params": {
+        "theme": "white",
+        "sideLayout": "split",
+        "marginPct": 5.56,
+        "radiusPct": 2,
+        "shadow": 0.8,
+        "cardAspect": 0.692,
+        "rowGap": 6.5,
+        "rowsX": 77.93
+      },
+      "preview": "../assets/previews/glass3.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-white-3.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "sideCard",
+        "declaredParams": {
+          "theme": "white",
+          "sideLayout": "split",
+          "marginPct": 5.56,
+          "radiusPct": 2,
+          "shadow": 0.8,
+          "cardAspect": 0.692,
+          "rowGap": 6.5,
+          "rowsX": 77.93
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "sideLayout",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "cardAspect",
+          "rowGap",
+          "rowsX"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-card-4",
+      "name": "玻璃 04",
+      "en": "GLASS-CARD-4",
+      "category": "液态玻璃",
+      "base": "specFooter",
+      "params": {
+        "theme": "white",
+        "marginPct": 3,
+        "footerPct": 22,
+        "radiusPct": 1.5,
+        "shadow": 0.5,
+        "contentW": 32.43,
+        "sepX": 50,
+        "logoGap": 1.83
+      },
+      "preview": "../assets/previews/glass4.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-card-4.webp",
+      "badge": "热门",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "specFooter",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 3,
+          "footerPct": 22,
+          "radiusPct": 1.5,
+          "shadow": 0.5,
+          "contentW": 32.43,
+          "sepX": 50,
+          "logoGap": 1.83
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "footerPct",
+          "radiusPct",
+          "shadow",
+          "contentW",
+          "sepX",
+          "logoGap"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-pill-5",
+      "name": "玻璃 05",
+      "en": "GLASS-PILL-5",
+      "category": "液态玻璃",
+      "base": "glassSideCard",
+      "params": {
+        "theme": "ink",
+        "canvasAspect": 1.4971,
+        "cardAspect": 0.6903,
+        "cardSide": "right",
+        "contentSide": "left",
+        "cardHeightPct": 88.7,
+        "cardWidthPct": 0,
+        "cardInsetPct": 13.18,
+        "cardRadiusPct": 2.4,
+        "cardMattePct": 1.1,
+        "blur": 30,
+        "tintAlpha": 0.24,
+        "rowSet": "fmm",
+        "textInsetPct": 31.1,
+        "brandInsetPct": 31.1,
+        "brandWidthPct": 26,
+        "brandHeightPct": 4.6,
+        "brandTopPct": 28.5,
+        "rowsTopPct": 44.3,
+        "rowBoxWPct": 9.1,
+        "rowBoxHPct": 7.4,
+        "rowPitchPct": 13,
+        "rowValueGapPct": 10.4,
+        "rowLabelPct": 3,
+        "rowValuePct": 4
+      },
+      "preview": "../assets/previews/glass5.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-pill-5.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "glassSideCard",
+        "declaredParams": {
+          "theme": "ink",
+          "blur": 30,
+          "tintAlpha": 0.24,
+          "canvasAspect": 1.4971,
+          "cardAspect": 0.6903,
+          "cardSide": "right",
+          "contentSide": "left",
+          "cardWidthPct": 0,
+          "cardHeightPct": 88.7,
+          "cardInsetPct": 13.18,
+          "cardRadiusPct": 2.4,
+          "cardMattePct": 1.1,
+          "rowSet": "fmm",
+          "textInsetPct": 31.1,
+          "brandInsetPct": 31.1,
+          "brandWidthPct": 26,
+          "brandHeightPct": 4.6,
+          "brandTopPct": 28.5,
+          "rowsTopPct": 44.3,
+          "rowBoxWPct": 9.1,
+          "rowBoxHPct": 7.4,
+          "rowPitchPct": 13,
+          "rowValueGapPct": 10.4,
+          "rowLabelPct": 3,
+          "rowValuePct": 4
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "canvasAspect",
+          "cardAspect",
+          "cardSide",
+          "contentSide",
+          "cardHeightPct",
+          "cardWidthPct",
+          "cardInsetPct",
+          "cardRadiusPct",
+          "cardMattePct",
+          "blur",
+          "tintAlpha",
+          "rowSet",
+          "textInsetPct",
+          "brandInsetPct",
+          "brandWidthPct",
+          "brandHeightPct",
+          "brandTopPct",
+          "rowsTopPct",
+          "rowBoxWPct",
+          "rowBoxHPct",
+          "rowPitchPct",
+          "rowValueGapPct",
+          "rowLabelPct",
+          "rowValuePct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-liquid",
+      "name": "液态玻璃",
+      "en": "GLASS-LIQUID",
+      "category": "液态玻璃",
+      "base": "glass",
+      "params": {
+        "theme": "black",
+        "glassLayout": "pill",
+        "pillOrder": "stack"
+      },
+      "preview": "../assets/previews/liquid_glass.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-liquid.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "glass",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "blur": 24,
+          "theme": "black",
+          "logoScale": 5,
+          "glassAlign": "left",
+          "glassLayout": "pill",
+          "glassPalette": false,
+          "pillOrder": "stack"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "glassLayout",
+          "pillOrder"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-palette",
+      "name": "玻璃色卡",
+      "en": "GLASS-PALETTE",
+      "category": "液态玻璃",
+      "base": "glassPalettePortrait",
+      "params": {
+        "theme": "ink",
+        "panelWidthPct": 89.2,
+        "panelHeightPct": 29.7,
+        "panelBottomPct": 6.5,
+        "swatchCols": 3,
+        "swatchRows": 2,
+        "swatchPct": 12.3
+      },
+      "preview": "../assets/previews/glass_palette.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-palette.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "glassPalettePortrait",
+        "declaredParams": {
+          "theme": "ink",
+          "blur": 24,
+          "panelWidthPct": 89.2,
+          "panelHeightPct": 29.7,
+          "panelBottomPct": 6.5,
+          "panelRadiusPct": 16,
+          "swatchCols": 3,
+          "swatchRows": 2,
+          "swatchPct": 12.3,
+          "gridFirstXPct": 18.9,
+          "gridPitchXPct": 31.1,
+          "gridFirstYPct": 20.9,
+          "gridPitchYPct": 45.1,
+          "labelPct": 2.2,
+          "tintAlpha": 0.3
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "panelWidthPct",
+          "panelHeightPct",
+          "panelBottomPct",
+          "swatchCols",
+          "swatchRows",
+          "swatchPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "glass-card",
+      "name": "玻璃卡片",
+      "en": "GLASS-CARD",
+      "category": "液态玻璃",
+      "base": "glassSideCard",
+      "params": {
+        "theme": "ink",
+        "cardAspect": 1.3333,
+        "cardSide": "right",
+        "contentSide": "left",
+        "cardWidthPct": 56.25,
+        "cardHeightPct": 0,
+        "cardInsetPct": 6.35,
+        "cardRadiusPct": 1.6,
+        "blur": 26,
+        "tintAlpha": 0.2,
+        "rowSet": "fiso",
+        "rowValueGapPct": 6,
+        "rowValuePct": 5.6
+      },
+      "preview": "../assets/previews/glass.webp",
+      "renderedPreview": "../assets/previews/rendered/glass-card.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "glassSideCard",
+        "declaredParams": {
+          "theme": "ink",
+          "blur": 26,
+          "tintAlpha": 0.2,
+          "canvasAspect": 0,
+          "cardAspect": 1.3333,
+          "cardSide": "right",
+          "contentSide": "left",
+          "cardWidthPct": 56.25,
+          "cardHeightPct": 0,
+          "cardInsetPct": 6.35,
+          "cardRadiusPct": 1.6,
+          "cardMattePct": 1.8,
+          "rowSet": "fiso",
+          "textInsetPct": 30.5,
+          "brandInsetPct": 36.8,
+          "brandWidthPct": 28.7,
+          "brandHeightPct": 17.8,
+          "brandTopPct": 12.27,
+          "rowsTopPct": 43.75,
+          "rowBoxWPct": 19.2,
+          "rowBoxHPct": 9.95,
+          "rowPitchPct": 16.67,
+          "rowValueGapPct": 6,
+          "rowLabelPct": 4.4,
+          "rowValuePct": 5.6
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "cardAspect",
+          "cardSide",
+          "contentSide",
+          "cardWidthPct",
+          "cardHeightPct",
+          "cardInsetPct",
+          "cardRadiusPct",
+          "blur",
+          "tintAlpha",
+          "rowSet",
+          "rowValueGapPct",
+          "rowValuePct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "color-1",
+      "name": "色卡 01",
+      "en": "COLOR-1",
+      "category": "色卡",
+      "base": "paletteCard",
+      "params": {
+        "theme": "white",
+        "marginPct": 2,
+        "radiusPct": 2,
+        "shadow": 0.4,
+        "palettePct": 22,
+        "paletteRowPct": 120.5,
+        "paletteGapPct": 3.6
+      },
+      "preview": "../assets/previews/color1.webp",
+      "renderedPreview": "../assets/previews/rendered/color-1.webp",
+      "badge": "热门",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paletteCard",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 2,
+          "radiusPct": 2,
+          "shadow": 0.4,
+          "palettePct": 22,
+          "paletteRowPct": 120.5,
+          "paletteGapPct": 3.6
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "palettePct",
+          "paletteRowPct",
+          "paletteGapPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "color-2",
+      "name": "色卡 02",
+      "en": "COLOR-2",
+      "category": "色卡",
+      "base": "paletteCard",
+      "params": {
+        "theme": "white",
+        "marginPct": 2,
+        "radiusPct": 0,
+        "shadow": 0.4,
+        "palettePct": 22,
+        "paletteRowPct": 120.4,
+        "paletteGapPct": 4.1
+      },
+      "preview": "../assets/previews/color2.webp",
+      "renderedPreview": "../assets/previews/rendered/color-2.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paletteCard",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 2,
+          "radiusPct": 0,
+          "shadow": 0.4,
+          "palettePct": 22,
+          "paletteRowPct": 120.4,
+          "paletteGapPct": 4.1
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "palettePct",
+          "paletteRowPct",
+          "paletteGapPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "color-3",
+      "name": "色卡 03",
+      "en": "COLOR-3",
+      "category": "色卡",
+      "base": "paletteCard",
+      "params": {
+        "theme": "paper",
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "palettePct": 16.1,
+        "paletteRowPct": 115.4,
+        "paletteGapPct": 0
+      },
+      "preview": "../assets/previews/color3.webp",
+      "renderedPreview": "../assets/previews/rendered/color-3.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "paletteCard",
+        "declaredParams": {
+          "theme": "paper",
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "palettePct": 16.1,
+          "paletteRowPct": 115.4,
+          "paletteGapPct": 0
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "shadow",
+          "palettePct",
+          "paletteRowPct",
+          "paletteGapPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "color-reveal",
+      "name": "颜色显现",
+      "en": "COLOR-REVEAL",
+      "category": "色卡",
+      "base": "splitReveal",
+      "params": {
+        "theme": "paper",
+        "canvasAspect": 1.7777777777777777,
+        "frameMode": "single",
+        "dotOrientation": "vertical",
+        "dotCount": 3
+      },
+      "preview": "../assets/previews/color_reveal.png",
+      "renderedPreview": "../assets/previews/rendered/color-reveal.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "splitReveal",
+        "declaredParams": {
+          "theme": "paper",
+          "canvasAspect": 1.7777777777777777,
+          "frameMode": "single",
+          "dotOrientation": "vertical",
+          "dotCount": 3,
+          "dotXPct": 50,
+          "dotTopPct": 46.3,
+          "dotGapPct": 7.7,
+          "dotSizePct": 2.45
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "canvasAspect",
+          "frameMode",
+          "dotOrientation",
+          "dotCount"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "color-walk",
+      "name": "色卡漫步",
+      "en": "COLOR-WALK",
+      "category": "色卡",
+      "base": "locationCard",
+      "params": {
+        "theme": "paper",
+        "locationBg": "#405c66",
+        "locationFg": "#f5f2ea",
+        "locationTitle": "中国",
+        "locationTime": "08:00 AM",
+        "headerPct": 45
+      },
+      "preview": "../assets/previews/color-walk.webp",
+      "renderedPreview": "../assets/previews/rendered/color-walk.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "locationCard",
+        "declaredParams": {
+          "theme": "paper",
+          "locationBg": "#405c66",
+          "locationFg": "#f5f2ea",
+          "locationTitle": "中国",
+          "locationTime": "08:00 AM",
+          "headerPct": 45
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "locationBg",
+          "locationFg",
+          "locationTitle",
+          "locationTime",
+          "headerPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "movie-1",
+      "name": "电影 01",
+      "en": "MOVIE-1",
+      "category": "电影",
+      "base": "movie",
+      "params": {
+        "theme": "black",
+        "photoAspect": 2.34,
+        "barPct": 11.7,
+        "subtitleMode": "bar"
+      },
+      "text": {
+        "title": "人生是旷野不是轨道",
+        "subtitle": "Life is a wilderness,not a track"
+      },
+      "preview": "../assets/previews/movie1.webp",
+      "renderedPreview": "../assets/previews/rendered/movie-1.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "movie",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "black",
+          "logoScale": 5,
+          "barPct": 11.7,
+          "logoPos": "right",
+          "photoAspect": 2.34,
+          "subtitleMode": "bar"
+        },
+        "declaredText": {
+          "title": "人生是旷野不是轨道",
+          "subtitle": "Life is a wilderness,not a track",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "photoAspect",
+          "barPct",
+          "subtitleMode"
+        ],
+        "textKeys": [
+          "title",
+          "subtitle"
+        ]
+      }
+    },
+    {
+      "id": "movie-2",
+      "name": "电影 02",
+      "en": "MOVIE-2",
+      "category": "电影",
+      "base": "movie",
+      "params": {
+        "theme": "black",
+        "photoAspect": 2.34,
+        "barPct": 7.9,
+        "subtitleMode": "in-photo"
+      },
+      "text": {
+        "title": "人生是旷野不是轨道",
+        "subtitle": "Life is a wilderness,not a track"
+      },
+      "preview": "../assets/previews/movie2.webp",
+      "renderedPreview": "../assets/previews/rendered/movie-2.webp",
+      "badge": "原版",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "movie",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "black",
+          "logoScale": 5,
+          "barPct": 7.9,
+          "logoPos": "right",
+          "photoAspect": 2.34,
+          "subtitleMode": "in-photo"
+        },
+        "declaredText": {
+          "title": "人生是旷野不是轨道",
+          "subtitle": "Life is a wilderness,not a track",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "photoAspect",
+          "barPct",
+          "subtitleMode"
+        ],
+        "textKeys": [
+          "title",
+          "subtitle"
+        ]
+      }
+    },
+    {
+      "id": "ticket-1",
+      "name": "票据 01",
+      "en": "TICKET-1",
+      "category": "票据",
+      "base": "sideTicket",
+      "params": {
+        "theme": "ink",
+        "ticketBg": "#244231",
+        "ticketPanel": "#31533f",
+        "stubTitle": "HANG ZHOU",
+        "stubLabel": "GUANGYING 100"
+      },
+      "preview": "../assets/previews/ticket.webp",
+      "renderedPreview": "../assets/previews/rendered/ticket-1.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "sideTicket",
+        "declaredParams": {
+          "theme": "ink",
+          "ticketBg": "#244231",
+          "ticketPanel": "#31533f",
+          "stubTitle": "HANG ZHOU",
+          "stubLabel": "GUANGYING 100"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "ticketBg",
+          "ticketPanel",
+          "stubTitle",
+          "stubLabel"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "ticket-2",
+      "name": "票据 02",
+      "en": "TICKET-2",
+      "category": "票据",
+      "base": "portraitTicket",
+      "params": {
+        "theme": "stone",
+        "ticketBg": "#c7dfe6",
+        "ticketCard": "#ffffff",
+        "ticketInk": "#2d6f7c",
+        "stubTitle": "QING DAO",
+        "stubLabel": "GUANGYING 100",
+        "stubTitleSize": 0.066
+      },
+      "preview": "../assets/previews/ticket2.webp",
+      "renderedPreview": "../assets/previews/rendered/ticket-2.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "portraitTicket",
+        "declaredParams": {
+          "theme": "stone",
+          "ticketBg": "#c7dfe6",
+          "ticketCard": "#ffffff",
+          "ticketInk": "#2d6f7c",
+          "stubTitle": "QING DAO",
+          "stubLabel": "GUANGYING 100",
+          "stubTitleSize": 0.066
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "ticketBg",
+          "ticketCard",
+          "ticketInk",
+          "stubTitle",
+          "stubLabel",
+          "stubTitleSize"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "grad-1",
+      "name": "毕业 01",
+      "en": "GRAD-1",
+      "category": "毕业",
+      "base": "gradFooter",
+      "params": {
+        "theme": "white",
+        "footerPct": 12,
+        "sticker": "graduation1"
+      },
+      "text": {
+        "showLogo": false,
+        "showDate": false,
+        "showExif": true,
+        "showMake": true,
+        "showModel": true
+      },
+      "preview": "../assets/previews/graduation1.webp",
+      "renderedPreview": "../assets/previews/rendered/grad-1.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "gradFooter",
+        "declaredParams": {
+          "theme": "white",
+          "footerPct": 12,
+          "stickerScalePct": 100,
+          "stickerRightPct": 0,
+          "brandXPct": 3.9,
+          "brandY": 0.46,
+          "brandSizePct": 3.7,
+          "exifY": 0.772,
+          "exifSizePct": 2.85,
+          "sticker": "graduation1"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "footerPct",
+          "sticker"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showDate",
+          "showExif",
+          "showMake",
+          "showModel"
+        ]
+      }
+    },
+    {
+      "id": "grad-2",
+      "name": "毕业 02",
+      "en": "GRAD-2",
+      "category": "毕业",
+      "base": "gradFooter",
+      "params": {
+        "theme": "white",
+        "footerPct": 12,
+        "sticker": "graduation2"
+      },
+      "text": {
+        "showLogo": false,
+        "showDate": false,
+        "showExif": true,
+        "showMake": true,
+        "showModel": true
+      },
+      "preview": "../assets/previews/graduation2.webp",
+      "renderedPreview": "../assets/previews/rendered/grad-2.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "gradFooter",
+        "declaredParams": {
+          "theme": "white",
+          "footerPct": 12,
+          "stickerScalePct": 100,
+          "stickerRightPct": 0,
+          "brandXPct": 3.9,
+          "brandY": 0.46,
+          "brandSizePct": 3.7,
+          "exifY": 0.772,
+          "exifSizePct": 2.85,
+          "sticker": "graduation2"
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "footerPct",
+          "sticker"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showDate",
+          "showExif",
+          "showMake",
+          "showModel"
+        ]
+      }
+    },
+    {
+      "id": "ratio-1",
+      "name": "比例 01",
+      "en": "RATIO-1",
+      "category": "比例",
+      "base": "ratioMatte",
+      "params": {
+        "theme": "ink",
+        "photoAspect": 1.485,
+        "sideMarginPct": 9.03,
+        "topMarginPct": 5.72,
+        "blur": 22,
+        "tintAlpha": 0.9,
+        "vignette": 0.32,
+        "brandSizePct": 3.43,
+        "brandGapPct": 4.62,
+        "metaSizePct": 1.8,
+        "metaGapPct": 8.5,
+        "metaAlphaPct": 80
+      },
+      "text": {
+        "showLogo": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/ratio.webp",
+      "renderedPreview": "../assets/previews/rendered/ratio-1.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "ratioMatte",
+        "declaredParams": {
+          "theme": "ink",
+          "canvasAspect": 1.5015,
+          "photoAspect": 1.485,
+          "sideMarginPct": 9.03,
+          "topMarginPct": 5.72,
+          "radiusPct": 0,
+          "blur": 22,
+          "tintAlpha": 0.9,
+          "vignette": 0.32,
+          "brandSizePct": 3.43,
+          "brandGapPct": 4.62,
+          "brandTracking": 0.14,
+          "metaSizePct": 1.8,
+          "metaGapPct": 8.5,
+          "metaAlphaPct": 80
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "photoAspect",
+          "sideMarginPct",
+          "topMarginPct",
+          "blur",
+          "tintAlpha",
+          "vignette",
+          "brandSizePct",
+          "brandGapPct",
+          "metaSizePct",
+          "metaGapPct",
+          "metaAlphaPct"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "ratio-2",
+      "name": "比例 02",
+      "en": "RATIO-2",
+      "category": "比例",
+      "base": "ratioMatte",
+      "params": {
+        "theme": "cream",
+        "photoAspect": 1.7485,
+        "sideMarginPct": 6.54,
+        "topMarginPct": 7.04,
+        "blur": 26,
+        "tintAlpha": 0.06,
+        "vignette": 0.1,
+        "brandSizePct": 5.25,
+        "brandGapPct": 5.72,
+        "brandTracking": 0.06,
+        "metaSizePct": 3.2,
+        "metaGapPct": 12.17,
+        "metaAlphaPct": 92
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false
+      },
+      "preview": "../assets/previews/ratio2.webp",
+      "renderedPreview": "../assets/previews/rendered/ratio-2.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "ratioMatte",
+        "declaredParams": {
+          "theme": "cream",
+          "canvasAspect": 1.5015,
+          "photoAspect": 1.7485,
+          "sideMarginPct": 6.54,
+          "topMarginPct": 7.04,
+          "radiusPct": 0,
+          "blur": 26,
+          "tintAlpha": 0.06,
+          "vignette": 0.1,
+          "brandSizePct": 5.25,
+          "brandGapPct": 5.72,
+          "brandTracking": 0.06,
+          "metaSizePct": 3.2,
+          "metaGapPct": 12.17,
+          "metaAlphaPct": 92
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": true,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "photoAspect",
+          "sideMarginPct",
+          "topMarginPct",
+          "blur",
+          "tintAlpha",
+          "vignette",
+          "brandSizePct",
+          "brandGapPct",
+          "brandTracking",
+          "metaSizePct",
+          "metaGapPct",
+          "metaAlphaPct"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif"
+        ]
+      }
+    },
+    {
+      "id": "ratio-3",
+      "name": "比例 03",
+      "en": "RATIO-3",
+      "category": "比例",
+      "base": "ratioBlurSquare",
+      "params": {
+        "theme": "ink",
+        "blur": 30,
+        "tintAlpha": 0.18,
+        "squarePct": 88.27,
+        "radiusPct": 2.6
+      },
+      "text": {
+        "showMake": false,
+        "showModel": false,
+        "showExif": false,
+        "showDate": false,
+        "showLogo": false
+      },
+      "preview": "../assets/previews/ratio3.webp",
+      "renderedPreview": "../assets/previews/rendered/ratio-3.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "ratioBlurSquare",
+        "declaredParams": {
+          "theme": "ink",
+          "canvasAspect": 1.5015,
+          "blur": 30,
+          "tintAlpha": 0.18,
+          "squarePct": 88.27,
+          "radiusPct": 2.6
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": false,
+          "showModel": false,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "blur",
+          "tintAlpha",
+          "squarePct",
+          "radiusPct"
+        ],
+        "textKeys": [
+          "showMake",
+          "showModel",
+          "showExif",
+          "showDate",
+          "showLogo"
+        ]
+      }
+    },
+    {
+      "id": "new-color-2",
+      "name": "自然诗篇",
+      "en": "NEW-COLOR-2",
+      "category": "留白",
+      "base": "poetryCard",
+      "params": {
+        "theme": "white",
+        "marginPct": 6.5,
+        "radiusPct": 2,
+        "headerPct": 15.5,
+        "footerPct": 15.9,
+        "shadow": 0.3,
+        "photoAspect": 1.0811
+      },
+      "text": {
+        "title": "Nature's poetry"
+      },
+      "preview": "../assets/previews/new-color2.webp",
+      "renderedPreview": "../assets/previews/rendered/new-color-2.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "poetryCard",
+        "declaredParams": {
+          "theme": "white",
+          "marginPct": 6.5,
+          "radiusPct": 2,
+          "headerPct": 15.5,
+          "footerPct": 15.9,
+          "shadow": 0.3,
+          "photoAspect": 1.0811
+        },
+        "declaredText": {
+          "title": "Nature's poetry",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "radiusPct",
+          "headerPct",
+          "footerPct",
+          "shadow",
+          "photoAspect"
+        ],
+        "textKeys": [
+          "title"
+        ]
+      }
+    },
+    {
+      "id": "video-cover",
+      "name": "视频封面",
+      "en": "VIDEO-COVER",
+      "category": "FrameMark 精选",
+      "base": "bareCover",
+      "params": {
+        "theme": "ink"
+      },
+      "text": {
+        "showLogo": false,
+        "showExif": false,
+        "showDate": false
+      },
+      "preview": "../assets/previews/watermark_video_cover.jpg",
+      "renderedPreview": "../assets/previews/rendered/video-cover.webp",
+      "badge": "视频",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "bareCover",
+        "declaredParams": {
+          "theme": "ink",
+          "photoAspect": 1.7777777777777777
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": false,
+          "showDate": false,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme"
+        ],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    },
+    {
+      "id": "fm-editorial",
+      "name": "杂志编辑",
+      "en": "FM-EDITORIAL",
+      "category": "FrameMark 精选",
+      "base": "editorial",
+      "params": {
+        "theme": "cream",
+        "marginPct": 8.5,
+        "footerPct": 14
+      },
+      "renderedPreview": "../assets/previews/rendered/fm-editorial.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "editorial",
+        "declaredParams": {
+          "marginPct": 8.5,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 14,
+          "theme": "cream",
+          "logoScale": 5
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "footerPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "fm-polaroid",
+      "name": "拍立得",
+      "en": "FM-POLAROID",
+      "category": "FrameMark 精选",
+      "base": "polaroid",
+      "params": {
+        "theme": "paper",
+        "marginPct": 5.5,
+        "footerPct": 22
+      },
+      "renderedPreview": "../assets/previews/rendered/fm-polaroid.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "polaroid",
+        "declaredParams": {
+          "marginPct": 5.5,
+          "radiusPct": 0.5,
+          "shadow": 3,
+          "footerPct": 22,
+          "theme": "paper",
+          "grain": 0.06,
+          "logoScale": 5
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "marginPct",
+          "footerPct"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "fm-film",
+      "name": "胶片齿孔",
+      "en": "FM-FILM",
+      "category": "FrameMark 精选",
+      "base": "film",
+      "params": {
+        "theme": "black",
+        "grain": 0.16
+      },
+      "renderedPreview": "../assets/previews/rendered/fm-film.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "film",
+        "declaredParams": {
+          "marginPct": 2.5,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "black",
+          "grain": 0.16,
+          "logoScale": 5
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme",
+          "grain"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "fm-vertical",
+      "name": "竖排字幕",
+      "en": "FM-VERTICAL",
+      "category": "FrameMark 精选",
+      "base": "vertical",
+      "params": {
+        "theme": "ink"
+      },
+      "renderedPreview": "../assets/previews/rendered/fm-vertical.webp",
+      "autoLogo": true,
+      "_derived": {
+        "templateId": "vertical",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "ink",
+          "logoScale": 5
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "fm-overlay",
+      "name": "电影字幕",
+      "en": "FM-OVERLAY",
+      "category": "FrameMark 精选",
+      "base": "overlay",
+      "params": {
+        "theme": "ink"
+      },
+      "renderedPreview": "../assets/previews/rendered/fm-overlay.webp",
+      "autoLogo": false,
+      "_derived": {
+        "templateId": "overlay",
+        "declaredParams": {
+          "marginPct": 0,
+          "radiusPct": 0,
+          "shadow": 0,
+          "footerPct": 0,
+          "theme": "ink",
+          "logoScale": 5
+        },
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": true,
+          "fontScale": 1
+        },
+        "paramKeys": [
+          "theme"
+        ],
+        "textKeys": []
+      }
+    },
+    {
+      "id": "oppo-polaroid",
+      "name": "Polaroid · PLD",
+      "en": "POLAROID PLD",
+      "category": "系统相机",
+      "base": "polaroidFrame",
+      "params": {},
+      "text": {
+        "showLogo": false,
+        "showExif": true,
+        "showDate": true
+      },
+      "renderedPreview": "../assets/previews/rendered/oppo-polaroid.webp",
+      "badge": "近似",
+      "vendor": "oppo",
+      "family": "OPPO 相机",
+      "fidelity": "approx",
+      "_derived": {
+        "templateId": "polaroidFrame",
+        "declaredParams": {},
+        "declaredText": {
+          "title": "",
+          "subtitle": "",
+          "signature": "",
+          "customLine": "",
+          "location": "",
+          "showMake": true,
+          "showModel": true,
+          "showLens": true,
+          "showExif": true,
+          "showDate": true,
+          "showLogo": false,
+          "fontScale": 1
+        },
+        "paramKeys": [],
+        "textKeys": [
+          "showLogo",
+          "showExif",
+          "showDate"
+        ]
+      }
+    }
+  ]
+}

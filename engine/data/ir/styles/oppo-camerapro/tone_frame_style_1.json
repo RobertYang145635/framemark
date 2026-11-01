@@ -1,0 +1,76 @@
+{
+  "id": "oppo-camerapro:tone_frame_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相机",
+  "name": "色调边框 · 上",
+  "nameEn": "TONE FRAME · TOP",
+  "placement": "out",
+  "referenceWidth": 360,
+  "referenceWidthMode": "shortEdge",
+  "margins": {
+    "left": 0,
+    "top": 210,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#425A66",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 210,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 320,
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "Every moment feels like"
+              },
+              "font": "sys",
+              "size": 14,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 0.58,
+              "tracking": 0.01,
+              "lineHeight": 18,
+              "align": "left",
+              "gravity": "topHorCenter",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "imageParams"
+              },
+              "font": "sys",
+              "size": 9,
+              "weight": 400,
+              "color": "#FFFFFF",
+              "alpha": 0.42,
+              "tracking": 0.04,
+              "lineHeight": 12,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 5
+              },
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO CameraPro config; pending visual audit."
+  }
+}

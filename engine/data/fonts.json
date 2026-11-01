@@ -1,0 +1,830 @@
+{
+  "schemaVersion": "framemark-fonts/v1",
+  "generatedAt": "2026-10-31T17:16:15.916Z",
+  "sources": [
+    {
+      "role": "styles.css",
+      "path": "src/renderer/src/styles.css",
+      "bytes": 198911,
+      "sha256": "2e829503250697d456f9724b3a2396fb8f5e9cd89b877fa9b7657c1ef7c99787"
+    },
+    {
+      "role": "fonts.ts",
+      "path": "src/renderer/src/core/fonts.ts",
+      "bytes": 1940,
+      "sha256": "83d048b995e8fa39b37eb1990b5618698ea93e1b30faa3f576f3902be4377f31"
+    },
+    {
+      "role": "system/fonts.ts",
+      "path": "src/renderer/src/core/system/fonts.ts",
+      "bytes": 2799,
+      "sha256": "68c2336fdc09c43ae31dc3f6b4a0abdb531bb3e325f2cc8d9b9dc66674914859"
+    }
+  ],
+  "counts": {
+    "fontFiles": 26,
+    "ttf": 20,
+    "otf": 4,
+    "ttc": 1,
+    "woff2": 1,
+    "faceRules": 21,
+    "faceRulesWithMissingFile": 0,
+    "filesReferencedByCss": 21,
+    "filesNotReferencedByCss": 5,
+    "totalBytes": 67233752
+  },
+  "faceRules": [
+    {
+      "order": 1,
+      "family": "YouShe",
+      "src": "./assets/fonts/YouSheBiaoTiHei.ttf",
+      "file": "src/renderer/src/assets/fonts/YouSheBiaoTiHei.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 2,
+      "family": "Zeiss",
+      "src": "./assets/fonts/ZeissFrutigerNext-Bold.ttf",
+      "file": "src/renderer/src/assets/fonts/ZeissFrutigerNext-Bold.ttf",
+      "format": "truetype",
+      "weight": "700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 3,
+      "family": "Bebas Neue",
+      "src": "./assets/fonts/BebasNeue-Regular.ttf",
+      "file": "src/renderer/src/assets/fonts/BebasNeue-Regular.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 4,
+      "family": "OplusSans",
+      "src": "./assets/fonts/OplusSans-En-Regular.ttf",
+      "file": "src/renderer/src/assets/fonts/OplusSans-En-Regular.ttf",
+      "format": "truetype",
+      "weight": "100 900",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 5,
+      "family": "Chakra Petch",
+      "src": "./assets/fonts/ChakraPetch-SemiBoldItalic.woff2",
+      "file": "src/renderer/src/assets/fonts/ChakraPetch-SemiBoldItalic.woff2",
+      "format": "woff2",
+      "weight": "600",
+      "style": "italic",
+      "fileExists": true
+    },
+    {
+      "order": 6,
+      "family": "StockSysSans",
+      "src": "./assets/system/oppo/fonts/SysSans-En-Regular.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/SysSans-En-Regular.ttf",
+      "format": "truetype",
+      "weight": "100 900",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 7,
+      "family": "StockThai",
+      "src": "./assets/system/oppo/fonts/NotoSansThai-Regular.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/NotoSansThai-Regular.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 8,
+      "family": "StockThai",
+      "src": "./assets/system/oppo/fonts/NotoSansThai-Bold.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/NotoSansThai-Bold.ttf",
+      "format": "truetype",
+      "weight": "700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 9,
+      "family": "StockAvenir",
+      "src": "./assets/system/oppo/fonts/AvenirNext-Regular.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Regular.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 10,
+      "family": "StockAvenir",
+      "src": "./assets/system/oppo/fonts/AvenirNext-Medium.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Medium.ttf",
+      "format": "truetype",
+      "weight": "500",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 11,
+      "family": "StockAvenir",
+      "src": "./assets/system/oppo/fonts/AvenirNext-DemiBold.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-DemiBold.ttf",
+      "format": "truetype",
+      "weight": "600",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 12,
+      "family": "StockAvenir",
+      "src": "./assets/system/oppo/fonts/AvenirNext-Bold.ttf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Bold.ttf",
+      "format": "truetype",
+      "weight": "700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 13,
+      "family": "StockButler",
+      "src": "./assets/system/oppo/fonts/ButlerMedium.otf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/ButlerMedium.otf",
+      "format": "opentype",
+      "weight": "500",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 14,
+      "family": "StockButler",
+      "src": "./assets/system/oppo/fonts/ButlerBold.otf",
+      "file": "src/renderer/src/assets/system/oppo/fonts/ButlerBold.otf",
+      "format": "opentype",
+      "weight": "700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 15,
+      "family": "StockFZ",
+      "src": "./assets/system/oppo/fonts/FZCYSK.TTF",
+      "file": "src/renderer/src/assets/system/oppo/fonts/FZCYSK.TTF",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 16,
+      "family": "StockVivo",
+      "src": "./assets/system/vivo/fonts/vivo-Regular.otf",
+      "file": "src/renderer/src/assets/system/vivo/fonts/vivo-Regular.otf",
+      "format": "opentype",
+      "weight": "100 900",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 17,
+      "family": "StockOxanium",
+      "src": "./assets/system/xiaomi/fonts/Oxanium-Regular.ttf",
+      "file": "src/renderer/src/assets/system/xiaomi/fonts/Oxanium-Regular.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 18,
+      "family": "StockOxanium",
+      "src": "./assets/system/xiaomi/fonts/Oxanium-Medium.ttf",
+      "file": "src/renderer/src/assets/system/xiaomi/fonts/Oxanium-Medium.ttf",
+      "format": "truetype",
+      "weight": "500 700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 19,
+      "family": "StockMiSans",
+      "src": "./assets/system/xiaomi/fonts/misans_latin_regular.ttf",
+      "file": "src/renderer/src/assets/system/xiaomi/fonts/misans_latin_regular.ttf",
+      "format": "truetype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 20,
+      "family": "StockMiSans",
+      "src": "./assets/system/xiaomi/fonts/misans_latin_semibold.ttf",
+      "file": "src/renderer/src/assets/system/xiaomi/fonts/misans_latin_semibold.ttf",
+      "format": "truetype",
+      "weight": "600 700",
+      "style": "normal",
+      "fileExists": true
+    },
+    {
+      "order": 21,
+      "family": "StockLG1056",
+      "src": "./assets/system/xiaomi/fonts/LG1056-Regular.otf",
+      "file": "src/renderer/src/assets/system/xiaomi/fonts/LG1056-Regular.otf",
+      "format": "opentype",
+      "weight": "400",
+      "style": "normal",
+      "fileExists": true
+    }
+  ],
+  "files": [
+    {
+      "path": "src/renderer/src/assets/fonts/BebasNeue-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "939fea723dad24504f40faadc34eeffadfbbee558754f70c3c736e13786b0ab6",
+      "bytes": 56136,
+      "container": "ttf",
+      "family": "Bebas Neue",
+      "subfamily": "Regular",
+      "fullName": "Bebas Neue Regular",
+      "postscript": "BebasNeue-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/fonts/ChakraPetch-SemiBoldItalic.woff2",
+      "referencedByCss": true,
+      "sha256": "0befe34c63f18393930ab93131c7a0081c0f90e2670f5e17e81fa88196d5ad6f",
+      "bytes": 10872,
+      "container": "woff2",
+      "family": null,
+      "subfamily": null,
+      "fullName": null,
+      "postscript": null,
+      "weightClass": null
+    },
+    {
+      "path": "src/renderer/src/assets/fonts/OplusSans-En-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "e3e6132fdcaea7734dc980f96dc79a5b3849c8cfb8d27440206af6730360c241",
+      "bytes": 472560,
+      "container": "ttf",
+      "family": "OPPO Sans 4.0 EN",
+      "subfamily": "Regular",
+      "fullName": "OPPO_Sans_4.0_EN",
+      "postscript": "OPPO_Sans_4.0_EN",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/fonts/YouSheBiaoTiHei.ttf",
+      "referencedByCss": true,
+      "sha256": "dab883d69fb713233ea5d9aff8d1f27ccc2b71e249143edf6ea08367784c5dba",
+      "bytes": 1414784,
+      "container": "ttf",
+      "family": "YouSheBiaoTiHei",
+      "subfamily": "Regular",
+      "fullName": "YouSheBiaoTiHei",
+      "postscript": "YouSheBiaoTiHei",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/fonts/ZeissFrutigerNext-Bold.ttf",
+      "referencedByCss": true,
+      "sha256": "2c2507ac46d1ee3885d8a6f57a8817fea35dcac780c917290f75cd729a5e8371",
+      "bytes": 145524,
+      "container": "ttf",
+      "family": "ZEISS Frutiger Next W1G",
+      "subfamily": "Bold",
+      "fullName": "ZEISS Frutiger Next W1G Bold",
+      "postscript": "ZEISSFrutigerNextW1G-Bold",
+      "weightClass": 700
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Bold.ttf",
+      "referencedByCss": true,
+      "sha256": "ddd8a8bbfdddeb9a5f2fce1026f791b727712a7c1a92c2655a5b531d36512be6",
+      "bytes": 436284,
+      "container": "ttf",
+      "family": "Avenir Next",
+      "subfamily": "Bold",
+      "fullName": "Avenir Next Bold",
+      "postscript": "AvenirNext-Bold",
+      "weightClass": 700
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-DemiBold.ttf",
+      "referencedByCss": true,
+      "sha256": "d369cb2994c3d3ab14ed92a4478ce5756347af52fdefdf1148a9c3d491c73976",
+      "bytes": 369196,
+      "container": "ttf",
+      "family": "Avenir Next Demi Bold",
+      "subfamily": "Regular",
+      "fullName": "Avenir Next Demi Bold",
+      "postscript": "AvenirNext-DemiBold",
+      "weightClass": 600
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Medium.ttf",
+      "referencedByCss": true,
+      "sha256": "c0db917bc336a1ab0bcc028dc0daa94b17539b82f220369eececf6f28095e0f1",
+      "bytes": 382628,
+      "container": "ttf",
+      "family": "Avenir Next Medium",
+      "subfamily": "Regular",
+      "fullName": "Avenir Next Medium",
+      "postscript": "AvenirNext-Medium",
+      "weightClass": 500
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "725190e948a11b3f478736f11c938969e1f06ecc0c3bb8294812f6eb7e947015",
+      "bytes": 532608,
+      "container": "ttf",
+      "family": "Avenir Next",
+      "subfamily": "Regular",
+      "fullName": "Avenir Next Regular",
+      "postscript": "AvenirNext-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext.ttc",
+      "referencedByCss": false,
+      "sha256": "98dec241f3ee712a37fad61aafdb83e225ed54c3e5b6e9f0abeb24eba13743ba",
+      "bytes": 4994280,
+      "container": "ttc",
+      "numFonts": 12,
+      "faces": [
+        {
+          "index": 0,
+          "family": "Avenir Next",
+          "subfamily": "Bold",
+          "fullName": "Avenir Next Bold",
+          "postscript": "AvenirNext-Bold",
+          "weightClass": 700
+        },
+        {
+          "index": 1,
+          "family": "Avenir Next",
+          "subfamily": "Bold Italic",
+          "fullName": "Avenir Next Bold Italic",
+          "postscript": "AvenirNext-BoldItalic",
+          "weightClass": 700
+        },
+        {
+          "index": 2,
+          "family": "Avenir Next Demi Bold",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Demi Bold",
+          "postscript": "AvenirNext-DemiBold",
+          "weightClass": 600
+        },
+        {
+          "index": 3,
+          "family": "Avenir Next Demi Bold",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Demi Bold Italic",
+          "postscript": "AvenirNext-DemiBoldItalic",
+          "weightClass": 600
+        },
+        {
+          "index": 4,
+          "family": "Avenir Next",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Italic",
+          "postscript": "AvenirNext-Italic",
+          "weightClass": 400
+        },
+        {
+          "index": 5,
+          "family": "Avenir Next Medium",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Medium",
+          "postscript": "AvenirNext-Medium",
+          "weightClass": 500
+        },
+        {
+          "index": 6,
+          "family": "Avenir Next Medium",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Medium Italic",
+          "postscript": "AvenirNext-MediumItalic",
+          "weightClass": 500
+        },
+        {
+          "index": 7,
+          "family": "Avenir Next",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Regular",
+          "postscript": "AvenirNext-Regular",
+          "weightClass": 400
+        },
+        {
+          "index": 8,
+          "family": "Avenir Next Heavy",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Heavy",
+          "postscript": "AvenirNext-Heavy",
+          "weightClass": 900
+        },
+        {
+          "index": 9,
+          "family": "Avenir Next Heavy",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Heavy Italic",
+          "postscript": "AvenirNext-HeavyItalic",
+          "weightClass": 900
+        },
+        {
+          "index": 10,
+          "family": "Avenir Next Ultra Light",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Ultra Light",
+          "postscript": "AvenirNext-UltraLight",
+          "weightClass": 275
+        },
+        {
+          "index": 11,
+          "family": "Avenir Next Ultra Light",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Ultra Light Italic",
+          "postscript": "AvenirNext-UltraLightItalic",
+          "weightClass": 275
+        }
+      ]
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/ButlerBold.otf",
+      "referencedByCss": true,
+      "sha256": "cc8b26ab19aabe5540620719c35f0a80b0e0715355bea9d04cc9ef8e71a8e3f2",
+      "bytes": 43024,
+      "container": "otf",
+      "family": "Butler",
+      "subfamily": "Bold",
+      "fullName": "Butler Bold",
+      "postscript": "Butler-Bold",
+      "weightClass": 700
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/ButlerMedium.otf",
+      "referencedByCss": true,
+      "sha256": "f5a61aaf54dd47870637c2333957e7da99cbcdf9380c09abd977f1b27a340489",
+      "bytes": 45516,
+      "container": "otf",
+      "family": "Butler",
+      "subfamily": "Medium",
+      "fullName": "Butler Medium",
+      "postscript": "Butler-Medium",
+      "weightClass": 500
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/FZCYSK.TTF",
+      "referencedByCss": true,
+      "sha256": "1caa9414d5954de6a14a7fd59a5207f46e9415484e82c3af333bfd5826181e85",
+      "bytes": 10517788,
+      "container": "ttf",
+      "family": "FZYaSong-B-GBK",
+      "subfamily": "Regular",
+      "fullName": "FZYaSong-B-GBK",
+      "postscript": "FZCYSK--GBK1-0",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/NotoSansThai-Bold.ttf",
+      "referencedByCss": true,
+      "sha256": "cb0c042aa09133898650ac487ce4866956b105bf1474ee82648832c500ff3c35",
+      "bytes": 18336,
+      "container": "ttf",
+      "family": "Noto Sans Thai",
+      "subfamily": "Bold",
+      "fullName": "Noto Sans Thai Bold",
+      "postscript": "NotoSansThai-Bold",
+      "weightClass": 700
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/NotoSansThai-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "0dc4e81ac4fe236db1a1d8a9cdb28971b9c136de08f2e6328e365e11c76410de",
+      "bytes": 21380,
+      "container": "ttf",
+      "family": "Noto Sans Thai",
+      "subfamily": "Regular",
+      "fullName": "Noto Sans Thai",
+      "postscript": "NotoSansThai",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/SysSans-En-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "e3e6132fdcaea7734dc980f96dc79a5b3849c8cfb8d27440206af6730360c241",
+      "bytes": 472560,
+      "container": "ttf",
+      "family": "OPPO Sans 4.0 EN",
+      "subfamily": "Regular",
+      "fullName": "OPPO_Sans_4.0_EN",
+      "postscript": "OPPO_Sans_4.0_EN",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/SysSans-Hans-Regular.ttf",
+      "referencedByCss": false,
+      "sha256": "cf5e9738f92c8aab887275b7dc0443f52c01df9e5f4eb5cb4cd536bab34aa19d",
+      "bytes": 23022820,
+      "container": "ttf",
+      "family": "OPPO Sans 4.0 SC",
+      "subfamily": "Regular",
+      "fullName": "OPPO_Sans_4.0_SC",
+      "postscript": "OPPO_Sans_4.0_SC",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/vivo/fonts/vivo-Regular.otf",
+      "referencedByCss": true,
+      "sha256": "e8a72bb9ba3315ca1ae727e8f3905c8afb5d828872e9e6b4723b5eca8ab675bb",
+      "bytes": 52924,
+      "container": "otf",
+      "family": "vivo",
+      "subfamily": "Regular",
+      "fullName": "vivo Regular",
+      "postscript": "vivo-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/LG1056-Regular.otf",
+      "referencedByCss": true,
+      "sha256": "829f8ae9d3adc207dead93e303c12f7de90b05d6dde27989f98e94b27545a5b5",
+      "bytes": 81496,
+      "container": "otf",
+      "family": "LG1056",
+      "subfamily": "Regular",
+      "fullName": "LG1056 Regular",
+      "postscript": "LG1056-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/MiSans-Demibold.ttf",
+      "referencedByCss": false,
+      "sha256": "402d3ded24120a657916ab0c0253dfe1a2a21c8b4a6cb59be992c8a3288dcae4",
+      "bytes": 7846136,
+      "container": "ttf",
+      "family": "MiSans",
+      "subfamily": "Demibold",
+      "fullName": "MiSans Demibold",
+      "postscript": "MiSans-Demibold",
+      "weightClass": 600
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/MiSans-Medium.ttf",
+      "referencedByCss": false,
+      "sha256": "93528275ee67039c1daeb2ef700625bcf72abab2d3f97e1b6afae6273b579fc1",
+      "bytes": 7876052,
+      "container": "ttf",
+      "family": "MiSans",
+      "subfamily": "Medium",
+      "fullName": "MiSans Medium",
+      "postscript": "MiSans-Medium",
+      "weightClass": 500
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/MiSans-Regular.ttf",
+      "referencedByCss": false,
+      "sha256": "7172aa1b5c703780ee12df3fe4c50481dde01f3b125a045a398000a88d032ae5",
+      "bytes": 7924400,
+      "container": "ttf",
+      "family": "MiSans",
+      "subfamily": "Regular",
+      "fullName": "MiSans Regular",
+      "postscript": "MiSans-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/Oxanium-Medium.ttf",
+      "referencedByCss": true,
+      "sha256": "36dc893adef4029567c1cdf7dfb2fc7bc9edd564fd68e3f46d286da29f9657f0",
+      "bytes": 29504,
+      "container": "ttf",
+      "family": "Oxanium Medium",
+      "subfamily": "Regular",
+      "fullName": "Oxanium Medium",
+      "postscript": "Oxanium-Medium",
+      "weightClass": 500
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/Oxanium-Regular.ttf",
+      "referencedByCss": true,
+      "sha256": "dbdebdb2f11c3dc1d5f43a82221e9b106b08bbfda86c5560ee4b0f09b7e91a5e",
+      "bytes": 29476,
+      "container": "ttf",
+      "family": "Oxanium",
+      "subfamily": "Regular",
+      "fullName": "Oxanium Regular",
+      "postscript": "Oxanium-Regular",
+      "weightClass": 400
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/misans_latin_regular.ttf",
+      "referencedByCss": true,
+      "sha256": "d6afa946f09bf876e58ec2f784988a68647af9edb77709643f00fa25f183135b",
+      "bytes": 217756,
+      "container": "ttf",
+      "family": "MiSans Latin",
+      "subfamily": "Regular",
+      "fullName": "MiSans Latin Regular",
+      "postscript": "MiSansLatin-Regular",
+      "weightClass": 330
+    },
+    {
+      "path": "src/renderer/src/assets/system/xiaomi/fonts/misans_latin_semibold.ttf",
+      "referencedByCss": true,
+      "sha256": "2080f37e783eb269129c15f7f40028943fe659c1859efc5ba5f0de4e726c0e62",
+      "bytes": 219712,
+      "container": "ttf",
+      "family": "MiSans Latin",
+      "subfamily": "Semibold",
+      "fullName": "MiSans Latin Semibold",
+      "postscript": "MiSansLatin-Semibold",
+      "weightClass": 520
+    }
+  ],
+  "ttc": [
+    {
+      "path": "src/renderer/src/assets/system/oppo/fonts/AvenirNext.ttc",
+      "numFonts": 12,
+      "referencedByCss": false,
+      "faces": [
+        {
+          "index": 0,
+          "family": "Avenir Next",
+          "subfamily": "Bold",
+          "fullName": "Avenir Next Bold",
+          "postscript": "AvenirNext-Bold",
+          "weightClass": 700
+        },
+        {
+          "index": 1,
+          "family": "Avenir Next",
+          "subfamily": "Bold Italic",
+          "fullName": "Avenir Next Bold Italic",
+          "postscript": "AvenirNext-BoldItalic",
+          "weightClass": 700
+        },
+        {
+          "index": 2,
+          "family": "Avenir Next Demi Bold",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Demi Bold",
+          "postscript": "AvenirNext-DemiBold",
+          "weightClass": 600
+        },
+        {
+          "index": 3,
+          "family": "Avenir Next Demi Bold",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Demi Bold Italic",
+          "postscript": "AvenirNext-DemiBoldItalic",
+          "weightClass": 600
+        },
+        {
+          "index": 4,
+          "family": "Avenir Next",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Italic",
+          "postscript": "AvenirNext-Italic",
+          "weightClass": 400
+        },
+        {
+          "index": 5,
+          "family": "Avenir Next Medium",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Medium",
+          "postscript": "AvenirNext-Medium",
+          "weightClass": 500
+        },
+        {
+          "index": 6,
+          "family": "Avenir Next Medium",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Medium Italic",
+          "postscript": "AvenirNext-MediumItalic",
+          "weightClass": 500
+        },
+        {
+          "index": 7,
+          "family": "Avenir Next",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Regular",
+          "postscript": "AvenirNext-Regular",
+          "weightClass": 400
+        },
+        {
+          "index": 8,
+          "family": "Avenir Next Heavy",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Heavy",
+          "postscript": "AvenirNext-Heavy",
+          "weightClass": 900
+        },
+        {
+          "index": 9,
+          "family": "Avenir Next Heavy",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Heavy Italic",
+          "postscript": "AvenirNext-HeavyItalic",
+          "weightClass": 900
+        },
+        {
+          "index": 10,
+          "family": "Avenir Next Ultra Light",
+          "subfamily": "Regular",
+          "fullName": "Avenir Next Ultra Light",
+          "postscript": "AvenirNext-UltraLight",
+          "weightClass": 275
+        },
+        {
+          "index": 11,
+          "family": "Avenir Next Ultra Light",
+          "subfamily": "Italic",
+          "fullName": "Avenir Next Ultra Light Italic",
+          "postscript": "AvenirNext-UltraLightItalic",
+          "weightClass": 275
+        }
+      ],
+      "usedFaceIndex": null,
+      "usedFaceNote": "not referenced by any @font-face; per-weight single-face TTFs extracted from this collection are used instead (face #0 is Bold)"
+    }
+  ],
+  "extractionDeclaredByCssComment": [
+    {
+      "faceIndex": 7,
+      "file": "AvenirNext-Regular.ttf",
+      "weight": 400,
+      "facePostscript": "AvenirNext-Regular",
+      "faceSubfamily": "Regular",
+      "extractedPostscript": "AvenirNext-Regular",
+      "extractedWeightClass": 400,
+      "matches": true,
+      "note": "per-weight TTF extracted from the same .ttc (see styles.css comment)"
+    },
+    {
+      "faceIndex": 5,
+      "file": "AvenirNext-Medium.ttf",
+      "weight": 500,
+      "facePostscript": "AvenirNext-Medium",
+      "faceSubfamily": "Regular",
+      "extractedPostscript": "AvenirNext-Medium",
+      "extractedWeightClass": 500,
+      "matches": true,
+      "note": "per-weight TTF extracted from the same .ttc (see styles.css comment)"
+    },
+    {
+      "faceIndex": 2,
+      "file": "AvenirNext-DemiBold.ttf",
+      "weight": 600,
+      "facePostscript": "AvenirNext-DemiBold",
+      "faceSubfamily": "Regular",
+      "extractedPostscript": "AvenirNext-DemiBold",
+      "extractedWeightClass": 600,
+      "matches": true,
+      "note": "per-weight TTF extracted from the same .ttc (see styles.css comment)"
+    },
+    {
+      "faceIndex": 0,
+      "file": "AvenirNext-Bold.ttf",
+      "weight": 700,
+      "facePostscript": "AvenirNext-Bold",
+      "faceSubfamily": "Bold",
+      "extractedPostscript": "AvenirNext-Bold",
+      "extractedWeightClass": 700,
+      "matches": true,
+      "note": "face #0 of AvenirNext.ttc is Bold (weight 700); Chromium CSS src() on a .ttc only takes face #0 — the ttc is therefore NOT referenced by any @font-face; the per-weight TTFs extracted from this ttc are used instead."
+    }
+  ],
+  "uiFamilies": {
+    "core/system/fonts.ts": {
+      "STOCK_FONT_SYS": "\"StockSysSans\", \"StockThai\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", \"PingFang SC\", \"Noto Sans CJK SC\", sans-serif",
+      "STOCK_FONT_AVENIR": "\"StockAvenir\", \"StockSysSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "STOCK_FONT_BUTLER": "\"StockButler\", \"StockSysSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "STOCK_FONT_FZ": "\"StockFZ\", \"StockSysSans\", \"Microsoft YaHei\", \"Noto Sans CJK SC\", serif",
+      "STOCK_FONT_OXANIUM": "\"StockOxanium\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "STOCK_FONT_MISANS": "\"StockMiSans\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "STOCK_FONT_VIVO": "\"StockVivo\", \"StockSysSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "STOCK_FONT_LG": "\"StockLG1056\", \"StockOxanium\", \"OplusSans\", \"Inter\", serif",
+      "STOCK_FONT_ZEISS": "\"Zeiss\", \"StockSysSans\", \"Inter\", \"Microsoft YaHei\", sans-serif"
+    },
+    "core/draw.ts": {
+      "FONT_SYS": "\"StockSysSans\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "FONT_MISANS": "\"StockMiSans\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "FONT_VIVO": "\"StockVivo\", \"OplusSans\", \"Inter\", \"Microsoft YaHei\", sans-serif",
+      "FONT_BUTLER": "\"StockButler\", \"Butler\", \"Inter\", \"Microsoft YaHei\", serif",
+      "FONT_VENDOR": "\"OplusSans\", \"Inter\", \"Microsoft YaHei\", \"PingFang SC\", \"Noto Sans CJK SC\", sans-serif",
+      "FONT_TECH": "\"Chakra Petch\", \"OplusSans\", \"Inter\", sans-serif"
+    }
+  }
+}

@@ -89,6 +89,87 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/border_top.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/border_top.json",
+            "detail": "引擎渲染报告 b1/g0/g0/g0 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/border_top.json",
+            "detail": "引擎渲染报告 b1/g0/g0/g1 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0/g1",
+          "engineNodes": [
+            "b1/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -181,6 +262,87 @@
           "domain": {
             "on": true,
             "off": true
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/up_down.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/up_down.json",
+            "detail": "引擎渲染报告 b1/g0/g0/g0 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/up_down.json",
+            "detail": "引擎渲染报告 b1/g0/g0/g1 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0/g1",
+          "engineNodes": [
+            "b1/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -334,6 +496,60 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/inside.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-zeiss/inside.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g2 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g2",
+          "engineNodes": [
+            "b0/g0/g1/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -503,6 +719,60 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-polaroid/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-polaroid/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g2 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g2",
+          "engineNodes": [
+            "b1/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -528,7 +798,89 @@
       "fingerprint": "out|artImage|dateLine|locationLine|modelLine",
       "source": "manual",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-stamp/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-stamp/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g2 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g2",
+          "engineNodes": [
+            "b1/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-stamp/frame.json",
+            "detail": "引擎渲染报告 b2/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b2/g0/g0",
+          "engineNodes": [
+            "b2/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 un_support_edit:true ⇒ 该套不可编辑，不发控件",
       "notes": "vivo BORDER_STAMP_PHOTO-20260520"
     },
@@ -645,6 +997,33 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-tone/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g1",
+          "engineNodes": [
+            "b1/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -907,7 +1286,62 @@
       "fingerprint": "out|artImage|customLine|dateLine|literalText|locationLine|modelLine|vectorArt",
       "source": "manual",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-postcard/frame.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-postcard/frame.json",
+            "detail": "引擎渲染报告 b3/g0/g0/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b3/g0/g0/g0",
+          "engineNodes": [
+            "b3/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 un_support_edit:true ⇒ 该套不可编辑，不发控件",
       "notes": "vivo BORDER_POST_CARD_PHOTO-20260903"
     },
@@ -944,6 +1378,60 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-loc/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-loc/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g3/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g3/g0",
+          "engineNodes": [
+            "b0/g0/g3/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -987,6 +1475,60 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-signet/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-signet/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g3/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g3/g0",
+          "engineNodes": [
+            "b0/g0/g3/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -1030,6 +1572,60 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-ink/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-chinoiserie-ink/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g3/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g3/g0",
+          "engineNodes": [
+            "b0/g0/g3/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -1173,6 +1769,60 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-signature/overlay.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine+locationLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine+locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-signature/overlay.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -1333,6 +1983,87 @@
             "off": true
           },
           "fidelityRisk": true
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-feature-photo/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-feature-photo/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g2/g0 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2/g0",
+          "engineNodes": [
+            "b0/g0/g2/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine+locationLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine+locationLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/vivo-feature-photo/frame.json",
+            "detail": "引擎渲染报告 b0/g0/g2/g1 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2/g1",
+          "engineNodes": [
+            "b0/g0/g2/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [

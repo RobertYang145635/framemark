@@ -1,0 +1,115 @@
+{
+  "id": "vivo-zeiss:inside",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "蔡司 · 内嵌",
+  "nameEn": "ZEISS INSIDE",
+  "placement": "in",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "transparentBackground": true,
+  "bands": [
+    {
+      "direction": "overlay",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 860,
+          "background": "#CC002D62",
+          "gravity": "leftBottom",
+          "margins": {
+            "left": 72,
+            "bottom": 72
+          },
+          "children": [
+            {
+              "kind": "image",
+              "asset": "vivo-zeiss-grid",
+              "width": 96,
+              "height": 96,
+              "scale": "contain",
+              "margins": {
+                "left": 30,
+                "top": 26,
+                "bottom": 26
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "left": 24,
+                "right": 30,
+                "top": 26,
+                "bottom": 26
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "ZEISS"
+                  },
+                  "font": "zeiss",
+                  "size": 44,
+                  "weight": 700,
+                  "tracking": 0.04,
+                  "lineHeight": 51.04,
+                  "align": "left",
+                  "color": "#FFFFFF"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "model"
+                  },
+                  "font": "vivo",
+                  "size": 28,
+                  "weight": 500,
+                  "tracking": 0.2,
+                  "lineHeight": 33.6,
+                  "align": "left",
+                  "optional": true,
+                  "color": "#FFFFFF"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "vivo",
+                  "size": 22,
+                  "weight": 400,
+                  "tracking": 0.08,
+                  "lineHeight": 26.4,
+                  "align": "left",
+                  "optional": true,
+                  "color": "#DCE9FF"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-zeiss-grid": {
+      "file": "vivo/zeiss/grid.png",
+      "width": 168,
+      "height": 168
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "In-photo Zeiss brand block; host layout not exposed by template APK. Uses official grid icon and measured photo-layer scale; marked approximate."
+  }
+}

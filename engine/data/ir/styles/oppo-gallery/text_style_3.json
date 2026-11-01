@@ -1,0 +1,156 @@
+{
+  "id": "oppo-gallery:text_style_3",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "文字 · 3",
+  "nameEn": "text_style_3",
+  "placement": "in",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 29,
+      "offset": {
+        "x": 20,
+        "y": 20
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 209,
+          "gravity": "leftVerticalCenter",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 10,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 1,
+              "tracking": 0,
+              "lineHeight": 14.79,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "bottom": 1.8
+              },
+              "optional": false,
+              "shadow": {
+                "color": "#65000000",
+                "blur": 3.3000000000000003,
+                "x": 1,
+                "y": 0
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "width": 205,
+              "gravity": "leftTop",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "sys",
+                  "size": 8,
+                  "weight": 600,
+                  "color": "#FFFFFF",
+                  "alpha": 1,
+                  "tracking": 0,
+                  "lineHeight": 11.83,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "right": 4.51
+                  },
+                  "optional": false,
+                  "shadow": {
+                    "color": "#65000000",
+                    "blur": 3.3000000000000003,
+                    "x": 1,
+                    "y": 0
+                  }
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.5,
+                  "height": 7,
+                  "color": "#E5FFFFFF",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "top": 0.5,
+                    "right": 4.45
+                  }
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "time"
+                  },
+                  "font": "sys",
+                  "size": 8,
+                  "weight": 600,
+                  "color": "#FFFFFF",
+                  "alpha": 1,
+                  "tracking": 0,
+                  "lineHeight": 11.83,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false,
+                  "shadow": {
+                    "color": "#65000000",
+                    "blur": 3.3000000000000003,
+                    "x": 1,
+                    "y": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "image",
+          "asset": "text_style_sign_1",
+          "width": 91,
+          "height": 32,
+          "scale": "fill",
+          "gravity": "rightVerticalCenter",
+          "margins": {},
+          "alpha": 1
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "text_style_sign_1": {
+      "file": "text_style_sign_1.webp",
+      "width": 728,
+      "height": 256
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

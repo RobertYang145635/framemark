@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "square-frame-05",
+    "canvas": { "w": 5000, "h": 5000 },
+    "elements": [
+      { "kind": "frame", "inset": 200 },
+      { "kind": "text", "slot": "title", "value": "1:1" }
+    ]
+  },
+  "photo": { "path": "D:/photos/DSC_5150.jpg", "w": 5000, "h": 5000 },
+  "mode": "export",
+  "band": { "y": 2048, "h": 2048 }
+}

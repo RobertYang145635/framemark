@@ -1,0 +1,116 @@
+{
+  "id": "vivo-polaroid:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "拍立得 · 签名框",
+  "nameEn": "POLAROID",
+  "placement": "out",
+  "referenceWidth": 1497,
+  "margins": {
+    "left": 39,
+    "top": 39,
+    "right": 39,
+    "bottom": 271
+  },
+  "background": "#000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "width": 1497,
+      "thickness": 1356,
+      "offset": {
+        "x": -39,
+        "y": -39
+      },
+      "drawFirst": true,
+      "children": [
+        {
+          "kind": "image",
+          "asset": "vivo-polaroid-card",
+          "width": 1497,
+          "height": 1356,
+          "scale": "fill",
+          "gravity": "leftTop"
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 231,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1419,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 30,
+              "weight": 500,
+              "color": "#111111",
+              "tracking": 0.06,
+              "lineHeight": 40.5,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 400,
+              "color": "#555555",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "right"
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "location"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 400,
+              "color": "#555555",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "right",
+              "margins": {
+                "left": 26
+              },
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-polaroid-card": {
+      "file": "vivo/batch1/polaroid-card.png",
+      "width": 1497,
+      "height": 1356
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Polaroid film card; 39/39/39/271 bands and white 231 band measured from settled polaroid/4_3_540_q PAG frame (canvas 1497x1356). Card art is the vendor PAG raster with the photo layer punched out. Text order (model left, time+location right) from edit.apk temp.json mappings 1/4/12.",
+    "unsupported": [
+      "bottom-centre mini-photo seen mid-animation is not present in the settled PAG frame; omitted",
+      "signature (user handwriting) omitted"
+    ]
+  }
+}

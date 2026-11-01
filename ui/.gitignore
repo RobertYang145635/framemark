@@ -1,0 +1,5 @@
+# Build outputs / IDE state (ui/ deliverable)
+build/
+.gradle/
+.kotlin/
+local.properties

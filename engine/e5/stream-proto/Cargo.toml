@@ -1,0 +1,40 @@
+[package]
+name = "fm-e5-stream"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "E5 streaming-JPEG prototype: mozjpeg row-fed encoder, no Skia (libjpeg symbol clash)"
+
+# Own workspace + target dir: this crate must never link Skia.
+[workspace]
+
+[lib]
+name = "fm_e5_stream"
+path = "src/lib.rs"
+
+[[bin]]
+name = "e5-stream"
+path = "src/main.rs"
+
+[[bin]]
+name = "e5-worker"
+path = "src/bin/worker.rs"
+
+[[bin]]
+name = "e5-app"
+path = "src/bin/app.rs"
+
+[dependencies]
+mozjpeg-sys = { version = "2.2", default-features = false }
+# WebP VP8L/VP8 + mux (ICCP/EXIF chunks); bundled C sources, no system lib.
+libwebp-sys2 = { version = "0.2", default-features = false, features = ["std", "1_5", "mux", "static"] }
+libc = "0.2"
+serde_json = "1"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Threading",
+] }
+
+[profile.release]
+opt-level = 2

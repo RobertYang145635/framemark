@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "vivo-frame-19",
+    "canvas": { "w": 2400, "h": 1600 },
+    "elements": [
+      { "kind": "frame", "inset": 48 },
+      { "kind": "text", "slot": "title", "value": "Vivo X200" }
+    ]
+  },
+  "photo": { "path": "D:/photos/IMG_8801.jpg", "w": 2400, "h": 1600 },
+  "mode": "preview",
+  "maxEdge": 320
+}

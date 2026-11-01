@@ -1,0 +1,29 @@
+[package]
+name = "fm-android-engine"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "X1 Android minimal renderer: e2b IR solver + text engine, CPU raster, C ABI for the JNI shim"
+
+# Own workspace root; the desktop engine crates and engine/ stay untouched.
+[workspace]
+
+[lib]
+name = "fm_android_engine"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+serde_json = "1"
+tiff = "0.11"
+
+# Android uses the T0b prebuilt key (ganesh-gl + textlayout + jpeg). The host
+# build reuses the Windows T0b prebuilt so the same paint code can be compared
+# against the desktop engine before touching a device.
+[target.'cfg(target_os = "android")'.dependencies]
+skia-safe = { version = "0.156", features = ["textlayout", "gl"] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+skia-safe = { version = "0.156", features = ["textlayout", "d3d", "gl"] }
+
+[profile.release]
+opt-level = 2

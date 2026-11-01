@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "plain-border-02",
+    "canvas": { "w": 3024, "h": 4032 },
+    "elements": [{ "kind": "frame", "inset": 96 }]
+  },
+  "photo": { "path": "D:/photos/IMG_4477.jpg", "w": 3024, "h": 4032 },
+  "mode": "preview",
+  "maxEdge": 800
+}

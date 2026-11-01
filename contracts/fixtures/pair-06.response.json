@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/export/pair-06-band-1024.png", "w": 8000, "h": 1024 },
+  "photoRect": { "x": 0, "y": -1024, "w": 8000, "h": 6000 },
+  "textSlots": [
+    { "id": "title", "text": "城市夜行", "x": 180, "y": -620, "w": 900, "h": 120, "fontSize": 104, "lines": 1 }
+  ],
+  "ms": 812.5,
+  "engine": "fake"
+}

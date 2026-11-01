@@ -1,0 +1,100 @@
+{
+  "id": "vivo-geographic:overlay",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "地理 · 信息叠加",
+  "nameEn": "GEOGRAPHIC",
+  "placement": "in",
+  "referenceWidth": 1497,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "transparentBackground": true,
+  "bands": [
+    {
+      "direction": "overlay",
+      "gravity": "leftBottom",
+      "offset": {
+        "x": 72,
+        "y": -72
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "leftBottom",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 40,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "tracking": 0.06,
+              "lineHeight": 54,
+              "align": "left"
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+              },
+              "font": "vivo",
+              "size": 28,
+              "weight": 400,
+              "color": "#F2F2F2",
+              "tracking": 0.06,
+              "lineHeight": 37.800000000000004,
+              "align": "left"
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "custom"
+              },
+              "font": "vivo",
+              "size": 28,
+              "weight": 400,
+              "color": "#F2F2F2",
+              "tracking": 0.06,
+              "lineHeight": 37.800000000000004,
+              "align": "left",
+              "optional": true
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "location"
+              },
+              "font": "vivo",
+              "size": 28,
+              "weight": 400,
+              "color": "#F2F2F2",
+              "tracking": 0.06,
+              "lineHeight": 37.800000000000004,
+              "align": "left",
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Geographic overlay; settled geographic_photo/4_3_540_q PAG frame is fully transparent (numImages=1, the photo) so there is no vendor decoration to copy and none was invented. Line order model / time / custom text / latitude-longitude from temp.json mappings 1-4; anchored bottom-left over the photo, host metrics unknown.",
+    "unsupported": [
+      "latitude/longitude formatting approximated by the location token",
+      "text opacity slider (10-100%) not modelled"
+    ]
+  }
+}

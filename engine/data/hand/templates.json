@@ -1,0 +1,3045 @@
+{
+  "schemaVersion": "framemark-hand-templates/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "source": {
+    "role": "hand:templates",
+    "path": "src/renderer/src/core/templates.ts",
+    "bytes": 171977,
+    "sha256": "0d1cedba5d297367967105123ac1b8ce8327f467934ef4904856b66ffdd0c9a7"
+  },
+  "note": "All 39 TemplateDefs, data fields verbatim. layout/render/prepare are replaced by fingerprints (deferredTo E4; systemCamera E3). `_`-prefixed keys are E1b-1 metadata, not source.",
+  "counts": {
+    "templateDefs": 39,
+    "handTemplateDefs": 38,
+    "systemCamera": 1,
+    "variantRefs": 69
+  },
+  "templates": [
+    {
+      "id": "minimal",
+      "name": "留白 · 极简",
+      "en": "MARGIN",
+      "category": "留白",
+      "description": "细画框与底部参数区，干净、克制，适合街拍与日常。",
+      "defaults": {
+        "marginPct": 6.5,
+        "radiusPct": 1.2,
+        "shadow": 3,
+        "footerPct": 12,
+        "theme": "white",
+        "logoScale": 5,
+        "footerAlign": "center",
+        "logoPos": "none",
+        "borderStyle": "none"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "minimal",
+          "sourceKind": "TS function/method body",
+          "chars": 339,
+          "bytes": 339,
+          "lines": 7,
+          "sha256": "c0382347147c875b2f62b5cb9abf23ef36d0f1b29d22b5d60340f1d2622ce8da",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "minimal",
+          "sourceKind": "TS function/method body",
+          "chars": 2048,
+          "bytes": 2048,
+          "lines": 58,
+          "sha256": "45b64f100f7376773f91457f299fddee5adabf7b28f1038967f564b336c9bd1d",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "gallery",
+      "name": "留白 · 画廊",
+      "en": "GALLERY",
+      "category": "留白",
+      "description": "宽卡纸与标题层，像一张展览作品卡。",
+      "defaults": {
+        "marginPct": 9,
+        "radiusPct": 0.5,
+        "shadow": 2,
+        "footerPct": 20,
+        "theme": "cream",
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "gallery",
+          "sourceKind": "TS function/method body",
+          "chars": 248,
+          "bytes": 248,
+          "lines": 6,
+          "sha256": "f7385519204e1397186375baf548a993b1f39db1cf182ba174a99deaf8e78ebb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "gallery",
+          "sourceKind": "TS function/method body",
+          "chars": 2249,
+          "bytes": 2249,
+          "lines": 68,
+          "sha256": "5d456edf22b1f0417364e94a47ca28e0485a43d7ce397999e6a9c013ddf2ed4a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "sideCard",
+      "name": "侧栏卡片",
+      "en": "SIDE CARD",
+      "category": "液态玻璃",
+      "description": "固定 3:2 白卡：照片保比例，品牌与 F/MM/S 参数在侧栏。",
+      "defaults": {
+        "theme": "white",
+        "sideLayout": "text-right",
+        "marginPct": 4,
+        "radiusPct": 2,
+        "shadow": 0.8
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "sideCard",
+          "sourceKind": "TS function/method body",
+          "chars": 90,
+          "bytes": 90,
+          "lines": 4,
+          "sha256": "f0530e9e57cd19363d820dfc908aea43116acae189e8cbdca696a6708dab30a4",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "sideCard",
+          "sourceKind": "TS function/method body",
+          "chars": 5477,
+          "bytes": 5477,
+          "lines": 134,
+          "sha256": "2794df45fe2ddd03f28a8c519e5f72625295aad50f7a38df49ea907bdb08624f",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "glass-white-1",
+        "glass-white-2",
+        "glass-white-3"
+      ]
+    },
+    {
+      "id": "specFooter",
+      "name": "参数页脚卡",
+      "en": "SPEC FOOTER",
+      "category": "液态玻璃",
+      "description": "照片 + 白底参数页脚：机型/品牌与 F/MM/S 三框。",
+      "defaults": {
+        "theme": "white",
+        "marginPct": 3,
+        "footerPct": 22,
+        "radiusPct": 1.5,
+        "shadow": 0.5
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "specFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 235,
+          "bytes": 235,
+          "lines": 6,
+          "sha256": "89c60faa9975806e4541f2efa05c6e500fab40a97c362d5288d5f8d7f0cf7f5f",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "specFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 2456,
+          "bytes": 2456,
+          "lines": 66,
+          "sha256": "972fa21d3309a28b0bb40a31d3c40f4d969837d7a6caf32a8d09bf2f93d4d6ac",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "glass-card-4"
+      ]
+    },
+    {
+      "id": "splitReveal",
+      "name": "色彩显现",
+      "en": "SPLIT REVEAL",
+      "category": "色卡",
+      "description": "整幅彩色照片与纵向三色点取色器。",
+      "defaults": {
+        "theme": "paper",
+        "canvasAspect": 1.7777777777777777,
+        "frameMode": "single",
+        "dotOrientation": "vertical",
+        "dotCount": 3,
+        "dotXPct": 50,
+        "dotTopPct": 46.3,
+        "dotGapPct": 7.7,
+        "dotSizePct": 2.45
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "splitReveal",
+          "sourceKind": "TS function/method body",
+          "chars": 160,
+          "bytes": 160,
+          "lines": 4,
+          "sha256": "11838aafa58d4f85e8f22e151c66c5ee383348f5dfe6042aab11eab36b0c5a85",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "splitReveal",
+          "sourceKind": "TS function/method body",
+          "chars": 1781,
+          "bytes": 1781,
+          "lines": 46,
+          "sha256": "8dd7da87eaf3835d4bc813273d99bc2e5a01bd22acd764c62626adbaf5cc31f6",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "color-reveal"
+      ]
+    },
+    {
+      "id": "sideTicket",
+      "name": "票据 · 侧存根",
+      "en": "SIDE TICKET",
+      "category": "票据",
+      "description": "竖版背景中一张横票，照片在左、城市存根在右。",
+      "defaults": {
+        "theme": "ink",
+        "ticketBg": "#244231",
+        "ticketPanel": "#31533f",
+        "stubTitle": "HANG ZHOU",
+        "stubLabel": "GUANGYING 100"
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "sideTicket",
+          "sourceKind": "TS function/method body",
+          "chars": 94,
+          "bytes": 94,
+          "lines": 4,
+          "sha256": "18a07000130a1cb8ab97c534c04ca494d9f2516128ec6626b4f236b728b173cc",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "sideTicket",
+          "sourceKind": "TS function/method body",
+          "chars": 2907,
+          "bytes": 2907,
+          "lines": 83,
+          "sha256": "da5acbcad0f9c8ad32e17999ffdd204bbf4955828a64e0592569bee939ea8c3d",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "ticket-1"
+      ]
+    },
+    {
+      "id": "portraitTicket",
+      "name": "票据 · 竖卡",
+      "en": "PORTRAIT TICKET",
+      "category": "票据",
+      "description": "浅色背景中的竖票卡：照片在上，白存根在下。",
+      "defaults": {
+        "theme": "stone",
+        "ticketBg": "#c7dfe6",
+        "ticketCard": "#ffffff",
+        "ticketInk": "#2d6f7c",
+        "stubTitle": "QING DAO",
+        "stubLabel": "GUANGYING 100"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "portraitTicket",
+          "sourceKind": "TS function/method body",
+          "chars": 94,
+          "bytes": 94,
+          "lines": 4,
+          "sha256": "18a07000130a1cb8ab97c534c04ca494d9f2516128ec6626b4f236b728b173cc",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "portraitTicket",
+          "sourceKind": "TS function/method body",
+          "chars": 3203,
+          "bytes": 3203,
+          "lines": 85,
+          "sha256": "0d3dfbb751f9d83c8704949de5dbbf73cf9f05b1bc3a6417fd083116aaa6eea5",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "ticket-2"
+      ]
+    },
+    {
+      "id": "poetryCard",
+      "name": "自然诗篇",
+      "en": "POETRY CARD",
+      "category": "留白",
+      "description": "标题/日期 + 圆角照片 + 色板与机型参数页脚。",
+      "defaults": {
+        "theme": "white",
+        "marginPct": 6.5,
+        "radiusPct": 2,
+        "headerPct": 15.5,
+        "footerPct": 15.9,
+        "shadow": 0.3,
+        "photoAspect": 0
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "poetryCard",
+          "sourceKind": "TS function/method body",
+          "chars": 434,
+          "bytes": 434,
+          "lines": 9,
+          "sha256": "f45135385d6dce4f3f24b06fd611c89277cb356703c7844118928b06548c9573",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "poetryCard",
+          "sourceKind": "TS function/method body",
+          "chars": 1947,
+          "bytes": 1947,
+          "lines": 48,
+          "sha256": "bc7d4c2500d80ef054f4167642bbd133aeb2606ff2bc0c962cec35a320044e55",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "new-color-2"
+      ]
+    },
+    {
+      "id": "locationCard",
+      "name": "坐标卡",
+      "en": "LOCATION CARD",
+      "category": "色卡",
+      "description": "顶部地点/时间色块，下方满幅照片。",
+      "defaults": {
+        "theme": "paper",
+        "locationBg": "#405c66",
+        "locationFg": "#f5f2ea",
+        "locationTitle": "中国",
+        "locationTime": "08:00 AM",
+        "headerPct": 45
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "locationCard",
+          "sourceKind": "TS function/method body",
+          "chars": 94,
+          "bytes": 94,
+          "lines": 4,
+          "sha256": "18a07000130a1cb8ab97c534c04ca494d9f2516128ec6626b4f236b728b173cc",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "locationCard",
+          "sourceKind": "TS function/method body",
+          "chars": 956,
+          "bytes": 956,
+          "lines": 27,
+          "sha256": "e92494af8c64bb5edbd55099b55fdd43ca22c8459b900384c8323e0003cb3ddf",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "color-walk"
+      ]
+    },
+    {
+      "id": "paletteCard",
+      "name": "色卡大样",
+      "en": "PALETTE CARD",
+      "category": "色卡",
+      "description": "圆角照片 + 下方大色板与十六进制标注。",
+      "defaults": {
+        "theme": "white",
+        "marginPct": 2,
+        "radiusPct": 2,
+        "shadow": 0.4,
+        "palettePct": 22
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "paletteCard",
+          "sourceKind": "TS function/method body",
+          "chars": 238,
+          "bytes": 238,
+          "lines": 6,
+          "sha256": "d4f939806403180ea7cacb2d4036b30e5c3c7f28f3c335e6879a0e0b35efe8f2",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "paletteCard",
+          "sourceKind": "TS function/method body",
+          "chars": 1015,
+          "bytes": 1015,
+          "lines": 22,
+          "sha256": "4446e36b75551c360198454779fd8ad318c0edc8ec5f1a4153fa35bd9e37f8f6",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "color-1",
+        "color-2",
+        "color-3"
+      ]
+    },
+    {
+      "id": "polaroidFrame",
+      "name": "Polaroid 整幅相框",
+      "en": "POLAROID FRAME",
+      "category": "系统相机",
+      "description": "按画幅选择 Polaroid frame，照片填入透明窗口，底部写机型/参数。",
+      "defaults": {},
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "polaroidFrame",
+          "sourceKind": "TS function/method body",
+          "chars": 169,
+          "bytes": 169,
+          "lines": 5,
+          "sha256": "e91ff554d84dae9065bb51f90a46015390cc129dae7576dfd76028007d1eecbf",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "polaroidFrame",
+          "sourceKind": "TS function/method body",
+          "chars": 1328,
+          "bytes": 1328,
+          "lines": 37,
+          "sha256": "80c27ba80e12f122376bda0c7a51b68905066fb2800167959f70e9f2e2bfb21a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": {
+          "name": "prepare",
+          "owner": "polaroidFrame",
+          "sourceKind": "TS function/method body",
+          "chars": 262,
+          "bytes": 262,
+          "lines": 7,
+          "sha256": "a6fc78eef93a24df054b07f95773c1c1265508efd88c6e230e3715c20d3c3d6d",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        }
+      },
+      "_variantIds": [
+        "oppo-polaroid"
+      ]
+    },
+    {
+      "id": "xiaomiStandard",
+      "name": "小米标准水印",
+      "en": "XIAOMI STANDARD",
+      "category": "系统相机",
+      "description": "照片内标准水印：左下品牌/机型，右侧日期，可选自定义行。",
+      "defaults": {
+        "theme": "ink",
+        "standardPosition": "bottom",
+        "standardLayout": "row",
+        "showStandardExif": false,
+        "insetPct": 4.44,
+        "offsetPct": 3.43,
+        "shadow": 0.6
+      },
+      "themes": [],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "xiaomiStandard",
+          "sourceKind": "TS function/method body",
+          "chars": 54,
+          "bytes": 54,
+          "lines": 3,
+          "sha256": "955b6d01590609ac2d504341516fa40e89ce5425e3f3785d315f7c9e56017fcb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "xiaomiStandard",
+          "sourceKind": "TS function/method body",
+          "chars": 3351,
+          "bytes": 3351,
+          "lines": 91,
+          "sha256": "a0f3cfbd73a0c009a7c50d7772ef92f03308e479d4fd0dd90ec397f6da46fa1a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "brandFooter",
+      "name": "品牌 · 页脚",
+      "en": "BRAND FOOTER",
+      "category": "品牌",
+      "description": "白/黑页脚、相机 Logo 与左右参数栏，最接近相机原厂水印。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 7.5,
+        "theme": "white",
+        "logoScale": 5,
+        "logoPos": "center",
+        "footerMode": "classic",
+        "footerAuto": false,
+        "footerTextScale": 1,
+        "footerFont": "auto",
+        "slots": "",
+        "logoCenterX": 0.53,
+        "frame": ""
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "brandFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 638,
+          "bytes": 638,
+          "lines": 12,
+          "sha256": "b9d346872d5236195666bfd4bd6d9e7f02835c3d9ae18f6c6075347b3e75b2af",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "brandFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 6455,
+          "bytes": 6455,
+          "lines": 138,
+          "sha256": "816c982f419223d0a708c5bc9450b5ba4ca0212beac358aa6bf0101e46783b1b",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "wm-classic",
+        "wm-simple",
+        "wm-black",
+        "wm-canon",
+        "wm-left",
+        "wm-wide",
+        "wm-right"
+      ]
+    },
+    {
+      "id": "gradFooter",
+      "name": "毕业 · 页脚",
+      "en": "GRAD FOOTER",
+      "category": "毕业",
+      "description": "满幅照片 + 纯白页脚：左侧 EXIF 品牌/参数，右侧毕业贴纸。",
+      "defaults": {
+        "theme": "white",
+        "footerPct": 12,
+        "stickerScalePct": 100,
+        "stickerRightPct": 0,
+        "brandXPct": 3.9,
+        "brandY": 0.46,
+        "brandSizePct": 3.7,
+        "exifY": 0.772,
+        "exifSizePct": 2.85
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "gradFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 128,
+          "bytes": 128,
+          "lines": 4,
+          "sha256": "dee1abfe9457c55634638b9cefdaca8778b8dcfb0b1af5189eaae85b3e61c09a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "gradFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 1563,
+          "bytes": 1563,
+          "lines": 39,
+          "sha256": "e678f82e35f8e08b5f2f44a27dd571545e8a89f42fe565f3a5202ae1508bc8cd",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": {
+          "name": "prepare",
+          "owner": "gradFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 282,
+          "bytes": 282,
+          "lines": 7,
+          "sha256": "80d7725e790cf0f36e7d1d995c09b760ef0d5e1a89b2f34299b70768bb778a3b",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        }
+      },
+      "_variantIds": [
+        "grad-1",
+        "grad-2"
+      ]
+    },
+    {
+      "id": "personalBorder",
+      "name": "个人 · 签名边框",
+      "en": "PERSONAL BORDER",
+      "category": "个人",
+      "description": "原版个人边框：照片满幅、四周细白边 + 底部签名栏，照片按模板画幅裁切。",
+      "defaults": {
+        "marginPct": 2,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 9.5,
+        "borderPct": 2,
+        "theme": "white",
+        "logoScale": 5,
+        "logoPos": "center",
+        "signature": "FrameMark"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "personalBorder",
+          "sourceKind": "TS function/method body",
+          "chars": 129,
+          "bytes": 129,
+          "lines": 4,
+          "sha256": "105d19167bfd18da54ba82cc14a19951ee0351dc1722f319b47a0f201bc99718",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "personalBorder",
+          "sourceKind": "TS function/method body",
+          "chars": 2805,
+          "bytes": 2805,
+          "lines": 75,
+          "sha256": "db2c7f03a8a9616ad4233287cc34dbc6d30416e866343db0b0f56ace0b0867ce",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "personal-simple"
+      ]
+    },
+    {
+      "id": "vendorFooter",
+      "name": "厂商 · 水印",
+      "en": "VENDOR WATERMARK",
+      "category": "厂商",
+      "description": "哈苏/蔡司/徕卡厂商水印，哈苏按 OPPO 相册 JSON 规格，蔡司/徕卡按系统包提取的字体与字标。",
+      "defaults": {
+        "theme": "white",
+        "vendor": "hasselblad",
+        "footerPct": 16.67,
+        "logoScale": 5,
+        "logoPos": "right",
+        "shadow": 0,
+        "radiusPct": 0
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "vendorFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 1075,
+          "bytes": 1075,
+          "lines": 19,
+          "sha256": "281024c9a2bfef7c9b271f648a7f2aba97d429ac697c5b9cce59e4a5017948c3",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "vendorFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 9352,
+          "bytes": 9352,
+          "lines": 247,
+          "sha256": "9fdd2eaf2e8af90437e2d206159e6b0d7000706f4e8d38a4f17456b1c4fa054d",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "vendor-hasselblad",
+        "vendor-hasselblad-dark",
+        "vendor-hasselblad-h",
+        "vendor-hasselblad-frame",
+        "vendor-hasselblad-matte",
+        "vendor-lumo",
+        "vendor-lumo-frame",
+        "vendor-lumo-matte",
+        "vendor-zeiss",
+        "vendor-leica"
+      ]
+    },
+    {
+      "id": "xiaomiLeica",
+      "name": "小米 · 徕卡",
+      "en": "XIAOMI LEICA",
+      "category": "厂商",
+      "description": "按小米相机 Leica 水印类反编译参数实现：短边 /1080 的 168/138 设计高度、左品牌右参数、分隔线、徕卡红标。",
+      "defaults": {
+        "theme": "white",
+        "shadow": 0,
+        "radiusPct": 0,
+        "logoScale": 5,
+        "logoPos": "right"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "xiaomiLeica",
+          "sourceKind": "TS function/method body",
+          "chars": 215,
+          "bytes": 215,
+          "lines": 6,
+          "sha256": "bcfff403f3e39110bd23b9d9ecb0c3a2c78759c6d13448b49878708bea506424",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "xiaomiLeica",
+          "sourceKind": "TS function/method body",
+          "chars": 2607,
+          "bytes": 2607,
+          "lines": 71,
+          "sha256": "e5f3d63f555d6967cdd41eab83805a506dc4e6e2508bbe04a597ccf7ecb74e2a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "vendor-xiaomi",
+        "vendor-xiaomi-single"
+      ]
+    },
+    {
+      "id": "paramStack",
+      "name": "四角 · 参数",
+      "en": "PARAM STACK",
+      "category": "参数",
+      "description": "满幅照片，四行相机参数压在画面一角，原版「极简 01–04」。字体 Bebas Neue，带斜切。",
+      "defaults": {
+        "theme": "ink",
+        "corner": "tl",
+        "canvasAspect": 0,
+        "paramPadPct": 3,
+        "paramSizePct": 5.4,
+        "paramGapPct": 20,
+        "shadow": 0,
+        "radiusPct": 0,
+        "logoScale": 5,
+        "logoPos": "none"
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "paramStack",
+          "sourceKind": "TS function/method body",
+          "chars": 91,
+          "bytes": 91,
+          "lines": 3,
+          "sha256": "5b83c0c8b97504da40e2307fd192078efca3e014a04ac05df5c9451555f5af39",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "paramStack",
+          "sourceKind": "TS function/method body",
+          "chars": 1856,
+          "bytes": 1856,
+          "lines": 46,
+          "sha256": "9fb26f72cc72df9ee48582bfe5a740c6bf6dc50f2bd493866ecbfdff230c5f33",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "simple-1",
+        "simple-2",
+        "simple-3",
+        "simple-4"
+      ]
+    },
+    {
+      "id": "matteOverlay",
+      "name": "留白 · 叠字",
+      "en": "MATTE OVERLAY",
+      "category": "留白",
+      "description": "原版「白边 01–04」：照片外包一圈白边，品牌与参数压在照片内，白字带阴影。",
+      "defaults": {
+        "theme": "white",
+        "marginPct": 4.5,
+        "radiusPct": 1.8,
+        "overlayMode": "brand",
+        "overlayBrand": "HASSELBLAD",
+        "exifAlign": "center",
+        "brandWidthPct": 26.8,
+        "brandOffsetPct": 4.5,
+        "exifWidthPct": 42,
+        "exifSizePct": 1.55,
+        "exifOffsetPct": 5,
+        "avatarPct": 4,
+        "nameSizePct": 2.3,
+        "footerTextScale": 100,
+        "shadow": 0,
+        "logoScale": 5,
+        "logoPos": "none"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "matteOverlay",
+          "sourceKind": "TS function/method body",
+          "chars": 345,
+          "bytes": 345,
+          "lines": 7,
+          "sha256": "2890d41735282b7000449be7dc8c233f4489ed2df1fa1c0219ac4c187545edc0",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "matteOverlay",
+          "sourceKind": "TS function/method body",
+          "chars": 2399,
+          "bytes": 2399,
+          "lines": 52,
+          "sha256": "8acd58609a572ebdc96ff55a51b2ff3840f30ecd4149e16a89aa6480e2bc7bbe",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "white-1",
+        "white-2",
+        "white-3",
+        "white-4"
+      ]
+    },
+    {
+      "id": "logoFooter",
+      "name": "图标 · 页脚",
+      "en": "LOGO FOOTER",
+      "category": "卡片",
+      "description": "原版「卡片 01/02」：照片满宽，白色页脚居中放品牌图标，可选参数行。",
+      "defaults": {
+        "theme": "white",
+        "insetPct": 0,
+        "footerPct": 14.8,
+        "radiusPct": 0,
+        "shadow": 0,
+        "logoPct": 5.5,
+        "exifSizePct": 2.3,
+        "exifWidthPct": 29.5,
+        "logoScale": 5,
+        "logoPos": "center"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "logoFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 277,
+          "bytes": 277,
+          "lines": 7,
+          "sha256": "145505af9bd55b56db6e75a0d2137c19727df8888702da7425460522f7bf6073",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "logoFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 1075,
+          "bytes": 1075,
+          "lines": 29,
+          "sha256": "7062e912410fd4748ed4ddf902eef5f73a84dfa55c9f286c6088cb5c04d97685",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "card-1",
+        "card-2"
+      ]
+    },
+    {
+      "id": "matteFooter",
+      "name": "留白 · 页脚",
+      "en": "MATTE FOOTER",
+      "category": "卡片",
+      "description": "原版「卡片 03/04」：四周细白边，照片下方留白放参数或图标字标。",
+      "defaults": {
+        "theme": "white",
+        "marginPct": 1.15,
+        "footerPct": 9.5,
+        "footerOffsetPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "logoPct": 5,
+        "brandTextSizePct": 2.6,
+        "exifSizePct": 1.9,
+        "exifWidthPct": 28.3,
+        "logoScale": 5,
+        "logoPos": "center"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "matteFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 268,
+          "bytes": 268,
+          "lines": 7,
+          "sha256": "9583147a7542564c3f2208c7520bfb7721fb7014d81ad5c23887f30f6b4939fe",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "matteFooter",
+          "sourceKind": "TS function/method body",
+          "chars": 2159,
+          "bytes": 2159,
+          "lines": 58,
+          "sha256": "009528803a14359f0fc3634b8c24a946784440d8bdf0f8a9c10667c160e776ec",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "card-3",
+        "card-4"
+      ]
+    },
+    {
+      "id": "profileFrame",
+      "name": "个人 · 主页",
+      "en": "PROFILE FRAME",
+      "category": "人物",
+      "description": "原版「人物 01–05」：头像/昵称与照片卡片组合，含页眉、浮层与页脚三种排布。",
+      "defaults": {
+        "theme": "white",
+        "profileMode": "header",
+        "profileName": "",
+        "marginPct": 4.2,
+        "headerPct": 11.7,
+        "footerPct": 11.3,
+        "radiusPct": 1.4,
+        "shadow": 0.8,
+        "brandPlacement": "footer",
+        "brandOffsetPct": 8.2,
+        "brandCenterPct": 0,
+        "chipTopPct": 4.5,
+        "exifAlign": "center",
+        "avatarPct": 4.3,
+        "nameSizePct": 2.6,
+        "brandWidthPct": 33.7,
+        "exifWidthPct": 40,
+        "exifSizePct": 1.55,
+        "exifOffsetPct": 3.9,
+        "modelSizePct": 2.6,
+        "footerLogoPct": 13.7,
+        "overlayBrand": "HASSELBLAD",
+        "logoScale": 5,
+        "logoPos": "center"
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "profileFrame",
+          "sourceKind": "TS function/method body",
+          "chars": 880,
+          "bytes": 880,
+          "lines": 18,
+          "sha256": "4b9b982974c32fb344079c736ad716a05b3998d8e45dde75ee32d2c1e5ebf30a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "profileFrame",
+          "sourceKind": "TS function/method body",
+          "chars": 4550,
+          "bytes": 4550,
+          "lines": 97,
+          "sha256": "4a97002e7bd9cfb119b4b64ebe9b04ddf82be769d49e03237471ea119ef2f3ff",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "person-1",
+        "person-2",
+        "person-3",
+        "person-4",
+        "person-5"
+      ]
+    },
+    {
+      "id": "overlay",
+      "name": "浮层 · 参数",
+      "en": "OVERLAY",
+      "category": "浮层",
+      "description": "满幅照片，底部渐变浮层，电影字幕式参数。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "theme": "ink",
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "overlay",
+          "sourceKind": "TS function/method body",
+          "chars": 54,
+          "bytes": 54,
+          "lines": 3,
+          "sha256": "955b6d01590609ac2d504341516fa40e89ce5425e3f3785d315f7c9e56017fcb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "overlay",
+          "sourceKind": "TS function/method body",
+          "chars": 1861,
+          "bytes": 1861,
+          "lines": 60,
+          "sha256": "30e4afa3580394ba43b3db7e7bfd60248bd3a8d2804dc8b2ce3ddd10c2e4f825",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "fm-overlay"
+      ]
+    },
+    {
+      "id": "bareCover",
+      "name": "纯封面",
+      "en": "BARE COVER",
+      "category": "精选",
+      "description": "满幅 16:9 纯封面，无叠加文字或图标。",
+      "defaults": {
+        "theme": "ink",
+        "photoAspect": 1.7777777777777777
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "bareCover",
+          "sourceKind": "TS function/method body",
+          "chars": 85,
+          "bytes": 85,
+          "lines": 4,
+          "sha256": "6a8e71b8777e2dd92412070d1a1a9e3e692571bdc57511554e1fb78babc4623a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "bareCover",
+          "sourceKind": "TS function/method body",
+          "chars": 191,
+          "bytes": 191,
+          "lines": 7,
+          "sha256": "839ac7674033abad3650c26ad303e9dd5d9c224e423d579a7b91e20e8ba16b43",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "video-cover"
+      ]
+    },
+    {
+      "id": "vertical",
+      "name": "浮层 · 竖排",
+      "en": "VERTICAL",
+      "category": "浮层",
+      "description": "左侧竖向大字与参数，像杂志封面的一行题。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "theme": "ink",
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "vertical",
+          "sourceKind": "TS function/method body",
+          "chars": 54,
+          "bytes": 54,
+          "lines": 3,
+          "sha256": "955b6d01590609ac2d504341516fa40e89ce5425e3f3785d315f7c9e56017fcb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "vertical",
+          "sourceKind": "TS function/method body",
+          "chars": 1605,
+          "bytes": 1605,
+          "lines": 43,
+          "sha256": "4adb49472204289c0f79e1ca0bbd6e240452d7e5faea6a259e972f527f84db10",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "fm-vertical"
+      ]
+    },
+    {
+      "id": "blur",
+      "name": "虚化 · 背景",
+      "en": "BLUR BACKDROP",
+      "category": "氛围",
+      "description": "照片本身虚化成底，前景卡片带圆角与阴影，参数居中。",
+      "defaults": {
+        "marginPct": 3.5,
+        "radiusPct": 2,
+        "shadow": 6,
+        "footerPct": 11,
+        "blur": 26,
+        "theme": "paper",
+        "logoScale": 5,
+        "minimalFooter": false
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer",
+        "blur"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "blur",
+          "sourceKind": "TS function/method body",
+          "chars": 255,
+          "bytes": 255,
+          "lines": 6,
+          "sha256": "f4ba1cba5099607a5e51789ae583642655f26c5fff1569639091647655858bbd",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "blur",
+          "sourceKind": "TS function/method body",
+          "chars": 2149,
+          "bytes": 2149,
+          "lines": 63,
+          "sha256": "5a3c03f9a86281aac8fed58006035eb17efb957311419060fa54e5a212544eda",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "blur-classic",
+        "blur-date"
+      ]
+    },
+    {
+      "id": "palette",
+      "name": "色卡 · 留白",
+      "en": "PALETTE",
+      "category": "留白",
+      "description": "从照片自动提取五色，连同参数一起排版。",
+      "defaults": {
+        "marginPct": 6.5,
+        "radiusPct": 1,
+        "shadow": 2,
+        "footerPct": 19,
+        "theme": "paper",
+        "logoScale": 5,
+        "paletteOverlay": false
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "palette",
+          "sourceKind": "TS function/method body",
+          "chars": 328,
+          "bytes": 328,
+          "lines": 7,
+          "sha256": "19ef4f759ed4a2d34ed57e7c830d6dcd6bc84adde0981715b38b6fa9f4e44147",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "palette",
+          "sourceKind": "TS function/method body",
+          "chars": 2516,
+          "bytes": 2516,
+          "lines": 67,
+          "sha256": "7ed55be34989487a31b75f905991fdfb69fdf3af5ed54233d86fd8b39584adbe",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "film",
+      "name": "胶片 · 齿孔",
+      "en": "FILM",
+      "category": "胶片",
+      "description": "上下齿孔与胶片边码，带一点颗粒和曝光标记。",
+      "defaults": {
+        "marginPct": 2.5,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "theme": "black",
+        "grain": 0.16,
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [
+        "grain"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "film",
+          "sourceKind": "TS function/method body",
+          "chars": 172,
+          "bytes": 172,
+          "lines": 6,
+          "sha256": "2b34c3939b70d134e7b6a0ee993326dc5a2914997ec3415168ec92e6ebab3873",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "film",
+          "sourceKind": "TS function/method body",
+          "chars": 2444,
+          "bytes": 2444,
+          "lines": 63,
+          "sha256": "c3205053a78dfe4a2b07d8807d275cfa47a0af9c58a9124677569ba09c485324",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "fm-film"
+      ]
+    },
+    {
+      "id": "polaroid",
+      "name": "拍立得",
+      "en": "POLAROID",
+      "category": "胶片",
+      "description": "粗白边、手写标题与日期，像一张刚显影的相纸。",
+      "defaults": {
+        "marginPct": 5.5,
+        "radiusPct": 0.5,
+        "shadow": 3,
+        "footerPct": 22,
+        "theme": "paper",
+        "grain": 0.06,
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin",
+        "radius",
+        "shadow",
+        "footer",
+        "grain"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "polaroid",
+          "sourceKind": "TS function/method body",
+          "chars": 251,
+          "bytes": 251,
+          "lines": 6,
+          "sha256": "fd32f53308d7465e8f1fffd5a2d7d3f46dfd9c00ec497e2aad3302a3b012556b",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "polaroid",
+          "sourceKind": "TS function/method body",
+          "chars": 1811,
+          "bytes": 1811,
+          "lines": 54,
+          "sha256": "bf75008f292c71d6006091091a27d799cd0292dd511a932b3d9994a910468eaf",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "fm-polaroid"
+      ]
+    },
+    {
+      "id": "editorial",
+      "name": "杂志 · 编辑",
+      "en": "EDITORIAL",
+      "category": "编辑",
+      "description": "米白底、大标题、细分隔线与三栏参数，像一页摄影杂志。",
+      "defaults": {
+        "marginPct": 8.5,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 14,
+        "theme": "cream",
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [
+        "margin"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "editorial",
+          "sourceKind": "TS function/method body",
+          "chars": 305,
+          "bytes": 305,
+          "lines": 7,
+          "sha256": "1952c0c4ed60a2fa5771c5bfc893d2ad755bf39ee09fc5df86e35e1f033ceda2",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "editorial",
+          "sourceKind": "TS function/method body",
+          "chars": 3956,
+          "bytes": 3956,
+          "lines": 102,
+          "sha256": "48f2d9cf88b74936a2141486964d8dd04342c2b9cef54a6e47997b9716cbbbd5",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "fm-editorial"
+      ]
+    },
+    {
+      "id": "glass",
+      "name": "液态玻璃",
+      "en": "LIQUID GLASS",
+      "category": "氛围",
+      "description": "满幅照片上的磨砂玻璃信息卡，带高光与细边。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "blur": 24,
+        "theme": "ink",
+        "logoScale": 5,
+        "glassAlign": "left",
+        "glassLayout": "card",
+        "glassPalette": false
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [
+        "blur"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "glass",
+          "sourceKind": "TS function/method body",
+          "chars": 54,
+          "bytes": 54,
+          "lines": 3,
+          "sha256": "955b6d01590609ac2d504341516fa40e89ce5425e3f3785d315f7c9e56017fcb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "glass",
+          "sourceKind": "TS function/method body",
+          "chars": 9016,
+          "bytes": 9016,
+          "lines": 243,
+          "sha256": "92ee9b1f0f7fc871a8d11b8c55b947ab49785036d38e73e4bb9247be0979ea93",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "glass-liquid"
+      ]
+    },
+    {
+      "id": "glassSideCard",
+      "name": "玻璃侧卡",
+      "en": "GLASS SIDE CARD",
+      "category": "液态玻璃",
+      "description": "虚化底图上的内嵌玻璃照片卡，另一侧为品牌与 F/ISO/S 参数。",
+      "defaults": {
+        "theme": "ink",
+        "blur": 26,
+        "tintAlpha": 0.2,
+        "canvasAspect": 0,
+        "cardAspect": 1.3333333333333333,
+        "cardSide": "right",
+        "contentSide": "left",
+        "cardWidthPct": 56.25,
+        "cardHeightPct": 0,
+        "cardInsetPct": 6.35,
+        "cardRadiusPct": 1.6,
+        "cardMattePct": 1.8,
+        "rowSet": "fiso",
+        "textInsetPct": 30.5,
+        "brandInsetPct": 36.8,
+        "brandWidthPct": 28.7,
+        "brandHeightPct": 17.8,
+        "brandTopPct": 12.27,
+        "rowsTopPct": 43.75,
+        "rowBoxWPct": 19.2,
+        "rowBoxHPct": 9.95,
+        "rowPitchPct": 16.67,
+        "rowValueGapPct": 6.48,
+        "rowLabelPct": 4.4,
+        "rowValuePct": 5.8
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [
+        "blur"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "glassSideCard",
+          "sourceKind": "TS function/method body",
+          "chars": 91,
+          "bytes": 91,
+          "lines": 3,
+          "sha256": "5b83c0c8b97504da40e2307fd192078efca3e014a04ac05df5c9451555f5af39",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "glassSideCard",
+          "sourceKind": "TS function/method body",
+          "chars": 4880,
+          "bytes": 4880,
+          "lines": 111,
+          "sha256": "dcca12e800aaabb8eac7a21641649fead1a6024826ba12cebe927633e65a3d74",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "glass-pill-5",
+        "glass-card"
+      ]
+    },
+    {
+      "id": "glassPalettePortrait",
+      "name": "玻璃色卡",
+      "en": "GLASS PALETTE",
+      "category": "液态玻璃",
+      "description": "3:4 竖幅满幅照片，底部玻璃面板内 3×2 大色卡与十六进制色值。",
+      "defaults": {
+        "theme": "ink",
+        "blur": 24,
+        "panelWidthPct": 89.2,
+        "panelHeightPct": 29.7,
+        "panelBottomPct": 6.5,
+        "panelRadiusPct": 16,
+        "swatchCols": 3,
+        "swatchRows": 2,
+        "swatchPct": 12.3,
+        "gridFirstXPct": 18.9,
+        "gridPitchXPct": 31.1,
+        "gridFirstYPct": 20.9,
+        "gridPitchYPct": 45.1,
+        "labelPct": 2.2,
+        "tintAlpha": 0.3
+      },
+      "controls": [
+        "blur"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "glassPalettePortrait",
+          "sourceKind": "TS function/method body",
+          "chars": 115,
+          "bytes": 115,
+          "lines": 4,
+          "sha256": "80875f36e79481bd442b146763d6df2f4314000a4d8e85606e3340917433946a",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "glassPalettePortrait",
+          "sourceKind": "TS function/method body",
+          "chars": 3433,
+          "bytes": 3433,
+          "lines": 82,
+          "sha256": "72704acc7fb722097249e8331143defe4dd5794fa20bcee65f10e69ff8720ebf",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "glass-palette"
+      ]
+    },
+    {
+      "id": "ticket",
+      "name": "票据 · 旅行",
+      "en": "TICKET",
+      "category": "票据",
+      "description": "圆角票卡、撕线与条码存根，把照片做成一张纪念票。",
+      "defaults": {
+        "marginPct": 6,
+        "radiusPct": 2,
+        "shadow": 5,
+        "footerPct": 16,
+        "theme": "ink",
+        "logoScale": 5
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [
+        "margin",
+        "footer"
+      ],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "ticket",
+          "sourceKind": "TS function/method body",
+          "chars": 318,
+          "bytes": 318,
+          "lines": 7,
+          "sha256": "da5ddbe6688d797faf688b32b2d927015de349e0c00e7c4326ae8d5e93ad07f4",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "ticket",
+          "sourceKind": "TS function/method body",
+          "chars": 3309,
+          "bytes": 3309,
+          "lines": 89,
+          "sha256": "be434992daf778db0632d7ce9f63e9779ab8c043713945c03b6f7e8c4f3d1ee1",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "movie",
+      "name": "电影 · 宽银幕",
+      "en": "CINEMA",
+      "category": "电影",
+      "description": "上下黑边与片头字幕，带电影画幅的仪式感。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "theme": "black",
+        "logoScale": 5,
+        "barPct": 6.5,
+        "logoPos": "right",
+        "photoAspect": 0,
+        "subtitleMode": "bar"
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "movie",
+          "sourceKind": "TS function/method body",
+          "chars": 467,
+          "bytes": 467,
+          "lines": 12,
+          "sha256": "eee13688e7836efa5acf11a4a0e9203940a1ed0ccfbc03a1d3724df23eab9fb4",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "movie",
+          "sourceKind": "TS function/method body",
+          "chars": 2444,
+          "bytes": 2444,
+          "lines": 74,
+          "sha256": "e95bd6d17450d37e9fa7ee8869a9a7c5af7e2c0e3aa110e9026dec348fe46b08",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "movie-1",
+        "movie-2"
+      ]
+    },
+    {
+      "id": "ratio",
+      "name": "比例 · 角标",
+      "en": "RATIO BLOCK",
+      "category": "比例",
+      "description": "满幅照片，四角参数块，适合社交平台直出。",
+      "defaults": {
+        "marginPct": 0,
+        "radiusPct": 0,
+        "shadow": 0,
+        "footerPct": 0,
+        "theme": "ink",
+        "logoScale": 5,
+        "corner": 3
+      },
+      "themes": [
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "ratio",
+          "sourceKind": "TS function/method body",
+          "chars": 54,
+          "bytes": 54,
+          "lines": 3,
+          "sha256": "955b6d01590609ac2d504341516fa40e89ce5425e3f3785d315f7c9e56017fcb",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "ratio",
+          "sourceKind": "TS function/method body",
+          "chars": 1696,
+          "bytes": 1696,
+          "lines": 52,
+          "sha256": "70edd73c72f012bc072cabfc4a14932b47888dbe747a0d53d0707dcf949a6668",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": []
+    },
+    {
+      "id": "ratioMatte",
+      "name": "比例 · 衬边",
+      "en": "RATIO MATTE",
+      "category": "比例",
+      "description": "模糊底衬边，内嵌照片，品牌与参数居中。",
+      "defaults": {
+        "theme": "ink",
+        "canvasAspect": 1.5015,
+        "photoAspect": 1.485,
+        "sideMarginPct": 9.03,
+        "topMarginPct": 5.72,
+        "radiusPct": 0,
+        "blur": 24,
+        "tintAlpha": 0.9,
+        "vignette": 0.28,
+        "brandSizePct": 3.43,
+        "brandGapPct": 4.62,
+        "brandTracking": 0.14,
+        "metaSizePct": 1.8,
+        "metaGapPct": 8.5,
+        "metaAlphaPct": 80
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "ratioMatte",
+          "sourceKind": "TS function/method body",
+          "chars": 160,
+          "bytes": 160,
+          "lines": 4,
+          "sha256": "415977ceb526b9b1359999b4786f795b57805e6838d2120adcbe1aa6288edb99",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "ratioMatte",
+          "sourceKind": "TS function/method body",
+          "chars": 2431,
+          "bytes": 2431,
+          "lines": 57,
+          "sha256": "0fc50033d66b6d4fcce53a4443a3bc3dc03752402937d92f5d32ef0dc2e5477f",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "ratio-1",
+        "ratio-2"
+      ]
+    },
+    {
+      "id": "ratioBlurSquare",
+      "name": "比例 · 模糊方图",
+      "en": "RATIO BLUR SQUARE",
+      "category": "比例",
+      "description": "模糊底 + 居中方形照片，无文字。",
+      "defaults": {
+        "theme": "ink",
+        "canvasAspect": 1.5015,
+        "blur": 30,
+        "tintAlpha": 0.18,
+        "squarePct": 88.27,
+        "radiusPct": 2.6
+      },
+      "themes": [
+        {
+          "id": "white",
+          "label": "纯白",
+          "swatch": "#ffffff"
+        },
+        {
+          "id": "paper",
+          "label": "纸白",
+          "swatch": "#f6f3ec"
+        },
+        {
+          "id": "cream",
+          "label": "米色",
+          "swatch": "#eee6d7"
+        },
+        {
+          "id": "stone",
+          "label": "灰米",
+          "swatch": "#d9d4c9"
+        },
+        {
+          "id": "ink",
+          "label": "墨黑",
+          "swatch": "#111214"
+        },
+        {
+          "id": "black",
+          "label": "纯黑",
+          "swatch": "#08090a"
+        }
+      ],
+      "controls": [],
+      "handTemplate": true,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "ratioBlurSquare",
+          "sourceKind": "TS function/method body",
+          "chars": 160,
+          "bytes": 160,
+          "lines": 4,
+          "sha256": "415977ceb526b9b1359999b4786f795b57805e6838d2120adcbe1aa6288edb99",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "render": {
+          "name": "render",
+          "owner": "ratioBlurSquare",
+          "sourceKind": "TS function/method body",
+          "chars": 476,
+          "bytes": 476,
+          "lines": 11,
+          "sha256": "96343c50eb37a93e448efcf80ba241643b74ae3ef420a1660e255c6f4e20478b",
+          "deferredTo": "E4",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E4."
+        },
+        "prepare": null
+      },
+      "_variantIds": [
+        "ratio-3"
+      ]
+    },
+    {
+      "id": "systemCamera",
+      "name": "系统相机",
+      "en": "SYSTEM CAMERA",
+      "category": "系统相机",
+      "description": "按厂商相机/相册的原始水印配置渲染，保留真实版式与素材。",
+      "defaults": {
+        "systemStyle": "oppo-gallery:hassel_style_1"
+      },
+      "controls": [],
+      "handTemplate": false,
+      "_functions": {
+        "layout": {
+          "name": "layout",
+          "owner": "systemCamera",
+          "sourceKind": "TS function/method body",
+          "chars": 291,
+          "bytes": 291,
+          "lines": 7,
+          "sha256": "28f7e5adb523180c9ce293aeaece702594791ff6dc8e1c40d11f0fd1d6bb4a7c",
+          "deferredTo": "E3",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E3."
+        },
+        "render": {
+          "name": "render",
+          "owner": "systemCamera",
+          "sourceKind": "TS function/method body",
+          "chars": 320,
+          "bytes": 320,
+          "lines": 9,
+          "sha256": "2619b4a603205b7983ec452064f9a6ea578f6c451e55a622f90d11fae15f6ab4",
+          "deferredTo": "E3",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E3."
+        },
+        "prepare": {
+          "name": "prepare",
+          "owner": "systemCamera",
+          "sourceKind": "TS function/method body",
+          "chars": 525,
+          "bytes": 525,
+          "lines": 14,
+          "sha256": "caceffca5c96df6872784a597812cfe393e3158c99953140f4e6666355b6704b",
+          "deferredTo": "E3",
+          "note": "Function body is executable TS logic and is NOT serialized (see E1b-1 manifest gaps); re-implement in E3."
+        }
+      },
+      "_variantIds": []
+    }
+  ]
+}

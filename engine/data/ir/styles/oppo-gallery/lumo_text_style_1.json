@@ -1,0 +1,89 @@
+{
+  "id": "oppo-gallery:lumo_text_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "LUMO 文字 · 1",
+  "nameEn": "lumo_text_style_1",
+  "placement": "in",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 56,
+      "offset": {
+        "x": 20,
+        "y": 20
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "lumo_text_watermark_logo",
+              "width": 54,
+              "height": 15.27,
+              "scale": "contain",
+              "gravity": "topHorCenter",
+              "margins": {
+                "top": 8
+              },
+              "alpha": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 10,
+              "weight": 500,
+              "color": "#FFFFFF",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 12,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 5
+              },
+              "optional": false,
+              "shadow": {
+                "color": "#65000000",
+                "blur": 3.3000000000000003,
+                "x": 1,
+                "y": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "lumo_text_watermark_logo": {
+      "file": "lumo_text_watermark_logo.webp",
+      "width": 428,
+      "height": 121
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

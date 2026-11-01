@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "oppo-frame-42",
+    "canvas": { "w": 8000, "h": 6000 },
+    "elements": [
+      { "kind": "frame", "inset": 160 },
+      { "kind": "text", "slot": "title", "value": "城市夜行" }
+    ]
+  },
+  "photo": { "path": "D:/photos/DSC_9002.jpg", "w": 8000, "h": 6000 },
+  "mode": "export",
+  "band": { "y": 1024, "h": 1024 }
+}

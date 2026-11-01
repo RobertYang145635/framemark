@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/export/pair-04.png", "w": 6000, "h": 4000 },
+  "photoRect": { "x": 180, "y": 180, "w": 5640, "h": 3640 },
+  "textSlots": [
+    { "id": "title", "text": "秋日拾光", "x": 240, "y": 3520, "w": 1080, "h": 140, "fontSize": 120, "lines": 1 },
+    { "id": "subtitle", "text": "Xiaomi 15 Ultra", "x": 240, "y": 3680, "w": 640, "h": 52, "fontSize": 44, "lines": 1 },
+    { "id": "footer", "text": "2026.10.30 15:42 · 北京", "x": 240, "y": 3760, "w": 720, "h": 44, "fontSize": 36, "lines": 1, "truncated": true }
+  ],
+  "ms": 2350.7,
+  "engine": "fake"
+}

@@ -2274,6 +2274,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-disney/31.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -2450,6 +2477,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-disney/32.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -2652,6 +2706,60 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-disney/33.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-disney/33.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -2779,6 +2887,87 @@
             "themeCount": 3
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/12.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/12.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/12.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -2866,6 +3055,33 @@
               "texture_brown_gray"
             ],
             "themeCount": 9
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/13.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -3641,6 +3857,87 @@
             "themeCount": 3
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/103.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/103.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-film/103.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -4027,6 +4324,141 @@
             "themeCount": 4
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/3.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/3.json",
+            "detail": "引擎渲染报告 b0/g2/g0/g0/g0 绘制「1/400」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g2/g0/g0/g0",
+          "engineNodes": [
+            "b0/g2/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/3.json",
+            "detail": "引擎渲染报告 b0/g2/g0/g1/g0 绘制「125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g2/g0/g1/g0",
+          "engineNodes": [
+            "b0/g2/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#3",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/3.json",
+            "detail": "引擎渲染报告 b0/g2/g0/g2/g0 绘制「366」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g2/g0/g2/g0",
+          "engineNodes": [
+            "b0/g2/g0/g2/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#4",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/3.json",
+            "detail": "引擎渲染报告 b0/g2/g0/g3/g0 绘制「6.3」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g2/g0/g3/g0",
+          "engineNodes": [
+            "b0/g2/g0/g3/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -4109,6 +4541,141 @@
               "dark_blur"
             ],
             "themeCount": 4
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/4.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/4.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g0 绘制「366mm」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/4.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g1 绘制「f/6.3」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/4.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g2 绘制「1/400s」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g2",
+          "engineNodes": [
+            "b0/g0/g0/g1/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g3",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/4.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g3 绘制「ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g3",
+          "engineNodes": [
+            "b0/g0/g0/g1/g3"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -4917,6 +5484,60 @@
             "themeCount": 1
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/111.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-leica/111.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「366mm  f/6.3  1/400s  ISO125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -5142,6 +5763,60 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/6.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/6.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -5386,6 +6061,60 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/7.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/7.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -5935,6 +6664,60 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/107.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g0/g1 绘制「DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-standard/107.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0 绘制「2022.07.05 14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -6132,6 +6915,87 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/9.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g0 绘制「14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0#2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/9.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1/g0 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/9.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1/g1 绘制「周二」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -6338,6 +7202,87 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/10.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1 绘制「14:13」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/10.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g0 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1#2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/10.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g1/g1 绘制「周二」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -6540,6 +7485,114 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/11.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g0/g0 绘制「07」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/11.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g0/g1 绘制「05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g0#2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/11.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1/g0 绘制「2022.07.05」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.dateLine.g1#2",
+          "kind": "text",
+          "label": "编辑「dateLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/xiaomi-tag/11.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0/g1/g1 绘制「周二」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0/g1/g1",
+          "engineNodes": [
+            "b0/g0/g0/g0/g1/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }

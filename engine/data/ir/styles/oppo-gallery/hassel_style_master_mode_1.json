@@ -1,0 +1,503 @@
+{
+  "id": "oppo-gallery:hassel_style_master_mode_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏 · 大师模式",
+  "nameEn": "hassel_style_master_mode_1",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 79,
+    "right": 10,
+    "bottom": 79
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 79,
+      "offset": {
+        "x": 10,
+        "y": 79
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "image",
+          "asset": "hasselblad_watermark_dark",
+          "width": 116,
+          "height": 9.28,
+          "scale": "contain",
+          "gravity": "center",
+          "margins": {},
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 79,
+      "offset": {
+        "x": 10,
+        "y": 0
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "center",
+          "margins": {
+            "left": 39,
+            "right": 39
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "avenir",
+              "size": 11,
+              "weight": 600,
+              "color": "#000000",
+              "alpha": 1,
+              "tracking": 0,
+              "lineHeight": 15,
+              "align": "left",
+              "gravity": "topHorCenter",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "bottomHorCenter",
+              "margins": {
+                "top": 5,
+                "bottom": 2.5
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_filter"
+                  },
+                  "font": "sys",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_filter_intensity_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_filter_intensity"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 5
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_soft_light_dark",
+                  "width": 10,
+                  "height": 10,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_soft_light"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 1.2
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_tone_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_tone"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_filter_saturation_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_filter_saturation"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_color_temperature_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_color_temperature"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_cyan_magenta_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_cyan_magenta"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_sharpness_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_sharpness"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.52,
+                  "height": 5.3,
+                  "color": "#1F000000",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 6,
+                    "right": 6
+                  }
+                },
+                {
+                  "kind": "image",
+                  "asset": "master_model_vig_enable_dark",
+                  "width": 7.5,
+                  "height": 7.5,
+                  "scale": "contain",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "alpha": 1
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "",
+                    "slot": "master_model_param_vig_enable"
+                  },
+                  "font": "avenir",
+                  "size": 7,
+                  "weight": 500,
+                  "color": "#000000",
+                  "alpha": 0.6,
+                  "tracking": 0,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2.8
+                  },
+                  "optional": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "hasselblad_watermark_dark": {
+      "file": "hasselblad_watermark_dark.webp",
+      "width": 1475,
+      "height": 118
+    },
+    "master_model_filter_intensity_dark": {
+      "file": "master_model_filter_intensity_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_soft_light_dark": {
+      "file": "master_model_soft_light_dark.webp",
+      "width": 84,
+      "height": 84
+    },
+    "master_model_tone_dark": {
+      "file": "master_model_tone_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_filter_saturation_dark": {
+      "file": "master_model_filter_saturation_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_color_temperature_dark": {
+      "file": "master_model_color_temperature_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_cyan_magenta_dark": {
+      "file": "master_model_cyan_magenta_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_sharpness_dark": {
+      "file": "master_model_sharpness_dark.webp",
+      "width": 60,
+      "height": 60
+    },
+    "master_model_vig_enable_dark": {
+      "file": "master_model_vig_enable_dark.webp",
+      "width": 60,
+      "height": 60
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

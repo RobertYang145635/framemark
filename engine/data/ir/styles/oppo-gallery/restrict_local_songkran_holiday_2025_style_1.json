@@ -1,0 +1,100 @@
+{
+  "id": "oppo-gallery:restrict_local_songkran_holiday_2025_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "宋干节 · 1",
+  "nameEn": "restrict_local_songkran_holiday_2025_style_1",
+  "placement": "out",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 60
+  },
+  "background": "#D4EFE5",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 60,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 20
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 13,
+              "weight": 700,
+              "color": "#3B2C12",
+              "alpha": 1,
+              "tracking": 0.05,
+              "lineHeight": 15.24,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "สุขสันต์วันสงกรานต์"
+              },
+              "font": "sys",
+              "size": 10,
+              "weight": 400,
+              "color": "#3B2C12",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 12.25,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "top": 3
+              },
+              "optional": false
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "image",
+          "asset": "songkran_watermark_icon",
+          "width": 176,
+          "height": 60,
+          "scale": "contain",
+          "gravity": "rightVerticalCenter",
+          "margins": {},
+          "alpha": 1
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "songkran_watermark_icon": {
+      "file": "songkran_watermark_icon.webp",
+      "width": 563,
+      "height": 192
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

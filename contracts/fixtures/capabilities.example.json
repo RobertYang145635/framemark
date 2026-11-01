@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-30T00:00:00Z",
+  "cards": [
+    {
+      "styleId": "xiaomi-frame-03",
+      "title": "小米 · 经典边框",
+      "category": "xiaomi",
+      "sections": [
+        {
+          "id": "frame",
+          "label": "边框",
+          "collapsible": true,
+          "defaultCollapsed": false,
+          "controls": [
+            { "id": "frameInset", "type": "slider", "label": "边框粗细", "default": 120, "min": 0, "max": 400, "step": 1, "unit": "px" },
+            { "id": "frameColor", "type": "color", "label": "边框颜色", "default": "#FFFFFF" },
+            { "id": "cornerStyle", "type": "segmented", "label": "边角样式", "default": "round", "options": [ { "value": "round", "label": "圆角" }, { "value": "square", "label": "直角" } ] }
+          ]
+        },
+        {
+          "id": "text",
+          "label": "文字",
+          "collapsible": true,
+          "defaultCollapsed": false,
+          "controls": [
+            { "id": "titleText", "type": "text", "label": "主标题", "default": "2026 · 秋", "placeholder": "输入标题" },
+            { "id": "titleSize", "type": "slider", "label": "标题字号", "default": 48, "min": 12, "max": 160, "step": 1 },
+            { "id": "logoScale", "type": "stepper", "label": "Logo 大小", "default": 100, "min": 50, "max": 200, "step": 5, "gated": true }
+          ]
+        }
+      ]
+    },
+    {
+      "styleId": "oppo-frame-11",
+      "title": "OPPO · 流光边框",
+      "category": "oppo",
+      "sections": [
+        {
+          "id": "layout",
+          "label": "布局",
+          "controls": [
+            { "id": "margin", "type": "number", "label": "外边距", "default": 64, "min": 0, "max": 300, "step": 1 },
+            { "id": "showExif", "type": "toggle", "label": "显示拍摄参数", "default": true, "visible": false },
+            { "id": "texturePreset", "type": "select", "label": "纹理", "default": "none", "options": [ { "value": "none", "label": "无" }, { "value": "paper", "label": "纸张" } ] }
+          ]
+        }
+      ]
+    }
+  ]
+}

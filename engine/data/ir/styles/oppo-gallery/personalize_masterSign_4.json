@@ -1,0 +1,103 @@
+{
+  "id": "oppo-gallery:personalize_masterSign_4",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "大师签名 · 4",
+  "nameEn": "personalize_masterSign_4",
+  "placement": "out",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 60
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 60,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 230,
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 20
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 12,
+              "weight": 600,
+              "color": "#000000",
+              "alpha": 0.9,
+              "tracking": 0.04,
+              "lineHeight": 14.06,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "imageParams"
+              },
+              "font": "sys",
+              "size": 7,
+              "weight": 400,
+              "color": "#000000",
+              "alpha": 0.54,
+              "tracking": 0.08,
+              "lineHeight": 8.2,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "top": 2.81
+              },
+              "optional": false
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "image",
+          "asset": "master_sign_4_dark",
+          "width": 74,
+          "height": 32,
+          "scale": "contain",
+          "gravity": "rightVerticalCenter",
+          "margins": {
+            "right": 16,
+            "bottom": 5
+          },
+          "alpha": 1
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "master_sign_4_dark": {
+      "file": "master_sign_4_dark.webp",
+      "width": 686,
+      "height": 204
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

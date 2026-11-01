@@ -1,0 +1,188 @@
+{
+  "id": "vivo-postcard:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "明信片 · 邮戳框",
+  "nameEn": "POST CARD",
+  "placement": "out",
+  "referenceWidth": 1497,
+  "margins": {
+    "left": 92,
+    "top": 92,
+    "right": 92,
+    "bottom": 281
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "overlay",
+      "width": 1405,
+      "thickness": 1356,
+      "offset": {
+        "x": -46,
+        "y": -92
+      },
+      "drawFirst": true,
+      "children": [
+        {
+          "kind": "image",
+          "asset": "vivo-postcard-card",
+          "width": 1405,
+          "height": 1356,
+          "scale": "fill",
+          "gravity": "leftTop"
+        }
+      ]
+    },
+    {
+      "direction": "top",
+      "thickness": 92,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1311,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 28,
+              "weight": 500,
+              "color": "#333333",
+              "tracking": 0.06,
+              "lineHeight": 37.800000000000004,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "POST CARD"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 600,
+              "color": "#777777",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "right"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "overlay",
+      "gravity": "rightTop",
+      "offset": {
+        "x": 160,
+        "y": 40
+      },
+      "width": 260,
+      "thickness": 256,
+      "children": [
+        {
+          "kind": "shape",
+          "shape": "rect",
+          "width": 233,
+          "height": 233,
+          "color": "#00000000",
+          "vectorKey": "postcard-postmark",
+          "gravity": "center"
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 281,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1311,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "leftVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "vivo",
+                  "size": 26,
+                  "weight": 400,
+                  "color": "#555555",
+                  "tracking": 0.06,
+                  "lineHeight": 35.1,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "vivo",
+                  "size": 26,
+                  "weight": 400,
+                  "color": "#555555",
+                  "tracking": 0.06,
+                  "lineHeight": 35.1,
+                  "align": "left",
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "custom"
+              },
+              "font": "vivo",
+              "size": 28,
+              "weight": 500,
+              "color": "#333333",
+              "tracking": 0.06,
+              "lineHeight": 37.800000000000004,
+              "align": "right",
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-postcard-card": {
+      "file": "vivo/batch1/postcard-card.png",
+      "width": 1405,
+      "height": 1356
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Postcard frame; card x46..1450, photo hole x92..1404 y92..1075 measured from settled post_card/4_3_540_q PAG frame. \"POST CARD\" literal from mapping 2 (右侧上方：POST CARD TEXT); model top-left per mapping 1. The postmark is the vendor VectorDrawable BORDER_POST_CARD edit.apk res/ZS.xml (46.56x45.96 viewport, 30 paths, white @0.9 fill) converted verbatim by scripts/system-camera/adapters/vivo-vector.cjs and stamped over the photo top-right.",
+    "unsupported": [
+      "postmark is one of the user-selectable personal_graphic vectors (PIC 1-6 mappings); the template default ZS.xml ships, rotation angle on the host is user-set",
+      "dynamic background (live) option omitted"
+    ]
+  }
+}

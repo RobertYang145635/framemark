@@ -1,0 +1,542 @@
+{
+  "id": "oppo-camerapro:gr_style_5",
+  "vendor": "oppo",
+  "family": "OPPO 相机",
+  "name": "理光 GR · 参数边栏",
+  "nameEn": "RICOH GR · SIDEBAR",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 6,
+    "top": 6,
+    "right": 120,
+    "bottom": 6
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "right",
+      "thickness": 120,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 120,
+          "matchHeight": true,
+          "gravity": "leftTop",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 8,
+              "weight": 600,
+              "color": "#000000",
+              "tracking": 0.04,
+              "lineHeight": 9.6,
+              "width": 120,
+              "align": "center",
+              "gravity": "topHorCenter",
+              "optional": true,
+              "margins": {
+                "top": 6
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "width": 82,
+              "gap": 3,
+              "gravity": "leftTop",
+              "margins": {
+                "left": 31,
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Style"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 700,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 700,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Saturation"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Hue"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Tone"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Contrast"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Highlight"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Shadow"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Sharpness"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Clarity"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Grain Intensity"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "width": 82,
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Grain Size"
+                      },
+                      "font": "sys",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "width": 41,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "space",
+                      "weight": 1
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "—"
+                      },
+                      "font": "avenir",
+                      "size": 5,
+                      "weight": 400,
+                      "color": "#848484",
+                      "tracking": 0.04,
+                      "lineHeight": 6.4,
+                      "align": "left",
+                      "gravity": "rightVerticalCenter"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "gr_style_5-realme_gr_logo_dark",
+              "width": 56,
+              "height": 18,
+              "scale": "contain",
+              "gravity": "topHorCenter",
+              "margins": {
+                "bottom": 6
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "gr_style_5-realme_gr_logo_dark": {
+      "file": "oppo/camerapro/realme_gr_logo_dark.webp",
+      "width": 56,
+      "height": 18
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Hand-authored GR5 right sidebar; filter values are not stored in EXIF and render as dashes."
+  }
+}

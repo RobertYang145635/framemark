@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://framemark.local/contracts/render-v1.schema.json",
+  "title": "FrameMarkRender v1",
+  "description": "Engine <-> UI render contract v1 (task book 3.3). A document is either a render request or a render response; the two shapes are disjoint, so the root oneOf doubles as a kind check. Big images always travel as paths, never as bytes: photo.path points at the file on disk and response.image.path at the engine output. The only byte payload allowed is response.image.rgba, reserved for tiny previews (returned image max edge <= 512 px); it is base64 of raw RGBA8888 rows, length exactly w*h*4 bytes.",
+  "oneOf": [
+    { "$ref": "#/$defs/renderRequest" },
+    { "$ref": "#/$defs/renderResponse" }
+  ],
+  "$defs": {
+    "pathString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Absolute file path (or file URI on Android). Never inline image data."
+    },
+    "dimension": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200000
+    },
+    "renderRequest": {
+      "type": "object",
+      "required": ["schemaVersion", "design", "photo", "mode"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "design": {
+          "type": "object",
+          "minProperties": 1,
+          "description": "Design JSON (D9). Opaque to the render contract: its inner structure is owned by the Design layer; the engine only requires it to be a non-empty object carrying styleId."
+        },
+        "photo": { "$ref": "#/$defs/photoRef" },
+        "mode": { "enum": ["preview", "export"] },
+        "maxEdge": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 20000,
+          "description": "Preview only: longest edge of the returned image, in pixels."
+        },
+        "band": {
+          "$ref": "#/$defs/band",
+          "description": "Export only: vertical strip to render, in output pixel space."
+        },
+        "overlay": {
+          "$ref": "#/$defs/overlay",
+          "description": "Optional user watermark (transparent PNG/WebP), composited above the photo and below the template's border/text/logo. Absent = no overlay layer, and the output is unchanged."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["mode"], "properties": { "mode": { "const": "preview" } } },
+          "then": { "not": { "required": ["band"] } }
+        },
+        {
+          "if": { "required": ["mode"], "properties": { "mode": { "const": "export" } } },
+          "then": { "not": { "required": ["maxEdge"] } }
+        }
+      ]
+    },
+    "photoRef": {
+      "type": "object",
+      "required": ["path", "w", "h"],
+      "additionalProperties": false,
+      "description": "The source photo is referenced by path + intrinsic pixel size. Byte payloads (bytes/data/base64 fields) are forbidden by design and rejected by additionalProperties.",
+      "properties": {
+        "path": { "$ref": "#/$defs/pathString" },
+        "w": { "$ref": "#/$defs/dimension" },
+        "h": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "band": {
+      "type": "object",
+      "required": ["y", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "y": { "type": "integer", "minimum": 0 },
+        "h": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "overlay": {
+      "type": "object",
+      "required": ["path", "rect", "opacity"],
+      "additionalProperties": false,
+      "description": "User watermark layer. Semantics (v1, additive): z-order = immediately above the photo layer, below every border/text/logo the template paints afterwards; clipped to the photo draw box; contain + centre inside `rect` (never stretched, aspect preserved); `opacity` multiplies the image alpha. A missing or undecodable path is a hard error, never a silent no-op.",
+      "properties": {
+        "path": { "$ref": "#/$defs/pathString" },
+        "rect": { "$ref": "#/$defs/unitRect" },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Global alpha multiplier applied to the overlay image's alpha channel."
+        }
+      }
+    },
+    "unitRect": {
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "additionalProperties": false,
+      "description": "Rectangle normalised to the photo draw box (origin at that box's top-left, 0..1 on both axes). The overlay is contained inside it; parts outside the photo box are clipped.",
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "w": { "type": "number", "minimum": 0, "maximum": 1 },
+        "h": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "renderResponse": {
+      "type": "object",
+      "required": ["schemaVersion", "image", "photoRect", "textSlots", "ms"],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "image": {
+          "oneOf": [
+            { "$ref": "#/$defs/imagePath" },
+            { "$ref": "#/$defs/imageRgba" }
+          ]
+        },
+        "photoRect": { "$ref": "#/$defs/rect" },
+        "textSlots": {
+          "type": "array",
+          "maxItems": 4096,
+          "items": { "$ref": "#/$defs/textSlot" }
+        },
+        "ms": { "type": "number", "minimum": 0 },
+        "engine": {
+          "enum": ["fake", "native"],
+          "description": "Optional provenance marker (v1 additive field). 'fake' = FakeEngine/golden-image path, 'native' = real engine. UI must not present 'fake' output as live parameter rendering."
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Optional non-fatal diagnostics (v1 additive field)."
+        }
+      }
+    },
+    "imagePath": {
+      "type": "object",
+      "required": ["path", "w", "h"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/pathString" },
+        "w": { "$ref": "#/$defs/dimension" },
+        "h": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "imageRgba": {
+      "type": "object",
+      "required": ["rgba", "w", "h"],
+      "additionalProperties": false,
+      "description": "Tiny previews only (max(w,h) <= 512). Base64 of raw RGBA8888 rows, decoded length must be w*h*4.",
+      "properties": {
+        "rgba": {
+          "type": "string",
+          "minLength": 16,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        },
+        "w": { "$ref": "#/$defs/dimension" },
+        "h": { "$ref": "#/$defs/dimension" }
+      }
+    },
+    "rect": {
+      "type": "object",
+      "required": ["x", "y", "w", "h"],
+      "additionalProperties": false,
+      "description": "Axis-aligned rectangle in response image pixel space (origin top-left). When the request carried a band, coordinates are relative to the returned strip (add band.y to get canvas space). x/y may be negative when the photo bleeds outside the canvas.",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "minimum": 0 },
+        "h": { "type": "number", "minimum": 0 }
+      }
+    },
+    "textSlot": {
+      "type": "object",
+      "required": ["id", "x", "y", "w", "h"],
+      "additionalProperties": false,
+      "description": "Measured fill region for one text slot, in response image pixel space (band-local when the request carried a band). The engine does not return glyph runs in v1; the UI only needs the box for overlay/hit-testing.",
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "minimum": 0 },
+        "h": { "type": "number", "minimum": 0 },
+        "baseline": { "type": "number" },
+        "fontSize": { "type": "number", "exclusiveMinimum": 0 },
+        "lines": { "type": "integer", "minimum": 1 },
+        "truncated": { "type": "boolean" }
+      }
+    }
+  }
+}

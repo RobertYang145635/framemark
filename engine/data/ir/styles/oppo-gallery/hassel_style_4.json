@@ -1,0 +1,281 @@
+{
+  "id": "oppo-gallery:hassel_style_4",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏 · 4",
+  "nameEn": "hassel_style_4",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 79,
+    "right": 10,
+    "bottom": 79
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 79,
+      "offset": {
+        "x": 10,
+        "y": 79
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "image",
+          "asset": "hasselblad_watermark_dark",
+          "width": 116,
+          "height": 9,
+          "scale": "contain",
+          "gravity": "center",
+          "margins": {},
+          "alpha": 1
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 79,
+      "offset": {
+        "x": 10,
+        "y": 0
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 340,
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "avenir",
+              "size": 12,
+              "weight": 500,
+              "color": "#000000",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 16.39,
+              "align": "left",
+              "gravity": "topHorCenter",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 3
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "gravity": "horCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "FL"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.65,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "leftVerticalCenter",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{focal}"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 1,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 8
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "mm"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 1,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Aperture"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.65,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 16
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=f/@{aperture}"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 1,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 8
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "Shutter"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.65,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 16
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{speed}"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 1,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 8
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "ISO"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.65,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 16
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{iso}"
+                      },
+                      "font": "avenir",
+                      "size": 8.45,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 1,
+                      "tracking": 0.03,
+                      "lineHeight": 11.54,
+                      "align": "left",
+                      "gravity": "verticalCenter",
+                      "margins": {
+                        "left": 8
+                      },
+                      "optional": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "hasselblad_watermark_dark": {
+      "file": "hasselblad_watermark_dark.webp",
+      "width": 1475,
+      "height": 118
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

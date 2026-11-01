@@ -1,0 +1,102 @@
+{
+  "id": "oppo-gallery:hassel_style_2",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏 · 2",
+  "nameEn": "hassel_style_2",
+  "placement": "out",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 68
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 68,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 230,
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 19
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "avenir",
+              "size": 11,
+              "weight": 500,
+              "color": "#000000",
+              "alpha": 1,
+              "tracking": 0,
+              "lineHeight": 15.03,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "imageParams"
+              },
+              "font": "avenir",
+              "size": 11,
+              "weight": 400,
+              "color": "#000000",
+              "alpha": 0.65,
+              "tracking": 0,
+              "lineHeight": 15.03,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "top": 1
+              },
+              "optional": false
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "image",
+          "asset": "hassel_watermark_h_logo_dark",
+          "width": 36,
+          "height": 36,
+          "scale": "contain",
+          "gravity": "rightVerticalCenter",
+          "margins": {
+            "right": 19
+          },
+          "alpha": 1
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "hassel_watermark_h_logo_dark": {
+      "file": "hassel_watermark_h_logo_dark.webp",
+      "width": 512,
+      "height": 512
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "id": "oppo-camerapro:gr_style_4",
+  "vendor": "oppo",
+  "family": "OPPO 相机",
+  "name": "理光 GR · 叠加",
+  "nameEn": "RICOH GR · OVERLAY",
+  "placement": "overlay",
+  "referenceWidth": 360,
+  "referenceWidthMode": "shortEdge",
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 54,
+      "gravity": "centerBottom",
+      "offset": {
+        "x": 0,
+        "y": 20
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "gr_style_4-realme_gr_logo_white",
+              "width": 70,
+              "height": 22,
+              "scale": "contain",
+              "gravity": "topHorCenter",
+              "margins": {},
+              "alpha": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 9,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 1,
+              "tracking": 0.04,
+              "lineHeight": 14.06,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 19
+              },
+              "optional": true,
+              "shadow": {
+                "color": "#65000000",
+                "blur": 3.3000000000000003,
+                "x": 1,
+                "y": 0
+              }
+            }
+          ],
+          "matchWidth": true
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "gr_style_4-realme_gr_logo_white": {
+      "file": "oppo/camerapro/realme_gr_logo_white.webp",
+      "width": 70,
+      "height": 22
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "unsupported": [
+      "FZLTZCHK substituted with SysSans"
+    ],
+    "notes": "Auto-converted from OPPO CameraPro config; pending visual audit."
+  }
+}

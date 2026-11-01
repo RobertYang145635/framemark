@@ -1,0 +1,1911 @@
+{
+  "schemaVersion": "framemark-ir-assets/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "note": "IR bitmap references recorded from StockStyle.assets; the files themselves are outside the E1b-1 asset scope (fonts/logos/previews) and are not copied — E3 must ship them.",
+  "counts": {
+    "assetRefs": 155,
+    "uniqueFiles": 124,
+    "resolvedInAssetsSystem": 124,
+    "unresolved": 0
+  },
+  "rows": [
+    {
+      "file": "hasselblad_watermark_dark.webp",
+      "keys": [
+        "hasselblad_watermark_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_1",
+        "oppo-gallery:hassel_style_4",
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:hassel_style_xpan_1"
+      ],
+      "declaredWidth": 831,
+      "declaredHeight": 73,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/hasselblad_watermark_dark.webp",
+      "shippedWidth": 1475,
+      "shippedHeight": 118,
+      "sha256": "f4dcf1309ad0551624466d1a005ec4fa1140779a017d3b7097415cdbb8c14220"
+    },
+    {
+      "file": "hassel_watermark_h_logo_dark.webp",
+      "keys": [
+        "hassel_watermark_h_logo_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_2",
+        "oppo-gallery:hassel_style_3"
+      ],
+      "declaredWidth": 512,
+      "declaredHeight": 512,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/hassel_watermark_h_logo_dark.webp",
+      "shippedWidth": 512,
+      "shippedHeight": 512,
+      "sha256": "b99e390513bc56f070d877696753590f58557991d4cc0c664a6e6d9104223612"
+    },
+    {
+      "file": "master_model_filter_intensity_dark.webp",
+      "keys": [
+        "master_model_filter_intensity_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_filter_intensity_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "3f92af9bba25002ec3acc925390daf1159ef91191cafad0c1e42aca39d82d583"
+    },
+    {
+      "file": "master_model_soft_light_dark.webp",
+      "keys": [
+        "master_model_soft_light_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 84,
+      "declaredHeight": 84,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_soft_light_dark.webp",
+      "shippedWidth": 84,
+      "shippedHeight": 84,
+      "sha256": "864c2f9ee4b50ee6a267059d571f48085f4f69be0c03b543257cb51fe1f087c7"
+    },
+    {
+      "file": "master_model_tone_dark.webp",
+      "keys": [
+        "master_model_tone_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_tone_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "bb550620d331799809c841991ae4acba1e2c602158f373cf7b82485fb18e9ae6"
+    },
+    {
+      "file": "master_model_filter_saturation_dark.webp",
+      "keys": [
+        "master_model_filter_saturation_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_filter_saturation_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "cab447d74c7b7142f29b4ddd6ae3d3a70664baf54afe92d34afe0aae891ef43b"
+    },
+    {
+      "file": "master_model_color_temperature_dark.webp",
+      "keys": [
+        "master_model_color_temperature_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_color_temperature_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "9dbcb264281a3ba6b160236b8ed82f759a355d9b32deac32a8ae1794eef4017f"
+    },
+    {
+      "file": "master_model_cyan_magenta_dark.webp",
+      "keys": [
+        "master_model_cyan_magenta_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_cyan_magenta_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "9f0f20fd2882edd0d71a727961240207bd92f67b4cf8fc45f54720b328ed7910"
+    },
+    {
+      "file": "master_model_sharpness_dark.webp",
+      "keys": [
+        "master_model_sharpness_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_sharpness_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "7bfa1b662a85baf9bbc437f7e22e5f2011b674d724d8ac0e43ec7cad1d2a3893"
+    },
+    {
+      "file": "master_model_vig_enable_dark.webp",
+      "keys": [
+        "master_model_vig_enable_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_master_mode_1",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 60,
+      "declaredHeight": 60,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_model_vig_enable_dark.webp",
+      "shippedWidth": 60,
+      "shippedHeight": 60,
+      "sha256": "b7e027ab2d266c9e72a1483f10d0cc7e89e991014ca85a458e5f5702c796d9b8"
+    },
+    {
+      "file": "xpan_watermark_dark.webp",
+      "keys": [
+        "xpan_watermark_dark"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_style_xpan_1"
+      ],
+      "declaredWidth": 345,
+      "declaredHeight": 140,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/xpan_watermark_dark.webp",
+      "shippedWidth": 345,
+      "shippedHeight": 140,
+      "sha256": "a98146346e74bc98de8da90232efd7991aa6c53b2bd5661bbf4c2f7aa0c8ab1b"
+    },
+    {
+      "file": "hassel_watermark_h_logo_text_style.webp",
+      "keys": [
+        "hassel_watermark_h_logo_text_style"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_text_style_1",
+        "oppo-gallery:video_hassel_text_style_1"
+      ],
+      "declaredWidth": 526,
+      "declaredHeight": 397,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/hassel_watermark_h_logo_text_style.webp",
+      "shippedWidth": 526,
+      "shippedHeight": 397,
+      "sha256": "28855fc0be585811f450695915ce62d98b9dc718ac74a594e7f438cec5062a91"
+    },
+    {
+      "file": "hasselblad_watermark_text_style.webp",
+      "keys": [
+        "hasselblad_watermark_text_style"
+      ],
+      "styles": [
+        "oppo-gallery:hassel_text_style_2",
+        "oppo-gallery:video_hassel_text_style_2"
+      ],
+      "declaredWidth": 518,
+      "declaredHeight": 53,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/hasselblad_watermark_text_style.webp",
+      "shippedWidth": 518,
+      "shippedHeight": 53,
+      "sha256": "0c07023e0f25f3fc71fdfd7768dd6cb3882d296fad845b084643e87480958f7e"
+    },
+    {
+      "file": "lumo_watermark_logo_dark.webp",
+      "keys": [
+        "lumo_watermark_logo_dark"
+      ],
+      "styles": [
+        "oppo-gallery:lumo_style_1",
+        "oppo-gallery:lumo_style_2",
+        "oppo-gallery:lumo_style_3",
+        "oppo-gallery:lumo_style_master_mode_1"
+      ],
+      "declaredWidth": 386,
+      "declaredHeight": 120,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/lumo_watermark_logo_dark.webp",
+      "shippedWidth": 416,
+      "shippedHeight": 256,
+      "sha256": "2a240a27544539354e60e100d857bc87c7bfbefc2b74f206c48458786798b303"
+    },
+    {
+      "file": "lumo_text_watermark_logo.webp",
+      "keys": [
+        "lumo_text_watermark_logo"
+      ],
+      "styles": [
+        "oppo-gallery:lumo_text_style_1",
+        "oppo-gallery:lumo_text_style_2"
+      ],
+      "declaredWidth": 428,
+      "declaredHeight": 121,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/lumo_text_watermark_logo.webp",
+      "shippedWidth": 428,
+      "shippedHeight": 121,
+      "sha256": "fd1bfba9f18156a1358716e3d73b01e389ea9f998c8e73b6730f1c6ebca1c29a"
+    },
+    {
+      "file": "brand_color_os_dark.webp",
+      "keys": [
+        "brand_color_os_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_brand_1"
+      ],
+      "declaredWidth": 529,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/brand_color_os_dark.webp",
+      "shippedWidth": 529,
+      "shippedHeight": 321,
+      "sha256": "a7201cd84b720d38fdf248df4239d3fed4aa09e925a94501d2d77be3347404d7"
+    },
+    {
+      "file": "brand_find_x_dark.webp",
+      "keys": [
+        "brand_find_x_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_brand_2"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 320,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/brand_find_x_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 320,
+      "sha256": "b4078c25e988b9cdae3e3a28995d488736f4dd6d87db72db5e337d2b6b883d82"
+    },
+    {
+      "file": "brand_break_through_dark.webp",
+      "keys": [
+        "brand_break_through_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_brand_5"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 320,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/brand_break_through_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 320,
+      "sha256": "b5453416f03f0bbbef37d229e38cbdc5b8e04ac118696652a3bf5ee1c9b0f373"
+    },
+    {
+      "file": "brand_lumo_image_dark.webp",
+      "keys": [
+        "brand_lumo_image_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_brand_6"
+      ],
+      "declaredWidth": 360,
+      "declaredHeight": 256,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/brand_lumo_image_dark.webp",
+      "shippedWidth": 360,
+      "shippedHeight": 256,
+      "sha256": "61f4445e567472040253ef2c8b1be15a290d39789875ace207a43ddce5d0330d"
+    },
+    {
+      "file": "film_street_sweeping_dark.webp",
+      "keys": [
+        "film_street_sweeping_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_film_1"
+      ],
+      "declaredWidth": 368,
+      "declaredHeight": 256,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/film_street_sweeping_dark.webp",
+      "shippedWidth": 368,
+      "shippedHeight": 256,
+      "sha256": "e787d665b77b88ebf9ef5e8d9f565fd1a9dda63ed1e7cf73b0714a7a28825530"
+    },
+    {
+      "file": "film_daylight_vertical_dark.webp",
+      "keys": [
+        "film_daylight_vertical_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_film_2"
+      ],
+      "declaredWidth": 400,
+      "declaredHeight": 272,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/film_daylight_vertical_dark.webp",
+      "shippedWidth": 400,
+      "shippedHeight": 272,
+      "sha256": "73ac00ebc5ac17a992af0fdf96e9b420bc8091648afeab775796418d949ea784"
+    },
+    {
+      "file": "realme_film_street_sweeping.webp",
+      "keys": [
+        "realme_film_street_sweeping"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_film_realme_1"
+      ],
+      "declaredWidth": 460,
+      "declaredHeight": 320,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/realme_film_street_sweeping.webp",
+      "shippedWidth": 460,
+      "shippedHeight": 320,
+      "sha256": "cb4d6b73c9087811379028fbf72956fb9194129732f7494d11f2a5c42140c80d"
+    },
+    {
+      "file": "realme_film_daylight.webp",
+      "keys": [
+        "realme_film_daylight"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_film_realme_2"
+      ],
+      "declaredWidth": 368,
+      "declaredHeight": 256,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/realme_film_daylight.webp",
+      "shippedWidth": 368,
+      "shippedHeight": 256,
+      "sha256": "6f8423bee03f00937d1235d49b97821647306cd2fdc5e979f68c40369c350c13"
+    },
+    {
+      "file": "master_sign_1_dark.webp",
+      "keys": [
+        "master_sign_1_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_masterSign_1"
+      ],
+      "declaredWidth": 1001,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_sign_1_dark.webp",
+      "shippedWidth": 1001,
+      "shippedHeight": 321,
+      "sha256": "0f36f0d0e519898061369384420dd9591a95c8930d77db2e604d973b640855cc"
+    },
+    {
+      "file": "master_sign_2_dark.webp",
+      "keys": [
+        "master_sign_2_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_masterSign_2"
+      ],
+      "declaredWidth": 888,
+      "declaredHeight": 272,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_sign_2_dark.webp",
+      "shippedWidth": 888,
+      "shippedHeight": 272,
+      "sha256": "7c998da8c717f50f6dc90cb8fe8d7297327144193cf53972e40b642f8cd17c62"
+    },
+    {
+      "file": "master_sign_3_dark.webp",
+      "keys": [
+        "master_sign_3_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_masterSign_3"
+      ],
+      "declaredWidth": 750,
+      "declaredHeight": 204,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_sign_3_dark.webp",
+      "shippedWidth": 750,
+      "shippedHeight": 204,
+      "sha256": "5aed5e2c1111a5196057f955f2ff4aad3da8afe8ecf21e0c2b6e581f33a158d8"
+    },
+    {
+      "file": "master_sign_4_dark.webp",
+      "keys": [
+        "master_sign_4_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_masterSign_4"
+      ],
+      "declaredWidth": 686,
+      "declaredHeight": 204,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/master_sign_4_dark.webp",
+      "shippedWidth": 686,
+      "shippedHeight": 204,
+      "sha256": "2a3a671bd90d2ab6194b9133ada73f306c8607f682ed05d450cf8dce6f5489af"
+    },
+    {
+      "file": "classic_double_reverse1_dark.webp",
+      "keys": [
+        "classic_double_reverse1_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_retroCamera_1"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_double_reverse1_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "2686331ef9f5934ee6e90a7f78577a539dfb02e7c12dd46d4718e03461a196b1"
+    },
+    {
+      "file": "classic_135_camera_dark.webp",
+      "keys": [
+        "classic_135_camera_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_retroCamera_2"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_135_camera_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "45c734d7541b8ad316352a54a8fd5cde06933b557498641abf4d749465974d2b"
+    },
+    {
+      "file": "classic_double_reverse4_dark.webp",
+      "keys": [
+        "classic_double_reverse4_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_retroCamera_3"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_double_reverse4_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "eee771d91b71643749eafe486b3a274b74e1c6b2687049f50044482656e63237"
+    },
+    {
+      "file": "classic_double_reverse3_dark.webp",
+      "keys": [
+        "classic_double_reverse3_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_retroCamera_4"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_double_reverse3_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "7eca67c85021fba35b3cf6e02c212cebb581189acc573141425c02a34f00fbcf"
+    },
+    {
+      "file": "classic_double_reverse2_dark.webp",
+      "keys": [
+        "classic_double_reverse2_dark"
+      ],
+      "styles": [
+        "oppo-gallery:personalize_retroCamera_5"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_double_reverse2_dark.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "9cb8e3d34f30e539245301ea763d5ddd37bf81ed22c6507e7ce75cfeb9c1d931"
+    },
+    {
+      "file": "color_card_inspiration.webp",
+      "keys": [
+        "color_card_inspiration"
+      ],
+      "styles": [
+        "oppo-gallery:realme_brand_imprint_inspirationPhoto_1"
+      ],
+      "declaredWidth": 163,
+      "declaredHeight": 23,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/color_card_inspiration.webp",
+      "shippedWidth": 163,
+      "shippedHeight": 23,
+      "sha256": "c1641fb104f1a14fd5ca774eb1edd18ebce13ef27c9a0c646779906488224b4f"
+    },
+    {
+      "file": "color_card_perspective.webp",
+      "keys": [
+        "color_card_perspective"
+      ],
+      "styles": [
+        "oppo-gallery:realme_brand_imprint_inspirationPhoto_2"
+      ],
+      "declaredWidth": 96,
+      "declaredHeight": 48,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/color_card_perspective.webp",
+      "shippedWidth": 96,
+      "shippedHeight": 48,
+      "sha256": "218f4c52eb3e43b63685633dab71334d5a74c01b5480a7c3a0ec393027869d71"
+    },
+    {
+      "file": "color_card_explore.webp",
+      "keys": [
+        "color_card_explore"
+      ],
+      "styles": [
+        "oppo-gallery:realme_brand_imprint_inspirationPhoto_3"
+      ],
+      "declaredWidth": 120,
+      "declaredHeight": 24,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/color_card_explore.webp",
+      "shippedWidth": 120,
+      "shippedHeight": 24,
+      "sha256": "7743077f9c79f064b5248cbd7651483e612dbdb640ac7a41562b840d2d398800"
+    },
+    {
+      "file": "songkran_watermark_icon.webp",
+      "keys": [
+        "songkran_watermark_icon"
+      ],
+      "styles": [
+        "oppo-gallery:restrict_local_songkran_holiday_2025_style_1"
+      ],
+      "declaredWidth": 563,
+      "declaredHeight": 192,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/songkran_watermark_icon.webp",
+      "shippedWidth": 563,
+      "shippedHeight": 192,
+      "sha256": "0fbc8f846fd075e1cbc0563c3a754bccb025169140a4b8c4a0f22719402cb041"
+    },
+    {
+      "file": "classic_double_reverse2.webp",
+      "keys": [
+        "classic_double_reverse2"
+      ],
+      "styles": [
+        "oppo-gallery:text_style_1",
+        "oppo-gallery:video_text_style_1"
+      ],
+      "declaredWidth": 320,
+      "declaredHeight": 321,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/classic_double_reverse2.webp",
+      "shippedWidth": 320,
+      "shippedHeight": 321,
+      "sha256": "e10d4ed1c048c5a9dfe546fdaf81616130b9ba444e852b73844fc9e0093af651"
+    },
+    {
+      "file": "text_style_sign_1.webp",
+      "keys": [
+        "text_style_sign_1"
+      ],
+      "styles": [
+        "oppo-gallery:text_style_3",
+        "oppo-gallery:video_text_style_3"
+      ],
+      "declaredWidth": 728,
+      "declaredHeight": 256,
+      "sourcePath": "src/renderer/src/assets/system/oppo/gallery/text_style_sign_1.webp",
+      "shippedWidth": 728,
+      "shippedHeight": 256,
+      "sha256": "72bc81369e6e15f57a12157f2878d705c7ab517f76cb7c2f011e0433296836fb"
+    },
+    {
+      "file": "oppo/camerapro/realme_gr_logo_dark.webp",
+      "keys": [
+        "gr_style_1-realme_gr_logo_dark",
+        "gr_style_2-realme_gr_logo_dark",
+        "gr_style_3-realme_gr_logo_dark",
+        "gr_style_5-realme_gr_logo_dark"
+      ],
+      "styles": [
+        "oppo-camerapro:gr_style_1",
+        "oppo-camerapro:gr_style_2",
+        "oppo-camerapro:gr_style_3",
+        "oppo-camerapro:gr_style_5"
+      ],
+      "declaredWidth": 75,
+      "declaredHeight": 23,
+      "sourcePath": "src/renderer/src/assets/system/oppo/camerapro/realme_gr_logo_dark.webp",
+      "shippedWidth": 280,
+      "shippedHeight": 89,
+      "sha256": "1c96b6b4a2414519aaab3113eee401a8f7e69990655242b083b704e873e0b93d"
+    },
+    {
+      "file": "oppo/camerapro/realme_gr_logo_white.webp",
+      "keys": [
+        "gr_style_4-realme_gr_logo_white"
+      ],
+      "styles": [
+        "oppo-camerapro:gr_style_4"
+      ],
+      "declaredWidth": 70,
+      "declaredHeight": 22,
+      "sourcePath": "src/renderer/src/assets/system/oppo/camerapro/realme_gr_logo_white.webp",
+      "shippedWidth": 280,
+      "shippedHeight": 89,
+      "sha256": "8b058906b1d194a4e5470748a12202c7ef1036da58253756f4565e511a34d4a1"
+    },
+    {
+      "file": "oppo/camerapro/leica_live_moment_logo.webp",
+      "keys": [
+        "leica_live_moment_style_1-leica_live_moment_logo"
+      ],
+      "styles": [
+        "oppo-camerapro:leica_live_moment_style_1"
+      ],
+      "declaredWidth": 18,
+      "declaredHeight": 18,
+      "sourcePath": "src/renderer/src/assets/system/oppo/camerapro/leica_live_moment_logo.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "oppo/camerapro/leica_live_moment_corner_left.webp",
+      "keys": [
+        "leica_live_moment_style_1-leica_live_moment_corner_left"
+      ],
+      "styles": [
+        "oppo-camerapro:leica_live_moment_style_1"
+      ],
+      "declaredWidth": 4,
+      "declaredHeight": 10,
+      "sourcePath": "src/renderer/src/assets/system/oppo/camerapro/leica_live_moment_corner_left.webp",
+      "shippedWidth": 44,
+      "shippedHeight": 108,
+      "sha256": "06d32b7347e383db8d0a7067518e61934a11fabfbb89124845d0ef737469f7dd"
+    },
+    {
+      "file": "oppo/camerapro/leica_live_moment_corner_right.webp",
+      "keys": [
+        "leica_live_moment_style_1-leica_live_moment_corner_right"
+      ],
+      "styles": [
+        "oppo-camerapro:leica_live_moment_style_1"
+      ],
+      "declaredWidth": 4,
+      "declaredHeight": 10,
+      "sourcePath": "src/renderer/src/assets/system/oppo/camerapro/leica_live_moment_corner_right.webp",
+      "shippedWidth": 44,
+      "shippedHeight": 108,
+      "sha256": "8346ed62650bcc9cfcdaf136354fbed73b1ed86b339d66c73b1fff33a7163907"
+    },
+    {
+      "file": "xiaomi/classic/17/xiaomi_black.webp",
+      "keys": [
+        "classic-17-logo-xiaomi_black",
+        "classic_22-logo-black",
+        "classic_99-logo-black"
+      ],
+      "styles": [
+        "xiaomi-classic:17",
+        "xiaomi-classic:22",
+        "xiaomi-classic:99"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/17/xiaomi_white.webp",
+      "keys": [
+        "classic-17-logo-xiaomi_white",
+        "classic_22-logo-white",
+        "classic_99-logo-white"
+      ],
+      "styles": [
+        "xiaomi-classic:17",
+        "xiaomi-classic:22",
+        "xiaomi-classic:99"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/18/xiaomi_black.webp",
+      "keys": [
+        "classic-18-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:18"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/18/xiaomi_white.webp",
+      "keys": [
+        "classic-18-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:18"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/19/xiaomi_white.webp",
+      "keys": [
+        "classic-19-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:19"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/20/xiaomi_white.webp",
+      "keys": [
+        "classic-20-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:20"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/20/xiaomi_black.webp",
+      "keys": [
+        "classic-20-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:20"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/21/xiaomi_black.webp",
+      "keys": [
+        "classic-21-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:21"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/21/xiaomi_white.webp",
+      "keys": [
+        "classic-21-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:21"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/23/xiaomi_black.webp",
+      "keys": [
+        "classic-23-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:23"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/23/xiaomi_white.webp",
+      "keys": [
+        "classic-23-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:23"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/71/xiaomi_black.webp",
+      "keys": [
+        "classic-71-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:71"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/72/xiaomi_white.webp",
+      "keys": [
+        "classic-72-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:72"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/72/xiaomi_black.webp",
+      "keys": [
+        "classic-72-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:72"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/95/xiaomi_black.webp",
+      "keys": [
+        "classic-95-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:95"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/95/xiaomi_white.webp",
+      "keys": [
+        "classic-95-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:95"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/96/xiaomi_black.webp",
+      "keys": [
+        "classic-96-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:96"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/classic/96/xiaomi_white.webp",
+      "keys": [
+        "classic-96-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:96"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/97/xiaomi_white.webp",
+      "keys": [
+        "classic-97-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:97"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/98/xiaomi_white.webp",
+      "keys": [
+        "classic-98-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-classic:98"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/classic/98/xiaomi_black.webp",
+      "keys": [
+        "classic-98-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-classic:98"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/disney/31/snow_white.webp",
+      "keys": [
+        "disney-31-snow_white"
+      ],
+      "styles": [
+        "xiaomi-disney:31"
+      ],
+      "declaredWidth": 160,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/disney/31/snow_white.webp",
+      "shippedWidth": 160,
+      "shippedHeight": 160,
+      "sha256": "324264972fefb2dde05beaa87aa1cb384249d2757faeb4936afcfdb2530d9c63"
+    },
+    {
+      "file": "xiaomi/disney/31/xiaomi_white.webp",
+      "keys": [
+        "disney-31-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-disney:31"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/disney/31/disney_icon.webp",
+      "keys": [
+        "disney-31-disney_icon"
+      ],
+      "styles": [
+        "xiaomi-disney:31"
+      ],
+      "declaredWidth": 134,
+      "declaredHeight": 58,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/disney/33/disney_icon.webp",
+      "shippedWidth": 456,
+      "shippedHeight": 126,
+      "sha256": "9758f46b5331f991da3f078c8294d3fcf03135bf7cf44e6c0ab465b478eff147"
+    },
+    {
+      "file": "xiaomi/disney/32/queen_dark.webp",
+      "keys": [
+        "disney-32-queen_dark"
+      ],
+      "styles": [
+        "xiaomi-disney:32"
+      ],
+      "declaredWidth": 160,
+      "declaredHeight": 161,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/disney/32/queen_dark.webp",
+      "shippedWidth": 160,
+      "shippedHeight": 161,
+      "sha256": "23de39dd8ccfb6a2e8323f7444ad6063c8daf40b5a1f70ca8ff2b86c741f2a85"
+    },
+    {
+      "file": "xiaomi/disney/32/xiaomi_white.webp",
+      "keys": [
+        "disney-32-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-disney:32"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/disney/32/disney_icon.webp",
+      "keys": [
+        "disney-32-disney_icon"
+      ],
+      "styles": [
+        "xiaomi-disney:32"
+      ],
+      "declaredWidth": 134,
+      "declaredHeight": 58,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/disney/33/disney_icon.webp",
+      "shippedWidth": 456,
+      "shippedHeight": 126,
+      "sha256": "9758f46b5331f991da3f078c8294d3fcf03135bf7cf44e6c0ab465b478eff147"
+    },
+    {
+      "file": "xiaomi/disney/33/xiaomi_white.webp",
+      "keys": [
+        "disney-33-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-disney:33"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/disney/33/disney_icon.webp",
+      "keys": [
+        "disney-33-disney_icon"
+      ],
+      "styles": [
+        "xiaomi-disney:33"
+      ],
+      "declaredWidth": 456,
+      "declaredHeight": 126,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/disney/33/disney_icon.webp",
+      "shippedWidth": 456,
+      "shippedHeight": 126,
+      "sha256": "9758f46b5331f991da3f078c8294d3fcf03135bf7cf44e6c0ab465b478eff147"
+    },
+    {
+      "file": "xiaomi/film/12/xiaomi_F4CA32.webp",
+      "keys": [
+        "film-12-logo-xiaomi_F4CA32"
+      ],
+      "styles": [
+        "xiaomi-film:12"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/film/12/xiaomi_F4CA32.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "bd1375f93b1f62ad5c42f15c86285c6328a4f699daf51cebcc743357cc48fa98"
+    },
+    {
+      "file": "xiaomi/film/13/xiaomi_white.webp",
+      "keys": [
+        "film-13-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-film:13"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/film/13/xiaomi_black.webp",
+      "keys": [
+        "film-13-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-film:13"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/film/14/xiaomi_white.webp",
+      "keys": [
+        "film-14-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-film:14"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/film/15/icon_triangle.webp",
+      "keys": [
+        "film-15-icon_triangle"
+      ],
+      "styles": [
+        "xiaomi-film:15"
+      ],
+      "declaredWidth": 161,
+      "declaredHeight": 36,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/film/15/icon_triangle.webp",
+      "shippedWidth": 161,
+      "shippedHeight": 36,
+      "sha256": "9c750cd8e724b4a56fe93c4b348da8f2eec9b1bedda57f9cc68ad39ee10812ac"
+    },
+    {
+      "file": "xiaomi/film/15/xiaomi_CE9238.webp",
+      "keys": [
+        "film-15-logo-xiaomi_CE9238"
+      ],
+      "styles": [
+        "xiaomi-film:15"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/film/15/xiaomi_CE9238.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "09dca890ca0cfc4bf1d5e7997b4a84d281cc1fa25e3595129fb970d4f63096b1"
+    },
+    {
+      "file": "xiaomi/film/16/xiaomi_white.webp",
+      "keys": [
+        "film-16-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-film:16"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/film/73/xiaomi_black.webp",
+      "keys": [
+        "film-73-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-film:73"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/film/73/xiaomi_white.webp",
+      "keys": [
+        "film-73-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-film:73"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/film/103/xiaomi_F4CA32.webp",
+      "keys": [
+        "film-103-logo-xiaomi_F4CA32"
+      ],
+      "styles": [
+        "xiaomi-film:103"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/film/12/xiaomi_F4CA32.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "bd1375f93b1f62ad5c42f15c86285c6328a4f699daf51cebcc743357cc48fa98"
+    },
+    {
+      "file": "xiaomi/leica/1/xiaomi_black.webp",
+      "keys": [
+        "leica-1-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:1"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/1/xiaomi_white.webp",
+      "keys": [
+        "leica-1-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:1"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/1/leica.webp",
+      "keys": [
+        "leica-1-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:1"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/2/xiaomi_black.webp",
+      "keys": [
+        "leica-2-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:2"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/2/xiaomi_white.webp",
+      "keys": [
+        "leica-2-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:2"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/2/leica.webp",
+      "keys": [
+        "leica-2-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:2"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/3/xiaomi_black.webp",
+      "keys": [
+        "leica-3-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:3"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/3/xiaomi_white.webp",
+      "keys": [
+        "leica-3-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:3"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/3/leica.webp",
+      "keys": [
+        "leica-3-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:3"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/4/xiaomi_black.webp",
+      "keys": [
+        "leica-4-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:4"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/4/xiaomi_white.webp",
+      "keys": [
+        "leica-4-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:4"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/4/leica.webp",
+      "keys": [
+        "leica-4-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:4"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/90/xiaomi_black.webp",
+      "keys": [
+        "leica-90-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:90"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/90/xiaomi_white.webp",
+      "keys": [
+        "leica-90-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:90"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/90/leica.webp",
+      "keys": [
+        "leica-90-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:90"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/91/xiaomi_white.webp",
+      "keys": [
+        "leica-91-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:91"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/91/leica.webp",
+      "keys": [
+        "leica-91-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:91"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/92/xiaomi_black.webp",
+      "keys": [
+        "leica-92-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:92"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/92/xiaomi_white.webp",
+      "keys": [
+        "leica-92-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:92"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/92/leica.webp",
+      "keys": [
+        "leica-92-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:92"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/104/xiaomi_black.webp",
+      "keys": [
+        "leica-104-logo-xiaomi_black"
+      ],
+      "styles": [
+        "xiaomi-leica:104"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/xiaomi_black.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "8d1af987d1cf920298275882b6febdb49cb793628505746863a3ab910b787962"
+    },
+    {
+      "file": "xiaomi/leica/104/xiaomi_white.webp",
+      "keys": [
+        "leica-104-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-leica:104"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/leica/104/leica.webp",
+      "keys": [
+        "leica-104-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:104"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/111/leica.webp",
+      "keys": [
+        "leica-111-leica"
+      ],
+      "styles": [
+        "xiaomi-leica:111"
+      ],
+      "declaredWidth": 240,
+      "declaredHeight": 240,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/92/leica.webp",
+      "shippedWidth": 240,
+      "shippedHeight": 240,
+      "sha256": "ebae89313eab5799b57995847117a3fb1b511dba507d63494664ece475135278"
+    },
+    {
+      "file": "xiaomi/leica/111/xiaomi_E6A54F.webp",
+      "keys": [
+        "leica-111-logo-xiaomi_E6A54F"
+      ],
+      "styles": [
+        "xiaomi-leica:111"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/leica/111/xiaomi_E6A54F.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "d4f1239f111cbbf89dcd2d5f0c69e129228b6f50a754d7593b323ae2fea94977"
+    },
+    {
+      "file": "xiaomi/standard/6/xiaomi_white.webp",
+      "keys": [
+        "standard-6-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-standard:6"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/standard/7/xiaomi_white.webp",
+      "keys": [
+        "standard-7-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-standard:7"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/standard/8/xiaomi_white.webp",
+      "keys": [
+        "standard-8-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-standard:8"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "xiaomi/standard/107/xiaomi_white.webp",
+      "keys": [
+        "standard-107-logo-xiaomi_white"
+      ],
+      "styles": [
+        "xiaomi-standard:107"
+      ],
+      "declaredWidth": 673,
+      "declaredHeight": 160,
+      "sourcePath": "src/renderer/src/assets/system/xiaomi/standard/8/xiaomi_white.webp",
+      "shippedWidth": 673,
+      "shippedHeight": 160,
+      "sha256": "015657a853744c60ff141d28e41a58849711f49bdcad6faba5597ac660433c7c"
+    },
+    {
+      "file": "vivo/zeiss/grid.png",
+      "keys": [
+        "vivo-zeiss-grid"
+      ],
+      "styles": [
+        "vivo-zeiss:border_top",
+        "vivo-zeiss:inside",
+        "vivo-zeiss:up_down"
+      ],
+      "declaredWidth": 168,
+      "declaredHeight": 168,
+      "sourcePath": "src/renderer/src/assets/system/vivo/zeiss/grid.png",
+      "shippedWidth": 168,
+      "shippedHeight": 168,
+      "sha256": "e7f3ad404bc377c8fdc57c1c2288d52a2f78a1f31179f142e6389721869c069c"
+    },
+    {
+      "file": "vivo/zeiss/stamp-black.png",
+      "keys": [
+        "vivo-zeiss-stamp-black"
+      ],
+      "styles": [
+        "vivo-zeiss:border_top",
+        "vivo-zeiss:up_down"
+      ],
+      "declaredWidth": 221,
+      "declaredHeight": 192,
+      "sourcePath": "src/renderer/src/assets/system/vivo/zeiss/stamp-black.png",
+      "shippedWidth": 221,
+      "shippedHeight": 192,
+      "sha256": "9d1764315390bb076cf8df958105efc9c866ad45e81355d4ef01753b45f89b3a"
+    },
+    {
+      "file": "vivo/zeiss/stamp-white.png",
+      "keys": [
+        "vivo-zeiss-stamp-white"
+      ],
+      "styles": [
+        "vivo-zeiss:border_top",
+        "vivo-zeiss:up_down"
+      ],
+      "declaredWidth": 221,
+      "declaredHeight": 192,
+      "sourcePath": "src/renderer/src/assets/system/vivo/zeiss/stamp-white.png",
+      "shippedWidth": 221,
+      "shippedHeight": 192,
+      "sha256": "9f3af6d4b4feabe3c272970a5bad9d9a89229fbc1b0d7f077e72065aa8a857f6"
+    },
+    {
+      "file": "vivo/batch1/polaroid-card.png",
+      "keys": [
+        "vivo-polaroid-card"
+      ],
+      "styles": [
+        "vivo-polaroid:frame"
+      ],
+      "declaredWidth": 1497,
+      "declaredHeight": 1356,
+      "sourcePath": "src/renderer/src/assets/system/vivo/batch1/polaroid-card.png",
+      "shippedWidth": 1497,
+      "shippedHeight": 1356,
+      "sha256": "fad71baafc55c53aaafb5c583dd1042a412ef9ffb7f3cd7dc24150c42bf6e763"
+    },
+    {
+      "file": "vivo/batch1/stamp-card.png",
+      "keys": [
+        "vivo-stamp-card"
+      ],
+      "styles": [
+        "vivo-stamp:frame"
+      ],
+      "declaredWidth": 1497,
+      "declaredHeight": 1356,
+      "sourcePath": "src/renderer/src/assets/system/vivo/batch1/stamp-card.png",
+      "shippedWidth": 1497,
+      "shippedHeight": 1356,
+      "sha256": "ecf11426dc895104a202328599604c300f137624f42ab30b65584f1b43bc41eb"
+    },
+    {
+      "file": "vivo/batch1/tone-card.png",
+      "keys": [
+        "vivo-tone-card"
+      ],
+      "styles": [
+        "vivo-tone:frame"
+      ],
+      "declaredWidth": 1497,
+      "declaredHeight": 968,
+      "sourcePath": "src/renderer/src/assets/system/vivo/batch1/tone-card.png",
+      "shippedWidth": 1497,
+      "shippedHeight": 968,
+      "sha256": "c75252d8f2630a3a77a0835d328da164f059819ca0112cd0ec9b39d82baa4ca0"
+    },
+    {
+      "file": "vivo/batch1/postcard-card.png",
+      "keys": [
+        "vivo-postcard-card"
+      ],
+      "styles": [
+        "vivo-postcard:frame"
+      ],
+      "declaredWidth": 1405,
+      "declaredHeight": 1356,
+      "sourcePath": "src/renderer/src/assets/system/vivo/batch1/postcard-card.png",
+      "shippedWidth": 1405,
+      "shippedHeight": 1356,
+      "sha256": "c9eac0df3618fdb25d68f508833a441d384a4e500b0e5362303e66b8b9f91d99"
+    },
+    {
+      "file": "vivo/batch2/chinoiserie-hebei.webp",
+      "keys": [
+        "vivo-chinoiserie-hebei"
+      ],
+      "styles": [
+        "vivo-chinoiserie-loc:frame"
+      ],
+      "declaredWidth": 144,
+      "declaredHeight": 144,
+      "sourcePath": "src/renderer/src/assets/system/vivo/batch2/chinoiserie-hebei.webp",
+      "shippedWidth": 144,
+      "shippedHeight": 144,
+      "sha256": "3976a2b23faedc38514276ec8cb3d8e426b0a44b10a030dc246daf0dc0f30cfb"
+    },
+    {
+      "file": "vivo/disney/mickey-white.png",
+      "keys": [
+        "vivo-disney-mickey-white"
+      ],
+      "styles": [
+        "vivo-disney:mickey"
+      ],
+      "declaredWidth": 1440,
+      "declaredHeight": 1234,
+      "sourcePath": "src/renderer/src/assets/system/vivo/disney/mickey-white.png",
+      "shippedWidth": 1440,
+      "shippedHeight": 1234,
+      "sha256": "09adf9be8e7aa03adfd61e6c5b15e0ec5bea4123a1e18e8a6a2b1d948282f3cf"
+    },
+    {
+      "file": "vivo/disney/pluto-white.png",
+      "keys": [
+        "vivo-disney-pluto-white"
+      ],
+      "styles": [
+        "vivo-disney:pluto"
+      ],
+      "declaredWidth": 1440,
+      "declaredHeight": 1234,
+      "sourcePath": "src/renderer/src/assets/system/vivo/disney/pluto-white.png",
+      "shippedWidth": 1440,
+      "shippedHeight": 1234,
+      "sha256": "7a0649f07e40c27c16a6264e3ab911bafd54126871f1ed3bb6ee3eeb0a19f79e"
+    },
+    {
+      "file": "vivo/disney/judy-white.png",
+      "keys": [
+        "vivo-disney-judy-white"
+      ],
+      "styles": [
+        "vivo-disney:judy"
+      ],
+      "declaredWidth": 1440,
+      "declaredHeight": 1234,
+      "sourcePath": "src/renderer/src/assets/system/vivo/disney/judy-white.png",
+      "shippedWidth": 1440,
+      "shippedHeight": 1234,
+      "sha256": "72d9138f51a96dfe5a4586a1d08bd6d0193be34c9c03cb9afb07d968aaa398fd"
+    },
+    {
+      "file": "vivo/disney/chip_dale-white.png",
+      "keys": [
+        "vivo-disney-chip_dale-white"
+      ],
+      "styles": [
+        "vivo-disney:chip_dale"
+      ],
+      "declaredWidth": 1440,
+      "declaredHeight": 1234,
+      "sourcePath": "src/renderer/src/assets/system/vivo/disney/chip_dale-white.png",
+      "shippedWidth": 1440,
+      "shippedHeight": 1234,
+      "sha256": "10f1de707b4362e9524cb72ec736874be35ae536b5351f0d1cb87a06b5beb457"
+    },
+    {
+      "file": "vivo/disney/donald_duck-white.png",
+      "keys": [
+        "vivo-disney-donald_duck-white"
+      ],
+      "styles": [
+        "vivo-disney:donald_duck"
+      ],
+      "declaredWidth": 1440,
+      "declaredHeight": 1234,
+      "sourcePath": "src/renderer/src/assets/system/vivo/disney/donald_duck-white.png",
+      "shippedWidth": 1440,
+      "shippedHeight": 1234,
+      "sha256": "06de025baf5cfe0222b22524831aea37f1b84c3ee74bb7b55203a62d70a5ac51"
+    }
+  ]
+}

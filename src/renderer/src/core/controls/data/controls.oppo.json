@@ -104,6 +104,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -142,6 +169,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_3.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -156,7 +210,143 @@
       "fingerprint": "with|cobrandWordmark|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText|modelLine",
       "source": "baseline",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g1",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+            "detail": "引擎渲染报告 b1/g0/g1/g0/g1 绘制「366」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g1/g0/g1",
+          "engineNodes": [
+            "b1/g0/g1/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g4",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+            "detail": "引擎渲染报告 b1/g0/g1/g0/g4 绘制「f/6.3」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g1/g0/g4",
+          "engineNodes": [
+            "b1/g0/g1/g0/g4"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g6",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+            "detail": "引擎渲染报告 b1/g0/g1/g0/g6 绘制「1/400」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g1/g0/g6",
+          "engineNodes": [
+            "b1/g0/g1/g0/g6"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g8",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_4.json",
+            "detail": "引擎渲染报告 b1/g0/g1/g0/g8 绘制「125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g1/g0/g8",
+          "engineNodes": [
+            "b1/g0/g1/g0/g8"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 11 个文字元素里 editable:true 1 处、visible:false 1 处；（editable 全部绑不上：1 处，见 unmappedVendor）；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）",
       "unmappedVendor": [
         {
@@ -179,7 +369,35 @@
       "fingerprint": "with|artImage|cobrandWordmark|customLine|modelLine|shape",
       "source": "baseline",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_master_mode_1.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 10 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
     },
     {
@@ -209,6 +427,33 @@
           },
           "param": "slotText",
           "targetNode": "b1/bottom1/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_style_xpan_1.json",
+            "detail": "引擎渲染报告 b1/g1/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g1/g0",
+          "engineNodes": [
+            "b1/g1/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -309,6 +554,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g2",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_text_style_1.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -414,6 +686,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/hassel_text_style_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -475,6 +774,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_style_1.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -505,6 +831,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_style_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -551,6 +904,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_style_3.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -565,7 +945,35 @@
       "fingerprint": "with|artImage|cobrandWordmark|customLine|modelLine|shape",
       "source": "baseline",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_style_master_mode_1.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 10 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
     },
     {
@@ -657,6 +1065,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g2",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_text_style_1.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -762,6 +1197,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/lumo_text_style_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -815,6 +1277,33 @@
           },
           "param": "slotText",
           "targetNode": "b1/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_brand_1.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -885,6 +1374,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_brand_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -915,6 +1431,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_brand_5.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -961,6 +1504,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_brand_6.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -991,6 +1561,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_film_1.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -1117,6 +1714,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_film_2.json",
+            "detail": "引擎渲染报告 b0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0",
+          "engineNodes": [
+            "b0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1147,6 +1771,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_film_realme_1.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -1273,6 +1924,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_film_realme_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1311,6 +1989,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_1.json",
+            "detail": "引擎渲染报告 b1/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b1/g0/g0",
+          "engineNodes": [
+            "b1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1325,7 +2030,116 @@
       "fingerprint": "with|artImage|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText|shape",
       "source": "baseline",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0/g0 绘制「125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0/g0",
+          "engineNodes": [
+            "b0/g0/g1/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g2/g0 绘制「6.3」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g2/g0",
+          "engineNodes": [
+            "b0/g0/g1/g2/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#3",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g4/g0 绘制「366」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g4/g0",
+          "engineNodes": [
+            "b0/g0/g1/g4/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#4",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_2.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g6/g0 绘制「1/400」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g6/g0",
+          "engineNodes": [
+            "b0/g0/g1/g6/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 8 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
     },
     {
@@ -1443,6 +2257,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_3.json",
+            "detail": "引擎渲染报告 b0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0",
+          "engineNodes": [
+            "b0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1481,6 +2322,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_masterSign_4.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1511,6 +2379,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g2",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_1.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -1581,6 +2476,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1611,6 +2533,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_3.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -1681,6 +2630,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g1",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_4.json",
+            "detail": "引擎渲染报告 b0/g0/g1 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1",
+          "engineNodes": [
+            "b0/g0/g1"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1695,7 +2671,116 @@
       "fingerprint": "with|cobrandWordmark|exifMetricLine[aperture]|exifMetricLine[focal]|exifMetricLine[iso]|exifMetricLine[shutter]|literalText",
       "source": "manual",
       "panel": "generic",
-      "controls": [],
+      "controls": [
+        {
+          "id": "text.exifCompositeLine.g0",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_5.json",
+            "detail": "引擎渲染报告 b0/g0/g0/g0 绘制「125」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#2",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_5.json",
+            "detail": "引擎渲染报告 b0/g0/g1/g0 绘制「6.3」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g1/g0",
+          "engineNodes": [
+            "b0/g0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#3",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_5.json",
+            "detail": "引擎渲染报告 b0/g0/g2/g0 绘制「366」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2/g0",
+          "engineNodes": [
+            "b0/g0/g2/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.exifCompositeLine.g0#4",
+          "kind": "text",
+          "label": "编辑「exifCompositeLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/personalize_retroCamera_5.json",
+            "detail": "引擎渲染报告 b0/g0/g3/g0 绘制「1/400」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g3/g0",
+          "engineNodes": [
+            "b0/g0/g3/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        }
+      ],
       "noControlsReason": "厂商 8 个文字元素里 editable:true 0 处、visible:false 0 处；⇒ 厂商侧没有任何行级授权；IR optional 行 0 个；可动条带（overlay/rotation）0 个；themes 0 组；isBrandLogo 节点 0 个 ⇒ 没有任何有消费对象具名函数的编辑面可声明，沿用通用面板（行为零变化）"
     },
     {
@@ -1725,6 +2810,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom2/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_1.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -1771,6 +2883,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1809,6 +2948,33 @@
             "multiline": false
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/realme_brand_imprint_inspirationPhoto_3.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -1839,6 +3005,33 @@
           },
           "param": "slotText",
           "targetNode": "b0/bottom0/g1",
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/restrict_local_songkran_holiday_2025_style_1.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
           "default": null,
           "domain": {
             "maxLength": null,
@@ -2544,6 +3737,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g2",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/video_hassel_text_style_1.json",
+            "detail": "引擎渲染报告 b0/g0/g2 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g2",
+          "engineNodes": [
+            "b0/g0/g2"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ],
       "unmappedVendor": [
@@ -2645,6 +3865,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/video_hassel_text_style_2.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -2812,6 +4059,33 @@
             "unit": "pctOfLongEdge"
           },
           "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/video_text_style_1.json",
+            "detail": "引擎渲染报告 b0/g1/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g1/g0",
+          "engineNodes": [
+            "b0/g1/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
+          },
+          "fidelityRisk": false
         }
       ]
     },
@@ -2952,6 +4226,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/video_text_style_2.json",
+            "detail": "引擎渲染报告 b0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0",
+          "engineNodes": [
+            "b0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }
@@ -3103,6 +4404,33 @@
             "max": 25,
             "step": 0.5,
             "unit": "pctOfLongEdge"
+          },
+          "fidelityRisk": false
+        },
+        {
+          "id": "text.modelLine.g0",
+          "kind": "text",
+          "label": "编辑「modelLine」文字",
+          "group": "content",
+          "consumer": "text.slotText",
+          "provenance": "engine-text-node",
+          "evidence": {
+            "source": "engine-text-node",
+            "ref": "engine/data/ir/styles/oppo-gallery/video_text_style_3.json",
+            "detail": "引擎渲染报告 b0/g0/g0 绘制「Panasonic DC-S1」；值取该照片自身 EXIF，缺字段留空，用户输入经 slotText 覆盖",
+            "match": "rendered-text-node"
+          },
+          "param": "slotText",
+          "targetNode": "b0/g0/g0",
+          "engineNodes": [
+            "b0/g0/g0"
+          ],
+          "default": null,
+          "domain": {
+            "maxLength": null,
+            "minLength": null,
+            "maxLengthSource": "fallback",
+            "multiline": false
           },
           "fidelityRisk": false
         }

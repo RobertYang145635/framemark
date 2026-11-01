@@ -1,0 +1,96 @@
+{
+  "id": "oppo-gallery:video_hassel_text_style_2",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "哈苏文字 · 视频 · 2",
+  "nameEn": "video_hassel_text_style_2",
+  "placement": "in",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "bands": [
+    {
+      "direction": "overlay",
+      "thickness": 36,
+      "offset": {
+        "x": 20,
+        "y": 20
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "gravity": "topHorCenter",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "avenir",
+              "size": 10,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 15.03,
+              "align": "left",
+              "gravity": "verticalCenter",
+              "margins": {},
+              "optional": false,
+              "shadow": {
+                "color": "#65000000",
+                "blur": 3.3000000000000003,
+                "x": 0.7,
+                "y": 0
+              }
+            },
+            {
+              "kind": "shape",
+              "shape": "rect",
+              "width": 1.4,
+              "height": 7.5,
+              "color": "#FFFFFF",
+              "gravity": "verticalCenter",
+              "margins": {
+                "left": 6.5,
+                "top": 0.9,
+                "right": 5.5
+              }
+            },
+            {
+              "kind": "image",
+              "asset": "hasselblad_watermark_text_style",
+              "width": 88.2,
+              "height": 10.53,
+              "scale": "contain",
+              "gravity": "verticalCenter",
+              "margins": {
+                "top": 0.9
+              },
+              "alpha": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "hasselblad_watermark_text_style": {
+      "file": "hasselblad_watermark_text_style.webp",
+      "width": 518,
+      "height": 53
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

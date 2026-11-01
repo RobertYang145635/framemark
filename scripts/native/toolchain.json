@@ -1,0 +1,47 @@
+{
+  "schema": "framemark-native-toolchain/v1",
+  "versions": {
+    "node": "24.15.0",
+    "jdk": "21.0.8",
+    "gradle": "8.14.3",
+    "androidGradlePlugin": "8.13.0",
+    "kotlin": "2.2.20",
+    "composeMultiplatform": "1.9.0",
+    "androidCompileSdk": 36,
+    "androidBuildTools": "36.0.0",
+    "androidNdk": "26.3.11579264",
+    "rustToolchain": "stable-x86_64-pc-windows-msvc",
+    "rustc": "1.99.1",
+    "cargo": "1.99.1",
+    "rustToolchainStatus": "local-exact-version-confirmed"
+  },
+  "targets": {
+    "androidAbi": "arm64-v8a",
+    "androidRustTarget": "aarch64-linux-android",
+    "windowsRustTarget": "x86_64-pc-windows-msvc"
+  },
+  "pathEnvironment": {
+    "javaHome": "FM_JAVA_HOME or JAVA_HOME",
+    "gradleHome": "FM_GRADLE_HOME or GRADLE_HOME",
+    "androidSdk": "FM_ANDROID_SDK_ROOT or ANDROID_SDK_ROOT or ANDROID_HOME",
+    "cargo": "FM_CARGO_EXE or PATH",
+    "rustc": "FM_RUSTC_EXE or beside cargo.exe or PATH",
+    "rustup": "FM_RUSTUP_EXE or beside cargo.exe or PATH",
+    "rustupHome": "FM_RUSTUP_HOME or RUSTUP_HOME",
+    "cargoHome": "FM_CARGO_HOME or CARGO_HOME",
+    "visualStudioDevCmd": "FM_VSDEVCMD",
+    "skiaWindowsArchive": "FM_SKIA_WINDOWS_ARCHIVE",
+    "skiaAndroidArchive": "FM_SKIA_ANDROID_ARCHIVE"
+  },
+  "skiaArchives": {
+    "windowsX64": {
+      "sha256": "839b373ef8a1bb221ef54265f3b37b6384add208f2313fd3df9f3fe7621aa358",
+      "sourceStatus": "local-archive-hash-recorded"
+    },
+    "androidArm64": {
+      "sha256": "162963f140ca6269ab24de9aba2636c0cf290fd686d30820a2b0ff81a3d49ae3",
+      "sourceStatus": "local-archive-hash-recorded"
+    }
+  },
+  "artifactDirectory": "../_research/acceptance-dual-20261101/execution-20261102/build-release"
+}

@@ -7,6 +7,17 @@ android/.gradle/
 android/build/
 android/app/build/
 
+# Native Compose/Rust build outputs and machine-local SDK configuration
+ui/.gradle/
+ui/.kotlin/
+ui/build/
+ui/composeApp/build/
+ui/composeApp/.cxx/
+ui/local.properties
+engine/**/target/
+bridge/**/target/
+/execution-20261102/
+
 # Local machine config
 android/local.properties
 android/keystore.properties
@@ -24,6 +35,9 @@ android/app/src/main/assets/public/
 *.apk
 *.aab
 
+# This is a required Android runtime asset, not a generated application package.
+!ui/composeApp/src/androidMain/assets/x1ir.zip
+
 # Local scratch scripts (one-off diagnostics, not part of build)
 /_font-check.cjs
 
@@ -33,3 +47,6 @@ android/app/src/main/assets/public/
 
 # Research evidence / agent handoffs (local, not part of the build)
 /_research/
+
+# local signing credentials (workspace sibling; defensive)
+.secrets/

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/export/pair-09-band-2048.png", "w": 5000, "h": 2048 },
+  "photoRect": { "x": 0, "y": -2048, "w": 5000, "h": 5000 },
+  "textSlots": [
+    { "id": "title", "text": "1:1", "x": 220, "y": -120, "w": 220, "h": 180, "fontSize": 150, "lines": 1 }
+  ],
+  "ms": 1460.2,
+  "engine": "fake",
+  "warnings": ["band intersects frame edge; strip re-rendered from cached base layer"]
+}

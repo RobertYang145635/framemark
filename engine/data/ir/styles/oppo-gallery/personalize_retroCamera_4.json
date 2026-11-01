@@ -1,0 +1,114 @@
+{
+  "id": "oppo-gallery:personalize_retroCamera_4",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "复古相机 · 4",
+  "nameEn": "personalize_retroCamera_4",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 10,
+    "right": 220,
+    "bottom": 10
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "right",
+      "thickness": 220,
+      "offset": {
+        "x": 10,
+        "y": 10
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 180,
+          "margins": {},
+          "children": [
+            {
+              "kind": "image",
+              "asset": "classic_double_reverse3_dark",
+              "width": 68,
+              "height": 40,
+              "scale": "contain",
+              "gravity": "horCenter",
+              "margins": {},
+              "alpha": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "butler",
+              "size": 12,
+              "weight": 700,
+              "color": "#000000",
+              "alpha": 1,
+              "tracking": 0.02,
+              "lineHeight": 14.4,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 14,
+                "bottom": 8
+              },
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "imageParams"
+              },
+              "font": "fz",
+              "size": 8,
+              "weight": 400,
+              "color": "#000000",
+              "alpha": 0.54,
+              "tracking": 0.06,
+              "lineHeight": 9.83,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "time"
+              },
+              "font": "fz",
+              "size": 8,
+              "weight": 400,
+              "color": "#000000",
+              "alpha": 0.54,
+              "tracking": 0.06,
+              "lineHeight": 9.83,
+              "align": "left",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 5
+              },
+              "optional": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "classic_double_reverse3_dark": {
+      "file": "classic_double_reverse3_dark.webp",
+      "width": 320,
+      "height": 321
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "id": "vivo-feature-photo:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "功能 · 参数边框",
+  "nameEn": "FEATURE PHOTO",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 260
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 260,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1360,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 40,
+              "weight": 500,
+              "color": "#1A1A1A",
+              "tracking": 0.06,
+              "lineHeight": 54,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "rightVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "vivo",
+                  "size": 28,
+                  "weight": 500,
+                  "color": "#1A1A1A",
+                  "tracking": 0.06,
+                  "lineHeight": 37.800000000000004,
+                  "align": "right",
+                  "optional": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "timeLocation"
+                  },
+                  "font": "vivo",
+                  "size": 24,
+                  "weight": 400,
+                  "color": "#666666",
+                  "tracking": 0.06,
+                  "lineHeight": 32.400000000000006,
+                  "align": "right",
+                  "optional": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Function border (功能边框); white bottom band with model left and exposure params + date·location right, per the official preview card (picker_overview.jpg 功能边框 thumbnail) and temp.json mappings (left Logo+图标, right 3A+时间+地点).",
+    "unsupported": [
+      "the function/module camera icon (icon_function_camera) is a vector or dynamic asset; omitted",
+      "dopamine/gold material background variants not modelled (default white band)",
+      "band geometry estimated from the picker preview card (no vendor PAG frame)"
+    ]
+  }
+}

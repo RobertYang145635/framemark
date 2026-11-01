@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "vivo-frame-07",
+    "canvas": { "w": 16, "h": 16 },
+    "elements": [{ "kind": "frame", "inset": 1 }]
+  },
+  "photo": { "path": "D:/photos/thumb.png", "w": 16, "h": 16 },
+  "mode": "preview",
+  "maxEdge": 64
+}

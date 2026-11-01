@@ -1,0 +1,716 @@
+{
+  "schemaVersion": "framemark-e1b1-manifest/v1",
+  "task": "E1b-1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "repo": {
+    "head": "8323aac806ef82f7a80b1b13d8d9b2a88f3dfd31",
+    "headShort": "8323aac",
+    "branch": "master"
+  },
+  "scope": {
+    "serialized": [
+      "IR styles (D1)",
+      "hand template mechanical data (D2)",
+      "Preset/Design schema (D9)"
+    ],
+    "copied": [
+      "fonts (D6)",
+      "logos + cuts (D7)",
+      "previews (D8)"
+    ],
+    "excluded": [
+      "hand function bodies (deferred to E4)",
+      "IR bitmap files (E3)",
+      "template-specific polaroid/graduation images (E4)",
+      "E1a data files (unchanged)"
+    ]
+  },
+  "sources": [
+    {
+      "role": "ir:types",
+      "path": "src/renderer/src/core/system/ir.ts",
+      "bytes": 6624,
+      "sha256": "54cb2fac5702c042e778ff25f7bb87217531501b4d5622f84f591f6897e85439"
+    },
+    {
+      "role": "ir:gallery",
+      "path": "src/renderer/src/core/system/generated/oppoGallery.ts",
+      "bytes": 171503,
+      "sha256": "7cdcb9ec9931739cbeb715ca4ab975c17308f131df0c7e834da9d6866761aa52"
+    },
+    {
+      "role": "ir:camerapro",
+      "path": "src/renderer/src/core/system/generated/oppoCameraPro.ts",
+      "bytes": 53873,
+      "sha256": "64400d9db79ae1cdaef1b0a7b11295a6dc183bdd1c623fdeaa7c10efbee8eb05"
+    },
+    {
+      "role": "ir:xiaomi",
+      "path": "src/renderer/src/core/system/generated/xiaomiStyles.ts",
+      "bytes": 296113,
+      "sha256": "8a8018f3fcbe1d7cb0df777b3b79af5613765dacaecd71809511b2859e99f8bf"
+    },
+    {
+      "role": "ir:vivo-manual",
+      "path": "src/renderer/src/core/system/vivoManual.ts",
+      "bytes": 34282,
+      "sha256": "a8ce1468a34f439a2f08b5bd0d415d64e56d6c8838468b63582730d482ea87fc"
+    },
+    {
+      "role": "ir:styles",
+      "path": "src/renderer/src/core/system/styles.ts",
+      "bytes": 22173,
+      "sha256": "e290505335c6e75ffe53fff1f4274daa5a129b6e21ba43ba7134902476aa8ead"
+    },
+    {
+      "role": "ir:layout",
+      "path": "src/renderer/src/core/system/layout.ts",
+      "bytes": 40261,
+      "sha256": "e552efd863f93fc7cc5b6046920ed1cef133ff0ca82df25f0ea33a696e0573c3"
+    },
+    {
+      "role": "ir:paint",
+      "path": "src/renderer/src/core/system/paint.ts",
+      "bytes": 33511,
+      "sha256": "5ef21b809e4b799d15bb1061ce0ebffcc3f5b64d677fe29a95b306e4ea5a8a02"
+    },
+    {
+      "role": "ir:tokens",
+      "path": "src/renderer/src/core/system/tokens.ts",
+      "bytes": 8734,
+      "sha256": "0868ca4a491a2de41bce6b2e11cfd997ea19da41006bd745d35b27ac517b9a1b"
+    },
+    {
+      "role": "p2b1:stock-styles",
+      "path": "../_research/native/designs/_stock-styles.json",
+      "bytes": 94372,
+      "sha256": "1af2c36f87d856aa08cd497c2cd535c04a074ba08496c03027b5bff9d0bd10a2"
+    },
+    {
+      "role": "hand:templates",
+      "path": "src/renderer/src/core/templates.ts",
+      "bytes": 171977,
+      "sha256": "0d1cedba5d297367967105123ac1b8ce8327f467934ef4904856b66ffdd0c9a7"
+    },
+    {
+      "role": "hand:variants",
+      "path": "src/renderer/src/core/variants.ts",
+      "bytes": 35699,
+      "sha256": "417030e8518e7039c4a9b9c3655f71bad3efe43536a7dc11b217f1a7468b2546"
+    },
+    {
+      "role": "hand:text-slots",
+      "path": "src/renderer/src/core/text-slots.ts",
+      "bytes": 8424,
+      "sha256": "5cbcf63ba762d5c506c7b6242937e97726b867ec271c658263c5ec8d469efb61"
+    },
+    {
+      "role": "hand:draw",
+      "path": "src/renderer/src/core/draw.ts",
+      "bytes": 26063,
+      "sha256": "17894c960b3ee7ed5386162208ca988cbdd01866f2d0aa7202bf4f6495c8665f"
+    },
+    {
+      "role": "hand:presets",
+      "path": "src/renderer/src/core/presets.ts",
+      "bytes": 9632,
+      "sha256": "9f168c3f01ec6da95cfaa79e552c235fefa71711af71c058d495f587067b1d83"
+    },
+    {
+      "role": "hand:types",
+      "path": "src/renderer/src/types.ts",
+      "bytes": 10584,
+      "sha256": "f747ce29b32eea56b87c800d67b94825b0da027d77500cafd3fd65680237ed6f"
+    },
+    {
+      "role": "schema:types",
+      "path": "src/renderer/src/types.ts",
+      "bytes": 10584,
+      "sha256": "f747ce29b32eea56b87c800d67b94825b0da027d77500cafd3fd65680237ed6f"
+    },
+    {
+      "role": "schema:presets",
+      "path": "src/renderer/src/core/presets.ts",
+      "bytes": 9632,
+      "sha256": "9f168c3f01ec6da95cfaa79e552c235fefa71711af71c058d495f587067b1d83"
+    },
+    {
+      "role": "schema:storage",
+      "path": "src/renderer/src/core/storage.ts",
+      "bytes": 5022,
+      "sha256": "d38ffaebd929568c0ab366dede6337ca48b45cb33e0ae49d1c479b7749cdc5ab"
+    },
+    {
+      "role": "schema:templates",
+      "path": "src/renderer/src/core/templates.ts",
+      "bytes": 171977,
+      "sha256": "0d1cedba5d297367967105123ac1b8ce8327f467934ef4904856b66ffdd0c9a7"
+    },
+    {
+      "role": "assets:fonts-index",
+      "path": "engine/data/fonts.json",
+      "bytes": 27627,
+      "sha256": "03218638765830e89320b95bb44f262dee7e540a4e430d3fa8533af5f180bd0a"
+    },
+    {
+      "role": "assets:logos-index",
+      "path": "engine/data/logos.json",
+      "bytes": 364604,
+      "sha256": "54c17a2ac2ae6c27ef1bbd51da38c409596d8b234ad960487fa6bc6c95aab49d"
+    },
+    {
+      "role": "assets:previews-index",
+      "path": "engine/data/previews.json",
+      "bytes": 107522,
+      "sha256": "d02a501b5d1014b5bf97b9bfae6ff064ca55b97f66ac884952d068e16dace787"
+    },
+    {
+      "role": "assets:styles-css",
+      "path": "src/renderer/src/styles.css",
+      "bytes": 198911,
+      "sha256": "2e829503250697d456f9724b3a2396fb8f5e9cd89b877fa9b7657c1ef7c99787"
+    }
+  ],
+  "outputs": {
+    "ir": {
+      "index": {
+        "path": "engine/data/ir/index.json",
+        "bytes": 120382,
+        "sha256": "95bece0f6afebe6722295cb8f9d89d0e00aa94f5e8b81735830b57599ab833ae"
+      },
+      "styles": {
+        "path": "engine/data/ir/styles.json",
+        "bytes": 584167,
+        "sha256": "e7b27878cdf4d622052b901e1b76dc48780158af1c1cd6a72d54d833455fe4d1"
+      },
+      "perStyle": {
+        "dir": "engine/data/ir/styles",
+        "files": 111,
+        "bytes": 545479,
+        "combinedSha256": "60edaa26a6ef264625ce4663db9605c046a447221d30c916c61a9fed8a62b21d"
+      },
+      "assets": {
+        "path": "engine/data/ir/assets.json",
+        "bytes": 60268,
+        "sha256": "349e8c448c751a172db5e35e819cd979574f6cbcf586ef97821522d3eb9631a5"
+      }
+    },
+    "hand": {
+      "index": {
+        "path": "engine/data/hand/index.json",
+        "bytes": 9058,
+        "sha256": "4f6c4f89a961de7e6af108f397a0ef4ecf88e315f2cd986ef54e929eb57d16ec"
+      },
+      "templates": {
+        "path": "engine/data/hand/templates.json",
+        "bytes": 85722,
+        "sha256": "0fd2c110d9e5a416979bdb3c0fbd094a15009ee6ad4f058fe732064a89217887"
+      },
+      "variants": {
+        "path": "engine/data/hand/variants.json",
+        "bytes": 113849,
+        "sha256": "9f615b16bffd343c3540b45f40717aa487bfdc99a366655c2522eb5b787f7a77"
+      },
+      "themes": {
+        "path": "engine/data/hand/themes.json",
+        "bytes": 1928,
+        "sha256": "52dbece79f06d1c3e5c2842f0ccd358445f16d401db9c83a7274f1c11dcbcba8"
+      },
+      "textSlots": {
+        "path": "engine/data/hand/text-slots.json",
+        "bytes": 94358,
+        "sha256": "eed19c1b0f827ab5f484895b6163e254823c2e3ce1760789eb5fc12218bca9e6"
+      }
+    },
+    "schema": {
+      "path": "engine/data/presets-schema.json",
+      "bytes": 15054,
+      "sha256": "a4e5e3a76b2b606c59820b9e9b1ee8521a069e576161123f7d77861666989707"
+    },
+    "assets": {
+      "fonts": {
+        "manifest": {
+          "path": "engine/assets/fonts/manifest.json",
+          "bytes": 29052,
+          "sha256": "fdc7e0d5d63eec2527be1ed15c7154b8be04640d0a272ecb50e1818fc025dd36"
+        },
+        "counts": {
+          "files": 26,
+          "containers": {
+            "ttf": 20,
+            "woff2": 1,
+            "ttc": 1,
+            "otf": 4
+          },
+          "bytes": 67233752,
+          "referencedByCss": 21
+        }
+      },
+      "logos": {
+        "manifest": {
+          "path": "engine/assets/logos/manifest.json",
+          "bytes": 321096,
+          "sha256": "9f20c28dcc74ac98ed5a6b8b5b819e013c173455b68603a49b7cb64668fd81a9"
+        },
+        "counts": {
+          "appFiles": 155,
+          "versionFiles": 183,
+          "files": 338,
+          "bytes": 5225834,
+          "appBytes": 2891358,
+          "versionBytes": 2334476,
+          "cuts": 330,
+          "cutFiles": 330,
+          "referencedAppFiles": 147,
+          "referencedVersionFiles": 183,
+          "selectedVersions": 218,
+          "versions": 268,
+          "unreferencedAppFiles": 7,
+          "unresolvedCuts": 0
+        }
+      },
+      "previews": {
+        "manifest": {
+          "path": "engine/assets/previews/manifest.json",
+          "bytes": 72650,
+          "sha256": "da12917c83e7626c998bc3055e79016c3e5eeff9e4b492f2628e95528219e408"
+        },
+        "counts": {
+          "cards": 180,
+          "layers": {
+            "system": 111,
+            "rendered": 69
+          },
+          "bytes": 1489528,
+          "legacyInspectorNotCopied": 47
+        }
+      }
+    }
+  },
+  "counts": {
+    "ir": {
+      "styles": 111,
+      "uniqueIds": 111,
+      "byVendor": {
+        "oppo": 52,
+        "xiaomi": 40,
+        "vivo": 19
+      },
+      "bands": 133,
+      "nodes": 974,
+      "nodeKinds": {
+        "group": 320,
+        "text": 431,
+        "space": 58,
+        "image": 133,
+        "shape": 32
+      },
+      "assetRefs": 155,
+      "uniqueAssetFiles": 124,
+      "stylesWithThemes": 43
+    },
+    "hand": {
+      "templateDefs": 39,
+      "handTemplateDefs": 38,
+      "systemCameraDefs": 1,
+      "handVariants": 69,
+      "taskBookHandTemplates": 76,
+      "delta": 7,
+      "why": "76 is a stale task-book/HANDOFF figure for the historical systemCamera approx set; the frozen source has 175 cards = 106 stock (systemCamera) + 69 hand cards, backed by 38 hand TemplateDefs (+1 systemCamera def)"
+    },
+    "templates": {
+      "defs": 39,
+      "hand": 38,
+      "systemCamera": 1,
+      "variants": 69,
+      "themes": 6,
+      "textSlotCards": 69,
+      "textSlotLines": 204
+    },
+    "assets": {
+      "fonts": {
+        "files": 26,
+        "containers": {
+          "ttf": 20,
+          "woff2": 1,
+          "ttc": 1,
+          "otf": 4
+        },
+        "bytes": 67233752,
+        "referencedByCss": 21
+      },
+      "logos": {
+        "appFiles": 155,
+        "versionFiles": 183,
+        "files": 338,
+        "bytes": 5225834,
+        "appBytes": 2891358,
+        "versionBytes": 2334476,
+        "cuts": 330,
+        "cutFiles": 330,
+        "referencedAppFiles": 147,
+        "referencedVersionFiles": 183,
+        "selectedVersions": 218,
+        "versions": 268,
+        "unreferencedAppFiles": 7,
+        "unresolvedCuts": 0
+      },
+      "previews": {
+        "cards": 180,
+        "layers": {
+          "system": 111,
+          "rendered": 69
+        },
+        "bytes": 1489528,
+        "legacyInspectorNotCopied": 47
+      }
+    }
+  },
+  "checks": [
+    {
+      "id": "ir.count",
+      "status": "PASS",
+      "detail": "111 styles, 111 unique ids"
+    },
+    {
+      "id": "ir.shape",
+      "status": "PASS",
+      "detail": {
+        "bands": 133,
+        "nodes": 974,
+        "kinds": {
+          "group": 320,
+          "text": 431,
+          "space": 58,
+          "image": 133,
+          "shape": 32
+        },
+        "tokenKinds": {
+          "model": 62,
+          "imageParams": 30,
+          "literal": 78,
+          "template": 198,
+          "time": 11,
+          "timeLocation": 6,
+          "location": 38,
+          "custom": 8
+        },
+        "directions": {
+          "bottom": 63,
+          "top": 18,
+          "overlay": 42,
+          "right": 10
+        },
+        "assetRefs": 155,
+        "themes": 43,
+        "defaultThemes": 46,
+        "transparent": 17,
+        "byVendor": {
+          "oppo": 52,
+          "xiaomi": 40,
+          "vivo": 19
+        },
+        "audit": {
+          "approx": 111
+        },
+        "placements": {
+          "out": 46,
+          "with": 33,
+          "in": 29,
+          "overlay": 3
+        },
+        "refModes": {
+          "(absent)": 103,
+          "shortEdge": 8
+        }
+      }
+    },
+    {
+      "id": "ir.generated",
+      "status": "PASS",
+      "detail": {
+        "counts": {
+          "oppoGallery": 43,
+          "oppoCameraPro": 9,
+          "xiaomiStyles": 38,
+          "vivoManual": 19
+        },
+        "total": 109,
+        "generatedUnique": 109,
+        "replaced": [
+          "oppo-gallery:hassel_style_1",
+          "oppo-gallery:lumo_style_1",
+          "oppo-gallery:personalize_retroCamera_5",
+          "oppo-camerapro:gr_style_5",
+          "xiaomi-film:15"
+        ],
+        "added": [
+          "xiaomi-classic:22",
+          "xiaomi-classic:99"
+        ]
+      }
+    },
+    {
+      "id": "ir.p2b1-crosscheck",
+      "status": "PASS",
+      "detail": {
+        "sourceSha256": "1af2c36f87d856aa08cd497c2cd535c04a074ba08496c03027b5bff9d0bd10a2",
+        "styles": 106,
+        "scalarsCompared": 106,
+        "note": "P2b-1 file is a 14-field projection (no bands/assets); D1 re-derived from TS, scalars match 106/106"
+      }
+    },
+    {
+      "id": "ir.files",
+      "status": "PASS",
+      "detail": {
+        "perStyleFiles": 111,
+        "perStyleBytes": 545479,
+        "combinedSha256": "60edaa26a6ef264625ce4663db9605c046a447221d30c916c61a9fed8a62b21d",
+        "stylesJsonBytes": 584167
+      }
+    },
+    {
+      "id": "ir.asset-refs",
+      "status": "PASS",
+      "detail": {
+        "uniqueFiles": 124,
+        "resolved": 124,
+        "unresolved": []
+      }
+    },
+    {
+      "id": "hand.counts",
+      "status": "PASS",
+      "detail": {
+        "templateDefs": 39,
+        "handTemplateDefs": 38,
+        "systemCameraDefs": 1,
+        "handVariants": 69,
+        "taskBookHandTemplates": 76,
+        "delta": 7,
+        "why": "76 is a stale task-book/HANDOFF figure for the historical systemCamera approx set; the frozen source has 175 cards = 106 stock (systemCamera) + 69 hand cards, backed by 38 hand TemplateDefs (+1 systemCamera def)"
+      }
+    },
+    {
+      "id": "hand.templates",
+      "status": "PASS",
+      "detail": {
+        "defs": 39,
+        "layout": 39,
+        "render": 39,
+        "prepare": 3,
+        "defaultsKeys": 331
+      }
+    },
+    {
+      "id": "hand.variants",
+      "status": "PASS",
+      "detail": {
+        "variants": 69,
+        "uniqueIds": 69,
+        "withParams": 69,
+        "withText": 41,
+        "byBase": {
+          "blur": 2,
+          "vendorFooter": 10,
+          "xiaomiLeica": 2,
+          "personalBorder": 1,
+          "brandFooter": 7,
+          "matteOverlay": 4,
+          "paramStack": 4,
+          "logoFooter": 2,
+          "matteFooter": 2,
+          "profileFrame": 5,
+          "sideCard": 3,
+          "specFooter": 1,
+          "glassSideCard": 2,
+          "glass": 1,
+          "glassPalettePortrait": 1,
+          "paletteCard": 3,
+          "splitReveal": 1,
+          "locationCard": 1,
+          "movie": 2,
+          "sideTicket": 1,
+          "portraitTicket": 1,
+          "gradFooter": 2,
+          "ratioMatte": 2,
+          "ratioBlurSquare": 1,
+          "poetryCard": 1,
+          "bareCover": 1,
+          "editorial": 1,
+          "polaroid": 1,
+          "film": 1,
+          "vertical": 1,
+          "overlay": 1,
+          "polaroidFrame": 1
+        },
+        "declaredParamKeys": 781
+      }
+    },
+    {
+      "id": "hand.themes",
+      "status": "PASS",
+      "detail": {
+        "themes": [
+          "paper",
+          "white",
+          "cream",
+          "ink",
+          "black",
+          "stone"
+        ]
+      }
+    },
+    {
+      "id": "hand.text-slots",
+      "status": "PASS",
+      "detail": {
+        "cards": 69,
+        "withSlots": 62,
+        "empty": 7,
+        "lines": 204,
+        "missing": 0,
+        "provenance": "_research/native/designs/<card>.json derived.textSlots (P2b-1, frozen app)"
+      }
+    },
+    {
+      "id": "json.fidelity",
+      "status": "PASS",
+      "detail": {
+        "undefinedKeysDropped": {
+          "irStyles": 3,
+          "handTemplates": 0,
+          "handVariants": 0,
+          "themes": 0,
+          "textSlots": 0
+        },
+        "roundTrip": "styles.json matches JSON.stringify(STOCK_STYLE_LIST)"
+      }
+    },
+    {
+      "id": "schema.template-ids",
+      "status": "PASS",
+      "detail": {
+        "templateIds": 39
+      }
+    },
+    {
+      "id": "schema.parse",
+      "status": "PASS",
+      "detail": {
+        "bytes": 15054,
+        "defs": 9,
+        "templateIds": 39
+      }
+    },
+    {
+      "id": "assets.fonts",
+      "status": "PASS",
+      "detail": {
+        "files": 26,
+        "containers": {
+          "ttf": 20,
+          "woff2": 1,
+          "ttc": 1,
+          "otf": 4
+        },
+        "bytes": 67233752,
+        "referencedByCss": 21
+      }
+    },
+    {
+      "id": "assets.logos",
+      "status": "PASS",
+      "detail": {
+        "appFiles": 155,
+        "versionFiles": 183,
+        "files": 338,
+        "bytes": 5225834,
+        "appBytes": 2891358,
+        "versionBytes": 2334476,
+        "cuts": 330,
+        "cutFiles": 330,
+        "referencedAppFiles": 147,
+        "referencedVersionFiles": 183,
+        "selectedVersions": 218,
+        "versions": 268,
+        "unreferencedAppFiles": 7,
+        "unresolvedCuts": 0
+      }
+    },
+    {
+      "id": "assets.previews",
+      "status": "PASS",
+      "detail": {
+        "cards": 180,
+        "layers": {
+          "system": 111,
+          "rendered": 69
+        },
+        "bytes": 1489528,
+        "legacyInspectorNotCopied": 47
+      }
+    },
+    {
+      "id": "manifest.hashes",
+      "status": "PASS",
+      "detail": "12 artifact hashes verified"
+    }
+  ],
+  "gaps": [
+    {
+      "id": "D2-function-bodies",
+      "status": "deferred-to-E4",
+      "detail": "TemplateDef.layout/render/prepare are closures over canvas/EXIF/params; 39 layout + 39 render + 3 prepare bodies are NOT in JSON. templates.json records name/sha256/bytes/lines per function. E4 re-implements them."
+    },
+    {
+      "id": "hand-count-76-vs-69",
+      "status": "recorded",
+      "detail": "76 is a stale task-book/HANDOFF figure for the historical systemCamera approx set; the frozen source has 175 cards = 106 stock (systemCamera) + 69 hand cards, backed by 38 hand TemplateDefs (+1 systemCamera def)"
+    },
+    {
+      "id": "p2b1-stock-styles-projection",
+      "status": "recorded",
+      "detail": "_research/native/designs/_stock-styles.json has 106 styles but only 14 fields (no bands/children/assets); it cannot satisfy D1 fidelity. D1 was re-derived from the frozen TS with esbuild; ids + referenceWidth/margins/background/themes/audit match P2b-1 106/106."
+    },
+    {
+      "id": "ir-bitmaps-not-copied",
+      "status": "deferred-to-E3",
+      "detail": "124 unique IR asset files are referenced by StockStyle.assets; engine/data/ir/assets.json maps names to source paths + sha256. The files themselves are outside the E1b-1 asset scope (fonts/logos/previews) and are not copied."
+    },
+    {
+      "id": "template-specific-images",
+      "status": "deferred-to-E4",
+      "detail": "polaroidFrame/gradFooter need assets/system/oppo/camerapro/polaroid/*.webp and assets/graduation/*.webp (declared via import.meta.glob). Those are template inputs, not IR assets; not copied in E1b-1."
+    },
+    {
+      "id": "previews-47-legacy-inspector",
+      "status": "recorded",
+      "detail": "175 card previews copied (106 system + 69 rendered). The 47 legacy inspector screenshots are deliberately not copied; previews.json path is the library image and E1a README says a native UI should use path, not inspectorPath."
+    },
+    {
+      "id": "logos-unreferenced",
+      "status": "recorded",
+      "detail": "All 155 app webp copied. 7 are not referenced by any catalog cut; 147 app files back the 330 cuts (the remaining 183 cut files are version webp). None deleted."
+    },
+    {
+      "id": "fonts-size-and-ttc",
+      "status": "recorded",
+      "detail": "22 fonts / 20.56 MB decimal (task book §2.2 says ~17.6 MB, omitting vendor fonts). AvenirNext.ttc face #0 is Bold and is not referenced by CSS; do not load it by family."
+    },
+    {
+      "id": "ir-audit-status",
+      "status": "recorded",
+      "detail": "111/111 IR styles are audit.status=approx; 0 verified, 0 blocked in the shipped map."
+    },
+    {
+      "id": "vendor-111-vs-104",
+      "status": "recorded",
+      "detail": "111 IR styles back 111 stock cards; the taxonomy vendor category has 104 cards because 7 vendor styles are filed under text/card/color/minimal. No style is missing."
+    }
+  ],
+  "corrections": {
+    "irPerStyleCombinedSha256": "60edaa26a6ef264625ce4663db9605c046a447221d30c916c61a9fed8a62b21d"
+  }
+}

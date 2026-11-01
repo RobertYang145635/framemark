@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/export/pair-02-band-0.png", "w": 4000, "h": 512 },
+  "photoRect": { "x": 0, "y": 0, "w": 4000, "h": 3000 },
+  "textSlots": [
+    { "id": "title", "text": "OPPO Find X", "x": 120, "y": 280, "w": 880, "h": 96, "fontSize": 84, "lines": 1 },
+    { "id": "caption", "text": "f/1.8 · 1/250s · ISO 100", "x": 120, "y": 392, "w": 760, "h": 36, "fontSize": 30, "lines": 1 }
+  ],
+  "ms": 188.4,
+  "engine": "fake"
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/preview/pair-01.png", "w": 1600, "h": 1200 },
+  "photoRect": { "x": 120, "y": 120, "w": 1360, "h": 1020 },
+  "textSlots": [
+    { "id": "title", "text": "2026 · 秋", "x": 120, "y": 1080, "w": 420.5, "h": 56, "fontSize": 48, "lines": 1 }
+  ],
+  "ms": 42.5,
+  "engine": "fake"
+}

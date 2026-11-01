@@ -1,0 +1,198 @@
+{
+  "id": "xiaomi-disney:32",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "迪士尼 · 32",
+  "nameEn": "disney_32",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "transparent_white",
+      "label": "transparent_white",
+      "swatch": "#00FFFFFF",
+      "background": "#00FFFFFF",
+      "foreground": [
+        "#FFFFFFFF",
+        "#B2FFFFFF",
+        "#BFFFFFFF",
+        "white"
+      ]
+    }
+  ],
+  "defaultTheme": "transparent_white",
+  "assets": {
+    "disney-32-queen_dark": {
+      "file": "xiaomi/disney/32/queen_dark.webp",
+      "width": 160,
+      "height": 161
+    },
+    "disney-32-logo-xiaomi_white": {
+      "file": "xiaomi/disney/32/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "disney-32-disney_icon": {
+      "file": "xiaomi/disney/32/disney_icon.webp",
+      "width": 134,
+      "height": 58
+    }
+  },
+  "placement": "in",
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "transparentBackground": true,
+  "bands": [
+    {
+      "direction": "overlay",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "centerBottom",
+          "margins": {
+            "bottom": 32
+          },
+          "children": [
+            {
+              "kind": "image",
+              "asset": "disney-32-queen_dark",
+              "width": 80,
+              "height": 80,
+              "scale": "contain",
+              "isBrandLogo": false,
+              "margins": {}
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "topHorCenter",
+              "margins": {
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "topHorCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "group",
+                      "orientation": "row",
+                      "matchWidth": false,
+                      "matchHeight": false,
+                      "gravity": "topHorCenter",
+                      "margins": {},
+                      "children": [
+                        {
+                          "kind": "image",
+                          "asset": "disney-32-logo-xiaomi_white",
+                          "themeAssets": {
+                            "transparent_white": "disney-32-logo-xiaomi_white"
+                          },
+                          "colorIndex": 3,
+                          "width": 92.5375,
+                          "height": 22,
+                          "scale": "contain",
+                          "isBrandLogo": true,
+                          "margins": {
+                            "right": 8
+                          }
+                        },
+                        {
+                          "kind": "text",
+                          "token": {
+                            "kind": "template",
+                            "value": "@model=@{versionNumber}"
+                          },
+                          "font": "misans",
+                          "size": 19,
+                          "weight": 500,
+                          "color": "#FFFFFFFF",
+                          "alpha": 1,
+                          "tracking": 0,
+                          "align": "left",
+                          "margins": {},
+                          "optional": false
+                        },
+                        {
+                          "kind": "text",
+                          "token": {
+                            "kind": "template",
+                            "value": "@model=@{versionName}"
+                          },
+                          "font": "misans",
+                          "size": 12,
+                          "weight": 400,
+                          "color": "#FFFFFFFF",
+                          "alpha": 1,
+                          "tracking": 0.032,
+                          "align": "center",
+                          "outline": {
+                            "paddingX": 5,
+                            "height": 17,
+                            "radius": 4,
+                            "strokeWidth": 1,
+                            "strokeColorIndex": 2
+                          },
+                          "margins": {},
+                          "optional": true
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "image",
+                      "asset": "disney-32-disney_icon",
+                      "width": 64.6896551724138,
+                      "height": 28,
+                      "scale": "contain",
+                      "isBrandLogo": false,
+                      "margins": {
+                        "left": 13
+                      }
+                    }
+                  ]
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "SPECIAL  EDITION"
+                  },
+                  "font": "misans",
+                  "size": 14,
+                  "weight": 500,
+                  "color": "#FFF5F5F5",
+                  "alpha": 1,
+                  "tracking": 0.785,
+                  "align": "left",
+                  "margins": {
+                    "top": 8
+                  },
+                  "optional": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "In-style overlay (bottom) converted from Xiaomi config; pending visual audit.",
+    "unsupported": [
+      "in-style overlay anchored using bottom layout",
+      "3 anchor presets in config; default bottom used"
+    ]
+  }
+}

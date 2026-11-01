@@ -1,0 +1,222 @@
+{
+  "id": "oppo-camerapro:tone_gallery_frame_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相机",
+  "name": "影调画框 · 页脚",
+  "nameEn": "TONE FRAME · FOOTER",
+  "placement": "out",
+  "referenceWidth": 360,
+  "referenceWidthMode": "shortEdge",
+  "margins": {
+    "left": 14,
+    "top": 14,
+    "right": 14,
+    "bottom": 144
+  },
+  "background": "#436A62",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 144,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 332,
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "Make it last."
+              },
+              "font": "misans",
+              "size": 10,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "alpha": 0.94,
+              "tracking": 0.18,
+              "lineHeight": 13.5,
+              "align": "left",
+              "gravity": "topHorCenter",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 7
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "Captured with "
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "model"
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "horCenter",
+              "margins": {
+                "top": 1
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=F@{aperture}"
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": " · "
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{speed}s"
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": " · "
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "ISO"
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{iso}"
+                  },
+                  "font": "misans",
+                  "size": 7.5,
+                  "weight": 400,
+                  "color": "#FFFFFF",
+                  "alpha": 0.56,
+                  "tracking": 0.03,
+                  "lineHeight": 10,
+                  "align": "left",
+                  "gravity": "verticalCenter",
+                  "margins": {
+                    "left": 2
+                  },
+                  "optional": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO CameraPro config; pending visual audit."
+  }
+}

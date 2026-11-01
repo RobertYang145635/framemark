@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/preview/pair-10.png", "w": 1024, "h": 768 },
+  "photoRect": { "x": 51.2, "y": 38.4, "w": 921.6, "h": 691.2 },
+  "textSlots": [
+    { "id": "title", "text": "Hand", "x": 51.2, "y": 640.5, "w": 168.25, "h": 44, "fontSize": 38, "lines": 1 }
+  ],
+  "ms": 17.6,
+  "engine": "fake"
+}

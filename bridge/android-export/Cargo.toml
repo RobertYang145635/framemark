@@ -1,0 +1,26 @@
+[package]
+name = "fm-android-export"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "X1 Android export: E5 in-process API (Skia q100 4:4:4 + 456B ICC + EXIF/thumbnail)"
+
+[workspace]
+
+[lib]
+name = "fm_android_export"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+serde_json = "1"
+# WebP VP8L/VP8 + mux (ICCP/EXIF chunks); bundled C sources, no system lib.
+libwebp-sys2 = { version = "0.1", default-features = false, features = ["1_5", "mux", "static"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+skia-safe = { version = "0.156", features = ["textlayout", "gl"] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+skia-safe = { version = "0.156", features = ["textlayout", "d3d", "gl"] }
+
+[profile.release]
+opt-level = 2

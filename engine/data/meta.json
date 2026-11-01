@@ -1,0 +1,308 @@
+{
+  "schemaVersion": "framemark-ui-data-meta/v1",
+  "generatedAt": "2026-10-31T17:16:15.916Z",
+  "repo": {
+    "head": "8323aac806ef82f7a80b1b13d8d9b2a88f3dfd31",
+    "headShort": "8323aac",
+    "branch": "master",
+    "root": "D:/border&watermark/framemark"
+  },
+  "artifacts": {
+    "taxonomy.json": {
+      "path": "engine/data/taxonomy.json",
+      "sha256": "3e41881550a4f1bfb91f8d940b16a0fe13cc1da3dae8d648436778c1179b7721",
+      "bytes": 201211
+    },
+    "controls.json": {
+      "path": "engine/data/controls.json",
+      "sha256": "943289adf89e2babcc08dcd0592ccee510746fcee79c4ac8bbe98e41a06ff04c",
+      "bytes": 1026734
+    },
+    "capabilities.json": {
+      "path": "engine/data/capabilities.json",
+      "sha256": "401407c3248673a5b6adf80b6901feb08cb8db887a7e7187e2dfb902c5295b47",
+      "bytes": 248547
+    },
+    "previews.json": {
+      "path": "engine/data/previews.json",
+      "sha256": "d02a501b5d1014b5bf97b9bfae6ff064ca55b97f66ac884952d068e16dace787",
+      "bytes": 107522
+    },
+    "logos.json": {
+      "path": "engine/data/logos.json",
+      "sha256": "54c17a2ac2ae6c27ef1bbd51da38c409596d8b234ad960487fa6bc6c95aab49d",
+      "bytes": 364604
+    },
+    "fonts.json": {
+      "path": "engine/data/fonts.json",
+      "sha256": "03218638765830e89320b95bb44f262dee7e540a4e430d3fa8533af5f180bd0a",
+      "bytes": 27627
+    }
+  },
+  "sources": [
+    {
+      "role": "taxonomy",
+      "path": "src/renderer/src/core/taxonomy.generated.ts",
+      "bytes": 18513,
+      "sha256": "f6be82e8aadb8e26c2bef20badd5774850363132fb1c08c6462cbe199833d539"
+    },
+    {
+      "role": "variants",
+      "path": "src/renderer/src/core/variants.ts",
+      "bytes": 35699,
+      "sha256": "417030e8518e7039c4a9b9c3655f71bad3efe43536a7dc11b217f1a7468b2546"
+    },
+    {
+      "role": "controls:oppo",
+      "path": "src/renderer/src/core/controls/data/controls.oppo.json",
+      "bytes": 193531,
+      "sha256": "550bac70c8fbde1f2995d582b26f52ef1d9416af7ec1979743a97be026e4f53b"
+    },
+    {
+      "role": "controls:xiaomi",
+      "path": "src/renderer/src/core/controls/data/controls.xiaomi.json",
+      "bytes": 278983,
+      "sha256": "ac229c337492716652b3cb46a68867687739143270f3763d715829def1acce7d"
+    },
+    {
+      "role": "controls:vivo",
+      "path": "src/renderer/src/core/controls/data/controls.vivo.json",
+      "bytes": 71626,
+      "sha256": "6016cff34d97414a9c6e07059ccdf4b417b31dadd7412cbc469a221ceecbf1ee"
+    },
+    {
+      "role": "hand-controls",
+      "path": "src/renderer/src/core/controls/hand.generated.ts",
+      "bytes": 13852,
+      "sha256": "a92337c385010d0bc5f7462d8cadbf8c39555168254531244d471ff54f5171ff"
+    },
+    {
+      "role": "control-audit",
+      "path": "D:/border&watermark/_research/s7/control-audit.json",
+      "bytes": 989361,
+      "sha256": "bdeaa2902e1138c51985c797e9f4d03b73dabcacc9734352f3714a323d1a156f"
+    },
+    {
+      "role": "logo-catalog",
+      "path": "src/renderer/src/core/logo-catalog.ts",
+      "bytes": 459567,
+      "sha256": "ce0b0c568616c068b7b2522569b8f8fdb849bf4c99d8b21313f9a4b500e48ced"
+    },
+    {
+      "role": "logo-selection",
+      "path": "src/renderer/src/core/logo-selection.generated.ts",
+      "bytes": 4983,
+      "sha256": "8275fb8d5c4dc2ec35d87bea9f96043b693a8ece46027828bfd88c0f6b64efe6"
+    },
+    {
+      "role": "styles.css",
+      "path": "src/renderer/src/styles.css",
+      "bytes": 198911,
+      "sha256": "2e829503250697d456f9724b3a2396fb8f5e9cd89b877fa9b7657c1ef7c99787"
+    },
+    {
+      "role": "fonts.ts",
+      "path": "src/renderer/src/core/fonts.ts",
+      "bytes": 1940,
+      "sha256": "83d048b995e8fa39b37eb1990b5618698ea93e1b30faa3f576f3902be4377f31"
+    },
+    {
+      "role": "system/fonts.ts",
+      "path": "src/renderer/src/core/system/fonts.ts",
+      "bytes": 2799,
+      "sha256": "68c2336fdc09c43ae31dc3f6b4a0abdb531bb3e325f2cc8d9b9dc66674914859"
+    }
+  ],
+  "counts": {
+    "cards": 180,
+    "categories": 7,
+    "vendorCategory": 111,
+    "attribution": {
+      "attributed": 111,
+      "tiers": {
+        "firmware-confirmed": 102,
+        "firmware-declared-not-shipped": 5,
+        "firmware-no-backing": 4
+      },
+      "provenance": {
+        "verified-in-file": 88,
+        "no-family-by-design": 23
+      },
+      "byBrand": {
+        "OPPO": 48,
+        "(null)": 4,
+        "小米": 40,
+        "vivo": 19
+      },
+      "authority": "D:\\border&watermark\\_research\\native\\p8\\authoritative-brand-family.json",
+      "authoritySha256": "90eb0f299f91cc2a3e670120acdd6521fdfd10a52ae1b1de3df9ae84da05a5aa",
+      "movedToVendor": 0,
+      "exceptions": [
+        "oppo-polaroid",
+        "stock-oppo-camerapro-tone_gallery_frame_style_1",
+        "stock-oppo-camerapro-leica_live_moment_style_1",
+        "stock-oppo-camerapro-tone_frame_style_1",
+        "stock-oppo-camerapro-liquid_glass_style_1"
+      ]
+    },
+    "vendorTaggedCards": 112,
+    "platformControls": 554,
+    "handControls": 45,
+    "handPanels": 8,
+    "auditRows": 996,
+    "auditEffective": 752,
+    "auditGated": 244,
+    "auditedCards": 69,
+    "previews": 180,
+    "logoVersions": 268,
+    "logoSelectedVersions": 218,
+    "logoCuts": 330,
+    "logoFiles": 155,
+    "fontFiles": 26,
+    "ttcFiles": 1,
+    "bytes": {
+      "previewsMapped": 1489528,
+      "logoAppFiles": 2891358,
+      "logoVersionFiles": 2334476,
+      "fonts": 67233752
+    }
+  },
+  "expectations": [
+    {
+      "item": "taxonomy cards",
+      "expected": 180,
+      "actual": 180,
+      "status": "match"
+    },
+    {
+      "item": "taxonomy categories",
+      "expected": 7,
+      "actual": 7,
+      "status": "match"
+    },
+    {
+      "item": "vendor category count",
+      "expected": 111,
+      "actual": 111,
+      "status": "match",
+      "note": "D-035 归属后：vendor 111（111 张 stock 全部在厂商边框一级，P9 W4 增 5 张 vivo 迪士尼）；旧 99/106 作废。一级分布 text 17 / impression 13 / white 12 / card 18 / color 5 / minimal 4"
+    },
+    {
+      "item": "D-035 attribution (authority)",
+      "expected": "p8/authoritative-brand-family.json rows=106",
+      "actual": "attributed 111; tiers {\"firmware-confirmed\":102,\"firmware-declared-not-shipped\":5,\"firmware-no-backing\":4}; brands {\"OPPO\":48,\"(null)\":4,\"小米\":40,\"vivo\":19}; authority sha256 90eb0f299f91cc2a…",
+      "status": "match",
+      "note": "moved-to-vendor 0; exceptions oppo-polaroid, stock-oppo-camerapro-tone_gallery_frame_style_1, stock-oppo-camerapro-leica_live_moment_style_1, stock-oppo-camerapro-tone_frame_style_1, stock-oppo-camerapro-liquid_glass_style_1"
+    },
+    {
+      "item": "vendor brand split (category vendor)",
+      "expected": "OPPO 48 / 小米 40 / vivo 14（另有 4 张 no-firmware-backing brand=null，逐条在例外表）",
+      "actual": "taxonomy brand field: OPPO 48 / 小米 40 / vivo 19; TemplateVariant.vendor: oppo 52 / xiaomi 40 / vivo 19",
+      "status": "discrepancy",
+      "note": "Exactly 0 cards disagree: . Both values are preserved verbatim; neither is forced."
+    },
+    {
+      "item": "platform controls",
+      "expected": 554,
+      "actual": 554,
+      "status": "match"
+    },
+    {
+      "item": "hand controls",
+      "expected": 45,
+      "actual": 45,
+      "status": "match"
+    },
+    {
+      "item": "hand panels",
+      "expected": 8,
+      "actual": 8,
+      "status": "match"
+    },
+    {
+      "item": "control-audit rows",
+      "expected": 996,
+      "actual": 996,
+      "status": "match"
+    },
+    {
+      "item": "control-audit effective (live)",
+      "expected": 752,
+      "actual": 752,
+      "status": "match"
+    },
+    {
+      "item": "control-audit gated (no-op)",
+      "expected": 244,
+      "actual": 244,
+      "status": "match"
+    },
+    {
+      "item": "preview coverage",
+      "expected": 180,
+      "actual": 180,
+      "status": "match"
+    },
+    {
+      "item": "assets/logos files",
+      "expected": 155,
+      "actual": 155,
+      "status": "match"
+    },
+    {
+      "item": "fonts",
+      "expected": "no count; task book §2.2 ≈17.6 MB (incl. FZCYSK.TTF 10.5 MB, AvenirNext.ttc 5.0 MB)",
+      "actual": "26 files / 67.23 MB decimal; FZCYSK.TTF 10.52 MB; AvenirNext.ttc 4.99 MB; 5 file not referenced by CSS (.ttc)",
+      "status": "discrepancy",
+      "note": "Task book size ≈17.6 MB matches app fonts (2.0 MB) + FZCYSK (10.5 MB) + AvenirNext.ttc (5.0 MB) but omits the other vendor fonts (SysSans/Thai/Butler/vivo/MiSans/Oxanium/LG); actual bundle is 20.56 MB. No font file was modified."
+    }
+  ],
+  "discrepancies": [
+    {
+      "id": "vendor-106-vs-tagged",
+      "expected": "D-035 终值: 175 cards / 7 categories / vendor 106（旧 99 作废）",
+      "actual": "vendor category = 111; cards carrying a vendor value = 112; brand non-null = 107",
+      "impact": "UI 必须以 category=vendor 为厂商分组（106）；brand=null 的 4 张靠例外表逐条点名留在该组可见。"
+    },
+    {
+      "id": "brand-split",
+      "expected": "taxonomy 宣告的品牌分布: OPPO 48 / 小米 40 / vivo 14（归属后）",
+      "actual": "taxonomy brand field: OPPO 48 / 小米 40 / vivo 19 (111); TemplateVariant.vendor: oppo 52 / xiaomi 40 / vivo 19",
+      "impact": "Exactly 0 cards disagree: . Preserved verbatim; UI should use taxonomy brand for the vendor chip."
+    },
+    {
+      "id": "control-audit-path",
+      "expected": "framemark/_research/s7/control-audit.json",
+      "actual": "D:\\border&watermark\\_research\\s7\\control-audit.json",
+      "impact": "framemark/_research is not in the repo (gitignored, local only). Hash/version pin the sibling file used here."
+    },
+    {
+      "id": "control-audit-scope",
+      "expected": "996 control rows for the 106/175 card library",
+      "actual": "996 rows cover 69 cards only (the hand-template set); 111 of 175 cards have no audit rows; audit inventory is the 996-control superset (D:\\border&watermark\\_research\\hand-controls\\controls.hand.json), not the 526+45 UI inventory",
+      "impact": "Capabilities for unaudited cards are marked audited:false with null lists — deliberately not zero, so UI cannot silently hide controls."
+    },
+    {
+      "id": "font-ttc",
+      "expected": "D6: .ttc needs face split or face[0] only",
+      "actual": "AvenirNext.ttc has 12 faces; face #0 = Bold (AvenirNext-Bold); it is not referenced by CSS — four extracted TTFs are used instead",
+      "impact": "Native font loader must not load the .ttc by family name; use the extracted per-weight TTFs. Faces recorded in fonts.json."
+    },
+    {
+      "id": "font-size",
+      "expected": "task book §2.2 fonts ≈17.6 MB",
+      "actual": "26 font files / 67.23 MB (decimal); FZCYSK.TTF 10.52 MB, AvenirNext.ttc 4.99 MB",
+      "impact": "The quoted 17.6 MB omits the other vendor fonts (~3 MB); the bundle is 20.56 MB. No font was removed or modified."
+    }
+  ],
+  "knownGaps": [
+    "68/175 cards have no vendor/family in source (hand templates); vendor is null rather than guessed.",
+    "29/175 cards have no badge; 68/175 have no fidelity flag; 28/175 have no declaredText (null preserved).",
+    "capabilities covers 69/175 cards (control-audit scope); the other 111 are audited:false.",
+    "47/175 cards declare a legacy preview screenshot that Inspector prefers (preview ?? renderedPreview) while the library uses renderedPreview ?? preview; previews.json stores path, declaredPreviewPath and inspectorPath.",
+    "control-audit lives outside the repo (D:\\border&watermark\\_research\\s7\\control-audit.json); its path+sha256 are pinned in capabilities.json/meta.json.",
+    "AvenirNext.ttc is present but unused by CSS (face #0 = Bold); fonts.json records all 12 faces and the four extracted TTFs.",
+    "7 assets/logos files are not referenced by any catalog cut or card vendorLogo (counted, not deleted).",
+    "183 logo cuts ship at a different pixel size than the catalog's declared source size (catalog width/height describe the source image)."
+  ]
+}

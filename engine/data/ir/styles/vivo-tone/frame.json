@@ -1,0 +1,93 @@
+{
+  "id": "vivo-tone:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "色调 · 右侧栏",
+  "nameEn": "TONE",
+  "placement": "out",
+  "referenceWidth": 1497,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 226,
+    "bottom": 0
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "overlay",
+      "width": 1497,
+      "thickness": 968,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "drawFirst": true,
+      "children": [
+        {
+          "kind": "image",
+          "asset": "vivo-tone-card",
+          "width": 1497,
+          "height": 968,
+          "scale": "fill",
+          "gravity": "leftTop"
+        }
+      ]
+    },
+    {
+      "direction": "right",
+      "thickness": 226,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "vivo"
+              },
+              "font": "vivo",
+              "size": 40,
+              "weight": 600,
+              "color": "#111111",
+              "tracking": 0.06,
+              "lineHeight": 54,
+              "align": "center"
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 24,
+              "weight": 400,
+              "color": "#555555",
+              "tracking": 0.06,
+              "lineHeight": 32.400000000000006,
+              "align": "center",
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-tone-card": {
+      "file": "vivo/batch1/tone-card.png",
+      "width": 1497,
+      "height": 968
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Tone frame; 226-wide white right rail measured from settled tone/4_3_540_q PAG frame (photo x0..1270, rail x1272..1496). Rail text \"vivo\" per temp.json mapping 1 (右侧中部：vivo). QR code subCard is opt-in in the host and omitted.",
+    "unsupported": [
+      "optional QR code omitted (host-rendered, default off)"
+    ]
+  }
+}

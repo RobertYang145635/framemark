@@ -1,0 +1,197 @@
+{
+  "id": "xiaomi-classic:99",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "经典 · 99",
+  "nameEn": "classic_99",
+  "placement": "with",
+  "referenceWidth": 1080,
+  "margins": {
+    "left": 48,
+    "top": 48,
+    "right": 560,
+    "bottom": 48
+  },
+  "background": "#FFFFFF",
+  "themes": [
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FF000000",
+        "#80000000",
+        "#BF000000",
+        "black"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FFFFFFFF",
+        "#80FFFFFF",
+        "#CCFFFFFF",
+        "white"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "classic_99-logo-black": {
+      "file": "xiaomi/classic/17/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    },
+    "classic_99-logo-white": {
+      "file": "xiaomi/classic/17/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    }
+  },
+  "bands": [
+    {
+      "direction": "right",
+      "thickness": 560,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 560,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "width": 560,
+              "gravity": "horCenter",
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "gravity": "horCenter",
+                  "children": [
+                    {
+                      "kind": "image",
+                      "asset": "classic_99-logo-black",
+                      "themeAssets": {
+                        "white": "classic_99-logo-black",
+                        "black": "classic_99-logo-white"
+                      },
+                      "width": 109.36,
+                      "height": 26,
+                      "scale": "contain",
+                      "isBrandLogo": true
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionNumber}"
+                      },
+                      "font": "misans",
+                      "size": 22.6,
+                      "weight": 500,
+                      "colorIndex": 0,
+                      "tracking": 0.01,
+                      "lineHeight": 27.12,
+                      "align": "left",
+                      "gravity": "leftVerticalCenter",
+                      "margins": {
+                        "left": 8
+                      }
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionName}"
+                      },
+                      "font": "misans",
+                      "size": 14.3,
+                      "weight": 450,
+                      "colorIndex": 0,
+                      "tracking": 0.04,
+                      "lineHeight": 17.16,
+                      "align": "left",
+                      "gravity": "leftVerticalCenter",
+                      "margins": {
+                        "left": 6
+                      },
+                      "optional": true
+                    }
+                  ]
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+                  },
+                  "font": "misans",
+                  "size": 20,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "tracking": 0.04,
+                  "lineHeight": 25,
+                  "width": 520,
+                  "align": "center",
+                  "gravity": "horCenter",
+                  "margins": {
+                    "top": 10
+                  }
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "misans",
+                  "size": 20,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "tracking": 0.04,
+                  "lineHeight": 25,
+                  "width": 520,
+                  "align": "center",
+                  "gravity": "horCenter",
+                  "margins": {
+                    "top": 10
+                  },
+                  "optional": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "misans",
+                  "size": 20,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "tracking": 0.04,
+                  "lineHeight": 25,
+                  "width": 520,
+                  "align": "center",
+                  "gravity": "horCenter",
+                  "margins": {
+                    "top": 10
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "From NeoHyper 17 Ultra classic/22 config: inner-border right, 48dp padding, 560dp sidebar. No vendor-rendered reference frame; geometry is config-derived."
+  }
+}

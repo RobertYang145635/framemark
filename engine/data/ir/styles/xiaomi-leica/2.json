@@ -1,0 +1,241 @@
+{
+  "id": "xiaomi-leica:2",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "徕卡 · 2",
+  "nameEn": "leica_2",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FF000000",
+        "#4D000000",
+        "#80000000",
+        "black",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FFFFFFFF",
+        "#B2FFFFFF",
+        "#80FFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "leica-2-logo-xiaomi_black": {
+      "file": "xiaomi/leica/2/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-2-logo-xiaomi_white": {
+      "file": "xiaomi/leica/2/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-2-leica": {
+      "file": "xiaomi/leica/2/leica.webp",
+      "width": 240,
+      "height": 240
+    }
+  },
+  "placement": "with",
+  "margins": {
+    "left": 80,
+    "top": 80,
+    "right": 80,
+    "bottom": 258
+  },
+  "background": "#FFFFFFFF",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 80,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "height": 80,
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "leftTop",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "rightBottom",
+              "margins": {
+                "top": -7
+              },
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "leica-2-logo-xiaomi_black",
+                  "themeAssets": {
+                    "white": "leica-2-logo-xiaomi_black",
+                    "black": "leica-2-logo-xiaomi_white"
+                  },
+                  "colorIndex": 3,
+                  "width": 100.94999999999999,
+                  "height": 24,
+                  "scale": "contain",
+                  "isBrandLogo": true,
+                  "margins": {
+                    "right": 8
+                  }
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionNumber}"
+                  },
+                  "font": "misans",
+                  "size": 21.6,
+                  "weight": 500,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0,
+                  "align": "left",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionName}"
+                  },
+                  "font": "misans",
+                  "size": 13.2,
+                  "weight": 400,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0.028,
+                  "align": "center",
+                  "outline": {
+                    "paddingX": 5,
+                    "height": 18.5,
+                    "radius": 4.4,
+                    "strokeWidth": 1.32,
+                    "strokeColorIndex": 4
+                  },
+                  "margins": {},
+                  "optional": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 258,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "height": 250,
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "leftTop",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftTop",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "leica-2-leica",
+                  "width": 72,
+                  "height": 72,
+                  "scale": "contain",
+                  "isBrandLogo": false,
+                  "margins": {}
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+                  },
+                  "font": "oxanium",
+                  "size": 20,
+                  "weight": 500,
+                  "color": "#FFE20612",
+                  "alpha": 1,
+                  "tracking": 0.15,
+                  "align": "left",
+                  "margins": {
+                    "top": 20
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "oxanium",
+                  "size": 20,
+                  "weight": 500,
+                  "colorIndex": 2,
+                  "alpha": 1,
+                  "tracking": 0.15,
+                  "align": "left",
+                  "margins": {
+                    "top": 12
+                  },
+                  "optional": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "oxanium",
+                  "size": 20,
+                  "weight": 500,
+                  "colorIndex": 2,
+                  "alpha": 1,
+                  "tracking": 0.15,
+                  "align": "left",
+                  "margins": {
+                    "top": 12
+                  },
+                  "optional": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit."
+  }
+}

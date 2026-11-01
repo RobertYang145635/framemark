@@ -1,0 +1,438 @@
+{
+  "id": "xiaomi-leica:3",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "徕卡 · 3",
+  "nameEn": "leica_3",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FF000000",
+        "#33000000",
+        "#CC000000",
+        "#80000000",
+        "black",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FFFFFFFF",
+        "#33FFFFFF",
+        "#CCFFFFFF",
+        "#80FFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    },
+    {
+      "id": "light_blur",
+      "label": "light_blur",
+      "swatch": "#00000000",
+      "background": "#00000000",
+      "foreground": [
+        "#FF000000",
+        "#33000000",
+        "#CC000000",
+        "#80000000",
+        "black",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "dark_blur",
+      "label": "dark_blur",
+      "swatch": "#00000000",
+      "background": "#00000000",
+      "foreground": [
+        "#FFFFFFFF",
+        "#33FFFFFF",
+        "#CCFFFFFF",
+        "#80FFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "leica-3-logo-xiaomi_black": {
+      "file": "xiaomi/leica/3/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-3-logo-xiaomi_white": {
+      "file": "xiaomi/leica/3/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-3-leica": {
+      "file": "xiaomi/leica/3/leica.webp",
+      "width": 240,
+      "height": 240
+    }
+  },
+  "placement": "with",
+  "margins": {
+    "left": 48,
+    "top": 48,
+    "right": 48,
+    "bottom": 214
+  },
+  "background": "#FFFFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 214,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "matchWidth": false,
+          "matchHeight": false,
+          "gravity": "topHorCenter",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "topHorCenter",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "topHorCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "image",
+                      "asset": "leica-3-logo-xiaomi_black",
+                      "themeAssets": {
+                        "white": "leica-3-logo-xiaomi_black",
+                        "black": "leica-3-logo-xiaomi_white",
+                        "light_blur": "leica-3-logo-xiaomi_black",
+                        "dark_blur": "leica-3-logo-xiaomi_white"
+                      },
+                      "colorIndex": 4,
+                      "width": 168.25,
+                      "height": 40,
+                      "scale": "contain",
+                      "isBrandLogo": true,
+                      "margins": {
+                        "right": 8
+                      }
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionNumber}"
+                      },
+                      "font": "misans",
+                      "size": 32,
+                      "weight": 500,
+                      "colorIndex": 0,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionName}"
+                      },
+                      "font": "misans",
+                      "size": 23,
+                      "weight": 400,
+                      "colorIndex": 0,
+                      "alpha": 1,
+                      "tracking": 0.04,
+                      "align": "center",
+                      "outline": {
+                        "paddingX": 10,
+                        "height": 32,
+                        "radius": 7,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 5
+                      },
+                      "margins": {},
+                      "optional": true
+                    },
+                    {
+                      "kind": "image",
+                      "asset": "leica-3-leica",
+                      "width": 40,
+                      "height": 40,
+                      "scale": "contain",
+                      "isBrandLogo": false,
+                      "margins": {
+                        "left": 24
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "group",
+          "orientation": "column",
+          "matchWidth": false,
+          "matchHeight": false,
+          "gravity": "topHorCenter",
+          "margins": {
+            "top": 45.5
+          },
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftVerticalCenter",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftTop",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{speed}"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 2,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "center",
+                      "outline": {
+                        "width": 108,
+                        "height": 60,
+                        "radius": 12,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 1
+                      },
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "S"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {
+                        "top": 20
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftTop",
+                  "margins": {
+                    "left": 50
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{iso}"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 2,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "center",
+                      "outline": {
+                        "width": 108,
+                        "height": 60,
+                        "radius": 12,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 1
+                      },
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "ISO"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {
+                        "top": 20
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftTop",
+                  "margins": {
+                    "left": 50
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{focal}"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 2,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "center",
+                      "outline": {
+                        "width": 108,
+                        "height": 60,
+                        "radius": 12,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 1
+                      },
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "mm"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {
+                        "top": 20
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftTop",
+                  "margins": {
+                    "left": 50
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{aperture}"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 2,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "center",
+                      "outline": {
+                        "width": 108,
+                        "height": 60,
+                        "radius": 12,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 1
+                      },
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "F"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {
+                        "top": 20
+                      },
+                      "optional": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit."
+  }
+}

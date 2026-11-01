@@ -1,0 +1,231 @@
+{
+  "id": "vivo-zeiss:border_top",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "蔡司 · 上框",
+  "nameEn": "ZEISS TOP",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 21,
+    "top": 305,
+    "right": 21,
+    "bottom": 220
+  },
+  "background": "#FFFFFF",
+  "themes": [
+    {
+      "id": "white",
+      "label": "白底",
+      "swatch": "#FFFFFF",
+      "background": "#FFFFFF",
+      "foreground": [
+        "#111111",
+        "#5A5A5A",
+        "#0057B8"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "黑底",
+      "swatch": "#111111",
+      "background": "#111111",
+      "foreground": [
+        "#FFFFFF",
+        "#BDBDBD",
+        "#FFD166"
+      ]
+    },
+    {
+      "id": "glass",
+      "label": "玻璃",
+      "swatch": "#D9FFFFFF",
+      "background": "#D9FFFFFF",
+      "foreground": [
+        "#111111",
+        "#4A4A4A",
+        "#0057B8"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 305,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1398,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "leftVerticalCenter",
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "vivo-zeiss-grid",
+                  "width": 84,
+                  "height": 84,
+                  "scale": "contain"
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "gravity": "leftVerticalCenter",
+                  "margins": {
+                    "left": 24
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "ZEISS"
+                      },
+                      "font": "zeiss",
+                      "size": 56,
+                      "weight": 700,
+                      "colorIndex": 0,
+                      "tracking": 0.04,
+                      "lineHeight": 64.96,
+                      "align": "left"
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "model"
+                      },
+                      "font": "vivo",
+                      "size": 30,
+                      "weight": 500,
+                      "colorIndex": 0,
+                      "tracking": 0.2,
+                      "lineHeight": 36,
+                      "align": "left",
+                      "optional": true
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "vivo-zeiss-stamp-black",
+              "themeAssets": {
+                "white": "vivo-zeiss-stamp-black",
+                "black": "vivo-zeiss-stamp-white",
+                "glass": "vivo-zeiss-stamp-black"
+              },
+              "width": 128,
+              "height": 112,
+              "scale": "contain",
+              "gravity": "rightVerticalCenter"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 220,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1398,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "leftVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "vivo",
+                  "size": 26,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "tracking": 0.08,
+                  "lineHeight": 31.2,
+                  "align": "left",
+                  "optional": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "vivo",
+                  "size": 24,
+                  "weight": 400,
+                  "colorIndex": 1,
+                  "tracking": 0.08,
+                  "lineHeight": 28.799999999999997,
+                  "align": "left"
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "ZEISS"
+              },
+              "font": "zeiss",
+              "size": 34,
+              "weight": 700,
+              "colorIndex": 2,
+              "tracking": 0.04,
+              "lineHeight": 39.44,
+              "align": "left"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-zeiss-grid": {
+      "file": "vivo/zeiss/grid.png",
+      "width": 168,
+      "height": 168
+    },
+    "vivo-zeiss-stamp-black": {
+      "file": "vivo/zeiss/stamp-black.png",
+      "width": 221,
+      "height": 192
+    },
+    "vivo-zeiss-stamp-white": {
+      "file": "vivo/zeiss/stamp-white.png",
+      "width": 221,
+      "height": 192
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Zeiss top frame; 305/220 bands measured from 4:3 PAG preview. Host-rendered QR omitted; brand wordmark uses Zeiss Frutiger text.",
+    "unsupported": [
+      "QR code omitted (host-rendered)",
+      "glass texture approximated by translucent solid"
+    ]
+  }
+}

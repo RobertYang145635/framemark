@@ -1,0 +1,27 @@
+{
+  "schema": "framemark-android-prebuilt/v1",
+  "targetAbi": "arm64-v8a",
+  "sourceBuildReproduced": false,
+  "provenanceStatus": "unverified",
+  "provenanceNote": "SHA-256 values record the current archives only. Their source/toolchain build was not reproduced from a clean checkout; release builds must use libraries compiled by the in-repository driver.",
+  "libraries": [
+    {
+      "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_engine.a",
+      "crateManifest": "bridge/android/Cargo.toml",
+      "cargoLock": "bridge/android/Cargo.lock",
+      "sha256": "481c9a4f03455e45399d7fc3bed43c5c54006f347d95582f242551c4f2a2606c"
+    },
+    {
+      "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_hand.a",
+      "crateManifest": "bridge/android-hand/Cargo.toml",
+      "cargoLock": "bridge/android-hand/Cargo.lock",
+      "sha256": "da9b2d4f5743aaedea01bf378d18d47f3cd70d5e92710a716708d6025b7a79c5"
+    },
+    {
+      "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_export.a",
+      "crateManifest": "bridge/android-export/Cargo.toml",
+      "cargoLock": "bridge/android-export/Cargo.lock",
+      "sha256": "ef77bbe873b5dd28d7e20206ee2ebbbf02b8203a2207e9a8d95ec0f9c73cc143"
+    }
+  ]
+}

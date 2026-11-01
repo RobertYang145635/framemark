@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "xiaomi-frame-03",
+    "canvas": { "w": 3000, "h": 2250 },
+    "elements": [
+      { "kind": "frame", "inset": 120 },
+      { "kind": "text", "slot": "title", "value": "2026 · 秋" }
+    ]
+  },
+  "photo": { "path": "D:/photos/IMG_0001.jpg", "w": 4032, "h": 3024 },
+  "mode": "preview",
+  "maxEdge": 1600
+}

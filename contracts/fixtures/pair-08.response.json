@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "image": { "path": "D:/framemark/cache/preview/pair-08.png", "w": 2048, "h": 1152 },
+  "photoRect": { "x": -24, "y": 0, "w": 2096, "h": 1152 },
+  "textSlots": [
+    { "id": "title", "text": "WIDE", "x": -12.5, "y": 980, "w": 260, "h": 72, "fontSize": 64, "lines": 1 },
+    { "id": "caption", "text": "16:9", "x": 900, "y": 1000, "w": 120, "h": 32, "fontSize": 28, "lines": 1 }
+  ],
+  "ms": 31.9,
+  "engine": "fake"
+}

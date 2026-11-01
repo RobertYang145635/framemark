@@ -1,0 +1,230 @@
+{
+  "id": "xiaomi-classic:20",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "经典 · 20",
+  "nameEn": "classic_20",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FFFFFFFF",
+        "#B2FFFFFF",
+        "#CCFFFFFF",
+        "#80FFFFFF",
+        "white"
+      ]
+    },
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FF000000",
+        "#4D000000",
+        "#BF000000",
+        "#80000000",
+        "black"
+      ]
+    }
+  ],
+  "defaultTheme": "black",
+  "assets": {
+    "classic-20-logo-xiaomi_white": {
+      "file": "xiaomi/classic/20/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "classic-20-logo-xiaomi_black": {
+      "file": "xiaomi/classic/20/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    }
+  },
+  "placement": "out",
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 147
+  },
+  "background": "#FF141414",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 147,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "leftVerticalCenter",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "left": 48
+              },
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "classic-20-logo-xiaomi_white",
+                  "themeAssets": {
+                    "black": "classic-20-logo-xiaomi_white",
+                    "white": "classic-20-logo-xiaomi_black"
+                  },
+                  "colorIndex": 4,
+                  "width": 143.0125,
+                  "height": 34,
+                  "scale": "contain",
+                  "isBrandLogo": true,
+                  "margins": {
+                    "right": 8
+                  }
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionNumber}"
+                  },
+                  "font": "misans",
+                  "size": 30.6,
+                  "weight": 500,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0,
+                  "align": "left",
+                  "margins": {},
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionName}"
+                  },
+                  "font": "misans",
+                  "size": 20,
+                  "weight": 400,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0.028,
+                  "align": "center",
+                  "outline": {
+                    "paddingX": 8,
+                    "height": 28,
+                    "radius": 6.6,
+                    "strokeWidth": 2,
+                    "strokeColorIndex": 2
+                  },
+                  "margins": {},
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "rightVerticalCenter",
+              "margins": {
+                "left": -50
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "height": 29,
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "rightVerticalCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+                      },
+                      "font": "misans",
+                      "size": 22,
+                      "weight": 500,
+                      "colorIndex": 0,
+                      "alpha": 1,
+                      "tracking": -0.02,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "rightVerticalCenter",
+                  "margins": {
+                    "top": 10
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@time=@wm_time_yyyy_MM_dd"
+                      },
+                      "font": "misans",
+                      "size": 20,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "location"
+                      },
+                      "font": "misans",
+                      "size": 20,
+                      "weight": 400,
+                      "colorIndex": 3,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {
+                        "left": 20
+                      },
+                      "optional": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit."
+  }
+}

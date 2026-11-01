@@ -1,0 +1,105 @@
+{
+  "id": "vivo-chinoiserie-ink:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "国风 · 水墨印章",
+  "nameEn": "CHINOISERIES INK",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 250
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 250,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1360,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 46,
+              "weight": 500,
+              "color": "#1A1A1A",
+              "tracking": 0.06,
+              "lineHeight": 62.1,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "shape",
+              "shape": "rect",
+              "width": 112,
+              "height": 112,
+              "color": "#00000000",
+              "vectorKey": "chinoiserie-ink",
+              "margins": {
+                "right": 24
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "rightVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "vivo",
+                  "size": 30,
+                  "weight": 500,
+                  "color": "#1A1A1A",
+                  "tracking": 0.06,
+                  "lineHeight": 40.5,
+                  "align": "right"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "vivo",
+                  "size": 26,
+                  "weight": 400,
+                  "color": "#666666",
+                  "tracking": 0.06,
+                  "lineHeight": 35.1,
+                  "align": "right",
+                  "optional": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Chinoiserie ink-wash (水墨) variant; white bottom band, model left, the brush-ink seal centre-right, time + city right, per temp.json mappings (left 机型 / right 图案+时间+地点). The seal is the vendor VectorDrawable CHINOISERIES_INK edit.apk res/SQ.xml converted verbatim by scripts/system-camera/adapters/vivo-vector.cjs (viewport 42x42, circular clip-path + black brush strokes + #c40f0f accent resolved from the template resources.arsc).",
+    "unsupported": [
+      "lunar-calendar time approximated by the gregorian date token",
+      "band geometry estimated from the picker preview card (no vendor PAG frame)"
+    ]
+  }
+}

@@ -1,0 +1,287 @@
+{
+  "id": "oppo-gallery:personalize_masterSign_2",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "大师签名 · 2",
+  "nameEn": "personalize_masterSign_2",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 10,
+    "right": 10,
+    "bottom": 136
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 136,
+      "offset": {
+        "x": 10,
+        "y": 0
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "image",
+              "asset": "master_sign_2_dark",
+              "width": 156,
+              "height": 32,
+              "scale": "contain",
+              "gravity": "topHorCenter",
+              "margins": {
+                "bottom": 22
+              },
+              "alpha": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "horCenter",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "width": 90,
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{iso}"
+                      },
+                      "font": "sys",
+                      "size": 12,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.9,
+                      "tracking": 0,
+                      "lineHeight": 15.26,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "ISO"
+                      },
+                      "font": "sys",
+                      "size": 9,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.54,
+                      "tracking": 0,
+                      "lineHeight": 13.35,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.5,
+                  "height": 13,
+                  "color": "#4c000000",
+                  "gravity": "verticalCenter",
+                  "margins": {}
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "width": 90,
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{aperture}"
+                      },
+                      "font": "sys",
+                      "size": 12,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.9,
+                      "tracking": 0,
+                      "lineHeight": 15.26,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "F"
+                      },
+                      "font": "sys",
+                      "size": 9,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.54,
+                      "tracking": 0,
+                      "lineHeight": 13.35,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.5,
+                  "height": 13,
+                  "color": "#4c000000",
+                  "gravity": "verticalCenter",
+                  "margins": {}
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "width": 90,
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{focal}"
+                      },
+                      "font": "sys",
+                      "size": 12,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.9,
+                      "tracking": 0,
+                      "lineHeight": 15.26,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "mm"
+                      },
+                      "font": "sys",
+                      "size": 9,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.54,
+                      "tracking": 0,
+                      "lineHeight": 13.35,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    }
+                  ]
+                },
+                {
+                  "kind": "shape",
+                  "shape": "rect",
+                  "width": 0.5,
+                  "height": 13,
+                  "color": "#4c000000",
+                  "gravity": "verticalCenter",
+                  "margins": {}
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "width": 90,
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{speed}"
+                      },
+                      "font": "sys",
+                      "size": 12,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.9,
+                      "tracking": 0,
+                      "lineHeight": 15.26,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "literal",
+                        "value": "s"
+                      },
+                      "font": "sys",
+                      "size": 9,
+                      "weight": 500,
+                      "color": "#000000",
+                      "alpha": 0.54,
+                      "tracking": 0,
+                      "lineHeight": 13.35,
+                      "align": "left",
+                      "gravity": "horCenter",
+                      "margins": {
+                        "top": 1.26
+                      },
+                      "optional": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "master_sign_2_dark": {
+      "file": "master_sign_2_dark.webp",
+      "width": 888,
+      "height": 272
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+  }
+}

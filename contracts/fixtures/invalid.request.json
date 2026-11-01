@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "design": {},
+  "photo": { "bytes": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "w": 800, "h": 0 },
+  "mode": "print",
+  "maxEdge": 16,
+  "band": { "y": 0, "h": 256 }
+}

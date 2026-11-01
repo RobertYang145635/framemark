@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "hand-frame-63",
+    "canvas": { "w": 1600, "h": 1200 },
+    "elements": [
+      { "kind": "frame", "inset": 38.4 },
+      { "kind": "text", "slot": "title", "value": "Hand" }
+    ]
+  },
+  "photo": { "path": "D:/photos/IMG_1200.jpg", "w": 1600, "h": 1200 },
+  "mode": "preview",
+  "maxEdge": 1024
+}

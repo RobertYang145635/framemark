@@ -1,0 +1,99 @@
+{
+  "id": "oppo-gallery:lumo_style_1",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "LUMO · 页脚",
+  "nameEn": "LUMO FOOTER",
+  "placement": "out",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 60
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 60,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 360,
+          "height": 60,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "left": 20
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "model"
+                  },
+                  "font": "sys",
+                  "size": 12,
+                  "weight": 600,
+                  "color": "#000000",
+                  "tracking": 0.04,
+                  "lineHeight": 14,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "imageParams"
+                  },
+                  "font": "sys",
+                  "size": 7,
+                  "weight": 400,
+                  "color": "#000000",
+                  "alpha": 0.54,
+                  "tracking": 0.08,
+                  "lineHeight": 8,
+                  "align": "left",
+                  "margins": {
+                    "top": 1
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "lumo_watermark_logo_dark",
+              "width": 52,
+              "height": 32,
+              "scale": "contain",
+              "gravity": "rightVerticalCenter",
+              "margins": {
+                "right": 16
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "lumo_watermark_logo_dark": {
+      "file": "lumo_watermark_logo_dark.webp",
+      "width": 386,
+      "height": 120
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Hand-authored from OPPO Gallery lumo_style_1.json; pending visual audit."
+  }
+}

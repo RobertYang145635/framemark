@@ -1,0 +1,226 @@
+{
+  "id": "oppo-gallery:personalize_retroCamera_5",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "复古相机 · 5",
+  "nameEn": "personalize_retroCamera_5",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 10,
+    "right": 162,
+    "bottom": 10
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "right",
+      "thickness": 162,
+      "background": "#FFFFFF",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 142,
+          "matchHeight": true,
+          "margins": {
+            "left": 10,
+            "right": 10,
+            "top": 10,
+            "bottom": 10
+          },
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{iso}"
+                  },
+                  "font": "butler",
+                  "size": 12,
+                  "weight": 500,
+                  "color": "#111111",
+                  "tracking": 0.05,
+                  "lineHeight": 15,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "ISO"
+                  },
+                  "font": "butler",
+                  "size": 8,
+                  "weight": 500,
+                  "color": "#77716A",
+                  "tracking": 0.08,
+                  "lineHeight": 11,
+                  "align": "left",
+                  "margins": {
+                    "left": 6
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{aperture}"
+                  },
+                  "font": "butler",
+                  "size": 12,
+                  "weight": 500,
+                  "color": "#111111",
+                  "tracking": 0.05,
+                  "lineHeight": 15,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "F"
+                  },
+                  "font": "butler",
+                  "size": 8,
+                  "weight": 500,
+                  "color": "#77716A",
+                  "tracking": 0.08,
+                  "lineHeight": 11,
+                  "align": "left",
+                  "margins": {
+                    "left": 6
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{focal}"
+                  },
+                  "font": "butler",
+                  "size": 12,
+                  "weight": 500,
+                  "color": "#111111",
+                  "tracking": 0.05,
+                  "lineHeight": 15,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "mm"
+                  },
+                  "font": "butler",
+                  "size": 8,
+                  "weight": 500,
+                  "color": "#77716A",
+                  "tracking": 0.08,
+                  "lineHeight": 11,
+                  "align": "left",
+                  "margins": {
+                    "left": 6
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "leftVerticalCenter",
+              "margins": {
+                "top": 12
+              },
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{speed}"
+                  },
+                  "font": "butler",
+                  "size": 12,
+                  "weight": 500,
+                  "color": "#111111",
+                  "tracking": 0.05,
+                  "lineHeight": 15,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "literal",
+                    "value": "s"
+                  },
+                  "font": "butler",
+                  "size": 8,
+                  "weight": 500,
+                  "color": "#77716A",
+                  "tracking": 0.08,
+                  "lineHeight": 11,
+                  "align": "left",
+                  "margins": {
+                    "left": 6
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "classic_double_reverse2_dark",
+              "width": 68,
+              "height": 40,
+              "scale": "contain",
+              "gravity": "topHorCenter"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "classic_double_reverse2_dark": {
+      "file": "classic_double_reverse2_dark.webp",
+      "width": 320,
+      "height": 321
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Side panel reflowed into four compact metric rows to avoid top clipping at 4:3. Pending visual audit."
+  }
+}

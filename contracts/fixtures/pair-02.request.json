@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "design": {
+    "styleId": "oppo-frame-11",
+    "canvas": { "w": 4000, "h": 3000 },
+    "elements": [
+      { "kind": "frame", "inset": 64 },
+      { "kind": "text", "slot": "title", "value": "OPPO Find X" },
+      { "kind": "text", "slot": "caption", "value": "f/1.8 · 1/250s · ISO 100" }
+    ]
+  },
+  "photo": { "path": "D:/photos/DSC_2041.jpg", "w": 4000, "h": 3000 },
+  "mode": "export",
+  "band": { "y": 0, "h": 512 }
+}

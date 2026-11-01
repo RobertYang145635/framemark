@@ -1,0 +1,99 @@
+{
+  "id": "vivo-signature:overlay",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "艺术 · 手写签名",
+  "nameEn": "SIGNATURE",
+  "placement": "in",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 0
+  },
+  "background": "#00000000",
+  "transparentBackground": true,
+  "bands": [
+    {
+      "direction": "overlay",
+      "gravity": "leftBottom",
+      "offset": {
+        "x": 40,
+        "y": 40
+      },
+      "width": 900,
+      "thickness": 230,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "leftBottom",
+          "margins": {
+            "left": 40,
+            "bottom": 40
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "custom"
+              },
+              "font": "vivo",
+              "size": 52,
+              "weight": 400,
+              "color": "#FFFFFF",
+              "tracking": 0.06,
+              "lineHeight": 70.2,
+              "align": "left",
+              "optional": true
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 34,
+              "weight": 600,
+              "color": "#FFFFFF",
+              "tracking": 0.06,
+              "lineHeight": 45.900000000000006,
+              "align": "left",
+              "margins": {
+                "top": 6
+              }
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "timeLocation"
+              },
+              "font": "vivo",
+              "size": 26,
+              "weight": 400,
+              "color": "#F2F2F2",
+              "tracking": 0.06,
+              "lineHeight": 35.1,
+              "align": "left",
+              "margins": {
+                "top": 4
+              },
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {},
+  "audit": {
+    "status": "approx",
+    "notes": "Art-signature overlay (艺术签名); white text bottom-left over the photo — signature line, model, then location·time — per the official preview card (picker_overview.jpg 艺术签名 thumbnail: Photographer / iQOO 12 / 河北省 承德市 2023.11.22 21:44, bottom-left anchored) and temp.json mappings (签名 + logo + 时间 + 地点). In-photo placement, no band. The band box is sized tight with inner margins so the content anchors bottom-left instead of being re-centred by the overflow-fit pass.",
+    "unsupported": [
+      "the signature line is the user handwriting (pref_camera_watermark_signature_type) — the vendor card shows the user name in script; no fixed glyph ships, so the frame + model + time·location render and the signature line only appears when the user supplies custom text",
+      "signature opacity (10-100%) and 3-step size scale not modelled",
+      "anchor position/size estimated from the low-res picker thumbnail (no full-resolution camera sample)"
+    ]
+  }
+}

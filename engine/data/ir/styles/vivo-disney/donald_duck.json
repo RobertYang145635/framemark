@@ -1,0 +1,69 @@
+{
+  "id": "vivo-disney:donald_duck",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "迪士尼 · 唐老鸭",
+  "nameEn": "DISNEY DONALD DUCK",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 154
+  },
+  "background": "#FFFFFF",
+  "themes": [
+    {
+      "id": "white",
+      "label": "白底",
+      "swatch": "#FFFFFF",
+      "background": "#FFFFFF",
+      "foreground": [
+        "#111111",
+        "#5A5A5A",
+        "#0057B8"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "vivo-disney-donald_duck-white": {
+      "file": "vivo/disney/donald_duck-white.png",
+      "width": 1440,
+      "height": 1234
+    }
+  },
+  "bands": [
+    {
+      "direction": "overlay",
+      "width": 1440,
+      "thickness": 1234,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "drawFirst": false,
+      "fit": "none",
+      "children": [
+        {
+          "kind": "image",
+          "asset": "vivo-disney-donald_duck-white",
+          "width": 1440,
+          "height": 1234,
+          "scale": "fill",
+          "gravity": "leftTop"
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Disney 2026 frame from the vivo X500 Pro Max PAG (photo layers replaced with transparency; 40/40 layer checks). Canvas is the PAG composition 1440x1234 = photo 1440x1080 + 154 bar (white material).",
+    "unsupported": [
+      "PAG composition is authored 4:3; other photo aspects degrade like the other PAG-art vivo cards (no per-ratio composition in IR)",
+      "vendor material #2 (pag/.../black, blue card) is a different composition (photo window 1440x864 + blue band 864-1080 + white bar 1080-1234) and is not shipped as a theme — GAP; firmware pref_camera_watermark_material therefore only carries the white value here",
+      "roll/tilt vector layer inside the PAG photo area is part of the photo replacement, not the decoration"
+    ]
+  }
+}

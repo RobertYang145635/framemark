@@ -1,0 +1,112 @@
+{
+  "id": "vivo-chinoiserie-loc:frame",
+  "vendor": "vivo",
+  "family": "vivo 相机",
+  "name": "国风 · 地点印章",
+  "nameEn": "CHINOISERIES LOC",
+  "placement": "out",
+  "referenceWidth": 1440,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 250
+  },
+  "background": "#FFFFFF",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 250,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "width": 1360,
+          "matchHeight": true,
+          "gravity": "center",
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "vivo",
+              "size": 46,
+              "weight": 500,
+              "color": "#1A1A1A",
+              "tracking": 0.06,
+              "lineHeight": 62.1,
+              "align": "left"
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "image",
+              "asset": "vivo-chinoiserie-hebei",
+              "width": 108,
+              "height": 108,
+              "scale": "contain",
+              "gravity": "center",
+              "margins": {
+                "right": 24
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "gravity": "rightVerticalCenter",
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                  },
+                  "font": "vivo",
+                  "size": 30,
+                  "weight": 500,
+                  "color": "#1A1A1A",
+                  "tracking": 0.06,
+                  "lineHeight": 40.5,
+                  "align": "right"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "location"
+                  },
+                  "font": "vivo",
+                  "size": 26,
+                  "weight": 400,
+                  "color": "#666666",
+                  "tracking": 0.06,
+                  "lineHeight": 35.1,
+                  "align": "right",
+                  "optional": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "vivo-chinoiserie-hebei": {
+      "file": "vivo/batch2/chinoiserie-hebei.webp",
+      "width": 144,
+      "height": 144
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "Chinoiserie (国潮) location-seal frame; white bottom band with model left, the province seal centre-right and time + city right, per official iQOO12 community preview card (chinoiserie_loc_settings.jpg) and edit.apk temp.json mappings (left 机型 / right 图案+时间+地点, frame_type=bottom). The 河北 seal is the vendor raster wm_province_hebei (VivoCamera.apk res/0dy.webp) shipped verbatim — the location icon is NOT a vector in this template (edit.apk res/ carries only picker UI icons A6/cp/Hs), it is a per-province webp set. No PAG group ships, so band geometry is estimated from the preview-card proportions.",
+    "unsupported": [
+      "province follows the photo location on the host; the 河北 sample seal is baked here (other provinces are vendor webps, not vectors)",
+      "lunar-calendar time (癸卯年十月初十亥时) approximated by the gregorian date token",
+      "band thickness/margins estimated from the picker preview card (no vendor PAG frame to measure)"
+    ]
+  }
+}

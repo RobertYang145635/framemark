@@ -1,0 +1,176 @@
+{
+  "id": "xiaomi-film:15",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "胶片 · 15",
+  "nameEn": "film_15",
+  "placement": "out",
+  "referenceWidth": 1080,
+  "margins": {
+    "left": 80,
+    "top": 80,
+    "right": 80,
+    "bottom": 80
+  },
+  "background": "#141414",
+  "bands": [
+    {
+      "direction": "top",
+      "thickness": 80,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "matchWidth": true,
+          "matchHeight": true,
+          "margins": {
+            "left": 80,
+            "right": 80
+          },
+          "children": [
+            {
+              "kind": "image",
+              "asset": "film-15-icon_triangle",
+              "width": 80,
+              "height": 17.9,
+              "scale": "contain",
+              "gravity": "leftVerticalCenter"
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "location"
+              },
+              "font": "misans",
+              "size": 17,
+              "weight": 500,
+              "color": "#CE9238",
+              "tracking": 0.04,
+              "lineHeight": 20,
+              "gravity": "rightVerticalCenter",
+              "optional": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 80,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "matchWidth": true,
+          "matchHeight": true,
+          "margins": {
+            "left": 80,
+            "right": 80
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+              },
+              "font": "misans",
+              "size": 17,
+              "weight": 500,
+              "color": "#CE9238",
+              "tracking": 0.03,
+              "lineHeight": 20,
+              "gravity": "leftVerticalCenter"
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "gravity": "center",
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "film-15-logo-xiaomi_CE9238",
+                  "width": 109.4,
+                  "height": 26,
+                  "scale": "contain",
+                  "margins": {
+                    "right": 8
+                  },
+                  "isBrandLogo": true
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionNumber}"
+                  },
+                  "font": "misans",
+                  "size": 24,
+                  "weight": 500,
+                  "color": "#CE9238",
+                  "lineHeight": 28,
+                  "align": "left"
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionName}"
+                  },
+                  "font": "misans",
+                  "size": 15,
+                  "weight": 400,
+                  "color": "#CE9238",
+                  "tracking": 0.028,
+                  "lineHeight": 22,
+                  "align": "center",
+                  "optional": true,
+                  "margins": {
+                    "left": 4
+                  },
+                  "outline": {
+                    "paddingX": 6,
+                    "height": 22,
+                    "radius": 5.6,
+                    "strokeWidth": 1.8,
+                    "strokeColor": "#CE9238"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "template",
+                "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+              },
+              "font": "misans",
+              "size": 17,
+              "weight": 500,
+              "color": "#CE9238",
+              "tracking": 0.03,
+              "lineHeight": 20,
+              "gravity": "rightVerticalCenter"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "film-15-icon_triangle": {
+      "file": "xiaomi/film/15/icon_triangle.webp",
+      "width": 161,
+      "height": 36
+    },
+    "film-15-logo-xiaomi_CE9238": {
+      "file": "xiaomi/film/15/xiaomi_CE9238.webp",
+      "width": 673,
+      "height": 160
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "notes": "NeoHyper 17 Ultra film/15: 80dp bands with 80dp side inset, top triangle+location row, bottom time+brand+EXIF row, #CE9238. Config-derived; no vendor-rendered 4:3 frame."
+  }
+}

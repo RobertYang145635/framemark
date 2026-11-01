@@ -1,0 +1,3218 @@
+{
+  "schemaVersion": "framemark-hand-text-slots/v1",
+  "generatedAt": "2026-10-31T17:16:16.978Z",
+  "provenance": {
+    "source": "_research/native/designs/<card>.json",
+    "field": "derived.textSlots",
+    "slice": "P2b-1 (frozen app, 175 cards)",
+    "note": "Runtime probe, not TS source: each painted text line of the 69 hand cards with its stable key <source>#<n>, position and text. 106 stock cards are excluded by construction."
+  },
+  "counts": {
+    "cards": 69,
+    "withSlots": 62,
+    "empty": 7,
+    "lines": 204
+  },
+  "cards": {
+    "blur-classic": {
+      "templateId": "blur",
+      "base": "blur",
+      "source": "../_research/native/designs/blur-classic.json",
+      "sourceSha256": "393eb803ba1913fa43c8e218ef6441027bfcac1b152d4b702e8da0a1a6893be5",
+      "sourceBytes": 48657,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "blur-classic#title#0",
+          "key": "blur-classic#title#0",
+          "anchor": "bottom-center",
+          "text": "PANASONIC DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 769.1308746337891,
+          "y": 1019.75,
+          "w": 356.7382507324219,
+          "h": 600
+        },
+        {
+          "id": "blur-classic#exif#0",
+          "key": "blur-classic#exif#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 761.6051483154297,
+          "y": 1523.64,
+          "w": 371.7897033691406,
+          "h": 22.95
+        },
+        {
+          "id": "blur-classic#date#0",
+          "key": "blur-classic#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 890.8000183105469,
+          "y": 1582.3300000000002,
+          "w": 113.39996337890625,
+          "h": 18.9
+        }
+      ]
+    },
+    "blur-date": {
+      "templateId": "blur",
+      "base": "blur",
+      "source": "../_research/native/designs/blur-date.json",
+      "sourceSha256": "1867a92778ae4f72b474ff93e181e829f8fbc3dbae8cb8ba46fcfb2930ce5fc4",
+      "sourceBytes": 9948,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "blur-date#title#0",
+          "key": "blur-date#title#0",
+          "anchor": "bottom-center",
+          "text": "PANASONIC DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 795.4436187744141,
+          "y": 1019.04,
+          "w": 290.1127624511719,
+          "h": 600
+        },
+        {
+          "id": "blur-date#date#0",
+          "key": "blur-date#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 843.3000640869141,
+          "y": 1515.24,
+          "w": 194.39987182617188,
+          "h": 32.4
+        }
+      ]
+    },
+    "vendor-hasselblad": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-hasselblad.json",
+      "sourceSha256": "47e983c2e97c4a042438c66c0222caa925bbe3873824627284b0b857fb202ed7",
+      "sourceBytes": 37806,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-hasselblad#date#0",
+          "key": "vendor-hasselblad#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 90,
+          "y": 1212.5,
+          "w": 283.6761779785156,
+          "h": 500
+        },
+        {
+          "id": "vendor-hasselblad#model#0",
+          "key": "vendor-hasselblad#model#0",
+          "anchor": "bottom-right",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 1338.75,
+          "y": 1490.0625,
+          "w": 82.24195861816406,
+          "h": 12
+        }
+      ]
+    },
+    "vendor-hasselblad-dark": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-hasselblad-dark.json",
+      "sourceSha256": "315ff349444e88bd6c9ed2d6fb830ec5d420ac6f35fc1be16fb9f00aeac5de8c",
+      "sourceBytes": 38864,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-hasselblad-dark#date#0",
+          "key": "vendor-hasselblad-dark#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 90,
+          "y": 1212.5,
+          "w": 283.6761779785156,
+          "h": 500
+        },
+        {
+          "id": "vendor-hasselblad-dark#model#0",
+          "key": "vendor-hasselblad-dark#model#0",
+          "anchor": "bottom-right",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 1338.75,
+          "y": 1490.0625,
+          "w": 82.24195861816406,
+          "h": 12
+        }
+      ]
+    },
+    "vendor-hasselblad-h": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-hasselblad-h.json",
+      "sourceSha256": "0b377a1c556f57c19e464915bfe46de0267a013301a7c5ca7aa57a55881f115c",
+      "sourceBytes": 29523,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-hasselblad-h#title#0",
+          "key": "vendor-hasselblad-h#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 71.25,
+          "y": 1197.4437500000001,
+          "w": 340.21612548828125,
+          "h": 500
+        },
+        {
+          "id": "vendor-hasselblad-h#date#0",
+          "key": "vendor-hasselblad-h#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 71.25,
+          "y": 1488.80625,
+          "w": 235.6612091064453,
+          "h": 41.25
+        }
+      ]
+    },
+    "vendor-hasselblad-frame": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-hasselblad-frame.json",
+      "sourceSha256": "965367e37b65ae665e2f2e17256ab469be8c0063c8ca60debc1195d23fd8bd85",
+      "sourceBytes": 29686,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-hasselblad-frame#title#0",
+          "key": "vendor-hasselblad-frame#title#0",
+          "anchor": "bottom-center",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 758.11328125,
+          "y": 1393.2775,
+          "w": 358.7734375,
+          "h": 500
+        },
+        {
+          "id": "vendor-hasselblad-frame#date#0",
+          "key": "vendor-hasselblad-frame#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 830.3812713623047,
+          "y": 1683.6087499999999,
+          "w": 214.23745727539062,
+          "h": 37.5
+        }
+      ]
+    },
+    "vendor-hasselblad-matte": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-hasselblad-matte.json",
+      "sourceSha256": "a3b17622cb681be7b52cfe8f5f7a2fb3ed199be99082af5ba791ffb8bfc5549b",
+      "sourceBytes": 39579,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-hasselblad-matte#title#0",
+          "key": "vendor-hasselblad-matte#title#0",
+          "anchor": "bottom-center",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 741.8026123046875,
+          "y": 1516.8325000000002,
+          "w": 391.394775390625,
+          "h": 500
+        },
+        {
+          "id": "vendor-hasselblad-matte#exif#0",
+          "key": "vendor-hasselblad-matte#exif#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 700.6362609863281,
+          "y": 1580.4512500000003,
+          "w": 473.72747802734375,
+          "h": 500
+        }
+      ]
+    },
+    "vendor-lumo": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-lumo.json",
+      "sourceSha256": "b6cf2e0e3f1235b2ee5137837d51840c8fda73c88c881b48793de0bc95513d97",
+      "sourceBytes": 24316,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-lumo#title#0",
+          "key": "vendor-lumo#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 75,
+          "y": 1145.625,
+          "w": 402.62969970703125,
+          "h": 600
+        },
+        {
+          "id": "vendor-lumo#date#0",
+          "key": "vendor-lumo#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 75,
+          "y": 1477.5,
+          "w": 170.96607971191406,
+          "h": 26.25
+        }
+      ]
+    },
+    "vendor-lumo-frame": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-lumo-frame.json",
+      "sourceSha256": "c48997d84fd8c7041b484cb627a2868662cbe1710953e598c3d4fe7f2bd02e35",
+      "sourceBytes": 24575,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-lumo-frame#title#0",
+          "key": "vendor-lumo-frame#title#0",
+          "anchor": "bottom-center",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 769.2385559082031,
+          "y": 1404.8274999999999,
+          "w": 336.52288818359375,
+          "h": 500
+        },
+        {
+          "id": "vendor-lumo-frame#date#0",
+          "key": "vendor-lumo-frame#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 842.8050994873047,
+          "y": 1686.7024999999999,
+          "w": 189.38980102539062,
+          "h": 30
+        }
+      ]
+    },
+    "vendor-lumo-matte": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-lumo-matte.json",
+      "sourceSha256": "fc78845c7f8106bb538ec8c57dc0f8aefb90799ccc3e54075b397da847a738ba",
+      "sourceBytes": 24611,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-lumo-matte#title#0",
+          "key": "vendor-lumo-matte#title#0",
+          "anchor": "bottom-center",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 736.1851501464844,
+          "y": 1471.595,
+          "w": 402.62969970703125,
+          "h": 600
+        },
+        {
+          "id": "vendor-lumo-matte#date#0",
+          "key": "vendor-lumo-matte#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 839.8050689697266,
+          "y": 1810.97,
+          "w": 195.38986206054688,
+          "h": 30
+        }
+      ]
+    },
+    "vendor-zeiss": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-zeiss.json",
+      "sourceSha256": "d51bdf67cec7c8e758e35a16163da465c3700a60783e280d15b0e311ef4e0ef7",
+      "sourceBytes": 295104,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-zeiss#title#0",
+          "key": "vendor-zeiss#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 72,
+          "y": 1136.5439999999999,
+          "w": 371.7070617675781,
+          "h": 600
+        },
+        {
+          "id": "vendor-zeiss#exif#0",
+          "key": "vendor-zeiss#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm F6.3 1/400s ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 72,
+          "y": 1481.1839999999997,
+          "w": 378.5469970703125,
+          "h": 28.8
+        }
+      ]
+    },
+    "vendor-leica": {
+      "templateId": "vendorFooter",
+      "base": "vendorFooter",
+      "source": "../_research/native/designs/vendor-leica.json",
+      "sourceSha256": "eb9df8264a1f68fd59fadce67a3c1fbe998dcfad3db192528479664b9e6470c7",
+      "sourceBytes": 136992,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-leica#title#0",
+          "key": "vendor-leica#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 72,
+          "y": 1139.224,
+          "w": 371.7070617675781,
+          "h": 600
+        },
+        {
+          "id": "vendor-leica#exif#0",
+          "key": "vendor-leica#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm F6.3 1/400s ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 72,
+          "y": 1483.8639999999998,
+          "w": 378.5469970703125,
+          "h": 28.8
+        },
+        {
+          "id": "vendor-leica#date#0",
+          "key": "vendor-leica#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 72,
+          "y": 1528.504,
+          "w": 164.5343017578125,
+          "h": 28.8
+        }
+      ]
+    },
+    "vendor-xiaomi": {
+      "templateId": "xiaomiLeica",
+      "base": "xiaomiLeica",
+      "source": "../_research/native/designs/vendor-xiaomi.json",
+      "sourceSha256": "7ae097332ee425493bef7c7ab318ae077bcd8729618026f7622d9fa7d99b937e",
+      "sourceBytes": 415450,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-xiaomi#title#0",
+          "key": "vendor-xiaomi#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 62.5,
+          "y": 1175,
+          "w": 309.2874755859375,
+          "h": 500
+        },
+        {
+          "id": "vendor-xiaomi#exif#0",
+          "key": "vendor-xiaomi#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1207.1251220703125,
+          "y": 1175,
+          "w": 530.3748779296875,
+          "h": 500
+        },
+        {
+          "id": "vendor-xiaomi#photo#0",
+          "key": "vendor-xiaomi#photo#0",
+          "anchor": "bottom-right",
+          "text": "2022.07.05 14:13:37",
+          "source": "photo",
+          "hidden": false,
+          "x": 1207.1251220703125,
+          "y": 1475.25,
+          "w": 285.3123779296875,
+          "h": 27.5
+        }
+      ]
+    },
+    "vendor-xiaomi-single": {
+      "templateId": "xiaomiLeica",
+      "base": "xiaomiLeica",
+      "source": "../_research/native/designs/vendor-xiaomi-single.json",
+      "sourceSha256": "08dde4c77c77592b1260ab0131dfcdcc53dd1673e75099b13bfffa6bfea42490",
+      "sourceBytes": 415242,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "vendor-xiaomi-single#title#0",
+          "key": "vendor-xiaomi-single#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 62.5,
+          "y": 1184,
+          "w": 309.2874755859375,
+          "h": 500
+        },
+        {
+          "id": "vendor-xiaomi-single#exif#0",
+          "key": "vendor-xiaomi-single#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1207.1251220703125,
+          "y": 1184,
+          "w": 530.3748779296875,
+          "h": 500
+        }
+      ]
+    },
+    "personal-simple": {
+      "templateId": "personalBorder",
+      "base": "personalBorder",
+      "source": "../_research/native/designs/personal-simple.json",
+      "sourceSha256": "8d202cff8bc47b6dba99fabafd14fb1fc7b80a7c02e3a09f7389a4a2148c4349",
+      "sourceBytes": 48981,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "personal-simple#photo#1",
+          "key": "personal-simple#photo#1",
+          "anchor": "bottom-left",
+          "text": "FrameMark",
+          "source": "photo",
+          "hidden": false,
+          "x": 169.344,
+          "y": 1033.0800000000002,
+          "w": 331.91461181640625,
+          "h": 600
+        },
+        {
+          "id": "personal-simple#model#0",
+          "key": "personal-simple#model#0",
+          "anchor": "bottom-center",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 833.5417381591795,
+          "y": 1313.892,
+          "w": 113.69026184082031,
+          "h": 38.376
+        },
+        {
+          "id": "personal-simple#exif#0",
+          "key": "personal-simple#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm F6.3 1/400s ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1365.530771972656,
+          "y": 1316.2320000000002,
+          "w": 442.82122802734375,
+          "h": 33.696
+        },
+        {
+          "id": "personal-simple#photo#0",
+          "key": "personal-simple#photo#0",
+          "anchor": "bottom-left",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 96.89469995117187,
+          "y": 1327.0800000000002,
+          "w": 17.60260009765625,
+          "h": 12
+        }
+      ]
+    },
+    "wm-classic": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-classic.json",
+      "sourceSha256": "d58ed026b6985fe28c685f4f86c97917848745d28626267ef722853d9d486575",
+      "sourceBytes": 49214,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-classic#exif#0",
+          "key": "wm-classic#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1218.6000000000001,
+          "y": 954,
+          "w": 490.8399658203125,
+          "h": 600
+        },
+        {
+          "id": "wm-classic#make#0",
+          "key": "wm-classic#make#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC",
+          "source": "make",
+          "hidden": false,
+          "x": 72,
+          "y": 1424.4,
+          "w": 266.75177001953125,
+          "h": 12
+        },
+        {
+          "id": "wm-classic#date#0",
+          "key": "wm-classic#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05 14:13:37",
+          "source": "date",
+          "hidden": false,
+          "x": 1218.6000000000001,
+          "y": 1467.32,
+          "w": 283.69818115234375,
+          "h": 28.35
+        },
+        {
+          "id": "wm-classic#model#0",
+          "key": "wm-classic#model#0",
+          "anchor": "bottom-left",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 72,
+          "y": 1480.4,
+          "w": 129.038330078125,
+          "h": 12
+        }
+      ]
+    },
+    "wm-simple": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-simple.json",
+      "sourceSha256": "24288c1f3542f0b40fd011b7fc76ea324a7dbab758ac55034be3a4709606add7",
+      "sourceBytes": 48458,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-simple#model#0",
+          "key": "wm-simple#model#0",
+          "anchor": "bottom-left",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 57.599999999999994,
+          "y": 1201.5,
+          "w": 100.4676513671875,
+          "h": 500
+        },
+        {
+          "id": "wm-simple#exif#0",
+          "key": "wm-simple#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm F6.3 1/400s ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1312.308203125,
+          "y": 1446.124,
+          "w": 430.091796875,
+          "h": 12
+        }
+      ]
+    },
+    "wm-black": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-black.json",
+      "sourceSha256": "3761f1f799cfb50d31e6a3b463ac9dc13563088507f30d91afd13a05df4f62d9",
+      "sourceBytes": 52133,
+      "slotCount": 5,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-black#make#0",
+          "key": "wm-black#make#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC",
+          "source": "make",
+          "hidden": false,
+          "x": 232.74,
+          "y": 775.6799999999998,
+          "w": 162.1318817138672,
+          "h": 600
+        },
+        {
+          "id": "wm-black#title#0",
+          "key": "wm-black#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 232.74,
+          "y": 780.9950000000001,
+          "w": 210.14703369140625,
+          "h": 500
+        },
+        {
+          "id": "wm-black#exif#0",
+          "key": "wm-black#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1129.500033569336,
+          "y": 999.945,
+          "w": 437.3999328613281,
+          "h": 27
+        },
+        {
+          "id": "wm-black#make#1",
+          "key": "wm-black#make#1",
+          "anchor": "bottom-right",
+          "text": "PANASONIC + 366MM F6.3",
+          "source": "make",
+          "hidden": false,
+          "x": 1192.3080322265625,
+          "y": 1058.0625,
+          "w": 311.783935546875,
+          "h": 23.625
+        },
+        {
+          "id": "wm-black#date#0",
+          "key": "wm-black#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 1275.300067138672,
+          "y": 1106.3249999999998,
+          "w": 145.79986572265625,
+          "h": 24.3
+        }
+      ]
+    },
+    "wm-canon": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-canon.json",
+      "sourceSha256": "f043d4da483a4dd35af1b3ae05376560bd7d6d24a613cfb16d3fc80ca2b3b3ba",
+      "sourceBytes": 49175,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-canon#exif#0",
+          "key": "wm-canon#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1218.6000000000001,
+          "y": 954,
+          "w": 490.8399658203125,
+          "h": 600
+        },
+        {
+          "id": "wm-canon#make#0",
+          "key": "wm-canon#make#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC",
+          "source": "make",
+          "hidden": false,
+          "x": 72,
+          "y": 1424.4,
+          "w": 266.75177001953125,
+          "h": 12
+        },
+        {
+          "id": "wm-canon#date#0",
+          "key": "wm-canon#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05 14:13:37",
+          "source": "date",
+          "hidden": false,
+          "x": 1218.6000000000001,
+          "y": 1467.32,
+          "w": 283.69818115234375,
+          "h": 28.35
+        },
+        {
+          "id": "wm-canon#model#0",
+          "key": "wm-canon#model#0",
+          "anchor": "bottom-left",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 72,
+          "y": 1480.4,
+          "w": 129.038330078125,
+          "h": 12
+        }
+      ]
+    },
+    "wm-left": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-left.json",
+      "sourceSha256": "91bb49880ba19e1c173ccaea97c47f7633419bf7be9ff4d54bbfa9b688a5df01",
+      "sourceBytes": 48670,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-left#exif#0",
+          "key": "wm-left#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1328.9399999999998,
+          "y": 966,
+          "w": 434.28814697265625,
+          "h": 600
+        },
+        {
+          "id": "wm-left#model#0",
+          "key": "wm-left#model#0",
+          "anchor": "bottom-left",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 72,
+          "y": 1436.4,
+          "w": 129.038330078125,
+          "h": 12
+        }
+      ]
+    },
+    "wm-wide": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-wide.json",
+      "sourceSha256": "e7b7a79fcd6c39b3eef7697e316fe5e6b547dacfc03cfb6c616d55188e6eadef",
+      "sourceBytes": 47976,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "wm-right": {
+      "templateId": "brandFooter",
+      "base": "brandFooter",
+      "source": "../_research/native/designs/wm-right.json",
+      "sourceSha256": "d93be375ffe0e641dd0a1df135fe4805767042e2eaa913fd7c027e2930e7bcd8",
+      "sourceBytes": 48843,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "wm-right#exif#0",
+          "key": "wm-right#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1279.5552,
+          "y": 975.8327999999999,
+          "w": 532.6311645507812,
+          "h": 600
+        },
+        {
+          "id": "wm-right#make#0",
+          "key": "wm-right#make#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC",
+          "source": "make",
+          "hidden": false,
+          "x": 110.1408,
+          "y": 1446.2328,
+          "w": 266.75177001953125,
+          "h": 12
+        }
+      ]
+    },
+    "white-1": {
+      "templateId": "matteOverlay",
+      "base": "matteOverlay",
+      "source": "../_research/native/designs/white-1.json",
+      "sourceSha256": "ec200415b54017611cd96cd91846e83986870f30760a1edd85227305773aa1f9",
+      "sourceBytes": 38864,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "white-2": {
+      "templateId": "matteOverlay",
+      "base": "matteOverlay",
+      "source": "../_research/native/designs/white-2.json",
+      "sourceSha256": "81e936d3ff8588163dfa04c0216664514cde5310726629d6265e35a6f42ca268",
+      "sourceBytes": 35036,
+      "slotCount": 1,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "white-2#photo#0",
+          "key": "white-2#photo#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  ISO125  1/400s",
+          "source": "photo",
+          "hidden": false,
+          "x": 702.9523931073636,
+          "y": 1023.27001953125,
+          "w": 510.0952137852728,
+          "h": 600
+        }
+      ]
+    },
+    "white-3": {
+      "templateId": "matteOverlay",
+      "base": "matteOverlay",
+      "source": "../_research/native/designs/white-3.json",
+      "sourceSha256": "74b6a789841e05d1b9fa1300c08b26543fe8eaa696d97feae5c96263d90a9c42",
+      "sourceBytes": 10349,
+      "slotCount": 1,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "white-3#photo#0",
+          "key": "white-3#photo#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  ISO125  1/400s",
+          "source": "photo",
+          "hidden": false,
+          "x": 666.4996274982659,
+          "y": 1029.2099609375,
+          "w": 583.0007450034682,
+          "h": 600
+        }
+      ]
+    },
+    "white-4": {
+      "templateId": "matteOverlay",
+      "base": "matteOverlay",
+      "source": "../_research/native/designs/white-4.json",
+      "sourceSha256": "15c526756da977916c24a4e327129aa3751e67c0f22d48ace06c0e957ea6d8f2",
+      "sourceBytes": 9968,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "simple-1": {
+      "templateId": "paramStack",
+      "base": "paramStack",
+      "source": "../_research/native/designs/simple-1.json",
+      "sourceSha256": "aa1ae8cb3d26ff8a7b3385e435216e3b6c05c080298c455ad6c8fea522c05fd7",
+      "sourceBytes": 10649,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "simple-1#photo#0",
+          "key": "simple-1#photo#0",
+          "anchor": "top-left",
+          "text": "366mm",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 39.77814467284679,
+          "w": 173.2103271484375,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-1#photo#1",
+          "key": "simple-1#photo#1",
+          "anchor": "top-left",
+          "text": "F6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 127.25814040038586,
+          "w": 102.93473815917969,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-1#photo#2",
+          "key": "simple-1#photo#2",
+          "anchor": "top-left",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 214.73815138671398,
+          "w": 152.2880096435547,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-1#photo#3",
+          "key": "simple-1#photo#3",
+          "anchor": "top-left",
+          "text": "ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 302.2181623730421,
+          "w": 179.62547302246094,
+          "h": 74.34370455079079
+        }
+      ]
+    },
+    "simple-2": {
+      "templateId": "paramStack",
+      "base": "paramStack",
+      "source": "../_research/native/designs/simple-2.json",
+      "sourceSha256": "7d3cfae59bab2e6ff4b823e51aea688e586168da0f4fc6c1b5bde3e8c9ba6814",
+      "sourceBytes": 10660,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "simple-2#photo#0",
+          "key": "simple-2#photo#0",
+          "anchor": "bottom-left",
+          "text": "366mm",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 973.4381330761671,
+          "w": 173.2103271484375,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-2#photo#1",
+          "key": "simple-2#photo#1",
+          "anchor": "bottom-left",
+          "text": "F6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 1060.918113544917,
+          "w": 102.93473815917969,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-2#photo#2",
+          "key": "simple-2#photo#2",
+          "anchor": "bottom-left",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 1148.398094013667,
+          "w": 152.2880096435547,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-2#photo#3",
+          "key": "simple-2#photo#3",
+          "anchor": "bottom-left",
+          "text": "ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 52.83000183105469,
+          "y": 1235.8781965527296,
+          "w": 179.62547302246094,
+          "h": 74.34370455079079
+        }
+      ]
+    },
+    "simple-3": {
+      "templateId": "paramStack",
+      "base": "paramStack",
+      "source": "../_research/native/designs/simple-3.json",
+      "sourceSha256": "1e263a8552ba53ebaacae0654906ff7a06bd547f5a6875c6b6e38c970fd53ebc",
+      "sourceBytes": 10758,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "simple-3#photo#0",
+          "key": "simple-3#photo#0",
+          "anchor": "top-right",
+          "text": "366mm",
+          "source": "photo",
+          "hidden": false,
+          "x": 1533.189697265625,
+          "y": 59.35314925048351,
+          "w": 173.2103271484375,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-3#photo#1",
+          "key": "simple-3#photo#1",
+          "anchor": "top-right",
+          "text": "F6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 1603.4652862548828,
+          "y": 146.8331526074171,
+          "w": 102.93473815917969,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-3#photo#2",
+          "key": "simple-3#photo#2",
+          "anchor": "top-right",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 1554.1120147705078,
+          "y": 234.3131330761671,
+          "w": 152.2880096435547,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-3#photo#3",
+          "key": "simple-3#photo#3",
+          "anchor": "top-right",
+          "text": "ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 1526.7745513916016,
+          "y": 321.79314406249523,
+          "w": 179.62547302246094,
+          "h": 74.34370455079079
+        }
+      ]
+    },
+    "simple-4": {
+      "templateId": "paramStack",
+      "base": "paramStack",
+      "source": "../_research/native/designs/simple-4.json",
+      "sourceSha256": "075efd4e7d5d678f31d4c29ebe06a911e95cd97037973ed7bcbc3cc9caa6bc56",
+      "sourceBytes": 10667,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "simple-4#photo#0",
+          "key": "simple-4#photo#0",
+          "anchor": "bottom-right",
+          "text": "366mm",
+          "source": "photo",
+          "hidden": false,
+          "x": 1534.959716796875,
+          "y": 973.4381330761671,
+          "w": 173.2103271484375,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-4#photo#1",
+          "key": "simple-4#photo#1",
+          "anchor": "bottom-right",
+          "text": "F6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 1605.2353057861328,
+          "y": 1060.918113544917,
+          "w": 102.93473815917969,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-4#photo#2",
+          "key": "simple-4#photo#2",
+          "anchor": "bottom-right",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 1555.8820343017578,
+          "y": 1148.398094013667,
+          "w": 152.2880096435547,
+          "h": 74.34370455079079
+        },
+        {
+          "id": "simple-4#photo#3",
+          "key": "simple-4#photo#3",
+          "anchor": "bottom-right",
+          "text": "ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 1528.5445709228516,
+          "y": 1235.8781965527296,
+          "w": 179.62547302246094,
+          "h": 74.34370455079079
+        }
+      ]
+    },
+    "card-1": {
+      "templateId": "logoFooter",
+      "base": "logoFooter",
+      "source": "../_research/native/designs/card-1.json",
+      "sourceSha256": "425d2bd3be738a52aacc8ea5ef8cafb1c060a8eeeea969066ebc24a976c3c9a9",
+      "sourceBytes": 415120,
+      "slotCount": 1,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "card-1#photo#0",
+          "key": "card-1#photo#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  ISO125  1/400s",
+          "source": "photo",
+          "hidden": false,
+          "x": 727.2175903320312,
+          "y": 1209.1400146484375,
+          "w": 376.5648193359375,
+          "h": 600
+        }
+      ]
+    },
+    "card-2": {
+      "templateId": "logoFooter",
+      "base": "logoFooter",
+      "source": "../_research/native/designs/card-2.json",
+      "sourceSha256": "68105e03b861e66ac53df03b214090680b1f685061c30ec6055fd105b30adcd8",
+      "sourceBytes": 414874,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "card-3": {
+      "templateId": "matteFooter",
+      "base": "matteFooter",
+      "source": "../_research/native/designs/card-3.json",
+      "sourceSha256": "6ac9b15bb281d17000bfdd5e73f96f3a0bb28aad0b4d6be6dfa46aa124ab5833",
+      "sourceBytes": 10065,
+      "slotCount": 1,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "card-3#photo#0",
+          "key": "card-3#photo#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  ISO125  1/400s",
+          "source": "photo",
+          "hidden": false,
+          "x": 688.212646484375,
+          "y": 1130.0975341796875,
+          "w": 366.57470703125,
+          "h": 600
+        }
+      ]
+    },
+    "card-4": {
+      "templateId": "matteFooter",
+      "base": "matteFooter",
+      "source": "../_research/native/designs/card-4.json",
+      "sourceSha256": "6c3275d8a56145899489a555c22048361d8aba0b03b70afae12128009804afa1",
+      "sourceBytes": 415387,
+      "slotCount": 1,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "card-4#photo#0",
+          "key": "card-4#photo#0",
+          "anchor": "bottom-center",
+          "text": "Leica",
+          "source": "photo",
+          "hidden": false,
+          "x": 896.8138851928711,
+          "y": 1140.4225,
+          "w": 105.96107482910156,
+          "h": 600
+        }
+      ]
+    },
+    "person-1": {
+      "templateId": "profileFrame",
+      "base": "profileFrame",
+      "source": "../_research/native/designs/person-1.json",
+      "sourceSha256": "81cc74c8f12ab6d6d43cf033baaa9402a30b64020e4b391da5baeae047816111",
+      "sourceBytes": 38752,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "person-1#photo#0",
+          "key": "person-1#photo#0",
+          "anchor": "top-center",
+          "text": "鹤",
+          "source": "photo",
+          "hidden": false,
+          "x": 854.9900152587891,
+          "y": -221.1465,
+          "w": 36.279998779296875,
+          "h": 600
+        },
+        {
+          "id": "person-1#photo#1",
+          "key": "person-1#photo#1",
+          "anchor": "top-center",
+          "text": "鹤羽轻风",
+          "source": "photo",
+          "hidden": false,
+          "x": 944.9500146484376,
+          "y": -171.9025,
+          "w": 131.719970703125,
+          "h": 500
+        }
+      ]
+    },
+    "person-2": {
+      "templateId": "profileFrame",
+      "base": "profileFrame",
+      "source": "../_research/native/designs/person-2.json",
+      "sourceSha256": "970c436d86a985888904c42c1e0a762bde7b84d2a535e32d30c5433d73eb5ef3",
+      "sourceBytes": 39189,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "person-2#photo#0",
+          "key": "person-2#photo#0",
+          "anchor": "top-center",
+          "text": "鹤",
+          "source": "photo",
+          "hidden": false,
+          "x": 864.4325103759766,
+          "y": -215.4225,
+          "w": 32.399993896484375,
+          "h": 600
+        },
+        {
+          "id": "person-2#photo#1",
+          "key": "person-2#photo#1",
+          "anchor": "top-center",
+          "text": "鹤羽轻风",
+          "source": "photo",
+          "hidden": false,
+          "x": 944.7575073242188,
+          "y": -166.0975,
+          "w": 140.3599853515625,
+          "h": 500
+        },
+        {
+          "id": "person-2#photo#2",
+          "key": "person-2#photo#2",
+          "anchor": "bottom-center",
+          "text": "366mm   1/400s   F6.3   ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 689.905200500576,
+          "y": 1161.10498046875,
+          "w": 552.1895989988479,
+          "h": 600
+        }
+      ]
+    },
+    "person-3": {
+      "templateId": "profileFrame",
+      "base": "profileFrame",
+      "source": "../_research/native/designs/person-3.json",
+      "sourceSha256": "571105025dfa882da75af79ad3311847c4e484b510acbee135f51a702257bde5",
+      "sourceBytes": 39323,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "person-3#photo#0",
+          "key": "person-3#photo#0",
+          "anchor": "top-center",
+          "text": "鹤",
+          "source": "photo",
+          "hidden": false,
+          "x": 856.8418792724609,
+          "y": -180.55874999999997,
+          "w": 30.779998779296875,
+          "h": 600
+        },
+        {
+          "id": "person-3#photo#1",
+          "key": "person-3#photo#1",
+          "anchor": "top-center",
+          "text": "鹤羽轻风",
+          "source": "photo",
+          "hidden": false,
+          "x": 933.1506286621094,
+          "y": -131.2,
+          "w": 110.67999267578125,
+          "h": 500
+        },
+        {
+          "id": "person-3#photo#2",
+          "key": "person-3#photo#2",
+          "anchor": "bottom-center",
+          "text": "366mm   1/400s   F6.3   ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 691.0404154411935,
+          "y": 1040.550048828125,
+          "w": 501.9191691176129,
+          "h": 600
+        }
+      ]
+    },
+    "person-4": {
+      "templateId": "profileFrame",
+      "base": "profileFrame",
+      "source": "../_research/native/designs/person-4.json",
+      "sourceSha256": "5dff9d95db500f0dee3e51c41530ce43f40df48a06088c55f16eff0c85e06d14",
+      "sourceBytes": 40223,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "person-4#photo#0",
+          "key": "person-4#photo#0",
+          "anchor": "top-center",
+          "text": "鹤",
+          "source": "photo",
+          "hidden": false,
+          "x": 843.6512802124023,
+          "y": -196.79250000000002,
+          "w": 29.159988403320312,
+          "h": 600
+        },
+        {
+          "id": "person-4#photo#1",
+          "key": "person-4#photo#1",
+          "anchor": "top-center",
+          "text": "鹤羽轻风",
+          "source": "photo",
+          "hidden": false,
+          "x": 915.9437744140624,
+          "y": -147.4,
+          "w": 124.199951171875,
+          "h": 500
+        },
+        {
+          "id": "person-4#photo#2",
+          "key": "person-4#photo#2",
+          "anchor": "bottom-center",
+          "text": "366mm   1/400s   F6.3   ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 698.1757068071202,
+          "y": 1037.8499755859375,
+          "w": 471.6485863857597,
+          "h": 600
+        }
+      ]
+    },
+    "person-5": {
+      "templateId": "profileFrame",
+      "base": "profileFrame",
+      "source": "../_research/native/designs/person-5.json",
+      "sourceSha256": "828e753ffc1d81507714be9bc0cebb9f1af653998322bc04e382ce64bb2cd587",
+      "sourceBytes": 49770,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "person-5#photo#2",
+          "key": "person-5#photo#2",
+          "anchor": "bottom-right",
+          "text": "366mm   1/400s   F6.3   ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 1438.6217346191406,
+          "y": 1157.18994140625,
+          "w": 396.3432312011719,
+          "h": 600
+        },
+        {
+          "id": "person-5#photo#0",
+          "key": "person-5#photo#0",
+          "anchor": "bottom-left",
+          "text": "鹤",
+          "source": "photo",
+          "hidden": false,
+          "x": 95.7700048828125,
+          "y": 1157.919,
+          "w": 34.989990234375,
+          "h": 600
+        },
+        {
+          "id": "person-5#photo#1",
+          "key": "person-5#photo#1",
+          "anchor": "bottom-left",
+          "text": "鹤羽轻风",
+          "source": "photo",
+          "hidden": false,
+          "x": 182.51999999999998,
+          "y": 1207.19,
+          "w": 121.47998046875,
+          "h": 500
+        },
+        {
+          "id": "person-5#model#0",
+          "key": "person-5#model#0",
+          "anchor": "bottom-center",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 1033.6741125488281,
+          "y": 1207.19,
+          "w": 84.44088745117188,
+          "h": 500
+        }
+      ]
+    },
+    "glass-white-1": {
+      "templateId": "sideCard",
+      "base": "sideCard",
+      "source": "../_research/native/designs/glass-white-1.json",
+      "sourceSha256": "10cfe7b2abb92b44f0d8611c324427f99a3f618d5a4927923ab15668a4922ce3",
+      "sourceBytes": 49488,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-white-1#photo#1",
+          "key": "glass-white-1#photo#1",
+          "anchor": "middle-left",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 518.5350137329101,
+          "y": 593.73,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-1#photo#0",
+          "key": "glass-white-1#photo#0",
+          "anchor": "middle-left",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 335.4750051879883,
+          "y": 601.83,
+          "w": 18.629989624023438,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-1#photo#3",
+          "key": "glass-white-1#photo#3",
+          "anchor": "middle-left",
+          "text": "366",
+          "source": "photo",
+          "hidden": false,
+          "x": 518.5350137329101,
+          "y": 751.68,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-1#photo#2",
+          "key": "glass-white-1#photo#2",
+          "anchor": "middle-left",
+          "text": "MM",
+          "source": "photo",
+          "hidden": false,
+          "x": 326.1600103759766,
+          "y": 759.78,
+          "w": 37.259979248046875,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-1#photo#5",
+          "key": "glass-white-1#photo#5",
+          "anchor": "bottom-left",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 490.18502288818354,
+          "y": 909.63,
+          "w": 141.7499542236328,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-1#photo#4",
+          "key": "glass-white-1#photo#4",
+          "anchor": "bottom-left",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 335.4750051879883,
+          "y": 917.73,
+          "w": 18.629989624023438,
+          "h": 31.05
+        }
+      ]
+    },
+    "glass-white-2": {
+      "templateId": "sideCard",
+      "base": "sideCard",
+      "source": "../_research/native/designs/glass-white-2.json",
+      "sourceSha256": "21d4f4ab84bd0a9ab0e5fac661a07790c3e48fc50ee0e24963ffa6fac92dca1b",
+      "sourceBytes": 49496,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-white-2#photo#1",
+          "key": "glass-white-2#photo#1",
+          "anchor": "middle-right",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 1598.2650137329101,
+          "y": 593.73,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-2#photo#0",
+          "key": "glass-white-2#photo#0",
+          "anchor": "middle-right",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 1415.2050051879883,
+          "y": 601.83,
+          "w": 18.629989624023438,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-2#photo#3",
+          "key": "glass-white-2#photo#3",
+          "anchor": "middle-right",
+          "text": "366",
+          "source": "photo",
+          "hidden": false,
+          "x": 1598.2650137329101,
+          "y": 751.68,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-2#photo#2",
+          "key": "glass-white-2#photo#2",
+          "anchor": "middle-right",
+          "text": "MM",
+          "source": "photo",
+          "hidden": false,
+          "x": 1405.8900103759765,
+          "y": 759.78,
+          "w": 37.259979248046875,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-2#photo#5",
+          "key": "glass-white-2#photo#5",
+          "anchor": "bottom-right",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 1569.9150228881836,
+          "y": 909.63,
+          "w": 141.7499542236328,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-2#photo#4",
+          "key": "glass-white-2#photo#4",
+          "anchor": "bottom-right",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 1415.2050051879883,
+          "y": 917.73,
+          "w": 18.629989624023438,
+          "h": 31.05
+        }
+      ]
+    },
+    "glass-white-3": {
+      "templateId": "sideCard",
+      "base": "sideCard",
+      "source": "../_research/native/designs/glass-white-3.json",
+      "sourceSha256": "d4cf8b31a7cc79672e1ce0dccb62d049ccd48b84c093f3b5880468d9aac71021",
+      "sourceBytes": 49499,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-white-3#photo#1",
+          "key": "glass-white-3#photo#1",
+          "anchor": "middle-right",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 1809.87751373291,
+          "y": 543.375,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-3#photo#0",
+          "key": "glass-white-3#photo#0",
+          "anchor": "middle-right",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 1626.8175051879882,
+          "y": 551.475,
+          "w": 18.629989624023438,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-3#photo#3",
+          "key": "glass-white-3#photo#3",
+          "anchor": "middle-right",
+          "text": "366",
+          "source": "photo",
+          "hidden": false,
+          "x": 1809.87751373291,
+          "y": 701.3249999999999,
+          "w": 85.04997253417969,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-3#photo#2",
+          "key": "glass-white-3#photo#2",
+          "anchor": "middle-right",
+          "text": "MM",
+          "source": "photo",
+          "hidden": false,
+          "x": 1617.5025103759765,
+          "y": 709.425,
+          "w": 37.259979248046875,
+          "h": 31.05
+        },
+        {
+          "id": "glass-white-3#photo#5",
+          "key": "glass-white-3#photo#5",
+          "anchor": "middle-right",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 1781.5275228881835,
+          "y": 859.275,
+          "w": 141.7499542236328,
+          "h": 47.25
+        },
+        {
+          "id": "glass-white-3#photo#4",
+          "key": "glass-white-3#photo#4",
+          "anchor": "middle-right",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 1626.8175051879882,
+          "y": 867.375,
+          "w": 18.629989624023438,
+          "h": 31.05
+        }
+      ]
+    },
+    "glass-card-4": {
+      "templateId": "specFooter",
+      "base": "specFooter",
+      "source": "../_research/native/designs/glass-card-4.json",
+      "sourceSha256": "83b4c0bd572d023fd049a19905d5d80bb58107c643d9f1b3d59853602fc2c87f",
+      "sourceBytes": 49727,
+      "slotCount": 7,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-card-4#model#0",
+          "key": "glass-card-4#model#0",
+          "anchor": "bottom-center",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 804.2225494384766,
+          "y": 1205.25,
+          "w": 89.02745056152344,
+          "h": 600
+        },
+        {
+          "id": "glass-card-4#photo#0",
+          "key": "glass-card-4#photo#0",
+          "anchor": "bottom-center",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 729.8739067138672,
+          "y": 1594.35,
+          "w": 14.579986572265625,
+          "h": 24.3
+        },
+        {
+          "id": "glass-card-4#photo#2",
+          "key": "glass-card-4#photo#2",
+          "anchor": "bottom-center",
+          "text": "MM",
+          "source": "photo",
+          "hidden": false,
+          "x": 925.9200134277344,
+          "y": 1594.35,
+          "w": 29.15997314453125,
+          "h": 24.3
+        },
+        {
+          "id": "glass-card-4#photo#4",
+          "key": "glass-card-4#photo#4",
+          "anchor": "bottom-center",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 1136.5461067138672,
+          "y": 1594.35,
+          "w": 14.579986572265625,
+          "h": 24.3
+        },
+        {
+          "id": "glass-card-4#photo#1",
+          "key": "glass-card-4#photo#1",
+          "anchor": "bottom-center",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 705.5828987182617,
+          "y": 1651.05,
+          "w": 63.16200256347656,
+          "h": 35.1
+        },
+        {
+          "id": "glass-card-4#photo#3",
+          "key": "glass-card-4#photo#3",
+          "anchor": "bottom-center",
+          "text": "366",
+          "source": "photo",
+          "hidden": false,
+          "x": 908.9189987182617,
+          "y": 1651.05,
+          "w": 63.16200256347656,
+          "h": 35.1
+        },
+        {
+          "id": "glass-card-4#photo#5",
+          "key": "glass-card-4#photo#5",
+          "anchor": "bottom-center",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 1091.2010978637695,
+          "y": 1651.05,
+          "w": 105.27000427246094,
+          "h": 35.1
+        }
+      ]
+    },
+    "glass-pill-5": {
+      "templateId": "glassSideCard",
+      "base": "glassSideCard",
+      "source": "../_research/native/designs/glass-pill-5.json",
+      "sourceSha256": "871992566497294d34abab0b48d5bbe82a95f2dbedc3762f64af6d87a4d7bf5f",
+      "sourceBytes": 52871,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-pill-5#photo#1",
+          "key": "glass-pill-5#photo#1",
+          "anchor": "middle-left",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 465.0325373058,
+          "y": 558.35302,
+          "w": 76.75199890136719,
+          "h": 42.647
+        },
+        {
+          "id": "glass-pill-5#photo#0",
+          "key": "glass-pill-5#photo#0",
+          "anchor": "middle-left",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 296.045530165175,
+          "y": 563.68392,
+          "w": 19.18798828125,
+          "h": 31.9852
+        },
+        {
+          "id": "glass-pill-5#photo#3",
+          "key": "glass-pill-5#photo#3",
+          "anchor": "middle-left",
+          "text": "366",
+          "source": "photo",
+          "hidden": false,
+          "x": 465.0325373058,
+          "y": 696.95564,
+          "w": 76.75199890136719,
+          "h": 42.647
+        },
+        {
+          "id": "glass-pill-5#photo#2",
+          "key": "glass-pill-5#photo#2",
+          "anchor": "middle-left",
+          "text": "MM",
+          "source": "photo",
+          "hidden": false,
+          "x": 286.45153602455,
+          "y": 702.28654,
+          "w": 38.3759765625,
+          "h": 31.9852
+        },
+        {
+          "id": "glass-pill-5#photo#5",
+          "key": "glass-pill-5#photo#5",
+          "anchor": "bottom-left",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 465.0325373058,
+          "y": 835.55826,
+          "w": 127.91999816894531,
+          "h": 42.647
+        },
+        {
+          "id": "glass-pill-5#photo#4",
+          "key": "glass-pill-5#photo#4",
+          "anchor": "bottom-left",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 296.045530165175,
+          "y": 840.88916,
+          "w": 19.18798828125,
+          "h": 31.9852
+        }
+      ]
+    },
+    "glass-liquid": {
+      "templateId": "glass",
+      "base": "glass",
+      "source": "../_research/native/designs/glass-liquid.json",
+      "sourceSha256": "2569fef47d734b4f8a422bb7af7941eab2bc5ba063895cc1474f178c8c3ca1df",
+      "sourceBytes": 50833,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-liquid#title#0",
+          "key": "glass-liquid#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 147.06,
+          "y": 856.518,
+          "w": 334.540283203125,
+          "h": 600
+        },
+        {
+          "id": "glass-liquid#exif#0",
+          "key": "glass-liquid#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1030.2839999999999,
+          "y": 1138.968,
+          "w": 568.4580078125,
+          "h": 35.1
+        },
+        {
+          "id": "glass-liquid#photo#0",
+          "key": "glass-liquid#photo#0",
+          "anchor": "bottom-left",
+          "text": "2022.07.05 14:13:37",
+          "source": "photo",
+          "hidden": false,
+          "x": 147.06,
+          "y": 1203.606,
+          "w": 338.579833984375,
+          "h": 29.7
+        }
+      ]
+    },
+    "glass-palette": {
+      "templateId": "glassPalettePortrait",
+      "base": "glassPalettePortrait",
+      "source": "../_research/native/designs/glass-palette.json",
+      "sourceSha256": "cfaf21f08e4d019525786feeefb52e10a6cc12a9a5bfd2f95935925ba342b81e",
+      "sourceBytes": 11573,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-palette#photo#0",
+          "key": "glass-palette#photo#0",
+          "anchor": "bottom-left",
+          "text": "#233400",
+          "source": "photo",
+          "hidden": false,
+          "x": 224.31016047363278,
+          "y": 1360.8297,
+          "w": 152.36727905273438,
+          "h": 500
+        },
+        {
+          "id": "glass-palette#photo#1",
+          "key": "glass-palette#photo#1",
+          "anchor": "bottom-center",
+          "text": "#475C1C",
+          "source": "photo",
+          "hidden": false,
+          "x": 598.8163604736328,
+          "y": 1360.8297,
+          "w": 152.36727905273438,
+          "h": 500
+        },
+        {
+          "id": "glass-palette#photo#2",
+          "key": "glass-palette#photo#2",
+          "anchor": "bottom-right",
+          "text": "#031100",
+          "source": "photo",
+          "hidden": false,
+          "x": 973.3225604736328,
+          "y": 1360.8297,
+          "w": 152.36727905273438,
+          "h": 500
+        },
+        {
+          "id": "glass-palette#photo#3",
+          "key": "glass-palette#photo#3",
+          "anchor": "bottom-left",
+          "text": "#637A00",
+          "source": "photo",
+          "hidden": false,
+          "x": 224.31016047363278,
+          "y": 1601.9343,
+          "w": 152.36727905273438,
+          "h": 500
+        },
+        {
+          "id": "glass-palette#photo#4",
+          "key": "glass-palette#photo#4",
+          "anchor": "bottom-center",
+          "text": "#676C38",
+          "source": "photo",
+          "hidden": false,
+          "x": 598.8163604736328,
+          "y": 1601.9343,
+          "w": 152.36727905273438,
+          "h": 500
+        },
+        {
+          "id": "glass-palette#photo#5",
+          "key": "glass-palette#photo#5",
+          "anchor": "bottom-right",
+          "text": "#969683",
+          "source": "photo",
+          "hidden": false,
+          "x": 973.3225604736328,
+          "y": 1601.9343,
+          "w": 152.36727905273438,
+          "h": 500
+        }
+      ]
+    },
+    "glass-card": {
+      "templateId": "glassSideCard",
+      "base": "glassSideCard",
+      "source": "../_research/native/designs/glass-card.json",
+      "sourceSha256": "aaaa05ab3ff59291cd41ecdfa38d80e90cca74b7b015440fed61f65de096fc73",
+      "sourceBytes": 52619,
+      "slotCount": 6,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "glass-card#photo#1",
+          "key": "glass-card#photo#1",
+          "anchor": "middle-left",
+          "text": "6.3",
+          "source": "photo",
+          "hidden": false,
+          "x": 396.69328418210455,
+          "y": 644.0546766931673,
+          "w": 76.53598022460938,
+          "h": 42.5261
+        },
+        {
+          "id": "glass-card#photo#0",
+          "key": "glass-card#photo#0",
+          "anchor": "middle-left",
+          "text": "F",
+          "source": "photo",
+          "hidden": false,
+          "x": 268.20482755044645,
+          "y": 648.6110766931673,
+          "w": 20.045989990234375,
+          "h": 33.4133
+        },
+        {
+          "id": "glass-card#photo#3",
+          "key": "glass-card#photo#3",
+          "anchor": "middle-left",
+          "text": "125",
+          "source": "photo",
+          "hidden": false,
+          "x": 396.69328418210455,
+          "y": 770.6456539675992,
+          "w": 76.53598022460938,
+          "h": 42.5261
+        },
+        {
+          "id": "glass-card#photo#2",
+          "key": "glass-card#photo#2",
+          "anchor": "middle-left",
+          "text": "ISO",
+          "source": "photo",
+          "hidden": false,
+          "x": 248.15883756021208,
+          "y": 775.2020539675992,
+          "w": 60.137969970703125,
+          "h": 33.4133
+        },
+        {
+          "id": "glass-card#photo#5",
+          "key": "glass-card#photo#5",
+          "anchor": "bottom-left",
+          "text": "1/400",
+          "source": "photo",
+          "hidden": false,
+          "x": 396.69328418210455,
+          "y": 897.236631242031,
+          "w": 127.55996704101562,
+          "h": 42.5261
+        },
+        {
+          "id": "glass-card#photo#4",
+          "key": "glass-card#photo#4",
+          "anchor": "bottom-left",
+          "text": "S",
+          "source": "photo",
+          "hidden": false,
+          "x": 268.20482755044645,
+          "y": 901.793031242031,
+          "w": 20.045989990234375,
+          "h": 33.4133
+        }
+      ]
+    },
+    "color-1": {
+      "templateId": "paletteCard",
+      "base": "paletteCard",
+      "source": "../_research/native/designs/color-1.json",
+      "sourceSha256": "30cf5a5ddfcf1c3e72f4b7e0cf53d203ca01d3eecde44e4c384569acfccb2ae7",
+      "sourceBytes": 10768,
+      "slotCount": 5,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "color-1#photo#0",
+          "key": "color-1#photo#0",
+          "anchor": "bottom-left",
+          "text": "233400",
+          "source": "photo",
+          "hidden": false,
+          "x": 109.19701538085937,
+          "y": 1560.654,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-1#photo#1",
+          "key": "color-1#photo#1",
+          "anchor": "bottom-left",
+          "text": "475C1C",
+          "source": "photo",
+          "hidden": false,
+          "x": 488.20951538085933,
+          "y": 1560.654,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-1#photo#2",
+          "key": "color-1#photo#2",
+          "anchor": "bottom-center",
+          "text": "031100",
+          "source": "photo",
+          "hidden": false,
+          "x": 867.2220153808594,
+          "y": 1560.654,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-1#photo#3",
+          "key": "color-1#photo#3",
+          "anchor": "bottom-right",
+          "text": "637A00",
+          "source": "photo",
+          "hidden": false,
+          "x": 1246.2345153808592,
+          "y": 1560.654,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-1#photo#4",
+          "key": "color-1#photo#4",
+          "anchor": "bottom-right",
+          "text": "676C38",
+          "source": "photo",
+          "hidden": false,
+          "x": 1625.2470153808592,
+          "y": 1560.654,
+          "w": 119.55596923828125,
+          "h": 33.21
+        }
+      ]
+    },
+    "color-2": {
+      "templateId": "paletteCard",
+      "base": "paletteCard",
+      "source": "../_research/native/designs/color-2.json",
+      "sourceSha256": "d1786da09f8ddf15f3727bf5d5ac9567c14d26e94df0e097a5703b8d78197016",
+      "sourceBytes": 10763,
+      "slotCount": 5,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "color-2#photo#0",
+          "key": "color-2#photo#0",
+          "anchor": "bottom-left",
+          "text": "233400",
+          "source": "photo",
+          "hidden": false,
+          "x": 109.87201538085932,
+          "y": 1567.404,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-2#photo#1",
+          "key": "color-2#photo#1",
+          "anchor": "bottom-left",
+          "text": "475C1C",
+          "source": "photo",
+          "hidden": false,
+          "x": 488.5470153808593,
+          "y": 1567.404,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-2#photo#2",
+          "key": "color-2#photo#2",
+          "anchor": "bottom-center",
+          "text": "031100",
+          "source": "photo",
+          "hidden": false,
+          "x": 867.2220153808594,
+          "y": 1567.404,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-2#photo#3",
+          "key": "color-2#photo#3",
+          "anchor": "bottom-right",
+          "text": "637A00",
+          "source": "photo",
+          "hidden": false,
+          "x": 1245.8970153808593,
+          "y": 1567.404,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-2#photo#4",
+          "key": "color-2#photo#4",
+          "anchor": "bottom-right",
+          "text": "676C38",
+          "source": "photo",
+          "hidden": false,
+          "x": 1624.5720153808593,
+          "y": 1567.404,
+          "w": 119.55596923828125,
+          "h": 33.21
+        }
+      ]
+    },
+    "color-3": {
+      "templateId": "paletteCard",
+      "base": "paletteCard",
+      "source": "../_research/native/designs/color-3.json",
+      "sourceSha256": "295220500a68876f406ddab2e86ada628cd1639d638359f303e3779913cdeed3",
+      "sourceBytes": 10758,
+      "slotCount": 5,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "color-3#photo#0",
+          "key": "color-3#photo#0",
+          "anchor": "bottom-left",
+          "text": "233400",
+          "source": "photo",
+          "hidden": false,
+          "x": 116.62201538085932,
+          "y": 1485.054,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-3#photo#1",
+          "key": "color-3#photo#1",
+          "anchor": "bottom-left",
+          "text": "475C1C",
+          "source": "photo",
+          "hidden": false,
+          "x": 478.4220153808593,
+          "y": 1485.054,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-3#photo#2",
+          "key": "color-3#photo#2",
+          "anchor": "bottom-center",
+          "text": "031100",
+          "source": "photo",
+          "hidden": false,
+          "x": 840.2220153808594,
+          "y": 1485.054,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-3#photo#3",
+          "key": "color-3#photo#3",
+          "anchor": "bottom-right",
+          "text": "637A00",
+          "source": "photo",
+          "hidden": false,
+          "x": 1202.0220153808593,
+          "y": 1485.054,
+          "w": 119.55596923828125,
+          "h": 33.21
+        },
+        {
+          "id": "color-3#photo#4",
+          "key": "color-3#photo#4",
+          "anchor": "bottom-right",
+          "text": "676C38",
+          "source": "photo",
+          "hidden": false,
+          "x": 1563.8220153808593,
+          "y": 1485.054,
+          "w": 119.55596923828125,
+          "h": 33.21
+        }
+      ]
+    },
+    "color-reveal": {
+      "templateId": "splitReveal",
+      "base": "splitReveal",
+      "source": "../_research/native/designs/color-reveal.json",
+      "sourceSha256": "b3c893c6148dc92ae23dc351c2b584fe49dfc7fd2751cacd880ea0ca27ef03ff",
+      "sourceBytes": 9497,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "color-walk": {
+      "templateId": "locationCard",
+      "base": "locationCard",
+      "source": "../_research/native/designs/color-walk.json",
+      "sourceSha256": "b55cf28963dff495d4aec7af8c16d6efc094bcbe4ef152bd897a3abf7ab573a7",
+      "sourceBytes": 9972,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "color-walk#photo#0",
+          "key": "color-walk#photo#0",
+          "anchor": "top-center",
+          "text": "中国",
+          "source": "photo",
+          "hidden": false,
+          "x": 953.5320129394531,
+          "y": 333.19999999999993,
+          "w": 117.93597412109375,
+          "h": 500
+        },
+        {
+          "id": "color-walk#photo#1",
+          "key": "color-walk#photo#1",
+          "anchor": "top-center",
+          "text": "08:00 AM",
+          "source": "photo",
+          "hidden": false,
+          "x": 936.68408203125,
+          "y": 637.8750000000001,
+          "w": 151.6318359375,
+          "h": 24.3
+        }
+      ]
+    },
+    "movie-1": {
+      "templateId": "movie",
+      "base": "movie",
+      "source": "../_research/native/designs/movie-1.json",
+      "sourceSha256": "956e78db7f73170fe7356a640d6e16a45f85f95063188a2a343c052162cd928b",
+      "sourceBytes": 10236,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "movie-1#title#0",
+          "key": "movie-1#title#0",
+          "anchor": "bottom-center",
+          "text": "人生是旷野不是轨道",
+          "source": "title",
+          "hidden": false,
+          "x": 766.2780456542969,
+          "y": 901.5684576923077,
+          "w": 267.44390869140625,
+          "h": 32.3077
+        },
+        {
+          "id": "movie-1#subtitle#0",
+          "key": "movie-1#subtitle#0",
+          "anchor": "bottom-center",
+          "text": "Life is a wilderness,not a track",
+          "source": "subtitle",
+          "hidden": false,
+          "x": 701.4446868896484,
+          "y": 947.1910807692308,
+          "w": 397.1106262207031,
+          "h": 27.6923
+        }
+      ]
+    },
+    "movie-2": {
+      "templateId": "movie",
+      "base": "movie",
+      "source": "../_research/native/designs/movie-2.json",
+      "sourceSha256": "825108bb427aa23c8f449ab9c3c4cfb7a2d01f3f82f4c66fbef903ec160019d6",
+      "sourceBytes": 10241,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "movie-2#title#0",
+          "key": "movie-2#title#0",
+          "anchor": "bottom-center",
+          "text": "人生是旷野不是轨道",
+          "source": "title",
+          "hidden": false,
+          "x": 766.2780456542969,
+          "y": 731.6153807692308,
+          "w": 267.44390869140625,
+          "h": 32.3077
+        },
+        {
+          "id": "movie-2#subtitle#0",
+          "key": "movie-2#subtitle#0",
+          "anchor": "bottom-center",
+          "text": "Life is a wilderness,not a track",
+          "source": "subtitle",
+          "hidden": false,
+          "x": 701.4446868896484,
+          "y": 777.0000038461538,
+          "w": 397.1106262207031,
+          "h": 27.6923
+        }
+      ]
+    },
+    "ticket-1": {
+      "templateId": "sideTicket",
+      "base": "sideTicket",
+      "source": "../_research/native/designs/ticket-1.json",
+      "sourceSha256": "a60607477915222b11fe9430abfc34e6a41b8c09153dbe1284c03b01d72cff34",
+      "sourceBytes": 10499,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "ticket-1#photo#0",
+          "key": "ticket-1#photo#0",
+          "anchor": "middle-right",
+          "text": "HANG",
+          "source": "photo",
+          "hidden": false,
+          "x": 1466.7662250000003,
+          "y": 764.2744540250001,
+          "w": 263.6266174316406,
+          "h": 800
+        },
+        {
+          "id": "ticket-1#photo#1",
+          "key": "ticket-1#photo#1",
+          "anchor": "middle-right",
+          "text": "ZHOU",
+          "source": "photo",
+          "hidden": false,
+          "x": 1466.7662250000003,
+          "y": 850.399774385,
+          "w": 255.49131774902344,
+          "h": 800
+        },
+        {
+          "id": "ticket-1#photo#2",
+          "key": "ticket-1#photo#2",
+          "anchor": "middle-right",
+          "text": "2022-07",
+          "source": "photo",
+          "hidden": false,
+          "x": 1466.7662250000003,
+          "y": 1115.2356524250001,
+          "w": 208.99191284179688,
+          "h": 600
+        },
+        {
+          "id": "ticket-1#photo#3",
+          "key": "ticket-1#photo#3",
+          "anchor": "middle-right",
+          "text": "GUANGYING 100",
+          "source": "photo",
+          "hidden": false,
+          "x": 1466.7662250000003,
+          "y": 1237.6008843500001,
+          "w": 360.67559814453125,
+          "h": 500
+        }
+      ]
+    },
+    "ticket-2": {
+      "templateId": "portraitTicket",
+      "base": "portraitTicket",
+      "source": "../_research/native/designs/ticket-2.json",
+      "sourceSha256": "c81ec300a68f601664ddf3e4b9c9df96dde15cde334547d10b6d8dd4ec538608",
+      "sourceBytes": 10674,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "ticket-2#photo#0",
+          "key": "ticket-2#photo#0",
+          "anchor": "bottom-left",
+          "text": "QING DAO",
+          "source": "photo",
+          "hidden": false,
+          "x": 380.50389899999993,
+          "y": 1489.9125279920002,
+          "w": 505.817626953125,
+          "h": 800
+        },
+        {
+          "id": "ticket-2#photo#1",
+          "key": "ticket-2#photo#1",
+          "anchor": "bottom-left",
+          "text": "2022-07",
+          "source": "photo",
+          "hidden": false,
+          "x": 380.50389899999993,
+          "y": 1762.7906023760002,
+          "w": 242.59193420410156,
+          "h": 500
+        },
+        {
+          "id": "ticket-2#photo#3",
+          "key": "ticket-2#photo#3",
+          "anchor": "bottom-right",
+          "text": "GUANGYING 100",
+          "source": "photo",
+          "hidden": false,
+          "x": 1157.5240945703126,
+          "y": 1897.117771448,
+          "w": 390.9061279296875,
+          "h": 500
+        },
+        {
+          "id": "ticket-2#photo#2",
+          "key": "ticket-2#photo#2",
+          "anchor": "bottom-left",
+          "text": "NO.88549",
+          "source": "photo",
+          "hidden": false,
+          "x": 380.50389899999993,
+          "y": 2237.6083362639997,
+          "w": 220.1759033203125,
+          "h": 45.8707
+        }
+      ]
+    },
+    "grad-1": {
+      "templateId": "gradFooter",
+      "base": "gradFooter",
+      "source": "../_research/native/designs/grad-1.json",
+      "sourceSha256": "7352cc34ecf2fed4d2426c4cc18e730dd287106de5362a75ad5e6e2b40ba6de7",
+      "sourceBytes": 10059,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "grad-1#title#0",
+          "key": "grad-1#title#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 70.2,
+          "y": 1439.76,
+          "w": 496.3876953125,
+          "h": 12
+        },
+        {
+          "id": "grad-1#exif#0",
+          "key": "grad-1#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 70.2,
+          "y": 1485.972,
+          "w": 532.4374389648438,
+          "h": 38.475
+        }
+      ]
+    },
+    "grad-2": {
+      "templateId": "gradFooter",
+      "base": "gradFooter",
+      "source": "../_research/native/designs/grad-2.json",
+      "sourceSha256": "9d50af0c3f7a65908fe369631ddd65bb1d52ec62de277199810d9a3f94cb6a7d",
+      "sourceBytes": 10063,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "grad-2#title#0",
+          "key": "grad-2#title#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 70.2,
+          "y": 1439.76,
+          "w": 477.80279541015625,
+          "h": 12
+        },
+        {
+          "id": "grad-2#exif#0",
+          "key": "grad-2#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 70.2,
+          "y": 1485.972,
+          "w": 532.4374389648438,
+          "h": 38.475
+        }
+      ]
+    },
+    "ratio-1": {
+      "templateId": "ratioMatte",
+      "base": "ratioMatte",
+      "source": "../_research/native/designs/ratio-1.json",
+      "sourceSha256": "9f751d2c782374742b8ccf47463a63a67f7a48c2a2feec0ac3aca288c3280081",
+      "sourceBytes": 10507,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "ratio-1#title#0",
+          "key": "ratio-1#title#0",
+          "anchor": "bottom-center",
+          "text": "PANASONIC  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 659.3923950195312,
+          "y": 817.1887212121212,
+          "w": 481.2152099609375,
+          "h": 600
+        },
+        {
+          "id": "ratio-1#exif#0",
+          "key": "ratio-1#exif#0",
+          "anchor": "bottom-center",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 719.3750762939453,
+          "y": 1152.9189212121212,
+          "w": 361.2498474121094,
+          "h": 21.582
+        }
+      ]
+    },
+    "ratio-2": {
+      "templateId": "ratioMatte",
+      "base": "ratioMatte",
+      "source": "../_research/native/designs/ratio-2.json",
+      "sourceSha256": "46d37271a151397504cdf2fbcc918b810428e4e39797b8278eb75155638769fb",
+      "sourceBytes": 10538,
+      "slotCount": 2,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "ratio-2#title#0",
+          "key": "ratio-2#title#0",
+          "anchor": "bottom-center",
+          "text": "PANASONIC  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 572.0035400390625,
+          "y": 747.7936582213324,
+          "w": 655.992919921875,
+          "h": 600
+        },
+        {
+          "id": "ratio-2#date#0",
+          "key": "ratio-2#date#0",
+          "anchor": "bottom-center",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 781.0832977294922,
+          "y": 1105.9451582213326,
+          "w": 237.83340454101562,
+          "h": 38.368
+        }
+      ]
+    },
+    "ratio-3": {
+      "templateId": "ratioBlurSquare",
+      "base": "ratioBlurSquare",
+      "source": "../_research/native/designs/ratio-3.json",
+      "sourceSha256": "250f39e328209c987e062a81e15460f9fad9a77f181b07c0e09c35f1529215ea",
+      "sourceBytes": 9445,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "new-color-2": {
+      "templateId": "poetryCard",
+      "base": "poetryCard",
+      "source": "../_research/native/designs/new-color-2.json",
+      "sourceSha256": "29071749f523a6da54da4ac60eb66ab35361025bc02f9ce83787586e5fc75443",
+      "sourceBytes": 10663,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "new-color-2#title#0",
+          "key": "new-color-2#title#0",
+          "anchor": "top-left",
+          "text": "Nature's poetry",
+          "source": "title",
+          "hidden": false,
+          "x": 88,
+          "y": -328.17875000000004,
+          "w": 618.1644287109375,
+          "h": 600
+        },
+        {
+          "id": "new-color-2#date#0",
+          "key": "new-color-2#date#0",
+          "anchor": "top-left",
+          "text": "PHOTOGRAPHED IN: 2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 88,
+          "y": 208.02456,
+          "w": 640.976806640625,
+          "h": 38.2943
+        },
+        {
+          "id": "new-color-2#model#0",
+          "key": "new-color-2#model#0",
+          "anchor": "bottom-right",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 1664.011116821289,
+          "y": 1724.2762595735826,
+          "w": 188.42088317871094,
+          "h": 500
+        },
+        {
+          "id": "new-color-2#photo#0",
+          "key": "new-color-2#photo#0",
+          "anchor": "bottom-right",
+          "text": "366mm 1/400s F6.3 ISO 125",
+          "source": "photo",
+          "hidden": false,
+          "x": 1390.4321220703125,
+          "y": 2166.026069711405,
+          "w": 461.9998779296875,
+          "h": 30.802
+        }
+      ]
+    },
+    "video-cover": {
+      "templateId": "bareCover",
+      "base": "bareCover",
+      "source": "../_research/native/designs/video-cover.json",
+      "sourceSha256": "aaee04211b9131fb06ae7635ec815f40bd7aa0cc762ea381b8b83a272463caee",
+      "sourceBytes": 9170,
+      "slotCount": 0,
+      "textSlotsVia": "hook:TextSection(empty)",
+      "slots": []
+    },
+    "fm-editorial": {
+      "templateId": "editorial",
+      "base": "editorial",
+      "source": "../_research/native/designs/fm-editorial.json",
+      "sourceSha256": "c498eedc084cddf9749ed28f217844fb9f0d045e9ff07c0cf521f830ad203b17",
+      "sourceBytes": 12011,
+      "slotCount": 9,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "fm-editorial#photo#0",
+          "key": "fm-editorial#photo#0",
+          "anchor": "top-left",
+          "text": "FRAMEMARK / PHOTO ANNUAL",
+          "source": "photo",
+          "hidden": false,
+          "x": 114.75000000000001,
+          "y": -327.1,
+          "w": 294.6954345703125,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#photo#1",
+          "key": "fm-editorial#photo#1",
+          "anchor": "top-right",
+          "text": "NO. 49",
+          "source": "photo",
+          "hidden": false,
+          "x": 1845.7881164550781,
+          "y": 58.85999999999999,
+          "w": 69.46188354492188,
+          "h": 17.55
+        },
+        {
+          "id": "fm-editorial#title#0",
+          "key": "fm-editorial#title#0",
+          "anchor": "top-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 114.75000000000001,
+          "y": 72.89999999999999,
+          "w": 886.8527221679688,
+          "h": 97.2
+        },
+        {
+          "id": "fm-editorial#photo#2",
+          "key": "fm-editorial#photo#2",
+          "anchor": "bottom-left",
+          "text": "CAMERA",
+          "source": "photo",
+          "hidden": false,
+          "x": 114.75000000000001,
+          "y": 1280.75,
+          "w": 64.15191650390625,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#photo#3",
+          "key": "fm-editorial#photo#3",
+          "anchor": "bottom-center",
+          "text": "OPTICS",
+          "source": "photo",
+          "hidden": false,
+          "x": 714.9166666666666,
+          "y": 1280.75,
+          "w": 64.15191650390625,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#photo#5",
+          "key": "fm-editorial#photo#5",
+          "anchor": "bottom-center",
+          "text": "DATE",
+          "source": "photo",
+          "hidden": false,
+          "x": 1315.0833333333333,
+          "y": 1280.75,
+          "w": 42.7679443359375,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#title#1",
+          "key": "fm-editorial#title#1",
+          "anchor": "bottom-left",
+          "text": "Panasonic  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 114.75000000000001,
+          "y": 1321.25,
+          "w": 182.72450256347656,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#photo#4",
+          "key": "fm-editorial#photo#4",
+          "anchor": "bottom-center",
+          "text": "100-400mm F5-6.3 DG DN OS | Contemporary 020  366mm  F6.3  1/400s  ISO125",
+          "source": "photo",
+          "hidden": false,
+          "x": 714.9166666666666,
+          "y": 1321.25,
+          "w": 558.6158447265625,
+          "h": 500
+        },
+        {
+          "id": "fm-editorial#date#0",
+          "key": "fm-editorial#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 1315.0833333333333,
+          "y": 1321.25,
+          "w": 129.59991455078125,
+          "h": 500
+        }
+      ]
+    },
+    "fm-polaroid": {
+      "templateId": "polaroid",
+      "base": "polaroid",
+      "source": "../_research/native/designs/fm-polaroid.json",
+      "sourceSha256": "c2c779e67682defecc492e047384b74c8626a9efe8f8fad20ab230791964dddc",
+      "sourceBytes": 10151,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "fm-polaroid#title#0",
+          "key": "fm-polaroid#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 74.25,
+          "y": 1057.015,
+          "w": 799.6864013671875,
+          "h": 600
+        },
+        {
+          "id": "fm-polaroid#date#0",
+          "key": "fm-polaroid#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 1702.5440979003906,
+          "y": 1504.615,
+          "w": 172.20590209960938,
+          "h": 40.5
+        },
+        {
+          "id": "fm-polaroid#exif#0",
+          "key": "fm-polaroid#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 74.25,
+          "y": 1566.4075,
+          "w": 306.1799011230469,
+          "h": 18.9
+        }
+      ]
+    },
+    "fm-film": {
+      "templateId": "film",
+      "base": "film",
+      "source": "../_research/native/designs/fm-film.json",
+      "sourceSha256": "1d2b5985986e761be6ac84b210a166568a7f672c2bfb135591625de9b197c338",
+      "sourceBytes": 10572,
+      "slotCount": 5,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "fm-film#photo#0",
+          "key": "fm-film#photo#0",
+          "anchor": "top-left",
+          "text": "FRAMEMARK 400",
+          "source": "photo",
+          "hidden": false,
+          "x": 58.05,
+          "y": -241.8,
+          "w": 159.62669372558594,
+          "h": 500
+        },
+        {
+          "id": "fm-film#photo#1",
+          "key": "fm-film#photo#1",
+          "anchor": "top-right",
+          "text": "36 EXP",
+          "source": "photo",
+          "hidden": false,
+          "x": 1738.38212890625,
+          "y": 144.16,
+          "w": 71.56787109375,
+          "h": 17.55
+        },
+        {
+          "id": "fm-film#title#0",
+          "key": "fm-film#title#0",
+          "anchor": "bottom-left",
+          "text": "PANASONIC  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 58.05,
+          "y": 914.8,
+          "w": 157.982421875,
+          "h": 600
+        },
+        {
+          "id": "fm-film#date#0",
+          "key": "fm-film#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 58.05,
+          "y": 1414.24,
+          "w": 97.19985961914062,
+          "h": 16.2
+        },
+        {
+          "id": "fm-film#photo#2",
+          "key": "fm-film#photo#2",
+          "anchor": "bottom-right",
+          "text": "NO. 34",
+          "source": "photo",
+          "hidden": false,
+          "x": 1751.6300842285157,
+          "y": 1414.24,
+          "w": 58.319915771484375,
+          "h": 16.2
+        }
+      ]
+    },
+    "fm-vertical": {
+      "templateId": "vertical",
+      "base": "vertical",
+      "source": "../_research/native/designs/fm-vertical.json",
+      "sourceSha256": "72bc6b93abaf1f876eabeb0a172fe1c16f6ae55446078f5623ad43507615c353",
+      "sourceBytes": 50559,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "fm-vertical#title#0",
+          "key": "fm-vertical#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 171,
+          "y": 1154.25,
+          "w": 656.3699340820312,
+          "h": 67.5
+        },
+        {
+          "id": "fm-vertical#exif#0",
+          "key": "fm-vertical#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 299.25,
+          "y": 1177.2,
+          "w": 367.4156188964844,
+          "h": 21.6
+        },
+        {
+          "id": "fm-vertical#date#0",
+          "key": "fm-vertical#date#0",
+          "anchor": "bottom-right",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 1578.6000366210938,
+          "y": 1240.38,
+          "w": 113.39996337890625,
+          "h": 18.9
+        }
+      ]
+    },
+    "fm-overlay": {
+      "templateId": "overlay",
+      "base": "overlay",
+      "source": "../_research/native/designs/fm-overlay.json",
+      "sourceSha256": "9d8ba1d4109818b179eb99903c8f6ab73c9a489ec3ace8eb91c123fa36361b3f",
+      "sourceBytes": 10310,
+      "slotCount": 4,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "fm-overlay#title#1",
+          "key": "fm-overlay#title#1",
+          "anchor": "middle-left",
+          "text": "PANASONIC  DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 108,
+          "y": 485.25,
+          "w": 243.4534912109375,
+          "h": 600
+        },
+        {
+          "id": "fm-overlay#title#0",
+          "key": "fm-overlay#title#0",
+          "anchor": "bottom-left",
+          "text": "Panasonic DC-S1",
+          "source": "title",
+          "hidden": false,
+          "x": 108,
+          "y": 1003.86,
+          "w": 714.4091186523438,
+          "h": 78.3
+        },
+        {
+          "id": "fm-overlay#exif#0",
+          "key": "fm-overlay#exif#0",
+          "anchor": "bottom-left",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 108,
+          "y": 1126.98,
+          "w": 415.5299987792969,
+          "h": 25.65
+        },
+        {
+          "id": "fm-overlay#date#0",
+          "key": "fm-overlay#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 108,
+          "y": 1178.55,
+          "w": 121.49993896484375,
+          "h": 20.25
+        }
+      ]
+    },
+    "oppo-polaroid": {
+      "templateId": "polaroidFrame",
+      "base": "polaroidFrame",
+      "source": "../_research/native/designs/oppo-polaroid.json",
+      "sourceSha256": "d6428fe2dd36b6212514788317e13cc2d2b0eea54214fceeb2ab05270208b131",
+      "sourceBytes": 10081,
+      "slotCount": 3,
+      "textSlotsVia": "hook:TextSection",
+      "slots": [
+        {
+          "id": "oppo-polaroid#model#0",
+          "key": "oppo-polaroid#model#0",
+          "anchor": "bottom-left",
+          "text": "DC-S1",
+          "source": "model",
+          "hidden": false,
+          "x": 64.95192307692308,
+          "y": 1378.6669871794873,
+          "w": 127.27630615234375,
+          "h": 600
+        },
+        {
+          "id": "oppo-polaroid#photo#0",
+          "key": "oppo-polaroid#photo#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  ISO125  1/400s",
+          "source": "photo",
+          "hidden": false,
+          "x": 1314.8963435246394,
+          "y": 1707.1493333333335,
+          "w": 550.1517333984375,
+          "h": 33.968
+        },
+        {
+          "id": "oppo-polaroid#date#0",
+          "key": "oppo-polaroid#date#0",
+          "anchor": "bottom-left",
+          "text": "2022-07-05",
+          "source": "date",
+          "hidden": false,
+          "x": 64.95192307692308,
+          "y": 1779.8954871794874,
+          "w": 203.75991821289062,
+          "h": 33.968
+        }
+      ]
+    }
+  }
+}
