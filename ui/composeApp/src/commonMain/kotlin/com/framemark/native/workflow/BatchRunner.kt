@@ -464,7 +464,11 @@ class BatchRunner(
         if (store != null) {
             when (val result = store.loadBatch()) {
                 is StoreResult.Ok -> {
-                    val recovered = result.value.recoverAfterRestart()
+                    // This legacy reader shares the phone queue document. It must
+                    // use the same receipt verifier as PhonePhotoBatchQueue so a
+                    // valid committed output is not downgraded before that queue
+                    // performs its normal load.
+                    val recovered = recoverBatchQueue(result.value, platform, platform.nowMillis())
                     if (recovered != result.value) store.saveBatch(recovered)
                     recovered.jobs.forEach { snapshot ->
                         val item = BatchItem(

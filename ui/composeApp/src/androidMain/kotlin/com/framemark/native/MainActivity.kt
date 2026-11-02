@@ -405,6 +405,30 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         installAppVersion(applicationContext)
+        // W3 crash/migration controls have to be configured before the phone
+        // project loads: preset migration is synchronous during installed.load().
+        // This entire block is absent from the release behavior by design.
+        if (BuildConfig.DEBUG) {
+            LaunchOptions.crashWindow = intent?.getStringExtra("fmCrashWindow")?.takeIf { it.isNotBlank() }
+            LaunchOptions.queueAutoStart = intent?.getBooleanExtra("fmQueueAutoStart", false) == true
+            LaunchOptions.crashResumeOnMarkerRemoval =
+                intent?.getBooleanExtra("fmCrashResumeOnMarkerRemoval", false) == true
+            LaunchOptions.crashMarkerDir = null
+            if (LaunchOptions.crashWindow != null) {
+                val markerDir = java.io.File(
+                    applicationContext.getExternalFilesDir(null) ?: applicationContext.filesDir,
+                    "fm-crash",
+                ).apply { mkdirs() }
+                // Clear only QA marker files, before the operation under test starts.
+                markerDir.listFiles()?.forEach { it.delete() }
+                LaunchOptions.crashMarkerDir = markerDir.absolutePath
+                println(
+                    "FM_CRASH_HOOK window=${LaunchOptions.crashWindow} markerDir=${markerDir.absolutePath} " +
+                        "queueAutoStart=${LaunchOptions.queueAutoStart} " +
+                        "resumeOnMarkerRemoval=${LaunchOptions.crashResumeOnMarkerRemoval}",
+                )
+            }
+        }
         // U4: presets live in the app's private files dir; sample exports go to
         // the cache dir. Installed before the first composition.
         WorkflowEnv.platform = AndroidWorkflowPlatform(applicationContext)
@@ -607,22 +631,6 @@ class MainActivity : ComponentActivity() {
                 exportEdge = intent.getIntExtra("fmMatrixExportEdge", 1600),
                 kinds = intent.getStringExtra("fmMatrixKinds") ?: "all",
             )
-        }
-        // W3 crash-window evidence (debug-only): park the commit pipeline at the named
-        // stage so an external `adb shell am kill` can be proven to land inside the
-        // window.  Release builds never reach this line (BuildConfig.DEBUG gate above).
-        // Accepted windows: prereceipt / receipt / midwrite / beforeDone.
-        LaunchOptions.crashWindow = intent?.getStringExtra("fmCrashWindow")?.takeIf { it.isNotBlank() }
-        LaunchOptions.queueAutoStart = intent?.getBooleanExtra("fmQueueAutoStart", false) == true
-        if (LaunchOptions.crashWindow != null) {
-            val markerDir = java.io.File(
-                applicationContext.getExternalFilesDir(null) ?: applicationContext.filesDir,
-                "fm-crash",
-            ).apply { mkdirs() }
-            // Clear any stale marker from a previous run so the driver polls the right file.
-            markerDir.listFiles()?.forEach { it.delete() }
-            LaunchOptions.crashMarkerDir = markerDir.absolutePath
-            println("FM_CRASH_HOOK window=${LaunchOptions.crashWindow} markerDir=${markerDir.absolutePath} queueAutoStart=${LaunchOptions.queueAutoStart}")
         }
         }
         setContent { FrameMarkApp() }

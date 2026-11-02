@@ -350,7 +350,11 @@ object NativeEngine {
             val markerPath = "$markerDir/marker-$stage"
             platform.writeTextFile(markerPath, "$stage ${System.currentTimeMillis()}")
             println("FM_CRASH_WINDOW $stage marker=$markerPath")
-            while (true) Thread.sleep(200)
+            if (LaunchOptions.crashResumeOnMarkerRemoval) {
+                while (platform.exists(markerPath)) Thread.sleep(100)
+            } else {
+                while (true) Thread.sleep(200)
+            }
         }
     }
 

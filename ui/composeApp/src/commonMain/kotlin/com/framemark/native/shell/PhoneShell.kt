@@ -87,6 +87,12 @@ import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowEnv
 
+/** The legacy batch sheet is retained only for the explicit QA/demo launch path. */
+internal fun createPhoneBatchDemoRunner(
+    enabled: Boolean,
+    create: () -> BatchRunner,
+): BatchRunner? = if (enabled) create() else null
+
 /**
  * Phone shell (width < [com.framemark.native.theme.FmBreakpoints.compact]).
  *
@@ -126,7 +132,11 @@ fun PhoneShell() {
     // Home「先逛边框」: picking a card drops the sample photo into the editor.
     var browsingBorders by remember { mutableStateOf(false) }
     var pairDemoSeeded by remember { mutableStateOf(false) }
-    val batch = remember(store) { BatchRunner(store.fileSystem, store.batchInputs()) }
+    val batch = remember(store, LaunchOptions.openBatch) {
+        createPhoneBatchDemoRunner(LaunchOptions.openBatch) {
+            BatchRunner(store.fileSystem, store.batchInputs())
+        }
+    }
     val shortcutFocus = remember { FocusRequester() }
     // Bumped when something replaced the active design wholesale (a preset, an
     // apply-to-all), so the editor re-reads it even though the card and photo are
@@ -324,13 +334,14 @@ fun PhoneShell() {
     // ready. A persisted queue wins over seeding; FM_BATCH_AUTOSTART=1 resumes.
     LaunchedEffect(LaunchOptions.openBatch, libraryState) {
         if (!LaunchOptions.openBatch || LaunchOptions.batchSeeded) return@LaunchedEffect
+        val demoBatch = batch ?: return@LaunchedEffect
         val ready = libraryState as? LibraryLoadState.Ready ?: return@LaunchedEffect
         LaunchOptions.batchSeeded = true
         batchSheetOpen = true
-        if (LaunchOptions.batchReset) batch.resetForVerify()
-        batch.seedDemo(ready.snapshot.cards, LaunchOptions.batchCount)
-        if (WorkflowEnv.platform?.batchAutoStart() == true && batch.hasPending) batch.start()
-        println("FM_BATCH_DEMO items=${batch.items.size} pending=${batch.hasPending} reset=${LaunchOptions.batchReset}")
+        if (LaunchOptions.batchReset) demoBatch.resetForVerify()
+        demoBatch.seedDemo(ready.snapshot.cards, LaunchOptions.batchCount)
+        if (WorkflowEnv.platform?.batchAutoStart() == true && demoBatch.hasPending) demoBatch.start()
+        println("FM_BATCH_DEMO items=${demoBatch.items.size} pending=${demoBatch.hasPending} reset=${LaunchOptions.batchReset}")
     }
 
     // Evidence-only: open a workflow sheet once the editor model is ready (so the
@@ -825,7 +836,7 @@ fun PhoneShell() {
             )
         }
 
-        if (batchSheetOpen) {
+        if (batchSheetOpen && batch != null) {
             PhoneOverlay(onDismiss = { batchSheetOpen = false }) {
                 BatchScreen(
                     state = batchScroll,

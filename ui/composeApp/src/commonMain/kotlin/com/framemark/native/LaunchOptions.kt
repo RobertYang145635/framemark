@@ -100,10 +100,11 @@ object LaunchOptions {
     var batchSeeded: Boolean = false
 
     /**
-     * W3 crash-window evidence (debug-only): park the commit pipeline at the named
-     * stage so an external process kill can be proven to land inside the intended
-     * window.  Accepted values: `prereceipt` (W3-09), `receipt` (W3-10),
-     * `midwrite` (W3-11), `beforeDone` (W3-12).
+     * W3 crash-window evidence (debug-only): park queue commits or preset migration
+     * at the named stage so an external process kill/change can be proven to land
+     * inside the intended window. Queue stages: `prereceipt` (W3-09), `receipt`
+     * (W3-10), `midwrite` (W3-11), `beforeDone` (W3-12); preset stages:
+     * `preset-after-backup` (W3-05) and `preset-after-replace` (W3-07).
      * Null in release builds and in all normal launches; set only inside
      * `if (BuildConfig.DEBUG)` in MainActivity's QA extras block.
      */
@@ -115,6 +116,9 @@ object LaunchOptions {
      * poll them before killing.  Set from androidMain inside `if (BuildConfig.DEBUG)`.
      */
     var crashMarkerDir: String? = null
+
+    /** Debug QA only: a checkpoint may resume when its marker is removed. */
+    var crashResumeOnMarkerRemoval: Boolean = false
 
     /**
      * W3 crash-window evidence (debug-only): auto-start the per-photo batch queue

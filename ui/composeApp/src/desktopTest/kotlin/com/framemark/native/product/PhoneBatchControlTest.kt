@@ -1,6 +1,8 @@
 package com.framemark.native.product
 
 import com.framemark.native.workflow.BatchCandidate
+import com.framemark.native.workflow.BatchItemStatus
+import com.framemark.native.workflow.BatchRunner
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.NativeImage
 import com.framemark.native.workflow.NativeRenderApi
@@ -18,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import java.security.MessageDigest
 
@@ -36,6 +39,9 @@ class PhoneBatchControlTest {
 
         @Synchronized
         override fun readText(path: String): String? = files[path]?.decodeToString()
+
+        @Synchronized
+        override fun readBytes(path: String): ByteArray? = files[path]?.copyOf()
 
         @Synchronized
         override fun writeBytes(path: String, bytes: ByteArray): Boolean {
@@ -96,6 +102,11 @@ class PhoneBatchControlTest {
     private class TestPlatform(override val dataDir: String) : WorkflowPlatform {
         override val exportDir: String = "$dataDir/exports"
         private val files = mutableMapOf<String, ByteArray>()
+
+        @Synchronized
+        fun seed(path: String, bytes: ByteArray) {
+            files[path] = bytes.copyOf()
+        }
 
         override fun readTextFile(path: String): String? = null
         override fun writeTextFile(path: String, text: String) = Unit
@@ -167,6 +178,37 @@ class PhoneBatchControlTest {
         settings = ExportSettings(),
     )
 
+    private fun runningWithReceipt(harness: Harness, bytes: ByteArray): Pair<BatchJob, String> {
+        val outputPath = "${harness.platform.exportDir}/中文 测试 照片-1-1.jpg"
+        val job = BatchJob.forPhoto(
+            id = "recovery-job",
+            photoPath = "/photos/recovery.jpg",
+            photoFingerprint = "fingerprint-recovery",
+            displayName = "中文 测试 照片.jpg",
+            design = PhotoDesign.base("card-recovery", "style-recovery"),
+            exportSettings = ExportSettings(),
+            now = 1_800_000_000_000L,
+            nameIndex = 1,
+            outputDirectory = harness.platform.exportDir,
+        ).copy(status = BatchJobStatus.Running, attempts = 1, startedAt = 1_800_000_000_000L)
+        val prepared = job.copy(
+            preparedOutputPath = outputPath,
+            preparedOutputBytes = bytes.size.toLong(),
+            preparedOutputSha256 = sha256(bytes),
+            preparedInputKey = job.outputReceiptKey,
+        )
+        harness.fs.seed(
+            "${harness.fs.dataDir}/batch-queue.json",
+            BatchCodec.encode(BatchQueue(listOf(prepared))).encodeToByteArray(),
+        )
+        harness.platform.seed(outputPath, bytes)
+        return prepared to outputPath
+    }
+
+    private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256")
+        .digest(bytes)
+        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+
     private suspend fun <T> withHarness(harness: Harness, block: suspend () -> T): T {
         val oldPlatform = WorkflowEnv.platform
         val oldRender = WorkflowEnv.nativeRender
@@ -236,6 +278,65 @@ class PhoneBatchControlTest {
             assertFalse(harness.queue.running)
             assertTrue(harness.render.photoPaths.isEmpty(), "旧任务不得以猜测的文件序号或目录启动")
             assertTrue(harness.queue.error?.contains("缺少稳定序号或输出目录") == true)
+        }
+    }
+
+    @Test
+    fun validReceiptSurvivesLegacySnapshotReaderBeforePhoneQueueLoad() = kotlinx.coroutines.runBlocking<Unit> {
+        val harness = Harness()
+        val committed = "committed output bytes".encodeToByteArray()
+        val (prepared, outputPath) = runningWithReceipt(harness, committed)
+        withHarness(harness) {
+            // This is the historical initialization order: the optional legacy
+            // snapshot reader is constructed before the real per-photo queue loads.
+            val legacyReader = BatchRunner(harness.fs)
+            assertEquals(BatchItemStatus.Done, legacyReader.items.single().status)
+
+            val restored = harness.queue.load().single()
+            assertEquals(BatchJobStatus.Done, restored.status)
+            assertEquals(1, restored.attempts)
+            assertEquals(outputPath, restored.outputPath)
+            assertEquals(prepared.preparedOutputSha256, harness.platform.fileFingerprint(outputPath))
+            val persisted = assertNotNull(
+                (SessionStore(harness.fs).loadBatch() as? StoreResult.Ok)?.value?.job(prepared.id),
+            )
+            assertEquals(BatchJobStatus.Done, persisted.status)
+            assertEquals(prepared.outputReceiptKey, persisted.preparedInputKey)
+            assertEquals(outputPath, persisted.preparedOutputPath)
+            assertEquals(prepared.preparedOutputBytes, persisted.preparedOutputBytes)
+            assertEquals(prepared.preparedOutputSha256, persisted.preparedOutputSha256)
+            assertTrue(harness.render.photoPaths.isEmpty(), "a matching receipt must reconcile without rendering")
+        }
+    }
+
+    @Test
+    fun invalidReceiptIsQueuedBeforeRetryAndDoesNotOverwriteExistingBytes() = kotlinx.coroutines.runBlocking<Unit> {
+        val harness = Harness()
+        val original = "prepared bytes".encodeToByteArray()
+        val decoy = "decoy bytes!!!".encodeToByteArray()
+        assertEquals(original.size, decoy.size)
+        val (prepared, outputPath) = runningWithReceipt(harness, original)
+        harness.platform.seed(outputPath, decoy)
+        withHarness(harness) {
+            val legacyReader = BatchRunner(harness.fs)
+            assertEquals(BatchItemStatus.Queued, legacyReader.items.single().status)
+
+            val restored = harness.queue.load().single()
+            assertEquals(BatchJobStatus.Queued, restored.status)
+            assertNull(restored.preparedOutputPath)
+            assertEquals(1, restored.attempts)
+            assertEquals(decoy.toList(), harness.platform.readBytes(outputPath)?.toList())
+
+            harness.queue.start()
+            assertEquals("/photos/recovery.jpg", awaitRenderStart(harness.render))
+            harness.render.release.complete(Unit)
+            awaitStopped(harness.queue)
+
+            val completed = harness.queue.queue.jobs.single()
+            assertEquals(BatchJobStatus.Done, completed.status)
+            assertEquals(2, completed.attempts)
+            assertEquals(listOf("/photos/recovery.jpg"), harness.render.photoPaths.toList())
+            assertEquals(decoy.toList(), harness.platform.readBytes(outputPath)?.toList())
         }
     }
 

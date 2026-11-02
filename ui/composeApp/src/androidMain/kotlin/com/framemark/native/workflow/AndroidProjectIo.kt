@@ -41,6 +41,7 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
             StandardOpenOption.CREATE_NEW,
             StandardOpenOption.WRITE,
         ).use { it.write(bytes) }
+        if (isPresetLibraryBackup(file)) checkpointAfterPresetMutation("preset-after-backup")
         true
     }.getOrDefault(false)
 
@@ -57,10 +58,16 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
                 target.toPath(),
                 StandardCopyOption.ATOMIC_MOVE,
             )
+            if (isPresetLibraryReplacement(source, target)) {
+                checkpointAfterPresetMutation("preset-after-replace")
+            }
             true
         }.getOrElse { atomic ->
             runCatching {
                 Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                if (isPresetLibraryReplacement(source, target)) {
+                    checkpointAfterPresetMutation("preset-after-replace")
+                }
                 true
             }.getOrElse {
                 println("FM_FS_REPLACE_FAIL from=$from to=$to atomic=${atomic.message} fallback=${it.message}")
@@ -70,6 +77,36 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
     }
 
     override fun delete(path: String): Boolean = runCatching { File(path).delete() }.getOrDefault(false)
+
+    private fun isPresetLibraryBackup(file: File): Boolean = runCatching {
+        file.canonicalFile.parentFile == File(dataDir).canonicalFile &&
+            file.name.startsWith("presets.json.legacy-") && file.name.endsWith(".bak")
+    }.getOrDefault(false)
+
+    private fun isPresetLibraryReplacement(source: File, target: File): Boolean = runCatching {
+        source.canonicalFile == File(dataDir, "presets.json.tmp").canonicalFile &&
+            target.canonicalFile == File(dataDir, "presets.json").canonicalFile
+    }.getOrDefault(false)
+
+    /**
+     * Debug QA checkpoint around real preset-library file operations. The backup
+     * checkpoint may resume after the test changes the source file and removes the
+     * marker; the replacement checkpoint is force-stopped immediately after the
+     * actual rename. Both are inert unless MainActivity accepted debug QA extras.
+     */
+    private fun checkpointAfterPresetMutation(stage: String) {
+        if (com.framemark.native.LaunchOptions.crashWindow != stage) return
+        val markerDir = com.framemark.native.LaunchOptions.crashMarkerDir?.let(::File) ?: return
+        if (!markerDir.isDirectory) return
+        val marker = File(markerDir, "marker-$stage")
+        marker.writeText("$stage time=${System.currentTimeMillis()} pid=${android.os.Process.myPid()}")
+        println("FM_CRASH_WINDOW $stage marker=${marker.absolutePath}")
+        if (com.framemark.native.LaunchOptions.crashResumeOnMarkerRemoval) {
+            while (marker.exists()) Thread.sleep(100)
+        } else {
+            while (true) Thread.sleep(200)
+        }
+    }
 }
 
 /**
