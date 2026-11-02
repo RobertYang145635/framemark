@@ -608,6 +608,22 @@ class MainActivity : ComponentActivity() {
                 kinds = intent.getStringExtra("fmMatrixKinds") ?: "all",
             )
         }
+        // W3 crash-window evidence (debug-only): park the commit pipeline at the named
+        // stage so an external `adb shell am kill` can be proven to land inside the
+        // window.  Release builds never reach this line (BuildConfig.DEBUG gate above).
+        // Accepted windows: prereceipt / receipt / midwrite / beforeDone.
+        LaunchOptions.crashWindow = intent?.getStringExtra("fmCrashWindow")?.takeIf { it.isNotBlank() }
+        LaunchOptions.queueAutoStart = intent?.getBooleanExtra("fmQueueAutoStart", false) == true
+        if (LaunchOptions.crashWindow != null) {
+            val markerDir = java.io.File(
+                applicationContext.getExternalFilesDir(null) ?: applicationContext.filesDir,
+                "fm-crash",
+            ).apply { mkdirs() }
+            // Clear any stale marker from a previous run so the driver polls the right file.
+            markerDir.listFiles()?.forEach { it.delete() }
+            LaunchOptions.crashMarkerDir = markerDir.absolutePath
+            println("FM_CRASH_HOOK window=${LaunchOptions.crashWindow} markerDir=${markerDir.absolutePath} queueAutoStart=${LaunchOptions.queueAutoStart}")
+        }
         }
         setContent { FrameMarkApp() }
     }

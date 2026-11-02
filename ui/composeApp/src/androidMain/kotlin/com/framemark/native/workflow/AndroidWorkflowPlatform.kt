@@ -80,11 +80,26 @@ class AndroidWorkflowPlatform(private val context: Context) : WorkflowPlatform {
                 created = true
                 temporary.inputStream().use { input ->
                     val buffer = ByteArray(64 * 1024)
+                    var totalWritten = 0L
                     while (true) {
                         val count = input.read(buffer)
                         if (count < 0) break
                         val bytes = java.nio.ByteBuffer.wrap(buffer, 0, count)
                         while (bytes.hasRemaining()) output.write(bytes)
+                        totalWritten += count
+                        // W3-11 midwrite crash window (debug-only): some bytes are on
+                        // disk, force(true) has NOT been called yet.  Park so an external
+                        // `adb shell am kill` can be proven to land inside this window.
+                        if (totalWritten >= 65_536 &&
+                            com.framemark.native.LaunchOptions.crashWindow == "midwrite" &&
+                            com.framemark.native.LaunchOptions.crashMarkerDir != null
+                        ) {
+                            val markerDir = com.framemark.native.LaunchOptions.crashMarkerDir!!
+                            val marker = File(markerDir, "marker-midwrite")
+                            marker.writeText("midwrite written=$totalWritten pid=${android.os.Process.myPid()}")
+                            println("FM_CRASH_WINDOW midwrite written=$totalWritten pid=${android.os.Process.myPid()}")
+                            while (true) Thread.sleep(200)
+                        }
                     }
                 }
                 output.force(true)

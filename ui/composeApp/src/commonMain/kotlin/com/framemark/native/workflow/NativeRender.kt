@@ -1,5 +1,6 @@
 package com.framemark.native.workflow
 
+import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.library.LibraryCard
 import kotlinx.coroutines.Dispatchers
@@ -260,9 +261,15 @@ object NativeEngine {
                     continue
                 }
 
+                // Crash window W3-09: render temp ready, receipt callback not yet called.
+                crashCheckpoint(platform, "prereceipt")
+
                 if (onOutputPrepared != null && !onOutputPrepared(candidate, bytes, sha256!!)) {
                     throw EngineFailure("FM-E-IO-003", "批量导出回执未能保存，成片尚未提交")
                 }
+
+                // Crash window W3-10: receipt persisted, commitExport not yet called.
+                crashCheckpoint(platform, "receipt")
 
                 val committed = try {
                     withContext(Dispatchers.IO) { platform.commitExport(temporaryPath, candidate) }
@@ -328,6 +335,32 @@ object NativeEngine {
         }
         throw EngineFailure("FM-E-IO-003", "无法创建唯一临时导出路径")
     }
+
+    /**
+     * W3 crash-window checkpoint (debug-only).  When `LaunchOptions.crashWindow`
+     * equals [stage], write a marker file to `LaunchOptions.crashMarkerDir` and
+     * spin so an external process kill can be proven to land inside the window.
+     * Does nothing when the crash-window hook is absent (normal and release builds).
+     */
+    internal suspend fun crashCheckpoint(platform: WorkflowPlatform, stage: String) {
+        val window = LaunchOptions.crashWindow ?: return
+        if (window != stage) return
+        val markerDir = LaunchOptions.crashMarkerDir ?: return
+        withContext(Dispatchers.IO) {
+            val markerPath = "$markerDir/marker-$stage"
+            platform.writeTextFile(markerPath, "$stage ${System.currentTimeMillis()}")
+            println("FM_CRASH_WINDOW $stage marker=$markerPath")
+            while (true) Thread.sleep(200)
+        }
+    }
+
+    /**
+     * Public entry-point for the `beforeDone` checkpoint from `PhotoBatch.kt`.
+     * Delegates to [crashCheckpoint]; does nothing unless `LaunchOptions.crashWindow`
+     * equals [stage].
+     */
+    suspend fun crashCheckpointBefore(platform: WorkflowPlatform, stage: String) =
+        crashCheckpoint(platform, stage)
 
     /** Preview render for the stage; null when the card or platform is not wired. */
     suspend fun preview(

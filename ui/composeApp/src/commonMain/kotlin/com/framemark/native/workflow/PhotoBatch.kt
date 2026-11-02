@@ -419,6 +419,8 @@ class PhonePhotoBatchQueue(
                     persistPreparedOutput(job.id, preparedPath, size, sha, job.outputReceiptKey)
                 },
             )
+            // Crash window W3-12: commitExport succeeded (file on disk), Done not yet saved.
+            NativeEngine.crashCheckpointBefore(platform, "beforeDone")
             updateQueue { it.complete(job.id, result.path, clock()) }
             println("FM_PHOTO_JOB_DONE id=${job.id} out=${result.path} bytes=${result.bytes}")
         } catch (c: kotlinx.coroutines.CancellationException) {

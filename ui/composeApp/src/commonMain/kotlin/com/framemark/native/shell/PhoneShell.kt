@@ -164,7 +164,16 @@ fun PhoneShell() {
     val batchQueue = remember(store) {
         PhonePhotoBatchQueue(store.fileSystem, cardLookup = { id: String -> currentCards.firstOrNull { it.id == id } })
     }
-    LaunchedEffect(batchQueue) { batchQueue.load() }
+    LaunchedEffect(batchQueue) {
+        batchQueue.load()
+        // W3 crash-window evidence (debug-only): auto-start the per-photo queue so
+        // an existing Queued job drives the commit pipeline without UI interaction.
+        // LaunchOptions.queueAutoStart is set only inside `if (BuildConfig.DEBUG)`.
+        if (LaunchOptions.queueAutoStart && batchQueue.pendingCount > 0) {
+            println("FM_QUEUE_AUTOSTART pending=${batchQueue.pendingCount}")
+            batchQueue.start()
+        }
+    }
 
     /** Rebuilds the visible strip from the project; only when the set really changed. */
     fun syncTray() {

@@ -98,4 +98,28 @@ object LaunchOptions {
     var autoSaveApplied: Boolean = false
     var sheetsApplied: Boolean = false
     var batchSeeded: Boolean = false
+
+    /**
+     * W3 crash-window evidence (debug-only): park the commit pipeline at the named
+     * stage so an external process kill can be proven to land inside the intended
+     * window.  Accepted values: `prereceipt` (W3-09), `receipt` (W3-10),
+     * `midwrite` (W3-11), `beforeDone` (W3-12).
+     * Null in release builds and in all normal launches; set only inside
+     * `if (BuildConfig.DEBUG)` in MainActivity's QA extras block.
+     */
+    var crashWindow: String? = null
+
+    /**
+     * W3 crash-window evidence (debug-only): directory under the app's external
+     * files dir where crash-window marker files are written so the driver can
+     * poll them before killing.  Set from androidMain inside `if (BuildConfig.DEBUG)`.
+     */
+    var crashMarkerDir: String? = null
+
+    /**
+     * W3 crash-window evidence (debug-only): auto-start the per-photo batch queue
+     * on launch once `batchQueue.load()` has finished, so an existing Queued job
+     * drives the commit pipeline without UI interaction.
+     */
+    var queueAutoStart: Boolean = false
 }
