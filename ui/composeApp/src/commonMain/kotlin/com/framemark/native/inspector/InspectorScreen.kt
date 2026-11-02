@@ -181,7 +181,9 @@ private fun BrandLogoArea(model: InspectorCardModel, session: DesignSession) {
             return@Column
         }
         val raw = session.value(control) as? String ?: ""
-        val display = selectedDisplay(control, raw)
+        var friendly by remember(raw) { mutableStateOf<String?>(null) }
+        LaunchedEffect(raw) { friendly = if (raw.isBlank()) null else logoValueLabel(raw) }
+        val display = friendly ?: selectedDisplay(control, raw)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -211,23 +213,12 @@ private fun BrandLogoArea(model: InspectorCardModel, session: DesignSession) {
                 )
             }
             var brandMenu by remember(control.key) { mutableStateOf(false) }
-            Box {
-                BrandAction("选择") { brandMenu = true }
-                DropdownMenu(expanded = brandMenu, onDismissRequest = { brandMenu = false }) {
-                    // "auto" = follow the photo's own EXIF brand (no override written).
-                    control.options.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.display, style = FmType.bodyMedium) },
-                            onClick = {
-                                session.set(control, if (option.value == "auto") "" else option.value)
-                                brandMenu = false
-                            },
-                        )
-                    }
-                }
-            }
+            BrandAction("选择") { brandMenu = true }
             Spacer(Modifier.width(FmSpacing.xs))
             BrandAction("自动匹配") { session.set(control, "") }
+            if (brandMenu) {
+                BrandLogoLibraryDialog(control = control, session = session, onDismiss = { brandMenu = false })
+            }
         }
         Spacer(Modifier.height(FmSpacing.sm))
     }
@@ -710,14 +701,14 @@ private fun ColorControl(control: InspectorControl, session: DesignSession) {
 
 @Composable
 private fun BrandControl(control: InspectorControl, session: DesignSession) {
-    // Inline list instead of a popup: the choice has to be visible on the panel
-    // itself (a popped menu is a separate window and reads as "nothing happened").
     val raw = session.value(control) as? String ?: ""
     val isAuto = raw.isBlank() || raw == "auto"
+    var friendly by remember(raw) { mutableStateOf<String?>(null) }
+    LaunchedEffect(raw) { friendly = if (isAuto) null else logoValueLabel(raw) }
     val display = if (isAuto) {
         "自动匹配（按照片品牌）"
     } else {
-        control.options.firstOrNull { it.value == raw }?.display ?: raw
+        friendly ?: control.options.firstOrNull { it.value == raw }?.display ?: raw
     }
     var open by remember(control.key) { mutableStateOf(false) }
     Column {
@@ -730,7 +721,7 @@ private fun BrandControl(control: InspectorControl, session: DesignSession) {
                     .clip(RoundedCornerShape(FmRadii.input))
                     .background(FmPalette.surfaceMuted)
                     .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
-                    .clickable { open = !open }
+                    .clickable { open = true }
                     .padding(horizontal = FmSpacing.md, vertical = FmSpacing.sm),
             ) {
                 Text(
@@ -740,40 +731,12 @@ private fun BrandControl(control: InspectorControl, session: DesignSession) {
                 )
             }
             Spacer(Modifier.width(FmSpacing.sm))
-            BrandAction(if (open) "收起" else "选择") { open = !open }
+            BrandAction("选择") { open = true }
         }
-        if (open) {
-            Spacer(Modifier.height(FmSpacing.xs))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 240.dp)
-                    .clip(RoundedCornerShape(FmRadii.input))
-                    .background(FmPalette.surface)
-                    .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input)),
-            ) {
-                LazyColumn {
-                    items(control.options.size) { index ->
-                        val option = control.options[index]
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    session.set(control, if (option.value == "auto") "" else option.value)
-                                    open = false
-                                }
-                                .padding(horizontal = FmSpacing.md, vertical = 8.dp),
-                        ) {
-                            Text(
-                                text = option.display,
-                                style = FmType.bodyMedium,
-                                color = if (option.value == raw) FmPalette.primaryStrong else FmPalette.onSurface,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+    }
+    // The library is a real page (grid → versions), not a 64-row dropdown.
+    if (open) {
+        BrandLogoLibraryDialog(control = control, session = session, onDismiss = { open = false })
     }
 }
 

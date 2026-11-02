@@ -948,6 +948,11 @@ private fun valueFor(design: PhotoDesign, param: String): Any? = when (param) {
     "theme" -> design.theme
     "text.fontScale" -> design.fontScale
     "design.logo" -> design.logo
+    // The brand picker's control param is `brandLogoFile` (IR rows) or
+    // `params.brandLogoFile` (capability rows), but the value is stored on the design's
+    // own `logo` field (consumer == "logo"). Reading only params made a saved pick show
+    // up as 自动匹配 after a restart.
+    "params.brandLogoFile", "brandLogoFile" -> design.params["brandLogoFile"] ?: design.logo
     else -> when {
         param.startsWith("params.") -> design.params[param.removePrefix("params.")]
         param.startsWith("text.") -> design.text[param.removePrefix("text.")]
