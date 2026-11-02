@@ -441,9 +441,19 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
             ChoiceChip(
                 label = "全选 ${photos.size}",
                 selected = photos.isNotEmpty() && selected.size == photos.size,
-                onClick = { selected = photos.map { it.id }.toSet() },
+                onClick = {
+                    selected = photos.map { it.id }.toSet()
+                    pendingBatch = null
+                },
             )
-            ChoiceChip(label = "清空选择", selected = false, onClick = { selected = emptySet() })
+            ChoiceChip(
+                label = "清空选择",
+                selected = false,
+                onClick = {
+                    selected = emptySet()
+                    pendingBatch = null
+                },
+            )
         }
         Spacer(Modifier.height(FmSpacing.sm))
         Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
@@ -454,6 +464,7 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                     selected = on,
                     onClick = {
                         selected = if (on) selected - photo.id else selected + photo.id
+                        pendingBatch = null
                     },
                 )
             }
@@ -502,7 +513,7 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                 onClick = { jobs.filter { it.status != BatchJobStatus.Running }.forEach { projects.removeBatchJob(it.id) } },
             )
         }
-        pendingBatch?.let { (preflight, _) ->
+        pendingBatch?.let { (preflight, pendingIds) ->
             Spacer(Modifier.height(FmSpacing.sm))
             SheetNote(
                 "有 ${preflight.undesignedCount} 张还没有应用边框，不会加入导出：${preflight.undesignedSummary}。" +
@@ -514,12 +525,27 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                     text = "仅导出已设计的 ${preflight.designedCount} 张",
                     enabled = !projects.batchRunning,
                     onClick = {
-                        val added = projects.enqueueBatch(preflight.designedPhotoIds)
-                        pendingBatch = null
-                        notice = if (added == 0) {
-                            "没有新任务：这些照片已在队列中。未加入 ${preflight.undesignedCount} 张无设计照片。"
-                        } else {
-                            "已入队 $added 项，未加入 ${preflight.undesignedCount} 张无设计照片。"
+                        // The panel was computed for `pendingIds`; re-validate it against
+                        // the selection and bindings as they are right now (P1-01).
+                        val current = projects.preflightBatch(pendingIds)
+                        when (batchConfirmGate(pendingIds, selected, preflight, current)) {
+                            BatchConfirmGate.SelectionChanged -> {
+                                pendingBatch = null
+                                notice = "选择已改变，本次未加入任何任务。请重新点「加入队列」预检。"
+                            }
+                            BatchConfirmGate.DesignChanged -> {
+                                pendingBatch = null
+                                notice = "这些照片的边框状态已改变，本次未加入任何任务。请重新点「加入队列」预检。"
+                            }
+                            BatchConfirmGate.Submit -> {
+                                val added = projects.enqueueBatch(current.designedPhotoIds)
+                                pendingBatch = null
+                                notice = if (added == 0) {
+                                    "没有新任务：这些照片已在队列中。未加入 ${current.undesignedCount} 张无设计照片。"
+                                } else {
+                                    "已入队 $added 项，未加入 ${current.undesignedCount} 张无设计照片。"
+                                }
+                            }
                         }
                     },
                 )

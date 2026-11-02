@@ -118,6 +118,29 @@ data class BatchPreflight(
         get() = undesigned.joinToString("、") { "「${it.displayName}」(第${it.nameIndex}张)" }
 }
 
+/** Why a pending 「仅导出已设计的 X 张」 confirmation may no longer be honoured. */
+enum class BatchConfirmGate { Submit, SelectionChanged, DesignChanged }
+
+/**
+ * Re-validates a pending pre-flight confirmation against the state at click time. The
+ * desktop sheet holds the confirmation in composable state, so clearing or changing the
+ * selection — or an asynchronous project change landing behind it — can leave the panel
+ * pointing at a set the user no longer chose. Callers must pass the click through here
+ * instead of enqueueing the originally computed ids.
+ */
+fun batchConfirmGate(
+    pendingIds: List<String>,
+    currentSelection: Set<String>,
+    pending: BatchPreflight,
+    current: BatchPreflight,
+): BatchConfirmGate = when {
+    pendingIds.size != currentSelection.size || pendingIds.toSet() != currentSelection ->
+        BatchConfirmGate.SelectionChanged
+    current.designedPhotoIds != pending.designedPhotoIds || current.undesigned != pending.undesigned ->
+        BatchConfirmGate.DesignChanged
+    else -> BatchConfirmGate.Submit
+}
+
 /**
  * Splits [photoIds] into exportable (own binding) and 未应用边框 ones using **only**
  * `designs[photo.id]`. A shared / active / selected design is never lent to an existing
