@@ -343,6 +343,75 @@ class PhonePresetMigrationOrderTest {
         assertEquals(2, SessionStore(fs).loadPresets().ok().size)
     }
 
+    // ---- W3a 迁移顺序的“物理可实现”变体（任务 B）--------------------------------
+
+    /**
+     * The physically-realizable counterpart of the decoder-visible/byte-invisible fault
+     * injected by the three ordering tests above. There the staged document is *always*
+     * the intended bytes to every byte check and only the codec's read channel sees a
+     * different meaning. Here the tamper is a real mid-transaction rewrite: the staged
+     * temp is opened and verified with the correct bytes, and a concurrent writer then
+     * changes the on-disk temp **after** `saveAt`'s byte comparison but **before** the
+     * atomic rename — a scenario any second process touching the temp folder can produce.
+     *
+     * It is modelled as a read-count-ordered double over [FakeFs]: the first `readBytes`
+     * of the temp (the byte comparison) faithfully returns the intended bytes, and only
+     * after returning does the backing temp become the tampered content that any later
+     * reader — the staged decode in the fixed ordering, or the rename source in the
+     * pre-fix ordering — actually sees. The `.restore.tmp` auto-restore is blocked so the
+     * pre-fix implementation cannot hide behind its post-rename mitigation:
+     *  - pre-fix `savePresets`/`saveAt` ordering renames the tampered temp straight onto
+     *    the live library (byte compare already passed on the pre-tamper read);
+     *  - the current `migrateLegacyPresetLibrary` decodes the staged temp before renaming,
+     *    sees the tampered list, refuses, and leaves the exact original legacy bytes live
+     *    with the temp cleaned.
+     */
+    @Test
+    fun aConcurrentTempRewriteAfterTheByteCompareNeverReachesTheLiveLibrary() {
+        val base = FakeFs()
+        val legacyBytes = legacyText.encodeToByteArray()
+        base.files[base.presetsPath] = legacyBytes.copyOf()
+        val staged = converted()
+        // A structurally valid product library that decodes to the same count / ids / names
+        // but silently loses the second watermark: an ordered rewrite, not corruption.
+        val tampered = productLibrary(
+            listOf(staged[0], staged[1].copy(design = staged[1].design.withoutOverlay())),
+        ).encodeToByteArray()
+        val fs = MidTransactionTempRewriteFs(base, base.presetsPath, tampered, legacyBytes)
+        val store = PhoneProjectStore(fs, io = null, platform = null)
+        store.loadPresets()
+
+        assertEquals(0, store.importLegacyPresets(staged, expectedCount = 2))
+
+        assertContentEquals(
+            legacyBytes,
+            base.files.getValue(base.presetsPath),
+            "暂存字节比对之后被并发改写的 temp 不得替换线上库：线上库必须仍是原始旧库字节",
+        )
+        assertTrue(
+            fs.renamedNonOriginalToLive.isEmpty(),
+            "被并发改写的暂存文件不得 rename 到线上库：${fs.renamedNonOriginalToLive}",
+        )
+        // The tampered temp was promoted only as far as the decode check, which then removed it.
+        assertFalse(base.files.containsKey(fs.tempPath), "被拒绝的暂存文件必须清理")
+        val backup = base.files.keys.single { ".legacy-" in it }
+        assertContentEquals(legacyBytes, base.files.getValue(backup), "备份必须保留原始字节")
+        assertTrue(backup.contains(Sha256.hex(legacyBytes)))
+        assertTrue(
+            store.presetError?.startsWith("FM-E-PRESET-001") == true,
+            "并发改写后的解码不符必须保留禁写错误码：${store.presetError}",
+        )
+
+        // The temp really was tampered mid-transaction: the byte comparison ran on the
+        // pre-tamper read and the staged decode ran on the post-tamper content.
+        assertTrue(
+            fs.ops.count { it.startsWith("readBytes ${fs.tempPath}") } >= 1 &&
+                fs.ops.any { it == "readText ${fs.tempPath}" } &&
+                fs.tamperApplied,
+            "必须确有“字节比对在前、暂存解码在后”的中途改写：${fs.ops}",
+        )
+    }
+
     // ---- doubles -------------------------------------------------------------
 
     /**
@@ -384,6 +453,70 @@ class PhonePresetMigrationOrderTest {
             if (path.endsWith(".restore.tmp")) return false
             if (path == tempPath) stagedBytes = bytes.copyOf()
             return base.writeBytes(path, bytes)
+        }
+
+        override fun rename(from: String, to: String): Boolean {
+            ops += "rename $from -> $to"
+            if (from.endsWith(".restore.tmp")) return false
+            if (to == livePath) {
+                val moving = base.readBytes(from)
+                if (moving == null || !moving.contentEquals(legacyBytes)) {
+                    renamedNonOriginalToLive += "$from -> $to (${moving?.size ?: -1} B)"
+                }
+            }
+            return base.rename(from, to)
+        }
+    }
+
+    /**
+     * A read-count-ordered double for a *real* mid-transaction temp rewrite. The staged
+     * temp is written and read back for the byte comparison with the genuine bytes; only
+     * after that comparison read returns does the backing temp become the tampered content
+     * every later reader sees (the staged decode in the fixed ordering, or the rename
+     * source in the pre-fix `saveAt` ordering). `.restore.tmp` writes/rename are refused so
+     * the pre-fix implementation cannot conceal a promoted tamper behind its auto-restore.
+     */
+    private class MidTransactionTempRewriteFs(
+        private val base: FakeFs,
+        private val livePath: String,
+        private val tamperedBytes: ByteArray,
+        private val legacyBytes: ByteArray,
+    ) : ProductFileSystem by base {
+        val ops = mutableListOf<String>()
+        val renamedNonOriginalToLive = mutableListOf<String>()
+        val tempPath get() = "$livePath.tmp"
+        var tamperApplied = false
+            private set
+        private var genuineStaged: ByteArray? = null
+        private var armed = false
+
+        override fun writeBytes(path: String, bytes: ByteArray): Boolean {
+            ops += "writeBytes $path ${bytes.size}"
+            // The auto-restore mitigation must not succeed either.
+            if (path.endsWith(".restore.tmp")) return false
+            if (path == tempPath) genuineStaged = bytes.copyOf()
+            return base.writeBytes(path, bytes)
+        }
+
+        override fun readBytes(path: String): ByteArray? {
+            ops += "readBytes $path"
+            if (path == tempPath) {
+                val genuine = genuineStaged
+                if (!armed && genuine != null) {
+                    // This read is the byte comparison: hand back the genuine staged bytes,
+                    // then rewrite the on-disk temp so every subsequent read sees the tamper.
+                    armed = true
+                    base.files[tempPath] = tamperedBytes.copyOf()
+                    tamperApplied = true
+                    return genuine.copyOf()
+                }
+            }
+            return base.readBytes(path)
+        }
+
+        override fun readText(path: String): String? {
+            ops += "readText $path"
+            return base.readText(path)
         }
 
         override fun rename(from: String, to: String): Boolean {
