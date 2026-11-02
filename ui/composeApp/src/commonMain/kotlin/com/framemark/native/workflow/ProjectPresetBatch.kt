@@ -408,6 +408,8 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
     // M01 rule 2: a mixed 有设计/无设计 selection waits for an explicit
     // 「仅导出已设计的 X 张」 before anything reaches the queue.
     var pendingBatch by remember { mutableStateOf<Pair<BatchPreflight, List<String>>?>(null) }
+    // 本次提交的对账行：只反映这一按，历史 Done 不计入。
+    var submitLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     projects.loadBatch()
     val jobs = projects.batchJobs
@@ -489,12 +491,8 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                         }
                         else -> {
                             pendingBatch = null
-                            val added = projects.enqueueBatch(ids)
-                            notice = if (added == 0) {
-                                "没有新任务：这些照片的设计与导出设置和队列里已有的完全相同。"
-                            } else {
-                                "已入队 $added 项（重复的自动跳过）。"
-                            }
+                            projects.enqueueBatch(ids)
+                            submitLines = projects.submitLines()
                         }
                     }
                 },
@@ -538,13 +536,9 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                                 notice = "这些照片的边框状态已改变，本次未加入任何任务。请重新点「加入队列」预检。"
                             }
                             BatchConfirmGate.Submit -> {
-                                val added = projects.enqueueBatch(current.designedPhotoIds)
+                                projects.enqueueBatch(current.designedPhotoIds)
                                 pendingBatch = null
-                                notice = if (added == 0) {
-                                    "没有新任务：这些照片已在队列中。未加入 ${current.undesignedCount} 张无设计照片。"
-                                } else {
-                                    "已入队 $added 项，未加入 ${current.undesignedCount} 张无设计照片。"
-                                }
+                                submitLines = projects.submitLines()
                             }
                         }
                     },
@@ -556,6 +550,16 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                 GhostButton(
                     text = "取消",
                     onClick = { pendingBatch = null; notice = null },
+                )
+            }
+        }
+        if (submitLines.isNotEmpty()) {
+            Spacer(Modifier.height(FmSpacing.sm))
+            submitLines.forEach { line ->
+                Text(
+                    text = line,
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
                 )
             }
         }
@@ -701,4 +705,18 @@ private fun jobMeta(job: BatchJob): String {
     )
     if (job.attempts > 1) parts.add("第 ${job.attempts} 次")
     return parts.joinToString(" · ")
+}
+
+
+/** 本次「加入队列」的对账行；尚未提交过时为空。 */
+private fun ProjectHolder.submitLines(): List<String> {
+    val report = batchLastSubmit ?: return emptyList()
+    return submitFeedbackLines(
+        selected = report.selected,
+        added = report.added,
+        undesigned = report.undesigned,
+        duplicates = report.duplicates,
+        rejected = report.rejected.size,
+        tally = SubmitTally.of(batchJobs, report.addedIds),
+    )
 }

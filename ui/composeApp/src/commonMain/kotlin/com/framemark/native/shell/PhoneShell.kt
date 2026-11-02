@@ -259,13 +259,21 @@ fun PhoneShell() {
      * reuse it without re-running the check. `buildPhotoBatch()` reflects the current
      * per-photo bindings only; historical queue rows are untouched (M01 rule 5).
      */
-    fun submitAndOpenPhotoBatch() {
-        val report = batchQueue.submit(buildPhotoBatch())
+    fun submitAndOpenPhotoBatch(preflight: BatchPreflight? = null) {
+        // `selected` is the whole selection the user asked for, not just the designed
+        // subset: the sheet must be able to show 无设计未加入 next to what it queued.
+        val report = batchQueue.submit(
+            buildPhotoBatch(),
+            selected = store.photos.size,
+            undesigned = preflight?.undesignedCount ?: 0,
+        )
         photoBatchOpen = true
         report.rejected.firstOrNull()?.let { (name, why) -> watermarkError = "$name：$why" }
         println(
-            "FM_PHOTO_BATCH open photos=${store.photos.size} added=${report.added} " +
-                "duplicate=${report.duplicates} rejected=${report.rejected.size} rows=${batchQueue.rows().size}",
+            "FM_PHOTO_BATCH open photos=${store.photos.size} selected=${report.selected} " +
+                "added=${report.added} duplicate=${report.duplicates} " +
+                "undesigned=${report.undesigned} rejected=${report.rejected.size} " +
+                "reconciled=${report.reconciled} rows=${batchQueue.rows().size}",
         )
     }
 
@@ -825,7 +833,7 @@ fun PhoneShell() {
                 confirmButton = {
                     androidx.compose.material3.TextButton(onClick = {
                         pendingPhotoBatch = null
-                        submitAndOpenPhotoBatch()
+                        submitAndOpenPhotoBatch(preflight)
                     }) { androidx.compose.material3.Text("仅导出已设计的 ${preflight.designedCount} 张") }
                 },
                 dismissButton = {

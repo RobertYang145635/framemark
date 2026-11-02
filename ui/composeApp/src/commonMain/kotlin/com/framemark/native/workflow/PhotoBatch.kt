@@ -201,6 +201,9 @@ class PhonePhotoBatchQueue(
         private set
     var running by mutableStateOf(false)
         private set
+    /** Counts of the most recent [submit] only; earlier queue rows never contribute. */
+    var lastSubmit by mutableStateOf<SubmitReport?>(null)
+        private set
     private var pauseRequested by mutableStateOf(false)
     var resumed by mutableStateOf(0)
         private set
@@ -209,6 +212,7 @@ class PhonePhotoBatchQueue(
     val runnableCount: Int get() = queue.jobs.count { it.status == BatchJobStatus.Queued && !it.requiresRebuild }
     val doneCount: Int get() = queue.doneCount
     val failedCount: Int get() = queue.failedCount
+    val cancelledCount: Int get() = queue.cancelledCount
 
     /** Reads the persisted queue and turns an interrupted Running back into Queued. */
     fun load(): List<BatchJob> {
@@ -241,7 +245,11 @@ class PhonePhotoBatchQueue(
      * settings already exist is not added twice ([BatchQueue.submit] dedupes on the
      * idempotency key), so pressing 开始导出 twice cannot duplicate an output.
      */
-    fun submit(candidates: List<BatchCandidate>): SubmitReport = synchronized(queueLock) {
+    fun submit(
+        candidates: List<BatchCandidate>,
+        selected: Int = candidates.size,
+        undesigned: Int = 0,
+    ): SubmitReport = synchronized(queueLock) {
         val now = clock()
         var next = queue
         val added = mutableListOf<String>()
@@ -281,15 +289,26 @@ class PhonePhotoBatchQueue(
         }
         queue = next
         persist()
-        val report = SubmitReport(added.size, duplicates.size, rejected.toList())
+        val report = SubmitReport(
+            added = added.size,
+            duplicates = duplicates.size,
+            rejected = rejected.toList(),
+            selected = selected,
+            undesigned = undesigned,
+            addedIds = added.toList(),
+        )
+        lastSubmit = report
         println(
-            "FM_PHOTO_QUEUE_SUBMIT added=${report.added} duplicate=${report.duplicates} " +
-                "rejected=${report.rejected} total=${next.jobs.size}",
+            "FM_PHOTO_QUEUE_SUBMIT selected=$selected added=${report.added} duplicate=${report.duplicates} " +
+                "undesigned=$undesigned rejected=${report.rejected.size} total=${next.jobs.size}",
         )
         report
     }
 
     fun rows(): List<PhoneBatchRow> = queue.jobs.map { job -> rowOf(job) }
+
+    /** Status split of one submission's jobs, read from the live queue. */
+    fun tally(report: SubmitReport): SubmitTally = SubmitTally.of(queue, report.addedIds)
 
     private fun rowOf(job: BatchJob): PhoneBatchRow {
         val card = cardLookup(job.design.cardId)
@@ -503,8 +522,24 @@ private fun BatchJob.overlayMaterialized(): OverlaySpec? {
     return spec.toOverlaySpec(file, aspect)
 }
 
-/** Queue result for the UI: how many landed, how many were already there, what was refused. */
-data class SubmitReport(val added: Int, val duplicates: Int, val rejected: List<Pair<String, String>>)
+/**
+ * Queue result for the UI: how many landed, how many were already there, what was refused.
+ *
+ * [selected] and [undesigned] make the press self-reconciling without the caller having to
+ * remember the pre-flight: selected == added + undesigned + duplicates + rejected.size.
+ * [addedIds] lets the panel split *these* jobs by status instead of counting the whole queue.
+ */
+data class SubmitReport(
+    val added: Int,
+    val duplicates: Int,
+    val rejected: List<Pair<String, String>>,
+    val selected: Int = added + duplicates + rejected.size,
+    val undesigned: Int = 0,
+    val addedIds: List<String> = emptyList(),
+) {
+    /** True when every photo of the selection is accounted for exactly once. */
+    val reconciled: Boolean get() = selected == added + undesigned + duplicates + rejected.size
+}
 
 private fun ProductExportSettings.toUiExport(): ExportSettings = ExportSettings(
     format = when (format) {
@@ -567,7 +602,12 @@ fun PhotoBatchScreen(
         Spacer(Modifier.height(FmSpacing.md))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "完成 ${queue.doneCount} · 待导出 ${queue.pendingCount} · 失败 ${queue.failedCount}",
+                text = buildString {
+                    append("完成 ${queue.doneCount} · 待导出 ${queue.pendingCount} · 失败 ${queue.failedCount}")
+                    // Cancelled jobs are neither done nor failed; hiding them would make
+                    // the queue totals silently disagree with the row list.
+                    if (queue.cancelledCount > 0) append(" · 已取消 ${queue.cancelledCount}")
+                },
                 style = FmType.labelMedium,
                 color = FmPalette.onSurfaceSecondary,
             )
@@ -582,6 +622,18 @@ fun PhotoBatchScreen(
                     .clickable(enabled = !queue.running && queue.runnableCount > 0) { queue.start() }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
+        }
+        queue.lastSubmit?.let { report ->
+            submitFeedbackLines(
+                selected = report.selected,
+                added = report.added,
+                undesigned = report.undesigned,
+                duplicates = report.duplicates,
+                rejected = report.rejected.size,
+                tally = queue.tally(report),
+            ).forEach { line ->
+                Text(line, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
+            }
         }
         queue.error?.let { message ->
             Text(message, style = FmType.labelSmall, color = FmPalette.onSurfaceSecondary)

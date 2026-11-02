@@ -129,6 +129,13 @@ interface ProjectHolder {
     val batchUndesignedSkipped: List<UndesignedPhoto>
         get() = emptyList()
 
+    /**
+     * Counts of the last 按照片批量 press only (selection, enqueued, 无设计, 重复, 拒绝).
+     * Null before the first submission; earlier Done rows never feed into it.
+     */
+    val batchLastSubmit: SubmitReport?
+        get() = null
+
     /** Reads the persisted queue and puts an interrupted item back in the queue. */
     fun loadBatch()
 

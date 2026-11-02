@@ -102,6 +102,10 @@ class DesktopProjectController(
     override var batchUndesignedSkipped by mutableStateOf<List<UndesignedPhoto>>(emptyList())
         private set
 
+    /** Counts of the most recent [enqueueBatch] press; the panel reads it for 本次对账. */
+    override var batchLastSubmit by mutableStateOf<SubmitReport?>(null)
+        private set
+
     private var batchQueue = BatchQueue()
     private var batchCancelRequested = false
     private var legacyBatchJobs: List<BatchJob>? = null
@@ -720,9 +724,21 @@ class DesktopProjectController(
     override fun enqueueBatch(photoIds: List<String>): Int {
         loadBatch()
         var added = 0
+        var duplicates = 0
+        val rejected = mutableListOf<Pair<String, String>>()
+        val addedIds = mutableListOf<String>()
         val platform = WorkflowEnv.platform
         if (platform == null) {
             batchError = "存储不可用，无法固定批量导出目录"
+            // Nothing could be queued, and the selected photos are accounted for as refused,
+            // so 选择 = 入队 + 无设计 + 重复 + 拒绝 still adds up for the panel.
+            batchLastSubmit = SubmitReport(
+                added = 0,
+                duplicates = 0,
+                rejected = listOf("<全部>" to "存储不可用"),
+                selected = photoIds.size,
+                undesigned = 0,
+            )
             return 0
         }
         // M01 rules 1-3: an existing photo with no border of its own is 未加入, reported
@@ -730,9 +746,23 @@ class DesktopProjectController(
         // binding are enqueued, each keeping its original list position as nameIndex.
         val preflight = project.batchPreflight(photoIds)
         batchUndesignedSkipped = preflight.undesigned
+        // Ids the pre-flight neither designed nor marked as 无设计 (a photo removed between
+        // the selection and this call). They used to vanish from every count; name them so
+        // 选择 = 入队 + 无设计 + 重复 + 拒绝 still holds.
+        val accounted = preflight.designedPhotoIds.toSet() + preflight.undesigned.map { it.photoId }.toSet()
+        photoIds.filterNot { it in accounted }.forEach { stale ->
+            val name = project.photos.firstOrNull { it.id == stale }?.displayName ?: stale
+            rejected += name to "照片已不在项目中，未加入"
+        }
         for (photoId in preflight.designedPhotoIds) {
-            val photo = project.photos.firstOrNull { it.id == photoId } ?: continue
-            val design = project.designs[photoId] ?: continue
+            val photo = project.photos.firstOrNull { it.id == photoId }
+            val design = project.designs[photoId]
+            if (photo == null || design == null) {
+                // The project changed between the pre-flight and the loop; say so instead
+                // of dropping the item, otherwise the counts stop reconciling.
+                rejected += (photo?.displayName ?: photoId) to "照片或设计已不存在，未加入"
+                continue
+            }
             val photoIndex = project.photos.indexOfFirst { it.id == photo.id } + 1
             val exportSettings = project.exportSettings.copy(quality = platform.preferredJpegQuality())
             val job = BatchJob.forPhoto(
@@ -750,14 +780,29 @@ class DesktopProjectController(
                 is SubmitOutcome.Added -> {
                     batchQueue = outcome.queue
                     added++
+                    addedIds += outcome.jobId
                 }
-                is SubmitOutcome.Duplicate ->
+                is SubmitOutcome.Duplicate -> {
+                    duplicates++
                     println("FM_PRODUCT_BATCH_DUPLICATE photo=${photo.displayName} existing=${outcome.existingId}")
+                }
             }
         }
         batchJobs = batchQueue.jobs
         if (added > 0) persistBatch()
-        println("FM_PRODUCT_BATCH_ENQUEUED added=$added total=${batchJobs.size}")
+        batchLastSubmit = SubmitReport(
+            added = added,
+            duplicates = duplicates,
+            rejected = rejected.toList(),
+            selected = photoIds.size,
+            undesigned = preflight.undesigned.size,
+            addedIds = addedIds.toList(),
+        )
+        println(
+            "FM_PRODUCT_BATCH_ENQUEUED selected=${photoIds.size} added=$added duplicate=$duplicates " +
+                "undesigned=${preflight.undesigned.size} rejected=${rejected.size} " +
+                "reconciled=${batchLastSubmit?.reconciled} total=${batchJobs.size}",
+        )
         return added
     }
 
