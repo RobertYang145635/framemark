@@ -39,3 +39,12 @@ target_compile_definitions(framemark_engine PRIVATE FM_EXPORT_LINKED=1)
 target_link_libraries(framemark_engine fm_android_export)
 
 target_link_libraries(framemark_engine android log EGL GLESv2 dl m z)
+
+# Android 15+ devices can run 16 KB pages, and the platform refuses to map a
+# shared library whose LOAD segments are only 4 KB aligned. NDK r26 still emits
+# 4 KB alignment unless asked otherwise, so set it for the final shared library
+# only: the prebuilt renderer archives above are unchanged inputs, and nothing
+# here touches the render/queue contracts.
+target_link_options(framemark_engine PRIVATE
+    "-Wl,-z,max-page-size=16384"
+)
