@@ -3,6 +3,7 @@ package com.framemark.native.inspector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -115,9 +116,20 @@ fun EditorTabList(
                 }
             }
             is InspectorLoadState.Ready -> {
-                val sections = tabSections(tab, model)
+                val sections = tabSections(tab, model).map { (section, list) ->
+                    // The Logo tab already renders the brand block above; repeating the raw
+                    // control underneath was the duplicate row users saw twice.
+                    val visible = if (tab == InspectorSection.Logo) {
+                        list.filterNot { it.type == ControlType.Brand }
+                    } else {
+                        list
+                    }
+                    section to visible
+                }
                 val controls = sections.flatMap { it.second }
-                if (controls.isEmpty()) {
+                val brandBlockShown = tab == InspectorSection.Logo &&
+                    model?.controls?.any { it.type == ControlType.Brand } == true
+                if (controls.isEmpty() && !brandBlockShown) {
                     item { PanelNote(emptyTabText(tab)) }
                 } else {
                     sections.forEachIndexed { sectionIndex, (section, sectionControls) ->
@@ -212,9 +224,12 @@ private fun BrandLogoArea(model: InspectorCardModel, session: DesignSession) {
                     color = FmPalette.onSurfaceMuted,
                 )
             }
+        }
+        // Actions live on their own line: at 1.5x/2x system font the two chips used to
+        // squeeze the value into one line and the text got clipped by the fixed box.
+        Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs)) {
             var brandMenu by remember(control.key) { mutableStateOf(false) }
             BrandAction("选择") { brandMenu = true }
-            Spacer(Modifier.width(FmSpacing.xs))
             BrandAction("自动匹配") { session.set(control, "") }
             if (brandMenu) {
                 BrandLogoLibraryDialog(control = control, session = session, onDismiss = { brandMenu = false })
