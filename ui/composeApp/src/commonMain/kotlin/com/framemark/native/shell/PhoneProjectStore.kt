@@ -19,7 +19,6 @@ import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreError
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
-import com.framemark.native.product.valueOrNull
 import com.framemark.native.product.WatermarkSpec as ProjectWatermark
 import com.framemark.native.product.ExportFormat as ProductExportFormat
 import com.framemark.native.product.ExportSettings as ProductExportSettings
@@ -659,6 +658,12 @@ class PhoneProjectStore(
      * Rewrites the old `{"version":1,"presets":[...]}` document only after the
      * exact original bytes are backed up and verified. A conversion that omits any
      * legacy item is refused so the source file cannot be replaced partially.
+     *
+     * The replace itself is [SessionStore.migrateLegacyPresetLibrary] — the same
+     * transaction the empty-legacy branch uses: it stages the converted document,
+     * decodes the staged file and compares it against the whole converted list, and
+     * only renames over the library once that verification passed. Nothing reaches
+     * the live document before a semantic read-back of the staged bytes.
      */
     fun importLegacyPresets(converted: List<ProjectPreset>, expectedCount: Int): Int {
         if (expectedCount <= 0 && converted.isEmpty()) return 0
@@ -732,35 +737,34 @@ class PhoneProjectStore(
             presetError = "FM-E-PRESET-001 迁移预设 ID 冲突；原文件未更改（备份：$backupPath）"
             return 0
         }
-
-        val saved = store.savePresets(presets + normalized)
-        if (saved !is StoreResult.Ok) {
-            if (readRawBytes(path)?.contentEquals(originalBytes) != true) {
-                restorePresetBytes(path, originalBytes)
-            }
-            presetError = "FM-E-PRESET-001 旧预设迁移写入失败；原库已备份：$backupPath"
+        // The transaction below replaces the whole library with `normalized`, so it may
+        // only run while the unreadable document contributes nothing in memory. A failed
+        // `loadPresets` never assigns [presets] and the field starts empty, so an
+        // unreadable document means an empty one; refused here instead of silently merged.
+        if (presets.isNotEmpty()) {
+            presetError = "FM-E-PRESET-001 旧库不可读但内存已有 ${presets.size} 项预设，先解决冲突再迁移；原文件未更改（备份：$backupPath）"
             return 0
         }
 
-        val verified = store.loadPresets().valueOrNull()
-        val expectedReadback = (presets + normalized).map {
-            it.copy(exportSettings = it.exportSettings.copy(quality = 100))
-        }
-        if (verified != expectedReadback) {
-            val restored = restorePresetBytes(path, originalBytes)
-            presetError = buildString {
-                append("FM-E-PRESET-001 迁移读回校验失败；原库备份：").append(backupPath)
-                if (!restored) append("（自动恢复未完成，请从备份恢复）")
+        when (val migrated = store.migrateLegacyPresetLibrary(normalized)) {
+            is StoreResult.Ok -> {
+                presets = normalized
+                presetDocumentState = PresetDocumentState.Loaded
+                presetError = null
+                println("FM_PRESET_MIGRATED count=${normalized.size} sha256=$sha backup=$backupPath")
+                return normalized.size
             }
-            presetDocumentState = PresetDocumentState.Unreadable
-            return 0
+            is StoreResult.Failed -> {
+                presetError = "FM-E-PRESET-001 旧预设迁移已停止；原库备份：$backupPath（${migrated.error.message}）"
+                presetDocumentState = PresetDocumentState.Unreadable
+                return 0
+            }
+            StoreResult.Missing -> {
+                presetError = "FM-E-PRESET-001 旧预设库不存在，未执行迁移；原库备份：$backupPath"
+                presetDocumentState = PresetDocumentState.Unreadable
+                return 0
+            }
         }
-
-        presets = presets + normalized
-        presetDocumentState = PresetDocumentState.Loaded
-        presetError = null
-        println("FM_PRESET_MIGRATED count=${normalized.size} sha256=$sha backup=$backupPath")
-        return normalized.size
     }
 
     private fun persistPresets(next: List<ProjectPreset>): Boolean {
@@ -792,23 +796,6 @@ class PhoneProjectStore(
             return false
         }
         return presetDocumentState == PresetDocumentState.Missing || presetDocumentState == PresetDocumentState.Loaded
-    }
-
-    private fun restorePresetBytes(path: String, bytes: ByteArray): Boolean {
-        val temp = "$path.restore.tmp"
-        return try {
-            if (!fileSystem.writeBytes(temp, bytes) || fileSystem.fileSize(temp) != bytes.size.toLong()) {
-                false
-            } else if (!fileSystem.rename(temp, path)) {
-                false
-            } else {
-                readRawBytes(path)?.contentEquals(bytes) == true
-            }
-        } catch (_: Throwable) {
-            false
-        } finally {
-            runCatching { fileSystem.delete(temp) }
-        }
     }
 
     private fun readRawBytes(path: String): ByteArray? = runCatching { fileSystem.readBytes(path) }.getOrNull()
