@@ -39,15 +39,7 @@ import kotlin.test.assertTrue
  * and the desktop batch queue (`product.BatchQueue`, per-photo pairing, resume).
  */
 class DesktopPresetBatchTest {
-    private val repo = Path.of(System.getProperty("user.dir")).toAbsolutePath().let {
-        var dir: Path? = it
-        while (dir != null && !Files.isRegularFile(dir.resolve("framemark/bridge/desktop/cards-175.json"))) {
-            dir = dir.parent
-        }
-        dir
-    } ?: error("repo root not found")
-
-    private fun asset(name: String): String = repo.resolve("_research/test-assets/$name").toString()
+    private fun asset(name: String): String = DesktopTestImageFixtures.path(name)
 
     private fun newController(dir: Path, fsOverride: ProductFileSystem? = null): DesktopProjectController {
         val store = if (fsOverride != null) SessionStore(fsOverride) else SessionStore(JvmProductFileSystem(dir.toString()))

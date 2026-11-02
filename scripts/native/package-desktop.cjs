@@ -36,13 +36,18 @@ fs.mkdirSync(input)
 const sources = [path.resolve(args['app-jar']), ...fs.readFileSync(args.classpath, 'utf8').trim().split(path.delimiter).filter(filename => filename.endsWith('.jar'))]
 const jars = []
 for (const source of sources) {
-  const target = path.join(input, path.basename(source))
+  let name = path.basename(source)
+  let target = path.join(input, name)
   if (fs.existsSync(target)) {
-    if (sha(target) !== sha(source)) throw new Error(`Conflicting classpath jar names: ${path.basename(source)}`)
-    continue
+    if (sha(target) === sha(source)) continue
+    // Compose publishes a small forwarding jar and its AndroidX implementation
+    // with the same basename. Preserve both instead of overwriting either one.
+    name = path.basename(source, '.jar') + '-' + sha(source).slice(0, 12) + '.jar'
+    target = path.join(input, name)
+    if (fs.existsSync(target)) throw new Error(`Conflicting disambiguated classpath jar: ${name}`)
   }
   fs.copyFileSync(source, target)
-  jars.push({ name: path.basename(source), sha256: sha(source) })
+  jars.push({ name, sha256: sha(source) })
 }
 // The previous verified runtime's modules plus management/Unsafe/accessibility,
 // which the native UI and its runtime diagnostics actually use.
@@ -63,7 +68,11 @@ for (const part of ['bin', 'data', 'bridge']) {
   fs.cpSync(source, path.join(image, part), { recursive: true, errorOnExist: true, force: false })
 }
 const cfg = path.join(image, 'app', name + '.cfg')
-const cfgText = fs.readFileSync(cfg, 'utf8')
+let cfgText = fs.readFileSync(cfg, 'utf8')
+// Match Gradle's classpath ordering, including disambiguated equal-name jars.
+cfgText = cfgText.replace(/^app\.classpath=.*(?:\r?\n)?/gm, '')
+cfgText = cfgText.replace('[Application]', '[Application]\n' + jars.map(jar => 'app.classpath=$APPDIR\\' + jar.name).join('\n'))
+fs.writeFileSync(cfg, cfgText, 'utf8')
 if (/[A-Za-z]:[\\/]|_research/.test(cfgText)) throw new Error('Launcher config contains a build-machine path')
 const rows = []
 function inventory (dir) {

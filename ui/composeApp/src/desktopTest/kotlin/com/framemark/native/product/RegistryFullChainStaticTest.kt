@@ -140,8 +140,10 @@ class RegistryFullChainStaticTest {
     @Test
     fun the_desktop_and_phone_resolve_the_same_registry_bytes() {
         val target = requireNotNull(load) { "Registry fixtures must load: ${provider.missing()}" }
-        val file = RegistrySource(RegistrySource.devWorkspaceRoot()).documents().irSlotBinding
-        assertTrue(file != null && file.isFile, "绑定表必须可解析：${RegistrySource(RegistrySource.devWorkspaceRoot()).documents().missing}")
+        val source = RegistrySource(RealData.root.toFile())
+        val documents = source.documents()
+        val file = documents.irSlotBinding
+        assertTrue(file != null && file.isFile, "绑定表必须可解析：${documents.missing}")
         val reparsed = IrSlotBinding.load(file!!.readText())
         assertEquals(target.binding.stats.entries, reparsed.stats.entries)
         // Same control, same decision, whichever instance asked.
@@ -165,5 +167,5 @@ class RegistryFullChainStaticTest {
  * The registry documents are several megabytes and JUnit builds a new test instance
  * per method, so the parse is shared: one load for the whole class.
  */
-private val sharedProvider = DesktopRegistryProvider(RegistrySource(RegistrySource.devWorkspaceRoot()))
+private val sharedProvider = DesktopRegistryProvider(RegistrySource(RealData.root.toFile()))
 private val sharedLoad by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { sharedProvider.load() }

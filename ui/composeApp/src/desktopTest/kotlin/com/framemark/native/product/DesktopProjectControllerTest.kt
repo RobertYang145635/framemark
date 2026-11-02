@@ -25,15 +25,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopProjectControllerTest {
-    private val repo = Path.of(System.getProperty("user.dir")).toAbsolutePath().let {
-        var dir: Path? = it
-        while (dir != null && !Files.isRegularFile(dir.resolve("framemark/bridge/desktop/cards-175.json"))) {
-            dir = dir.parent
-        }
-        dir
-    } ?: error("repo root not found")
-
-    private fun photo(name: String): String = repo.resolve("_research/test-assets/$name").toString()
+    private fun photo(name: String): String = DesktopTestImageFixtures.path(name)
 
     private fun newController(dir: Path, fsOverride: ProductFileSystem? = null): DesktopProjectController {
         val store = if (fsOverride != null) SessionStore(fsOverride) else SessionStore(JvmProductFileSystem(dir.toString()))

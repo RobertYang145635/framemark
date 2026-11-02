@@ -12,7 +12,9 @@ import java.io.File
  * keeps them spread over the source tree. Both are answered from a root that does
  * **not** come from the launch working directory: an install is located through
  * [InstallRoot] (launcher / jar folder / process command), and the workspace
- * layout is only used when `FM_RUNTIME_ROOT` points at the checkout explicitly.
+ * layout is only used when the caller or `FM_RUNTIME_ROOT` supplies a checkout
+ * root explicitly. The supplied root may be the repository itself or its legacy
+ * parent containing a `framemark/` directory.
  *
  * This replaces the earlier "walk up from cwd" lookup, which made a shortcut or a
  * shell started in another folder boot with an empty inspector.
@@ -43,10 +45,12 @@ class RegistrySource(explicitRoot: File? = null) {
             }
     }
 
-    private val roots: List<File> = buildList {
+    private val explicitRoots: List<File> = buildList {
         explicitRoot?.let { add(it.absoluteFile) }
-        addAll(InstallRoot.candidates())
+        System.getenv("FM_RUNTIME_ROOT")?.takeIf { it.isNotBlank() }?.let { add(File(it).absoluteFile) }
     }.distinct()
+
+    private val roots: List<File> = (explicitRoots + InstallRoot.candidates()).distinct()
 
     /** Packaged layout: `<root>/data/registry/`. */
     private val bundleRegistry: File? =
@@ -56,8 +60,12 @@ class RegistrySource(explicitRoot: File? = null) {
 
     /** Dev layout, only reachable through an explicit root. */
     private val workspace: File? =
-        roots.firstNotNullOfOrNull { root ->
-            root.takeIf { File(it, "framemark/engine/data/taxonomy.json").isFile }
+        explicitRoots.firstNotNullOfOrNull { root ->
+            when {
+                File(root, "engine/data/taxonomy.json").isFile -> root
+                File(root, "framemark/engine/data/taxonomy.json").isFile -> File(root, "framemark")
+                else -> null
+            }
         }
 
     /** The workspace repo root, when an explicit root pointed at one. */
@@ -74,24 +82,24 @@ class RegistrySource(explicitRoot: File? = null) {
     }
 
     fun documents(): Documents = Documents(
-        taxonomy = bundledOr("taxonomy.json", "framemark/engine/data/taxonomy.json"),
-        capabilities = bundledOr("capabilities.json", "framemark/engine/data/capabilities.json"),
+        taxonomy = bundledOr("taxonomy.json", "engine/data/taxonomy.json"),
+        capabilities = bundledOr("capabilities.json", "engine/data/capabilities.json"),
         inspectorMeta = bundledOr(
             "inspector-meta.json",
-            "framemark/ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json",
-            "framemark/engine/data/inspector-meta.json",
+            "ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json",
+            "engine/data/inspector-meta.json",
         ),
-        controls = bundledOr("controls.json", "framemark/engine/data/controls.json"),
+        controls = bundledOr("controls.json", "engine/data/controls.json"),
         vendoredControls = VENDOR_KEYS.mapNotNull { key ->
             bundledOr(
                 "controls.$key.json",
-                "framemark/src/renderer/src/core/controls/data/controls.$key.json",
+                "src/renderer/src/core/controls/data/controls.$key.json",
             )
         },
-        logos = bundledOr("logos.json", "framemark/engine/data/logos.json"),
+        logos = bundledOr("logos.json", "engine/data/logos.json"),
         irSlotBinding = bundledOr(
             "ir-slot-binding.json",
-            "framemark/bridge/desktop/ir-slot-binding.json",
+            "bridge/desktop/ir-slot-binding.json",
             "_research/native/p3c/ir-slot-binding.json",
         ),
     )
@@ -158,7 +166,8 @@ class RegistrySource(explicitRoot: File? = null) {
             var dir: File? = if (code.isDirectory) code else code.parentFile
             var hops = 0
             while (dir != null && hops++ < 12) {
-                if (File(dir, "framemark/engine/data/taxonomy.json").isFile) return dir
+                if (File(dir, "engine/data/taxonomy.json").isFile) return dir
+                if (File(dir, "framemark/engine/data/taxonomy.json").isFile) return File(dir, "framemark")
                 dir = dir.parentFile
             }
             return null

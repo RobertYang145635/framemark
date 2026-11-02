@@ -1,9 +1,7 @@
 package com.framemark.native.product
 
 import com.framemark.native.library.Json
-import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
-import com.framemark.native.library.jsonString
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -15,12 +13,21 @@ internal object RealData {
     val root: Path = findRoot()
 
     private fun findRoot(): Path {
-        var dir: Path? = Path.of(System.getProperty("user.dir")).toAbsolutePath()
-        while (dir != null) {
-            if (Files.isRegularFile(dir.resolve("engine/data/taxonomy.json"))) return dir
-            dir = dir.parent
+        val codeRoot = runCatching {
+            ControlRegistryRealDataTest::class.java.protectionDomain?.codeSource?.location?.toURI()
+                ?.let(Path::of)
+        }.getOrNull()?.let { if (Files.isDirectory(it)) it else it.parent }
+        val starts = listOfNotNull(codeRoot, Path.of(System.getProperty("user.dir")).toAbsolutePath())
+        for (start in starts) {
+            var dir: Path? = start
+            while (dir != null) {
+                if (Files.isRegularFile(dir.resolve("engine/data/taxonomy.json"))) return dir
+                val legacyProject = dir.resolve("framemark")
+                if (Files.isRegularFile(legacyProject.resolve("engine/data/taxonomy.json"))) return legacyProject
+                dir = dir.parent
+            }
         }
-        error("repository root not found from ${System.getProperty("user.dir")}")
+        error("repository root not found from test code source or ${System.getProperty("user.dir")}")
     }
 
     fun text(relative: String): String = Files.readString(root.resolve(relative.removePrefix("framemark/")))
@@ -59,17 +66,14 @@ internal object RealData {
         return out
     }
 
-    /** The 10 cards the X1 desktop manifest can render today (engine binaries wired). */
+    /** Independent render-request photo fixture; real binary assets are not required here. */
     fun x1Photo(): PhotoRef {
-        val doc = Json.parse(text("framemark/bridge/desktop/x1-cards.json")).jsonMap()
-        val photo = doc["photo"].jsonMap()
-        val path = photo.jsonString("path") ?: error("x1 photo path missing")
         return PhotoRef(
-            id = "x1-photo",
-            path = root.resolve(path).toString(),
+            id = "registry-test-photo",
+            path = DesktopTestImageFixtures.path("ratio-study/4x3.jpg"),
             displayName = "photo-pil.png",
-            widthPx = (photo["w"] as? Number)?.toInt() ?: error("x1 photo w missing"),
-            heightPx = (photo["h"] as? Number)?.toInt() ?: error("x1 photo h missing"),
+            widthPx = 400,
+            heightPx = 300,
         )
     }
 
