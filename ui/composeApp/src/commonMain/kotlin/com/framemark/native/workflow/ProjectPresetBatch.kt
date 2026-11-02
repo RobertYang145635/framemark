@@ -405,6 +405,9 @@ private fun formatPresetBytes(bytes: Int): String {
 fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
     var selected by remember { mutableStateOf<Set<String>>(emptySet()) }
     var notice by remember { mutableStateOf<String?>(null) }
+    // M01 rule 2: a mixed 有设计/无设计 selection waits for an explicit
+    // 「仅导出已设计的 X 张」 before anything reaches the queue.
+    var pendingBatch by remember { mutableStateOf<Pair<BatchPreflight, List<String>>?>(null) }
 
     projects.loadBatch()
     val jobs = projects.batchJobs
@@ -462,11 +465,26 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                 text = "加入队列",
                 enabled = selected.isNotEmpty() && !projects.batchRunning,
                 onClick = {
-                    val added = projects.enqueueBatch(selected.toList())
-                    notice = if (added == 0) {
-                        "没有新任务：这些照片的设计与导出设置和队列里已有的完全相同。"
-                    } else {
-                        "已入队 $added 项（重复的自动跳过）。"
+                    val ids = selected.toList()
+                    val preflight = projects.preflightBatch(ids)
+                    when {
+                        preflight.allUndesigned -> {
+                            pendingBatch = null
+                            notice = "选中的 ${preflight.undesignedCount} 张都还没有应用边框，未创建任何任务。请先「去编辑」为照片应用边框。"
+                        }
+                        preflight.hasUndesigned -> {
+                            notice = null
+                            pendingBatch = preflight to ids
+                        }
+                        else -> {
+                            pendingBatch = null
+                            val added = projects.enqueueBatch(ids)
+                            notice = if (added == 0) {
+                                "没有新任务：这些照片的设计与导出设置和队列里已有的完全相同。"
+                            } else {
+                                "已入队 $added 项（重复的自动跳过）。"
+                            }
+                        }
                     }
                 },
             )
@@ -483,6 +501,37 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                 text = "清空队列",
                 onClick = { jobs.filter { it.status != BatchJobStatus.Running }.forEach { projects.removeBatchJob(it.id) } },
             )
+        }
+        pendingBatch?.let { (preflight, _) ->
+            Spacer(Modifier.height(FmSpacing.sm))
+            SheetNote(
+                "有 ${preflight.undesignedCount} 张还没有应用边框，不会加入导出：${preflight.undesignedSummary}。" +
+                    "可只导出已设计的 ${preflight.designedCount} 张。",
+            )
+            Spacer(Modifier.height(FmSpacing.sm))
+            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
+                PrimaryButton(
+                    text = "仅导出已设计的 ${preflight.designedCount} 张",
+                    enabled = !projects.batchRunning,
+                    onClick = {
+                        val added = projects.enqueueBatch(preflight.designedPhotoIds)
+                        pendingBatch = null
+                        notice = if (added == 0) {
+                            "没有新任务：这些照片已在队列中。未加入 ${preflight.undesignedCount} 张无设计照片。"
+                        } else {
+                            "已入队 $added 项，未加入 ${preflight.undesignedCount} 张无设计照片。"
+                        }
+                    },
+                )
+                GhostButton(
+                    text = "去编辑",
+                    onClick = { pendingBatch = null; notice = "已取消入队，请先为无设计的照片应用边框。" },
+                )
+                GhostButton(
+                    text = "取消",
+                    onClick = { pendingBatch = null; notice = null },
+                )
+            }
         }
         notice?.let {
             Spacer(Modifier.height(FmSpacing.sm))

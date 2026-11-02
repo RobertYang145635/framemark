@@ -125,8 +125,20 @@ interface ProjectHolder {
     val batchDone: Int
     val batchFailed: Int
 
+    /** The photos the last 按照片批量 refused for having no border of their own (M01). */
+    val batchUndesignedSkipped: List<UndesignedPhoto>
+        get() = emptyList()
+
     /** Reads the persisted queue and puts an interrupted item back in the queue. */
     fun loadBatch()
+
+    /**
+     * Pre-flight for 「按照片批量」 before anything is enqueued (M01 rules 1-3): which
+     * photos have their own binding and which are 未应用边框. Uses only
+     * `designs[photo.id]` — it never borrows the shared / active / selected design —
+     * so the backend, not silent UI filtering, drives the confirmation prompt.
+     */
+    fun preflightBatch(photoIds: List<String>): BatchPreflight = project.batchPreflight(photoIds)
 
     /** Queues one job per photo with that photo's own design + watermark. Returns the count added. */
     fun enqueueBatch(photoIds: List<String>): Int

@@ -68,6 +68,8 @@ import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.BatchRunner
 import com.framemark.native.workflow.BatchCandidate
+import com.framemark.native.workflow.BatchPreflight
+import com.framemark.native.workflow.batchPreflight
 import com.framemark.native.workflow.BatchScreen
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
@@ -116,6 +118,8 @@ fun PhoneShell() {
     val session = remember { DesignSession() }
     var photoBatchOpen by remember { mutableStateOf(false) }
     var confirmApplyAll by remember { mutableStateOf(false) }
+    // M01 rule 2: 「按照片批量」预检——有未应用边框的照片时先确认，再入队。
+    var pendingPhotoBatch by remember { mutableStateOf<BatchPreflight?>(null) }
     var watermarkError by remember { mutableStateOf<String?>(null) }
     // A watermark picked before any border exists yet; applied once the card does.
     var pendingWatermark by remember { mutableStateOf<String?>(null) }
@@ -227,6 +231,22 @@ fun PhoneShell() {
             ),
             nameIndex = store.photos.indexOfFirst { it.id == entry.photo.id }.let { if (it < 0) 1 else it + 1 },
             outputDirectory = WorkflowEnv.platform?.exportDir,
+        )
+    }
+
+    /**
+     * Submits the built (already designed-only) candidates and opens the sheet. Kept
+     * separate from the pre-flight gate so the 「仅导出已设计的 X 张」 confirmation can
+     * reuse it without re-running the check. `buildPhotoBatch()` reflects the current
+     * per-photo bindings only; historical queue rows are untouched (M01 rule 5).
+     */
+    fun submitAndOpenPhotoBatch() {
+        val report = batchQueue.submit(buildPhotoBatch())
+        photoBatchOpen = true
+        report.rejected.firstOrNull()?.let { (name, why) -> watermarkError = "$name：$why" }
+        println(
+            "FM_PHOTO_BATCH open photos=${store.photos.size} added=${report.added} " +
+                "duplicate=${report.duplicates} rejected=${report.rejected.size} rows=${batchQueue.rows().size}",
         )
     }
 
@@ -547,7 +567,7 @@ fun PhoneShell() {
         }
     }
 
-    val anySheet = librarySheetOpen || presetSheetOpen || exportSheetOpen || batchSheetOpen || settingsSheetOpen || photoBatchOpen || confirmApplyAll
+    val anySheet = librarySheetOpen || presetSheetOpen || exportSheetOpen || batchSheetOpen || settingsSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
     fun openExport() {
         if (activeDesignSnapshot() == null) {
             watermarkError = "请先选择并应用边框，再导出这张照片。"
@@ -556,6 +576,7 @@ fun PhoneShell() {
         }
     }
     BackHandler(enabled = anySheet || tool == EditorTool.Watermark) {        when {
+            pendingPhotoBatch != null -> pendingPhotoBatch = null
             confirmApplyAll -> confirmApplyAll = false
             photoBatchOpen -> photoBatchOpen = false
             librarySheetOpen -> librarySheetOpen = false
@@ -682,12 +703,23 @@ fun PhoneShell() {
                     .toSet(),
                 onApplyAll = { confirmApplyAll = true },
                 onOpenPhotoBatch = {
-                    val report = batchQueue.submit(buildPhotoBatch())
-                    photoBatchOpen = true
-                    report.rejected.firstOrNull()?.let { (name, why) -> watermarkError = "$name：$why" }
+                    val preflight = store.project.batchPreflight(store.photos.map { it.id })
+                    when {
+                        preflight.allUndesigned -> {
+                            pendingPhotoBatch = null
+                            watermarkError = "还没有为任何照片应用边框，未创建导出任务。请先在编辑页选择边框。"
+                        }
+                        preflight.hasUndesigned -> {
+                            pendingPhotoBatch = preflight
+                        }
+                        else -> {
+                            pendingPhotoBatch = null
+                            submitAndOpenPhotoBatch()
+                        }
+                    }
                     println(
-                        "FM_PHOTO_BATCH open photos=${store.photos.size} added=${report.added} " +
-                            "duplicate=${report.duplicates} rejected=${report.rejected.size} rows=${batchQueue.rows().size}",
+                        "FM_PHOTO_BATCH_PREFLIGHT photos=${store.photos.size} designed=${preflight.designedCount} " +
+                            "undesigned=${preflight.undesignedCount}",
                     )
                 },
             )
@@ -750,6 +782,34 @@ fun PhoneShell() {
                 },
                 dismissButton = {
                     androidx.compose.material3.TextButton(onClick = { confirmApplyAll = false }) {
+                        androidx.compose.material3.Text("取消")
+                    }
+                },
+            )
+        }
+
+        pendingPhotoBatch?.let { preflight ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { pendingPhotoBatch = null },
+                title = { androidx.compose.material3.Text("批量导出预检") },
+                text = {
+                    Column {
+                        androidx.compose.material3.Text(
+                            "有 ${preflight.undesignedCount} 张还没有应用边框，不会加入导出：${preflight.undesignedSummary}。",
+                        )
+                        androidx.compose.material3.TextButton(onClick = {
+                            pendingPhotoBatch = null
+                        }) { androidx.compose.material3.Text("去编辑") }
+                    }
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        pendingPhotoBatch = null
+                        submitAndOpenPhotoBatch()
+                    }) { androidx.compose.material3.Text("仅导出已设计的 ${preflight.designedCount} 张") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { pendingPhotoBatch = null }) {
                         androidx.compose.material3.Text("取消")
                     }
                 },

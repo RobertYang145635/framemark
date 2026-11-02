@@ -36,6 +36,7 @@ import com.framemark.native.product.ExportSettings as ProductExportSettings
 import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.ProductFileSystem
+import com.framemark.native.product.Project
 import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.SubmitOutcome
@@ -85,6 +86,57 @@ data class BatchCandidate(
     val nameIndex: Int = 1,
     val outputDirectory: String? = null,
 )
+
+/**
+ * An already-existing photo the 「按照片批量」 entry cannot export because it has no
+ * border of its own (M01 rule 1). Its real list position is kept so a pre-flight can
+ * name it without renumbering anything (M01 rule 3).
+ */
+data class UndesignedPhoto(val photoId: String, val displayName: String, val nameIndex: Int)
+
+/**
+ * The result of a pre-flight check before a batch-by-photo submit is enqueued
+ * (M01 rules 1-3). Both the phone (`PhoneShell`) and the desktop (`DesktopProjectController`)
+ * reach the same rule here, so the backend — not silent UI filtering — states which
+ * photos have their own binding and which are 未应用边框.
+ */
+data class BatchPreflight(
+    val designedPhotoIds: List<String>,
+    val undesigned: List<UndesignedPhoto>,
+) {
+    val designedCount: Int get() = designedPhotoIds.size
+    val undesignedCount: Int get() = undesigned.size
+
+    /** Some but not all photos lack a border: needs an explicit 「仅导出已设计的 X 张」 choice. */
+    val hasUndesigned: Boolean get() = undesigned.isNotEmpty()
+
+    /** Nothing is exportable: create zero tasks and prompt to apply a border first. */
+    val allUndesigned: Boolean get() = designedPhotoIds.isEmpty() && undesigned.isNotEmpty()
+
+    /** The un-borded file names with their original list positions, for the prompt. */
+    val undesignedSummary: String
+        get() = undesigned.joinToString("、") { "「${it.displayName}」(第${it.nameIndex}张)" }
+}
+
+/**
+ * Splits [photoIds] into exportable (own binding) and 未应用边框 ones using **only**
+ * `designs[photo.id]`. A shared / active / selected design is never lent to an existing
+ * photo here — borrowing it is the P1 defect M01 rule 1 forbids. The original list
+ * index is preserved so filtering cannot renumber a name (M01 rule 3).
+ */
+fun Project.batchPreflight(photoIds: List<String>): BatchPreflight {
+    val designed = ArrayList<String>()
+    val undesigned = ArrayList<UndesignedPhoto>()
+    photoIds.forEach { id ->
+        if (designs.containsKey(id)) {
+            designed += id
+        } else {
+            val photo = photos.firstOrNull { it.id == id } ?: return@forEach
+            undesigned += UndesignedPhoto(photo.id, photo.displayName, photos.indexOf(photo) + 1)
+        }
+    }
+    return BatchPreflight(designed, undesigned)
+}
 
 /** Writes an embedded watermark out for the engine, once per digest. */
 object PhoneOverlayFiles {

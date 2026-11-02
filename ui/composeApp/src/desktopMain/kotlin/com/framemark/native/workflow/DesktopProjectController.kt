@@ -94,6 +94,14 @@ class DesktopProjectController(
     override var batchError by mutableStateOf<String?>(null)
         private set
 
+    /**
+     * The photos a 「按照片批量」 enqueue refused because they have no border of their own
+     * (M01 rules 2-3). Populated by [enqueueBatch] itself, so the backend states which
+     * photos were 未加入 rather than relying on the UI silently dropping them.
+     */
+    override var batchUndesignedSkipped by mutableStateOf<List<UndesignedPhoto>>(emptyList())
+        private set
+
     private var batchQueue = BatchQueue()
     private var batchCancelRequested = false
     private var legacyBatchJobs: List<BatchJob>? = null
@@ -717,7 +725,12 @@ class DesktopProjectController(
             batchError = "存储不可用，无法固定批量导出目录"
             return 0
         }
-        for (photoId in photoIds) {
+        // M01 rules 1-3: an existing photo with no border of its own is 未加入, reported
+        // here by the backend rather than silently dropped. Only photos with their own
+        // binding are enqueued, each keeping its original list position as nameIndex.
+        val preflight = project.batchPreflight(photoIds)
+        batchUndesignedSkipped = preflight.undesigned
+        for (photoId in preflight.designedPhotoIds) {
             val photo = project.photos.firstOrNull { it.id == photoId } ?: continue
             val design = project.designs[photoId] ?: continue
             val photoIndex = project.photos.indexOfFirst { it.id == photo.id } + 1

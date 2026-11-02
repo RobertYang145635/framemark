@@ -834,15 +834,21 @@ class PhoneProjectStore(
     }
 
     /**
-     * Every photo with a design, in list order. A photo whose own design is missing
-     * falls back to the shared design and then to the selected card — it is never
-     * dropped, because a dropped photo means an export the user never got.
+     * Every photo paired with **its own** design, in list order (M01 rule 1).
+     *
+     * An already-existing photo whose binding is missing is 未应用边框 — it is returned
+     * with `design == null` and must NOT borrow `sharedDesign`, `activeDesign` or
+     * `selectedCardId`. `PhoneShell.buildPhotoBatch()` drops a null design, so such a
+     * photo never enters 「按照片批量」 wearing another photo's card. The missing-card
+     * fallback this method used to carry was the confirmed P1 batch defect; the shared
+     * design remains only a *new-photo* default (see `Project.designForNewPhoto`), and
+     * the explicit 应用到全部 (`applyActiveDesignToAll`) is what creates a binding.
+     *
+     * The list stays aligned with `project.photos`, so a caller's positional index is
+     * the photo's real list position (`nameIndex`) and filtering cannot renumber it.
      */
     fun photoEntries(): List<PhonePhotoEntry> = project.photos.map { photo ->
-        val design = project.designs[photo.id]
-            ?: project.sharedDesign
-            ?: project.selectedCardId?.let { PhotoDesign.base(it) }
-        PhonePhotoEntry(photo, design)
+        PhonePhotoEntry(photo, project.designs[photo.id])
     }
 
     fun customized(photoId: String): Boolean {
