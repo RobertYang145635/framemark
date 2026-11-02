@@ -145,6 +145,61 @@ class PhonePresetMigrationOrderTest {
         assertTrue(store.presetError?.startsWith("FM-E-PRESET-001") == true, store.presetError.orEmpty())
     }
 
+    // ---- W3-04：重复 ID -------------------------------------------------------
+
+    @Test
+    fun duplicateIdsInALegacyOrProductLibraryAreRefusedWithoutTouchingTheDocument() {
+        // (a) The old hand-written envelope may carry two rows with the same id; the
+        //     retained ID gate has to refuse before anything is staged or renamed.
+        val dupLegacy = """
+            {"version":1,"presets":[
+            {"id":"legacy-1","name":"旧预设一","updatedAt":10,
+            "cardId":"simple-4","cardName":"simple-4","adjustedCount":0,
+            "export":{"format":"JPG","quality":86,"longEdge":1600,"webpLossless":true,"filename":"{name}-{date}"},
+            "values":{}},
+            {"id":"legacy-1","name":"旧预设二","updatedAt":11,
+            "cardId":"glass-white-1","cardName":"glass-white-1","adjustedCount":0,
+            "export":{"format":"JPG","quality":90,"longEdge":1200,"webpLossless":false,"filename":"{name}-{date}"},
+            "values":{}}]}
+        """.trimIndent() + "\n"
+        val fs = FakeFs()
+        val legacyBytes = dupLegacy.encodeToByteArray()
+        fs.files[fs.presetsPath] = legacyBytes.copyOf()
+        val store = PhoneProjectStore(fs, io = null, platform = null)
+        store.loadPresets()
+        val duplicated = listOf(
+            samplePreset().copy(id = "legacy-1", name = "旧预设一"),
+            samplePreset().copy(id = "legacy-1", name = "旧预设二", createdAt = 11, updatedAt = 11),
+        )
+
+        assertEquals(0, store.importLegacyPresets(duplicated, expectedCount = 2))
+
+        assertContentEquals(legacyBytes, fs.files.getValue(fs.presetsPath), "重复 ID 迁移失败不得改写旧库")
+        assertTrue(fs.renames.isEmpty(), "重复 ID 迁移不得替换线上库：${fs.renames}")
+        assertTrue(
+            store.presetError?.contains("ID 冲突") == true,
+            "重复 ID 必须给出明确拒绝：${store.presetError}",
+        )
+        assertFalse(store.importPreset(samplePreset().copy(id = "ordinary-after-duplicate")))
+        assertContentEquals(legacyBytes, fs.files.getValue(fs.presetsPath))
+
+        // (b) A product library with duplicate ids is unreadable as a whole, so it can
+        //     never be "repaired" by saving the empty in-memory list over it.
+        val fs2 = FakeFs()
+        val dupProduct = productLibrary(duplicated).encodeToByteArray()
+        fs2.files[fs2.presetsPath] = dupProduct.copyOf()
+        val store2 = PhoneProjectStore(fs2, io = null, platform = null)
+        store2.loadPresets()
+
+        assertTrue(store2.presets.isEmpty(), "重复 ID 文档不得部分加载")
+        assertNotNull(store2.presetError)
+        assertFalse(store2.importPreset(samplePreset()))
+        assertEquals(0, store2.importLegacyPresets(converted(), expectedCount = 2))
+        assertContentEquals(dupProduct, fs2.files.getValue(fs2.presetsPath), "不可读的产品库必须逐字节保留")
+        assertTrue(fs2.files.keys.none { ".legacy-" in it }, "产品库不是旧格式，不能生成迁移备份")
+        assertTrue(fs2.renames.none { it.second == fs2.presetsPath }, "重复 ID 文档不得被替换：${fs2.renames}")
+    }
+
     // ---- W3-05：备份与迁移前变化 ---------------------------------------------
 
     @Test
