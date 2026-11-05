@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.content.res.Configuration
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
@@ -464,10 +465,26 @@ class MainActivity : ComponentActivity() {
         // WP-T: the appearance file lives next to project.json / presets.json in
         // the app's private files dir. Installed before the first composition so
         // the very first frame already renders in the stored appearance.
-        val appearance = AppearanceController(store = AndroidAppearanceStore.forContext(applicationContext)).also {
+        //
+        // T-1: the platform flag is read from the Activity's configuration right
+        // here, so "follow the system" is already correct on the first frame
+        // instead of waiting for the `SideEffect` inside the composition (which
+        // only runs after the first frame has been drawn).
+        val initialSystemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val appearance = AppearanceController(
+            store = AndroidAppearanceStore.forContext(applicationContext),
+            initialSystemDark = initialSystemDark,
+        ).also {
             AppearanceEnv.controller = it
         }
         println("FM_APPEARANCE_INIT ${appearance.describe()}")
+        // Evidence for T-1: printed in onCreate, i.e. before setContent and before
+        // the first frame.
+        println(
+            "FM_APPEARANCE_PRECOMPOSE systemDark=$initialSystemDark dark=${appearance.dark} " +
+                "mode=${appearance.settings.mode.wire} source=configuration",
+        )
         // W3 crash/migration controls have to be configured before the phone
         // project loads: preset migration is synchronous during installed.load().
         // This entire block is absent from the release behavior by design.
