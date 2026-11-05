@@ -36,7 +36,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.fmElevated
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
@@ -139,6 +141,9 @@ private fun BrandedLogoPanel(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text("品牌 Logo", style = FmType.titleSmall, color = FmPalette.onSurface)
+        Spacer(Modifier.height(4.dp))
+        // Three layers, stated once: 品牌 → 版本 → 款式.
+        LogoBreadcrumb()
         Spacer(Modifier.height(if (dense) FmSpacing.sm else FmSpacing.md))
         if (userSupported) {
             LogoLibraryTabs(
@@ -147,7 +152,7 @@ private fun BrandedLogoPanel(
                 onBrand = { userTab = false },
                 onUser = { userTab = true },
             )
-            Spacer(Modifier.height(FmSpacing.xs))
+            Spacer(Modifier.height(FmSpacing.sm))
         }
         if (!userSupported && UserLogoLibrary.isUserLogo(raw)) {
             Text(
@@ -211,13 +216,16 @@ private fun BrandedLogoPanel(
                     modifier = Modifier.padding(top = FmSpacing.sm, bottom = FmSpacing.xxs),
                 )
                 logoCutRows(browsingBrand).forEach { row ->
-                    LogoCutRowItem(
-                        brandLabel = browsingBrand.label,
-                        row = row,
-                        selected = row.cut.assetKey == raw,
-                        dense = dense,
-                        onPick = { session.set(brandControl, row.cut.assetKey) },
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        LogoCutRowItem(
+                            brandLabel = browsingBrand.label,
+                            row = row,
+                            selected = row.cut.assetKey == raw,
+                            dense = dense,
+                            onPick = { session.set(brandControl, row.cut.assetKey) },
+                        )
+                        Spacer(Modifier.height(FmSpacing.xs))
+                    }
                 }
             }
         }
@@ -252,37 +260,37 @@ private fun LogoLibraryTabs(
     onBrand: () -> Unit,
     onUser: () -> Unit,
 ) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        LibraryTab("品牌库", !userSelected, dense, onBrand, Modifier.weight(1f))
-        Spacer(Modifier.width(FmSpacing.xs))
-        LibraryTab("用户", userSelected, dense, onUser, Modifier.weight(1f))
-    }
+    // V2 shared segmented control (WP-C §4.2): same look as 样式 / 文字 / Logo / 水印.
+    FmSegmented(
+        options = listOf("品牌库", "我的 Logo"),
+        selected = if (userSelected) "我的 Logo" else "品牌库",
+        onSelect = { next -> if (next == "我的 Logo") onUser() else onBrand() },
+        touch = dense,
+    )
 }
 
+/** V2 breadcrumb for the three layers the panel keeps. */
 @Composable
-private fun LibraryTab(
-    label: String,
-    selected: Boolean,
-    dense: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier,
-) {
-    Box(
-        modifier = modifier
-            .heightIn(min = if (dense) 48.dp else 44.dp)
-            .clip(RoundedCornerShape(FmRadii.input))
-            .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted)
-            .border(1.dp, if (selected) FmPalette.primary else FmPalette.outline, RoundedCornerShape(FmRadii.input))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = label }
-            .padding(horizontal = FmSpacing.sm),
-        contentAlignment = Alignment.Center,
+private fun LogoBreadcrumb() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = FmType.labelMedium,
-            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
-        )
+        listOf("1 品牌", "2 版本", "3 款式").forEachIndexed { index, step ->
+            if (index > 0) {
+                Text(
+                    text = "›",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceFaint,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+            Text(
+                text = step,
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+        }
     }
 }
 
@@ -487,8 +495,9 @@ private fun BrandEntryRow(    brand: LogoBrand?,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = if (dense) 48.dp else 0.dp)
+            .fmElevated(FmElevation.card, RoundedCornerShape(FmRadii.input))
             .clip(RoundedCornerShape(FmRadii.input))
-            .background(FmPalette.surfaceMuted)
+            .background(FmPalette.surface)
             .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
             .clickable(onClick = onOpenBrandPage)
             .semantics {
@@ -546,7 +555,16 @@ private fun BrandEntryRow(    brand: LogoBrand?,
             }
         }
         Spacer(Modifier.width(FmSpacing.sm))
-        Text("选择品牌 ›", style = FmType.labelMedium, color = FmPalette.primaryStrong)
+        Text(
+            text = "选择品牌 ›",
+            style = FmType.labelMedium,
+            color = FmPalette.primaryStrong,
+            modifier = Modifier
+                .heightIn(min = 28.dp)
+                .clip(RoundedCornerShape(FmRadii.pill))
+                .background(FmPalette.primarySoft)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        )
     }
 }
 
@@ -598,7 +616,14 @@ private fun LogoCutRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = if (dense) 48.dp else 0.dp)
+            .fmElevated(FmElevation.card, RoundedCornerShape(FmRadii.input))
             .clip(RoundedCornerShape(FmRadii.input))
+            .background(if (selected) FmPalette.primarySoft else FmPalette.surface)
+            .border(
+                width = 1.dp,
+                color = if (selected) FmPalette.primary else FmPalette.outline,
+                shape = RoundedCornerShape(FmRadii.input),
+            )
             .clickable(enabled = enabled, onClick = onPick)
             .semantics {
                 contentDescription = buildString {
@@ -610,7 +635,7 @@ private fun LogoCutRowItem(
                     if (selected) append("，已选") else if (missing) append("，未收录")
                 }
             }
-            .padding(vertical = if (dense) 4.dp else 6.dp),
+            .padding(horizontal = FmSpacing.sm, vertical = if (dense) 5.dp else 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

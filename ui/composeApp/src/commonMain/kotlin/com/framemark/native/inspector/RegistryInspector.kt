@@ -169,6 +169,7 @@ object RegistryInspectorFactory {
             cardId = cardId,
             cardName = cardName,
             audited = spec.audited,
+            isIr = spec.backend == ControlBackend.Ir,
             effectiveCount = spec.effectiveCount,
             gatedCount = spec.gatedCount,
             declaredCount = spec.controls.size,
@@ -265,6 +266,7 @@ object RegistryInspectorFactory {
             else -> ControlValue.Str(default.toString())
         }
         val declared = control.defaultValue?.toString()
+        val maxValue = control.max?.toFloat()
         return InspectorControl(
             key = "$cardId::${control.controlId}",
             controlId = control.controlId,
@@ -275,14 +277,16 @@ object RegistryInspectorFactory {
             type = type,
             initial = initial,
             min = control.min?.toFloat(),
-            max = control.max?.toFloat(),
+            max = maxValue,
             step = control.step?.toFloat(),
             options = control.options.map { ControlOption(it.value, it.label) },
             multiline = false,
             declaredDefault = declared,
             currentText = control.currentValue?.toString() ?: declared,
             autoMatch = null,
-            unit = control.unit,
+            // P0: never pass the raw engine unit through — map it to display copy.
+            unit = FmUnits.suffixFor(control.unit, maxValue, verdict.consumer),
+            unitScale = FmUnits.scaleFor(control.unit, maxValue, verdict.consumer),
             hidden = false,
             companions = verdict.companions,
             disabledReason = if (verdict.disabled) DISABLED_REASON else null,

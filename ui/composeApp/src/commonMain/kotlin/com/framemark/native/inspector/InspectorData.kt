@@ -77,7 +77,13 @@ data class InspectorControl(
     /** Audited current value (capabilities) or the row default (stock). */
     val currentText: String?,
     val autoMatch: Boolean?,
+    /**
+     * **Display** suffix (WP-C §4.1): `%`, `×`, `个`, `% 长边` or null. The raw
+     * engine token is never stored here — see [FmUnits].
+     */
     val unit: String?,
+    /** Multiplier between the stored value and the displayed number (alpha ×100). */
+    val unitScale: Float = 1f,
     val hidden: Boolean,
     /**
      * Extra design fields that carry the same value. A `slotOff` switch hides a
@@ -98,6 +104,8 @@ data class InspectorCardModel(
     val cardId: String,
     val cardName: String,
     val audited: Boolean,
+    /** WP-C §4.3: an IR-rendered card has no Logo tab (showcase `tabsFor`). */
+    val isIr: Boolean = false,
     val effectiveCount: Int?,
     val gatedCount: Int?,
     val declaredCount: Int?,
@@ -575,6 +583,7 @@ object InspectorModelFactory {
             cardId = card.id,
             cardName = card.name,
             audited = true,
+            isIr = false,
             effectiveCount = capability.effectiveCount ?: capability.effective.size,
             gatedCount = gatedCount,
             declaredCount = null,
@@ -634,6 +643,9 @@ object InspectorModelFactory {
             cardId = card.id,
             cardName = card.name,
             audited = false,
+            // Stock cards are rendered from the IR bundle; the Logo tab is hidden
+            // (showcase `tabsFor`: `if (c.backend === 'ir') return ['style','text','wm']`).
+            isIr = true,
             effectiveCount = rows.size,
             gatedCount = null,
             declaredCount = rows.size,
@@ -715,7 +727,10 @@ object InspectorModelFactory {
         else parseOptions(optionsRaw, domain["options"].jsonList(), kind)
         val multiline = domain.jsonBool("multiline") ?: false
         val initial = initialValue(type, currentValue, declaredDefault, min, max, step, fallbackInitial)
-        val humanLabel = HumanLabels.forControl(label, controlId)
+        // WP-C §4.1: the field key wins over the source label so a field can only
+        // have one name; `params.slots` (engine bookkeeping) resolves to null and
+        // the control is hidden instead of shown as an identifier.
+        val humanLabel = HumanLabels.forControl(label, controlId, param)
         val section = inspectorSectionFor(kind, param, scope, group, humanLabel ?: label)
         return InspectorControl(
             key = "$cardId::$controlId",
@@ -734,7 +749,9 @@ object InspectorModelFactory {
             declaredDefault = formatValue(declaredDefault),
             currentText = formatValue(currentValue),
             autoMatch = domain.jsonBool("autoMatch"),
-            unit = displayUnit(unit),
+            // Display-only mapping; the raw token is never kept (see FmUnits).
+            unit = FmUnits.suffixFor(unit, max, param),
+            unitScale = FmUnits.scaleFor(unit, max, param),
             hidden = gated || hiddenByFlag || humanLabel == null,
         )
     }
@@ -886,244 +903,26 @@ internal fun inspectorSectionFor(
         return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
     }
 
-    private fun displayUnit(unit: String?): String? = when (unit) {
-        null, "", "unitless", "alpha" -> null
-        "pct", "percent" -> "%"
-        "multiplier" -> "×"
-        "count" -> "个"
-        "pctOfLongEdge" -> "% 长边"
-        else -> unit
-    }
+    private fun displayUnit(unit: String?): String? = FmUnits.suffixFor(unit, null, "")
 }
 
 /**
- * Display vocabulary for values that the frozen sources carry as identifiers.
- *
- * This is a display-only layer: it never changes membership or values. A control
- * whose source label is an identifier and cannot be mapped here is dropped by
- * [InspectorModelFactory] instead of showing the raw key to a user.
+ * Display vocabulary facade. WP-C §4.1 merged the two label tables: every
+ * lookup now goes to [com.framemark.native.product.ControlLabels], which also
+ * carries the brand/theme/text maps. These signatures are kept because tests
+ * and the stock-card panel call them by name.
  */
 internal object HumanLabels {
-    private val controls: Map<String, String> = mapOf(
-        "footerPct" to "底部留白",
-        "marginPct" to "外边距",
-        "radiusPct" to "圆角半径",
-        "shadow" to "阴影强度",
-        "blur" to "模糊强度",
-        "sidePadPct" to "左右留白",
-        "topPadPct" to "顶部留白",
-        "logoPct" to "字标大小",
-        "paletteGapPct" to "色块间距",
-        "palettePct" to "色块大小",
-        "paletteRowPct" to "色块行高",
-        "brandHeightPct" to "字标高度",
-        "brandInsetPct" to "字标内缩",
-        "brandTopPct" to "字标顶部位置",
-        "cardHeightPct" to "卡片高度",
-        "cardInsetPct" to "卡片内缩",
-        "cardMattePct" to "卡片留白",
-        "cardRadiusPct" to "卡片圆角",
-        "contentSide" to "内容位置",
-        "rowBoxHPct" to "参数行高度",
-        "rowBoxWPct" to "参数行宽度",
-        "rowLabelPct" to "参数标签字号",
-        "rowPitchPct" to "参数行间距",
-        "rowValueGapPct" to "参数值间距",
-        "rowValuePct" to "参数值字号",
-        "rowsTopPct" to "参数区顶部位置",
-        "textInsetPct" to "文字内缩",
-        "brandXPct" to "字标横向位置",
-        "brandY" to "字标纵向位置",
-        "exifY" to "参数行纵向位置",
-        "sticker" to "贴纸文字",
-        "stickerRightPct" to "贴纸右边距",
-        "stickerScalePct" to "贴纸缩放",
-        "insetPct" to "内缩",
-        "footerOffsetPct" to "底栏偏移",
-        "borderPct" to "边框宽度",
-        "signature" to "签名文字",
-        "frame" to "相框文字",
-        "gridFirstXPct" to "网格起点 X",
-        "gridFirstYPct" to "网格起点 Y",
-        "gridPitchXPct" to "网格列间距",
-        "gridPitchYPct" to "网格行间距",
-        "labelPct" to "标签字号",
-        "panelBottomPct" to "面板底部位置",
-        "panelHeightPct" to "面板高度",
-        "panelRadiusPct" to "面板圆角",
-        "panelWidthPct" to "面板宽度",
-        "swatchCols" to "色块列数",
-        "swatchPct" to "色块大小",
-        "swatchRows" to "色块行数",
-        "cardWidthPct" to "卡片宽度",
-        "glassLayout" to "玻璃布局",
-        "pillOrder" to "胶囊顺序",
-        "contentW" to "内容宽度",
-        "logoGap" to "字标间距",
-        "sepX" to "分隔线位置",
-        "brandTextSizePct" to "品牌字号",
-    )
+    fun forControl(sourceLabel: String, controlId: String, param: String = ""): String? =
+        ControlLabels.forControl(sourceLabel, controlId, param)
 
-    private val options: Map<String, String> = mapOf(
-        "white" to "白色",
-        "paper" to "纸白",
-        "cream" to "奶油",
-        "stone" to "石色",
-        "ink" to "墨色",
-        "black" to "黑色",
-        "left" to "居左",
-        "right" to "居右",
-        "center" to "居中",
-        "none" to "无",
-        "lumo" to "Lumo",
-        "hasselblad" to "哈苏",
-        "HASSELBLAD" to "哈苏",
-        "zeiss" to "蔡司",
-        "leica" to "徕卡",
-        "FUJIFILM" to "富士",
-        "h2" to "H2",
-        "h3" to "H3",
-        "h4" to "H4",
-        "l1" to "L1",
-        "l2" to "L2",
-        "l3" to "L3",
-        "exif" to "参数",
-        "brand-exif" to "品牌 + 参数",
-        "brand" to "品牌",
-        "profile-chip" to "品牌胶囊",
-        "simple" to "简约",
-        "overlay" to "叠加",
-        "classic" to "经典",
-        "header" to "页头",
-        "chip" to "胶囊",
-        "footer" to "页脚",
-        "text-left" to "文字居左",
-        "text-right" to "文字居右",
-        "split" to "分栏",
-        "pill" to "胶囊",
-        "palette" to "色板",
-        "vendor" to "厂商默认",
-        "title" to "标题",
-        "model" to "机型",
-        "logo" to "字标",
-        "brand-placement" to "品牌摆位",
-        "inside" to "照片内",
-        "in-photo" to "照片内",
-        "stack" to "堆叠",
-        "single" to "单张",
-        "reference" to "参考",
-        "bar" to "条状",
-        "vertical" to "竖排",
-        "horizontal" to "横排",
-        "tl" to "左上",
-        "tr" to "右上",
-        "bl" to "左下",
-        "br" to "右下",
-        "graduation1" to "毕业样式 1",
-        "graduation2" to "毕业样式 2",
-        "leftTop" to "左上",
-        "leftCenter" to "左中",
-        "leftBottom" to "左下",
-        "centerTop" to "上中",
-        "centerBottom" to "下中",
-        "rightTop" to "右上",
-        "rightCenter" to "右中",
-        "rightBottom" to "右下",
-        "bottomHorCenter" to "底部居中",
-    )
+    fun forOption(value: String): String = ControlLabels.forDisplayOption(value)
 
-    private val brands: Map<String, String> = mapOf(
-        "auto" to "自动匹配",
-        "laika" to "徕卡",
-        "laika_long" to "徕卡长标",
-        "hasu_long_black" to "哈苏长标 · 黑",
-        "hasu_long_white" to "哈苏长标 · 白",
-        "hassel_h_black" to "哈苏 H · 黑",
-        "hassel_wordmark_black" to "哈苏字标 · 黑",
-        "lumo_black" to "Lumo · 黑",
-        "fushi_white" to "富士 · 白",
-        "zeiss" to "蔡司",
-    )
+    fun forThemeOption(value: String): String = ControlLabels.forThemeOption(value)
 
-    /** Stock labels wrap an internal line key in 「」; map it to a human line name. */
-    private val lineTokens: Map<String, String> = mapOf(
-        "modelLine" to "机型",
-        "dateLine" to "日期",
-        "locationLine" to "地点",
-        "exifCompositeLine" to "参数",
-        "customLine" to "自定义",
-        "model" to "机型",
-        "dateLine+locationLine" to "日期与地点",
-        "greetingLine" to "问候",
-        "imageParams" to "图片参数",
-        "literalText" to "文字",
-        "template" to "模板",
-    )
+    fun forText(value: String): String = ControlLabels.forText(value)
 
-    private val bracketToken = Regex("「([^」]*)」")
-
-    /** Returns a human label, or null when the source only has an identifier. */
-    fun forControl(sourceLabel: String, controlId: String): String? {
-        val raw = sourceLabel.trim()
-        if (raw.isEmpty()) return null
-        if (raw.hasCjk()) return sanitize(raw)
-        controls[raw]?.let { return it }
-        val idTail = controlId.substringAfterLast(':').substringAfterLast('.')
-        controls[idTail]?.let { return it }
-        controls[raw.substringAfterLast(':').substringAfterLast('.')]?.let { return it }
-        return null
-    }
-
-    /**
-     * Removes 「internalKey」 fragments from an otherwise Chinese stock label.
-     * Returns null when nothing readable is left, so the control is dropped.
-     */
-    private fun sanitize(raw: String): String? {
-        val cleaned = bracketToken.replace(raw) { match ->
-            val key = match.groupValues[1].substringBefore('[').trim()
-            lineTokens[key] ?: ""
-        }.replace(Regex("\\s+"), " ").trim()
-        if (!cleaned.hasCjk()) return null
-        return cleaned
-    }
-
-    /** Unknown identifiers remain distinguishable from an unselected value. */
-    fun forOption(value: String): String {
-        val raw = value.trim()
-        if (raw.isEmpty()) return raw
-        options[raw]?.let { return it }
-        if (raw.hasCjk()) return raw
-        return "未知选项（$raw）"
-    }
-
-    /** Uses the shared registry vocabulary for themes and labels unknown IDs explicitly. */
-    fun forThemeOption(value: String): String {
-        val raw = value.trim()
-        if (raw.isEmpty()) return "未选择"
-        val display = ControlLabels.forOption(raw)
-        return if (display == null || display == "未设置") "未知主题（$raw）" else display
-    }
-
-    /** A free-text control may carry an enum token; keep prose, humanise keys. */
-    fun forText(value: String): String {
-        val raw = value.trim()
-        if (raw.isEmpty()) return ""
-        options[raw]?.let { return it }
-        if (raw.hasCjk()) return raw
-        if (Regex("^[a-z][a-z0-9_-]*$").matches(raw)) return "未设置"
-        return raw
-    }
-
-    /** Brand logos are asset keys in the frozen source; show the brand name only. */
-    fun forBrand(value: String): String {
-        val raw = value.trim()
-        if (raw.isEmpty()) return ""
-        brands[raw]?.let { return it }
-        if (raw.hasCjk()) return raw
-        return "未设置"
-    }
-
-    private fun String.hasCjk(): Boolean = any { it in '\u4e00'..'\u9fff' }
+    fun forBrand(value: String): String = ControlLabels.forBrand(value)
 }
 
 /**
