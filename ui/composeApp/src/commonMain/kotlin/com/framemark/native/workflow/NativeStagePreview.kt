@@ -4,8 +4,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,6 +21,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.graphics.Color
@@ -67,6 +72,8 @@ private const val INTERACTIVE_MAX_EDGE = 480
 private const val INTERACTIVE_FRAME_INTERVAL_MS = 33L
 private const val FINAL_DEBOUNCE_MS = 120L
 private const val PREVIEW_GATE_RETRY_MS = 16L
+/** How often the A-07 wait badge re-evaluates which phase it is in. */
+private const val RENDER_PHASE_TICK_MS = 50L
 
 /** One immutable input snapshot; only the latest submitted by the UI can render. */
 private data class StagePreviewInput(
@@ -128,6 +135,17 @@ fun NativeStagePreview(
      * draws its frame only on the current valid render; null draws nothing.
      */
     highlightedTextSlotKey: String? = null,
+    /**
+     * WP-C §4.5: the watermark layer to drag directly on the photo. Null keeps
+     * the historical behaviour (no handle, no zone frame).
+     */
+    watermark: WatermarkSpec? = null,
+    /**
+     * Called with the **absolute** normalised `dx/dy` after a drag; the value is
+     * already clamped to the watermark's own cell zone and matches what the
+     * margin sliders write.
+     */
+    onWatermarkNudge: ((dx: Float, dy: Float) -> Unit)? = null,
 ) {
     BoxWithConstraints(modifier = modifier) {
         val displayEdge = if (constraints.hasBoundedWidth && constraints.hasBoundedHeight) {
@@ -209,6 +227,22 @@ fun NativeStagePreview(
         // A re-render must not blank the stage: the previous frame stays until the new
         // one is ready, with a small busy badge on top.
         var busy by remember(card.id) { mutableStateOf(false) }
+        // UX-RESEARCH A-07 / WP-C §4.5: three-stage wait feedback. The engine call
+        // is blocking, so an in-flight render cannot be cancelled from here; the
+        // phase only controls what the user sees (see the WP-C report).
+        var renderPhase by remember(card.id) { mutableStateOf(StageRenderPhase.Idle) }
+        LaunchedEffect(card.id, busy) {
+            if (!busy) {
+                renderPhase = StageRenderPhase.Idle
+                return@LaunchedEffect
+            }
+            val startedAt = TimeSource.Monotonic.markNow()
+            while (busy) {
+                renderPhase = StageRenderTiming.phaseAt(startedAt.elapsedNow().inWholeMilliseconds)
+                delay(RENDER_PHASE_TICK_MS)
+            }
+            renderPhase = StageRenderPhase.Idle
+        }
         // Preview-box pixels, needed to project an output-pixel slot rectangle onto
         // the ContentScale.Fit frame. Remembered per card like the render state.
         var boxPx by remember(card.id) { mutableStateOf(IntSize.Zero) }
@@ -685,16 +719,141 @@ fun NativeStagePreview(
                     }
                 }
             }
+            // WP-C §4.5: drag the watermark on the photo. The dashed frame marks
+            // the cell's zone (the area it may move in); the value written back is
+            // the same absolute `dx/dy` the margin sliders write.
+            val mark = watermark
+            if (mark != null && onWatermarkNudge != null && ready != null && readyIsCurrent &&
+                boxPx.width > 0 && boxPx.height > 0
+            ) {
+                val frame = fitPhotoFrame(
+                    boxW = boxPx.width.toFloat(),
+                    boxH = boxPx.height.toFloat(),
+                    bitmapW = ready.bitmap.width.toFloat(),
+                    bitmapH = ready.bitmap.height.toFloat(),
+                )
+                val photoAspect = ready.photoRect
+                    ?.let { it.w / it.h.coerceAtLeast(1f) }
+                    ?: frame.aspect
+                val zoneEdge = FmPalette.primary
+                val zoneWash = FmPalette.primary.copy(alpha = 0.06f)
+                val markRect = watermarkRectPx(mark, photoAspect, frame)
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(mark.anchor, mark.width, mark.aspect, photoAspect, frame) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                val (dx, dy) = com.framemark.native.inspector.WatermarkZones.moveByPixels(
+                                    spec = mark,
+                                    photoAspect = photoAspect,
+                                    dxPx = dragAmount.x,
+                                    dyPx = dragAmount.y,
+                                    photoWidthPx = frame.width,
+                                    photoHeightPx = frame.height,
+                                )
+                                onWatermarkNudge(dx, dy)
+                            }
+                        },
+                ) {
+                    val zone = com.framemark.native.inspector.WatermarkZones.zoneFor(mark.anchor)
+                    val zoneLeft = frame.left + frame.width * zone.xMin
+                    val zoneTop = frame.top + frame.height * zone.yMin
+                    val zoneRectW = frame.width * (zone.xMax - zone.xMin)
+                    val zoneRectH = frame.height * (zone.yMax - zone.yMin)
+                    drawRect(
+                        color = zoneWash,
+                        topLeft = Offset(zoneLeft, zoneTop),
+                        size = Size(zoneRectW, zoneRectH),
+                    )
+                    drawRect(
+                        color = zoneEdge.copy(alpha = 0.75f),
+                        topLeft = Offset(zoneLeft, zoneTop),
+                        size = Size(zoneRectW, zoneRectH),
+                        style = Stroke(
+                            width = 1.2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
+                        ),
+                    )
+                    drawRect(
+                        color = zoneEdge,
+                        topLeft = Offset(markRect[0], markRect[1]),
+                        size = Size(markRect[2].coerceAtLeast(1f), markRect[3].coerceAtLeast(1f)),
+                        style = Stroke(width = 1.5.dp.toPx()),
+                    )
+                }
+            }
             if (busy || (ready != null && !readyIsCurrent)) {
                 // Busy badge instead of a blank stage: the previous frame stays visible
-                // while the engine runs (~1.3 s), so an edit never looks like a freeze.
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = Color(0xFF2F75E5),
-                )
+                // while the engine runs, so an edit never looks like a freeze.
+                // A-07: nothing for the first 200 ms, "渲染中" from 200 ms, progress
+                // (elapsed seconds) after 1 s. The engine cannot be cancelled from
+                // the UI, so no cancel button is offered (see the WP-C report).
+                val phase = renderPhase
+                if (phase != StageRenderPhase.Idle || !busy) {
+                    StageBusyBadge(
+                        phase = phase,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                    )
+                }
             }
         }
+    }
+}
+
+/** A-07 wait phases: silence, then "渲染中", then progress. */
+internal enum class StageRenderPhase { Idle, Hint, Progress }
+
+internal object StageRenderTiming {
+    /** Nothing is shown before this (report §4.5 / UX-RESEARCH A-07). */
+    const val HINT_MS = 200L
+    /** From here the badge also shows progress (elapsed time). */
+    const val PROGRESS_MS = 1000L
+
+    fun phaseAt(elapsedMs: Long): StageRenderPhase = when {
+        elapsedMs < HINT_MS -> StageRenderPhase.Idle
+        elapsedMs < PROGRESS_MS -> StageRenderPhase.Hint
+        else -> StageRenderPhase.Progress
+    }
+
+    fun label(phase: StageRenderPhase, elapsedMs: Long = 0L): String = when (phase) {
+        StageRenderPhase.Idle -> ""
+        StageRenderPhase.Hint -> "渲染中"
+        StageRenderPhase.Progress -> "渲染中 ${elapsedMs / 1000}s"
+    }
+}
+
+@Composable
+private fun StageBusyBadge(phase: StageRenderPhase, modifier: Modifier = Modifier) {
+    val tint = FmPalette.primary
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(FmPalette.stage.copy(alpha = 0.86f))
+            .border(1.dp, FmPalette.stageLine, RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (phase == StageRenderPhase.Progress) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(12.dp),
+                strokeWidth = 1.5.dp,
+                color = tint,
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(tint),
+            )
+        }
+        Spacer(Modifier.size(6.dp))
+        Text(
+            text = StageRenderTiming.label(phase),
+            style = FmType.labelSmall,
+            color = FmPalette.stageMuted,
+        )
     }
 }
 
@@ -703,3 +862,48 @@ private fun adaptivePreviewEdge(displayEdge: Int): Int =
     (displayEdge.coerceAtLeast(1) * PREVIEW_SUPERSAMPLE)
         .roundToInt()
         .coerceIn(PREVIEW_MIN_EDGE, PREVIEW_MAX_EDGE)
+
+// ---------------------------------------------------------------------------
+// WP-C §4.5: stage geometry for the watermark drag handle
+// ---------------------------------------------------------------------------
+
+/** Which rectangle of the stage box the photo occupies under ContentScale.Fit. */
+internal data class StagePhotoFrame(
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float,
+) {
+    val aspect: Float get() = if (height > 0f) width / height else 1.5f
+}
+
+/** Pure `ContentScale.Fit` projection; testable without Compose. */
+internal fun fitPhotoFrame(
+    boxW: Float,
+    boxH: Float,
+    bitmapW: Float,
+    bitmapH: Float,
+): StagePhotoFrame {
+    if (boxW <= 0f || boxH <= 0f || bitmapW <= 0f || bitmapH <= 0f) {
+        return StagePhotoFrame(0f, 0f, boxW.coerceAtLeast(0f), boxH.coerceAtLeast(0f))
+    }
+    val scale = minOf(boxW / bitmapW, boxH / bitmapH)
+    val w = bitmapW * scale
+    val h = bitmapH * scale
+    return StagePhotoFrame((boxW - w) / 2f, (boxH - h) / 2f, w, h)
+}
+
+/** The watermark's rectangle in stage pixels: x, y, w, h. */
+internal fun watermarkRectPx(
+    spec: WatermarkSpec,
+    photoAspect: Float,
+    frame: StagePhotoFrame,
+): FloatArray {
+    val r = spec.rect(photoAspect)
+    return floatArrayOf(
+        frame.left + r[0] * frame.width,
+        frame.top + r[1] * frame.height,
+        r[2] * frame.width,
+        r[3] * frame.height,
+    )
+}

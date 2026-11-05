@@ -248,17 +248,28 @@ internal fun NativeTextSlotControls(
 ) {
     val grouped = groupTextSlots(slots, outputWidth, outputHeight)
     val controlsByKey = model.controls.associateBy { it.key }
+    // WP-C §4.6 / A-03: say "未读到拍摄参数" once per card, not on every row.
+    val showExifHint = remember(model.cardId) { ExifGapNotice.shouldShowHint(slots) }
+    if (showExifHint) {
+        Text(
+            text = ExifGapNotice.HINT,
+            style = FmType.labelSmall,
+            color = FmPalette.onSurfaceMuted,
+            modifier = Modifier.padding(bottom = FmSpacing.xs),
+        )
+    }
     grouped.forEach { group ->
         SectionCardShell(title = group.label, dense = dense) {
             group.rows.forEachIndexed { rowIndex, row ->
                 if (rowIndex > 0) Divider()
-                val sourceText = row.slot.text.ifBlank { row.slot.raw }
-                    .lineSequence()
-                    .map { it.trim() }
-                    .filter(String::isNotEmpty)
-                    .joinToString(" ")
+                // A-04: deterministic display rule — shrink to 80 % at most, then one
+                // ellipsis; the row can never grow over its neighbours.
+                val sourceText = FmTextFit.ellipsize(
+                    ExifGapNotice.rowSummary(row.slot.text, row.slot.raw),
+                    maxChars = 90,
+                )
                 Text(
-                    text = sourceText.ifBlank { "空白文字" },
+                    text = sourceText,
                     style = FmType.labelSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -785,48 +796,53 @@ private fun SliderControl(control: InspectorControl, session: DesignSession, den
         return
     }
     val value = session.value(control) as? Float ?: min
-    val step = control.step
-    val steps = if (step != null && step > 0f) {
-        (((max - min) / step).roundToInt() - 1).coerceIn(0, 200)
-    } else {
-        0
+    val step = control.step?.takeIf { it > 0f }
+    // Declared default: the tick, the ±1.5 % snap and double-tap reset all use it.
+    val default = (control.initial as? ControlValue.Num)?.value
+    val reset: () -> Unit = { session.resetControl(control) }
+    val change: (Float) -> Unit = { raw ->
+        FeelProbe.begin("slider", control.key)
+        session.set(control, raw)
     }
-    var preciseOpen by remember(control.key) { mutableStateOf(false) }
-    Column {
-        ControlLabel(
-            control = control,
-            valueText = formatNumber(value) + (control.unit ?: ""),
-            valueClickable = true,
-            onClickValue = { preciseOpen = true },
-        )
-        FmSlider(
+    if (dense) {
+        FmTouchSliderRow(
+            label = com.framemark.native.product.ControlLabels.forControl(
+                control.label,
+                control.controlId,
+                control.param,
+            ) ?: control.label,
             value = value.coerceIn(min, max),
-            onValueChange = { raw ->
-                FeelProbe.begin("slider", control.key)
-                val next = if (steps > 0 && step != null) {
-                    val quantized = min + ((raw - min) / step).roundToInt() * step
-                    quantized.coerceIn(min, max)
-                } else {
-                    raw
-                }
-                session.set(control, next)
-            },
-            valueRange = min..max,
-            modifier = Modifier.probeBounds("hit:${control.key}"),
-        )
-    }
-    if (preciseOpen) {
-        PreciseNumberDialog(
-            control = control,
             min = min,
             max = max,
-            current = value,
-            onDismiss = { preciseOpen = false },
-            onConfirm = { next ->
-                // Only a valid in-range entry writes; the dialog never rounds.
-                session.set(control, next)
-                preciseOpen = false
-            },
+            step = step,
+            default = default,
+            unit = control.unit,
+            scale = control.unitScale,
+            enabled = control.disabledReason == null,
+            disabledReason = control.disabledReason,
+            onValueChange = change,
+            onReset = reset,
+            modifier = Modifier.probeBounds("hit:${control.key}"),
+        )
+    } else {
+        FmDesktopSliderRow(
+            label = com.framemark.native.product.ControlLabels.forControl(
+                control.label,
+                control.controlId,
+                control.param,
+            ) ?: control.label,
+            value = value.coerceIn(min, max),
+            min = min,
+            max = max,
+            step = step,
+            default = default,
+            unit = control.unit,
+            scale = control.unitScale,
+            enabled = control.disabledReason == null,
+            disabledReason = control.disabledReason,
+            onValueChange = change,
+            onReset = reset,
+            modifier = Modifier.probeBounds("hit:${control.key}"),
         )
     }
 }
@@ -841,8 +857,13 @@ private fun PreciseNumberDialog(
     onDismiss: () -> Unit,
     onConfirm: (Float) -> Unit,
 ) {
-    var raw by remember(control.key) { mutableStateOf(formatNumber(current)) }
-    val parsed = parsePreciseNumber(raw, min, max)
+    // The dialog speaks the display unit (e.g. alpha %): convert both ways here so
+    // the stored value stays in engine units (WP-C §4.1).
+    val scale = control.unitScale.takeIf { it > 0f } ?: 1f
+    val displayMin = min * scale
+    val displayMax = max * scale
+    var raw by remember(control.key) { mutableStateOf(FmUnits.formatNumber(current * scale)) }
+    val parsed = parsePreciseNumber(raw, displayMin, displayMax)
     val unit = control.unit ?: ""
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -870,7 +891,7 @@ private fun PreciseNumberDialog(
                         Box {
                             if (raw.isEmpty()) {
                                 Text(
-                                    text = "例：${formatNumber((min + max) / 2f)}$unit",
+                                    text = "例：${FmUnits.formatNumber((displayMin + displayMax) / 2f)}$unit",
                                     style = FmType.bodyMedium,
                                     color = FmPalette.onSurfaceMuted,
                                 )
@@ -881,7 +902,7 @@ private fun PreciseNumberDialog(
                 )
                 Spacer(Modifier.height(FmSpacing.xs))
                 Text(
-                    text = "范围 ${formatNumber(min)}$unit – ${formatNumber(max)}$unit",
+                    text = "范围 ${FmUnits.formatNumber(displayMin)}$unit – ${FmUnits.formatNumber(displayMax)}$unit",
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceMuted,
                 )

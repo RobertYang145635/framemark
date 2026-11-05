@@ -1,35 +1,57 @@
 package com.framemark.native.product
 
 /**
- * Human copy for control ids, option ids and stock line tokens.
+ * Human copy for control ids, field names, option ids and stock line tokens.
  *
- * The frozen data carries identifiers as labels in two places: hand sliders use
- * the field name (`footerPct`), stock audit labels wrap the internal line key in
- * 「」 (`编辑「exifCompositeLine」文字`). A control that cannot be turned into
- * human copy is hidden rather than shown as a raw key (ARCH §5); this table is
- * the translation layer, never a source of values.
+ * WP-C §4.1 (P0): this object is now the **single** label table. The old
+ * inspector-local `HumanLabels` object keeps its signatures but delegates here,
+ * so the desktop and the phone can never disagree on a field name:
+ *
+ *  1. [fields] — canonical display name per design-field key (`footerPct`,
+ *     `logoCenterX`, …). This wins over any source label, which is what merges
+ *     the two names a field used to have (`背景模糊` / `模糊强度`,
+ *     `字标水平中心` / `Logo 水平位置`, …).
+ *  2. [sourceLabels] — renames of legacy user-visible copy (`显示标志` →
+ *     `显示 Logo`, `底色主题` → `底色`, …). Also the showcase RELABEL set.
+ *  3. A source label that is already a raw identifier is looked up in [fields].
+ *  4. A source label carrying CJK is kept (after stripping 「internalKey」).
+ *
+ * A control that cannot be turned into human copy is hidden rather than shown
+ * as a raw key (ARCH §5). Internal fields ([internalFields], e.g. `params.slots`)
+ * are always hidden. This table is display only — it never changes a value.
  */
 internal object ControlLabels {
-    private val friendlyLabels: Map<String, String> = mapOf(
-        "品牌字标" to "品牌标志",
-        "显示字标" to "显示标志",
-        "显示厂商" to "显示品牌",
-        "显示参数行" to "显示拍摄参数",
-        "字标位置" to "标志位置",
-        "极简页脚" to "简洁底栏",
-        "圆角半径" to "圆角",
-        "整卡字号缩放" to "整体文字大小",
-        "画布画幅" to "照片比例",
-        "方图占比" to "方形区域大小",
-        "衬底不透明度" to "背景透明度",
-    )
 
-    private val controls: Map<String, String> = mapOf(
+    /** Fields whose value is engine bookkeeping and must never reach the UI. */
+    private val internalFields: Set<String> = setOf("slots")
+
+    /**
+     * Canonical name per design-field key. Keyed by the field name (the part
+     * after the last `.` and before the first `:` of a design key), which is how
+     * `capabilities.json`, `controls.json` and `inspector-meta.json` agree.
+     */
+    private val fields: Map<String, String> = mapOf(
+        // wm-classic terminology (report §9 "术语" table + showcase RELABEL).
+        "theme" to "底色",
+        "footerMode" to "版式",
         "footerPct" to "底部留白",
         "marginPct" to "照片留白",
+        "fontScale" to "整体文字大小",
+        "showLogo" to "显示 Logo",
+        "logoPos" to "位置",
+        "logoScale" to "Logo 大小",
+        "logoCenterX" to "水平位置",
+        "showDate" to "显示日期",
+        "showExif" to "显示拍摄参数",
+        "showMake" to "显示厂商",
+        "showModel" to "显示机型",
+        "showLens" to "显示镜头",
+        "brandLogoFile" to "Logo",
+        "design.logo" to "Logo",
+        // Remaining hand controls (union of the former two tables).
         "radiusPct" to "圆角",
-        "shadow" to "阴影强度",
         "blur" to "模糊强度",
+        "shadow" to "阴影强度",
         "sidePadPct" to "左右留白",
         "topPadPct" to "顶部留白",
         "logoPct" to "字标大小",
@@ -82,6 +104,35 @@ internal object ControlLabels {
         "logoGap" to "字标间距",
         "sepX" to "分隔线位置",
         "brandTextSizePct" to "品牌字号",
+        // Fields that used to have two names in the frozen sources.
+        "photoAspect" to "画幅",
+    )
+
+    /** Renames of legacy user-visible copy (showcase RELABEL + the A3 set). */
+    private val sourceLabels: Map<String, String> = mapOf(
+        // A3: 标志 / 字标 / Logo 混用 → one word.
+        "显示标志" to "显示 Logo",
+        "显示字标" to "显示 Logo",
+        "标志位置" to "位置",
+        "字标位置" to "位置",
+        "字标缩放" to "Logo 大小",
+        "字标水平中心" to "水平位置",
+        "品牌标志" to "Logo",
+        "品牌字标" to "Logo",
+        "标志" to "Logo",
+        // Showcase RELABEL / report §9 terms.
+        "底色主题" to "底色",
+        "页脚版式" to "版式",
+        "照片留白" to "照片留白",
+        "外边距" to "照片留白",
+        "整卡字号缩放" to "整体文字大小",
+        "衬底着色不透明度" to "背景透明度",
+        "衬底不透明度" to "背景透明度",
+        "画布画幅" to "照片比例",
+        "方图占比" to "方形区域大小",
+        "背景模糊" to "模糊强度",
+        "照片圆角" to "圆角",
+        "圆角半径" to "圆角",
     )
 
     private val options: Map<String, String> = mapOf(
@@ -189,28 +240,66 @@ internal object ControlLabels {
         "template" to "模板",
     )
 
+    /** Brand asset keys → brand names (moved here from the old HumanLabels). */
+    private val brands: Map<String, String> = mapOf(
+        "auto" to "自动匹配",
+        "laika" to "徕卡",
+        "laika_long" to "徕卡长标",
+        "hasu_long_black" to "哈苏长标 · 黑",
+        "hasu_long_white" to "哈苏长标 · 白",
+        "hassel_h_black" to "哈苏 H · 黑",
+        "hassel_wordmark_black" to "哈苏字标 · 黑",
+        "lumo_black" to "Lumo · 黑",
+        "fushi_white" to "富士 · 白",
+        "zeiss" to "蔡司",
+    )
+
     private val bracketToken = Regex("「([^」]*)」")
     private val whitespace = Regex("\\s+")
 
-    fun forControl(sourceLabel: String, controlId: String): String? {
+    /** Field key of a design key: `params.slotText:b0/g0` → `slotText`. */
+    fun fieldOf(param: String): String =
+        param.substringBefore(':').substringAfterLast('.').trim()
+
+    /** True when this design key addresses engine bookkeeping, not user copy. */
+    fun isInternal(param: String): Boolean = fieldOf(param) in internalFields
+
+    /**
+     * Human label for one control, or null when there is none (the control is
+     * then hidden). [param] is the design/consumer key the control writes.
+     */
+    fun forControl(sourceLabel: String, controlId: String, param: String = ""): String? {
+        if (param.isNotBlank()) {
+            if (isInternal(param)) return null
+            // Exact design key first (`design.logo`), then its field name.
+            fields[param]?.let { return it }
+            val field = fieldOf(param)
+            fields[field]?.let { return it }
+            fields[param.substringAfterLast('.')]?.let { return it }
+        }
         val raw = sourceLabel.trim()
         if (raw.isEmpty()) return null
-        friendlyLabels[raw]?.let { return it }
+        sourceLabels[raw]?.let { return it }
         if (raw.hasCjk()) return sanitize(raw)
-        controls[raw]?.let { return it }
+        fields[raw]?.let { return it }
         val tail = controlId.substringAfterLast(':').substringAfterLast('.')
-        controls[tail]?.let { return it }
-        controls[raw.substringAfterLast(':').substringAfterLast('.')]?.let { return it }
+        fields[tail]?.let { return it }
+        fields[raw.substringAfterLast(':').substringAfterLast('.')]?.let { return it }
         return null
     }
 
+    /** Back-compat alias for the old table name. */
+    fun forLabel(sourceLabel: String, controlId: String): String? = forControl(sourceLabel, controlId)
+
     /** `编辑「exifCompositeLine」文字` → `编辑参数文字`; null when nothing readable is left. */
     fun sanitize(raw: String): String? {
-        val cleaned = bracketToken.replace(raw) { match ->
+        val renamed = sourceLabels[raw.trim()] ?: raw
+        val cleaned = bracketToken.replace(renamed) { match ->
             val key = match.groupValues[1].substringBefore('[').trim()
             lineTokens[key] ?: ""
         }.replace(whitespace, " ").trim()
-        return if (cleaned.hasCjk()) cleaned else null
+        // "Logo" is human copy even without CJK; it is the word the V2 terms use.
+        return if (cleaned.hasCjk() || cleaned == "Logo") cleaned else null
     }
 
     /** Null means "no human copy"; callers hide the option/control instead of showing the id. */
@@ -222,7 +311,39 @@ internal object ControlLabels {
         return null
     }
 
-    private fun String.hasCjk(): Boolean = any { it in '\u4e00'..'\u9fff' }
+    /** Option display that keeps unknown ids distinguishable from "unselected". */
+    fun forDisplayOption(value: String): String {
+        val raw = value.trim()
+        if (raw.isEmpty()) return raw
+        return forOption(raw) ?: "未知选项（$raw）"
+    }
+
+    /** Theme / swatch ids use the shared option vocabulary; unknown ids are explicit. */
+    fun forThemeOption(value: String): String {
+        val raw = value.trim()
+        if (raw.isEmpty()) return "未选择"
+        val display = forOption(raw)
+        return if (display == null || display == "未设置") "未知主题（$raw）" else display
+    }
+
+    /** A free-text control may carry an enum token; keep prose, humanise keys. */
+    fun forText(value: String): String {
+        val raw = value.trim()
+        if (raw.isEmpty()) return ""
+        options[raw]?.let { return it }
+        if (raw.hasCjk()) return raw
+        if (Regex("^[a-z][a-z0-9_-]*$").matches(raw)) return "未设置"
+        return raw
+    }
+
+    /** Brand logos are asset keys in the frozen source; show the brand name only. */
+    fun forBrand(value: String): String {
+        val raw = value.trim()
+        if (raw.isEmpty()) return ""
+        brands[raw]?.let { return it }
+        if (raw.hasCjk()) return raw
+        return "未设置"
+    }
 }
 
 internal fun String.hasCjk(): Boolean = any { it in '\u4e00'..'\u9fff' }
