@@ -13,6 +13,12 @@ import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_HEIGHT
 import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_WIDTH
 import com.framemark.native.shell.MotionProbe
 import com.framemark.native.shell.fitWindowToScreen
+import com.framemark.native.theme.AppearanceController
+import com.framemark.native.theme.AppearanceEnv
+import com.framemark.native.theme.DesktopAppearanceEffects
+import com.framemark.native.theme.DesktopAppearanceStore
+import com.framemark.native.theme.NoPersistenceAppearanceStore
+import com.framemark.native.theme.ThemeMode
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopProjectRuntime
 import com.framemark.native.workflow.DesktopWorkflowPlatform
@@ -35,6 +41,10 @@ import java.awt.GraphicsEnvironment
  *  - FM_OPEN_EXPORT=1   → open the export sheet (U4)
  *  - FM_RUN_EXPORT=1    → also generate the sample export (U4)
  *  - FM_OPEN_BATCH=1    → open the batch tab with a seeded demo queue (U4)
+ *  - FM_APPEARANCE=system|light|dark → force the appearance for this run only
+ *    (never written to `settings\appearance.json`)
+ *  - FM_FAKE_SYSTEM_DARK_FILE=<path> → replace the Win32 registry read with a file
+ *    (`1` = dark, `0` = light), polled every 5 s; sandbox QA only
  *  - FM_DATA_DIR / FM_EXPORT_DIR → redirect preset + sample files (evidence only)
  */
 fun main() = application {
@@ -128,6 +138,24 @@ fun main() = application {
         Unit
     }
 
+    // WP-T: appearance is resolved before the first composition. FM_APPEARANCE
+    // forces a mode for this run only and is never written to the settings file.
+    val appearance = remember {
+        val forcedMode = when (System.getenv("FM_APPEARANCE")?.trim()?.lowercase()) {
+            "system" -> ThemeMode.System
+            "light" -> ThemeMode.Light
+            "dark" -> ThemeMode.Dark
+            else -> null
+        }
+        val store = runCatching { DesktopAppearanceStore() }
+            .onFailure { println("FM_APPEARANCE_STORE_UNAVAILABLE ${it.message}") }
+            .getOrElse { NoPersistenceAppearanceStore }
+        AppearanceController(store = store, forcedMode = forcedMode).also {
+            AppearanceEnv.controller = it
+            println("FM_APPEARANCE_FORCED ${forcedMode?.wire ?: "-"} file=${it.settingsPath}")
+        }
+    }
+
     Window(
         onCloseRequest = {
             DesktopProjectRuntime.flush()
@@ -140,6 +168,7 @@ fun main() = application {
         ),
         undecorated = System.getenv("FM_UNDECORATED") == "1",
     ) {
+        DesktopAppearanceEffects(appearance, window)
         FrameMarkApp()
     }
 }

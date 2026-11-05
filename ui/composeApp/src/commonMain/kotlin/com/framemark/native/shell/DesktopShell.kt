@@ -1109,17 +1109,20 @@ private fun BrandBlock(compact: Boolean) {
                 .border(1.dp, FmPalette.outline, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
+            // WP-T: read the ink during composition; the Canvas draw scope is not composable.
+            val markOuter = FmPalette.primary
+            val markInner = FmPalette.primaryStrong
             Canvas(modifier = Modifier.size(22.dp)) {
                 val stroke = Stroke(width = 1.8.dp.toPx(), join = StrokeJoin.Round)
                 drawRoundRect(
-                    color = FmPalette.primary,
+                    color = markOuter,
                     topLeft = Offset(size.width * 0.08f, size.height * 0.08f),
                     size = androidx.compose.ui.geometry.Size(size.width * 0.84f, size.height * 0.84f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.20f),
                     style = stroke,
                 )
                 drawRoundRect(
-                    color = FmPalette.primaryStrong,
+                    color = markInner,
                     topLeft = Offset(size.width * 0.32f, size.height * 0.32f),
                     size = androidx.compose.ui.geometry.Size(size.width * 0.36f, size.height * 0.36f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.07f),

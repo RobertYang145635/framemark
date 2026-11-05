@@ -1,28 +1,12 @@
 package com.framemark.native.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-
-private val FmColorScheme = lightColorScheme(
-    primary = FmPalette.primary,
-    onPrimary = FmPalette.onPrimary,
-    primaryContainer = FmPalette.primarySoft,
-    onPrimaryContainer = FmPalette.primaryStrong,
-    background = FmPalette.canvas,
-    onBackground = FmPalette.onSurface,
-    surface = FmPalette.surface,
-    onSurface = FmPalette.onSurface,
-    surfaceVariant = FmPalette.surfaceMuted,
-    onSurfaceVariant = FmPalette.onSurfaceSecondary,
-    outline = FmPalette.outline,
-    outlineVariant = FmPalette.outlineStrong,
-    error = FmPalette.error,
-    onError = Color.White,
-    scrim = FmPalette.scrim,
-)
+import androidx.compose.runtime.CompositionLocalProvider
 
 private val FmTypography = Typography(
     titleLarge = FmType.titleLarge,
@@ -35,15 +19,64 @@ private val FmTypography = Typography(
 )
 
 /**
- * Light-only theme for U1. Tokens live in [FmPalette]/[FmType]/[FmSpacing]/
- * [FmRadii]/[FmElevation]/[FmMotion]; MaterialTheme is wired to the same roles so
- * stock M3 components inherit them. Dark mode is out of scope for this slice.
+ * Material 3 colour scheme generated from one [FmColors] snapshot.
+ *
+ * No screen reads `MaterialTheme.colorScheme` today (they all go through
+ * [FmPalette]); this exists so stock M3 components that the shells embed (ripples,
+ * `Surface`, text fields) inherit the same appearance instead of falling back to
+ * the M3 baseline purple.
+ */
+private fun fmColorScheme(colors: FmColors, dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = colors.primary,
+        onPrimary = colors.onPrimary,
+        primaryContainer = colors.primarySoft,
+        onPrimaryContainer = colors.primaryStrong,
+        background = colors.canvas,
+        onBackground = colors.onSurface,
+        surface = colors.surface,
+        onSurface = colors.onSurface,
+        surfaceVariant = colors.surfaceMuted,
+        onSurfaceVariant = colors.onSurfaceSecondary,
+        surfaceContainer = colors.surfaceMuted,
+        surfaceContainerHigh = colors.surfaceMuted,
+        outline = colors.outline,
+        outlineVariant = colors.outlineStrong,
+        error = colors.error,
+        onError = colors.onPrimary,
+        scrim = colors.scrim,
+    )
+}
+
+private val FmLightColorScheme = fmColorScheme(FmColors.Light, dark = false)
+private val FmDarkColorScheme = fmColorScheme(FmColors.Dark, dark = true)
+
+/**
+ * Root theme.
+ *
+ * Provides [LocalFmColors] / [LocalFmDark] (which every [FmPalette] read resolves
+ * against) and a matching Material 3 scheme plus the FrameMark typography.
+ *
+ * @param dark the resolved appearance. The default `false` keeps every older
+ *   no-argument call site compiling and rendering exactly the light palette;
+ *   `App.kt` passes the value resolved from [AppearanceController] /
+ *   [resolveDark].
  */
 @Composable
-fun FrameMarkTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = FmColorScheme,
-        typography = FmTypography,
-        content = content,
-    )
+fun FrameMarkTheme(
+    dark: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val colors = if (dark) FmColors.Dark else FmColors.Light
+    CompositionLocalProvider(
+        LocalFmColors provides colors,
+        LocalFmDark provides dark,
+    ) {
+        MaterialTheme(
+            colorScheme = if (dark) FmDarkColorScheme else FmLightColorScheme,
+            typography = FmTypography,
+            content = content,
+        )
+    }
 }

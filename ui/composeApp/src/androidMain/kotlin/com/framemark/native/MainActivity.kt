@@ -2,7 +2,6 @@ package com.framemark.native
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -10,11 +9,13 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.lifecycle.lifecycleScope
 import android.util.Log
 import com.framemark.BuildConfig
@@ -29,6 +30,11 @@ import com.framemark.native.engine.PerCallPhotoRunner
 import com.framemark.native.engine.Perf50Runner
 import com.framemark.native.engine.WiredMatrixRunner
 import com.framemark.native.inspector.InspectorHints
+import com.framemark.native.theme.AndroidAppearanceStore
+import com.framemark.native.theme.AppearanceController
+import com.framemark.native.theme.AppearanceEnv
+import com.framemark.native.theme.applySystemBarInk
+import com.framemark.native.theme.resolveDark
 import com.framemark.native.workflow.AndroidProductFileSystem
 import com.framemark.native.workflow.AndroidWorkflowPlatform
 import com.framemark.native.workflow.AndroidPhoneAssetIo
@@ -446,14 +452,22 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // U1 is a light-only design system; force dark system-bar icons so they
-        // stay legible on the light canvas even when the device is in dark mode.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-        )
+        // WP-T: no more hard-coded light system bars. `enableEdgeToEdge()` with no
+        // arguments follows the launch theme (values / values-night themes.xml)
+        // so the first frame already has the right icon ink; the composition
+        // below re-applies it as soon as the resolved appearance is known, which
+        // is UX-RESEARCH A-10 (never rely on the Activity being recreated — the
+        // manifest keeps `uiMode` in configChanges).
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         installAppVersion(applicationContext)
+        // WP-T: the appearance file lives next to project.json / presets.json in
+        // the app's private files dir. Installed before the first composition so
+        // the very first frame already renders in the stored appearance.
+        val appearance = AppearanceController(store = AndroidAppearanceStore.forContext(applicationContext)).also {
+            AppearanceEnv.controller = it
+        }
+        println("FM_APPEARANCE_INIT ${appearance.describe()}")
         // W3 crash/migration controls have to be configured before the phone
         // project loads: preset migration is synchronous during installed.load().
         // This entire block is absent from the release behavior by design.
@@ -690,7 +704,19 @@ class MainActivity : ComponentActivity() {
             )
         }
         }
-        setContent { FrameMarkApp() }
+        setContent {
+            // WP-T: system dark comes from the configuration, and `uiMode` is in
+            // configChanges, so the Activity is not recreated on a system switch —
+            // this recomposes instead and re-applies the bar styles right here.
+            val systemDark = isSystemInDarkTheme()
+            SideEffect { appearance.updateSystemDark(systemDark) }
+            val dark = resolveDark(appearance.settings.mode, systemDark)
+            LaunchedEffect(dark) {
+                this@MainActivity.applySystemBarInk(dark)
+                println("FM_APPEARANCE_APPLIED ${appearance.describe()}")
+            }
+            FrameMarkApp()
+        }
     }
 
     override fun onPause() {

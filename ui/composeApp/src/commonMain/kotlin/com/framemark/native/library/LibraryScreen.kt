@@ -636,16 +636,18 @@ private fun SearchField(filters: LibraryFilterState, rail: Boolean) {
 
 @Composable
 private fun SearchGlyph() {
+    // WP-T: read the ink during composition; the Canvas draw scope is not composable.
+    val ink = FmPalette.onSurfaceMuted
     Canvas(modifier = Modifier.size(14.dp)) {
         val stroke = 1.5.dp.toPx()
         drawCircle(
-            color = FmPalette.onSurfaceMuted,
+            color = ink,
             radius = size.minDimension * 0.32f,
             center = Offset(size.width * 0.42f, size.height * 0.42f),
             style = Stroke(width = stroke),
         )
         drawLine(
-            color = FmPalette.onSurfaceMuted,
+            color = ink,
             start = Offset(size.width * 0.64f, size.height * 0.64f),
             end = Offset(size.width * 0.9f, size.height * 0.9f),
             strokeWidth = stroke,
