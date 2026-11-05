@@ -283,14 +283,19 @@ object WindowsTitleBar {
  *  - re-paints the Windows caption whenever the resolved appearance flips;
  *  - logs one line per resolved change, which is the evidence for the
  *    `FM_FAKE_SYSTEM_DARK_FILE` smoke run.
+ *
+ * [systemTheme] is passed in rather than created here (T-1): `main.kt` has to read
+ * the very same reader synchronously before the first composition, so the
+ * `initialSystemDark` it seeds the controller with and the value this effect keeps
+ * watching can never come from two different sources.
  */
 @Composable
 fun DesktopAppearanceEffects(
     controller: AppearanceController,
     window: ComposeWindow,
+    systemTheme: WindowsSystemTheme = remember { WindowsSystemTheme() },
 ) {
-    val systemTheme = remember { WindowsSystemTheme() }
-    val watcher = remember { WindowsSystemThemeWatcher(systemTheme, controller::updateSystemDark) }
+    val watcher = remember(systemTheme) { WindowsSystemThemeWatcher(systemTheme, controller::updateSystemDark) }
 
     DisposableEffect(watcher, window) {
         controller.updateSystemDark(systemTheme.isDark())
