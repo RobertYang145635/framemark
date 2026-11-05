@@ -59,15 +59,19 @@ fun FmSlider(
             } else {
                 0f
             }
+            // WP-T: colours are read during composition, the Canvas draw scope is
+            // not composable.
+            val idleTrack = FmPalette.outlineStrong
+            val activeTrack = FmPalette.primary
             Canvas(modifier = Modifier.fillMaxWidth().height(6.dp)) {
                 val radius = CornerRadius(size.height / 2f)
                 drawRoundRect(
-                    color = FmPalette.outlineStrong,
+                    color = idleTrack,
                     size = Size(size.width, size.height),
                     cornerRadius = radius,
                 )
                 drawRoundRect(
-                    color = FmPalette.primary,
+                    color = activeTrack,
                     size = Size(size.width * fraction, size.height),
                     cornerRadius = radius,
                 )

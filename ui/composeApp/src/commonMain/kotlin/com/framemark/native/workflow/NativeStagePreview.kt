@@ -644,18 +644,21 @@ fun NativeStagePreview(
                     }
                 println("FM_TEXT_HIGHLIGHT key=$highlightKey located=${ready.textSlots.firstOrNull { it.key == highlightKey }?.located} rect=$highlightRect")
                 if (highlightRect != null) {
+                    // WP-T: read the ink during composition; the Canvas draw scope is not composable.
+                    val highlightWash = FmPalette.primary.copy(alpha = 0.10f)
+                    val highlightEdge = FmPalette.primary
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val stroke = 1.5.dp.toPx()
                         val radius = 6.dp.toPx()
                         drawRoundRect(
-                            color = FmPalette.primary.copy(alpha = 0.10f),
+                            color = highlightWash,
                             topLeft = Offset(highlightRect.x, highlightRect.y),
                             size = Size(highlightRect.w, highlightRect.h),
                             cornerRadius = CornerRadius(radius, radius),
                         )
                         val inset = stroke / 2f
                         drawRoundRect(
-                            color = FmPalette.primary,
+                            color = highlightEdge,
                             topLeft = Offset(highlightRect.x + inset, highlightRect.y + inset),
                             size = Size(
                                 (highlightRect.w - stroke).coerceAtLeast(0.5f),

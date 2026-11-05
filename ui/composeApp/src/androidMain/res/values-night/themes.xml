@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      WP-T: dark variant of Theme.FrameMark. A dark Material base is required so
+      the platform picks light system-bar icons for the launch frame; the
+      #121316 window background matches FmColors.Dark.canvas and stops the
+      white flash that a light launch theme produces on a dark device.
+    -->
+    <style name="Theme.FrameMark" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121316</item>
+    </style>
+</resources>

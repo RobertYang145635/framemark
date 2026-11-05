@@ -4,126 +4,400 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.foundation.border
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * FrameMark design tokens (U1, HyperOS-light).
+ * FrameMark design tokens (UI V2, theme-aware).
  *
  * Sources (read-only, never copied at runtime):
- *  - `framemark/src/renderer/src/styles.css` → `html[data-skin='hyperos']` L5476+
- *    for canvas/surface/ink/outline/radius intent; the same block carries the
- *    shipped accent `--accent: #2F75E5` (L5498) and `--accent-strong: #1D5FC6`
- *    (L5499) — FrameMark's own colours, not OPCameraPro's palette.
- *  - `_research/native/ui-reference/REPORT.md` for nav geometry + motion
- *    relationships only (no reference colour value is copied: the indicator is
- *    the palette's own grey-92 step).
+ *  - Light values: the V2 showcase `E:\FrameMark\design\ui-v2-showcase\src\styles.css`
+ *    `:root` block (canvas/surface/ink/line/accent/stage intent). The shipped
+ *    accent stays `--accent: #2F75E5` / `--accent-strong: #1D5FC6`.
+ *  - Dark values: HANDOFF part 2 §3 table (the "深色（新）" column).
  *
- * U1F correction: earlier revisions of this file used `#0C668D`, the accent of
- * the retired liquid-glass light block (styles.css L3712). The shipped
- * `index.html` selects `data-skin="hyperos"`, whose block (L5480 > L3710) wins at
- * equal specificity, so `#0C668D` is never painted (0 px in all nine P3 states).
- * It must not be described as "shipped"; `#2F75E5` / `#1D5FC6` are.
+ * U1F correction (kept verbatim from the light-only revision): earlier revisions
+ * used `#0C668D`, the accent of the retired liquid-glass light block
+ * (styles.css L3712). The shipped `index.html` selects `data-skin="hyperos"`,
+ * whose block wins at equal specificity, so `#0C668D` is never painted. It must
+ * not be described as "shipped"; `#2F75E5` / `#1D5FC6` are.
+ *
+ * Structure (WP-T):
+ *  - [FmColors] is an immutable snapshot of one appearance (Light or Dark) and
+ *    owns every derived colour, so a derived value can never mix the two themes.
+ *  - [LocalFmColors] supplies the current snapshot; [FrameMarkTheme] provides it.
+ *  - [FmPalette] keeps its historical member names but is now a thin
+ *    `@Composable @ReadOnlyComposable` reader over [LocalFmColors]. Reading it
+ *    from a non-composable scope (a `drawBehind {}` lambda, `remember {}`,
+ *    a plain function) is a compile error by design: capture the value into a
+ *    local first, or pass `FmColors` as a parameter.
  *
  * Every screen must read roles from these objects; screen code may not hard-code
  * colours, durations or spacing.
  */
 
-object FmPalette {
-    // Surfaces -----------------------------------------------------------------
-    /** App canvas behind cards (`--bg` of the old HyperOS skin). */
-    val canvas = Color(0xFFF0F2F5)
-
-    /** Card / sheet surface. */
-    val surface = Color(0xFFFFFFFF)
-
-    /** Inset surface (search fields, image wells, `--panel-3`). */
-    val surfaceMuted = Color(0xFFF6F8FB)
-
+/**
+ * One immutable appearance snapshot.
+ *
+ * Use [Light] or [Dark] (or `LocalFmColors.current` inside a composable) instead
+ * of constructing a third one. Derived roles ([navSurface], [primarySoft],
+ * [ring], [indicator]) are computed from **this** snapshot's own base colours.
+ */
+class FmColors(
+    val canvas: Color,
+    val surface: Color,
+    val surfaceMuted: Color,
+    val onSurface: Color,
+    val onSurfaceSecondary: Color,
+    val onSurfaceMuted: Color,
+    val onSurfaceFaint: Color,
+    val outline: Color,
+    val outlineStrong: Color,
+    val primary: Color,
+    val primaryStrong: Color,
+    val onPrimary: Color,
+    val error: Color,
+    val warning: Color,
+    val success: Color,
+    val scrim: Color,
+    val hover: Color,
+    val press: Color,
+    val track: Color,
+    val sliderIdle: Color,
+    val stage: Color,
+    val stageDark: Color,
+    val stageMid: Color,
+    val stageLight: Color,
+    val stageLine: Color,
+    val stageInk: Color,
+    val stageMuted: Color,
+    val shadowNavAmbient: Color,
+    val shadowNavSpot: Color,
+    val shadowCardAmbient: Color,
+    val shadowCardSpot: Color,
+    /** Primary opacity used by [primarySoft] (10 % light / 18 % dark). */
+    val primarySoftAlpha: Float,
+    /** Primary opacity used by [ring] (28 % light / 40 % dark). */
+    val ringAlpha: Float,
+) {
     /**
      * Floating nav capsule: surface at high alpha (D-012: no backdrop blur in v1).
      * 0.97 still let card text ghost through the unblurred capsule in the U1
      * screenshots, so the surface is raised to 0.985 — high alpha, no readable
      * bleed-through, still not fully opaque.
      */
-    val navSurface = surface.copy(alpha = 0.985f)
+    val navSurface: Color = surface.copy(alpha = 0.985f)
 
-    // Ink ----------------------------------------------------------------------
-    /** Primary text (`--text`). */
-    val onSurface = Color(0xFF14181F)
+    /** Primary at [primarySoftAlpha] over [surface] — selected chip / soft highlight. */
+    val primarySoft: Color = primary.copy(alpha = primarySoftAlpha).compositeOver(surface)
 
-    /** Secondary text / unselected nav ink (`--text-2`). */
-    val onSurfaceSecondary = Color(0xFF3E4753)
+    /** Focus ring: primary at [ringAlpha]. Translucent on purpose, draw it over the surface. */
+    val ring: Color = primary.copy(alpha = ringAlpha)
 
-    /** Supporting copy (`--muted`; the hyperos skin overrides it at styles.css L6066). */
-    val onSurfaceMuted = Color(0xFF5C6673)
-
-    /** Disabled / tertiary (`--faint`; overridden at styles.css L6067). */
-    val onSurfaceFaint = Color(0xFF7F8A97)
-
-    // Brand --------------------------------------------------------------------
-    /**
-     * Shipped FrameMark accent (`--accent` of the hyperos skin, styles.css L5498;
-     * 53,252 px in P3-06). Fill role only: solid buttons, rail tile, cursor,
-     * hairlines. 4.38:1 on white, i.e. below AA for 11–13 sp text, so all small
-     * ink uses [primaryStrong] (5.99:1 on white) — the old app's own split.
-     */
-    val primary = Color(0xFF2F75E5)
-
-    /**
-     * Accent ink (`--accent-strong`, styles.css L5499): the old app's active
-     * tab / chip / segment text. Use this for every primary-coloured small
-     * label or glyph; [primary] itself fails 4.5:1 at 11–13 sp.
-     */
-    val primaryStrong = Color(0xFF1D5FC6)
-
-    /** `--accent-ink` (styles.css L5500): label on [primary] fills. */
-    val onPrimary = Color(0xFFFFFFFF)
-
-    /** 10 % primary over surface — selected chip / soft highlight. */
-    val primarySoft = primary.copy(alpha = 0.10f).compositeOver(surface)
-
-    // Lines --------------------------------------------------------------------
-    /** Hairline (`--line`). */
-    val outline = Color(0xFFE5E9EF)
-
-    /** Stronger divider (`--line-2`). */
-    val outlineStrong = Color(0xFFD6DDE6)
-
-    // Nav indicator ------------------------------------------------------------
     /**
      * Selected pill in the bottom nav. The old app has no neutral indicator
      * (D-012 keeps one: surface at ~0.9 lightness). `#000` 10 % over surface
      * rendered hue-0 `#E5E5E5`, the only warm-neutral patch in a 214–218° hue
-     * palette, so the pill collapses onto the palette's grey-92 step (`--line`,
-     * hue 216, 9,332–22,639 px in P3). Equal to [outline] by design.
+     * palette, so the pill collapses onto the palette's own line step. Equal to
+     * `outline` by design, in both appearances.
      */
-    val indicator = Color(0xFFE5E9EF)
+    val indicator: Color = outline
+
+    /** Stage backdrop for a stage-tone choice. D1/P1 switch the stage with this. */
+    fun stageColor(tone: StageTone): Color = when (tone) {
+        StageTone.Dark -> stageDark
+        StageTone.Mid -> stageMid
+        StageTone.Light -> stageLight
+    }
+
+    companion object {
+        /**
+         * FrameMark accent (`--accent`, styles.css `:root`). Identical in both
+         * appearances. Fill role only: solid buttons, rail tile, cursor,
+         * hairlines. 4.38:1 on white, i.e. below AA for 11–13 sp text, so all
+         * small ink uses [primaryStrong] (5.99:1 on white) — the old app's own
+         * split. Single definition (the user may still switch it to `#2B6FD8`).
+         */
+        private val PRIMARY = Color(0xFF2F75E5)
+
+        /** Single definition of the light slider idle grey (may become `#8A95A4`). */
+        private val SLIDER_IDLE_LIGHT = Color(0xFF9AA4B1)
+
+        /**
+         * Light slider idle for the **dark** appearance.
+         *
+         * WCAG relative luminance of `#1D1E22` (dark surface): 0.01306.
+         * `#6B7688` → L = 0.17863; contrast = (0.17863 + 0.05) / (0.01306 + 0.05)
+         * = 0.22863 / 0.06306 = **3.63 : 1** (requirement: ≥ 3 : 1). The value
+         * stays in the cool-grey family of the light token and sits 3.6× brighter
+         * than the surface, so the untouched part of a slider still reads.
+         */
+        private val SLIDER_IDLE_DARK = Color(0xFF6B7688)
+
+        private val STAGE_DARK = Color(0xFF2B2C2F)
+        private val STAGE_MID = Color(0xFF5A5C61)
+        private val STAGE_LIGHT = Color(0xFFD9DADD)
+
+        /** Light appearance — the V2 showcase `:root` values. */
+        val Light: FmColors = FmColors(
+            canvas = Color(0xFFF0F2F5),
+            surface = Color(0xFFFFFFFF),
+            surfaceMuted = Color(0xFFF6F8FB),
+            onSurface = Color(0xFF14181F),
+            onSurfaceSecondary = Color(0xFF3E4753),
+            onSurfaceMuted = Color(0xFF5C6673),
+            onSurfaceFaint = Color(0xFF7F8A97),
+            outline = Color(0xFFE3E7EC),
+            outlineStrong = Color(0xFFD5DBE2),
+            primary = PRIMARY,
+            primaryStrong = Color(0xFF1D5FC6),
+            onPrimary = Color(0xFFFFFFFF),
+            error = Color(0xFFD2453B),
+            warning = Color(0xFFC27A0E),
+            success = Color(0xFF1E9E5A),
+            scrim = Color(0x52101828),
+            hover = Color(0x0B14181F),
+            press = Color(0x1414181F),
+            track = Color(0xFFDCE1E7),
+            sliderIdle = SLIDER_IDLE_LIGHT,
+            stage = STAGE_DARK,
+            stageDark = STAGE_DARK,
+            stageMid = STAGE_MID,
+            stageLight = STAGE_LIGHT,
+            stageLine = Color(0xFF3A3F47),
+            stageInk = Color(0xFFD4DAE3),
+            stageMuted = Color(0xFF969AA4),
+            shadowNavAmbient = Color(0x0D101828),
+            shadowNavSpot = Color(0x1A101828),
+            shadowCardAmbient = Color(0x08101828),
+            shadowCardSpot = Color(0x0F101828),
+            primarySoftAlpha = 0.10f,
+            ringAlpha = 0.28f,
+        )
+
+        /**
+         * Dark appearance — HANDOFF part 2 §3 "深色（新）" column.
+         *
+         * The photo stage stays `#2B2C2F` in both appearances (hand-off decision
+         * 2: the photo area is always dark), and the shadow colours move to
+         * `#000` at a higher alpha because a `#101828` tint is invisible on
+         * `#121316`.
+         */
+        val Dark: FmColors = FmColors(
+            canvas = Color(0xFF121316),
+            surface = Color(0xFF1D1E22),
+            surfaceMuted = Color(0xFF26282D),
+            onSurface = Color(0xFFEDEFF3),
+            onSurfaceSecondary = Color(0xFFC3C8D0),
+            onSurfaceMuted = Color(0xFF9AA1AC),
+            onSurfaceFaint = Color(0xFF7D8490),
+            outline = Color(0xFF2E3036),
+            outlineStrong = Color(0xFF3A3D44),
+            primary = PRIMARY,
+            primaryStrong = Color(0xFF7FB0FF),
+            onPrimary = Color(0xFFFFFFFF),
+            error = Color(0xFFF06A5F),
+            warning = Color(0xFFE0A23A),
+            success = Color(0xFF3CC07A),
+            // 60 % black: the light scrim's 32 % `#101828` only dims `#121316`
+            // to `#0C0D0E`, which no longer separates a sheet from the canvas.
+            scrim = Color(0x99000000),
+            hover = Color(0x0FFFFFFF),
+            press = Color(0x1AFFFFFF),
+            track = Color(0xFF3A3D44),
+            sliderIdle = SLIDER_IDLE_DARK,
+            stage = STAGE_DARK,
+            stageDark = STAGE_DARK,
+            stageMid = STAGE_MID,
+            stageLight = STAGE_LIGHT,
+            stageLine = Color(0xFF3A3F47),
+            stageInk = Color(0xFFD4DAE3),
+            stageMuted = Color(0xFF969AA4),
+            shadowNavAmbient = Color(0x1F000000),
+            shadowNavSpot = Color(0x40000000),
+            shadowCardAmbient = Color(0x14000000),
+            shadowCardSpot = Color(0x24000000),
+            primarySoftAlpha = 0.18f,
+            ringAlpha = 0.40f,
+        )
+    }
+}
+
+/**
+ * The appearance every `FmPalette` read resolves against. Provided by
+ * [FrameMarkTheme]; defaults to [FmColors.Light] so a preview or a test that
+ * never wraps its content still gets the light palette.
+ */
+val LocalFmColors = staticCompositionLocalOf { FmColors.Light }
+
+/**
+ * Whether the resolved appearance is dark. Provided by [FrameMarkTheme]; read it
+ * when a component needs the appearance as a boolean (system-bar icons, shadow
+ * vs. hairline), not just as colours.
+ */
+val LocalFmDark = staticCompositionLocalOf { false }
+
+/**
+ * Colour roles. Member names are frozen (758 references across 24 files when the
+ * token layer was converted) — only the *source* changed, from static constants
+ * to [LocalFmColors].
+ *
+ * Usage notes that are easy to get wrong (UX-RESEARCH A-11):
+ *  - [onSurfaceFaint] (ink-4) is for **disabled state and placeholder text only**.
+ *    It never carries real copy.
+ *  - [sliderIdle] is only for the **unmodified** part of a slider. The modified
+ *    part uses [primary]; do not reuse [sliderIdle] for a general track line
+ *    (that is [track]).
+ */
+object FmPalette {
+    // Surfaces -----------------------------------------------------------------
+    /** App canvas behind cards (`--canvas`). */
+    val canvas: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.canvas
+
+    /** Card / sheet surface (`--surface`). */
+    val surface: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.surface
+
+    /** Inset surface (search fields, image wells, `--muted-bg`). */
+    val surfaceMuted: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.surfaceMuted
+
+    /** Floating nav capsule: surface at high alpha, see [FmColors.navSurface]. */
+    val navSurface: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.navSurface
+
+    // Ink ----------------------------------------------------------------------
+    /** Primary text (`--ink`). */
+    val onSurface: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.onSurface
+
+    /** Secondary text / unselected nav ink (`--ink-2`). */
+    val onSurfaceSecondary: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.onSurfaceSecondary
+
+    /** Supporting copy (`--ink-3`). */
+    val onSurfaceMuted: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.onSurfaceMuted
+
+    /** Disabled / placeholder only (`--ink-4`), see the usage note above. */
+    val onSurfaceFaint: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.onSurfaceFaint
+
+    // Brand --------------------------------------------------------------------
+    /** Shipped accent (`--accent`). Fill role only; small ink uses [primaryStrong]. */
+    val primary: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.primary
+
+    /** Accent ink (`--accent-strong`): every primary-coloured small label or glyph. */
+    val primaryStrong: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.primaryStrong
+
+    /** `--accent-ink`: label on [primary] fills. */
+    val onPrimary: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.onPrimary
+
+    /** 10 % primary over surface (18 % in dark) — selected chip / soft highlight. */
+    val primarySoft: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.primarySoft
+
+    // Lines --------------------------------------------------------------------
+    /** Hairline (`--line`). */
+    val outline: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.outline
+
+    /** Stronger divider (`--line-2`), and the dark-mode elevation outline. */
+    val outlineStrong: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.outlineStrong
+
+    /** General track line behind a slider (`--track`). */
+    val track: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.track
+
+    // Interaction --------------------------------------------------------------
+    /** Hover wash: ink 4.5 % (white 6 % in dark). */
+    val hover: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.hover
+
+    /** Press wash: ink 8 % (white 10 % in dark). */
+    val press: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.press
+
+    /** Focus ring: primary 28 % (40 % in dark). */
+    val ring: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.ring
+
+    // Nav indicator ------------------------------------------------------------
+    /** Selected pill in the bottom nav. Equal to [outline] by design. */
+    val indicator: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.indicator
 
     // Feedback -----------------------------------------------------------------
-    val error = Color(0xFFC2413B)
-    val warning = Color(0xFFB26A00)
-    val scrim = Color(0x52101828)
+    val error: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.error
+
+    val warning: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.warning
+
+    /** Success / done accent (`--ok`). */
+    val success: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.success
+
+    val scrim: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.scrim
 
     // Stage (photo canvas) -----------------------------------------------------
-    // V06 appends these four roles; no existing token above is changed. The photo
-    // stage is a neutral dark canvas with no dot matrix / grid decoration, so the
-    // marks and the floating view tools need their own ink levels.
-    /** Neutral dark stage behind the photo. */
-    val stage = Color(0xFF25282D)
+    /**
+     * Neutral dark stage behind the photo. `#2B2C2F` in **both** appearances:
+     * the photo area stays dark (hand-off part 2 §3 decision 2). The switchable
+     * tones live in [stageDark] / [stageMid] / [stageLight].
+     */
+    val stage: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stage
+
+    /** Stage tone: dark grey (default), identical in both appearances. */
+    val stageDark: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageDark
+
+    /** Stage tone: mid grey. */
+    val stageMid: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageMid
+
+    /** Stage tone: light grey. */
+    val stageLight: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageLight
 
     /** Hairline on the stage: frame edges and tool separators. */
-    val stageLine = Color(0xFF3A3F47)
+    val stageLine: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageLine
 
     /** Primary ink on the stage. */
-    val stageInk = Color(0xFFD4DAE3)
+    val stageInk: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageInk
 
     /** Muted ink on the stage (secondary labels, hints). */
-    val stageMuted = Color(0xFF969AA4)
+    val stageMuted: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.stageMuted
+
+    /**
+     * Slider idle part only (unmodified state), see the usage note above.
+     * Light `#9AA4B1`; dark `#6B7688` (3.63:1 on the dark surface).
+     */
+    val sliderIdle: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.sliderIdle
 }
 
 object FmType {
@@ -209,14 +483,55 @@ object FmRadii {
     val pill = 999.dp
 }
 
+/**
+ * Elevation. The two levels stay `Dp` (layout is theme independent); the shadow
+ * colours moved into [FmColors] so a dark surface gets a deeper, black-based
+ * shadow instead of an invisible `#101828` tint.
+ *
+ * New call sites should prefer [fmElevated] over `Modifier.shadow(...)` +
+ * `FmElevation.*Ambient`: the modifier also draws the 1 dp `outlineStrong`
+ * hairline that replaces the shadow in the dark appearance (hand-off part 2 §3
+ * "阴影 → 1px line-2 描边"). Existing `Modifier.shadow` call sites keep working
+ * and already get the deeper dark shadow.
+ */
 object FmElevation {
     /** Floating nav capsule (D-012: soft 4dp shadow, no blur). */
     val nav = 4.dp
     val card = 1.dp
-    val navAmbient = Color(0x0D101828)
-    val navSpot = Color(0x1A101828)
-    val cardAmbient = Color(0x08101828)
-    val cardSpot = Color(0x0F101828)
+    val navAmbient: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.shadowNavAmbient
+    val navSpot: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.shadowNavSpot
+    val cardAmbient: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.shadowCardAmbient
+    val cardSpot: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.shadowCardSpot
+}
+
+/**
+ * Theme-aware elevation for cards and the nav capsule.
+ *
+ * Light: the classic soft shadow (`ambientColor`/`spotColor` from [FmColors]).
+ * Dark: the same shadow, deeper, **plus** a 1 dp [FmPalette.outlineStrong]
+ * hairline — a shadow alone does not separate `#1D1E22` from `#121316`.
+ *
+ * @param level [FmElevation.card] (default) or [FmElevation.nav]; anything below
+ *   [FmElevation.nav] uses the card shadow colours and anything at or above it
+ *   uses the nav shadow colours.
+ * @param shape the surface shape; the hairline follows it, so pass the same
+ *   shape you clip with.
+ */
+@Composable
+fun Modifier.fmElevated(
+    level: Dp = FmElevation.card,
+    shape: Shape = RectangleShape,
+): Modifier {
+    val dark = LocalFmDark.current
+    val capsule = level >= FmElevation.nav
+    val ambient = if (capsule) FmElevation.navAmbient else FmElevation.cardAmbient
+    val spot = if (capsule) FmElevation.navSpot else FmElevation.cardSpot
+    val shadowed = shadow(elevation = level, shape = shape, clip = false, ambientColor = ambient, spotColor = spot)
+    return if (dark) shadowed.border(1.dp, FmPalette.outlineStrong, shape) else shadowed
 }
 
 object FmBreakpoints {

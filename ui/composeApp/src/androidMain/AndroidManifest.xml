@@ -3,7 +3,7 @@
 
     <application
         android:label="FrameMark"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+        android:theme="@style/Theme.FrameMark"
         android:supportsRtl="true">
         <provider
             android:name="com.framemark.native.workflow.FrameMarkFileProvider"
