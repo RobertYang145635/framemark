@@ -191,7 +191,15 @@ class PhoneProjectStore(
         loadProjectLocked()
     }
 
-    private fun loadProjectLocked(): Boolean {
+    /**
+     * Reads the project document once.
+     *
+     * [keepModelWhenMissing] is set by the deferred read a write may trigger before
+     * [load] ran: with no document on disk there is nothing to adopt, so the model the
+     * caller already built is the document to create. An existing document is always
+     * the authority and is adopted; a failed read keeps [projectWritesBlocked] set.
+     */
+    private fun loadProjectLocked(keepModelWhenMissing: Boolean = false): Boolean {
         loaded = true
         dirty = false
         changeVersion++
@@ -209,7 +217,7 @@ class PhoneProjectStore(
                 true
             }
             StoreResult.Missing -> {
-                project = Project(id = "phone", createdAt = 0, updatedAt = 0)
+                if (!keepModelWhenMissing) project = Project(id = "phone", createdAt = 0, updatedAt = 0)
                 projectWritesBlocked = false
                 saveError = null
                 println("FM_PROJECT_NONE")
@@ -269,6 +277,12 @@ class PhoneProjectStore(
      */
     fun saveNow(): Boolean = synchronized(writeLock) {
         val captured = synchronized(saveLock) {
+            // A save can arrive before anyone called load(): a store driven only through
+            // the preset API, or a flush raised while startup is still reading. The
+            // document has to be read once before it may be replaced, so the deferred
+            // read happens here; the guard keeps blocking when that read fails (only a
+            // successful read, or a missing document, releases writes).
+            if (!loaded) loadProjectLocked(keepModelWhenMissing = true)
             if (projectWritesBlocked) {
                 dirty = false
                 saveError = projectReadProtectionMessage()
@@ -308,10 +322,9 @@ class PhoneProjectStore(
 
     /** Lands any debounced write before the caller leaves the foreground. */
     fun flushBlocking(): Boolean {
-        if (projectWritesBlocked) {
-            saveNow()
-            return false
-        }
+        // The guard means "the document was not read yet" as well as "the read failed";
+        // saveNow performs that deferred read, so its answer is the flush's answer.
+        if (projectWritesBlocked) return saveNow()
         val pending = synchronized(saveLock) { dirty }
         if (!pending) return true
         var saved = saveNow()
@@ -951,7 +964,12 @@ class PhoneProjectStore(
 
     private fun commit(next: Project): Boolean {
         val committed = synchronized(saveLock) {
-            if (projectWritesBlocked) {
+            // Before the first read the flag only means "no document authority was
+            // established yet": the in-memory model may still change, while the disk
+            // write waits for the deferred read in [saveNow]. Once a read has failed,
+            // the edit itself is refused — a model built on top of an unreadable
+            // document must never be presented as saved.
+            if (projectWritesBlocked && loaded) {
                 saveError = projectReadProtectionMessage()
                 return@synchronized false
             }
