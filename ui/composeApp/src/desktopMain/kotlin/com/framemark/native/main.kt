@@ -7,6 +7,8 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.runtime.remember
+import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.window.rememberWindowState
 import com.framemark.native.engine.DesktopNativeRender
 import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_HEIGHT
@@ -17,8 +19,10 @@ import com.framemark.native.theme.AppearanceController
 import com.framemark.native.theme.AppearanceEnv
 import com.framemark.native.theme.DesktopAppearanceEffects
 import com.framemark.native.theme.DesktopAppearanceStore
+import com.framemark.native.theme.FmColors
 import com.framemark.native.theme.NoPersistenceAppearanceStore
 import com.framemark.native.theme.ThemeMode
+import com.framemark.native.theme.WindowsSystemTheme
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopProjectRuntime
 import com.framemark.native.workflow.DesktopWorkflowPlatform
@@ -138,6 +142,15 @@ fun main() = application {
         Unit
     }
 
+    // WP-T (T-1): the system flag is read *here*, synchronously, before the
+    // controller exists and before anything is composed. Seeding the controller
+    // with it means "follow the system" is already correct on the first frame; a
+    // controller created with the default `initialSystemDark = false` painted one
+    // light frame and only flipped to dark when an effect ran afterwards. The
+    // reader is the same WindowsSystemTheme the effect keeps polling, so
+    // FM_FAKE_SYSTEM_DARK_FILE still overrides the registry.
+    val systemTheme = remember { WindowsSystemTheme() }
+
     // WP-T: appearance is resolved before the first composition. FM_APPEARANCE
     // forces a mode for this run only and is never written to the settings file.
     val appearance = remember {
@@ -150,9 +163,20 @@ fun main() = application {
         val store = runCatching { DesktopAppearanceStore() }
             .onFailure { println("FM_APPEARANCE_STORE_UNAVAILABLE ${it.message}") }
             .getOrElse { NoPersistenceAppearanceStore }
-        AppearanceController(store = store, forcedMode = forcedMode).also {
+        val initialSystemDark = systemTheme.isDark()
+        AppearanceController(
+            store = store,
+            forcedMode = forcedMode,
+            initialSystemDark = initialSystemDark,
+        ).also {
             AppearanceEnv.controller = it
             println("FM_APPEARANCE_FORCED ${forcedMode?.wire ?: "-"} file=${it.settingsPath}")
+            // Evidence for T-1: this line is printed by the `application {}` body,
+            // i.e. before the window content is composed and before the first frame.
+            println(
+                "FM_APPEARANCE_PRECOMPOSE systemDark=$initialSystemDark dark=${it.dark} " +
+                    "mode=${it.settings.mode.wire} source=${systemTheme.lastSource}",
+            )
         }
     }
 
@@ -168,9 +192,33 @@ fun main() = application {
         ),
         undecorated = System.getenv("FM_UNDECORATED") == "1",
     ) {
-        DesktopAppearanceEffects(appearance, window)
+        // T-1: AWT paints the frame before Compose paints its first frame, and a
+        // plain JFrame starts on the Metal content-pane grey. Paint the window with
+        // the canvas the resolved appearance is about to render; this call happens
+        // while the window content is composed, which is before Compose Desktop
+        // makes the window visible.
+        applyWindowBackground(window, dark = appearance.dark)
+        DesktopAppearanceEffects(appearance, window, systemTheme)
         FrameMarkApp()
     }
+}
+
+/**
+ * Paints the AWT frame (and its content pane) with the canvas of the resolved
+ * appearance, so the gap between "window visible" and "first Compose frame"
+ * cannot show the light `JFrame` default. It is a no-op when the colour already
+ * matches, so a live theme switch only repaints once.
+ */
+private fun applyWindowBackground(window: ComposeWindow, dark: Boolean) {
+    val canvas = if (dark) FmColors.Dark.canvas else FmColors.Light.canvas
+    val awt = java.awt.Color(canvas.toArgb() and 0xFFFFFF)
+    if (window.background == awt) return
+    runCatching {
+        window.background = awt
+        window.contentPane?.background = awt
+        window.repaint()
+        println("FM_APPEARANCE_WINDOW_BG dark=$dark argb=#%06X".format(canvas.toArgb() and 0xFFFFFF))
+    }.onFailure { println("FM_APPEARANCE_WINDOW_BG_FAIL ${it.message}") }
 }
 
 /**
