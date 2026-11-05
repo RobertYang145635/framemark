@@ -63,16 +63,28 @@ pub struct Variant {
 
 impl HandDef {
     pub fn defaults_map(&self) -> Params {
-        self.defaults.as_object().cloned().map(|m| m.into_iter().collect()).unwrap_or_default()
+        self.defaults
+            .as_object()
+            .cloned()
+            .map(|m| m.into_iter().collect())
+            .unwrap_or_default()
     }
 }
 
 impl Variant {
     pub fn params_map(&self) -> Params {
-        self.params.as_object().cloned().map(|m| m.into_iter().collect()).unwrap_or_default()
+        self.params
+            .as_object()
+            .cloned()
+            .map(|m| m.into_iter().collect())
+            .unwrap_or_default()
     }
     pub fn text_map(&self) -> BTreeMap<String, Value> {
-        self.text.as_object().cloned().map(|m| m.into_iter().collect()).unwrap_or_default()
+        self.text
+            .as_object()
+            .cloned()
+            .map(|m| m.into_iter().collect())
+            .unwrap_or_default()
     }
 }
 
@@ -86,10 +98,14 @@ pub fn load_tables(hand_dir: &Path) -> Result<HandTables, String> {
     let v = read("variants.json")?;
     let th = read("themes.json")?;
     Ok(HandTables {
-        templates: serde_json::from_value(t.get("templates").cloned().unwrap_or(Value::Array(vec![])))
-            .map_err(|e| format!("templates.json: {e}"))?,
-        variants: serde_json::from_value(v.get("variants").cloned().unwrap_or(Value::Array(vec![])))
-            .map_err(|e| format!("variants.json: {e}"))?,
+        templates: serde_json::from_value(
+            t.get("templates").cloned().unwrap_or(Value::Array(vec![])),
+        )
+        .map_err(|e| format!("templates.json: {e}"))?,
+        variants: serde_json::from_value(
+            v.get("variants").cloned().unwrap_or(Value::Array(vec![])),
+        )
+        .map_err(|e| format!("variants.json: {e}"))?,
         themes: th.get("themes").cloned().unwrap_or(Value::Null),
     })
 }
@@ -253,7 +269,10 @@ pub fn model_without_make(make: &str, model: &str) -> String {
     if d.is_empty() {
         return String::new();
     }
-    if !m.is_empty() && d.to_lowercase().starts_with(&format!("{} ", m.to_lowercase())) {
+    if !m.is_empty()
+        && d.to_lowercase()
+            .starts_with(&format!("{} ", m.to_lowercase()))
+    {
         return d[m.len()..].trim().to_string();
     }
     d.to_string()
@@ -290,11 +309,17 @@ pub fn format_date_only(date_time: &str) -> String {
         return String::new();
     }
     let head = t.split(|c: char| c == ' ' || c == 'T').next().unwrap_or("");
-    if head.len() >= 10 && head.as_bytes().get(4) == Some(&b'-') && head.as_bytes().get(7) == Some(&b'-') {
+    if head.len() >= 10
+        && head.as_bytes().get(4) == Some(&b'-')
+        && head.as_bytes().get(7) == Some(&b'-')
+    {
         return head[..10].to_string();
     }
     // EXIF style `YYYY:MM:DD HH:MM:SS`
-    if head.len() >= 10 && head.as_bytes().get(4) == Some(&b':') && head.as_bytes().get(7) == Some(&b':') {
+    if head.len() >= 10
+        && head.as_bytes().get(4) == Some(&b':')
+        && head.as_bytes().get(7) == Some(&b':')
+    {
         return format!("{}-{}-{}", &head[0..4], &head[5..7], &head[8..10]);
     }
     head.to_string()
@@ -341,7 +366,14 @@ pub struct Crop {
 
 /// The whole sensor, no centre crop: used by `--fit native`.
 pub fn crop_full(image_w: f32, image_h: f32) -> Crop {
-    Crop { sx: 0.0, sy: 0.0, sw: image_w, sh: image_h, pw: image_w, ph: image_h }
+    Crop {
+        sx: 0.0,
+        sy: 0.0,
+        sw: image_w,
+        sh: image_h,
+        pw: image_w,
+        ph: image_h,
+    }
 }
 
 /// How the photo is fitted into the template. `Design` is the frozen behaviour
@@ -381,7 +413,14 @@ pub fn compute_crop(image_w: f32, image_h: f32, ratio: &str) -> Crop {
         _ => None,
     };
     let Some(target) = target else {
-        return Crop { sx: 0.0, sy: 0.0, sw: image_w, sh: image_h, pw: image_w, ph: image_h };
+        return Crop {
+            sx: 0.0,
+            sy: 0.0,
+            sw: image_w,
+            sh: image_h,
+            pw: image_w,
+            ph: image_h,
+        };
     };
     let (mut sw, mut sh, mut sx, mut sy) = (image_w, image_h, 0.0, 0.0);
     if image_w / image_h > target {
@@ -391,7 +430,14 @@ pub fn compute_crop(image_w: f32, image_h: f32, ratio: &str) -> Crop {
         sh = image_w / target;
         sy = (image_h - sh) / 2.0;
     }
-    Crop { sx, sy, sw, sh, pw: sw, ph: sh }
+    Crop {
+        sx,
+        sy,
+        sw,
+        sh,
+        pw: sw,
+        ph: sh,
+    }
 }
 
 // ── comparison manifest (tools/card-manifest.cjs output) ────────────────────
@@ -510,8 +556,12 @@ pub fn load_cards(path: &Path) -> Result<CardsFile, String> {
 
 pub fn load_design(path: &Path) -> Result<Design, String> {
     let raw = std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    let v: Value = serde_json::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))?;
-    let d = v.get("design").cloned().ok_or_else(|| format!("{}: no .design", path.display()))?;
+    let v: Value =
+        serde_json::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))?;
+    let d = v
+        .get("design")
+        .cloned()
+        .ok_or_else(|| format!("{}: no .design", path.display()))?;
     serde_json::from_value(d).map_err(|e| format!("{}: design: {e}", path.display()))
 }
 

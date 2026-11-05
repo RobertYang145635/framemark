@@ -30,11 +30,15 @@ interface ProjectHolder {
     val loaded: Boolean
     val loadError: String?
     val saveError: String?
+    /** True while a failed project read must prevent every project-file write. */
+    val projectWritesBlocked: Boolean
     val importing: Boolean
     val importFailures: List<ImportFailure>
     val saveCount: Int
 
     fun load()
+    /** Re-reads after a failed load; true means the project is writable again. */
+    fun retryProjectLoad(): Boolean = false
     fun flush()
     fun saveNow(): Boolean
 
@@ -59,6 +63,7 @@ interface ProjectHolder {
         opacity: Float? = null,
         dx: Float? = null,
         dy: Float? = null,
+        rotation: Float? = null,
     )
     fun applyWatermarkToAll()
     fun clearWatermark()
@@ -178,11 +183,13 @@ class InMemoryProjectHolder : ProjectHolder {
     override val loaded: Boolean = true
     override val loadError: String? = null
     override val saveError: String? = null
+    override val projectWritesBlocked: Boolean = false
     override val importing: Boolean = false
     override val importFailures: List<ImportFailure> = emptyList()
     override val saveCount: Int = 0
 
     override fun load() = Unit
+    override fun retryProjectLoad(): Boolean = true
     override fun flush() = Unit
     override fun saveNow(): Boolean = true
     override fun selectPhoto(id: String) = Unit
@@ -200,7 +207,7 @@ class InMemoryProjectHolder : ProjectHolder {
     override fun thumbnail(path: String, maxEdge: Int): ByteArray? = null
     override suspend fun importWatermark(path: String): Result<Unit> =
         Result.failure(IllegalStateException("当前平台不支持水印导入"))
-    override fun updateWatermark(anchor: Int?, width: Float?, opacity: Float?, dx: Float?, dy: Float?) = Unit
+    override fun updateWatermark(anchor: Int?, width: Float?, opacity: Float?, dx: Float?, dy: Float?, rotation: Float?) = Unit
     override fun applyWatermarkToAll() = Unit
     override fun clearWatermark() = Unit
     override fun watermark(): WatermarkSpec? = null

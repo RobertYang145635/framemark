@@ -9,17 +9,21 @@ import androidx.compose.ui.window.application
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.rememberWindowState
 import com.framemark.native.engine.DesktopNativeRender
+import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_HEIGHT
+import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_WIDTH
 import com.framemark.native.shell.MotionProbe
+import com.framemark.native.shell.fitWindowToScreen
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopProjectRuntime
 import com.framemark.native.workflow.DesktopWorkflowPlatform
 import com.framemark.native.workflow.WorkflowEnv
+import java.awt.GraphicsEnvironment
 
 /**
  * Desktop entry point.
  *
  * Env hooks (evidence capture only, no effect on a normal launch):
- *  - FM_WINDOW=390x844  → initial window size in dp
+ *  - FM_WINDOW=390x844  → initial window size in dp (still fitted to the screen)
  *  - FM_UNDECORATED=1   → no title bar, so the client area is exactly FM_WINDOW
  *  - FM_MOTION_LOG=1    → per-frame nav motion probe on stdout
  *  - FM_OPEN_CARD=<id>  → open this library card in the editor (U3/U4 capture)
@@ -39,13 +43,31 @@ fun main() = application {
             .map { System.currentTimeMillis() - it.toEpochMilli() }
             .orElse(-1L)
 
-    val spec = System.getenv("FM_WINDOW")
-        ?.split("x")
-        ?.mapNotNull { it.toFloatOrNull() }
-    val windowSize = if (spec != null && spec.size == 2) {
-        DpSize(spec[0].dp, spec[1].dp)
-    } else {
-        DpSize(1280.dp, 800.dp)
+    // V06: a window opened larger than the work area put the right inspector off
+    // screen (external report). The initial size is fitted to the AWT work area
+    // (taskbar excluded) instead of raising the three-column minimum width, so a
+    // 200 % display with a small logical work area still opens fully visible.
+    // Computed inside `remember`: the `application {}` body recomposes, and this
+    // probe must log exactly once per launch.
+    val windowSize = remember {
+        val spec = System.getenv("FM_WINDOW")
+            ?.split("x")
+            ?.mapNotNull { it.toFloatOrNull() }
+        val desiredWidth = spec?.getOrNull(0) ?: DESKTOP_WINDOW_DEFAULT_WIDTH
+        val desiredHeight = spec?.getOrNull(1) ?: DESKTOP_WINDOW_DEFAULT_HEIGHT
+        val workArea = desktopWorkAreaDp()
+        val fit = fitWindowToScreen(
+            desiredWidth = desiredWidth,
+            desiredHeight = desiredHeight,
+            screenWidth = workArea?.first ?: 0f,
+            screenHeight = workArea?.second ?: 0f,
+        )
+        println(
+            "FM_WINDOW_FIT desired=${dpLabel(desiredWidth)}x${dpLabel(desiredHeight)} " +
+                "screen=${workArea?.let { "${dpLabel(it.first)}x${dpLabel(it.second)}" } ?: "-"} " +
+                "applied=${dpLabel(fit.width)}x${dpLabel(fit.height)}",
+        )
+        DpSize(fit.width.dp, fit.height.dp)
     }
 
     // The body of `application {}` is a composable lambda, so anything written here
@@ -58,6 +80,16 @@ fun main() = application {
         FeelProbe.enabled = System.getenv("FM_G5_PROBE") == "1"
 
         WorkflowEnv.platform = DesktopWorkflowPlatform()
+        com.framemark.native.workflow.UserLogoEnv.repository =
+            runCatching { com.framemark.native.userlogo.DesktopUserLogoRepository() }
+                .onFailure { println("FM_USER_LOGO_UNAVAILABLE ${it.message}") }
+                .getOrNull()
+        com.framemark.native.workflow.UserLogoEnv.picker =
+            if (com.framemark.native.workflow.UserLogoEnv.repository != null) {
+                { com.framemark.native.userlogo.DesktopUserLogoPicker.open() }
+            } else {
+                null
+            }
         com.framemark.native.inspector.RegistryPorts.provider = com.framemark.native.engine.DesktopRegistryProvider(
             com.framemark.native.engine.RegistrySource(com.framemark.native.engine.RegistrySource.devWorkspaceRoot()),
         )
@@ -67,9 +99,12 @@ fun main() = application {
         println("FM_START_PROJECT photos=${projects.photos.size} active=${projects.activePhotoId ?: "-"} error=${projects.loadError ?: "-"}")
         // X1: the real renderer. A missing manifest/binary leaves the placeholder
         // workflow in place and says so once on stdout.
-        WorkflowEnv.nativeRender = runCatching { DesktopNativeRender() }
+        val desktopRender = runCatching { DesktopNativeRender() }
             .onFailure { println("FM_ENGINE_UNAVAILABLE ${it.message}") }
             .getOrNull()
+        WorkflowEnv.nativeRender = desktopRender
+        com.framemark.native.workflow.UserLogoSupport.probe =
+            desktopRender?.let { render -> { id: String -> render.supportsUserLogo(id) } }
         println("FM_START_ENGINE elapsedMs=${startupElapsedMs()}")
 
         LaunchOptions.openCardId = System.getenv("FM_OPEN_CARD")?.takeIf { it.isNotBlank() }
@@ -108,3 +143,29 @@ fun main() = application {
         FrameMarkApp()
     }
 }
+
+/**
+ * AWT work area (the screen minus taskbar) in the same units Compose sizes the
+ * window in.
+ *
+ * Compose Desktop sizes windows in AWT user-space coordinates and AWT already
+ * reports user space — a 200 % display reports its logical half of the physical
+ * pixels — so the rectangle is used as-is. Dividing by
+ * `defaultTransform.scaleX` a second time would halve the budget on exactly the
+ * high-DPI machines this fit targets and shrink the window instead of saving it.
+ *
+ * Returns null when the bounds cannot be read or are empty, and the caller then
+ * keeps the desired size.
+ */
+private fun desktopWorkAreaDp(): Pair<Float, Float>? = runCatching {
+    val bounds: java.awt.Rectangle? = GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
+    if (bounds == null || bounds.width <= 0 || bounds.height <= 0) {
+        null
+    } else {
+        bounds.width.toFloat() to bounds.height.toFloat()
+    }
+}.getOrNull()
+
+/** Log-friendly dp value: whole numbers stay whole. */
+private fun dpLabel(value: Float): String =
+    if (value == value.toInt().toFloat()) value.toInt().toString() else "%.1f".format(value)

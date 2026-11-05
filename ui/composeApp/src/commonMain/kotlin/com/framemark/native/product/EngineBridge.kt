@@ -53,6 +53,7 @@ fun WatermarkSpec.toOverlaySpec(materializedPath: String, photoAspect: Float): O
         w = r.w,
         h = r.h,
         opacity = opacity,
+        angle = rotation.coerceIn(-WatermarkSpec.MAX_ROTATION, WatermarkSpec.MAX_ROTATION),
     )
 }
 
@@ -65,6 +66,7 @@ data class RenderOverlay(
     val path: String,
     val rect: OverlayRect,
     val opacity: Float,
+    val angle: Float = 0f,
 )
 
 /** Design payload of a render-v1 request; optional fields are omitted when unset. */
@@ -118,6 +120,7 @@ data class RenderRequest(
             append(",\"w\":").append(ProductJson.number(it.rect.w))
             append(",\"h\":").append(ProductJson.number(it.rect.h))
             append("},\"opacity\":").append(ProductJson.number(it.opacity))
+            if (it.angle != 0f) append(",\"angle\":").append(ProductJson.number(it.angle))
             append('}')
         }
         append('}')
@@ -166,6 +169,10 @@ object RenderRequestFactory {
                 path = overlayPath!!,
                 rect = design.overlay!!.rect(photoAspect),
                 opacity = design.overlay!!.opacity,
+                angle = design.overlay!!.rotation.coerceIn(
+                    -WatermarkSpec.MAX_ROTATION,
+                    WatermarkSpec.MAX_ROTATION,
+                ),
             )
         }
 

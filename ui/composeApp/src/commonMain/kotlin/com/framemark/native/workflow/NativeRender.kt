@@ -53,6 +53,8 @@ data class NativeImage(
     val photoRect: ImageRect? = null,
     /** User-visible caveat about this render (e.g. a template-ratio crop). */
     val note: String? = null,
+    /** Renderer-reported text rows in this image's pixel coordinate space. */
+    val textSlots: List<TextSlot> = emptyList(),
 )
 
 /**
@@ -67,6 +69,8 @@ data class OverlaySpec(
     val w: Float,
     val h: Float,
     val opacity: Float,
+    /** Degrees clockwise around the dst centre; 0 keeps the legacy byte path. */
+    val angle: Float = 0f,
 )
 
 /**

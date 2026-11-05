@@ -86,7 +86,11 @@ fn get_ascii(t: &Tiff, val_off: usize, typ: u16, count: u32) -> Option<String> {
         return None;
     }
     let n = count as usize;
-    let off = if n <= 4 { val_off } else { t.u32(val_off)? as usize };
+    let off = if n <= 4 {
+        val_off
+    } else {
+        t.u32(val_off)? as usize
+    };
     t.ascii(off, n)
 }
 
@@ -221,7 +225,9 @@ pub fn model_without_make(make: &str, model: &str) -> String {
     if m.is_empty() || d.is_empty() {
         return d.to_string();
     }
-    if d.to_lowercase().starts_with(&format!("{} ", m.to_lowercase())) {
+    if d.to_lowercase()
+        .starts_with(&format!("{} ", m.to_lowercase()))
+    {
         d[m.len()..].trim().to_string()
     } else {
         d.to_string()

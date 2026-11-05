@@ -191,7 +191,13 @@ fn tone_rank(file: &str, dark: bool) -> i32 {
     let white = file.ends_with("_white");
     let black = file.ends_with("_black");
     if dark {
-        if white { 0 } else if black { 2 } else { 1 }
+        if white {
+            0
+        } else if black {
+            2
+        } else {
+            1
+        }
     } else if black {
         0
     } else if white {
@@ -302,9 +308,17 @@ impl BrandLib {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum H { Left, Center, Right }
+enum H {
+    Left,
+    Center,
+    Right,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum V { Top, Center, Bottom }
+enum V {
+    Top,
+    Center,
+    Bottom,
+}
 
 fn gravity_anchor(gravity: Option<&str>) -> (H, V) {
     let s = gravity.unwrap_or("leftTop");
@@ -393,7 +407,11 @@ pub fn brand_slot_rect(
                 rect_box.w * (1.0 - vr) + slack_x - gap_extra
             } else {
                 rect_box.w * (1.0 - vl) + slack_x
-                    - if ha == H::Center { gap_extra * 2.0 } else { gap_extra }
+                    - if ha == H::Center {
+                        gap_extra * 2.0
+                    } else {
+                        gap_extra
+                    }
             };
             let max_w = (rect_box.w * 0.2).max(max_ink_w) / (1.0 - sl - sr).max(0.05);
             let slack_y = match va {
@@ -446,10 +464,18 @@ pub fn slot_gap_parts(
         .unwrap_or(false);
     let declared = if prefer_right {
         let m = margins.right;
-        if m != 0.0 { m } else { margins.left }
+        if m != 0.0 {
+            m
+        } else {
+            margins.left
+        }
     } else {
         let m = margins.left;
-        if m != 0.0 { m } else { margins.right }
+        if m != 0.0 {
+            m
+        } else {
+            margins.right
+        }
     };
     let declared = if declared == 0.0 {
         SLOT_MARGIN_FALLBACK_UNITS

@@ -3,7 +3,9 @@
 
 use skia_safe::Rect;
 
-use crate::draw::{draw_glass_panel, draw_photo_cover, draw_text_exact, extract_palette, Env, LayoutEnv};
+use crate::draw::{
+    draw_glass_panel, draw_photo_cover, draw_text_exact_slot, extract_palette, Env, LayoutEnv,
+};
 use crate::hand::pct;
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
@@ -20,8 +22,20 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let panel_h = h * ((pct(env.params, "panelHeightPct", 29.7) as f32) / 100.0);
     let panel_x = (w - panel_w) / 2.0;
     let panel_y = h - h * ((pct(env.params, "panelBottomPct", 6.5) as f32) / 100.0) - panel_h;
-    let radius = (panel_h * ((pct(env.params, "panelRadiusPct", 16.0) as f32) / 100.0)).min(w * 0.09);
-    draw_photo_cover(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, s);
+    let radius =
+        (panel_h * ((pct(env.params, "panelRadiusPct", 16.0) as f32) / 100.0)).min(w * 0.09);
+    draw_photo_cover(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        w,
+        h,
+        0.0,
+        0.0,
+        s,
+    );
     let tint = (pct(env.params, "tintAlpha", 0.3) as f32).clamp(0.0, 0.6);
     let blur_px = (s * 0.012 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
     let tint_str = format!("rgba(0,0,0,{tint})");
@@ -53,8 +67,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let cx = first_x + c as f32 * pitch_x;
             let cy = first_y + r as f32 * pitch_y;
             env.ctx.fill_circle(cx, cy, d / 2.0, &hex);
-            env.ctx.record_shape("swatch", Rect::from_xywh(cx - d / 2.0, cy - d / 2.0, d, d), None, true);
-            draw_text_exact(
+            env.ctx.record_shape(
+                "swatch",
+                Rect::from_xywh(cx - d / 2.0, cy - d / 2.0, d, d),
+                None,
+                true,
+            );
+            let slot = format!("glassPalette.r{:02}.c{:02}.label", r + 1, c + 1);
+            draw_text_exact_slot(
                 env,
                 &hex.to_uppercase(),
                 cx,
@@ -68,6 +88,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 0.0,
                 false,
                 None,
+                &slot,
             );
         }
     }

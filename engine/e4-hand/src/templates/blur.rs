@@ -4,8 +4,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    date_text, draw_blurred_backdrop, draw_brand_logo, draw_fitted, draw_photo, exif_text, theme_of,
-    title_of, Env, FittedOpts, LayoutEnv,
+    date_text, draw_blurred_backdrop, draw_brand_logo, draw_fitted, draw_photo, exif_text,
+    resolve_text_slot, theme_of, title_of, Env, FittedOpts, LayoutEnv,
 };
 use crate::hand::pct;
 
@@ -38,17 +38,42 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         s,
     );
     let cx = w / 2.0;
-    let minimal = matches!(env.params.get("minimalFooter"), Some(serde_json::Value::Bool(true)));
+    let minimal = matches!(
+        env.params.get("minimalFooter"),
+        Some(serde_json::Value::Bool(true))
+    );
     if minimal {
         let dt = date_text(env);
         let topts = FittedOpts::new("Inter")
             .weight(600)
             .align("center")
             .tracking(0.14)
-            .min(s * 0.01);
-        draw_fitted(env, &title_of(env).to_uppercase(), cx, m + ph + m + footer * 0.42, w - 2.0 * m, s * 0.019, &theme.sub, &topts);
-        let dopts = FittedOpts::new("JetBrains Mono").align("center").min(s * 0.012);
-        draw_fitted(env, &dt, cx, m + ph + m + footer * 0.68, w - 2.0 * m, s * 0.024, &theme.fg, &dopts);
+            .min(s * 0.01)
+            .slot("blur.title");
+        draw_fitted(
+            env,
+            &title_of(env).to_uppercase(),
+            cx,
+            m + ph + m + footer * 0.42,
+            w - 2.0 * m,
+            s * 0.019,
+            &theme.sub,
+            &topts,
+        );
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .align("center")
+            .min(s * 0.012)
+            .slot("blur.date");
+        draw_fitted(
+            env,
+            &dt,
+            cx,
+            m + ph + m + footer * 0.68,
+            w - 2.0 * m,
+            s * 0.024,
+            &theme.fg,
+            &dopts,
+        );
         return Ok(Rect::from_xywh(m, m, pw, ph));
     }
     let title_y = m + ph + m + footer * 0.34;
@@ -57,26 +82,85 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         .weight(600)
         .align("center")
         .tracking(0.12)
-        .min(s * 0.013);
-    draw_fitted(env, &title_of(env).to_uppercase(), cx, y, w - 2.0 * m, s * 0.024, &theme.fg, &topts);
+        .min(s * 0.013)
+        .slot("blur.title");
+    draw_fitted(
+        env,
+        &title_of(env).to_uppercase(),
+        cx,
+        y,
+        w - 2.0 * m,
+        s * 0.024,
+        &theme.fg,
+        &topts,
+    );
     let ex = exif_text(env);
-    if !ex.is_empty() {
+    let ex_resolved = resolve_text_slot(env, "blur.exif", &ex);
+    let ex_y = y + footer * 0.26;
+    if !ex_resolved.text.is_empty() {
         y += footer * 0.26;
-        let eopts = FittedOpts::new("JetBrains Mono").align("center").min(s * 0.009);
+        let eopts = FittedOpts::new("JetBrains Mono")
+            .align("center")
+            .min(s * 0.009)
+            .slot("blur.exif");
         y += draw_fitted(env, &ex, cx, y, w - 2.0 * m, s * 0.017, &theme.sub, &eopts);
+    } else {
+        let eopts = FittedOpts::new("JetBrains Mono")
+            .align("center")
+            .min(s * 0.009)
+            .slot("blur.exif");
+        draw_fitted(
+            env,
+            &ex,
+            cx,
+            ex_y,
+            w - 2.0 * m,
+            s * 0.017,
+            &theme.sub,
+            &eopts,
+        );
     }
     let dt = date_text(env);
-    if !dt.is_empty() {
+    let date_resolved = resolve_text_slot(env, "blur.date", &dt);
+    if !date_resolved.text.is_empty() {
         y += footer * 0.2;
-        let dopts = FittedOpts::new("JetBrains Mono").align("center").min(s * 0.008);
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .align("center")
+            .min(s * 0.008)
+            .slot("blur.date");
         draw_fitted(env, &dt, cx, y, w - 2.0 * m, s * 0.014, &theme.sub, &dopts);
+    } else {
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .align("center")
+            .min(s * 0.008)
+            .slot("blur.date");
+        draw_fitted(
+            env,
+            &dt,
+            cx,
+            y + footer * 0.2,
+            w - 2.0 * m,
+            s * 0.014,
+            &theme.sub,
+            &dopts,
+        );
     }
     let logo_pos = crate::hand::str_param(env.params, "logoPos", "center");
     if env.text.show_logo && logo_pos != "none" {
         let lw = s * 0.18;
         let lh = footer * 0.18;
-        let lx = if logo_pos == "left" { m } else if logo_pos == "right" { w - m - lw } else { cx - lw / 2.0 };
-        let ly = if logo_pos == "center" { m + ph + m + footer * 0.08 } else { title_y - lh / 2.0 };
+        let lx = if logo_pos == "left" {
+            m
+        } else if logo_pos == "right" {
+            w - m - lw
+        } else {
+            cx - lw / 2.0
+        };
+        let ly = if logo_pos == "center" {
+            m + ph + m + footer * 0.08
+        } else {
+            title_y - lh / 2.0
+        };
         draw_brand_logo(env, lx, ly, lw, lh, &theme.fg);
     }
     Ok(Rect::from_xywh(m, m, pw, ph))

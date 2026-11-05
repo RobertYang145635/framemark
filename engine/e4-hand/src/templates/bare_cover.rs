@@ -19,7 +19,18 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     env.ctx.fill_rect(0.0, 0.0, w, h);
     let theme = theme_of(env.themes, env.params);
     let s = env.pw.min(env.ph);
-    draw_photo_cover(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, s);
+    draw_photo_cover(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        w,
+        h,
+        0.0,
+        0.0,
+        s,
+    );
     let _ = theme;
     Ok(Rect::from_xywh(0.0, 0.0, w, h))
 }

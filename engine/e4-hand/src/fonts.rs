@@ -60,12 +60,24 @@ impl HandFonts {
             let mut faces = Vec::new();
             for (weight, path, variable, italic) in entries {
                 match load_face(&mgr, &path) {
-                    Ok(tf) => faces.push(FaceDef { weight, file: path, tf, variable, italic }),
+                    Ok(tf) => faces.push(FaceDef {
+                        weight,
+                        file: path,
+                        tf,
+                        variable,
+                        italic,
+                    }),
                     Err(e) => missing.push(format!("{name} w{weight} {}: {e}", path.display())),
                 }
             }
             if !faces.is_empty() {
-                families.insert(name.to_string(), Family { name: name.to_string(), faces });
+                families.insert(
+                    name.to_string(),
+                    Family {
+                        name: name.to_string(),
+                        faces,
+                    },
+                );
             }
         };
 
@@ -92,9 +104,15 @@ impl HandFonts {
         );
         load(
             "Caveat",
-            vec![(400, extra.join("Caveat-400.ttf"), false, false), (600, extra.join("Caveat-600.ttf"), false, false)],
+            vec![
+                (400, extra.join("Caveat-400.ttf"), false, false),
+                (600, extra.join("Caveat-600.ttf"), false, false),
+            ],
         );
-        load("YouShe", vec![(400, app.join("YouSheBiaoTiHei.ttf"), false, false)]);
+        load(
+            "YouShe",
+            vec![(400, app.join("YouSheBiaoTiHei.ttf"), false, false)],
+        );
         let bebas = std::env::var("E4H_BEBAS_FILE")
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|_| app.join("BebasNeue-Regular.ttf"));
@@ -104,9 +122,17 @@ impl HandFonts {
         // the probe's measure-vs-oracle check proves whether the advances match.
         load(
             "Chakra Petch",
-            vec![(600, extra.join("ChakraPetch-SemiBoldItalic.ttf"), false, true)],
+            vec![(
+                600,
+                extra.join("ChakraPetch-SemiBoldItalic.ttf"),
+                false,
+                true,
+            )],
         );
-        load("Zeiss", vec![(700, app.join("ZeissFrutigerNext-Bold.ttf"), false, false)]);
+        load(
+            "Zeiss",
+            vec![(700, app.join("ZeissFrutigerNext-Bold.ttf"), false, false)],
+        );
         load(
             "OplusSans",
             vec![(400, oppo.join("SysSans-En-Regular.ttf"), true, false)],
@@ -126,9 +152,15 @@ impl HandFonts {
         );
         load(
             "StockButler",
-            vec![(500, oppo.join("ButlerMedium.otf"), false, false), (700, oppo.join("ButlerBold.otf"), false, false)],
+            vec![
+                (500, oppo.join("ButlerMedium.otf"), false, false),
+                (700, oppo.join("ButlerBold.otf"), false, false),
+            ],
         );
-        load("StockFZ", vec![(400, oppo.join("FZCYSK.TTF"), false, false)]);
+        load(
+            "StockFZ",
+            vec![(400, oppo.join("FZCYSK.TTF"), false, false)],
+        );
         load(
             "StockMiSans",
             vec![
@@ -138,17 +170,32 @@ impl HandFonts {
         );
         load(
             "StockOxanium",
-            vec![(400, mi.join("Oxanium-Regular.ttf"), false, false), (500, mi.join("Oxanium-Medium.ttf"), false, false)],
+            vec![
+                (400, mi.join("Oxanium-Regular.ttf"), false, false),
+                (500, mi.join("Oxanium-Medium.ttf"), false, false),
+            ],
         );
-        load("StockLG1056", vec![(400, mi.join("LG1056-Regular.otf"), false, false)]);
-        load("StockVivo", vec![(400, vivo.join("vivo-Regular.otf"), false, false)]);
+        load(
+            "StockLG1056",
+            vec![(400, mi.join("LG1056-Regular.otf"), false, false)],
+        );
+        load(
+            "StockVivo",
+            vec![(400, vivo.join("vivo-Regular.otf"), false, false)],
+        );
 
         let (fallback, fallback_bold, fallback_file) = load_system_cjk(&mgr);
         if fallback.is_none() {
             missing.push("system CJK fallback (Microsoft YaHei) not found".into());
         }
 
-        Ok(Self { families, missing, fallback, fallback_bold, fallback_file })
+        Ok(Self {
+            families,
+            missing,
+            fallback,
+            fallback_bold,
+            fallback_file,
+        })
     }
 
     /// CSS weight selection + Blink synthetic-bold rule.
@@ -162,13 +209,23 @@ impl HandFonts {
                 .iter()
                 .filter(|f| f.weight >= requested)
                 .min_by_key(|f| f.weight)
-                .or_else(|| fam.faces.iter().filter(|f| f.weight < requested).max_by_key(|f| f.weight))?
+                .or_else(|| {
+                    fam.faces
+                        .iter()
+                        .filter(|f| f.weight < requested)
+                        .max_by_key(|f| f.weight)
+                })?
         } else if requested <= 300 {
             fam.faces
                 .iter()
                 .filter(|f| f.weight <= requested)
                 .max_by_key(|f| f.weight)
-                .or_else(|| fam.faces.iter().filter(|f| f.weight > requested).min_by_key(|f| f.weight))?
+                .or_else(|| {
+                    fam.faces
+                        .iter()
+                        .filter(|f| f.weight > requested)
+                        .min_by_key(|f| f.weight)
+                })?
         } else {
             // 400/500: nearest, with 400/500 preferred in order.
             if requested == 500 {
@@ -176,14 +233,34 @@ impl HandFonts {
                     .iter()
                     .find(|f| f.weight == 500)
                     .or_else(|| fam.faces.iter().find(|f| f.weight == 400))
-                    .or_else(|| fam.faces.iter().filter(|f| f.weight < 500).max_by_key(|f| f.weight))
-                    .or_else(|| fam.faces.iter().filter(|f| f.weight > 500).min_by_key(|f| f.weight))?
+                    .or_else(|| {
+                        fam.faces
+                            .iter()
+                            .filter(|f| f.weight < 500)
+                            .max_by_key(|f| f.weight)
+                    })
+                    .or_else(|| {
+                        fam.faces
+                            .iter()
+                            .filter(|f| f.weight > 500)
+                            .min_by_key(|f| f.weight)
+                    })?
             } else {
                 fam.faces
                     .iter()
                     .find(|f| f.weight == 400)
-                    .or_else(|| fam.faces.iter().filter(|f| f.weight > 400).min_by_key(|f| f.weight))
-                    .or_else(|| fam.faces.iter().filter(|f| f.weight < 400).max_by_key(|f| f.weight))?
+                    .or_else(|| {
+                        fam.faces
+                            .iter()
+                            .filter(|f| f.weight > 400)
+                            .min_by_key(|f| f.weight)
+                    })
+                    .or_else(|| {
+                        fam.faces
+                            .iter()
+                            .filter(|f| f.weight < 400)
+                            .max_by_key(|f| f.weight)
+                    })?
             }
         };
         let synthetic_bold = requested >= 600 && !pick.variable && pick.weight < 600;
@@ -210,7 +287,10 @@ impl HandFonts {
     /// E2a/E2b measured Avenir 0.08, SysSans 0.044, vivo 0.10, MiSans 0.
     /// The hand-only faces are NOT calibrated yet — reported per card in phase 2.
     pub fn d021_em(&self, family: &str) -> f32 {
-        let key = format!("E4H_D021_{}", family.to_uppercase().replace([' ', '-'], "_"));
+        let key = format!(
+            "E4H_D021_{}",
+            family.to_uppercase().replace([' ', '-'], "_")
+        );
         if let Ok(v) = std::env::var(&key) {
             if let Ok(x) = v.parse::<f32>() {
                 return x;
@@ -249,8 +329,30 @@ impl HandFonts {
 }
 
 fn load_face(mgr: &FontMgr, path: &Path) -> Result<Typeface, String> {
-    let data = Data::from_filename(path).ok_or_else(|| "missing".to_string())?;
-    mgr.new_from_data(data, None).ok_or_else(|| "unreadable (woff2?)".to_string())
+    let data = Data::from_filename(path)
+        .ok_or_else(|| format!("missing or unreadable: {}", path.display()))?;
+    mgr.new_from_data(data, None)
+        .ok_or_else(|| format!("unreadable font face: {}", path.display()))
+}
+
+/// Load a required packaged fallback face. Unlike the optional card fonts,
+/// callers use this when rendering cannot proceed without the face.
+pub fn load_required_face(path: &Path) -> Result<Typeface, String> {
+    load_face(&FontMgr::new(), path)
+}
+
+/// Script ranges that may be absent from the Latin-only card faces. This is a
+/// selection hint for the packaged CJK fallback; glyph coverage is checked on
+/// the actual shaped line before the image is accepted.
+pub fn is_cjk_char(c: char) -> bool {
+    matches!(c as u32,
+        0x2E80..=0x2FFF | 0x3000..=0x303F | 0x3040..=0x30FF | 0x3400..=0x4DBF |
+        0x4E00..=0x9FFF | 0xAC00..=0xD7AF | 0xF900..=0xFAFF | 0xFE30..=0xFE4F |
+        0xFF00..=0xFFEF | 0x20000..=0x2FA1F)
+}
+
+pub fn contains_cjk(text: &str) -> bool {
+    text.chars().any(is_cjk_char)
 }
 
 /// CSS font-weight on a variable face: wght instance + opsz clamped to the
@@ -261,11 +363,20 @@ fn weighted_face(base: &Typeface, weight: f32) -> Typeface {
         .and_then(|v| v.parse::<f32>().ok())
         .unwrap_or(1010.0);
     let coords = [
-        Coordinate { axis: Coordinate::wght, value: weight },
-        Coordinate { axis: Coordinate::opsz, value: opsz },
+        Coordinate {
+            axis: Coordinate::wght,
+            value: weight,
+        },
+        Coordinate {
+            axis: Coordinate::opsz,
+            value: opsz,
+        },
     ];
-    let args = FontArguments::new().set_variation_design_position(VariationPosition { coordinates: &coords });
-    base.clone_with_arguments(&args).unwrap_or_else(|| base.clone())
+    let args = FontArguments::new().set_variation_design_position(VariationPosition {
+        coordinates: &coords,
+    });
+    base.clone_with_arguments(&args)
+        .unwrap_or_else(|| base.clone())
 }
 
 /// Chromium resolves a missing CJK glyph against "Microsoft YaHei" at the
@@ -329,4 +440,18 @@ pub fn parse_font(font: &str) -> (Option<f32>, u16, bool, String) {
         }
     }
     (px, weight, italic, stack.trim().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{contains_cjk, is_cjk_char};
+
+    #[test]
+    fn detects_only_cjk_script_ranges() {
+        assert!(is_cjk_char('中'));
+        assert!(is_cjk_char('の'));
+        assert!(is_cjk_char('한'));
+        assert!(contains_cjk("Latin + 中文"));
+        assert!(!contains_cjk("FRAME MARK 2026"));
+    }
 }

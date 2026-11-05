@@ -104,6 +104,8 @@ private fun encodeOverlay(spec: WatermarkSpec): String = buildString {
     append(",\"opacity\":").append(ProductJson.number(spec.opacity))
     append(",\"dx\":").append(ProductJson.number(spec.dx))
     append(",\"dy\":").append(ProductJson.number(spec.dy))
+    if (spec.rotation != 0f) append(",\"rotation\":").append(ProductJson.number(spec.rotation))
+    if (spec.photoAspect != 1.5f) append(",\"photoAspect\":").append(ProductJson.number(spec.photoAspect))
     append(",\"asset\":").append(encodeAsset(spec.asset))
     append('}')
 }
@@ -119,7 +121,24 @@ internal fun decodeOverlay(raw: Any?, where: String): WatermarkSpec {
     val dx = map.requireFloat("dx", where)
     val dy = map.requireFloat("dy", where)
     if (abs(dx) > 4f || abs(dy) > 4f) throw ProductDecodeException("$where 位移超出 ±4 归一化范围")
-    return WatermarkSpec(decodeAsset(map["asset"], "$where.asset"), anchor, width, opacity, dx, dy)
+    val rotation = map.optionalDouble("rotation", where)?.toFloat() ?: 0f
+    if (!rotation.isFinite() || abs(rotation) > WatermarkSpec.MAX_ROTATION) {
+        throw ProductDecodeException("$where.rotation 超出 ±${WatermarkSpec.MAX_ROTATION}：$rotation")
+    }
+    val photoAspect = map.optionalDouble("photoAspect", where)?.toFloat() ?: 1.5f
+    if (!photoAspect.isFinite() || photoAspect <= 0.01f || photoAspect > 20f) {
+        throw ProductDecodeException("$where.photoAspect 超出 (0.01,20]：$photoAspect")
+    }
+    return WatermarkSpec(
+        decodeAsset(map["asset"], "$where.asset"),
+        anchor,
+        width,
+        opacity,
+        dx,
+        dy,
+        rotation,
+        photoAspect,
+    )
 }
 
 internal fun encodeDesign(design: PhotoDesign): String = buildString {
@@ -150,9 +169,10 @@ internal fun decodeDesign(raw: Any?, where: String): PhotoDesign {
     val fontScale = map.optionalDouble("fontScale", where)?.also {
         if (it <= 0.0) throw ProductDecodeException("$where.fontScale 必须为正数")
     }
-    val logo = map.optionalString("logo", where)?.also {
-        if (it.isBlank()) throw ProductDecodeException("$where.logo 为空")
-    }
+    // Empty was written by the auto-match control in an earlier build; it means
+    // "not overridden", so recover it as null instead of making the project
+    // unreadable. New writes normalize blank to null in PhotoDesign.withLogo.
+    val logo = map.optionalString("logo", where)?.takeIf { it.isNotBlank() }
     val params = ProductJson.decodeValues(map["params"], "$where.params")
     val text = ProductJson.decodeValues(map["text"], "$where.text")
     val overlay = map["overlay"]?.let { decodeOverlay(it, "$where.overlay") }

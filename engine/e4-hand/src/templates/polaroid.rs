@@ -23,15 +23,32 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let m = s * (pct(env.params, "marginPct", 5.5) as f32) / 100.0;
     let bottom = h - ph - m;
     let base_y = m + ph;
-    let bg = if theme.id == "paper" { "#fbf8f0" } else { theme.bg.as_str() };
+    let bg = if theme.id == "paper" {
+        "#fbf8f0"
+    } else {
+        theme.bg.as_str()
+    };
     env.ctx.set_fill(bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
     env.ctx.save();
     env.ctx.set_global_alpha(0.55);
     env.ctx.translate(w / 2.0, m * 0.45);
     env.ctx.rotate(-0.018);
-    env.ctx.fill_rect_color(-w * 0.1, -s * 0.018, w * 0.2, s * 0.036, "rgba(255,250,236,0.7)");
-    env.ctx.stroke_rect(-w * 0.1, -s * 0.018, w * 0.2, s * 0.036, "rgba(120,110,90,0.12)", 1.0);
+    env.ctx.fill_rect_color(
+        -w * 0.1,
+        -s * 0.018,
+        w * 0.2,
+        s * 0.036,
+        "rgba(255,250,236,0.7)",
+    );
+    env.ctx.stroke_rect(
+        -w * 0.1,
+        -s * 0.018,
+        w * 0.2,
+        s * 0.036,
+        "rgba(120,110,90,0.12)",
+        1.0,
+    );
     env.ctx.restore();
     draw_photo(
         &mut env.ctx,
@@ -46,7 +63,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         &theme,
         s,
     );
-    env.ctx.stroke_rect(m, m, pw, ph, "rgba(80,72,60,0.22)", (s * 0.0008).max(1.0));
+    env.ctx
+        .stroke_rect(m, m, pw, ph, "rgba(80,72,60,0.22)", (s * 0.0008).max(1.0));
     let title = title_of(env);
     draw_fitted(
         env,
@@ -56,48 +74,59 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         w - 2.0 * m - s * 0.16,
         s * 0.062,
         "#2a241e",
-        &FittedOpts::new("Caveat").weight(600).min(s * 0.026),
+        &FittedOpts::new("Caveat")
+            .weight(600)
+            .min(s * 0.026)
+            .slot("polaroid.title"),
     );
     let dt = date_text(env);
-    if !dt.is_empty() {
-        draw_fitted(
-            env,
-            &dt,
-            w - m,
-            base_y + bottom * 0.38,
-            s * 0.26,
-            s * 0.03,
-            "#6d6254",
-            &FittedOpts::new("Caveat").align("right").min(s * 0.016),
-        );
-    }
-    if env.text.show_exif {
-        let ex = env.exif.line("  ");
-        if !ex.is_empty() {
-            draw_fitted(
-                env,
-                &ex,
-                m,
-                base_y + bottom * 0.53,
-                w - 2.0 * m,
-                s * 0.014,
-                "#7b7264",
-                &FittedOpts::new("JetBrains Mono").min(s * 0.008),
-            );
-        }
-    }
-    if !env.text.signature.trim().is_empty() {
-        draw_fitted(
-            env,
-            env.text.signature.trim(),
-            m,
-            base_y + bottom * 0.70,
-            w - 2.0 * m,
-            s * 0.039,
-            "#3a332b",
-            &FittedOpts::new("Caveat").min(s * 0.02),
-        );
-    }
-    draw_grain(&mut env.ctx, w, h, (pct(env.params, "grain", 0.06) as f32) * 0.55);
+    draw_fitted(
+        env,
+        &dt,
+        w - m,
+        base_y + bottom * 0.38,
+        s * 0.26,
+        s * 0.03,
+        "#6d6254",
+        &FittedOpts::new("Caveat")
+            .align("right")
+            .min(s * 0.016)
+            .slot("polaroid.date"),
+    );
+    let ex = if env.text.show_exif {
+        env.exif.line("  ")
+    } else {
+        String::new()
+    };
+    draw_fitted(
+        env,
+        &ex,
+        m,
+        base_y + bottom * 0.53,
+        w - 2.0 * m,
+        s * 0.014,
+        "#7b7264",
+        &FittedOpts::new("JetBrains Mono")
+            .min(s * 0.008)
+            .slot("polaroid.exif"),
+    );
+    draw_fitted(
+        env,
+        env.text.signature.trim(),
+        m,
+        base_y + bottom * 0.70,
+        w - 2.0 * m,
+        s * 0.039,
+        "#3a332b",
+        &FittedOpts::new("Caveat")
+            .min(s * 0.02)
+            .slot("polaroid.signature"),
+    );
+    draw_grain(
+        &mut env.ctx,
+        w,
+        h,
+        (pct(env.params, "grain", 0.06) as f32) * 0.55,
+    );
     Ok(Rect::from_xywh(m, m, pw, ph))
 }

@@ -26,10 +26,15 @@ mod paint;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-pub use paint::{render_design, OverlayLayer, RenderOptions, RenderStats};
+pub use paint::{render_design, render_design_rgba, OverlayLayer, RenderOptions, RenderStats};
 
 /// Builds the render-v1 overlay layer (validated + decoded) for CLI/host use.
-pub fn overlay_layer(path: &str, rect: [f32; 4], opacity: f32) -> Result<OverlayLayer, String> {
+pub fn overlay_layer(
+    path: &str,
+    rect: [f32; 4],
+    opacity: f32,
+    angle: f32,
+) -> Result<OverlayLayer, String> {
     for (i, v) in rect.iter().enumerate() {
         if !(0.0..=1.0).contains(v) {
             return Err(format!("overlay rect index {i} out of 0..1: {v}"));
@@ -41,11 +46,19 @@ pub fn overlay_layer(path: &str, rect: [f32; 4], opacity: f32) -> Result<Overlay
     if !(0.0..=1.0).contains(&opacity) {
         return Err(format!("overlay opacity out of 0..1: {opacity}"));
     }
+    if !angle.is_finite() || angle.abs() > 180.0 {
+        return Err(format!("overlay angle out of -180..180: {angle}"));
+    }
     let image = paint::load_overlay_image(path)?;
-    Ok(OverlayLayer { image, rect, opacity })
+    Ok(OverlayLayer {
+        image,
+        rect,
+        opacity,
+        angle,
+    })
 }
 
-pub const VERSION: &CStr = c"fm-android-engine 0.1.0 (e2b IR subset, cpu raster)";
+pub const VERSION: &CStr = c"fm-android-engine 0.2.0 (e2b IR subset, cpu raster)";
 
 /// Version string for the device probe (static, never freed).
 #[no_mangle]
@@ -90,7 +103,9 @@ pub extern "C" fn fm_tiff_to_png(tiff_path: *const c_char, out_png: *const c_cha
     })();
     match result {
         Ok(()) => std::ptr::null_mut(),
-        Err(e) => CString::new(e).unwrap_or_else(|_| CString::new("tiff error").unwrap()).into_raw(),
+        Err(e) => CString::new(e)
+            .unwrap_or_else(|_| CString::new("tiff error").unwrap())
+            .into_raw(),
     }
 }
 
@@ -149,6 +164,7 @@ pub extern "C" fn fm_render_design(
     overlay_w: f32,
     overlay_h: f32,
     overlay_opacity: f32,
+    overlay_angle: f32,
     out_png: *const c_char,
     max_edge: i32,
 ) -> *mut c_char {
@@ -157,7 +173,11 @@ pub extern "C" fn fm_render_design(
         let photo = unsafe { cstr(photo_path, "photo_path") }?;
         let photo_override = unsafe { cstr(photo_override, "photo_override") }?;
         // Per-call photo (batch pairing): non-empty wins, otherwise the global.
-        let photo_final = if photo_override.is_empty() { photo } else { photo_override };
+        let photo_final = if photo_override.is_empty() {
+            photo
+        } else {
+            photo_override
+        };
         let exif = unsafe { cstr(exif_path, "exif_path") }?;
         let assets_raw = unsafe { cstr(assets_json, "assets_json") }?;
         let fonts = unsafe { cstr(fonts_dir, "fonts_dir") }?;
@@ -187,17 +207,43 @@ pub extern "C" fn fm_render_design(
                 overlay_arg,
                 [overlay_x, overlay_y, overlay_w, overlay_h],
                 overlay_opacity,
+                overlay_angle,
             )?)
         };
         let options = RenderOptions {
-            theme: if theme_arg.is_empty() { None } else { Some(theme_arg) },
-            design_json: if design_arg.is_empty() { None } else { Some(design_arg) },
+            theme: if theme_arg.is_empty() {
+                None
+            } else {
+                Some(theme_arg)
+            },
+            design_json: if design_arg.is_empty() {
+                None
+            } else {
+                Some(design_arg)
+            },
             ratio,
-            brands_dir: if brands.is_empty() { None } else { Some(brands) },
-            fallback_dir: if fallback.is_empty() { None } else { Some(fallback) },
+            brands_dir: if brands.is_empty() {
+                None
+            } else {
+                Some(brands)
+            },
+            fallback_dir: if fallback.is_empty() {
+                None
+            } else {
+                Some(fallback)
+            },
             overlay,
         };
-        render_design(style, photo_final, exif, &assets, fonts, out, max_edge, &options)
+        render_design(
+            style,
+            photo_final,
+            exif,
+            &assets,
+            fonts,
+            out,
+            max_edge,
+            &options,
+        )
     })();
 
     match result {
@@ -220,5 +266,185 @@ pub extern "C" fn fm_render_design(
         Err(e) => CString::new(e)
             .unwrap_or_else(|_| CString::new("unknown error").unwrap())
             .into_raw(),
+    }
+}
+
+pub struct FmIrRgbaHandle {
+    rgba: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+
+fn set_out_error(out_error: *mut *mut c_char, message: String) {
+    if out_error.is_null() {
+        return;
+    }
+    let text =
+        CString::new(message).unwrap_or_else(|_| CString::new("IR raw render error").unwrap());
+    unsafe {
+        *out_error = text.into_raw();
+    }
+}
+
+/// Same render path as [`fm_render_design`], but returns the premultiplied
+/// picture converted to sRGB RGBA instead of encoding a PNG. Geometry is still
+/// written to `geom_path`; the caller frees the handle with
+/// [`fm_rgba_ir_free`].
+#[allow(clippy::too_many_arguments)]
+#[no_mangle]
+pub extern "C" fn fm_render_design_rgba(
+    style_path: *const c_char,
+    photo_path: *const c_char,
+    photo_override: *const c_char,
+    exif_path: *const c_char,
+    assets_json: *const c_char,
+    fonts_dir: *const c_char,
+    brands_dir: *const c_char,
+    fallback_dir: *const c_char,
+    theme: *const c_char,
+    ratio: *const c_char,
+    design_json: *const c_char,
+    overlay_path: *const c_char,
+    overlay_x: f32,
+    overlay_y: f32,
+    overlay_w: f32,
+    overlay_h: f32,
+    overlay_opacity: f32,
+    overlay_angle: f32,
+    geom_path: *const c_char,
+    max_edge: i32,
+    out_error: *mut *mut c_char,
+) -> *mut FmIrRgbaHandle {
+    if !out_error.is_null() {
+        unsafe {
+            *out_error = std::ptr::null_mut();
+        }
+    }
+    let result = (|| -> Result<FmIrRgbaHandle, String> {
+        let style = unsafe { cstr(style_path, "style_path") }?;
+        let photo = unsafe { cstr(photo_path, "photo_path") }?;
+        let photo_override = unsafe { cstr(photo_override, "photo_override") }?;
+        let photo_final = if photo_override.is_empty() {
+            photo
+        } else {
+            photo_override
+        };
+        let exif = unsafe { cstr(exif_path, "exif_path") }?;
+        let assets_raw = unsafe { cstr(assets_json, "assets_json") }?;
+        let fonts = unsafe { cstr(fonts_dir, "fonts_dir") }?;
+        let brands = unsafe { cstr(brands_dir, "brands_dir") }?;
+        let fallback = unsafe { cstr(fallback_dir, "fallback_dir") }?;
+        let theme_arg = unsafe { cstr(theme, "theme") }?;
+        let ratio_arg = unsafe { cstr(ratio, "ratio") }?;
+        let design_arg = unsafe { cstr(design_json, "design_json") }?;
+        let geom = unsafe { cstr(geom_path, "geom_path") }?;
+        let assets_value: serde_json::Value =
+            serde_json::from_str(assets_raw).map_err(|e| format!("assets_json: {e}"))?;
+        let mut assets = std::collections::HashMap::new();
+        if let Some(obj) = assets_value.as_object() {
+            for (k, v) in obj {
+                if let Some(path) = v.as_str() {
+                    assets.insert(k.clone(), path.to_string());
+                }
+            }
+        }
+        let overlay_arg = unsafe { cstr(overlay_path, "overlay_path") }?;
+        let overlay = if overlay_arg.is_empty() {
+            None
+        } else {
+            Some(overlay_layer(
+                overlay_arg,
+                [overlay_x, overlay_y, overlay_w, overlay_h],
+                overlay_opacity,
+                overlay_angle,
+            )?)
+        };
+        let options = RenderOptions {
+            theme: if theme_arg.is_empty() {
+                None
+            } else {
+                Some(theme_arg)
+            },
+            design_json: if design_arg.is_empty() {
+                None
+            } else {
+                Some(design_arg)
+            },
+            ratio: parse_ratio(ratio_arg)?,
+            brands_dir: if brands.is_empty() {
+                None
+            } else {
+                Some(brands)
+            },
+            fallback_dir: if fallback.is_empty() {
+                None
+            } else {
+                Some(fallback)
+            },
+            overlay,
+        };
+        let rendered = render_design_rgba(
+            style,
+            photo_final,
+            exif,
+            &assets,
+            fonts,
+            geom,
+            max_edge,
+            &options,
+        )?;
+        Ok(FmIrRgbaHandle {
+            rgba: rendered.rgba,
+            width: rendered.width,
+            height: rendered.height,
+        })
+    })();
+    match result {
+        Ok(handle) => Box::into_raw(Box::new(handle)),
+        Err(error) => {
+            set_out_error(out_error, error);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn fm_rgba_ir_data(handle: *const FmIrRgbaHandle) -> *const u8 {
+    if handle.is_null() {
+        return std::ptr::null();
+    }
+    unsafe { (*handle).rgba.as_ptr() }
+}
+
+#[no_mangle]
+pub extern "C" fn fm_rgba_ir_len(handle: *const FmIrRgbaHandle) -> usize {
+    if handle.is_null() {
+        return 0;
+    }
+    unsafe { (*handle).rgba.len() }
+}
+
+#[no_mangle]
+pub extern "C" fn fm_rgba_ir_width(handle: *const FmIrRgbaHandle) -> u32 {
+    if handle.is_null() {
+        return 0;
+    }
+    unsafe { (*handle).width }
+}
+
+#[no_mangle]
+pub extern "C" fn fm_rgba_ir_height(handle: *const FmIrRgbaHandle) -> u32 {
+    if handle.is_null() {
+        return 0;
+    }
+    unsafe { (*handle).height }
+}
+
+#[no_mangle]
+pub extern "C" fn fm_rgba_ir_free(handle: *mut FmIrRgbaHandle) {
+    if !handle.is_null() {
+        unsafe {
+            drop(Box::from_raw(handle));
+        }
     }
 }

@@ -33,7 +33,19 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let (w, h) = (env.w, env.h);
     let s = w.min(h);
     let theme = theme_of(env.themes, env.params);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        w,
+        h,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     let portrait = h > w;
     let align = crate::hand::str_param(env.params, "glassAlign", "left");
     let layout_mode = crate::hand::str_param(env.params, "glassLayout", "card");
@@ -93,20 +105,45 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 .weight(600)
                 .baseline("middle")
                 .min(s * 0.014)
-                .shadow(true);
-            draw_fitted(env, &title_of(env), pad_x, top_cy, card_w * 0.4, s * 0.03, "#ffffff", &topts);
+                .shadow(true)
+                .slot("glass.title");
+            draw_fitted(
+                env,
+                &title_of(env),
+                pad_x,
+                top_cy,
+                card_w * 0.4,
+                s * 0.03,
+                "#ffffff",
+                &topts,
+            );
             let dt = dot_date(env);
-            if !dt.is_empty() {
-                let dopts = FittedOpts::new("JetBrains Mono")
-                    .baseline("middle")
-                    .min(s * 0.01)
-                    .shadow(true);
-                draw_fitted(env, &dt, pad_x, bot_cy, card_w * 0.4, s * 0.022, "rgba(255,255,255,0.85)", &dopts);
-            }
+            let dopts = FittedOpts::new("JetBrains Mono")
+                .baseline("middle")
+                .min(s * 0.01)
+                .shadow(true)
+                .slot("glass.date");
+            draw_fitted(
+                env,
+                &dt,
+                pad_x,
+                bot_cy,
+                card_w * 0.4,
+                s * 0.022,
+                "rgba(255,255,255,0.85)",
+                &dopts,
+            );
             if env.text.show_logo {
                 let lw = card_w * 0.075;
                 let lh = card_h * 0.3;
-                draw_brand_logo(env, card_x + card_w * 0.488 - lw / 2.0, card_y + card_h * 0.3 - lh / 2.0, lw, lh, "#ffffff");
+                draw_brand_logo(
+                    env,
+                    card_x + card_w * 0.488 - lw / 2.0,
+                    card_y + card_h * 0.3 - lh / 2.0,
+                    lw,
+                    lh,
+                    "#ffffff",
+                );
             }
             line(
                 &mut env.ctx,
@@ -119,39 +156,95 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 None,
             );
             let ex = exif_text(env);
-            if !ex.is_empty() {
-                let eopts = FittedOpts::new("JetBrains Mono")
-                    .baseline("middle")
-                    .min(s * 0.01)
-                    .shadow(true);
-                draw_fitted(env, &ex, exif_x, top_cy, card_w * 0.38, s * 0.026, "rgba(255,255,255,0.9)", &eopts);
-            }
+            let eopts = FittedOpts::new("JetBrains Mono")
+                .baseline("middle")
+                .min(s * 0.01)
+                .shadow(true)
+                .slot("glass.exif");
+            draw_fitted(
+                env,
+                &ex,
+                exif_x,
+                top_cy,
+                card_w * 0.38,
+                s * 0.026,
+                "rgba(255,255,255,0.9)",
+                &eopts,
+            );
             let loc = env.text.location.trim();
-            if !loc.is_empty() {
-                let lopts = FittedOpts::new("JetBrains Mono")
-                    .baseline("middle")
-                    .min(s * 0.01)
-                    .shadow(true);
-                draw_fitted(env, loc, exif_x, bot_cy, card_w * 0.38, s * 0.022, "rgba(255,255,255,0.8)", &lopts);
-            }
+            let lopts = FittedOpts::new("JetBrains Mono")
+                .baseline("middle")
+                .min(s * 0.01)
+                .shadow(true)
+                .slot("glass.location");
+            draw_fitted(
+                env,
+                loc,
+                exif_x,
+                bot_cy,
+                card_w * 0.38,
+                s * 0.022,
+                "rgba(255,255,255,0.8)",
+                &lopts,
+            );
             return Ok(Rect::from_xywh(0.0, 0.0, w, h));
         }
-        let topts = FittedOpts::new("Inter").weight(600).min(s * 0.012).shadow(true);
-        draw_fitted(env, &title_of(env), inner_x, card_y + card_h * 0.58, card_w * 0.30, s * 0.023, "#ffffff", &topts);
+        let topts = FittedOpts::new("Inter")
+            .weight(600)
+            .min(s * 0.012)
+            .shadow(true)
+            .slot("glass.title");
+        draw_fitted(
+            env,
+            &title_of(env),
+            inner_x,
+            card_y + card_h * 0.58,
+            card_w * 0.30,
+            s * 0.023,
+            "#ffffff",
+            &topts,
+        );
         let ex = exif_text(env);
-        if !ex.is_empty() {
-            let eopts = FittedOpts::new("JetBrains Mono").min(s * 0.008).shadow(true);
-            draw_fitted(env, &ex, card_x + card_w * 0.40, card_y + card_h * 0.58, card_w * 0.27, s * 0.014, "rgba(255,255,255,0.8)", &eopts);
-        }
+        let eopts = FittedOpts::new("JetBrains Mono")
+            .min(s * 0.008)
+            .shadow(true)
+            .slot("glass.exif");
+        draw_fitted(
+            env,
+            &ex,
+            card_x + card_w * 0.40,
+            card_y + card_h * 0.58,
+            card_w * 0.27,
+            s * 0.014,
+            "rgba(255,255,255,0.8)",
+            &eopts,
+        );
         let dt = date_text(env);
-        if !dt.is_empty() {
-            let dopts = FittedOpts::new("JetBrains Mono").min(s * 0.007).shadow(true);
-            draw_fitted(env, &dt, card_x + card_w * 0.70, card_y + card_h * 0.58, card_w * 0.16, s * 0.012, "rgba(255,255,255,0.65)", &dopts);
-        }
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .min(s * 0.007)
+            .shadow(true)
+            .slot("glass.date");
+        draw_fitted(
+            env,
+            &dt,
+            card_x + card_w * 0.70,
+            card_y + card_h * 0.58,
+            card_w * 0.16,
+            s * 0.012,
+            "rgba(255,255,255,0.65)",
+            &dopts,
+        );
         if env.text.show_logo {
             let lw = card_w * 0.075;
             let lh = card_h * 0.3;
-            draw_brand_logo(env, card_x + card_w * 0.91 - lw / 2.0, card_y + card_h / 2.0 - lh / 2.0, lw, lh, "#ffffff");
+            draw_brand_logo(
+                env,
+                card_x + card_w * 0.91 - lw / 2.0,
+                card_y + card_h / 2.0 - lh / 2.0,
+                lw,
+                lh,
+                "#ffffff",
+            );
         }
         line(
             &mut env.ctx,
@@ -168,55 +261,163 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             .weight(500)
             .tracking(0.12)
             .min(s * 0.007)
-            .shadow(true);
-        draw_fitted(env, "FRAMEMARK / PALETTE", inner_x, card_y + card_h * 0.20, card_w * 0.55, s * 0.011, "rgba(255,255,255,0.66)", &lopts);
-        let topts = FittedOpts::new("Inter").weight(600).min(s * 0.014).shadow(true);
-        draw_fitted(env, &title_of(env), inner_x, card_y + card_h * 0.38, card_w * 0.62, s * 0.028, "#ffffff", &topts);
+            .shadow(true)
+            .slot("glass.palette.heading");
+        draw_fitted(
+            env,
+            "FRAMEMARK / PALETTE",
+            inner_x,
+            card_y + card_h * 0.20,
+            card_w * 0.55,
+            s * 0.011,
+            "rgba(255,255,255,0.66)",
+            &lopts,
+        );
+        let topts = FittedOpts::new("Inter")
+            .weight(600)
+            .min(s * 0.014)
+            .shadow(true)
+            .slot("glass.title");
+        draw_fitted(
+            env,
+            &title_of(env),
+            inner_x,
+            card_y + card_h * 0.38,
+            card_w * 0.62,
+            s * 0.028,
+            "#ffffff",
+            &topts,
+        );
         let ex = exif_text(env);
-        if !ex.is_empty() {
-            let eopts = FittedOpts::new("JetBrains Mono").min(s * 0.008).shadow(true);
-            draw_fitted(env, &ex, inner_x, card_y + card_h * 0.51, card_w * 0.62, s * 0.015, "rgba(255,255,255,0.78)", &eopts);
-        }
+        let eopts = FittedOpts::new("JetBrains Mono")
+            .min(s * 0.008)
+            .shadow(true)
+            .slot("glass.exif");
+        draw_fitted(
+            env,
+            &ex,
+            inner_x,
+            card_y + card_h * 0.51,
+            card_w * 0.62,
+            s * 0.015,
+            "rgba(255,255,255,0.78)",
+            &eopts,
+        );
         let dt = date_text(env);
-        if !dt.is_empty() {
-            let dopts = FittedOpts::new("JetBrains Mono").align("right").min(s * 0.007).shadow(true);
-            draw_fitted(env, &dt, card_x + card_w - card_w * 0.055, card_y + card_h * 0.51, card_w * 0.25, s * 0.012, "rgba(255,255,255,0.64)", &dopts);
-        }
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .align("right")
+            .min(s * 0.007)
+            .shadow(true)
+            .slot("glass.date");
+        draw_fitted(
+            env,
+            &dt,
+            card_x + card_w - card_w * 0.055,
+            card_y + card_h * 0.51,
+            card_w * 0.25,
+            s * 0.012,
+            "rgba(255,255,255,0.64)",
+            &dopts,
+        );
         let colors = extract_palette(env, 5);
-        draw_swatches(env, &colors, card_x + card_w * 0.05, card_y + card_h * 0.62, card_w * 0.9, s * 0.03, "rgba(255,255,255,0.62)", false);
+        draw_swatches(
+            env,
+            &colors,
+            card_x + card_w * 0.05,
+            card_y + card_h * 0.62,
+            card_w * 0.9,
+            s * 0.03,
+            "rgba(255,255,255,0.62)",
+            false,
+            "glass.palette.swatch",
+        );
         if env.text.show_logo {
             let lw = card_w * 0.16;
             let lh = card_h * 0.15;
-            draw_brand_logo(env, card_x + card_w - lw - card_w * 0.05, card_y + card_h * 0.12, lw, lh, "#ffffff");
+            draw_brand_logo(
+                env,
+                card_x + card_w - lw - card_w * 0.05,
+                card_y + card_h * 0.12,
+                lw,
+                lh,
+                "#ffffff",
+            );
         }
     } else {
         let lopts = FittedOpts::new("JetBrains Mono")
             .weight(500)
             .tracking(0.12)
             .min(s * 0.007)
-            .shadow(true);
-        draw_fitted(env, "FRAMEMARK / LIQUID GLASS", inner_x, card_y + card_h * 0.24, card_w * 0.55, s * 0.011, "rgba(255,255,255,0.66)", &lopts);
+            .shadow(true)
+            .slot("glass.liquid.heading");
+        draw_fitted(
+            env,
+            "FRAMEMARK / LIQUID GLASS",
+            inner_x,
+            card_y + card_h * 0.24,
+            card_w * 0.55,
+            s * 0.011,
+            "rgba(255,255,255,0.66)",
+            &lopts,
+        );
         let topts = FittedOpts::new("Inter")
             .weight(600)
             .tracking(0.01)
             .min(s * 0.014)
-            .shadow(true);
-        draw_fitted(env, &title_of(env), inner_x, card_y + card_h * 0.48, card_w * 0.62, s * 0.029, "#ffffff", &topts);
+            .shadow(true)
+            .slot("glass.title");
+        draw_fitted(
+            env,
+            &title_of(env),
+            inner_x,
+            card_y + card_h * 0.48,
+            card_w * 0.62,
+            s * 0.029,
+            "#ffffff",
+            &topts,
+        );
         let ex = exif_text(env);
-        if !ex.is_empty() {
-            let eopts = FittedOpts::new("JetBrains Mono").min(s * 0.009).shadow(true);
-            draw_fitted(env, &ex, inner_x, card_y + card_h * 0.64, card_w * 0.62, s * 0.016, "rgba(255,255,255,0.78)", &eopts);
-        }
+        let eopts = FittedOpts::new("JetBrains Mono")
+            .min(s * 0.009)
+            .shadow(true)
+            .slot("glass.exif");
+        draw_fitted(
+            env,
+            &ex,
+            inner_x,
+            card_y + card_h * 0.64,
+            card_w * 0.62,
+            s * 0.016,
+            "rgba(255,255,255,0.78)",
+            &eopts,
+        );
         let dt = date_text(env);
-        if !dt.is_empty() {
-            let dopts = FittedOpts::new("JetBrains Mono").min(s * 0.008).shadow(true);
-            draw_fitted(env, &dt, inner_x, card_y + card_h * 0.79, card_w * 0.55, s * 0.013, "rgba(255,255,255,0.64)", &dopts);
-        }
+        let dopts = FittedOpts::new("JetBrains Mono")
+            .min(s * 0.008)
+            .shadow(true)
+            .slot("glass.date");
+        draw_fitted(
+            env,
+            &dt,
+            inner_x,
+            card_y + card_h * 0.79,
+            card_w * 0.55,
+            s * 0.013,
+            "rgba(255,255,255,0.64)",
+            &dopts,
+        );
         if env.text.show_logo {
             let la = 0.68 + pct(env.params, "logoScale", 5.0) as f32 * 0.064;
             let lw = card_w * 0.22 * la;
             let lh = card_h * 0.26 * la;
-            draw_brand_logo(env, card_x + card_w - lw - card_w * 0.055, card_y + card_h * 0.42, lw, lh, "#ffffff");
+            draw_brand_logo(
+                env,
+                card_x + card_w - lw - card_w * 0.055,
+                card_y + card_h * 0.42,
+                lw,
+                lh,
+                "#ffffff",
+            );
         }
         line(
             &mut env.ctx,

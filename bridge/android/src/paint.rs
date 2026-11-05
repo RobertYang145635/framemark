@@ -25,6 +25,7 @@ pub struct OverlayLayer {
     pub image: Image,
     pub rect: [f32; 4],
     pub opacity: f32,
+    pub angle: f32,
 }
 
 #[derive(Default)]
@@ -77,6 +78,9 @@ struct ItemGeom {
     rect: [f32; 4],
     draw: Option<[f32; 4]>,
     fs: Option<f32>,
+    /// Exact engine path, independent of draw order and EXIF content.
+    path: Option<String>,
+    lines: Option<Vec<String>>,
 }
 
 #[derive(Default)]
@@ -138,12 +142,17 @@ fn exif_orientation(bytes: &[u8]) -> u16 {
         let mut i = 12usize;
         while i + 8 <= bytes.len() {
             let fourcc = &bytes[i..i + 4];
-            let size = u32::from_le_bytes([bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]]) as usize;
+            let size = u32::from_le_bytes([bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]])
+                as usize;
             let start = i + 8;
             let end = start.saturating_add(size).min(bytes.len());
             if fourcc == b"EXIF" {
                 let d = &bytes[start..end];
-                let tiff = if d.len() > 6 && &d[..6] == b"Exif\0\0" { &d[6..] } else { d };
+                let tiff = if d.len() > 6 && &d[..6] == b"Exif\0\0" {
+                    &d[6..]
+                } else {
+                    d
+                };
                 return crate::tiffsrc::orientation(tiff);
             }
             i = start + size + (size & 1);
@@ -184,7 +193,13 @@ fn rotate_by_orientation(image: Image, orientation: u16) -> Result<Image, String
         Some(ColorSpace::new_srgb()),
     );
     let mut rgba = vec![0u8; (w as usize) * (h as usize) * 4];
-    let ok = image.read_pixels(&info, &mut rgba, (w as usize) * 4, (0, 0), skia_safe::image::CachingHint::Disallow);
+    let ok = image.read_pixels(
+        &info,
+        &mut rgba,
+        (w as usize) * 4,
+        (0, 0),
+        skia_safe::image::CachingHint::Disallow,
+    );
     if !ok {
         return Err("read_pixels failed for orientation".into());
     }
@@ -236,7 +251,14 @@ pub(crate) fn engine_note(msg: &str) {
         let tag = CString::new("FrameMarkEngine").expect("tag");
         let fmt = CString::new("%s").expect("fmt");
         let body = CString::new(msg).unwrap_or_else(|_| CString::new("e3=log").expect("fallback"));
-        unsafe { __android_log_print(4 /* ANDROID_LOG_INFO */, tag.as_ptr(), fmt.as_ptr(), body.as_ptr()) };
+        unsafe {
+            __android_log_print(
+                4, /* ANDROID_LOG_INFO */
+                tag.as_ptr(),
+                fmt.as_ptr(),
+                body.as_ptr(),
+            )
+        };
     }
     #[cfg(not(target_os = "android"))]
     println!("{msg}");
@@ -275,14 +297,19 @@ fn design_overrides(json: Option<&str>) -> DesignBits {
         Some(text) => match serde_json::from_str::<Value>(text) {
             Ok(v) => v,
             Err(e) => {
-                engine_note(&format!("e3.design=unparsable ({e}); overrides resolve empty"));
+                engine_note(&format!(
+                    "e3.design=unparsable ({e}); overrides resolve empty"
+                ));
                 return bits;
             }
         },
         None => return bits,
     };
     bits.ov = parse_overrides(&doc);
-    let flag = |k: &str| doc.pointer(&format!("/design/text/{k}")).and_then(|v| v.as_bool());
+    let flag = |k: &str| {
+        doc.pointer(&format!("/design/text/{k}"))
+            .and_then(|v| v.as_bool())
+    };
     bits.show_model = flag("showModel").unwrap_or(true);
     bits.show_exif = flag("showExif").unwrap_or(true);
     bits.show_date = flag("showDate").unwrap_or(true);
@@ -295,7 +322,11 @@ fn design_overrides(json: Option<&str>) -> DesignBits {
         scale = 1.0;
     }
     scale = scale.clamp(0.5, 2.0);
-    bits.font_scale = if (scale - 1.0).abs() < 0.001 { 1.0 } else { scale };
+    bits.font_scale = if (scale - 1.0).abs() < 0.001 {
+        1.0
+    } else {
+        scale
+    };
     engine_note(&format!(
         "e3.design=ok slotText={} slotOff={} alpha={} gravity={} theme={:?} brand={:?} anchor={:?} fontScale={} show={}:{}:{}",
         bits.ov.slot_text.len(),
@@ -331,6 +362,11 @@ fn parse_overrides(doc: &Value) -> ir::Overrides {
         } else if let Some(p) = k.strip_prefix("slotOff:") {
             if v.as_bool() == Some(false) {
                 ov.slot_off.insert(p.to_string());
+            }
+        } else if let Some(p) = k.strip_prefix("slotScale:") {
+            if let Some(n) = v.as_f64().filter(|n| n.is_finite()) {
+                ov.slot_scale
+                    .insert(p.to_string(), n.clamp(0.6, 1.6) as f32);
             }
         } else if let Some(p) = k.strip_prefix("slotAlpha:") {
             if let Some(n) = v.as_f64() {
@@ -393,6 +429,18 @@ fn parse_overrides(doc: &Value) -> ir::Overrides {
     ov
 }
 
+pub struct RgbaRender {
+    pub rgba: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+    pub stats: RenderStats,
+}
+
+struct RenderProduct {
+    rgba: Option<Vec<u8>>,
+    stats: RenderStats,
+}
+
 pub fn render_design(
     style_path: &str,
     photo_path: &str,
@@ -403,6 +451,58 @@ pub fn render_design(
     max_edge: i32,
     options: &RenderOptions,
 ) -> Result<RenderStats, String> {
+    let geom_path = format!("{out_png}.geom.json");
+    render_design_impl(
+        style_path,
+        photo_path,
+        exif_path,
+        assets,
+        fonts_dir,
+        Some(out_png),
+        &geom_path,
+        max_edge,
+        options,
+    )
+    .map(|product| product.stats)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_design_rgba(
+    style_path: &str,
+    photo_path: &str,
+    exif_path: &str,
+    assets: &HashMap<String, String>,
+    fonts_dir: &str,
+    geom_path: &str,
+    max_edge: i32,
+    options: &RenderOptions,
+) -> Result<RgbaRender, String> {
+    let product = render_design_impl(
+        style_path, photo_path, exif_path, assets, fonts_dir, None, geom_path, max_edge, options,
+    )?;
+    let rgba = product
+        .rgba
+        .ok_or_else(|| "raw renderer produced no pixels".to_string())?;
+    Ok(RgbaRender {
+        width: product.stats.width as u32,
+        height: product.stats.height as u32,
+        rgba,
+        stats: product.stats,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_design_impl(
+    style_path: &str,
+    photo_path: &str,
+    exif_path: &str,
+    assets: &HashMap<String, String>,
+    fonts_dir: &str,
+    out_png: Option<&str>,
+    geom_path: &str,
+    max_edge: i32,
+    options: &RenderOptions,
+) -> Result<RenderProduct, String> {
     let raw = std::fs::read_to_string(style_path).map_err(|e| format!("read style: {e}"))?;
     let style = ir::parse_style(&raw).map_err(|e| format!("parse style: {e}"))?;
     // P3e-b: absent/unreadable EXIF is a contract state, not a render error.
@@ -417,14 +517,19 @@ pub fn render_design(
             Ok(e) => {
                 engine_note(&format!(
                     "e3.exif=ok src={} make={:?} model={:?}",
-                    Path::new(exif_path).file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default(),
+                    Path::new(exif_path)
+                        .file_name()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default(),
                     e.make,
                     e.model,
                 ));
                 e
             }
             Err(e) => {
-                engine_note(&format!("e3.exif=unreadable ({e}); EXIF tokens resolve empty"));
+                engine_note(&format!(
+                    "e3.exif=unreadable ({e}); EXIF tokens resolve empty"
+                ));
                 exif::Exif::default()
             }
         }
@@ -435,11 +540,23 @@ pub fn render_design(
     engine_note(&format!(
         "e3.render card={} photo={} designLen={} exifMode={} ratio={:?} out={} edge={}",
         style.id,
-        Path::new(photo_path).file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default(),
+        Path::new(photo_path)
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default(),
         options.design_json.map(|d| d.len()).unwrap_or(0),
-        if exif_path.trim().is_empty() { "absent" } else if exif.make.is_empty() && exif.model.is_empty() { "empty-tags" } else { "ok" },
+        if exif_path.trim().is_empty() {
+            "absent"
+        } else if exif.make.is_empty() && exif.model.is_empty() {
+            "empty-tags"
+        } else {
+            "ok"
+        },
         options.ratio,
-        Path::new(out_png).file_name().map(|s| s.to_string_lossy().to_string()).unwrap_or_default(),
+        out_png
+            .and_then(|p| Path::new(p).file_name())
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default(),
         max_edge,
     ));
 
@@ -467,7 +584,10 @@ pub fn render_design(
 
     // paint.ts / e2b main.rs precedence: explicit `--theme`-equivalent first, then
     // `design.params.theme`, then the style's defaultTheme.
-    let theme_arg = options.theme.map(str::to_string).or_else(|| bits.ov.theme.clone());
+    let theme_arg = options
+        .theme
+        .map(str::to_string)
+        .or_else(|| bits.ov.theme.clone());
     let theme = style.theme(theme_arg.as_deref());
     let theme_id = theme.map(|t| t.id.clone());
     let foreground = theme.map(|t| t.foreground.clone()).unwrap_or_default();
@@ -482,7 +602,8 @@ pub fn render_design(
     };
     // Inspector brand pick (`design.params.brandLogoFile`) wins over the EXIF-derived
     // brand, mirroring e2b main.rs.
-    let brand_key = bits.ov
+    let brand_key = bits
+        .ov
         .brand
         .clone()
         .or_else(|| brand::match_brand(&exif.make, &exif.model).map(str::to_string));
@@ -505,6 +626,7 @@ pub fn render_design(
     };
     let mut gaps = ir::Gaps::default();
     let layout = ir::solve(&style, &env, &mut gaps)?;
+    let text_slots = ir::text_slot_manifest(&style, &env, &layout, &mut gaps);
 
     let base_w = layout.photo.w;
     let k = pw / base_w;
@@ -543,9 +665,13 @@ pub fn render_design(
                 Some(img) => {
                     images.insert(asset.key.clone(), img);
                 }
-                None => stats.warnings.push(format!("asset '{}' decode failed: {path}", asset.key)),
+                None => stats
+                    .warnings
+                    .push(format!("asset '{}' decode failed: {path}", asset.key)),
             },
-            None => stats.warnings.push(format!("asset '{}' has no path", asset.key)),
+            None => stats
+                .warnings
+                .push(format!("asset '{}' has no path", asset.key)),
         }
     }
 
@@ -592,7 +718,8 @@ pub fn render_design(
             && (photo_rect.height() - ph).abs() < 1e-3;
         let photo_sampling = if integral {
             SamplingOptions::default()
-        } else if (photo_rect.width() - pw).abs() < 1e-3 && (photo_rect.height() - ph).abs() < 1e-3 {
+        } else if (photo_rect.width() - pw).abs() < 1e-3 && (photo_rect.height() - ph).abs() < 1e-3
+        {
             SamplingOptions {
                 filter: FilterMode::Linear,
                 ..SamplingOptions::default()
@@ -642,6 +769,10 @@ pub fn render_design(
             op.set_anti_alias(true);
             op.set_alpha_f(ov.opacity.clamp(0.0, 1.0));
             overlay_drawn.set(true);
+            let _ = canvas.save();
+            if ov.angle.abs() > 0.0001 {
+                canvas.rotate(ov.angle, Some(od.center()));
+            }
             draw_image_rect(
                 canvas,
                 &ov.image,
@@ -650,9 +781,11 @@ pub fn render_design(
                 image_sampling(iw, dw),
                 Some(&op),
             );
+            let _ = canvas.restore();
             Some(serde_json::json!({
                 "rect_norm": ov.rect,
                 "opacity": ov.opacity,
+                "angle": ov.angle,
                 "dst": [od.left(), od.top(), od.width(), od.height()],
             }))
         };
@@ -666,13 +799,34 @@ pub fn render_design(
     }
 
     let snapshot = surface.image_snapshot();
-    let data = snapshot
-        .encode_to_data(EncodedImageFormat::PNG)
-        .ok_or_else(|| "PNG encode failed".to_string())?;
-    if let Some(parent) = Path::new(out_png).parent() {
-        std::fs::create_dir_all(parent).ok();
-    }
-    std::fs::write(out_png, data.as_bytes()).map_err(|e| format!("write {out_png}: {e}"))?;
+    let raw_rgba = if let Some(out_png) = out_png {
+        let data = snapshot
+            .encode_to_data(EncodedImageFormat::PNG)
+            .ok_or_else(|| "PNG encode failed".to_string())?;
+        if let Some(parent) = Path::new(out_png).parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
+        std::fs::write(out_png, data.as_bytes()).map_err(|e| format!("write {out_png}: {e}"))?;
+        None
+    } else {
+        let info = ImageInfo::new(
+            (out_w, out_h),
+            ColorType::RGBA8888,
+            AlphaType::Unpremul,
+            Some(ColorSpace::new_srgb()),
+        );
+        let mut rgba = vec![0u8; (out_w as usize) * (out_h as usize) * 4];
+        if !snapshot.read_pixels(
+            &info,
+            &mut rgba,
+            (out_w as usize) * 4,
+            (0, 0),
+            skia_safe::image::CachingHint::Disallow,
+        ) {
+            return Err("read raster pixels failed".into());
+        }
+        Some(rgba)
+    };
 
     // Geometry sidecar (canvas space, independent of the preview scale) so the
     // Android render can be compared item-by-item against the desktop report.
@@ -682,22 +836,31 @@ pub fn render_design(
         "layout": [layout.w, layout.h],
         "photo": [layout.photo.x * k, layout.photo.y * k, layout.photo.w * k, layout.photo.h * k],
         "overlay": overlay_meta,
+        "textSlots": text_slots,
         "bands": geom_bands.iter().map(|b| serde_json::json!({
             "rect": b.rect,
             "items": b.items.iter().map(|i| serde_json::json!({
                 "kind": i.kind, "rect": i.rect, "draw": i.draw, "fs": i.fs,
+                "path": i.path, "lines": i.lines,
             })).collect::<Vec<_>>(),
         })).collect::<Vec<_>>(),
     });
     stats.geom_json = serde_json::to_string_pretty(&geom).unwrap_or_default();
-    let geom_path = format!("{out_png}.geom.json");
-    std::fs::write(&geom_path, &stats.geom_json).ok();
-    Ok(stats)
+    std::fs::write(geom_path, &stats.geom_json).ok();
+    Ok(RenderProduct {
+        rgba: raw_rgba,
+        stats,
+    })
 }
 
 fn draw_band(canvas: &Canvas, band: &ir::PlacedBand, ctx: &mut Ctx) {
     let k = ctx.k;
-    let br = Rect::from_xywh(band.rect.x * k, band.rect.y * k, band.rect.w * k, band.rect.h * k);
+    let br = Rect::from_xywh(
+        band.rect.x * k,
+        band.rect.y * k,
+        band.rect.w * k,
+        band.rect.h * k,
+    );
     let mut items: Vec<ItemGeom> = Vec::new();
     let rot_deg = band.rotation.unwrap_or(0.0);
     let rotated = ((rot_deg % 360.0) + 360.0) % 360.0 != 0.0;
@@ -741,7 +904,10 @@ fn draw_band(canvas: &Canvas, band: &ir::PlacedBand, ctx: &mut Ctx) {
                 if let Some(key) = &s.vector_key {
                     match vector_art().get(key) {
                         Some(art) => paint_vector(canvas, art, b),
-                        None => ctx.stats.warnings.push(format!("vector art '{key}' missing")),
+                        None => ctx
+                            .stats
+                            .warnings
+                            .push(format!("vector art '{key}' missing")),
                     }
                 } else {
                     let mut p = Paint::default();
@@ -772,6 +938,8 @@ fn draw_band(canvas: &Canvas, band: &ir::PlacedBand, ctx: &mut Ctx) {
                     kind: "text",
                     rect: [t.rect.x * k, t.rect.y * k, t.rect.w * k, t.rect.h * k],
                     fs: Some(fs),
+                    path: Some(t.path.clone()),
+                    lines: Some(t.lines.clone()),
                     ..Default::default()
                 });
             }
@@ -792,7 +960,12 @@ fn draw_band(canvas: &Canvas, band: &ir::PlacedBand, ctx: &mut Ctx) {
         }
     }
     ctx.geom.push(BandGeom {
-        rect: [band.rect.x * k, band.rect.y * k, band.rect.w * k, band.rect.h * k],
+        rect: [
+            band.rect.x * k,
+            band.rect.y * k,
+            band.rect.w * k,
+            band.rect.h * k,
+        ],
         items,
     });
 }
@@ -806,7 +979,12 @@ fn rotated_rect(r: Rect, cx: f32, cy: f32, deg: f32) -> Rect {
         (r.left, r.top + r.height()),
         (r.left + r.width(), r.top + r.height()),
     ];
-    let (mut x0, mut y0, mut x1, mut y1) = (f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+    let (mut x0, mut y0, mut x1, mut y1) = (
+        f32::INFINITY,
+        f32::INFINITY,
+        f32::NEG_INFINITY,
+        f32::NEG_INFINITY,
+    );
     for (x, y) in pts {
         let dx = x - cx;
         let dy = y - cy;
@@ -820,7 +998,12 @@ fn rotated_rect(r: Rect, cx: f32, cy: f32, deg: f32) -> Rect {
     Rect::from_ltrb(x0, y0, x1, y1)
 }
 
-fn draw_image_item(canvas: &Canvas, im: &ir::PlacedImage, ctx: &mut Ctx, items: &mut Vec<ItemGeom>) {
+fn draw_image_item(
+    canvas: &Canvas,
+    im: &ir::PlacedImage,
+    ctx: &mut Ctx,
+    items: &mut Vec<ItemGeom>,
+) {
     let k = ctx.k;
     let b = Rect::from_xywh(im.rect.x * k, im.rect.y * k, im.rect.w * k, im.rect.h * k);
 
@@ -837,14 +1020,21 @@ fn draw_image_item(canvas: &Canvas, im: &ir::PlacedImage, ctx: &mut Ctx, items: 
             return;
         };
         let Some(logo) = ctx.brands.image(&file) else {
-            ctx.stats.warnings.push(format!("brand slot '{}': missing {file}", im.path));
+            ctx.stats
+                .warnings
+                .push(format!("brand slot '{}': missing {file}", im.path));
             return;
         };
         let vendor_ink = ctx.images.get(&im.asset).and_then(brand::ink_box);
         let (margin_px, pad_px) = brand::slot_gap_parts(
             &im.margins,
             im.gravity.as_deref(),
-            ir::Rect { x: b.left, y: b.top, w: b.width(), h: b.height() },
+            ir::Rect {
+                x: b.left,
+                y: b.top,
+                w: b.width(),
+                h: b.height(),
+            },
             k,
             vendor_ink.as_ref(),
         );
@@ -854,11 +1044,18 @@ fn draw_image_item(canvas: &Canvas, im: &ir::PlacedImage, ctx: &mut Ctx, items: 
             margin_px,
             pad_px,
         };
-        let free = im.brand_free.map(|f| [f[0] * k, f[1] * k, f[2] * k, f[3] * k]);
+        let free = im
+            .brand_free
+            .map(|f| [f[0] * k, f[1] * k, f[2] * k, f[3] * k]);
         let rect = brand::brand_slot_rect(
             logo.w,
             logo.h,
-            ir::Rect { x: b.left, y: b.top, w: b.width(), h: b.height() },
+            ir::Rect {
+                x: b.left,
+                y: b.top,
+                w: b.width(),
+                h: b.height(),
+            },
             im.gravity.as_deref(),
             free,
             &metrics,
@@ -892,7 +1089,9 @@ fn draw_image_item(canvas: &Canvas, im: &ir::PlacedImage, ctx: &mut Ctx, items: 
     }
 
     let Some(img) = ctx.images.get(&im.asset) else {
-        ctx.stats.warnings.push(format!("asset '{}' not loaded", im.asset));
+        ctx.stats
+            .warnings
+            .push(format!("asset '{}' not loaded", im.asset));
         return;
     };
     let (iw, ih) = (img.width() as f32, img.height() as f32);
@@ -1001,7 +1200,12 @@ fn draw_text(canvas: &Canvas, t: &ir::PlacedText, rotated: bool, ctx: &mut Ctx) 
             sp.set_stroke_width(lw);
             sp.set_color(css_argb(&o.stroke_color, text_alpha));
             canvas.draw_round_rect(
-                Rect::from_xywh(bx + inset, by + inset, (bw - lw).max(0.0), (bh - lw).max(0.0)),
+                Rect::from_xywh(
+                    bx + inset,
+                    by + inset,
+                    (bw - lw).max(0.0),
+                    (bh - lw).max(0.0),
+                ),
                 (radius - inset).max(0.0),
                 (radius - inset).max(0.0),
                 &sp,
@@ -1062,8 +1266,16 @@ fn draw_text(canvas: &Canvas, t: &ir::PlacedText, rotated: bool, ctx: &mut Ctx) 
 fn pick_fallback(dir: Option<&str>, style_raw: &str) -> Option<skia_safe::Typeface> {
     let dir = dir?;
     let has_thai = style_raw.chars().any(|c| ('฀'..='๿').contains(&c));
-    let has_cjk = style_raw.chars().any(|c| ('一'..='鿿').contains(&c) || ('　'..='〿').contains(&c));
-    let name = if has_thai { "thai.ttf" } else if has_cjk { "cjk.ttf" } else { return None };
+    let has_cjk = style_raw
+        .chars()
+        .any(|c| ('一'..='鿿').contains(&c) || ('　'..='〿').contains(&c));
+    let name = if has_thai {
+        "thai.ttf"
+    } else if has_cjk {
+        "cjk.ttf"
+    } else {
+        return None;
+    };
     let path = Path::new(dir).join(name);
     let data = Data::from_filename(&path)?;
     skia_safe::FontMgr::new().new_from_data(data, None)
@@ -1113,7 +1325,8 @@ fn paint_vector_nodes(canvas: &Canvas, nodes: &[Value]) {
                 canvas.rotate(rot, None);
                 canvas.translate((-px, -py));
             }
-            if let (Some(sx), Some(sy), Some(px), Some(py)) = (vnum(n, "sx"), vnum(n, "sy"), px, py) {
+            if let (Some(sx), Some(sy), Some(px), Some(py)) = (vnum(n, "sx"), vnum(n, "sy"), px, py)
+            {
                 canvas.translate((px, py));
                 canvas.scale((sx, sy));
                 canvas.translate((-px, -py));
@@ -1229,7 +1442,12 @@ fn parse_solid(value: &str) -> Option<(f32, f32, f32, f32)> {
     let hex = s.strip_prefix('#')?;
     let parse = |a: &str| u8::from_str_radix(a, 16).unwrap_or(0) as f32;
     match hex.len() {
-        8 => Some((parse(&hex[2..4]), parse(&hex[4..6]), parse(&hex[6..8]), parse(&hex[0..2]) / 255.0)),
+        8 => Some((
+            parse(&hex[2..4]),
+            parse(&hex[4..6]),
+            parse(&hex[6..8]),
+            parse(&hex[0..2]) / 255.0,
+        )),
         6 => Some((parse(&hex[0..2]), parse(&hex[2..4]), parse(&hex[4..6]), 1.0)),
         _ => None,
     }
@@ -1303,7 +1521,12 @@ fn css_canvas_rgba(value: &str) -> Option<Color> {
             parse(&hex[4..6]),
         ))
     } else if hex.len() == 6 {
-        Some(Color::from_argb(255, parse(&hex[0..2]), parse(&hex[2..4]), parse(&hex[4..6])))
+        Some(Color::from_argb(
+            255,
+            parse(&hex[0..2]),
+            parse(&hex[2..4]),
+            parse(&hex[4..6]),
+        ))
     } else {
         None
     }
@@ -1344,6 +1567,12 @@ fn draw_image_rect(
             sampling,
             paint.unwrap_or(&p),
         ),
-        None => canvas.draw_image_rect_with_sampling_options(img, None, &dst, sampling, paint.unwrap_or(&p)),
+        None => canvas.draw_image_rect_with_sampling_options(
+            img,
+            None,
+            &dst,
+            sampling,
+            paint.unwrap_or(&p),
+        ),
     };
 }

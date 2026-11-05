@@ -31,7 +31,9 @@ fn js_number_from_str(s: &str) -> f64 {
         return 0.0;
     }
     if let Some(hex) = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")) {
-        return i64::from_str_radix(hex, 16).map(|v| v as f64).unwrap_or(f64::NAN);
+        return i64::from_str_radix(hex, 16)
+            .map(|v| v as f64)
+            .unwrap_or(f64::NAN);
     }
     if t == "Infinity" || t == "+Infinity" {
         return f64::INFINITY;

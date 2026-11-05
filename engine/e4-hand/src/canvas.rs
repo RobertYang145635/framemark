@@ -12,7 +12,7 @@
 
 use skia_safe::{
     canvas::SrcRectConstraint, Canvas, Color, FilterMode, Image, ImageFilter, Matrix, Paint,
-    PathBuilder, Point, Rect, RRect, SamplingOptions, Shader, TextBlob,
+    PathBuilder, Point, RRect, Rect, SamplingOptions, Shader, TextBlob,
 };
 
 use crate::css;
@@ -33,6 +33,8 @@ pub struct OverlaySpec {
     pub image: Image,
     pub rect: [f32; 4],
     pub opacity: f32,
+    /// Degrees clockwise around the final dst centre; 0 keeps the old path.
+    pub angle: f32,
 }
 
 pub struct Ctx2D<'a> {
@@ -53,7 +55,11 @@ impl<'a> Ctx2D<'a> {
         Self {
             canvas,
             report,
-            st: State { fill: Color::BLACK, alpha: 1.0, matrix: Matrix::new_identity() },
+            st: State {
+                fill: Color::BLACK,
+                alpha: 1.0,
+                matrix: Matrix::new_identity(),
+            },
             stack: Vec::new(),
             seq: 0,
             overlay: None,
@@ -72,7 +78,8 @@ impl<'a> Ctx2D<'a> {
     /// Rect, because `(x + w) - x` is not `w` in f32 and that shift alone moves
     /// rasterised pixels.
     pub fn snap_photo(&self, x: f32, y: f32) -> Option<(f32, f32, f32, f32)> {
-        self.photo_1to1.map(|(sw, sh)| (x.round(), y.round(), sw, sh))
+        self.photo_1to1
+            .map(|(sw, sh)| (x.round(), y.round(), sw, sh))
     }
 
     pub fn set_overlay(&mut self, overlay: Option<OverlaySpec>) {
@@ -87,7 +94,9 @@ impl<'a> Ctx2D<'a> {
         if self.overlay_done {
             return;
         }
-        let Some(ov) = self.overlay.take() else { return };
+        let Some(ov) = self.overlay.take() else {
+            return;
+        };
         self.overlay_done = true;
         let (pw, ph) = (photo.width(), photo.height());
         if pw <= 0.0 || ph <= 0.0 {
@@ -114,8 +123,13 @@ impl<'a> Ctx2D<'a> {
         p.set_alpha_f((self.st.alpha * ov.opacity).clamp(0.0, 1.0));
         let _ = self.canvas.save();
         self.canvas.concat(&self.st.matrix);
-        self.canvas.clip_rect(photo, skia_safe::ClipOp::Intersect, true);
-        self.canvas.draw_image_rect_with_sampling_options(&ov.image, None, &dst, samp, &p);
+        self.canvas
+            .clip_rect(photo, skia_safe::ClipOp::Intersect, true);
+        if ov.angle.abs() > 0.0001 {
+            self.canvas.rotate(ov.angle, Some(dst.center()));
+        }
+        self.canvas
+            .draw_image_rect_with_sampling_options(&ov.image, None, &dst, samp, &p);
         let _ = self.canvas.restore();
         let seq = self.next_seq();
         self.report.borrow_mut().images.push(ImageDraw {
@@ -158,10 +172,9 @@ impl<'a> Ctx2D<'a> {
     pub fn set_fill(&mut self, css_value: &str) {
         match css::parse(css_value) {
             Some(c) => self.st.fill = c.to_color(1.0),
-            None => self
-                .report
-                .borrow_mut()
-                .gap(format!("invalid Canvas2D colour '{css_value}' (assignment is a no-op)")),
+            None => self.report.borrow_mut().gap(format!(
+                "invalid Canvas2D colour '{css_value}' (assignment is a no-op)"
+            )),
         }
     }
 
@@ -278,7 +291,9 @@ impl<'a> Ctx2D<'a> {
         p.set_anti_alias(true);
         p.set_color(Color::from_argb(255, sc.r(), sc.g(), sc.b()));
         p.set_alpha_f((sc.a() as f32 / 255.0) * self.st.alpha);
-        if let Some(mf) = skia_safe::MaskFilter::blur(skia_safe::BlurStyle::Normal, blur * 0.5, None) {
+        if let Some(mf) =
+            skia_safe::MaskFilter::blur(skia_safe::BlurStyle::Normal, blur * 0.5, None)
+        {
             p.set_mask_filter(mf);
         }
         self.scoped(|c| {
@@ -299,7 +314,17 @@ impl<'a> Ctx2D<'a> {
         });
     }
 
-    pub fn stroke_round_rect(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, color: &str, width: f32, dash: Option<&[f32]>) {
+    pub fn stroke_round_rect(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        r: f32,
+        color: &str,
+        width: f32,
+        dash: Option<&[f32]>,
+    ) {
         let col = self.color_of(color);
         let mut p = self.paint(col);
         p.set_style(skia_safe::PaintStyle::Stroke);
@@ -323,7 +348,16 @@ impl<'a> Ctx2D<'a> {
         });
     }
 
-    pub fn stroke_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, color: &str, width: f32, dash: Option<&[f32]>) {
+    pub fn stroke_line(
+        &mut self,
+        x1: f32,
+        y1: f32,
+        x2: f32,
+        y2: f32,
+        color: &str,
+        width: f32,
+        dash: Option<&[f32]>,
+    ) {
         let col = self.color_of(color);
         let mut p = self.paint(col);
         p.set_style(skia_safe::PaintStyle::Stroke);
@@ -339,7 +373,15 @@ impl<'a> Ctx2D<'a> {
     }
 
     /// `createLinearGradient(x0,y0,x1,y1)` + `fillRect`: stops are (offset, css).
-    pub fn fill_linear_gradient(&mut self, x0: f32, y0: f32, x1: f32, y1: f32, stops: &[(f32, &str)], rect: Rect) {
+    pub fn fill_linear_gradient(
+        &mut self,
+        x0: f32,
+        y0: f32,
+        x1: f32,
+        y1: f32,
+        stops: &[(f32, &str)],
+        rect: Rect,
+    ) {
         let mut colors = Vec::with_capacity(stops.len());
         let mut pos = Vec::with_capacity(stops.len());
         for (o, c) in stops {
@@ -356,7 +398,9 @@ impl<'a> Ctx2D<'a> {
             None,
         );
         let Some(shader) = shader else {
-            self.report.borrow_mut().gap("linear gradient shader build failed");
+            self.report
+                .borrow_mut()
+                .gap("linear gradient shader build failed");
             return;
         };
         let mut p = Paint::default();
@@ -408,7 +452,9 @@ impl<'a> Ctx2D<'a> {
             None,
         );
         let Some(shader) = shader else {
-            self.report.borrow_mut().gap("radial gradient shader build failed");
+            self.report
+                .borrow_mut()
+                .gap("radial gradient shader build failed");
             return;
         };
         let mut p = Paint::default();
@@ -499,7 +545,8 @@ impl<'a> Ctx2D<'a> {
         self.canvas.concat(&self.st.matrix);
         let mut fsamp = SamplingOptions::default();
         fsamp.filter = FilterMode::Linear;
-        self.canvas.draw_image_rect_with_sampling_options(&img, None, &dst, fsamp, &p);
+        self.canvas
+            .draw_image_rect_with_sampling_options(&img, None, &dst, fsamp, &p);
         let _ = self.canvas.restore();
         self.report.borrow_mut().images.push(ImageDraw {
             seq: self.next_seq(),
@@ -510,7 +557,14 @@ impl<'a> Ctx2D<'a> {
         });
     }
 
-    pub fn draw_image(&mut self, img: &Image, src: Option<Rect>, dst: Rect, sampling: SamplingOptions, key: &str) {
+    pub fn draw_image(
+        &mut self,
+        img: &Image,
+        src: Option<Rect>,
+        dst: Rect,
+        sampling: SamplingOptions,
+        key: &str,
+    ) {
         self.draw_image_filtered(img, src, dst, sampling, None, key);
     }
 
@@ -604,7 +658,8 @@ impl<'a> Ctx2D<'a> {
                 );
             }
             None => {
-                self.canvas.draw_image_rect_with_sampling_options(img, None, &dst, sampling, &p);
+                self.canvas
+                    .draw_image_rect_with_sampling_options(img, None, &dst, sampling, &p);
             }
         }
         let _ = self.canvas.restore();
@@ -630,7 +685,8 @@ impl<'a> Ctx2D<'a> {
         let path = round_rect_path(x, y, w, h, r);
         let _ = self.canvas.save();
         self.canvas.concat(&self.st.matrix);
-        self.canvas.clip_path(&path, skia_safe::ClipOp::Intersect, true);
+        self.canvas
+            .clip_path(&path, skia_safe::ClipOp::Intersect, true);
     }
 
     pub fn clip_circle(&mut self, cx: f32, cy: f32, radius: f32) {
@@ -638,7 +694,8 @@ impl<'a> Ctx2D<'a> {
         let path = skia_safe::Path::oval(Rect::from_xywh(cx - r, cy - r, r * 2.0, r * 2.0), None);
         let _ = self.canvas.save();
         self.canvas.concat(&self.st.matrix);
-        self.canvas.clip_path(&path, skia_safe::ClipOp::Intersect, true);
+        self.canvas
+            .clip_path(&path, skia_safe::ClipOp::Intersect, true);
     }
 
     pub fn stroke_circle(&mut self, cx: f32, cy: f32, radius: f32, color: &str, width: f32) {
@@ -654,14 +711,25 @@ impl<'a> Ctx2D<'a> {
     pub fn clip_rect(&mut self, x: f32, y: f32, w: f32, h: f32) {
         let _ = self.canvas.save();
         self.canvas.concat(&self.st.matrix);
-        self.canvas.clip_rect(Rect::from_xywh(x, y, w, h), skia_safe::ClipOp::Intersect, true);
+        self.canvas.clip_rect(
+            Rect::from_xywh(x, y, w, h),
+            skia_safe::ClipOp::Intersect,
+            true,
+        );
     }
 
     pub fn restore_clip(&mut self) {
         let _ = self.canvas.restore();
     }
 
-    pub fn draw_text_blob(&mut self, blob: &TextBlob, x: f32, y: f32, color: Color, rec: &TextDraw) {
+    pub fn draw_text_blob(
+        &mut self,
+        blob: &TextBlob,
+        x: f32,
+        y: f32,
+        color: Color,
+        rec: &TextDraw,
+    ) {
         let p = self.paint(color);
         let _ = self.canvas.save();
         self.canvas.concat(&self.st.matrix);
@@ -673,7 +741,13 @@ impl<'a> Ctx2D<'a> {
     pub fn record_shape(&mut self, kind: &str, rect: Rect, color: Option<String>, decor: bool) {
         let seq = self.next_seq();
         let mut r = self.report.borrow_mut();
-        let rec = ShapeDraw { seq, underlay: false, kind: kind.into(), rect: RectJson::from_skia(rect), color };
+        let rec = ShapeDraw {
+            seq,
+            underlay: false,
+            kind: kind.into(),
+            rect: RectJson::from_skia(rect),
+            color,
+        };
         if decor {
             r.decor.push(rec);
         } else {
@@ -697,7 +771,13 @@ impl<'a> Ctx2D<'a> {
     pub fn record_underlay(&mut self, kind: &str, rect: Rect, color: Option<String>) {
         let seq = self.next_seq();
         let mut r = self.report.borrow_mut();
-        r.decor.push(ShapeDraw { seq, underlay: true, kind: kind.into(), rect: RectJson::from_skia(rect), color });
+        r.decor.push(ShapeDraw {
+            seq,
+            underlay: true,
+            kind: kind.into(),
+            rect: RectJson::from_skia(rect),
+            color,
+        });
     }
 
     pub fn record_gap(&mut self, msg: String) {
@@ -708,7 +788,11 @@ impl<'a> Ctx2D<'a> {
 pub fn round_rect_path(x: f32, y: f32, w: f32, h: f32, r: f32) -> skia_safe::Path {
     let rr = r.max(0.0).min(w.min(h) / 2.0);
     let mut b = PathBuilder::new();
-    b.add_rrect(RRect::new_rect_xy(Rect::from_xywh(x, y, w, h), rr, rr), skia_safe::PathDirection::CW, None);
+    b.add_rrect(
+        RRect::new_rect_xy(Rect::from_xywh(x, y, w, h), rr, rr),
+        skia_safe::PathDirection::CW,
+        None,
+    );
     b.detach()
 }
 

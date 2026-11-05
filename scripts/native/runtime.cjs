@@ -7,6 +7,98 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { spawnSync } = require('node:child_process')
+const { createRequire } = require('node:module')
+
+const LOGO_TOOLS_LOCK = path.join(__dirname, 'logo-tools/package-lock.json')
+const LOGO_TOOLS_PACKAGE = path.join(__dirname, 'logo-tools/package.json')
+const TOOL_REPO_ROOT = path.resolve(__dirname, '../..')
+
+function loadPinnedSharp () {
+  const prefix = process.env.FM_NATIVE_SHARP_PREFIX
+  if (!prefix || !path.isAbsolute(prefix)) {
+    throw new Error('FM_NATIVE_SHARP_PREFIX must point to the isolated sharp install; run scripts/native/prepare-logo-tools.ps1 first')
+  }
+  const resolvedPrefix = path.resolve(prefix)
+  const fromPrefix = createRequire(path.join(resolvedPrefix, 'package.json'))
+  let sharp
+  try {
+    sharp = fromPrefix('sharp')
+  } catch (error) {
+    throw new Error(`Pinned sharp is unavailable under FM_NATIVE_SHARP_PREFIX=${resolvedPrefix}; run scripts/native/prepare-logo-tools.ps1: ${error.message}`)
+  }
+  const packageBytes = fs.readFileSync(LOGO_TOOLS_PACKAGE)
+  const lockBytes = fs.readFileSync(LOGO_TOOLS_LOCK)
+  const packageJson = JSON.parse(packageBytes.toString('utf8'))
+  const lock = JSON.parse(lockBytes.toString('utf8'))
+  const expected = lock.packages?.['node_modules/sharp']
+  if (!expected?.version || !expected.integrity || !expected.resolved) throw new Error('Isolated logo-tools lock has no pinned sharp version, registry source or integrity')
+  if (packageJson.dependencies?.sharp !== expected.version) throw new Error('Isolated logo-tools package and lock disagree on the sharp version')
+  if (lock.lockfileVersion !== 3 || !expected.resolved.startsWith('https://registry.npmjs.org/sharp/-/sharp-') || !expected.integrity.startsWith('sha512-')) {
+    throw new Error('Isolated logo-tools lock must pin sharp from registry.npmjs.org with a SHA-512 integrity value')
+  }
+  const stagedPackageFile = path.join(resolvedPrefix, 'package.json')
+  const stagedLockFile = path.join(resolvedPrefix, 'package-lock.json')
+  if (!fs.existsSync(stagedPackageFile) || !fs.existsSync(stagedLockFile) ||
+      !fs.readFileSync(stagedPackageFile).equals(packageBytes) || !fs.readFileSync(stagedLockFile).equals(lockBytes)) {
+    throw new Error('Isolated sharp install manifest/lock differs from the checked-in logo-tools package; rerun prepare-logo-tools.ps1')
+  }
+  const sharpEntry = path.resolve(fromPrefix.resolve('sharp'))
+  const prefixNodeModules = path.join(resolvedPrefix, 'node_modules') + path.sep
+  if (!sharpEntry.toLowerCase().startsWith(prefixNodeModules.toLowerCase())) {
+    throw new Error(`sharp resolved outside FM_NATIVE_SHARP_PREFIX: ${sharpEntry}`)
+  }
+  let entry = path.dirname(sharpEntry)
+  let packageFile = null
+  while (entry.toLowerCase().startsWith(prefixNodeModules.toLowerCase())) {
+    const candidate = path.join(entry, 'package.json')
+    if (fs.existsSync(candidate)) {
+      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8'))
+      if (parsed.name === 'sharp') { packageFile = candidate; break }
+    }
+    entry = path.dirname(entry)
+  }
+  const installed = packageFile && fs.existsSync(packageFile) ? JSON.parse(fs.readFileSync(packageFile, 'utf8')) : null
+  if (!installed || installed.name !== 'sharp' || installed.version !== expected.version) {
+    throw new Error(`sharp install does not match the isolated lock: expected ${expected.version}; found ${installed?.version || '<missing>'}`)
+  }
+  const installedPackageJsonSha256 = crypto.createHash('sha256').update(fs.readFileSync(packageFile)).digest('hex')
+  const installReportPath = path.join(resolvedPrefix, 'framemark-logo-tools-install.json')
+  if (!fs.existsSync(installReportPath)) throw new Error('Isolated sharp install provenance is missing; rerun prepare-logo-tools.ps1')
+  const installReport = JSON.parse(fs.readFileSync(installReportPath, 'utf8').replace(/^\uFEFF/, ''))
+  const packageManifestSha256 = crypto.createHash('sha256').update(packageBytes).digest('hex')
+  const packageLockSha256 = crypto.createHash('sha256').update(lockBytes).digest('hex')
+  if (installReport.package !== 'sharp' || installReport.version !== expected.version ||
+      installReport.source !== expected.resolved || installReport.integrity !== expected.integrity ||
+      installReport.packageManifestSha256 !== packageManifestSha256 || installReport.packageLockSha256 !== packageLockSha256 ||
+      installReport.installedPackageJsonSha256 !== installedPackageJsonSha256) {
+    throw new Error('Isolated sharp install provenance does not match the installed package and checked-in lock')
+  }
+  const rootPackageFile = path.join(TOOL_REPO_ROOT, 'package.json')
+  const rootLockFile = path.join(TOOL_REPO_ROOT, 'package-lock.json')
+  const rootPackage = JSON.parse(fs.readFileSync(rootPackageFile, 'utf8'))
+  const rootLock = JSON.parse(fs.readFileSync(rootLockFile, 'utf8'))
+  const rootSharp = rootLock.packages?.['node_modules/sharp']
+  if (rootPackage.dependencies?.sharp !== expected.version || rootSharp?.version !== expected.version ||
+      rootSharp?.resolved !== expected.resolved || rootSharp?.integrity !== expected.integrity) {
+    throw new Error('Isolated sharp version/source/integrity disagrees with the repository-pinned sharp dependency')
+  }
+  sharp.framemarkLock = {
+    version: expected.version,
+    resolved: expected.resolved,
+    integrity: expected.integrity,
+    packageManifestSha256,
+    packageLockSha256,
+    installedPackageJsonSha256,
+    installReportSha256: crypto.createHash('sha256').update(fs.readFileSync(installReportPath)).digest('hex'),
+    installedEntryRelative: path.relative(resolvedPrefix, sharpEntry).replaceAll(path.sep, '/')
+  }
+  return sharp
+}
+
+const sharp = loadPinnedSharp()
+
+const LOGO_CATALOG = 'ui/composeApp/src/commonMain/composeResources/files/data/logos.json'
+const LOGO_RESOURCE_ROOT = 'ui/composeApp/src/commonMain/composeResources/files/logov'
 
 const REGISTRY_FILES = [
   ['engine/data/taxonomy.json', 'taxonomy.json'],
@@ -207,7 +299,90 @@ function stageRegistry (root, out) {
   return { sourceHashes, packagedHashes, sanitizedValues }
 }
 
-function buildDecoded (dataRoot, manifest) {
+function logoEngineKey (assetKey) {
+  if (typeof assetKey !== 'string' || !assetKey.trim()) throw new Error('Logo asset key is empty')
+  return `fmlogo_${crypto.createHash('sha256').update(assetKey, 'utf8').digest('hex')}`
+}
+
+async function stageExactLogoCuts (root, dataRoot) {
+  const catalogPath = assertRepoPath(root, LOGO_CATALOG)
+  const catalogText = fs.readFileSync(catalogPath, 'utf8')
+  const catalog = JSON.parse(catalogText)
+  if (!Array.isArray(catalog.versions)) throw new Error('Logo catalog has no versions array')
+  const cuts = new Map()
+  let selectedVersions = 0
+  for (const version of catalog.versions) {
+    if (version.selected !== true) continue
+    selectedVersions++
+    if (!Array.isArray(version.cuts)) throw new Error(`Selected logo version ${version.id || '<unknown>'} has no cuts array`)
+    for (const cut of version.cuts) {
+      const key = cut.assetKey
+      if (typeof key !== 'string' || !key.trim()) throw new Error(`Selected logo version ${version.id || '<unknown>'} has an empty assetKey`)
+      const resolvedPath = cut.resolvedPath
+      if (typeof resolvedPath !== 'string' || !resolvedPath.startsWith('src/renderer/src/assets/')) {
+        throw new Error(`Logo catalog cut ${key} has an unsupported resolvedPath`)
+      }
+      const assetPart = resolvedPath.slice('src/renderer/src/assets/'.length)
+      if (!assetPart.toLowerCase().endsWith('.webp') || assetPart.split('/').includes('..')) {
+        throw new Error(`Logo catalog cut ${key} is not a safe WebP path`)
+      }
+      const resourceName = assetPart.replaceAll('/', '__')
+      const sourceRelative = `${LOGO_RESOURCE_ROOT}/${resourceName}`
+      const previous = cuts.get(key)
+      if (previous && previous.sourceRelative !== sourceRelative) {
+        throw new Error(`Logo asset key maps to multiple selected resources: ${key}`)
+      }
+      cuts.set(key, { assetKey: key, sourceRelative, catalogSha256: cut.sha256 || null })
+    }
+  }
+  if (selectedVersions === 0 || cuts.size === 0) throw new Error('Logo catalog has no selected, renderable cuts')
+
+  const entries = []
+  const logoDir = path.join(dataRoot, 'logos')
+  fs.mkdirSync(logoDir, { recursive: true })
+  for (const cut of [...cuts.values()].sort((a, b) => a.assetKey.localeCompare(b.assetKey))) {
+    const source = assertRepoPath(root, cut.sourceRelative)
+    if (!fs.existsSync(source)) throw new Error(`Packaged exact logo resource is missing for ${cut.assetKey}: ${cut.sourceRelative}`)
+    const sourceSha256 = sha256File(source)
+    if (cut.catalogSha256 && sourceSha256.toLowerCase() !== cut.catalogSha256.toLowerCase()) {
+      throw new Error(`Logo catalog hash mismatch for ${cut.assetKey}: catalog=${cut.catalogSha256} packaged=${sourceSha256}`)
+    }
+    const metadata = await sharp(source).metadata()
+    if (metadata.format !== 'webp' || !Number.isInteger(metadata.width) || !Number.isInteger(metadata.height) || metadata.width <= 0 || metadata.height <= 0) {
+      throw new Error(`Packaged logo resource is not a decodable WebP for ${cut.assetKey}`)
+    }
+    const { data, info } = await sharp(source).png().toBuffer({ resolveWithObject: true })
+    if (info.width !== metadata.width || info.height !== metadata.height) {
+      throw new Error(`Logo PNG conversion changed dimensions for ${cut.assetKey}: ${metadata.width}x${metadata.height} -> ${info.width}x${info.height}`)
+    }
+    if (metadata.hasAlpha && info.channels < 4) throw new Error(`Logo PNG conversion lost alpha for ${cut.assetKey}`)
+    const engineKey = logoEngineKey(cut.assetKey)
+    const destination = path.join(logoDir, `${engineKey}.png`)
+    fs.writeFileSync(destination, data, { flag: 'wx' })
+    entries.push({
+      assetKey: cut.assetKey,
+      engineKey,
+      source: cut.sourceRelative,
+      sourceSha256,
+      catalogSha256: cut.catalogSha256,
+      pngSha256: sha256File(destination),
+      width: info.width,
+      height: info.height,
+      sourceHasAlpha: Boolean(metadata.hasAlpha),
+      pngChannels: info.channels
+    })
+  }
+  return {
+    schema: 'framemark-logo-version-map/v1',
+    sourceCatalog: LOGO_CATALOG,
+    sourceCatalogSha256: sha256File(catalogPath),
+    selectedVersions,
+    uniqueSelectedAssetKeys: entries.length,
+    entries
+  }
+}
+
+async function buildDecoded (root, dataRoot, manifest) {
   const byTarget = new Map()
   let copied = 0
   for (const card of manifest.cards) {
@@ -229,9 +404,10 @@ function buildDecoded (dataRoot, manifest) {
       copied++
     }
   }
+  const logoVersions = await stageExactLogoCuts(root, dataRoot)
   const logos = path.join(dataRoot, 'logos')
   copyTree(logos, path.join(dataRoot, 'decoded/logos'))
-  return copied
+  return { copied, logoVersions }
 }
 
 function validateManifest (dataRoot, manifest, manifestText) {
@@ -379,6 +555,104 @@ function assertNoAbsolutePaths (root) {
   return hits
 }
 
+/**
+ * Proves the exact-version logos really landed in the package and can be read
+ * back: every mapped assetKey has its PNG (with the recorded hash) in `logos/`
+ * and the same bytes in `decoded/logos/`, the only root the IR engine reads.
+ * Without this gate a package can lose all 280 files and still pass.
+ */
+function verifyLogoVersionsInPackage (out, logoVersions) {
+  const dataRoot = path.join(out, 'data')
+  const mapPath = path.join(out, 'data/registry/logo-versions.json')
+  if (!fs.existsSync(mapPath)) throw new Error(`Logo version map is missing from the package: ${path.relative(out, mapPath)}`)
+  const onDisk = JSON.parse(fs.readFileSync(mapPath, 'utf8'))
+  if (!Array.isArray(onDisk.entries) || onDisk.entries.length === 0) throw new Error('Logo version map carries no entries')
+  if (onDisk.uniqueSelectedAssetKeys !== onDisk.entries.length) {
+    throw new Error(`Logo version map count mismatch: declared ${onDisk.uniqueSelectedAssetKeys}, entries ${onDisk.entries.length}`)
+  }
+  if (logoVersions && onDisk.uniqueSelectedAssetKeys !== logoVersions.uniqueSelectedAssetKeys) {
+    throw new Error(`Logo version map changed between staging and packaging: ${logoVersions.uniqueSelectedAssetKeys} -> ${onDisk.uniqueSelectedAssetKeys}`)
+  }
+  const seen = new Set()
+  let verified = 0
+  for (const entry of onDisk.entries) {
+    if (typeof entry.assetKey !== 'string' || typeof entry.engineKey !== 'string') throw new Error('Logo version entry is missing assetKey/engineKey')
+    if (entry.engineKey !== logoEngineKey(entry.assetKey)) throw new Error(`Logo version entry has a wrong engine key for ${entry.assetKey}`)
+    if (seen.has(entry.engineKey)) throw new Error(`Duplicate logo engine key in the map: ${entry.engineKey}`)
+    seen.add(entry.engineKey)
+    const staged = path.join(dataRoot, 'logos', `${entry.engineKey}.png`)
+    if (!fs.existsSync(staged)) throw new Error(`Packaged exact logo is missing: data/logos/${entry.engineKey}.png (asset ${entry.assetKey})`)
+    const stagedSha = sha256File(staged)
+    if (entry.pngSha256 && stagedSha.toLowerCase() !== entry.pngSha256.toLowerCase()) {
+      throw new Error(`Packaged exact logo hash mismatch for ${entry.assetKey}: map=${entry.pngSha256} file=${stagedSha}`)
+    }
+    const decoded = path.join(dataRoot, 'decoded', 'logos', `${entry.engineKey}.png`)
+    if (!fs.existsSync(decoded)) throw new Error(`IR logo root is missing the exact cut: data/decoded/logos/${entry.engineKey}.png`)
+    if (sha256File(decoded).toLowerCase() !== stagedSha.toLowerCase()) {
+      throw new Error(`IR logo copy differs from the packaged cut: data/decoded/logos/${entry.engineKey}.png`)
+    }
+    verified++
+  }
+  return { path: 'data/registry/logo-versions.json', entries: onDisk.entries.length, verifiedBothRoots: verified }
+}
+
+/**
+ * Smoke that really exercises ONE packaged exact logo version: two different
+ * versions of the map are embedded into the same card design and must produce
+ * different pixels. Deleting the packaged PNGs fails here, where the default
+ * smoke (which renders each card's own capture-time logo) still passes.
+ */
+function smokeExactLogo (out, smokeDir, manifest) {
+  const dataRoot = path.join(out, 'data')
+  const mapPath = path.join(dataRoot, 'registry/logo-versions.json')
+  if (!fs.existsSync(mapPath)) throw new Error('Exact-logo smoke needs data/registry/logo-versions.json')
+  const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'))
+  const entries = (map.entries || []).slice().sort((a, b) => a.assetKey.localeCompare(b.assetKey))
+  if (entries.length < 2) throw new Error('Exact-logo smoke needs at least two packaged logo versions')
+  const cardsPath = path.join(dataRoot, 'hand/cards.json')
+  const cards = JSON.parse(fs.readFileSync(cardsPath, 'utf8'))
+  // A template that actually paints the brand mark: logoFooter (card-1 / card-2).
+  const card = cards.cards.find((entry) => entry.templateId === 'logoFooter') || cards.cards[0]
+  if (!card) throw new Error('Exact-logo smoke found no hand card to render')
+  const baseDesignPath = path.resolve(dataRoot, card.design)
+  const base = JSON.parse(fs.readFileSync(baseDesignPath, 'utf8'))
+  const rendered = []
+  for (const [index, entry] of entries.slice(0, 2).entries()) {
+    const pngPath = path.join(dataRoot, 'logos', `${entry.engineKey}.png`)
+    if (!fs.existsSync(pngPath)) throw new Error(`Exact-logo smoke cannot find ${entry.engineKey}.png`)
+    const design = JSON.parse(JSON.stringify(base))
+    design.design = design.design || {}
+    design.design.logo = {
+      name: entry.engineKey,
+      width: entry.width,
+      height: entry.height,
+      dataUrl: `data:image/png;base64,${fs.readFileSync(pngPath).toString('base64')}`
+    }
+    const designPath = path.join(smokeDir, `smoke-logo-${index}.design.json`)
+    fs.writeFileSync(designPath, JSON.stringify(design, null, 2), 'utf8')
+    const cardsCopy = JSON.parse(JSON.stringify(cards))
+    const target = cardsCopy.cards.find((item) => item.card === card.card)
+    target.design = designPath
+    const cardsCopyPath = path.join(smokeDir, `smoke-logo-${index}.cards.json`)
+    fs.writeFileSync(cardsCopyPath, JSON.stringify(cardsCopy), 'utf8')
+    const output = path.join(smokeDir, `smoke-logo-${index}.png`)
+    const report = path.join(smokeDir, `smoke-logo-${index}.json`)
+    const result = spawnSync(path.join(out, 'bin/e4hand.exe'), [
+      'render', '--card', card.card, '--cards', cardsCopyPath, '--hand', 'hand', '--fonts', 'fonts',
+      '--extra-fonts', 'e4-extra-fonts', '--out', output, '--report', report
+    ], { cwd: dataRoot, encoding: 'utf8', windowsHide: true })
+    if (result.status !== 0) throw new Error(`Exact-logo smoke failed for ${entry.assetKey} (${result.status}): ${result.stderr || result.stdout}`)
+    const doc = readJsonReport(report, 'Exact logo')
+    const drewLogo = (doc.images || doc.report?.images || []).some((image) => image.key === 'logo')
+    if (!drewLogo) throw new Error(`Exact-logo smoke: ${entry.assetKey} was not drawn as the card logo`)
+    rendered.push({ assetKey: entry.assetKey, engineKey: entry.engineKey, sha256: sha256File(output) })
+  }
+  if (rendered[0].sha256 === rendered[1].sha256) {
+    throw new Error(`Exact-logo smoke: two different packaged versions (${rendered[0].assetKey}, ${rendered[1].assetKey}) produced identical pixels`)
+  }
+  return { card: card.card, versions: rendered, differ: true }
+}
+
 function smoke (out, smokeDir, manifest) {
   const dataRoot = path.join(out, 'data')
   fs.mkdirSync(smokeDir, { recursive: true })
@@ -405,13 +679,15 @@ function smoke (out, smokeDir, manifest) {
   const parsedHandReport = readJsonReport(handReport, 'Hand')
   const handSummary = validateHandReport(parsedHandReport)
   const handPng = validatePng(handOutput, 'Hand', handSummary.width, handSummary.height)
+  const exactLogo = smokeExactLogo(out, smokeDir, manifest)
   return {
     ir: { cardId: ir.cardId, ...irSummary, ...irPng },
-    hand: { cardId: hand.cardId, ...handSummary, ...handPng }
+    hand: { cardId: hand.cardId, ...handSummary, ...handPng },
+    exactLogo
   }
 }
 
-function main () {
+async function main () {
   const args = parseArgs(process.argv.slice(2))
   const root = path.resolve(args.root)
   const artifactRoot = path.resolve(args['artifact-root'])
@@ -465,7 +741,7 @@ function main () {
     const filename = path.join(dataRoot, relative)
     if (fs.existsSync(filename)) { fs.rmSync(filename); droppedProvenance++ }
   }
-  const decodedCopied = buildDecoded(dataRoot, manifest)
+  const decoded = await buildDecoded(root, dataRoot, manifest)
   for (const card of manifest.cards) {
     for (const asset of card.assets || []) {
       const decoded = assertRepoPath(dataRoot, asset.engineFile.replace(/^data\//, ''))
@@ -473,6 +749,19 @@ function main () {
     }
   }
   const registry = stageRegistry(root, out)
+  const logoMapPath = path.join(out, 'data/registry/logo-versions.json')
+  fs.writeFileSync(logoMapPath, JSON.stringify(decoded.logoVersions, null, 2) + '\n', 'utf8')
+  registry.logoVersions = {
+    path: 'data/registry/logo-versions.json',
+    sha256: sha256File(logoMapPath),
+    sourceCatalog: decoded.logoVersions.sourceCatalog,
+    sourceCatalogSha256: decoded.logoVersions.sourceCatalogSha256,
+    selectedVersions: decoded.logoVersions.selectedVersions,
+    uniqueSelectedAssetKeys: decoded.logoVersions.uniqueSelectedAssetKeys
+  }
+  // Gate: the map must describe files that are really in the package, in both
+  // the exact-logo root and the IR root.
+  const logoVersionCheck = verifyLogoVersionsInPackage(out, decoded.logoVersions)
   fs.mkdirSync(path.join(out, 'bridge/desktop'), { recursive: true })
   fs.copyFileSync(manifestPath, path.join(out, 'bridge/desktop/cards-175.json'))
   fs.writeFileSync(path.join(out, 'FRAMEMARK-PACKAGE.json'), JSON.stringify({
@@ -496,6 +785,7 @@ function main () {
     status: 'PASS',
     buildId: args['build-id'],
     packager: { path: path.relative(root, __filename).replaceAll(path.sep, '/'), sha256: sha256File(__filename) },
+    logoImageTool: { package: 'sharp', ...sharp.framemarkLock },
     runtime: path.relative(root, out).replaceAll(path.sep, '/'),
     assetBundle: { path: path.relative(root, bundle).replaceAll(path.sep, '/'), sha256: sha256File(bundle), archiveEntries: archiveEntries.length },
     authoritativeManifest: { path: path.relative(root, manifestPath).replaceAll(path.sep, '/'), sha256: counts.manifestSha256, filename: 'cards-175.json', cardCounts: counts },
@@ -508,7 +798,8 @@ function main () {
       return [name, { sha256: executableHashes[name], crateManifest: row.crateManifest, crateSourceLockSha256: row.crateSourceLockSha256, sourceInputsSha256: row.sourceInputsSha256, skiaArchiveSha256: row.skiaArchiveSha256 }]
     })),
     registry,
-    sanitization: { fixedDesigns, fixedHandCards, fixedTextSlots, droppedProvenance, decodedAssets: decodedCopied, absolutePathHits: pathHits.length },
+    logoVersions: logoVersionCheck,
+    sanitization: { fixedDesigns, fixedHandCards, fixedTextSlots, droppedProvenance, decodedAssets: decoded.copied, absolutePathHits: pathHits.length },
     smoke: smokeResult,
     fileCount: files.length,
     packageBytes: files.reduce((sum, file) => sum + file.bytes, 0),
@@ -520,9 +811,11 @@ function main () {
   process.stdout.write(JSON.stringify({ status: report.status, runtime: report.runtime, cardCounts: counts, fileCount: report.fileCount, packageBytes: report.packageBytes, packageFilesSha256: report.packageFilesSha256, smoke: smokeResult }) + '\n')
 }
 
-try {
-  main()
-} catch (error) {
+if (require.main === module) {
+main().catch((error) => {
   process.stderr.write(`Desktop runtime staging failed: ${error.stack || error.message}\n`)
   process.exitCode = 1
+})
 }
+
+module.exports = { logoEngineKey, stageExactLogoCuts, verifyLogoVersionsInPackage }

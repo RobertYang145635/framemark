@@ -148,6 +148,13 @@ class DesignSession {
         history.clear()
     }
 
+    /** Hydrates newly discovered controls without overwriting edits in progress. */
+    fun mergeMissingValues(next: Map<String, Any>) {
+        next.forEach { (key, value) ->
+            if (!values.containsKey(key)) values[key] = value
+        }
+    }
+
     /** Sets export options without notifying the project (used while hydrating). */
     fun setExportSilently(next: ExportSettings) {
         if (next != exportState) exportState = next
@@ -156,10 +163,22 @@ class DesignSession {
     fun value(control: InspectorControl): Any =
         values[control.key] ?: initialValues[control.key] ?: plainValue(control.initial)
 
+    fun isModified(control: InspectorControl): Boolean =
+        value(control) != (initialValues[control.key] ?: plainValue(control.initial))
+
     fun set(control: InspectorControl, next: Any) {
         if (value(control) == next) return
         history.record(values.toMap(), control.key)
         values[control.key] = next
+        notifyChanged()
+    }
+
+    /** Restores one control to its declared value and records the action for undo. */
+    fun resetControl(control: InspectorControl) {
+        val initial = initialValues[control.key] ?: plainValue(control.initial)
+        if (value(control) == initial) return
+        history.record(values.toMap(), control.key)
+        values[control.key] = initial
         notifyChanged()
     }
 

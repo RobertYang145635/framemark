@@ -48,8 +48,22 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         m + ph + m + (palette - block).max(0.0) / 2.0
     };
     let spread = row_pct.is_finite() && row_pct > 0.0;
-    let row_w = if spread { w.min((s * row_pct as f32) / 100.0) } else { w - 2.0 * m };
+    let row_w = if spread {
+        w.min((s * row_pct as f32) / 100.0)
+    } else {
+        w - 2.0 * m
+    };
     let row_x = if spread { (w - row_w) / 2.0 } else { m };
-    draw_swatches(env, &colors, row_x, y, row_w, size, &theme.sub, spread);
+    draw_swatches(
+        env,
+        &colors,
+        row_x,
+        y,
+        row_w,
+        size,
+        &theme.sub,
+        spread,
+        "paletteCard.swatch",
+    );
     Ok(Rect::from_xywh(m, m, pw, ph))
 }

@@ -5,7 +5,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    date_text, draw_barcode, draw_fitted, draw_photo_cover, theme_of, Env, FittedOpts, LayoutEnv,
+    date_text, draw_barcode, draw_fitted, draw_photo_cover, resolve_text_slot, theme_of, Env,
+    FittedOpts, LayoutEnv,
 };
 use crate::hand::{pct, Exif};
 use crate::jsval::js_round;
@@ -61,24 +62,76 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         s * 0.018,
         s * 0.006,
     );
-    env.ctx.clip_round_rect(card_x, card_y, card_w, card_h, radius);
-    draw_photo_cover(&mut env.ctx, env.photo, &env.crop, card_x, card_y, photo_w, card_h, 0.0, 0.0, s);
-    env.ctx.fill_rect_color(boundary, card_y, stub_w, card_h, &panel);
+    env.ctx
+        .clip_round_rect(card_x, card_y, card_w, card_h, radius);
+    draw_photo_cover(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        card_x,
+        card_y,
+        photo_w,
+        card_h,
+        0.0,
+        0.0,
+        s,
+    );
+    env.ctx
+        .fill_rect_color(boundary, card_y, stub_w, card_h, &panel);
     env.ctx.restore_clip();
     // Card drop shadow: canvas shadowBlur S*0.018 with offsetY S*0.006 extends
     // about 1.6x the blur around the card; record that ring as decor.
     let ring = s * 0.018 * 1.6 + s * 0.006;
     for (kind, rect) in [
-        ("shadow-top", skia_safe::Rect::from_xywh(card_x - ring, card_y - ring + s * 0.006, card_w + 2.0 * ring, ring)),
-        ("shadow-bottom", skia_safe::Rect::from_xywh(card_x - ring, card_y + card_h + s * 0.006, card_w + 2.0 * ring, ring)),
-        ("shadow-left", skia_safe::Rect::from_xywh(card_x - ring, card_y - ring + s * 0.006, ring, card_h + 2.0 * ring)),
-        ("shadow-right", skia_safe::Rect::from_xywh(card_x + card_w, card_y - ring + s * 0.006, ring, card_h + 2.0 * ring)),
+        (
+            "shadow-top",
+            skia_safe::Rect::from_xywh(
+                card_x - ring,
+                card_y - ring + s * 0.006,
+                card_w + 2.0 * ring,
+                ring,
+            ),
+        ),
+        (
+            "shadow-bottom",
+            skia_safe::Rect::from_xywh(
+                card_x - ring,
+                card_y + card_h + s * 0.006,
+                card_w + 2.0 * ring,
+                ring,
+            ),
+        ),
+        (
+            "shadow-left",
+            skia_safe::Rect::from_xywh(
+                card_x - ring,
+                card_y - ring + s * 0.006,
+                ring,
+                card_h + 2.0 * ring,
+            ),
+        ),
+        (
+            "shadow-right",
+            skia_safe::Rect::from_xywh(
+                card_x + card_w,
+                card_y - ring + s * 0.006,
+                ring,
+                card_h + 2.0 * ring,
+            ),
+        ),
     ] {
         env.ctx.record_shape(kind, rect, None, true);
     }
     let notch = card_h * 0.024;
     for y in [card_y, card_y + card_h] {
-        env.ctx.fill_round_rect(boundary - notch, y - notch, notch * 2.0, notch * 2.0, notch, &bg);
+        env.ctx.fill_round_rect(
+            boundary - notch,
+            y - notch,
+            notch * 2.0,
+            notch * 2.0,
+            notch,
+            &bg,
+        );
     }
     let dash = [s * 0.012, s * 0.01];
     crate::draw::line(
@@ -99,11 +152,28 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         .map(|v| crate::jsval::js_string(Some(v)))
         .unwrap_or_else(|| "HANG ZHOU".into())
         .to_uppercase();
-    let lines: Vec<&str> = stub_title.split_whitespace().take(2).collect();
+    let lines: Vec<(&str, String)> = {
+        let mut words = stub_title.split_whitespace();
+        let first = words.next().unwrap_or("");
+        let second = words.next().unwrap_or("");
+        [
+            (
+                "sideTicket.title.line1",
+                resolve_text_slot(env, "sideTicket.title.line1", first).text,
+            ),
+            (
+                "sideTicket.title.line2",
+                resolve_text_slot(env, "sideTicket.title.line2", second).text,
+            ),
+        ]
+        .into_iter()
+        .filter(|(_, text)| !text.is_empty())
+        .collect()
+    };
     let stub_size = card_h * 0.123;
     let stub_pitch = 0.1208_f32 / 0.123;
     let mut stub_y = card_y + card_h * 0.2395;
-    for line_text in &lines {
+    for (slot, line_text) in &lines {
         let painted = draw_fitted(
             env,
             line_text,
@@ -112,11 +182,15 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             sw,
             stub_size,
             fg,
-            &FittedOpts::new("Inter").weight(800).baseline("middle").min(card_h * 0.06),
+            &FittedOpts::new("Inter")
+                .weight(800)
+                .baseline("middle")
+                .min(card_h * 0.06)
+                .slot(slot),
         );
         stub_y += painted * stub_pitch;
     }
-    let dt = date_text(env);
+    let dt = resolve_text_slot(env, "sideTicket.date", &date_text(env)).text;
     let stub_date = if dt.len() == 10 && dt.as_bytes()[4] == b'-' && dt.as_bytes()[7] == b'-' {
         dt[..7].to_string()
     } else {
@@ -131,14 +205,22 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             sw,
             card_h * 0.0698,
             fg,
-            &FittedOpts::new("JetBrains Mono").weight(600).baseline("middle").min(card_h * 0.04),
+            &FittedOpts::new("JetBrains Mono")
+                .weight(600)
+                .baseline("middle")
+                .min(card_h * 0.04)
+                .slot("sideTicket.date"),
         );
     }
-    let label = env
-        .params
-        .get("stubLabel")
-        .map(|v| crate::jsval::js_string(Some(v)))
-        .unwrap_or_else(|| "GUANGYING 100".into());
+    let label = resolve_text_slot(
+        env,
+        "sideTicket.label",
+        &env.params
+            .get("stubLabel")
+            .map(|v| crate::jsval::js_string(Some(v)))
+            .unwrap_or_else(|| "GUANGYING 100".into()),
+    )
+    .text;
     draw_fitted(
         env,
         &label,
@@ -151,9 +233,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             .weight(500)
             .tracking(0.08)
             .baseline("middle")
-            .min(card_h * 0.035),
+            .min(card_h * 0.035)
+            .slot("sideTicket.label"),
     );
-    let seed_text = if env.exif.model.is_empty() { "FRAMEMARK".to_string() } else { env.exif.model.clone() };
+    let seed_text = if env.exif.model.is_empty() {
+        "FRAMEMARK".to_string()
+    } else {
+        env.exif.model.clone()
+    };
     draw_barcode(
         &mut env.ctx,
         sx,

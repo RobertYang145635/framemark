@@ -15,10 +15,14 @@
 use std::collections::HashMap;
 
 use skia_safe::{
+    font_arguments::{variation_position::Coordinate, FontArguments, VariationPosition},
+    shaper::{
+        self,
+        run_handler::{Buffer, RunInfo},
+        RunHandler,
+    },
     Canvas, Color, Data, Font, FontHinting, FontMgr, FontStyle, GlyphId, Matrix, Paint, Point,
     Rect, Shaper, TextBlob, TextBlobBuilder, Typeface, Vector,
-    font_arguments::{variation_position::Coordinate, FontArguments, VariationPosition},
-    shaper::{self, RunHandler, run_handler::{Buffer, RunInfo}},
 };
 
 #[derive(Clone)]
@@ -30,16 +34,37 @@ struct Family {
 }
 
 impl Family {
-    fn new(regular: Typeface, medium: Option<Typeface>, demibold: Option<Typeface>, bold: Option<Typeface>) -> Self {
-        Self { regular, medium, demibold, bold }
+    fn new(
+        regular: Typeface,
+        medium: Option<Typeface>,
+        demibold: Option<Typeface>,
+        bold: Option<Typeface>,
+    ) -> Self {
+        Self {
+            regular,
+            medium,
+            demibold,
+            bold,
+        }
     }
     fn pick(&self, weight: i32) -> &Typeface {
         if weight >= 700 {
-            self.bold.as_ref().or(self.demibold.as_ref()).or(self.medium.as_ref()).unwrap_or(&self.regular)
+            self.bold
+                .as_ref()
+                .or(self.demibold.as_ref())
+                .or(self.medium.as_ref())
+                .unwrap_or(&self.regular)
         } else if weight >= 600 {
-            self.demibold.as_ref().or(self.medium.as_ref()).or(self.bold.as_ref()).unwrap_or(&self.regular)
+            self.demibold
+                .as_ref()
+                .or(self.medium.as_ref())
+                .or(self.bold.as_ref())
+                .unwrap_or(&self.regular)
         } else if weight >= 500 {
-            self.medium.as_ref().or(self.demibold.as_ref()).unwrap_or(&self.regular)
+            self.medium
+                .as_ref()
+                .or(self.demibold.as_ref())
+                .unwrap_or(&self.regular)
         } else {
             &self.regular
         }
@@ -55,7 +80,8 @@ pub struct FontSet {
 }
 
 fn load_face(mgr: &FontMgr, path: &std::path::Path) -> Result<Typeface, String> {
-    let data = Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
+    let data =
+        Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
     mgr.new_from_data(data, None)
         .ok_or_else(|| format!("font unreadable: {}", path.display()))
 }
@@ -64,12 +90,19 @@ fn load_face(mgr: &FontMgr, path: &std::path::Path) -> Result<Typeface, String> 
 /// 实测坑：`AvenirNext.ttc` 的 0 号 face 是 Bold（见 `data/fonts.json` 的
 /// `ttc` 段）。`want` 可以是 postscript 名（`AvenirNext-DemiBold`）、
 /// full name 或 family+subfamily；大小写/空格不敏感。
-pub fn load_ttc_face(mgr: &FontMgr, path: &std::path::Path, want: &str) -> Result<Typeface, String> {
-    let data = Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
+pub fn load_ttc_face(
+    mgr: &FontMgr,
+    path: &std::path::Path,
+    want: &str,
+) -> Result<Typeface, String> {
+    let data =
+        Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
     let norm = |s: &str| s.to_lowercase().replace([' ', '_', '-'], "");
     let want_n = norm(want);
     for i in 0..64u32 {
-        let Some(tf) = mgr.new_from_data(data.clone(), Some(i)) else { break };
+        let Some(tf) = mgr.new_from_data(data.clone(), Some(i)) else {
+            break;
+        };
         let family = tf.family_name();
         let ps = tf.post_script_name().unwrap_or_default();
         if norm(&ps) == want_n || norm(&family) == want_n {
@@ -139,9 +172,11 @@ fn weighted_face(base: &Typeface, weight: f32) -> Typeface {
             value: 1010.0,
         },
     ];
-    let args = FontArguments::new()
-        .set_variation_design_position(VariationPosition { coordinates: &coords });
-    base.clone_with_arguments(&args).unwrap_or_else(|| base.clone())
+    let args = FontArguments::new().set_variation_design_position(VariationPosition {
+        coordinates: &coords,
+    });
+    base.clone_with_arguments(&args)
+        .unwrap_or_else(|| base.clone())
 }
 
 impl FontSet {
@@ -159,7 +194,10 @@ impl FontSet {
         let avenir_med = load_face(&mgr, &oppo.join("AvenirNext-Medium.ttf")).ok();
         let avenir_demi = load_face(&mgr, &oppo.join("AvenirNext-DemiBold.ttf")).ok();
         let avenir_bold = load_face(&mgr, &oppo.join("AvenirNext-Bold.ttf")).ok();
-        families.insert("StockAvenir", Family::new(avenir_reg, avenir_med, avenir_demi, avenir_bold));
+        families.insert(
+            "StockAvenir",
+            Family::new(avenir_reg, avenir_med, avenir_demi, avenir_bold),
+        );
 
         let sys_base = load_face(&mgr, &oppo.join("SysSans-En-Regular.ttf"))?;
         // SysSans is a variable wght 100..700 face; the oracle asks for 600/500,
@@ -218,7 +256,10 @@ impl FontSet {
         let butler_med = load_face(&mgr, &oppo.join("ButlerMedium.otf")).ok();
         let butler_bold = load_face(&mgr, &oppo.join("ButlerBold.otf")).ok();
         if let Some(reg) = butler_med.clone() {
-            families.insert("StockButler", Family::new(reg, butler_med, butler_bold.clone(), butler_bold));
+            families.insert(
+                "StockButler",
+                Family::new(reg, butler_med, butler_bold.clone(), butler_bold),
+            );
         }
         if let Ok(fz) = load_face(&mgr, &oppo.join("FZCYSK.TTF")) {
             families.insert("StockFZ", Family::new(fz, None, None, None));
@@ -247,18 +288,30 @@ impl FontSet {
                 Some(weighted_face(&hans, 600.0)),
                 Some(weighted_face(&hans, 700.0)),
             );
-            add_cjk(&["StockSysSans", "StockAvenir", "StockButler"], fam, "oppo=SysSans-Hans");
+            add_cjk(
+                &["StockSysSans", "StockAvenir", "StockButler"],
+                fam,
+                "oppo=SysSans-Hans",
+            );
         }
         let mi_hans_reg = load_face(&mgr, &mi.join("MiSans-Regular.ttf")).ok();
         if let Some(reg) = mi_hans_reg.clone() {
             let med = load_face(&mgr, &mi.join("MiSans-Medium.ttf")).ok();
             let demi = load_face(&mgr, &mi.join("MiSans-Demibold.ttf")).ok();
             let fam = Family::new(reg, med, demi.clone(), demi);
-            add_cjk(&["StockMiSans", "StockLG1056", "StockOxanium"], fam, "xiaomi=MiSans");
+            add_cjk(
+                &["StockMiSans", "StockLG1056", "StockOxanium"],
+                fam,
+                "xiaomi=MiSans",
+            );
         }
         // vivo：文件名固定为 vivo/vivoSans-CJK-Regular.ttf（拿到真字再放进来）。
         if let Ok(vs) = load_face(&mgr, &vivo.join("vivoSans-CJK-Regular.ttf")) {
-            add_cjk(&["StockVivo", "Zeiss"], Family::new(vs, None, None, None), "vivo=vivoSans-CJK");
+            add_cjk(
+                &["StockVivo", "Zeiss"],
+                Family::new(vs, None, None, None),
+                "vivo=vivoSans-CJK",
+            );
         } else {
             cjk_log.push("vivo=<GAP>".into());
         }
@@ -266,7 +319,12 @@ impl FontSet {
         // `.ttc` 探针（证据用）：`E2B_TTC_PROBE=1` 时按 face 名逐个加载并打印。
         if std::env::var("E2B_TTC_PROBE").ok().as_deref() == Some("1") {
             let ttc = oppo.join("AvenirNext.ttc");
-            for want in ["AvenirNext-Regular", "AvenirNext-Medium", "AvenirNext-DemiBold", "AvenirNext-Bold"] {
+            for want in [
+                "AvenirNext-Regular",
+                "AvenirNext-Medium",
+                "AvenirNext-DemiBold",
+                "AvenirNext-Bold",
+            ] {
                 match load_ttc_face(&mgr, &ttc, want) {
                     Ok(tf) => println!(
                         "e2b.ttc want={} family={} ps={}",
@@ -284,16 +342,25 @@ impl FontSet {
         let fallback = mgr
             .match_family_style("Microsoft YaHei", FontStyle::normal())
             .or_else(|| mgr.match_family_style("Microsoft YaHei UI", FontStyle::normal()))
-            .or_else(|| mgr.match_family_style_character("", FontStyle::normal(), &["zh-Hans"], 0x5468))
+            .or_else(|| {
+                mgr.match_family_style_character("", FontStyle::normal(), &["zh-Hans"], 0x5468)
+            })
             .or_else(|| load_face(&mgr, &oppo.join("FZCYSK.TTF")).ok());
         println!(
             "e2b.fonts root={} families={} cjk={} fallback={}",
             assets.display(),
             families.len(),
             cjk_log.join(","),
-            fallback.as_ref().map(|f| f.family_name()).unwrap_or_else(|| "<none>".into())
+            fallback
+                .as_ref()
+                .map(|f| f.family_name())
+                .unwrap_or_else(|| "<none>".into())
         );
-        Ok(Self { families, cjk, fallback })
+        Ok(Self {
+            families,
+            cjk,
+            fallback,
+        })
     }
 
     /// W2: 指定 `font_key` 的厂商中文字形（按权重取）。取不到返回 None。
@@ -310,7 +377,9 @@ impl FontSet {
             return None;
         }
         let tf = self.cjk_face(key, weight)?;
-        let missing = text.chars().any(|c| !c.is_whitespace() && tf.unichar_to_glyph(c as i32) == 0);
+        let missing = text
+            .chars()
+            .any(|c| !c.is_whitespace() && tf.unichar_to_glyph(c as i32) == 0);
         if missing {
             return None;
         }
@@ -329,7 +398,11 @@ impl FontSet {
 
     pub fn resolve(&self, key: &str, weight: i32) -> &Typeface {
         let family = font_key_family(key);
-        let fam = self.families.get(family).or_else(|| self.families.get("StockSysSans")).expect("StockSysSans");
+        let fam = self
+            .families
+            .get(family)
+            .or_else(|| self.families.get("StockSysSans"))
+            .expect("StockSysSans");
         fam.pick(weight)
     }
 
@@ -506,8 +579,8 @@ pub struct TextEngine {
 
 impl TextEngine {
     pub fn new() -> Self {
-        let shaper = Shaper::new_shape_dont_wrap_or_reorder(None)
-            .expect("HarfBuzz shaper unavailable");
+        let shaper =
+            Shaper::new_shape_dont_wrap_or_reorder(None).expect("HarfBuzz shaper unavailable");
         let embolden = match std::env::var("T1C_EMBOLDEN").ok() {
             Some(v) => v == "1" || v.parse::<f32>().map(|f| f > 0.0).unwrap_or(false),
             None => false,
@@ -530,7 +603,11 @@ impl TextEngine {
 
     fn face_for(&self, base: &Typeface, text: &str, fb: &Typeface) -> Typeface {
         let missing = text.chars().any(|c| base.unichar_to_glyph(c as i32) == 0);
-        if missing { fb.clone() } else { base.clone() }
+        if missing {
+            fb.clone()
+        } else {
+            base.clone()
+        }
     }
 
     fn make_font(&self, tf: &Typeface, size: f32) -> Font {
@@ -551,7 +628,13 @@ impl TextEngine {
     /// HarfBuzz shaping with Canvas2D `letterSpacing` semantics. Returns the
     /// blob, the measured width (trailing spacing included, as `measureText`),
     /// and the number of glyph id 0 (`.notdef`) slots in the shaped output.
-    pub fn shape(&self, text: &str, tf: &Typeface, size: f32, tracking: f32) -> (TextBlob, f32, usize) {
+    pub fn shape(
+        &self,
+        text: &str,
+        tf: &Typeface,
+        size: f32,
+        tracking: f32,
+    ) -> (TextBlob, f32, usize) {
         self.shape_with(text, tf, size, tracking, self.fallback.as_ref())
     }
 
@@ -627,7 +710,10 @@ impl TextEngine {
             VBaseline::Alphabetic => 0.0,
             VBaseline::Middle => {
                 let default = -(metrics.ascent + metrics.descent) * 0.5;
-                match std::env::var("T1B_BASELINE_SHIFT").ok().and_then(|v| v.parse::<f32>().ok()) {
+                match std::env::var("T1B_BASELINE_SHIFT")
+                    .ok()
+                    .and_then(|v| v.parse::<f32>().ok())
+                {
                     Some(shift) => default + shift,
                     None => default,
                 }
@@ -675,7 +761,12 @@ impl TextEngine {
     /// Thai cluster without tracking and place them at cumulative advances so
     /// the run width matches Chromium's measureText; per-glyph spacing would
     /// push combining marks apart.
-    pub fn draw_clusters(&self, canvas: &Canvas, spec: &TextSpec, clusters: &[&str]) -> (f32, f32, usize) {
+    pub fn draw_clusters(
+        &self,
+        canvas: &Canvas,
+        spec: &TextSpec,
+        clusters: &[&str],
+    ) -> (f32, f32, usize) {
         let fb = spec
             .script_fallback
             .as_ref()
@@ -701,7 +792,10 @@ impl TextEngine {
             VBaseline::Alphabetic => 0.0,
             VBaseline::Middle => {
                 let default = -(metrics.ascent + metrics.descent) * 0.5;
-                match std::env::var("T1B_BASELINE_SHIFT").ok().and_then(|v| v.parse::<f32>().ok()) {
+                match std::env::var("T1B_BASELINE_SHIFT")
+                    .ok()
+                    .and_then(|v| v.parse::<f32>().ok())
+                {
                     Some(shift) => default + shift,
                     None => default,
                 }

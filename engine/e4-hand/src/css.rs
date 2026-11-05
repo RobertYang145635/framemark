@@ -33,8 +33,22 @@ pub fn parse(value: &str) -> Option<CssColor> {
     let s = value.trim();
     let lower = s.to_ascii_lowercase();
     match lower.as_str() {
-        "transparent" => return Some(CssColor { r: 0, g: 0, b: 0, a: 0 }),
-        "black" => return Some(CssColor { r: 0, g: 0, b: 0, a: 255 }),
+        "transparent" => {
+            return Some(CssColor {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            })
+        }
+        "black" => {
+            return Some(CssColor {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            })
+        }
         "white" => {
             return Some(CssColor {
                 r: 255,

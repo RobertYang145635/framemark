@@ -5,8 +5,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    draw_brand_logo, draw_fitted, draw_photo_cover, measure_text, theme_of, Env, FittedOpts,
-    LayoutEnv,
+    draw_brand_logo, draw_fitted, draw_photo_cover, measure_text, resolve_text_slot, theme_of, Env,
+    FittedOpts, LayoutEnv,
 };
 use crate::hand::{format_aperture, format_shutter, pct};
 use crate::jsval::js_round;
@@ -16,12 +16,40 @@ pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
     Ok((s * 1.5, s))
 }
 
-fn rows_of(env: &Env) -> Vec<(&'static str, String)> {
-    vec![
-        ("F", env.exif.aperture.map(format_aperture).unwrap_or_default().trim_start_matches('F').to_string()),
-        ("MM", env.exif.focal.map(|v| crate::jsval::format_js_number(js_round(v))).unwrap_or_default()),
-        ("S", env.exif.shutter.map(format_shutter).unwrap_or_default().trim_end_matches('s').to_string()),
+/// `(label slot, label, value slot, value)` for the three chip rows. Each row
+/// is a declared pair so a label or a value can be edited independently.
+fn rows_of(env: &Env) -> Vec<(&'static str, String, &'static str, String)> {
+    let aperture = env
+        .exif
+        .aperture
+        .map(format_aperture)
+        .unwrap_or_default()
+        .trim_start_matches('F')
+        .to_string();
+    let focal = env
+        .exif
+        .focal
+        .map(|v| crate::jsval::format_js_number(js_round(v)))
+        .unwrap_or_default();
+    let shutter = env
+        .exif
+        .shutter
+        .map(format_shutter)
+        .unwrap_or_default()
+        .trim_end_matches('s')
+        .to_string();
+    [
+        ("sideCard.label.f", "F", "sideCard.aperture", aperture),
+        ("sideCard.label.mm", "MM", "sideCard.focal", focal),
+        ("sideCard.label.s", "S", "sideCard.shutter", shutter),
     ]
+    .into_iter()
+    .map(|(label_slot, label, value_slot, value)| {
+        let label = resolve_text_slot(env, label_slot, label).text;
+        let value = resolve_text_slot(env, value_slot, &value).text;
+        (label_slot, label, value_slot, value)
+    })
+    .collect()
 }
 
 pub fn render(env: &mut Env) -> Result<Rect, String> {
@@ -52,10 +80,36 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             0.5
         };
         let cx_pct = pct(env.params, "cardCx", 0.0) as f32;
-        photo_x = w * if cx_pct > 0.0 { cx_pct / 100.0 } else { auto_cx } - ph_w / 2.0;
+        photo_x = w * if cx_pct > 0.0 {
+            cx_pct / 100.0
+        } else {
+            auto_cx
+        } - ph_w / 2.0;
         photo_y = (h - ph_h) / 2.0;
-        draw_photo_cover(&mut env.ctx, env.photo, &env.crop, photo_x, photo_y, ph_w, ph_h, radius, shadow, s);
-        render_portrait(env, w, h, s, photo_x, photo_y, ph_w, ph_h, &theme, &layout_mode);
+        draw_photo_cover(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            photo_x,
+            photo_y,
+            ph_w,
+            ph_h,
+            radius,
+            shadow,
+            s,
+        );
+        render_portrait(
+            env,
+            w,
+            h,
+            s,
+            photo_x,
+            photo_y,
+            ph_w,
+            ph_h,
+            &theme,
+            &layout_mode,
+        );
     } else {
         let max_w = w * if layout_mode == "split" { 0.52 } else { 0.58 };
         let mut h2 = h - 2.0 * m;
@@ -74,8 +128,31 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         photo_y = (h - h2) / 2.0;
         ph_w = w2;
         ph_h = h2;
-        draw_photo_cover(&mut env.ctx, env.photo, &env.crop, photo_x, photo_y, ph_w, ph_h, radius, shadow, s);
-        render_landscape(env, w, h, s, m, photo_x, photo_y, ph_w, ph_h, &theme, &layout_mode);
+        draw_photo_cover(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            photo_x,
+            photo_y,
+            ph_w,
+            ph_h,
+            radius,
+            shadow,
+            s,
+        );
+        render_landscape(
+            env,
+            w,
+            h,
+            s,
+            m,
+            photo_x,
+            photo_y,
+            ph_w,
+            ph_h,
+            &theme,
+            &layout_mode,
+        );
     }
     Ok(Rect::from_xywh(photo_x, photo_y, ph_w, ph_h))
 }
@@ -103,12 +180,14 @@ fn render_portrait(
     let value_ct = s * 0.2032;
     let split = layout_mode == "split";
     let mut value_w: f32 = 0.0;
-    for (_, v) in &rows {
+    for (_, _, _, v) in &rows {
         value_w = value_w.max(measure_text(env, v, "JetBrains Mono", 400, value_size, 0.0));
     }
     let block_w = value_ct + value_w / 2.0;
-    let rows_top = (h * (pct(env.params, "rowsTop", if split { 39.4 } else { 43.13 }) as f32)) / 100.0;
-    let brand_cy = (h * (pct(env.params, "brandCY", if split { 49.9 } else { 30.55 }) as f32)) / 100.0;
+    let rows_top =
+        (h * (pct(env.params, "rowsTop", if split { 39.4 } else { 43.13 }) as f32)) / 100.0;
+    let brand_cy =
+        (h * (pct(env.params, "brandCY", if split { 49.9 } else { 30.55 }) as f32)) / 100.0;
     let panel_l = photo_x;
     let panel_r = w - (photo_x + ph_w);
     let explicit_x = pct(env.params, "rowsX", 0.0) as f32;
@@ -123,7 +202,7 @@ fn render_portrait(
     };
     block_left = block_left.max(s * 0.02).min(w - block_w - s * 0.02);
     let value_cx = block_left + value_ct;
-    for (i, (label, value)) in rows.iter().enumerate() {
+    for (i, (label_slot, label, value_slot, value)) in rows.iter().enumerate() {
         let y = rows_top + i as f32 * row_pitch;
         env.ctx.stroke_round_rect(
             block_left,
@@ -143,7 +222,10 @@ fn render_portrait(
             box_w * 0.7,
             label_size,
             &theme.sub,
-            &FittedOpts::new("JetBrains Mono").align("center").baseline("middle"),
+            &FittedOpts::new("JetBrains Mono")
+                .align("center")
+                .baseline("middle")
+                .slot(label_slot),
         );
         draw_fitted(
             env,
@@ -153,12 +235,19 @@ fn render_portrait(
             value_w * 1.02,
             value_size,
             &theme.fg,
-            &FittedOpts::new("JetBrains Mono").align("center").baseline("middle"),
+            &FittedOpts::new("JetBrains Mono")
+                .align("center")
+                .baseline("middle")
+                .slot(value_slot),
         );
     }
     let bw = s * if split { 0.178 } else { 0.256 };
     let bh = s * if split { 0.03 } else { 0.044 };
-    let brand_x = if split { (photo_x - bw) / 2.0 } else { block_left };
+    let brand_x = if split {
+        (photo_x - bw) / 2.0
+    } else {
+        block_left
+    };
     draw_brand_logo(env, brand_x, brand_cy - bh / 2.0, bw, bh, &theme.fg);
     let _ = (photo_y, ph_h);
 }
@@ -187,7 +276,7 @@ fn render_landscape(
     let rows = rows_of(env);
     let draw_rows = |env: &mut Env, x: f32, width: f32, top: f32| {
         let row_h = box_h + row_gap;
-        for (i, (label, value)) in rows.iter().enumerate() {
+        for (i, (label_slot, label, value_slot, value)) in rows.iter().enumerate() {
             let y = top + i as f32 * row_h;
             env.ctx.stroke_round_rect(
                 x,
@@ -207,7 +296,10 @@ fn render_landscape(
                 box_w * 0.7,
                 label_size,
                 &theme.sub,
-                &FittedOpts::new("JetBrains Mono").align("center").baseline("middle"),
+                &FittedOpts::new("JetBrains Mono")
+                    .align("center")
+                    .baseline("middle")
+                    .slot(label_slot),
             );
             draw_fitted(
                 env,
@@ -217,13 +309,22 @@ fn render_landscape(
                 width - box_w - s * 0.022,
                 value_size,
                 &theme.fg,
-                &FittedOpts::new("JetBrains Mono").baseline("middle"),
+                &FittedOpts::new("JetBrains Mono")
+                    .baseline("middle")
+                    .slot(value_slot),
             );
         }
     };
     let draw_brand = |env: &mut Env, cx: f32, width: f32, cy: f32| {
         let bw = (width * 0.72).min(s * 0.3);
-        draw_brand_logo(env, cx - bw / 2.0, cy - brand_h / 2.0, bw, brand_h, &theme.fg);
+        draw_brand_logo(
+            env,
+            cx - bw / 2.0,
+            cy - brand_h / 2.0,
+            bw,
+            brand_h,
+            &theme.fg,
+        );
     };
     if layout_mode == "split" {
         let left_w = photo_x - gap - m;
@@ -232,8 +333,16 @@ fn render_landscape(
         draw_brand(env, m + left_w / 2.0, left_w, h * 0.5);
         draw_rows(env, right_x, right_w, h * 0.29);
     } else {
-        let panel_x = if layout_mode == "text-left" { m } else { photo_x + ph_w + gap };
-        let panel_w = if layout_mode == "text-left" { photo_x - gap - m } else { w - m - panel_x };
+        let panel_x = if layout_mode == "text-left" {
+            m
+        } else {
+            photo_x + ph_w + gap
+        };
+        let panel_w = if layout_mode == "text-left" {
+            photo_x - gap - m
+        } else {
+            w - m - panel_x
+        };
         draw_brand(env, panel_x + panel_w / 2.0, panel_w, h * 0.27);
         draw_rows(env, panel_x, panel_w, h * 0.41);
     }

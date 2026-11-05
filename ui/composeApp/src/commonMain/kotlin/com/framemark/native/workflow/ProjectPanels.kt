@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Slider
+import com.framemark.native.inspector.FmSlider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -259,23 +260,39 @@ private fun PhotoWithWatermark(projects: ProjectHolder, modifier: Modifier) {
         )
         if (spec != null && mark != null) {
             val rect = spec.rect(photoAspect)
+            val box = spec.aabb(photoAspect)
+            val boxW = (displayW.value * box.w).dp
+            val boxH = (displayH.value * box.h).dp
             val markW = (displayW.value * rect.w).dp
             val markH = (displayH.value * rect.h).dp
             Box(
                 modifier = Modifier
                     .offset(
-                        x = ((maxW - displayW).value / 2f + displayW.value * rect.x).dp,
-                        y = ((maxH - displayH).value / 2f + displayH.value * rect.y).dp,
+                        x = ((maxW - displayW).value / 2f + displayW.value * box.x).dp,
+                        y = ((maxH - displayH).value / 2f + displayH.value * box.y).dp,
                     )
-                    .size(markW, markH)
-                    .graphicsLayer(alpha = spec.opacity.coerceIn(0f, 1f)),
+                    .size(boxW, boxH)
+                    .clipToBounds(),
             ) {
-                Image(
-                    bitmap = mark,
-                    contentDescription = spec.asset.name,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Box(
+                    modifier = Modifier
+                        .offset(
+                            x = (displayW.value * (rect.x - box.x)).dp,
+                            y = (displayH.value * (rect.y - box.y)).dp,
+                        )
+                        .size(markW, markH)
+                        .graphicsLayer {
+                            alpha = spec.opacity.coerceIn(0f, 1f)
+                            rotationZ = spec.rotation
+                        },
+                ) {
+                    Image(
+                        bitmap = mark,
+                        contentDescription = spec.asset.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }
@@ -371,7 +388,7 @@ fun DesktopWatermarkPanel(projects: ProjectHolder, modifier: Modifier = Modifier
             label = "宽度",
             value = (spec?.width ?: 0.25f).toStringForUi(),
             slider = {
-                Slider(
+                FmSlider(
                     value = (spec?.width ?: 0.25f).coerceIn(0.05f, 0.60f),
                     onValueChange = { projects.updateWatermark(width = it) },
                     valueRange = 0.05f..0.60f,
@@ -383,7 +400,7 @@ fun DesktopWatermarkPanel(projects: ProjectHolder, modifier: Modifier = Modifier
             label = "透明度",
             value = "${(((spec?.opacity ?: 0.8f) * 100).toInt())}%",
             slider = {
-                Slider(
+                FmSlider(
                     value = (spec?.opacity ?: 0.8f).coerceIn(0f, 1f),
                     onValueChange = { projects.updateWatermark(opacity = it) },
                     valueRange = 0f..1f,
@@ -395,7 +412,7 @@ fun DesktopWatermarkPanel(projects: ProjectHolder, modifier: Modifier = Modifier
             label = "水平偏移",
             value = (spec?.dx ?: 0f).toStringForUi(),
             slider = {
-                Slider(
+                FmSlider(
                     value = (spec?.dx ?: 0f).coerceIn(-0.4f, 0.4f),
                     onValueChange = { projects.updateWatermark(dx = it) },
                     valueRange = -0.4f..0.4f,
@@ -407,10 +424,22 @@ fun DesktopWatermarkPanel(projects: ProjectHolder, modifier: Modifier = Modifier
             label = "垂直偏移",
             value = (spec?.dy ?: 0f).toStringForUi(),
             slider = {
-                Slider(
+                FmSlider(
                     value = (spec?.dy ?: 0f).coerceIn(-0.4f, 0.4f),
                     onValueChange = { projects.updateWatermark(dy = it) },
                     valueRange = -0.4f..0.4f,
+                    enabled = spec != null,
+                )
+            },
+        )
+        SliderRow(
+            label = "旋转",
+            value = "${(spec?.rotation ?: 0f).toInt()}°",
+            slider = {
+                FmSlider(
+                    value = (spec?.rotation ?: 0f).coerceIn(-180f, 180f),
+                    onValueChange = { projects.updateWatermark(rotation = it) },
+                    valueRange = -180f..180f,
                     enabled = spec != null,
                 )
             },

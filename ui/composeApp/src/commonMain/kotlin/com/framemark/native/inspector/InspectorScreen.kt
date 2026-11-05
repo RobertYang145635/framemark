@@ -20,15 +20,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,8 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.framemark.native.workflow.probeBounds
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +58,11 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.shell.Tag
 import com.framemark.native.workflow.DesignSession
+import com.framemark.native.workflow.TextSlot
+import com.framemark.native.workflow.groupTextSlots
+import com.framemark.native.workflow.isNativeTextSlotControl
+import com.framemark.native.workflow.isUsableStaticTextControl
+import com.framemark.native.workflow.textSlotControls
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -79,20 +93,40 @@ fun EditorTabList(
     pinnedTabs: (@Composable () -> Unit)? = null,
     /** Scrolls at the bottom: original reference + output size. */
     footer: (@Composable () -> Unit)? = null,
+    textSlots: List<TextSlot> = emptyList(),
+    outputWidth: Int = 0,
+    outputHeight: Int = 0,
+    /** §3.1: stable key of the text row whose 替换文字 input has focus; null clears. */
+    onTextSlotFocus: ((String?) -> Unit)? = null,
+    /** Phone density: tighter structure only — type size and touch targets stay. */
+    dense: Boolean = false,
+    /** Phone 调整 page: sections appended after the tab's own (e.g. Theme). */
+    extraSections: List<InspectorSection> = emptyList(),
 ) {
     LaunchedEffect(initialItem) {
         if (initialItem != null && initialItem > 0) state.scrollToItem(initialItem)
     }
+    val logoPanelShown = tab == InspectorSection.Logo && model != null
 
     LazyColumn(
         state = state,
         modifier = modifier,
-        contentPadding = PaddingValues(
-            start = FmSpacing.lg,
-            end = FmSpacing.lg,
-            top = FmSpacing.md,
-            bottom = FmSpacing.lg,
-        ),
+        contentPadding = if (dense) {
+            // 12 / 8: horizontal rails and the top/bottom of the phone panel.
+            PaddingValues(
+                start = FmSpacing.md,
+                end = FmSpacing.md,
+                top = FmSpacing.sm,
+                bottom = FmSpacing.sm,
+            )
+        } else {
+            PaddingValues(
+                start = FmSpacing.lg,
+                end = FmSpacing.lg,
+                top = FmSpacing.md,
+                bottom = FmSpacing.lg,
+            )
+        },
     ) {
         if (header != null) {
             item(key = "panel:header") { header() }
@@ -102,8 +136,13 @@ fun EditorTabList(
                 Box(modifier = Modifier.fillMaxWidth().background(FmPalette.surface)) { pinnedTabs() }
             }
         }
-        if (tab == InspectorSection.Logo && model != null) {
-            item(key = "panel:brandLogo") { BrandLogoArea(model, session) }
+        if (logoPanelShown && model != null) {
+            // One entry for the whole Logo tab: brand entry → auto match → exact
+            // cuts → non-Brand adjustments. The old raw Brand row underneath was
+            // the duplicate users saw twice.
+            item(key = "panel:logoBrand") {
+                LogoBrandPanel(model = model, session = session, dense = dense)
+            }
         }
         when (loadState) {
             InspectorLoadState.Idle, InspectorLoadState.Loading -> item {
@@ -116,40 +155,73 @@ fun EditorTabList(
                 }
             }
             is InspectorLoadState.Ready -> {
-                val sections = tabSections(tab, model).map { (section, list) ->
-                    // The Logo tab already renders the brand block above; repeating the raw
-                    // control underneath was the duplicate row users saw twice.
-                    val visible = if (tab == InspectorSection.Logo) {
-                        list.filterNot { it.type == ControlType.Brand }
-                    } else {
-                        list
-                    }
-                    section to visible
-                }
-                val controls = sections.flatMap { it.second }
-                val brandBlockShown = tab == InspectorSection.Logo &&
-                    model?.controls?.any { it.type == ControlType.Brand } == true
-                if (controls.isEmpty() && !brandBlockShown) {
+                if (model == null) {
                     item { PanelNote(emptyTabText(tab)) }
                 } else {
-                    sections.forEachIndexed { sectionIndex, (section, sectionControls) ->
-                        if (tab == InspectorSection.Layout && sectionControls.isNotEmpty()) {
-                            item(key = "label:${section.name}") {
-                                Text(
-                                    text = section.title,
-                                    style = FmType.labelMedium,
-                                    color = FmPalette.onSurfaceMuted,
-                                    modifier = Modifier.padding(
-                                        top = if (sectionIndex == 0) 0.dp else FmSpacing.md,
-                                        bottom = FmSpacing.xxs,
-                                    ),
+                    val sections = resolvedSections(tab, model, extraSections)
+                        .map { (section, list) ->
+                            section to list
+                                .filterNot(::isNativeTextSlotControl)
+                                .filter { it.label.isNotBlank() }
+                                .filter { section != InspectorSection.Text || isUsableStaticTextControl(it) }
+                               .distinctBy { it.key }
+                        }
+                    val textGroups = if (tab == InspectorSection.Text) {
+                        groupTextSlots(textSlots, outputWidth, outputHeight)
+                    } else {
+                        emptyList()
+                    }
+                    // The Logo panel renders the Logo section itself. Text uses
+                    // renderer rows when available and static controls only as the
+                    // fallback while no reliable text rows exist for this pair.
+                    val renderedSections = when {
+                        logoPanelShown -> sections.filterNot { it.first == InspectorSection.Logo }
+                        tab == InspectorSection.Text && textGroups.isNotEmpty() ->
+                            sections.filterNot { it.first == InspectorSection.Text }
+                        else -> sections
+                    }
+                    // Titles only when more than one section is listed: 布局 keeps
+                    // its Border+Layout headings, single-tab panels stay clean.
+                    val showSectionTitles = sections.size > 1
+                    val hasControls = renderedSections.any { it.second.isNotEmpty() }
+                    if (!logoPanelShown && !hasControls && textGroups.isEmpty()) {
+                        item { PanelNote(emptyTabText(tab)) }
+                    } else {
+                        if (textGroups.isNotEmpty()) {
+                            item(key = "native-text-slots:${model.cardId}") {
+                                NativeTextSlotControls(
+                                    model = model,
+                                    slots = textSlots,
+                                    outputWidth = outputWidth,
+                                    outputHeight = outputHeight,
+                                    session = session,
+                                    onTextSlotFocus = onTextSlotFocus,
+                                    dense = dense,
                                 )
                             }
                         }
-                        sectionControls.forEachIndexed { index, control ->
-                            item(key = "control:${control.key}") {
-                                if (index > 0) Divider()
-                                ControlItem(control, session)
+                        // When renderer rows exist, the Text section is omitted so it
+                        // cannot duplicate them. With no reliable rows, the same
+                        // section remains visible as the current card fallback.
+                        renderedSections.forEachIndexed { sectionIndex, (section, sectionControls) ->
+                            if (showSectionTitles && sectionControls.isNotEmpty()) {
+                                item(key = "label:${section.name}") {
+                                    Text(
+                                        text = section.title,
+                                        style = FmType.labelMedium,
+                                        color = FmPalette.onSurfaceMuted,
+                                        modifier = Modifier.padding(
+                                            top = if (sectionIndex == 0) 0.dp else FmSpacing.md,
+                                            bottom = FmSpacing.xxs,
+                                        ),
+                                    )
+                                }
+                            }
+                            sectionControls.forEachIndexed { index, control ->
+                                item(key = "control:${control.key}") {
+                                    if (index > 0) Divider()
+                                    ControlItem(control, session, dense = dense)
+                                }
                             }
                         }
                     }
@@ -162,7 +234,93 @@ fun EditorTabList(
     }
 }
 
-/** Desktop right-rail 品牌 Logo block: 标题 + 自动匹配 + 当前/未选择 + 更换/清除. */
+/** Renderer-backed rows grouped by observed canvas position and draw order. */
+@Composable
+internal fun NativeTextSlotControls(
+    model: InspectorCardModel,
+    slots: List<TextSlot>,
+    outputWidth: Int,
+    outputHeight: Int,
+    session: DesignSession,
+    /** §3.1: stable `TextSlot.key` of the row whose 替换文字 input has focus. */
+    onTextSlotFocus: ((String?) -> Unit)? = null,
+    dense: Boolean = false,
+) {
+    val grouped = groupTextSlots(slots, outputWidth, outputHeight)
+    val controlsByKey = model.controls.associateBy { it.key }
+    grouped.forEach { group ->
+        SectionCardShell(title = group.label, dense = dense) {
+            group.rows.forEachIndexed { rowIndex, row ->
+                if (rowIndex > 0) Divider()
+                val sourceText = row.slot.text.ifBlank { row.slot.raw }
+                    .lineSequence()
+                    .map { it.trim() }
+                    .filter(String::isNotEmpty)
+                    .joinToString(" ")
+                Text(
+                    text = sourceText.ifBlank { "空白文字" },
+                    style = FmType.labelSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.padding(
+                        top = if (rowIndex > 0 && dense) FmSpacing.xs else 0.dp,
+                        bottom = if (dense) FmSpacing.xxs else FmSpacing.xs,
+                    ),
+                )
+                textSlotControls(model.cardId, row.slot).forEachIndexed { controlIndex, generated ->
+                    val source = controlsByKey[generated.key] ?: generated
+                    val actionLabel = when {
+                        source.param.startsWith("params.slotText:") -> "替换文字"
+                        source.param.startsWith("params.slotOff:") -> "显示文字"
+                        else -> "文字大小"
+                    }
+                    // Only the free-text row reports focus, and it reports the
+                    // stable slot key — never the display index "第N行".
+                    val reportsFocus = source.param.startsWith("params.slotText:")
+                    val visibleControlledElsewhere =
+                        source.param.startsWith("params.slotOff:") &&
+                            row.slot.hidden && (session.value(source) as? Boolean != false)
+                    val control = source.copy(
+                        label = actionLabel,
+                        disabledReason = source.disabledReason,
+                    )
+                    // A hidden row's visibility switch cannot be operated here; showing
+                    // a disabled switch looks like a dead control. Replace it with a
+                    // short explanation and keep only the controls that can write.
+                    if (visibleControlledElsewhere) {
+                        Text(
+                            text = "当前行由整体文字显示开关控制",
+                            style = FmType.labelSmall,
+                            color = FmPalette.onSurfaceMuted,
+                            modifier = Modifier.padding(vertical = FmSpacing.xs),
+                        )
+                        return@forEachIndexed
+                    }
+                    if (controlIndex > 0) Divider()
+                    ControlItem(
+                        control = control,
+                        session = session,
+                        showResetControl = true,
+                        dense = dense,
+                        onTextFocusChanged = if (reportsFocus) {
+                            { focused -> onTextSlotFocus?.invoke(if (focused) row.slot.key else null) }
+                        } else {
+                            null
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Retained, no longer wired: the Logo tab is rendered by [LogoBrandPanel] on both
+ * platforms, which owns the brand entry, auto match and exact-cut list. This old
+ * block and [BrandLogoLibraryDialog] stay compiled for the cards' plain brand
+ * controls and for reference; they have no entry point in the Logo tab anymore.
+ */
 @Composable
 private fun BrandLogoArea(model: InspectorCardModel, session: DesignSession) {
     val control = model.controls.firstOrNull { it.type == ControlType.Brand }
@@ -274,6 +432,28 @@ private fun tabSections(
         )
         else -> listOf(tab to controls(tab))
     }
+}
+
+/**
+ * [tabSections] plus the phone 调整 page's [extraSections], appended in the given
+ * order and de-duplicated by section. A section already listed by the tab (or
+ * repeated in [extraSections]) is never rendered twice.
+ */
+private fun resolvedSections(
+    tab: InspectorSection,
+    model: InspectorCardModel,
+    extraSections: List<InspectorSection>,
+): List<Pair<InspectorSection, List<InspectorControl>>> {
+    val base = tabSections(tab, model)
+    if (extraSections.isEmpty()) return base
+    val sections = base.toMutableList()
+    val seen = base.mapTo(mutableSetOf()) { it.first }
+    extraSections.forEach { section ->
+        if (!seen.add(section)) return@forEach
+        val controls = model.sections.firstOrNull { it.section == section }?.controls.orEmpty()
+        sections += section to controls
+    }
+    return sections
 }
 
 private fun emptyTabText(tab: InspectorSection): String = when (tab) {
@@ -422,6 +602,7 @@ internal fun SectionCard(
 @Composable
 internal fun SectionCardShell(
     title: String,
+    dense: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -430,10 +611,10 @@ internal fun SectionCardShell(
             .clip(RoundedCornerShape(FmRadii.card))
             .background(FmPalette.surface)
             .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.card))
-            .padding(FmSpacing.lg),
+            .padding(if (dense) FmSpacing.md else FmSpacing.lg),
     ) {
         Text(title, style = FmType.titleSmall, color = FmPalette.onSurface)
-        Spacer(Modifier.height(FmSpacing.md))
+        Spacer(Modifier.height(if (dense) FmSpacing.sm else FmSpacing.md))
         content()
     }
 }
@@ -466,26 +647,63 @@ private fun RetryButton(onRetry: () -> Unit) {
 // One control row
 // ---------------------------------------------------------------------------
 
+/** Dense row padding: V06 compresses structure, never type size or touch targets. */
+private val DenseControlGap = 6.dp
+
 @Composable
-internal fun ControlItem(control: InspectorControl, session: DesignSession) {
+internal fun ControlItem(
+    control: InspectorControl,
+    session: DesignSession,
+    showResetControl: Boolean = false,
+    dense: Boolean = false,
+    /** Only text inputs call this; true = focus gained, false = focus lost. */
+    onTextFocusChanged: ((Boolean) -> Unit)? = null,
+) {
     val probedValue = session.values[control.key]
     androidx.compose.runtime.LaunchedEffect(probedValue) {
         com.framemark.native.workflow.ControlProbe.state("control:${control.key}", probedValue, control.type.name)
     }
-    Column(modifier = Modifier.probeBounds("control:${control.key}").padding(vertical = FmSpacing.md)) {
+    Column(
+        modifier = Modifier
+            .probeBounds("control:${control.key}")
+            .padding(vertical = if (dense) DenseControlGap else FmSpacing.md),
+    ) {
         when (control.type) {
-            ControlType.Switch -> SwitchControl(control, session)
-            ControlType.Slider -> SliderControl(control, session)
-            ControlType.Select -> SelectControl(control, session)
-            ControlType.Text -> TextControl(control, session)
-            ControlType.Color -> ColorControl(control, session)
-            ControlType.Brand -> BrandControl(control, session)
+            ControlType.Switch -> SwitchControl(control, session, dense)
+            ControlType.Slider -> SliderControl(control, session, dense)
+            ControlType.Select -> SelectControl(control, session, dense)
+            ControlType.Text -> TextControl(control, session, dense, onTextFocusChanged)
+            ControlType.Color -> ColorControl(control, session, dense)
+            ControlType.Brand -> BrandControl(control, session, dense)
+        }
+        // 单项复位: a compact right-aligned row under the control (40 dp minimum),
+        // not the old full-width 48 dp TextButton row. Non-dense keeps the old
+        // opt-in behavior (only callers that pass showResetControl get it).
+        if ((showResetControl || dense) && session.isModified(control)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 40.dp)
+                        .clip(RoundedCornerShape(FmRadii.pill))
+                        .clickable { session.resetControl(control) }
+                        .semantics { contentDescription = "恢复默认：${control.label}" }
+                        .padding(horizontal = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("恢复默认", style = FmType.labelSmall, color = FmPalette.primaryStrong)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ControlLabel(control: InspectorControl, valueText: String? = null) {
+private fun ControlLabel(
+    control: InspectorControl,
+    valueText: String? = null,
+    valueClickable: Boolean = false,
+    onClickValue: (() -> Unit)? = null,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = control.label,
@@ -495,40 +713,75 @@ private fun ControlLabel(control: InspectorControl, valueText: String? = null) {
         )
         if (valueText != null) {
             Spacer(Modifier.width(FmSpacing.sm))
-            Text(
-                text = valueText,
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceSecondary,
-            )
+            val action = onClickValue
+            if (valueClickable && action != null) {
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 40.dp)
+                        .clip(RoundedCornerShape(FmRadii.chip))
+                        .clickable(role = Role.Button, onClick = action)
+                        .semantics { contentDescription = "精确输入：${control.label}" }
+                        .padding(horizontal = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(valueText, style = FmType.labelMedium, color = FmPalette.primaryStrong)
+                }
+            } else {
+                Text(
+                    text = valueText,
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceSecondary,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun SwitchControl(control: InspectorControl, session: DesignSession) {
+private fun SwitchControl(control: InspectorControl, session: DesignSession, dense: Boolean = false) {
     val checked = session.value(control) as? Boolean ?: false
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = control.label,
-            style = FmType.bodyMedium,
-            color = FmPalette.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(FmSpacing.md))
-        Switch(
-            checked = checked,
-            modifier = Modifier.probeBounds("hit:${control.key}"),
-            onCheckedChange = { session.set(control, it) },
-        )
+    Column {
+        Row(
+            modifier = if (dense) Modifier.heightIn(min = 48.dp) else Modifier,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = control.label,
+                style = FmType.bodyMedium,
+                color = FmPalette.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(FmSpacing.md))
+            Switch(
+                checked = checked,
+                enabled = control.disabledReason == null,
+                modifier = Modifier
+                    .probeBounds("hit:${control.key}")
+                    .semantics {
+                        contentDescription = control.label
+                        stateDescription = if (checked) "已开启" else "已关闭"
+                    },
+                onCheckedChange = { session.set(control, it) },
+            )
+        }
+        control.disabledReason?.let { reason ->
+            Text(
+                text = reason,
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+                modifier = Modifier.padding(top = FmSpacing.xxs),
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SliderControl(control: InspectorControl, session: DesignSession) {
+private fun SliderControl(control: InspectorControl, session: DesignSession, dense: Boolean = false) {
     val min = control.min
     val max = control.max
     if (min == null || max == null || max <= min) {
-        TextControl(control, session)
+        TextControl(control, session, dense)
         return
     }
     val value = session.value(control) as? Float ?: min
@@ -538,12 +791,15 @@ private fun SliderControl(control: InspectorControl, session: DesignSession) {
     } else {
         0
     }
+    var preciseOpen by remember(control.key) { mutableStateOf(false) }
     Column {
         ControlLabel(
             control = control,
             valueText = formatNumber(value) + (control.unit ?: ""),
+            valueClickable = true,
+            onClickValue = { preciseOpen = true },
         )
-        Slider(
+        FmSlider(
             value = value.coerceIn(min, max),
             onValueChange = { raw ->
                 FeelProbe.begin("slider", control.key)
@@ -556,19 +812,103 @@ private fun SliderControl(control: InspectorControl, session: DesignSession) {
                 session.set(control, next)
             },
             valueRange = min..max,
-            steps = steps,
             modifier = Modifier.probeBounds("hit:${control.key}"),
-            colors = SliderDefaults.colors(
-                thumbColor = FmPalette.primary,
-                activeTrackColor = FmPalette.primary,
-                inactiveTrackColor = FmPalette.outlineStrong,
-            ),
+        )
+    }
+    if (preciseOpen) {
+        PreciseNumberDialog(
+            control = control,
+            min = min,
+            max = max,
+            current = value,
+            onDismiss = { preciseOpen = false },
+            onConfirm = { next ->
+                // Only a valid in-range entry writes; the dialog never rounds.
+                session.set(control, next)
+                preciseOpen = false
+            },
         )
     }
 }
 
+/** Exact numeric entry for a slider; confirming is the only write path. */
 @Composable
-private fun SelectControl(control: InspectorControl, session: DesignSession) {
+private fun PreciseNumberDialog(
+    control: InspectorControl,
+    min: Float,
+    max: Float,
+    current: Float,
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit,
+) {
+    var raw by remember(control.key) { mutableStateOf(formatNumber(current)) }
+    val parsed = parsePreciseNumber(raw, min, max)
+    val unit = control.unit ?: ""
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("精确输入 · ${control.label}", style = FmType.titleSmall, color = FmPalette.onSurface)
+        },
+        text = {
+            Column {
+                BasicTextField(
+                    value = raw,
+                    onValueChange = { raw = it },
+                    singleLine = true,
+                    textStyle = FmType.bodyMedium.copy(color = FmPalette.onSurface),
+                    cursorBrush = SolidColor(FmPalette.primary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(FmRadii.input))
+                        .background(FmPalette.surfaceMuted)
+                        .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
+                        .padding(horizontal = FmSpacing.md, vertical = 12.dp)
+                        .semantics { contentDescription = "精确输入：${control.label}" },
+                    decorationBox = { inner ->
+                        Box {
+                            if (raw.isEmpty()) {
+                                Text(
+                                    text = "例：${formatNumber((min + max) / 2f)}$unit",
+                                    style = FmType.bodyMedium,
+                                    color = FmPalette.onSurfaceMuted,
+                                )
+                            }
+                            inner()
+                        }
+                    },
+                )
+                Spacer(Modifier.height(FmSpacing.xs))
+                Text(
+                    text = "范围 ${formatNumber(min)}$unit – ${formatNumber(max)}$unit",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+                if (raw.isNotBlank() && parsed == null) {
+                    Text(
+                        text = "请输入范围内的数字；空值、非数字和越界值不会被保存。",
+                        style = FmType.labelSmall,
+                        color = FmPalette.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { parsed?.let(onConfirm) }, enabled = parsed != null) {
+                Text("确定")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun SelectControl(control: InspectorControl, session: DesignSession, dense: Boolean = false) {
     val selected = session.value(control) as? String ?: ""
     var expanded by remember { mutableStateOf(false) }
     Column {
@@ -577,7 +917,7 @@ private fun SelectControl(control: InspectorControl, session: DesignSession) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
+                    .heightIn(min = if (dense) 48.dp else 40.dp)
                     .clip(RoundedCornerShape(FmRadii.input))
                     .background(FmPalette.surfaceMuted)
                     .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
@@ -634,8 +974,16 @@ private fun selectedDisplay(control: InspectorControl, value: String): String {
 }
 
 @Composable
-private fun TextControl(control: InspectorControl, session: DesignSession) {
+private fun TextControl(
+    control: InspectorControl,
+    session: DesignSession,
+    dense: Boolean = false,
+    onTextFocusChanged: ((Boolean) -> Unit)? = null,
+) {
     val text = session.value(control) as? String ?: ""
+    // Report transitions only: Compose re-dispatches focus events, and callers
+    // store the focused slot key.
+    var hasFocus by remember(control.key) { mutableStateOf(false) }
     Column {
         ControlLabel(control)
         BasicTextField(
@@ -648,10 +996,17 @@ private fun TextControl(control: InspectorControl, session: DesignSession) {
             modifier = Modifier
                 .probeBounds("hit:${control.key}")
                 .fillMaxWidth()
-                .heightIn(min = 40.dp)
+                .heightIn(min = if (dense) 48.dp else 40.dp)
                 .clip(RoundedCornerShape(FmRadii.input))
                 .background(FmPalette.surfaceMuted)
                 .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused != hasFocus) {
+                        hasFocus = focusState.isFocused
+                        onTextFocusChanged?.invoke(focusState.isFocused)
+                    }
+                }
+                .semantics { contentDescription = control.label }
                 .padding(horizontal = FmSpacing.md, vertical = 10.dp),
             decorationBox = { inner ->
                 Box {
@@ -660,7 +1015,7 @@ private fun TextControl(control: InspectorControl, session: DesignSession) {
                             text = if (control.type == ControlType.Brand && control.autoMatch == true) {
                                 "自动匹配"
                             } else {
-                                "未设置"
+                                control.currentText?.takeIf(String::isNotBlank) ?: "未设置"
                             },
                             style = FmType.bodyMedium,
                             color = FmPalette.onSurfaceMuted,
@@ -674,7 +1029,7 @@ private fun TextControl(control: InspectorControl, session: DesignSession) {
 }
 
 @Composable
-private fun ColorControl(control: InspectorControl, session: DesignSession) {
+private fun ColorControl(control: InspectorControl, session: DesignSession, dense: Boolean = false) {
     val text = session.value(control) as? String ?: ""
     Column {
         ControlLabel(control)
@@ -696,7 +1051,7 @@ private fun ColorControl(control: InspectorControl, session: DesignSession) {
                 cursorBrush = SolidColor(FmPalette.primary),
                 modifier = Modifier
                     .weight(1f)
-                    .height(40.dp)
+                    .heightIn(min = if (dense) 48.dp else 40.dp)
                     .clip(RoundedCornerShape(FmRadii.input))
                     .background(FmPalette.surfaceMuted)
                     .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
@@ -715,7 +1070,7 @@ private fun ColorControl(control: InspectorControl, session: DesignSession) {
 }
 
 @Composable
-private fun BrandControl(control: InspectorControl, session: DesignSession) {
+private fun BrandControl(control: InspectorControl, session: DesignSession, dense: Boolean = false) {
     val raw = session.value(control) as? String ?: ""
     val isAuto = raw.isBlank() || raw == "auto"
     var friendly by remember(raw) { mutableStateOf<String?>(null) }
@@ -733,6 +1088,7 @@ private fun BrandControl(control: InspectorControl, session: DesignSession) {
             Box(
                 modifier = Modifier
                     .weight(1f)
+                    .then(if (dense) Modifier.heightIn(min = 48.dp) else Modifier)
                     .clip(RoundedCornerShape(FmRadii.input))
                     .background(FmPalette.surfaceMuted)
                     .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))

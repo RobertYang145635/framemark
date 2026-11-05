@@ -4,8 +4,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    draw_brand_logo, draw_fitted, draw_photo, draw_tech_text, measure_text, tech_exif_line,
-    theme_of, Env, FittedOpts, LayoutEnv,
+    draw_brand_logo, draw_fitted, draw_photo, draw_tech_text, measure_text, resolve_text_slot,
+    tech_exif_line, theme_of, Env, FittedOpts, LayoutEnv,
 };
 use crate::hand::{model_without_make, pct, str_param};
 
@@ -25,7 +25,10 @@ fn profile_name(env: &Env) -> String {
         "FrameMark".into()
     };
     let t = picked.trim();
-    if t.is_empty() { "FrameMark".into() } else { t.to_string() }
+    let t = if t.is_empty() { "FrameMark" } else { t };
+    // The chip label is a declared row: an override must also drive the
+    // measured chip width and the avatar initial, not just the painted text.
+    resolve_text_slot(env, "profileFrame.name", t).text
 }
 
 fn avatar_radius(env: &Env, fallback_pct: f64) -> f32 {
@@ -62,7 +65,14 @@ fn draw_brand(
     brand_h: f32,
 ) {
     if env.text.show_logo && env.images.logo.is_some() {
-        draw_brand_logo(env, cx - brand_w / 2.0, cy - brand_h / 2.0, brand_w, brand_h, color);
+        draw_brand_logo(
+            env,
+            cx - brand_w / 2.0,
+            cy - brand_h / 2.0,
+            brand_w,
+            brand_h,
+            color,
+        );
     } else {
         let opts = FittedOpts::new("OplusSans")
             .weight(600)
@@ -70,8 +80,18 @@ fn draw_brand(
             .baseline("middle")
             .tracking(0.18)
             .min(brand_h * 0.6)
-            .shadow(color == "#ffffff");
-        draw_fitted(env, brand_text, cx, cy, brand_w * 1.1, brand_h * 1.35, color, &opts);
+            .shadow(color == "#ffffff")
+            .slot("profileFrame.brand");
+        draw_fitted(
+            env,
+            brand_text,
+            cx,
+            cy,
+            brand_w * 1.1,
+            brand_h * 1.35,
+            color,
+            &opts,
+        );
     }
 }
 
@@ -82,7 +102,12 @@ fn draw_avatar_chip(env: &mut Env, left: f32, cy: f32, r: f32, color: &str, name
     let light = color == "#ffffff";
     // The chip is the backdrop; the initial/name text painted on top are their
     // own marks (draw-order attribution in the comparator).
-    env.ctx.record_shape("chip", Rect::from_xywh(cx - r, cy - r, r * 2.0, r * 2.0), None, true);
+    env.ctx.record_shape(
+        "chip",
+        Rect::from_xywh(cx - r, cy - r, r * 2.0, r * 2.0),
+        None,
+        true,
+    );
     env.ctx.save();
     if let Some(avatar) = env.images.avatar.clone() {
         env.ctx.clip_circle(cx, cy, r);
@@ -114,8 +139,9 @@ fn draw_avatar_chip(env: &mut Env, left: f32, cy: f32, r: f32, color: &str, name
             env.ctx.fill_rect(cx - r, cy - r, r * 2.0, r * 2.0);
         }
         let initial: String = name.chars().take(1).collect();
+        let initial = resolve_text_slot(env, "profileFrame.initial", &initial).text;
         let icol = if light { "#ffffff" } else { theme.bg.as_str() };
-        crate::draw::draw_text_exact(
+        crate::draw::draw_text_exact_slot(
             env,
             &initial,
             cx,
@@ -129,18 +155,33 @@ fn draw_avatar_chip(env: &mut Env, left: f32, cy: f32, r: f32, color: &str, name
             0.0,
             false,
             None,
+            "profileFrame.initial",
         );
         env.ctx.restore_clip();
     }
     env.ctx.restore();
-    let ring = if light { "rgba(255,255,255,0.72)" } else { "rgba(255,255,255,0.9)" };
+    let ring = if light {
+        "rgba(255,255,255,0.72)"
+    } else {
+        "rgba(255,255,255,0.9)"
+    };
     env.ctx.stroke_circle(cx, cy, r, ring, (r * 0.09).max(1.0));
     let opts = FittedOpts::new("Inter")
         .weight(500)
         .baseline("middle")
         .min(name_size * 0.8)
-        .shadow(light);
-    draw_fitted(env, &name, left + r * 2.9, cy, name_size * 12.0, name_size, color, &opts);
+        .shadow(light)
+        .slot("profileFrame.name");
+    draw_fitted(
+        env,
+        &name,
+        left + r * 2.9,
+        cy,
+        name_size * 12.0,
+        name_size,
+        color,
+        &opts,
+    );
 }
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
@@ -154,7 +195,11 @@ pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
     }
     if mode == "chip" {
         let inside = str_param(env.params, "brandPlacement", "inside") != "footer";
-        let footer_h = if inside { 0.0 } else { (s * (pct(env.params, "footerPct", 8.4) as f32)) / 100.0 };
+        let footer_h = if inside {
+            0.0
+        } else {
+            (s * (pct(env.params, "footerPct", 8.4) as f32)) / 100.0
+        };
         let mb_default = pct(env.params, "marginPct", 4.2);
         let mb = (s * (pct(env.params, "marginBottomPct", mb_default) as f32)) / 100.0;
         return Ok((env.pw + 2.0 * m, env.ph + m + mb + footer_h));
@@ -190,8 +235,27 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     if mode == "header" {
         let header_h = (s * (pct(env.params, "headerPct", 11.7) as f32)) / 100.0;
         let footer_h = (s * (pct(env.params, "footerPct", 11.3) as f32)) / 100.0;
-        draw_photo(&mut env.ctx, env.photo, &env.crop, m, header_h, pw, ph, radius, shadow, &theme, s);
-        draw_avatar_chip(env, w / 2.0 - chip_w / 2.0, header_h * 0.5, r, &theme.fg, name_size);
+        draw_photo(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            m,
+            header_h,
+            pw,
+            ph,
+            radius,
+            shadow,
+            &theme,
+            s,
+        );
+        draw_avatar_chip(
+            env,
+            w / 2.0 - chip_w / 2.0,
+            header_h * 0.5,
+            r,
+            &theme.fg,
+            name_size,
+        );
         if env.text.show_exif {
             let line = tech_exif_line(env);
             draw_tech_text(
@@ -205,6 +269,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 "center",
                 1.0,
                 exif_scale_x,
+                "profileFrame.exif",
             );
         }
         let cy = footer_brand_cy(brand_center, s, header_h + ph, footer_h);
@@ -213,13 +278,44 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     }
     if mode == "chip" {
         let inside = str_param(env.params, "brandPlacement", "inside") != "footer";
-        let footer_h = if inside { 0.0 } else { (s * (pct(env.params, "footerPct", 8.4) as f32)) / 100.0 };
-        draw_photo(&mut env.ctx, env.photo, &env.crop, m, m, pw, ph, radius, shadow, &theme, s);
+        let footer_h = if inside {
+            0.0
+        } else {
+            (s * (pct(env.params, "footerPct", 8.4) as f32)) / 100.0
+        };
+        draw_photo(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            m,
+            m,
+            pw,
+            ph,
+            radius,
+            shadow,
+            &theme,
+            s,
+        );
         let chip_top = (s * (pct(env.params, "chipTopPct", 4.5) as f32)) / 100.0;
-        draw_avatar_chip(env, w / 2.0 - chip_w / 2.0, m + chip_top, r, "#ffffff", name_size);
+        draw_avatar_chip(
+            env,
+            w / 2.0 - chip_w / 2.0,
+            m + chip_top,
+            r,
+            "#ffffff",
+            name_size,
+        );
         if inside {
             let brand_offset = (s * (pct(env.params, "brandOffsetPct", 8.2) as f32)) / 100.0;
-            draw_brand(env, w / 2.0, m + ph - brand_offset, "#ffffff", &brand_text, brand_w, brand_h);
+            draw_brand(
+                env,
+                w / 2.0,
+                m + ph - brand_offset,
+                "#ffffff",
+                &brand_text,
+                brand_w,
+                brand_h,
+            );
             if env.text.show_exif {
                 let line = tech_exif_line(env);
                 draw_tech_text(
@@ -233,6 +329,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                     "center",
                     1.0,
                     exif_scale_x,
+                    "profileFrame.exif",
                 );
             }
         } else {
@@ -249,6 +346,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                     "center",
                     1.0,
                     exif_scale_x,
+                    "profileFrame.exif",
                 );
             }
             let cy = footer_brand_cy(brand_center, s, m + ph, footer_h);
@@ -258,13 +356,37 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     }
 
     let footer_h = (s * (pct(env.params, "footerPct", 9.8) as f32)) / 100.0;
-    draw_photo(&mut env.ctx, env.photo, &env.crop, m, m, pw, ph, radius, shadow, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        m,
+        m,
+        pw,
+        ph,
+        radius,
+        shadow,
+        &theme,
+        s,
+    );
     let cy = m + ph + footer_h / 2.0;
     draw_avatar_chip(env, m + s * 0.027, cy, r, &theme.fg, name_size);
     if env.text.show_exif {
         let right = m + pw - s * 0.004;
         let line = tech_exif_line(env);
-        draw_tech_text(env, &line, right, cy, &theme.fg, exif_size, exif_w, "right", 1.0, exif_scale_x);
+        draw_tech_text(
+            env,
+            &line,
+            right,
+            cy,
+            &theme.fg,
+            exif_size,
+            exif_w,
+            "right",
+            1.0,
+            exif_scale_x,
+            "profileFrame.exif",
+        );
         let mut cursor = right - exif_w - s * 0.026;
         env.ctx.stroke_line(
             cursor,
@@ -279,20 +401,40 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         let logo_w = (s * (pct(env.params, "footerLogoPct", 13.7) as f32)) / 100.0;
         let logo_h = logo_w / 5.92;
         if env.text.show_logo && env.images.logo.is_some() {
-            draw_brand_logo(env, cursor - logo_w, cy - logo_h / 2.0, logo_w, logo_h, &theme.fg);
+            draw_brand_logo(
+                env,
+                cursor - logo_w,
+                cy - logo_h / 2.0,
+                logo_w,
+                logo_h,
+                &theme.fg,
+            );
             cursor -= logo_w + s * 0.03;
         }
-        let model = model_without_make(&env.exif.make, &env.exif.model);
-        let model = if model.is_empty() { env.exif.camera_line("") } else { model };
+        let model_raw = model_without_make(&env.exif.make, &env.exif.model);
+        let model_raw = if model_raw.is_empty() {
+            env.exif.camera_line("")
+        } else {
+            model_raw
+        };
+        let model = resolve_text_slot(env, "profileFrame.model", &model_raw).text;
         let model_size = (s * (pct(env.params, "modelSizePct", 2.6) as f32)) / 100.0;
-        if !model.is_empty() {
-            let opts = FittedOpts::new("Inter")
-                .weight(500)
-                .align("right")
-                .baseline("middle")
-                .min(model_size * 0.7);
-            draw_fitted(env, &model, cursor, cy, w * 0.3, model_size, &theme.fg, &opts);
-        }
+        let opts = FittedOpts::new("Inter")
+            .weight(500)
+            .align("right")
+            .baseline("middle")
+            .min(model_size * 0.7)
+            .slot("profileFrame.model");
+        draw_fitted(
+            env,
+            &model,
+            cursor,
+            cy,
+            w * 0.3,
+            model_size,
+            &theme.fg,
+            &opts,
+        );
     }
     Ok(Rect::from_xywh(m, m, pw, ph))
 }

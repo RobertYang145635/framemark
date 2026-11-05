@@ -23,7 +23,6 @@ import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
 import com.framemark.native.product.WatermarkSpec
-import com.framemark.native.product.applyConsumer
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.product.toOverlaySpec
 import kotlinx.coroutines.CoroutineScope
@@ -65,6 +64,10 @@ class DesktopProjectController(
         private set
 
     override var saveError by mutableStateOf<String?>(null)
+        private set
+
+    /** True until a project is known to be readable (or genuinely missing). */
+    override var projectWritesBlocked by mutableStateOf(true)
         private set
 
     override var importing by mutableStateOf(false)
@@ -134,33 +137,60 @@ class DesktopProjectController(
     }
 
     override fun load() {
-        if (loaded) return
+        synchronized(projectSaveLock) {
+            if (loaded) return
+            loadProjectLocked()
+        }
+    }
+
+    override fun retryProjectLoad(): Boolean = synchronized(projectSaveLock) {
+        if (loaded && !projectWritesBlocked) return@synchronized true
+        val recovered = loadProjectLocked()
+        if (recovered) hydrationVersion++
+        recovered
+    }
+
+    private fun loadProjectLocked(): Boolean {
+        saveJob?.cancel()
+        saveJob = null
+        projectWritesBlocked = true
+        loadError = null
         when (val result = store.loadProject()) {
-            is StoreResult.Ok -> project = result.value
-            StoreResult.Missing -> project = newProject()
+            is StoreResult.Ok -> {
+                project = result.value
+                projectWritesBlocked = false
+                saveError = null
+            }
+            StoreResult.Missing -> {
+                project = newProject()
+                projectWritesBlocked = false
+                saveError = null
+            }
             is StoreResult.Failed -> {
                 loadError = "${result.error.code} ${result.error.message}"
-                project = newProject()
+                saveError = projectReadProtectionMessage()
             }
         }
         loaded = true
+        return !projectWritesBlocked
     }
 
     // ---- project mutations -------------------------------------------------
 
     override fun selectPhoto(id: String) {
+        if (!requireWritableProject()) return
         if (project.activePhotoId == id) return
         if (project.photos.none { it.id == id }) return
         saveNow() // 先存后载：当前照片的编辑先落盘
-        project = project.selectPhoto(id)
+        if (!mutate { it.selectPhoto(id) }) return
         saveNow() // 新选中项也立刻持久化，重启/崩溃后仍回到这张照片
     }
 
     override fun removePhoto(id: String) {
+        if (!requireWritableProject()) return
         if (project.photos.none { it.id == id }) return
         saveNow()
-        project = project.removePhoto(id).touched(clock())
-        scheduleSave()
+        mutate { it.removePhoto(id) }
     }
 
     override fun applyCard(cardId: String, styleId: String?) {
@@ -182,37 +212,7 @@ class DesktopProjectController(
         val current = project.designs[photoId] ?: return
         val prefix = "${model.cardId}::"
         val cardOverrides = overrides.filterKeys { it.startsWith(prefix) }
-        var next = current.copy(
-            params = emptyMap(),
-            text = emptyMap(),
-            theme = null,
-            fontScale = null,
-            logo = null,
-            baseDesign = cardOverrides.isEmpty(),
-        )
-        model.controls.forEach { control ->
-            val raw = cardOverrides[control.key] ?: return@forEach
-            next = when (control.param) {
-                "theme" -> next.withTheme(raw.toString())
-                "text.fontScale" -> next.withFontScale((raw as? Number)?.toDouble() ?: raw.toString().toDoubleOrNull())
-                "design.logo" -> next.withLogo(raw.toString())
-                else -> {
-                    var written = if (control.param.startsWith("params.") || control.param.startsWith("text.")) {
-                        next.applyConsumer(control.param, raw)
-                    } else {
-                        next
-                    }
-                    // A shared-target switch hides a node set: one value, one key per
-                    // node, because the engine refuses to hide by container prefix.
-                    control.companions.forEach { companion ->
-                        if (companion.startsWith("params.") || companion.startsWith("text.")) {
-                            written = written.applyConsumer(companion, raw)
-                        }
-                    }
-                    written
-                }
-            }
-        }
+        val next = current.applyInspectorOverrides(model, cardOverrides)
         mutate { it.setDesign(photoId, next) }
     }
 
@@ -223,8 +223,11 @@ class DesktopProjectController(
         model.controls.forEach { control ->
             val present = (when (control.param) {
                 "theme" -> design.theme
+                "ratio" -> design.ratio
+                "fontScale" -> design.fontScale
                 "text.fontScale" -> design.fontScale
                 "design.logo" -> design.logo
+                "logo", "brandLogoFile" -> design.logo
                 else -> when {
                     control.param.startsWith("params.") -> design.params[control.param.removePrefix("params.")]
                     control.param.startsWith("text.") -> design.text[control.param.removePrefix("text.")]
@@ -343,6 +346,7 @@ class DesktopProjectController(
         opacity: Float?,
         dx: Float?,
         dy: Float?,
+        rotation: Float?,
     ) {
         updateActiveOverlay { spec ->
             if (spec == null) {
@@ -354,6 +358,10 @@ class DesktopProjectController(
                     opacity = opacity?.coerceIn(0f, 1f) ?: spec.opacity,
                     dx = dx ?: spec.dx,
                     dy = dy ?: spec.dy,
+                    rotation = rotation?.coerceIn(
+                        -WatermarkSpec.MAX_ROTATION,
+                        WatermarkSpec.MAX_ROTATION,
+                    ) ?: spec.rotation,
                 )
             }
         }
@@ -376,11 +384,15 @@ class DesktopProjectController(
         val design = activeDesign ?: return null
         val spec = design.overlay ?: return null
         val file = materialize(spec.asset)
-        val aspect = PreviewGeometry.aspectOf(design.cardId)
-            ?: activePhoto?.let {
-                it.widthPx.toFloat() / it.heightPx.coerceAtLeast(1)
-            }
-            ?: 1.5f
+        val aspect = if (spec.photoAspect.isFinite() && spec.photoAspect > 0.01f) {
+            spec.photoAspect
+        } else {
+            PreviewGeometry.aspectOf(design.cardId)
+                ?: activePhoto?.let {
+                    it.widthPx.toFloat() / it.heightPx.coerceAtLeast(1)
+                }
+                ?: 1.5f
+        }
         return spec.toOverlaySpec(file.path, aspect)
     }
 
@@ -496,6 +508,10 @@ class DesktopProjectController(
     }
 
     override fun applyPreset(id: String): Boolean {
+        if (!requireWritableProject()) {
+            presetError = projectReadProtectionMessage()
+            return false
+        }
         val preset = presets.firstOrNull { it.id == id } ?: return false
         val photoId = project.activePhotoId ?: run {
             presetError = "FM-E-INPUT-001 工程里还没有照片，无法套用预设"
@@ -504,13 +520,22 @@ class DesktopProjectController(
         val design = preset.design
         val applied = design.copy(baseDesign = design.isUntouched)
         val localQuality = WorkflowEnv.platform?.preferredJpegQuality() ?: project.exportSettings.quality
-        project = project.setDesign(photoId, applied)
-            .withExportSettings(preset.exportSettings.copy(quality = localQuality))
-            .touched(clock())
+        val changed = mutate {
+            it.setDesign(photoId, applied)
+                .withExportSettings(preset.exportSettings.copy(quality = localQuality))
+        }
+        if (!changed && projectWritesBlocked) {
+            presetError = projectReadProtectionMessage()
+            return false
+        }
         // The preset's design may name a different border than the session is showing,
         // so the shell must re-read the active design even when the photo is unchanged.
         hydrationVersion++
-        saveNow()
+        if (!saveNow()) {
+            presetError = saveError ?: "FM-E-IO-003 预设已应用，但工程未写入磁盘"
+            println("FM_PRODUCT_PRESET_APPLY_FAIL id=$id save=$saveError")
+            return false
+        }
         presetError = null
         println(
             "FM_PRODUCT_PRESET_APPLIED id=$id card=${applied.cardId} " +
@@ -1010,6 +1035,10 @@ class DesktopProjectController(
     override fun saveNow(): Boolean = synchronized(projectSaveLock) {
         saveJob?.cancel()
         saveJob = null
+        if (!requireWritableProject()) {
+            println("FM_PROJECT_SAVE_BLOCKED reason=project-read-failed")
+            return@synchronized false
+        }
         val snapshot = project
         when (val result = store.saveProject(snapshot)) {
             is StoreResult.Ok -> {
@@ -1036,6 +1065,7 @@ class DesktopProjectController(
     }
 
     private fun scheduleSave() {
+        if (projectWritesBlocked) return
         saveJob?.cancel()
         saveJob = scope.launch {
             delay(500)
@@ -1044,11 +1074,25 @@ class DesktopProjectController(
     }
 
     private fun mutate(block: (Project) -> Project): Boolean {
-        val next = block(project)
-        if (next == project) return false
-        project = next.touched(clock())
-        scheduleSave()
-        return true
+        synchronized(projectSaveLock) {
+            if (!requireWritableProject()) return false
+            val next = block(project)
+            if (next == project) return false
+            project = next.touched(clock())
+            scheduleSave()
+            return true
+        }
+    }
+
+    private fun requireWritableProject(): Boolean {
+        if (!projectWritesBlocked) return true
+        saveError = projectReadProtectionMessage()
+        return false
+    }
+
+    private fun projectReadProtectionMessage(): String {
+        val reason = loadError ?: "工程尚未成功读取"
+        return "FM-E-IO-002 已阻止写入以保护原工程；请重试读取。$reason"
     }
 
     private fun updateActiveOverlay(transform: (WatermarkSpec?) -> WatermarkSpec?): Boolean {

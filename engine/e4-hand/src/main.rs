@@ -18,12 +18,23 @@ mod fonts;
 mod gpu;
 mod hand;
 mod jsval;
+mod lines;
 mod report;
 mod templates;
 mod text;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
+use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
+
+thread_local! {
+    static PREVIEW_PHOTO: RefCell<Option<(PathBuf, Image)>> = const { RefCell::new(None) };
+    static PREVIEW_GPU: RefCell<Option<gpu::Gpu>> = const { RefCell::new(None) };
+    static PREVIEW_TABLES: RefCell<Option<(PathBuf, hand::HandTables)>> = const { RefCell::new(None) };
+    static PREVIEW_FONTS: RefCell<Option<(PathBuf, PathBuf, HandFonts)>> = const { RefCell::new(None) };
+    static PREVIEW_SERVER_ACTIVE: Cell<bool> = const { Cell::new(false) };
+}
 
 use serde_json::{json, Value};
 use skia_safe::{Data, Image};
@@ -49,6 +60,21 @@ fn flag(args: &[String], name: &str) -> bool {
 fn load_image(p: &Path) -> Result<Image, String> {
     let data = Data::from_filename(p).ok_or_else(|| format!("missing image {}", p.display()))?;
     Image::from_encoded(data).ok_or_else(|| format!("decode failed {}", p.display()))
+}
+
+/// Worker mode keeps the one active source photo decoded between requests.
+fn load_cached_photo(p: &Path) -> Result<Image, String> {
+    PREVIEW_PHOTO.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        if let Some((cached_path, image)) = slot.as_ref() {
+            if cached_path == p {
+                return Ok(image.clone());
+            }
+        }
+        let image = load_image(p)?;
+        *slot = Some((p.to_path_buf(), image.clone()));
+        Ok(image)
+    })
 }
 
 fn b64_val(b: u8) -> Option<u8> {
@@ -122,21 +148,54 @@ fn load_brand_logo(card: &hand::Card, design: &hand::Design) -> Result<Option<Im
     }
 }
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
+fn run_cli(args: Vec<String>) -> Result<(), String> {
     let mode = args.get(1).map(|s| s.as_str()).unwrap_or("probe");
-    let res = match mode {
+    match mode {
         "probe" => probe(&args),
         "render" => render(&args),
         "fonttest" => fonttest(&args),
         other => Err(format!("unknown mode '{other}' (probe|render)")),
-    };
-    match res {
-        Ok(()) => {}
-        Err(e) => {
-            eprintln!("e4hand.error={e}");
-            std::process::exit(2);
+    }
+}
+
+fn preview_server_loop() -> Result<(), String> {
+    PREVIEW_SERVER_ACTIVE.with(|active| active.set(true));
+    let stdin = std::io::stdin();
+    let mut stdout = std::io::stdout().lock();
+    println!("FM_PREVIEW_WORKER_READY backend=hand");
+    stdout.flush().map_err(|e| format!("stdout flush: {e}"))?;
+    for line in stdin.lock().lines() {
+        let line = line.map_err(|e| format!("stdin read: {e}"))?;
+        if line.trim().is_empty() {
+            continue;
         }
+        let request: Vec<String> =
+            serde_json::from_str(&line).map_err(|e| format!("worker request JSON: {e}"))?;
+        let mut args = Vec::with_capacity(request.len() + 1);
+        args.push("e4hand".to_string());
+        args.extend(request);
+        match run_cli(args) {
+            Ok(()) => println!("FM_PREVIEW_WORKER_DONE code=0"),
+            Err(e) => {
+                eprintln!("e4hand.error={e}");
+                println!("FM_PREVIEW_WORKER_DONE code=2 error={}", e.replace('\n', " "));
+            }
+        }
+        stdout.flush().map_err(|e| format!("stdout flush: {e}"))?;
+    }
+    Ok(())
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let res = if args.get(1).map(String::as_str) == Some("preview-server") {
+        preview_server_loop()
+    } else {
+        run_cli(args)
+    };
+    if let Err(e) = res {
+        eprintln!("e4hand.error={e}");
+        std::process::exit(2);
     }
 }
 
@@ -203,10 +262,17 @@ fn probe(args: &[String]) -> Result<(), String> {
     ));
 
     let cards = hand::load_cards(&cards_path)?;
-    let tables = hand::load_tables(&hand_dir)?;
+    let tables = match PREVIEW_TABLES.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_dir, tables)) if cached_dir == hand_dir => tables,
+        _ => hand::load_tables(&hand_dir)?,
+    };
     let tmap: std::collections::HashMap<String, hand::HandDef> =
         tables.templates.iter().cloned().map(|t| (t.id.clone(), t)).collect();
-    let fonts = HandFonts::load(&fonts_dir, &extra_fonts)?;
+    let fonts = match PREVIEW_FONTS.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_fonts, cached_extra, fonts))
+            if cached_fonts == fonts_dir && cached_extra == extra_fonts => fonts,
+        _ => HandFonts::load(&fonts_dir, &extra_fonts)?,
+    };
     let mut te = text_engine();
     te.fallback = fonts.fallback.clone();
     te.fallback_bold = fonts.fallback_bold.clone();
@@ -627,6 +693,7 @@ fn render_pass(
                 te: sh.te,
                 themes: sh.themes,
                 palette48: palette_buf.as_ref(),
+                lines: RefCell::new(lines::LineState::new()),
             };
             match templates::render(&mut env) {
                 Ok(r) => photo_rect = [r.left, r.top, r.width(), r.height()],
@@ -637,10 +704,19 @@ fn render_pass(
     if let Some(e) = render_err {
         return Err(e);
     }
+    if let Some(font_error) = report_cell
+        .borrow()
+        .gaps
+        .iter()
+        .find(|gap| gap.starts_with(draw::FONT_ERROR_PREFIX))
+    {
+        return Err(font_error.clone());
+    }
     Ok((pixels, photo_rect))
 }
 
 fn render(args: &[String]) -> Result<(), String> {
+    let worker_stage_started = Instant::now();
     let card_id = arg(args, "card", "video-cover");
     let cards_path = PathBuf::from(arg(
         args,
@@ -670,6 +746,16 @@ fn render(args: &[String]) -> Result<(), String> {
     ));
     let backend = arg(args, "backend", "d3d12");
     let adapter = arg(args, "adapter", "nvidia");
+    let preview_max_edge = match arg(args, "preview-max-edge", "") {
+        raw if raw.trim().is_empty() => None,
+        raw => Some(
+            raw.trim()
+                .parse::<i32>()
+                .ok()
+                .filter(|edge| *edge > 0)
+                .ok_or_else(|| format!("--preview-max-edge must be a positive integer, got '{raw}'"))?,
+        ),
+    };
 
     let cards = hand::load_cards(&cards_path)?;
     let card: &Card = cards
@@ -678,7 +764,10 @@ fn render(args: &[String]) -> Result<(), String> {
         .find(|c| c.card == card_id)
         .ok_or_else(|| format!("card '{card_id}' not in {}", cards_path.display()))?;
     let design = hand::load_design(&card.design)?;
-    let tables = hand::load_tables(&hand_dir)?;
+    let tables = match PREVIEW_TABLES.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_dir, tables)) if cached_dir == hand_dir => tables,
+        _ => hand::load_tables(&hand_dir)?,
+    };
     let def = tables
         .templates
         .iter()
@@ -692,7 +781,7 @@ fn render(args: &[String]) -> Result<(), String> {
         let overridden = arg(args, "photo", "");
         if overridden.is_empty() { card.photo.path.clone() } else { std::path::PathBuf::from(&overridden) }
     };
-    let photo = load_image(&photo_src)?;
+    let photo = load_cached_photo(&photo_src)?;
     let (iw, ih) = (photo.width() as f32, photo.height() as f32);
     let crop = match fit {
         hand::FitMode::Design => hand::compute_crop(iw, ih, &design.ratio),
@@ -728,7 +817,13 @@ fn render(args: &[String]) -> Result<(), String> {
         }
     }
 
-    let fonts = HandFonts::load(&fonts_dir, &extra_fonts)?;
+    let fonts = match PREVIEW_FONTS.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_fonts, cached_extra, fonts))
+            if cached_fonts == fonts_dir && cached_extra == extra_fonts => fonts,
+        _ => HandFonts::load(&fonts_dir, &extra_fonts)?,
+    };
+    let worker_prep_ms = worker_stage_started.elapsed().as_millis();
+    let gpu_started = Instant::now();
     let mut te = text_engine();
     te.fallback = fonts.fallback.clone();
     te.fallback_bold = fonts.fallback_bold.clone();
@@ -748,16 +843,20 @@ fn render(args: &[String]) -> Result<(), String> {
     };
 
     let backend = backend.as_str();
-    let mut gpu = match backend {
-        "angle" => {
-            let dir = std::env::var("T1C_ANGLE_DIR")
-                .unwrap_or_else(|_| r"C:\Program Files (x86)\Steam\bin\cef\cef.win64".to_string());
-            let mode = std::env::var("T1C_EGLMODE").unwrap_or_else(|_| "device".to_string());
-            let want = std::env::var("T1C_ADAPTER").unwrap_or_else(|_| adapter.clone());
-            gpu::Gpu::new_angle(&dir, &want, &mode).map_err(|e| format!("ANGLE context: {e}"))?
-        }
-        _ => gpu::Gpu::new_d3d12(&adapter).map_err(|e| format!("D3D12 context: {e}"))?,
+    let mut gpu = match PREVIEW_GPU.with(|cell| cell.borrow_mut().take()) {
+        Some(gpu) => gpu,
+        None => match backend {
+            "angle" => {
+                let dir = std::env::var("T1C_ANGLE_DIR")
+                    .unwrap_or_else(|_| r"C:\Program Files (x86)\Steam\bin\cef\cef.win64".to_string());
+                let mode = std::env::var("T1C_EGLMODE").unwrap_or_else(|_| "device".to_string());
+                let want = std::env::var("T1C_ADAPTER").unwrap_or_else(|_| adapter.clone());
+                gpu::Gpu::new_angle(&dir, &want, &mode).map_err(|e| format!("ANGLE context: {e}"))?
+            }
+            _ => gpu::Gpu::new_d3d12(&adapter).map_err(|e| format!("D3D12 context: {e}"))?,
+        },
     };
+    let worker_gpu_ms = gpu_started.elapsed().as_millis();
     let shared = PassShared {
         photo: &photo,
         exif: &exif,
@@ -781,9 +880,123 @@ fn render(args: &[String]) -> Result<(), String> {
 
     let mut fit_info = json!({ "mode": "design", "canvas": [cw, ch] });
     let (pixels, cw, ch, photo_rect, report_cell) = if fit == hand::FitMode::Design {
-        let cell = mk_report(cw, ch);
-        let (px, rect) = render_pass(&mut gpu, &shared, crop, crop.pw, crop.ph, cw, ch, &cell, None)?;
-        (px, cw, ch, rect, cell)
+        let preview_scale = preview_max_edge
+            .map(|edge| (edge as f32 / cw.max(ch).max(1) as f32).min(1.0))
+            .unwrap_or(1.0);
+        if preview_scale < 1.0 {
+            let preview_pw = crop.pw * preview_scale;
+            let preview_ph = crop.ph * preview_scale;
+            let (preview_cw, preview_ch) = layout_of(preview_pw, preview_ph)?;
+            let cell = mk_report(preview_cw, preview_ch);
+            let (px, rect) = render_pass(
+                &mut gpu,
+                &shared,
+                crop,
+                preview_pw,
+                preview_ph,
+                preview_cw,
+                preview_ch,
+                &cell,
+                None,
+            )?;
+            fit_info = json!({
+                "mode": "design",
+                "source_canvas": [cw, ch],
+                "canvas": [preview_cw, preview_ch],
+                "preview_scale": preview_scale,
+            });
+            (px, preview_cw, preview_ch, rect, cell)
+        } else {
+            let cell = mk_report(cw, ch);
+            let (px, rect) = render_pass(&mut gpu, &shared, crop, crop.pw, crop.ph, cw, ch, &cell, None)?;
+            (px, cw, ch, rect, cell)
+        }
+    } else if let Some(preview_edge) = preview_max_edge {
+        // Native-fit preview: measure the fit invariant on a preview-sized
+        // pilot, then render the final pass at the requested output scale. No
+        // full-resolution canvas is allocated or encoded.
+        let pilot_scale = (preview_edge as f32 / cw.max(ch).max(1) as f32).min(1.0);
+        let pilot_w = iw * pilot_scale;
+        let pilot_h = ih * pilot_scale;
+        let (pilot_cw, pilot_ch) = layout_of(pilot_w, pilot_h)?;
+        let pilot_cell = mk_report(pilot_cw, pilot_ch);
+        let (_pilot_px, pilot_rect) = render_pass(
+            &mut gpu,
+            &shared,
+            crop,
+            pilot_w,
+            pilot_h,
+            pilot_cw,
+            pilot_ch,
+            &pilot_cell,
+            Some((pilot_w, pilot_h)),
+        )?;
+        let (box_w, box_h) = (pilot_rect[2], pilot_rect[3]);
+        if !(box_w > 0.0) || !(box_h > 0.0) {
+            return Err(format!(
+                "E4H-FIT-NATIVE-LOCKED card='{}' template='{}': the template reports no photo box",
+                card.card, card.template_id
+            ));
+        }
+        let cx = box_w / pilot_w;
+        let mismatch_px = pilot_h * (1.0 - (box_h / pilot_h) / cx).abs();
+        if !(cx > 0.0) || !cx.is_finite() || mismatch_px > 0.5 {
+            return Err(format!(
+                "E4H-FIT-NATIVE-LOCKED card='{}' template='{}': photo box {:.5} vs photo {:.5} (native fit would crop {:.1}px)",
+                card.card,
+                card.template_id,
+                box_w / box_h,
+                pilot_w / pilot_h,
+                mismatch_px
+            ));
+        }
+        let fit_scale = 1.0 / cx;
+        if fit_scale < 1.0 - 1e-6 {
+            return Err(format!(
+                "E4H-FIT-NATIVE-LOCKED card='{}': photo box {:.0}x{:.0} is larger than the photo {:.0}x{:.0}",
+                card.card, box_w, box_h, pilot_w, pilot_h
+            ));
+        }
+        let (full_fit_w, full_fit_h) = (iw * fit_scale, ih * fit_scale);
+        let (full_fit_cw, full_fit_ch) = layout_of(full_fit_w, full_fit_h)?;
+        let preview_scale = (preview_edge as f32 / full_fit_cw.max(full_fit_ch).max(1) as f32).min(1.0);
+        let preview_w = iw * preview_scale;
+        let preview_h = ih * preview_scale;
+        let (preview_pw, preview_ph) = (full_fit_w * preview_scale, full_fit_h * preview_scale);
+        let (preview_cw, preview_ch) = layout_of(preview_pw, preview_ph)?;
+        let cell = mk_report(preview_cw, preview_ch);
+        let (px, rect) = render_pass(
+            &mut gpu,
+            &shared,
+            crop,
+            preview_pw,
+            preview_ph,
+            preview_cw,
+            preview_ch,
+            &cell,
+            Some((preview_w, preview_h)),
+        )?;
+        let resid_px = (rect[2] - preview_w).abs().max((rect[3] - preview_h).abs());
+        if resid_px > 1.0 {
+            return Err(format!(
+                "E4H-FIT-NATIVE-UNSTABLE card='{}': after preview scale {:.6} the photo box is {:.2}x{:.2}, expected {:.0}x{:.0} (off {:.2}px)",
+                card.card, preview_scale, rect[2], rect[3], preview_w, preview_h, resid_px
+            ));
+        }
+        fit_info = json!({
+            "mode": "native",
+            "source_photo": [iw, ih],
+            "source_canvas": [full_fit_cw, full_fit_ch],
+            "photo": [preview_w, preview_h],
+            "scale": preview_scale,
+            "native_scale": fit_scale,
+            "passes": 2,
+            "boxDesign": pilot_rect,
+            "boxScaled": rect,
+            "boxDrawn": [rect[0].round(), rect[1].round(), preview_w, preview_h],
+            "canvas": [preview_cw, preview_ch],
+        });
+        (px, preview_cw, preview_ch, rect, cell)
     } else {
         // Pass A pins the design photo box to the photo's own pixels and
         // measures the box the template actually wants.
@@ -876,7 +1089,7 @@ fn render(args: &[String]) -> Result<(), String> {
     );
 
     let rep = report_cell.borrow();
-    let out_json = json!({
+    let mut out_json = json!({
         "card": card.card,
         "template": card.template_id,
         "canvas": [cw, ch],
@@ -887,17 +1100,38 @@ fn render(args: &[String]) -> Result<(), String> {
         "overlay": overlay.as_ref().map(|o| json!({
             "rect_norm": o.rect,
             "opacity": o.opacity,
+            "angle": o.angle,
             "image": [o.image.width(), o.image.height()],
         })),
         "report": &*rep,
     });
+    if let Some(edge) = preview_max_edge {
+        out_json["preview"] = json!({
+            "max_edge": edge,
+            "canvas": [cw, ch],
+        });
+    }
     if let Some(parent) = report_path.parent() {
         std::fs::create_dir_all(parent).ok();
     }
     std::fs::write(&report_path, serde_json::to_string_pretty(&out_json).unwrap())
         .map_err(|e| format!("write {}: {e}", report_path.display()))?;
     println!("e4hand.report={}", report_path.display());
-    gpu.abandon();
+    drop(shared);
+    println!(
+        "FM_PREVIEW_WORKER_STAGE backend=hand prepMs={} gpuMs={} totalMs={}",
+        worker_prep_ms,
+        worker_gpu_ms,
+        worker_stage_started.elapsed().as_millis()
+    );
+    if PREVIEW_SERVER_ACTIVE.with(Cell::get) {
+        PREVIEW_TABLES.with(|cell| *cell.borrow_mut() = Some((hand_dir, tables)));
+        PREVIEW_FONTS.with(|cell| *cell.borrow_mut() = Some((fonts_dir, extra_fonts, fonts)));
+        PREVIEW_GPU.with(|cell| *cell.borrow_mut() = Some(gpu));
+    } else {
+        // One-shot CLI/smoke/export keeps the V06 teardown contract.
+        gpu.abandon();
+    }
     Ok(())
 }
 
@@ -956,7 +1190,18 @@ fn parse_overlay(args: &[String]) -> Result<Option<canvas::OverlaySpec>, String>
     if !opacity.is_finite() || !(0.0..=1.0).contains(&opacity) {
         return Err(format!("--overlay-opacity must be in 0..1, got {opacity}"));
     }
-    Ok(Some(canvas::OverlaySpec { image, rect, opacity }))
+    let angle = if let Some(j) = args.iter().position(|a| a == "--overlay-angle") {
+        args.get(j + 1)
+            .ok_or("--overlay-angle needs a number in -180..180")?
+            .parse::<f32>()
+            .map_err(|_| "--overlay-angle is not a number".to_string())?
+    } else {
+        0.0
+    };
+    if !angle.is_finite() || angle.abs() > 180.0 {
+        return Err(format!("--overlay-angle must be in -180..180, got {angle}"));
+    }
+    Ok(Some(canvas::OverlaySpec { image, rect, opacity, angle }))
 }
 
 fn text_engine() -> TextEngine {

@@ -17,7 +17,12 @@ impl RectJson {
         Self { x, y, w, h }
     }
     pub fn from_skia(r: skia_safe::Rect) -> Self {
-        Self { x: r.left, y: r.top, w: r.width(), h: r.height() }
+        Self {
+            x: r.left,
+            y: r.top,
+            w: r.width(),
+            h: r.height(),
+        }
     }
 }
 
@@ -33,7 +38,12 @@ pub struct ImageDraw {
 #[derive(Debug, Clone, Serialize)]
 pub struct TextDraw {
     pub seq: u32,
+    /// Current text after any slotText override. Kept as `s` for report-v1 clients.
     pub s: String,
+    /// Source text before a slotText override. May be empty for a declared slot
+    /// whose source metadata is currently unavailable.
+    #[serde(default)]
+    pub raw: String,
     pub family: String,
     pub weight: u16,
     pub size: f32,
@@ -49,6 +59,28 @@ pub struct TextDraw {
     /// baseline, 0.465/0.465 around a middle baseline, 0.93 em below top.
     pub rect: RectJson,
     pub matrix: [f32; 6],
+    /// Stable hand key (`hand:<variant-or-template>:<logical-slot>`). Empty for
+    /// text that has not been given an explicit template slot.
+    #[serde(default)]
+    pub key: String,
+    /// Classified source tag (`title`/`make`/`exif`/`photo`/...), internal only.
+    #[serde(default)]
+    pub source: String,
+    /// Line carries a hidden override: no glyphs painted, geometry still reported
+    /// so the editor keeps a restore entry for the row.
+    #[serde(default)]
+    pub hidden: bool,
+    /// True only when the template declares a stable logical slot.
+    #[serde(default)]
+    pub stable: bool,
+    /// False when a declared row has no drawable geometry in the current
+    /// branch/EXIF state. Consumers must ignore x/y/rect when false.
+    #[serde(default = "default_present")]
+    pub present: bool,
+}
+
+fn default_present() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize)]

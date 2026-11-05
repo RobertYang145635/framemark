@@ -408,12 +408,13 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
     // M01 rule 2: a mixed 有设计/无设计 selection waits for an explicit
     // 「仅导出已设计的 X 张」 before anything reaches the queue.
     var pendingBatch by remember { mutableStateOf<Pair<BatchPreflight, List<String>>?>(null) }
-    // 本次提交的对账行：只反映这一按，历史 Done 不计入。
-    var submitLines by remember { mutableStateOf<List<String>>(emptyList()) }
 
     projects.loadBatch()
     val jobs = projects.batchJobs
     val photos = projects.photos
+    // 本次提交的对账行必须随队列表态重新计算，否则任务完成或失败后仍停留在
+    // 入队时的「待导出 / 失败 0」，让用户漏看本轮结果。
+    val submitLines = projects.submitLines()
     val total = jobs.size
     val settled = projects.batchDone + projects.batchFailed + jobs.count {
         it.status == BatchJobStatus.Cancelled
@@ -492,7 +493,6 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                         else -> {
                             pendingBatch = null
                             projects.enqueueBatch(ids)
-                            submitLines = projects.submitLines()
                         }
                     }
                 },
@@ -538,7 +538,6 @@ fun ProjectBatchPanel(projects: ProjectHolder, modifier: Modifier = Modifier) {
                             BatchConfirmGate.Submit -> {
                                 projects.enqueueBatch(current.designedPhotoIds)
                                 pendingBatch = null
-                                submitLines = projects.submitLines()
                             }
                         }
                     },

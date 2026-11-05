@@ -326,7 +326,11 @@ class BatchRunner(
         val overlay = snapshot.overlay?.let { spec ->
             val file = PhoneOverlayFiles.materialize(spec)
                 ?: throw EngineFailure("FM-E-IO-003", "水印素材无法写出（${spec.asset.name}）")
-            val aspect = PreviewGeometry.aspectOf(snapshot.design.cardId) ?: 1.5f
+            val aspect = if (spec.photoAspect.isFinite() && spec.photoAspect > 0.01f) {
+                spec.photoAspect
+            } else {
+                PreviewGeometry.aspectOf(snapshot.design.cardId) ?: 1.5f
+            }
             spec.toOverlaySpec(file, aspect)
         }
         val design = snapshot.design

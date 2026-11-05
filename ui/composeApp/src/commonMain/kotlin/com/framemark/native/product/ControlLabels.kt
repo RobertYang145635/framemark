@@ -10,10 +10,24 @@ package com.framemark.native.product
  * the translation layer, never a source of values.
  */
 internal object ControlLabels {
+    private val friendlyLabels: Map<String, String> = mapOf(
+        "品牌字标" to "品牌标志",
+        "显示字标" to "显示标志",
+        "显示厂商" to "显示品牌",
+        "显示参数行" to "显示拍摄参数",
+        "字标位置" to "标志位置",
+        "极简页脚" to "简洁底栏",
+        "圆角半径" to "圆角",
+        "整卡字号缩放" to "整体文字大小",
+        "画布画幅" to "照片比例",
+        "方图占比" to "方形区域大小",
+        "衬底不透明度" to "背景透明度",
+    )
+
     private val controls: Map<String, String> = mapOf(
         "footerPct" to "底部留白",
-        "marginPct" to "外边距",
-        "radiusPct" to "圆角半径",
+        "marginPct" to "照片留白",
+        "radiusPct" to "圆角",
         "shadow" to "阴影强度",
         "blur" to "模糊强度",
         "sidePadPct" to "左右留白",
@@ -181,6 +195,7 @@ internal object ControlLabels {
     fun forControl(sourceLabel: String, controlId: String): String? {
         val raw = sourceLabel.trim()
         if (raw.isEmpty()) return null
+        friendlyLabels[raw]?.let { return it }
         if (raw.hasCjk()) return sanitize(raw)
         controls[raw]?.let { return it }
         val tail = controlId.substringAfterLast(':').substringAfterLast('.')

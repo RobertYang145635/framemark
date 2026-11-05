@@ -220,16 +220,36 @@ class DesktopProjectControllerTest {
     }
 
     @Test
-    fun a_corrupt_project_document_is_reported_but_startup_continues() = runBlocking {
+    fun a_corrupt_project_document_blocks_writes_until_an_explicit_retry_succeeds() = runBlocking {
         val dir = Files.createTempDirectory("fm-p2a-corrupt-")
         try {
-            Files.writeString(dir.resolve("project.json"), "{not json")
+            val projectFile = dir.resolve("project.json")
+            val original = "{not json".encodeToByteArray()
+            Files.write(projectFile, original)
             val controller = newController(dir)
             controller.load()
             assertNotNull(controller.loadError)
+            assertNotNull(controller.saveError)
             assertTrue(controller.photos.isEmpty())
+            assertTrue(controller.projectWritesBlocked)
+
             val report = controller.importPhotos(listOf(photo("ratio-study/4x3.jpg")))
-            assertEquals(1, report.added)
+            assertEquals(0, report.added)
+            controller.setExportSettings(ExportSettings(format = SampleFormat.WebP))
+            Thread.sleep(650) // Cross the debounced autosave window while the source is invalid.
+            assertContentEquals(original, Files.readAllBytes(projectFile))
+            assertFalse(controller.saveNow())
+            controller.flush()
+            assertFalse(controller.retryProjectLoad())
+            assertContentEquals(original, Files.readAllBytes(projectFile))
+            assertTrue(Files.list(dir).use { paths -> paths.noneMatch { it.fileName.toString().endsWith(".tmp") } })
+
+            Files.writeString(projectFile, ProjectCodec.encode(sampleProject()))
+            assertTrue(controller.retryProjectLoad())
+            assertNull(controller.loadError)
+            assertFalse(controller.projectWritesBlocked)
+            assertEquals(2, controller.photos.size)
+            assertTrue(controller.saveNow())
             controller.dispose()
         } finally {
             dir.toFile().deleteRecursively()
@@ -276,6 +296,23 @@ class DesktopProjectControllerTest {
         assertNotNull(error)
         assertTrue(error.contains("FM-E-IO-003"), error)
         assertContentEquals(old, fs.files["/fm-p2a/project.json"])
+        controller.dispose()
+    }
+
+    @Test
+    fun applying_a_preset_does_not_claim_success_when_its_final_save_fails() = runBlocking {
+        val fs = FakeFs("/fm-preset-apply")
+        SessionStore(fs).saveProject(sampleProject()).ok()
+        SessionStore(fs).savePresets(listOf(samplePreset())).ok()
+        val controller = newController(Path.of("unused"), fs)
+        controller.load()
+        controller.loadPresets()
+        val before = fs.files.getValue(fs.projectPath).copyOf()
+
+        fs.failWritePath = "${fs.projectPath}.tmp"
+        assertFalse(controller.applyPreset("preset-1"))
+        assertNotNull(controller.presetError)
+        assertContentEquals(before, fs.files.getValue(fs.projectPath))
         controller.dispose()
     }
 

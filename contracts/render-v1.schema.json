@@ -91,6 +91,12 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Global alpha multiplier applied to the overlay image's alpha channel."
+        },
+        "angle": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180,
+          "description": "Clockwise rotation in degrees around the final dst centre. Omitted/0 keeps the legacy unrotated path."
         }
       }
     },

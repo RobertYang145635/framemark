@@ -242,8 +242,14 @@ fn parse_node(v: &Value) -> Result<Node, String> {
             margins: margins_of(v),
             width: f32of(v, "width"),
             height: f32of(v, "height"),
-            match_width: v.get("matchWidth").and_then(|x| x.as_bool()).unwrap_or(false),
-            match_height: v.get("matchHeight").and_then(|x| x.as_bool()).unwrap_or(false),
+            match_width: v
+                .get("matchWidth")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false),
+            match_height: v
+                .get("matchHeight")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false),
             children: parse_children(v)?,
         }),
         "text" => {
@@ -291,7 +297,10 @@ fn parse_node(v: &Value) -> Result<Node, String> {
             gravity: str_of(v, "gravity"),
             margins: margins_of(v),
             alpha: f32of(v, "alpha").unwrap_or(1.0),
-            is_brand_logo: v.get("isBrandLogo").and_then(|x| x.as_bool()).unwrap_or(false),
+            is_brand_logo: v
+                .get("isBrandLogo")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false),
             theme_assets: v.get("themeAssets").cloned(),
             color_index: v.get("colorIndex").and_then(|x| x.as_i64()),
             tint: str_of(v, "tint"),
@@ -329,7 +338,11 @@ pub fn parse_style(raw: &str) -> Result<Style, String> {
     let v: Value = serde_json::from_str(raw.trim_start_matches('\u{feff}'))
         .map_err(|e| format!("style json: {e}"))?;
     let mut bands = Vec::new();
-    for b in v.get("bands").and_then(|x| x.as_array()).ok_or("style.bands missing")? {
+    for b in v
+        .get("bands")
+        .and_then(|x| x.as_array())
+        .ok_or("style.bands missing")?
+    {
         let off = b.get("offset").cloned().unwrap_or(Value::Null);
         bands.push(Band {
             direction: str_of(b, "direction").unwrap_or_else(|| "bottom".into()),
@@ -343,7 +356,10 @@ pub fn parse_style(raw: &str) -> Result<Style, String> {
             background: str_of(b, "background"),
             radius: f32of(b, "radius"),
             rotation: f32of(b, "rotation"),
-            draw_first: b.get("drawFirst").and_then(|x| x.as_bool()).unwrap_or(false),
+            draw_first: b
+                .get("drawFirst")
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false),
             fit: str_of(b, "fit"),
             children: parse_children(b)?,
         });
@@ -365,7 +381,11 @@ pub fn parse_style(raw: &str) -> Result<Style, String> {
             let foreground = t
                 .get("foreground")
                 .and_then(|x| x.as_array())
-                .map(|a| a.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|s| s.as_str().map(str::to_string))
+                        .collect()
+                })
                 .unwrap_or_default();
             themes.push(Theme {
                 id: str_of(t, "id").unwrap_or_default(),
@@ -530,6 +550,8 @@ pub struct Gaps {
 pub struct Overrides {
     /// `slotText:<path>` — non-empty only (empty string = fall back to token).
     pub slot_text: std::collections::HashMap<String, String>,
+    /// `slotScale:<path>` — independent row size multiplier (1 = untouched).
+    pub slot_scale: std::collections::HashMap<String, f32>,
     /// `slotOff:<path> === false` (and array form params.slotOff).
     pub slot_off: std::collections::HashSet<String>,
     /// `slotAlpha:<path>` multiplier (1 = untouched).
@@ -549,6 +571,14 @@ pub struct Overrides {
 impl Overrides {
     pub fn text(&self, path: &str) -> Option<&str> {
         self.slot_text.get(path).map(String::as_str)
+    }
+    pub fn text_scale(&self, path: &str) -> f32 {
+        self.slot_scale
+            .get(path)
+            .copied()
+            .filter(|n| n.is_finite())
+            .map(|n| n.clamp(0.6, 1.6))
+            .unwrap_or(1.0)
     }
     /// Exact path or any ancestor container is off.
     pub fn is_off(&self, path: &str) -> bool {
@@ -575,6 +605,37 @@ impl Overrides {
     }
     pub fn has_box_move(&self) -> bool {
         self.stock_anchor.is_some() || self.stock_offset.0 != 0.0 || self.stock_offset.1 != 0.0
+    }
+}
+
+#[cfg(test)]
+mod row_scale_tests {
+    use super::Overrides;
+
+    #[test]
+    fn sizing_one_row_does_not_resize_its_sibling_or_descendants() {
+        let mut ov = Overrides::default();
+        ov.slot_scale.insert("b0/g0".into(), 1.24);
+        assert_eq!(ov.text_scale("b0/g0"), 1.24);
+        assert_eq!(ov.text_scale("b0/g1"), 1.0);
+        assert_eq!(ov.text_scale("b0/g0/g0"), 1.0);
+        assert_eq!(Overrides::default().text_scale("b0/g0"), 1.0);
+    }
+
+    #[test]
+    fn invalid_sizes_fall_back_and_finite_sizes_respect_the_editor_range() {
+        let mut ov = Overrides::default();
+        for (value, expected) in [
+            (0.0, 0.6),
+            (4.0, 1.6),
+            (1.0, 1.0),
+            (f32::NAN, 1.0),
+            (f32::INFINITY, 1.0),
+            (f32::NEG_INFINITY, 1.0),
+        ] {
+            ov.slot_scale.insert("b0/g0".into(), value);
+            assert_eq!(ov.text_scale("b0/g0"), expected);
+        }
     }
 }
 
@@ -641,7 +702,8 @@ fn gravity_eff(env: &Env, path: &str, node: &Node, fallback: Option<String>) -> 
     node_gravity(node).or(fallback)
 }
 
-fn align_cross(g: Option<&str>, outer: f32, inner: f32, horizontal: bool) -> f32 {    let (h, v) = gravity_parts(g);
+fn align_cross(g: Option<&str>, outer: f32, inner: f32, horizontal: bool) -> f32 {
+    let (h, v) = gravity_parts(g);
     if horizontal {
         match v {
             't' => 0.0,
@@ -687,7 +749,11 @@ fn measure_line(env: &Env, text: &str, node: &TextNode, font_scale: f32) -> f32 
     let base = env.fonts.resolve(&node.font, node.weight);
     let script = env.fonts.script_face(base, text, node.weight);
     // W2: 含 CJK 的行按厂商中文字形量宽（与绘制用同一张面），否则布局与成片不一致。
-    let cjk = if script.is_none() { env.fonts.cjk_face_for(&node.font, text, node.weight) } else { None };
+    let cjk = if script.is_none() {
+        env.fonts.cjk_face_for(&node.font, text, node.weight)
+    } else {
+        None
+    };
     let tf = script.clone().or(cjk).unwrap_or_else(|| base.clone());
     let em = measure_em(node.size_raw, font_scale);
     let tracking = node.tracking * node.size;
@@ -704,22 +770,46 @@ fn exif_date_parts(date_time: &str) -> (String, String, String, String, String) 
     // fabricated epoch/00:00 value. Empty date parts make the template empty and
     // the engine's existing "empty text node is not drawn" rule removes the line.
     if date_time.trim().is_empty() {
-        return (String::new(), String::new(), String::new(), String::new(), String::new());
+        return (
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+        );
     }
     let (d, t) = date_time.split_once(' ').unwrap_or((date_time, ""));
     let dparts: Vec<&str> = d.split([':', '-']).collect();
     if dparts.len() < 3 {
-        return (String::new(), String::new(), String::new(), String::new(), String::new());
+        return (
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+        );
     }
     let (Ok(y), Ok(m), Ok(day)) = (
         dparts[0].parse::<i32>(),
         dparts[1].parse::<u32>(),
         dparts[2].parse::<u32>(),
     ) else {
-        return (String::new(), String::new(), String::new(), String::new(), String::new());
+        return (
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+        );
     };
     if !(1..=12).contains(&m) || !(1..=31).contains(&day) {
-        return (String::new(), String::new(), String::new(), String::new(), String::new());
+        return (
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+        );
     }
     let date = format!("{y:04}.{m:02}.{day:02}");
     let tparts: Vec<&str> = t.split(':').collect();
@@ -733,9 +823,19 @@ fn exif_date_parts(date_time: &str) -> (String, String, String, String, String) 
     // Sakamoto's weekday: 0 = Sunday.
     let table = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
     let yy = if m < 3 { y - 1 } else { y };
-    let wd = ((yy + yy / 4 - yy / 100 + yy / 400 + table[(m as usize - 1) % 12] as i32 + day as i32) % 7 + 7) % 7;
+    let wd =
+        ((yy + yy / 4 - yy / 100 + yy / 400 + table[(m as usize - 1) % 12] as i32 + day as i32)
+            % 7
+            + 7)
+            % 7;
     let week = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][wd as usize];
-    (date, time, week.to_string(), format!("{m:02}"), format!("{day:02}"))
+    (
+        date,
+        time,
+        week.to_string(),
+        format!("{m:02}"),
+        format!("{day:02}"),
+    )
 }
 
 fn model_number_name(model: &str) -> (String, String) {
@@ -773,10 +873,16 @@ fn template_text(env: &Env, value: &str) -> String {
         }
     }
     let make = env.exif.make.trim().to_string();
-    let model_full = crate::exif::model_without_make(&make, &env.exif.model).trim().to_string();
+    let model_full = crate::exif::model_without_make(&make, &env.exif.model)
+        .trim()
+        .to_string();
     // 机型开关作用在“组件”层：关掉机型时，任何含机型的占位符（独立行或合成行）
     // 都取空串，剩余分隔符随后收掉；开时逐字节保持原行为。
-    let model = if env.show_model { model_full.clone() } else { String::new() };
+    let model = if env.show_model {
+        model_full.clone()
+    } else {
+        String::new()
+    };
     let (number, name) = model_number_name(&model);
     let full = [make.as_str(), model.as_str()]
         .iter()
@@ -806,7 +912,9 @@ fn template_text(env: &Env, value: &str) -> String {
     s = s.replace("@{series}", &make);
     if !env.show_model {
         // 关掉机型后收掉悬空分隔符与重复空白（开启时完全不动，保持逐字节不变）。
-        while s.contains("  ") { s = s.replace("  ", " "); }
+        while s.contains("  ") {
+            s = s.replace("  ", " ");
+        }
         for sep in [" ·", " |", " /", " —", " -"] {
             s = s.replace(&format!("{sep}{sep}"), sep);
         }
@@ -860,7 +968,10 @@ fn template_text(env: &Env, value: &str) -> String {
             .join(" "),
     );
     s = s.replace("@wm_time_yyyy_MM_dd", &date);
-    s = s.replace("@wm_time_yyyy_MM", &date.chars().take(7).collect::<String>());
+    s = s.replace(
+        "@wm_time_yyyy_MM",
+        &date.chars().take(7).collect::<String>(),
+    );
     s = s.replace("@wm_time_HH_mm", &time);
     s = s.replace("@wm_time_week", &week);
     s = s.replace("@wm_time_MM", &month);
@@ -910,13 +1021,19 @@ fn template_text(env: &Env, value: &str) -> String {
         .iter()
         .any(|p| value.contains(p));
     let refs_location = value.contains("location_");
-    let has_placeholder = refs_exif || refs_time || refs_model || refs_location || value.contains("@{");
+    let has_placeholder =
+        refs_exif || refs_time || refs_model || refs_location || value.contains("@{");
     let mut relevant = false;
     if refs_exif {
-        relevant |= !focal.is_empty() || !aperture.is_empty() || !speed.is_empty() || !iso.is_empty();
+        relevant |=
+            !focal.is_empty() || !aperture.is_empty() || !speed.is_empty() || !iso.is_empty();
     }
     if refs_time {
-        relevant |= !date.is_empty() || !time.is_empty() || !week.is_empty() || !month.is_empty() || !day.is_empty();
+        relevant |= !date.is_empty()
+            || !time.is_empty()
+            || !week.is_empty()
+            || !month.is_empty()
+            || !day.is_empty();
     }
     if refs_model {
         relevant |= !make.is_empty() || !model.is_empty() || !number.is_empty() || !name.is_empty();
@@ -938,6 +1055,10 @@ fn token_text(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> String
             return s.to_string();
         }
     }
+    default_token_text(env, node, gaps)
+}
+
+fn default_token_text(env: &Env, node: &TextNode, gaps: &mut Gaps) -> String {
     match node.token_kind.as_str() {
         "literal" => node.token_value.clone().unwrap_or_default(),
         "model" => {
@@ -988,6 +1109,61 @@ fn token_text(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> String
     }
 }
 
+/// All declared rows, including hidden/empty ones. Geometry deliberately comes
+/// only from the painted item report: an absent row must not acquire a fake
+/// top-left position merely so the editor can offer its restore action.
+pub fn text_slot_manifest(
+    style: &Style,
+    env: &Env,
+    layout: &Layout,
+    gaps: &mut Gaps,
+) -> Vec<Value> {
+    let drawn: std::collections::HashSet<&str> = layout
+        .bands
+        .iter()
+        .flat_map(|band| band.items.iter())
+        .filter_map(|item| match item {
+            Item::Text(text) => Some(text.path.as_str()),
+            _ => None,
+        })
+        .collect();
+    fn visit(
+        children: &[Node],
+        parent: &str,
+        env: &Env,
+        drawn: &std::collections::HashSet<&str>,
+        gaps: &mut Gaps,
+        rows: &mut Vec<Value>,
+    ) {
+        for (index, node) in children.iter().enumerate() {
+            let path = format!("{parent}/g{index}");
+            match node {
+                Node::Group(group) => visit(&group.children, &path, env, drawn, gaps, rows),
+                Node::Text(text) => rows.push(serde_json::json!({
+                    "key": path, "path": path, "stable": true,
+                    "raw": default_token_text(env, text, gaps),
+                    "text": token_text(env, text, &path, gaps),
+                    "hidden": env.ov.is_off(&path),
+                    "present": drawn.contains(path.as_str()),
+                })),
+                _ => {}
+            }
+        }
+    }
+    let mut rows = Vec::new();
+    for (index, band) in style.bands.iter().enumerate() {
+        visit(
+            &band.children,
+            &format!("b{index}"),
+            env,
+            &drawn,
+            gaps,
+            &mut rows,
+        );
+    }
+    rows
+}
+
 #[derive(Clone, Debug)]
 struct Measured {
     w: f32,
@@ -997,6 +1173,7 @@ struct Measured {
 
 fn text_measured(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> Measured {
     let value = token_text(env, node, path, gaps);
+    let font_scale = env.font_scale * env.ov.text_scale(path);
     if value.is_empty() {
         return Measured {
             w: 0.0,
@@ -1019,7 +1196,7 @@ fn text_measured(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> Mea
         let mut line = String::new();
         for ch in paragraph.chars() {
             let next = format!("{line}{ch}");
-            if !line.is_empty() && measure_line(env, &next, node, env.font_scale) > max_w {
+            if !line.is_empty() && measure_line(env, &next, node, font_scale) > max_w {
                 lines.push(line);
                 line = ch.to_string();
             } else {
@@ -1030,10 +1207,10 @@ fn text_measured(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> Mea
     }
     // layout.ts `lineHeightOf()` scales the row step by fontScale (the frozen
     // solver measures and pitches at `size * fontScale`), so this must too.
-    let lh = line_height_of(node, env.font_scale);
+    let lh = line_height_of(node, font_scale);
     let measured = lines
         .iter()
-        .map(|l| measure_line(env, l, node, env.font_scale))
+        .map(|l| measure_line(env, l, node, font_scale))
         .fold(0.0f32, f32::max);
     // layout.ts: textWidth = node.width ?? max(line measures); outline padding
     // enlarges the solved box and forces centre alignment.
@@ -1070,7 +1247,11 @@ fn text_measured(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> Mea
             return None;
         }
         let stroke = match o.stroke_color_index {
-            Some(i) => env.foreground.get(i.max(0) as usize).cloned().or_else(|| o.stroke_color.clone()),
+            Some(i) => env
+                .foreground
+                .get(i.max(0) as usize)
+                .cloned()
+                .or_else(|| o.stroke_color.clone()),
             None => o.stroke_color.clone(),
         }?;
         Some(PlacedOutline {
@@ -1092,12 +1273,12 @@ fn text_measured(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> Mea
             lines,
             family: crate::text::font_key_family(&node.font).to_string(),
             font_key: node.font.clone(),
-            font_size: node.size * env.font_scale,
+            font_size: node.size * font_scale,
             weight: node.weight,
             line_height: lh,
             color,
             alpha: node.alpha,
-            tracking: node.tracking * node.size * env.font_scale,
+            tracking: node.tracking * node.size * font_scale,
             align,
             path: path.to_string(),
             shadow: node.shadow.clone(),
@@ -1210,7 +1391,14 @@ fn visible_pairs<'a>(
     out
 }
 
-fn place_text(node: &TextNode, rect: Rect, path: &str, env: &Env, gaps: &mut Gaps, out: &mut Vec<Item>) {
+fn place_text(
+    node: &TextNode,
+    rect: Rect,
+    path: &str,
+    env: &Env,
+    gaps: &mut Gaps,
+    out: &mut Vec<Item>,
+) {
     let m = text_measured(env, node, path, gaps);
     if let Some(mut t) = m.text {
         t.rect = rect;
@@ -1218,7 +1406,14 @@ fn place_text(node: &TextNode, rect: Rect, path: &str, env: &Env, gaps: &mut Gap
     }
 }
 
-fn place_node(env: &Env, node: &Node, rect: Rect, path: &str, gaps: &mut Gaps, out: &mut Vec<Item>) {
+fn place_node(
+    env: &Env,
+    node: &Node,
+    rect: Rect,
+    path: &str,
+    gaps: &mut Gaps,
+    out: &mut Vec<Item>,
+) {
     match node {
         Node::Text(t) => place_text(t, rect, path, env, gaps, out),
         Node::Image(i) => {
@@ -1234,7 +1429,8 @@ fn place_node(env: &Env, node: &Node, rect: Rect, path: &str, gaps: &mut Gaps, o
             // explicit `tint` (paint.ts ignores colorIndex on baked assets).
             let tint = if i.is_brand_logo {
                 i.tint.clone().or_else(|| {
-                    i.color_index.and_then(|ci| env.foreground.get(ci.max(0) as usize).cloned())
+                    i.color_index
+                        .and_then(|ci| env.foreground.get(ci.max(0) as usize).cloned())
                 })
             } else {
                 i.tint.clone()
@@ -1277,7 +1473,14 @@ fn place_node(env: &Env, node: &Node, rect: Rect, path: &str, gaps: &mut Gaps, o
     }
 }
 
-fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &mut Gaps, out: &mut Vec<Item>) {
+fn layout_children(
+    env: &Env,
+    node: &GroupNode,
+    rect: Rect,
+    path: &str,
+    gaps: &mut Gaps,
+    out: &mut Vec<Item>,
+) {
     let kids = visible_pairs(env, &node.children, path, gaps);
     if kids.is_empty() {
         return;
@@ -1367,7 +1570,19 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
                         s.h,
                         true,
                     );
-                place_node(env, c, Rect { x, y, w: s.w, h: s.h }, p, gaps, out);
+                place_node(
+                    env,
+                    c,
+                    Rect {
+                        x,
+                        y,
+                        w: s.w,
+                        h: s.h,
+                    },
+                    p,
+                    gaps,
+                    out,
+                );
                 xl = x + s.w + mg.right;
             }
             let mut xr = rect.x + rect.w;
@@ -1384,7 +1599,19 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
                         s.h,
                         true,
                     );
-                place_node(env, c, Rect { x, y, w: s.w, h: s.h }, p, gaps, out);
+                place_node(
+                    env,
+                    c,
+                    Rect {
+                        x,
+                        y,
+                        w: s.w,
+                        h: s.h,
+                    },
+                    p,
+                    gaps,
+                    out,
+                );
                 xr = x - mg.left;
             }
             for &i in &centers {
@@ -1400,7 +1627,19 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
                         s.h,
                         true,
                     );
-                place_node(env, c, Rect { x, y, w: s.w, h: s.h }, p, gaps, out);
+                place_node(
+                    env,
+                    c,
+                    Rect {
+                        x,
+                        y,
+                        w: s.w,
+                        h: s.h,
+                    },
+                    p,
+                    gaps,
+                    out,
+                );
             }
             return;
         }
@@ -1417,7 +1656,11 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
     for (i, (c, _)) in kids.iter().enumerate() {
         if !matches!(c, Node::Space(_)) {
             let mg = node_margins(c).unwrap_or_default();
-            total_fixed += if horizontal { sizes[i].w + mg.sum_x() } else { sizes[i].h + mg.sum_y() };
+            total_fixed += if horizontal {
+                sizes[i].w + mg.sum_x()
+            } else {
+                sizes[i].h + mg.sum_y()
+            };
         }
     }
     total_fixed += gap * kids.len().saturating_sub(1) as f32;
@@ -1444,7 +1687,19 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
                     sz.h,
                     true,
                 );
-            place_node(env, c, Rect { x, y, w: sz.w, h: sz.h }, p, gaps, out);
+            place_node(
+                env,
+                c,
+                Rect {
+                    x,
+                    y,
+                    w: sz.w,
+                    h: sz.h,
+                },
+                p,
+                gaps,
+                out,
+            );
             cursor += sz.w + mg.sum_x();
         } else {
             let x = rect.x
@@ -1456,7 +1711,19 @@ fn layout_children(env: &Env, node: &GroupNode, rect: Rect, path: &str, gaps: &m
                     false,
                 );
             let y = cursor + mg.top;
-            place_node(env, c, Rect { x, y, w: sz.w, h: sz.h }, p, gaps, out);
+            place_node(
+                env,
+                c,
+                Rect {
+                    x,
+                    y,
+                    w: sz.w,
+                    h: sz.h,
+                },
+                p,
+                gaps,
+                out,
+            );
             cursor += sz.h + mg.sum_y();
         }
     }
@@ -1822,7 +2089,11 @@ fn band_visual_extent(b: &PlacedBand) -> Rect {
     if b.rotation.is_some() {
         return b.rect;
     }
-    let mut rect: Option<Rect> = if b.background.is_some() { Some(b.rect) } else { None };
+    let mut rect: Option<Rect> = if b.background.is_some() {
+        Some(b.rect)
+    } else {
+        None
+    };
     for it in &b.items {
         let r = *it.rect();
         if r.w <= 0.0 || r.h <= 0.0 {
@@ -1896,7 +2167,9 @@ pub fn solve(style: &Style, env: &Env, gaps: &mut Gaps) -> Result<Layout, String
     gaps.add("rule: overlay band content is clamped to a 2.5%/4% inner box and translated (preservePosition) unless the band declares fit:\"none\"");
     if let Some(mode) = &style.reference_width_mode {
         if mode != "shortEdge" {
-            gaps.add(format!("referenceWidthMode '{mode}' not implemented in E2b"));
+            gaps.add(format!(
+                "referenceWidthMode '{mode}' not implemented in E2b"
+            ));
         }
     }
     let refw = style.reference_width;
@@ -2004,10 +2277,5 @@ pub fn solve(style: &Style, env: &Env, gaps: &mut Gaps) -> Result<Layout, String
             }
         }
     }
-    Ok(Layout {
-        w,
-        h,
-        photo,
-        bands,
-    })
+    Ok(Layout { w, h, photo, bands })
 }

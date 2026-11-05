@@ -8,9 +8,10 @@ use skia_safe::Rect;
 
 use crate::draw::{
     draw_brand_logo, draw_fitted, draw_photo, exif_text, footer_title, logo_scale,
-    simple_footer_metrics, theme_of, Env, FittedOpts, LayoutEnv,
+    resolve_text_slot, simple_footer_metrics, theme_of, Env, FittedOpts, LayoutEnv,
 };
 use crate::hand::{format_date_only, format_date_time, pct};
+use crate::lines;
 
 fn frame_map(env: &Env) -> std::collections::BTreeMap<String, f32> {
     let mut out = std::collections::BTreeMap::new();
@@ -34,9 +35,11 @@ fn frame_of(f: &std::collections::BTreeMap<String, f32>, key: &str, dflt: f32) -
 
 fn slots_of(env: &Env) -> std::collections::BTreeSet<String> {
     match env.params.get("slots") {
-        Some(Value::String(raw)) if !raw.trim().is_empty() => {
-            raw.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect()
-        }
+        Some(Value::String(raw)) if !raw.trim().is_empty() => raw
+            .split(',')
+            .map(|x| x.trim().to_string())
+            .filter(|x| !x.is_empty())
+            .collect(),
         _ => Default::default(),
     }
 }
@@ -46,35 +49,63 @@ fn slot_on(slots: &std::collections::BTreeSet<String>, key: &str) -> bool {
 }
 
 fn slot_of(env: &Env, id: &str) -> String {
-    let scope = env
-        .design
-        .variant_id
-        .clone()
-        .unwrap_or_else(|| env.design.template_id.clone());
-    let key = format!("{scope}#{id}");
-    env.text
-        .slot_values
-        .as_ref()
-        .and_then(|m| m.get(&key))
-        .map(|s| s.trim().to_string())
+    declared_text(env.text.slot_values.as_ref(), &scope_of(env), id)
+}
+
+fn declared_text(
+    values: Option<&std::collections::BTreeMap<String, String>>,
+    scope: &str,
+    id: &str,
+) -> String {
+    let key = lines::declared_key(scope, id);
+    values
+        .and_then(|map| map.get(&key))
+        .map(|value| value.trim().to_string())
         .unwrap_or_default()
 }
 
 fn size_of(env: &Env, id: &str) -> f32 {
-    let scope = env
-        .design
+    size_scale(
+        &env.params,
+        &scope_of(env),
+        id,
+        env.text.slot_sizes.as_ref(),
+    )
+}
+
+fn scope_of(env: &Env) -> String {
+    env.design
         .variant_id
         .clone()
-        .unwrap_or_else(|| env.design.template_id.clone());
-    let key = format!("{scope}#{id}");
-    let v = env
-        .text
-        .slot_sizes
-        .as_ref()
-        .and_then(|m| m.get(&key))
-        .map(|v| crate::jsval::pct(Some(v), 1.0) as f32)
-        .unwrap_or(1.0);
-    v.clamp(0.6, 1.6)
+        .unwrap_or_else(|| env.design.template_id.clone())
+}
+
+fn size_scale(
+    params: &crate::hand::Params,
+    scope: &str,
+    id: &str,
+    legacy_sizes: Option<&std::collections::BTreeMap<String, Value>>,
+) -> f32 {
+    let stable = lines::stable_key(scope, id);
+    let flat_key = format!("slotScale:{stable}");
+    if let Some(value) = params
+        .get(&flat_key)
+        .and_then(Value::as_f64)
+        .filter(|value| value.is_finite())
+    {
+        return value.clamp(0.6, 1.6) as f32;
+    }
+
+    let legacy_key = lines::declared_key(scope, id);
+    legacy_sizes
+        .and_then(|sizes| sizes.get(&legacy_key))
+        .map(|value| crate::jsval::pct(Some(value), 1.0) as f32)
+        .unwrap_or(1.0)
+        .clamp(0.6, 1.6)
+}
+
+fn flat_resolution(env: &Env, id: &str, raw: &str) -> lines::Resolution {
+    resolve_text_slot(env, id, raw)
 }
 
 fn mode_of(env: &Env) -> String {
@@ -131,6 +162,66 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     render_classic(env)
 }
 
+#[cfg(test)]
+mod slot_tests {
+    use super::*;
+    use crate::hand::Params;
+
+    #[test]
+    fn flat_brand_footer_slots_override_legacy_content_visibility_and_scale() {
+        let scope = "wm-classic";
+        let rows = ["brand", "model", "exif", "date"];
+        let mut params = Params::new();
+        let mut legacy_values = std::collections::BTreeMap::new();
+        let mut legacy_sizes = std::collections::BTreeMap::new();
+
+        for id in rows {
+            let old_key = lines::declared_key(scope, id);
+            let stable = lines::stable_key(scope, id);
+            legacy_values.insert(old_key.clone(), format!("old {id}"));
+            legacy_sizes.insert(old_key, serde_json::json!(1.25));
+            params.insert(
+                format!("slotText:{stable}"),
+                serde_json::json!(format!("new {id}")),
+            );
+            params.insert(format!("slotOff:{stable}"), serde_json::json!(false));
+            params.insert(format!("slotScale:{stable}"), serde_json::json!(1.4));
+
+            let legacy_raw = declared_text(Some(&legacy_values), scope, id);
+            assert_eq!(legacy_raw, format!("old {id}"));
+            let resolved = lines::resolve(&params, &stable, &legacy_raw);
+            assert_eq!(resolved.text, format!("new {id}"), "flat text for {id}");
+            assert!(resolved.hidden, "flat visibility for {id}");
+            assert_eq!(
+                size_scale(&params, scope, id, Some(&legacy_sizes)),
+                1.4,
+                "flat scale for {id}"
+            );
+        }
+
+        // Flat values take precedence, while removing those keys restores the
+        // exact declared-map behavior used by existing saved designs.
+        params.clear();
+        for id in rows {
+            let old_key = lines::declared_key(scope, id);
+            let stable = lines::stable_key(scope, id);
+            let legacy_raw = declared_text(Some(&legacy_values), scope, id);
+            let resolved = lines::resolve(&params, &stable, &legacy_raw);
+            assert_eq!(resolved.text, format!("old {id}"));
+            assert!(!resolved.hidden);
+            assert_eq!(size_scale(&params, scope, id, Some(&legacy_sizes)), 1.25);
+        }
+
+        // A malformed flat scale is not authoritative and keeps the legacy size.
+        let brand_key = format!("slotScale:{}", lines::stable_key(scope, "brand"));
+        params.insert(brand_key, serde_json::json!("invalid"));
+        assert_eq!(
+            size_scale(&params, scope, "brand", Some(&legacy_sizes)),
+            1.25
+        );
+    }
+}
+
 // ── simple (drawSimpleBrandFooter) ─────────────────────────────────────────
 
 fn render_simple(env: &mut Env) -> Result<Rect, String> {
@@ -140,7 +231,19 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, env.h);
     let s = pw.min(ph);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, pw, ph, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     let cy = ph + m.footer_h / 2.0;
     let logo_pos = env
         .params
@@ -149,20 +252,37 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
         .unwrap_or_else(|| "center".into());
     let make = env.exif.make.trim().to_string();
     let model = env.exif.model_without_make();
-    let left_text = if !model.is_empty() {
+    let left_raw = if !model.is_empty() {
         model.clone()
     } else if !make.is_empty() {
         make.clone()
     } else {
         footer_title(env)
     };
-    let right_lines: Vec<String> = [
-        if env.text.show_exif { env.exif.line(" ") } else { String::new() },
-        if env.text.show_date { format_date_only(&env.exif.date_time) } else { String::new() },
-    ]
-    .into_iter()
-    .filter(|s| !s.is_empty())
-    .collect();
+    let left_text = resolve_text_slot(env, "brandFooter.left", &left_raw).text;
+    let right_declared: [(&str, String); 2] = [
+        (
+            "brandFooter.exif",
+            if env.text.show_exif {
+                env.exif.line(" ")
+            } else {
+                String::new()
+            },
+        ),
+        (
+            "brandFooter.date",
+            if env.text.show_date {
+                format_date_only(&env.exif.date_time)
+            } else {
+                String::new()
+            },
+        ),
+    ];
+    let right_rows: Vec<(&str, String)> = right_declared
+        .into_iter()
+        .map(|(slot, raw)| (slot, resolve_text_slot(env, slot, &raw).text))
+        .filter(|(_, text)| !text.is_empty())
+        .collect();
     let has_logo = env.text.show_logo && env.images.logo.is_some();
     let mut logo_box: Option<(f32, f32, f32, f32)> = None;
     if has_logo {
@@ -187,7 +307,11 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
             (w / 2.0 - tx).max(40.0),
             m.font_left,
             &theme.fg,
-            &FittedOpts::new("OplusSans").weight(500).baseline("middle").min(m.font_left * 0.5),
+            &FittedOpts::new("OplusSans")
+                .weight(500)
+                .baseline("middle")
+                .min(m.font_left * 0.5)
+                .slot("brandFooter.left"),
         );
     } else {
         draw_fitted(
@@ -198,16 +322,25 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
             (center_left - m.pad).max(40.0),
             m.font_left,
             &theme.fg,
-            &FittedOpts::new("OplusSans").weight(500).baseline("middle").min(m.font_left * 0.5),
+            &FittedOpts::new("OplusSans")
+                .weight(500)
+                .baseline("middle")
+                .min(m.font_left * 0.5)
+                .slot("brandFooter.left"),
         );
     }
     if let Some(b) = logo_box {
         draw_brand_logo(env, b.0, b.1, b.2, b.3, &theme.fg);
     } else {
-        let text = if make.is_empty() { left_text.clone() } else { make.clone() };
+        let raw = if make.is_empty() {
+            left_text.clone()
+        } else {
+            make.clone()
+        };
+        let center = resolve_text_slot(env, "brandFooter.center", &raw.to_uppercase()).text;
         draw_fitted(
             env,
-            &text.to_uppercase(),
+            &center,
             w / 2.0,
             cy,
             w - 2.0 * m.pad,
@@ -217,10 +350,11 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
                 .weight(700)
                 .align("center")
                 .baseline("middle")
-                .min(m.font_center * 0.5),
+                .min(m.font_center * 0.5)
+                .slot("brandFooter.center"),
         );
     }
-    if !right_lines.is_empty() {
+    if !right_rows.is_empty() {
         let right_x = if logo_pos == "right" {
             logo_box.map(|b| b.0 - m.gap).unwrap_or(w - m.pad)
         } else {
@@ -228,10 +362,14 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
         };
         let max_w = (right_x - center_right).max(60.0);
         let line_gap = m.font_right * 0.95;
-        let block_h = m.font_right + (right_lines.len() as f32 - 1.0) * line_gap;
+        let block_h = m.font_right + (right_rows.len() as f32 - 1.0) * line_gap;
         let mut y = cy - block_h / 2.0 + m.font_right * 0.52;
-        for (i, text) in right_lines.iter().enumerate() {
-            let size = if i == 0 { m.font_right } else { m.font_right * 0.78 };
+        for (i, (slot, text)) in right_rows.iter().enumerate() {
+            let size = if i == 0 {
+                m.font_right
+            } else {
+                m.font_right * 0.78
+            };
             draw_fitted(
                 env,
                 text,
@@ -244,7 +382,8 @@ fn render_simple(env: &mut Env) -> Result<Rect, String> {
                     .weight(if i == 0 { 700 } else { 400 })
                     .align("right")
                     .baseline("middle")
-                    .min(size * 0.5),
+                    .min(size * 0.5)
+                    .slot(slot),
             );
             y += line_gap;
         }
@@ -290,7 +429,19 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
     let on = |k: &str| slot_on(&slots, k);
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, pw, ph, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     let left_x = w * frame_of(&f, "ovLeftX", 0.0913);
     let text_x = w * frame_of(&f, "ovTextX", 0.1293);
     let right_x = w * frame_of(&f, "ovRightCenterX", 0.749);
@@ -299,13 +450,43 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
     let logo_cy = h * frame_of(&f, "ovLogoCenterY", 0.7839);
     let make = env.exif.make.trim().to_string();
     let model = env.exif.model_without_make();
-    let title = footer_title(env);
-    let brand = if !make.is_empty() { make.clone() } else { model.clone() }.trim().to_string();
-    let exif_line = if env.text.show_exif { env.exif.line("  ") } else { String::new() };
-    let date_line = if env.text.show_date { format_date_only(&env.exif.date_time) } else { String::new() };
+    let title = resolve_text_slot(env, "brandFooter.title", &footer_title(env)).text;
+    let brand = if !make.is_empty() {
+        make.clone()
+    } else {
+        model.clone()
+    }
+    .trim()
+    .to_string();
+    let exif_line = resolve_text_slot(
+        env,
+        "brandFooter.exif",
+        &if env.text.show_exif {
+            env.exif.line("  ")
+        } else {
+            String::new()
+        },
+    )
+    .text;
+    let date_line = resolve_text_slot(
+        env,
+        "brandFooter.date",
+        &if env.text.show_date {
+            format_date_only(&env.exif.date_time)
+        } else {
+            String::new()
+        },
+    )
+    .text;
     let optics = vec![
-        env.exif.focal.map(|v| format!("{}mm", crate::jsval::js_round(v))).unwrap_or_default(),
-        env.exif.aperture.map(crate::hand::format_aperture).unwrap_or_default(),
+        env.exif
+            .focal
+            .map(|v| format!("{}mm", crate::jsval::js_round(v)))
+            .unwrap_or_default(),
+        env.exif
+            .aperture
+            .map(crate::hand::format_aperture)
+            .unwrap_or_default(),
     ]
     .into_iter()
     .filter(|s| !s.is_empty())
@@ -320,12 +501,25 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
     } else {
         let mut parts = vec![model.clone()];
         parts.extend(optics.iter().cloned());
-        parts.into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join(" ").to_uppercase()
+        parts
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_uppercase()
     };
+    let spec = resolve_text_slot(env, "brandFooter.lens", &spec).text;
     if on("logo") && env.text.show_logo {
-        draw_brand_logo(env, left_x, logo_cy - logo_h / 2.0, logo_w, logo_h, &theme.fg);
+        draw_brand_logo(
+            env,
+            left_x,
+            logo_cy - logo_h / 2.0,
+            logo_w,
+            logo_h,
+            &theme.fg,
+        );
     }
-    if on("title") && !title.is_empty() {
+    if on("title") {
         draw_fitted(
             env,
             &title,
@@ -334,10 +528,15 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
             w * 0.32,
             s * 0.019,
             &theme.fg,
-            &FittedOpts::new("Inter").weight(500).baseline("middle").min(s * 0.011).shadow(true),
+            &FittedOpts::new("Inter")
+                .weight(500)
+                .baseline("middle")
+                .min(s * 0.011)
+                .shadow(true)
+                .slot("brandFooter.title"),
         );
     }
-    if on("brand") && !brand.is_empty() {
+    if on("brand") {
         draw_fitted(
             env,
             &brand.to_uppercase(),
@@ -351,10 +550,11 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
                 .tracking(0.04)
                 .baseline("middle")
                 .min(s * 0.011)
-                .shadow(true),
+                .shadow(true)
+                .slot("brandFooter.brand"),
         );
     }
-    if on("exif") && !exif_line.is_empty() {
+    if on("exif") {
         draw_fitted(
             env,
             &exif_line,
@@ -367,10 +567,11 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
                 .baseline("middle")
                 .align("center")
                 .min(s * 0.012)
-                .shadow(true),
+                .shadow(true)
+                .slot("brandFooter.exif"),
         );
     }
-    if on("lens") && !spec.is_empty() {
+    if on("lens") {
         draw_fitted(
             env,
             &spec,
@@ -383,10 +584,11 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
                 .baseline("middle")
                 .align("center")
                 .min(s * 0.01)
-                .shadow(true),
+                .shadow(true)
+                .slot("brandFooter.lens"),
         );
     }
-    if on("date") && !date_line.is_empty() {
+    if on("date") {
         draw_fitted(
             env,
             &date_line,
@@ -399,7 +601,8 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
                 .baseline("middle")
                 .align("center")
                 .min(s * 0.01)
-                .shadow(true),
+                .shadow(true)
+                .slot("brandFooter.date"),
         );
     }
     Ok(Rect::from_xywh(0.0, 0.0, pw, ph))
@@ -420,7 +623,19 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
     let footer = h - footer_top;
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, border, top_inset, pw, ph, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        border,
+        top_inset,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     if frame_of(&f, "bandRule", 99.0) != 0.0 {
         crate::draw::line(
             &mut env.ctx,
@@ -444,25 +659,45 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
         .unwrap_or_else(|| "center".into());
     let make = if env.text.show_make {
         let slot = slot_of(env, "brand");
-        if slot.is_empty() { env.exif.make.clone() } else { slot }
+        if slot.is_empty() {
+            env.exif.make.clone()
+        } else {
+            slot
+        }
     } else {
         String::new()
     };
     let model = if env.text.show_model {
         let slot = slot_of(env, "model");
-        if slot.is_empty() { env.exif.model_without_make() } else { slot }
+        if slot.is_empty() {
+            env.exif.model_without_make()
+        } else {
+            slot
+        }
     } else {
         String::new()
     };
     let title = footer_title(env);
-    let make_text = if make.is_empty() { title.clone() } else { make.clone() }.to_uppercase();
+    let make_text = if make.is_empty() {
+        title.clone()
+    } else {
+        make.clone()
+    }
+    .to_uppercase();
     let model_text = if model.is_empty() {
-        if env.text.show_lens { env.exif.lens.trim().to_string() } else { String::new() }
+        if env.text.show_lens {
+            env.exif.lens.trim().to_string()
+        } else {
+            String::new()
+        }
     } else {
         model.clone()
     };
     let brand_key = format!("{} {}", make, env.exif.model).to_lowercase();
-    let auto_font = if brand_key.contains("xiaomi") || brand_key.contains("redmi") || brand_key.contains("poco") {
+    let auto_font = if brand_key.contains("xiaomi")
+        || brand_key.contains("redmi")
+        || brand_key.contains("poco")
+    {
         "misans"
     } else if brand_key.contains("vivo") || brand_key.contains("iqoo") {
         "vivo"
@@ -474,7 +709,11 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
         .get("footerFont")
         .map(|v| crate::jsval::js_string(Some(v)))
         .unwrap_or_else(|| "auto".into());
-    let font_style = if requested == "auto" || requested == "oppo" { auto_font } else { requested.as_str() };
+    let font_style = if requested == "auto" || requested == "oppo" {
+        auto_font
+    } else {
+        requested.as_str()
+    };
     let serif = font_style == "serif";
     let vivo = font_style == "vivo";
     let misans = font_style == "misans";
@@ -486,16 +725,57 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
         _ => ("StockSysSans", "StockSysSans"),
     };
     let brand_weight: u16 = if serif || !modern { 700 } else { 600 };
-    let model_weight: u16 = if serif { 500 } else if modern { 400 } else { 700 };
-    let body_weight: u16 = if serif { 500 } else if modern { 400 } else { 600 };
-    let brand_size = s * if serif { 0.03 } else if modern { 0.028 } else { 0.031 };
-    let model_size = s * if serif { 0.027 } else if modern { 0.0255 } else { 0.029 };
-    let brand_tracking = if serif { 0.01 } else if modern { 0.02 } else { 0.03 };
-    let model_tracking = if serif { 0.005 } else if modern { 0.01 } else { 0.05 };
+    let model_weight: u16 = if serif {
+        500
+    } else if modern {
+        400
+    } else {
+        700
+    };
+    let body_weight: u16 = if serif {
+        500
+    } else if modern {
+        400
+    } else {
+        600
+    };
+    let brand_size = s * if serif {
+        0.03
+    } else if modern {
+        0.028
+    } else {
+        0.031
+    };
+    let model_size = s * if serif {
+        0.027
+    } else if modern {
+        0.0255
+    } else {
+        0.029
+    };
+    let brand_tracking = if serif {
+        0.01
+    } else if modern {
+        0.02
+    } else {
+        0.03
+    };
+    let model_tracking = if serif {
+        0.005
+    } else if modern {
+        0.01
+    } else {
+        0.05
+    };
+    let brand_resolved = flat_resolution(env, "brand", &make_text);
+    let model_resolved = flat_resolution(env, "model", &model_text);
     let show_brand = on("brand");
-    let show_model = on("model") && !model_text.is_empty();
-    let show_left_text = !(logo_pos == "left" && env.text.show_logo) && (show_brand || show_model);
-    if show_left_text {
+    let show_model = on("model");
+    let visible_brand = show_brand && !brand_resolved.hidden && !brand_resolved.text.is_empty();
+    let visible_model = show_model && !model_resolved.hidden && !model_resolved.text.is_empty();
+    let left_text_allowed = !(logo_pos == "left" && env.text.show_logo);
+    let show_left_text = left_text_allowed && (visible_brand || visible_model);
+    if left_text_allowed {
         if show_brand {
             draw_fitted(
                 env,
@@ -508,7 +788,8 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
                 &FittedOpts::new(brand_font)
                     .weight(brand_weight)
                     .tracking(brand_tracking as f64)
-                    .min(s * 0.013),
+                    .min(s * 0.013)
+                    .declared_slot("brand"),
             );
         }
         if show_model {
@@ -523,7 +804,8 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
                 &FittedOpts::new(body_font)
                     .weight(model_weight)
                     .tracking(model_tracking as f64)
-                    .min(s * 0.01),
+                    .min(s * 0.01)
+                    .declared_slot("model"),
             );
         }
     }
@@ -533,18 +815,34 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
     let date_y = frame_of(&f, "dateY", 0.70);
     let ex = if env.text.show_exif {
         let slot = slot_of(env, "exif");
-        if slot.is_empty() { exif_text(env) } else { slot }
+        if slot.is_empty() {
+            exif_text(env)
+        } else {
+            slot
+        }
     } else {
         String::new()
     };
     let dt = if env.text.show_date {
         let slot = slot_of(env, "date");
-        if slot.is_empty() { format_date_time(&env.exif.date_time) } else { slot }
+        if slot.is_empty() {
+            format_date_time(&env.exif.date_time)
+        } else {
+            slot
+        }
     } else {
         String::new()
     };
-    let custom = if on("custom") { env.text.custom_line.trim().to_string() } else { String::new() };
-    let has_right = (on("exif") && !ex.is_empty()) || (on("date") && !dt.is_empty()) || !custom.is_empty();
+    let custom = if on("custom") {
+        env.text.custom_line.trim().to_string()
+    } else {
+        String::new()
+    };
+    let ex_resolved = flat_resolution(env, "exif", &ex);
+    let date_resolved = flat_resolution(env, "date", &dt);
+    let has_right = (on("exif") && !ex_resolved.hidden && !ex_resolved.text.is_empty())
+        || (on("date") && !date_resolved.hidden && !date_resolved.text.is_empty())
+        || !custom.is_empty();
     let rule_x = w * frame_of(&f, "ruleX", if logo_pos == "right" { 0.42 } else { 0.7 });
     if on("logo") && env.text.show_logo {
         let grow = logo_scale(&LayoutEnv {
@@ -573,7 +871,11 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             let gap = s * 0.008;
             let left_bound = left_x + if show_left_text { left_w } else { 0.0 } + gap;
             let right_bound = (if has_right {
-                if frame_of(&f, "rule", 99.0) != 0.0 { rule_x } else { right_x }
+                if frame_of(&f, "rule", 99.0) != 0.0 {
+                    rule_x
+                } else {
+                    right_x
+                }
             } else {
                 w * 0.96
             }) - gap;
@@ -589,7 +891,14 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
                 lx = right_bound - lw;
             }
         }
-        draw_brand_logo(env, lx, footer_top + footer / 2.0 - lh / 2.0, lw, lh, &theme.fg);
+        draw_brand_logo(
+            env,
+            lx,
+            footer_top + footer / 2.0 - lh / 2.0,
+            lw,
+            lh,
+            &theme.fg,
+        );
     }
     if frame_of(&f, "rule", 99.0) != 0.0 && has_right {
         crate::draw::line(
@@ -603,7 +912,7 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             None,
         );
     }
-    if on("exif") && !ex.is_empty() {
+    if on("exif") {
         draw_fitted(
             env,
             &ex,
@@ -612,10 +921,14 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             right_w,
             s * 0.027 * size_of(env, "exif"),
             &theme.fg,
-            &FittedOpts::new(body_font).weight(body_weight).tracking(0.01).min(s * 0.012),
+            &FittedOpts::new(body_font)
+                .weight(body_weight)
+                .tracking(0.01)
+                .min(s * 0.012)
+                .declared_slot("exif"),
         );
     }
-    if on("date") && !dt.is_empty() {
+    if on("date") {
         draw_fitted(
             env,
             &dt,
@@ -624,7 +937,11 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             right_w,
             s * 0.021 * size_of(env, "date"),
             &theme.sub,
-            &FittedOpts::new(body_font).weight(400).tracking(0.01).min(s * 0.01),
+            &FittedOpts::new(body_font)
+                .weight(400)
+                .tracking(0.01)
+                .min(s * 0.01)
+                .declared_slot("date"),
         );
     }
     if !custom.is_empty() {
@@ -636,7 +953,9 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             right_w,
             s * 0.016,
             &theme.accent,
-            &FittedOpts::new(body_font).weight(body_weight).min(s * 0.009),
+            &FittedOpts::new(body_font)
+                .weight(body_weight)
+                .min(s * 0.009),
         );
     }
     Ok(Rect::from_xywh(border, top_inset, pw, ph))

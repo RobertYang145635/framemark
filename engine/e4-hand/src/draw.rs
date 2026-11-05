@@ -6,6 +6,8 @@
 //! `drawTechText` and the two EXIF line builders; the rest (grain, barcode,
 //! sprockets, palette, swatches, avatar chip) land with their cards.
 
+use std::cell::RefCell;
+
 use serde_json::Value;
 use skia_safe::{image_filters, Color, FilterMode, Image, Rect, SamplingOptions, TileMode};
 
@@ -14,8 +16,13 @@ use crate::css;
 use crate::fonts::HandFonts;
 use crate::hand::{format_date_only, pct, Crop, Design, Exif, Params, TextSettings};
 use crate::jsval::js_round;
+use crate::lines::{self, LineState};
 use crate::report::{RectJson, TextDraw};
 use crate::text::{HAlign, Shadow, TextEngine, TextSpec, VBaseline};
+
+/// Gaps with this prefix are fatal in the Android bridge. Other gaps remain
+/// diagnostic because some templates intentionally report unsupported decor.
+pub const FONT_ERROR_PREFIX: &str = "font error: ";
 
 pub struct Images {
     pub logo: Option<Image>,
@@ -26,7 +33,12 @@ pub struct Images {
 
 impl Images {
     pub fn empty() -> Self {
-        Self { logo: None, avatar: None, sticker: None, frame: None }
+        Self {
+            logo: None,
+            avatar: None,
+            sticker: None,
+            frame: None,
+        }
     }
 }
 
@@ -50,6 +62,8 @@ pub struct Env<'a> {
     /// Chromium draws the palette sample on a GPU-backed temp canvas; this is
     /// the same 48 x h downscale read back from Ganesh (None = CPU fallback).
     pub palette48: Option<&'a (Vec<u8>, usize, usize)>,
+    /// Per-pass duplicate guard for explicitly declared stable text slots.
+    pub lines: RefCell<LineState>,
 }
 
 pub struct LayoutEnv<'a> {
@@ -96,17 +110,23 @@ pub fn theme_of(themes: &Value, params: &Params) -> Theme {
         None | Some(Value::Null) => "paper".to_string(),
         Some(v) => crate::jsval::js_string(Some(v)),
     };
-    let paper = themes.get("paper").and_then(|v| Theme::from_value("paper", v)).unwrap_or(Theme {
-        id: "paper".into(),
-        bg: "#f6f3ec".into(),
-        fg: "#151515".into(),
-        sub: "#6f6a61".into(),
-        line: "rgba(21,21,21,0.16)".into(),
-        accent: "#a9824c".into(),
-        paper: "#fbf9f4".into(),
-        shadow: "rgba(20,18,15,0.22)".into(),
-    });
-    themes.get(id.as_str()).and_then(|v| Theme::from_value(id.as_str(), v)).unwrap_or(paper)
+    let paper = themes
+        .get("paper")
+        .and_then(|v| Theme::from_value("paper", v))
+        .unwrap_or(Theme {
+            id: "paper".into(),
+            bg: "#f6f3ec".into(),
+            fg: "#151515".into(),
+            sub: "#6f6a61".into(),
+            line: "rgba(21,21,21,0.16)".into(),
+            accent: "#a9824c".into(),
+            paper: "#fbf9f4".into(),
+            shadow: "rgba(20,18,15,0.22)".into(),
+        });
+    themes
+        .get(id.as_str())
+        .and_then(|v| Theme::from_value(id.as_str(), v))
+        .unwrap_or(paper)
 }
 
 // ── photo (draw.ts:160 drawPhoto / :190 drawPhotoCover) ────────────────────
@@ -137,7 +157,9 @@ pub fn image_sampling_at(src_w: f32, src_h: f32, dst: Rect) -> SamplingOptions {
                 return s;
             }
             "nearest" => return SamplingOptions::default(),
-            "mipmap" => return SamplingOptions::new(FilterMode::Linear, skia_safe::MipmapMode::Linear),
+            "mipmap" => {
+                return SamplingOptions::new(FilterMode::Linear, skia_safe::MipmapMode::Linear)
+            }
             "cubicmip" => {
                 let mut s = SamplingOptions::new(FilterMode::Linear, skia_safe::MipmapMode::Linear);
                 s.use_cubic = true;
@@ -193,13 +215,29 @@ pub fn draw_photo(
         } else {
             "rgba(25,21,16,0.25)"
         };
-        ctx.fill_round_rect_shadow(x, y, w, h, radius, "#000", sc, short_side * 0.03 * shadow, short_side * 0.012 * shadow);
+        ctx.fill_round_rect_shadow(
+            x,
+            y,
+            w,
+            h,
+            radius,
+            "#000",
+            sc,
+            short_side * 0.03 * shadow,
+            short_side * 0.012 * shadow,
+        );
         ctx.record_shape("photo-shadow", dst, None, true);
     }
     if radius > 0.0 {
         ctx.clip_round_rect(x, y, w, h, radius);
     }
-    ctx.draw_image(photo, Some(src), dst, image_sampling_at(crop.sw, crop.sh, dst), "photo");
+    ctx.draw_image(
+        photo,
+        Some(src),
+        dst,
+        image_sampling_at(crop.sw, crop.sh, dst),
+        "photo",
+    );
     // render-v1 overlay: above the photo, below everything the template paints
     // afterwards (still inside the photo's clip).
     ctx.draw_overlay_once(dst);
@@ -231,7 +269,17 @@ pub fn draw_photo_cover(
     let sx = crop.sx + (crop.sw - sw) / 2.0;
     let sy = crop.sy + (crop.sh - sh) / 2.0;
     if shadow > 0.0 {
-        ctx.fill_round_rect_shadow(x, y, w, h, radius, "#000", "rgba(0,0,0,0.5)", short_side * 0.03 * shadow, 0.0);
+        ctx.fill_round_rect_shadow(
+            x,
+            y,
+            w,
+            h,
+            radius,
+            "#000",
+            "rgba(0,0,0,0.5)",
+            short_side * 0.03 * shadow,
+            0.0,
+        );
         ctx.record_shape("photo-shadow", Rect::from_xywh(x, y, w, h), None, true);
     }
     if radius > 0.0 {
@@ -267,13 +315,22 @@ pub fn photo_window_of(params: &Params, pw: f32, ph: f32) -> (f32, f32, bool) {
 /// `aspectCanvas()` (templates.ts:1873) — rounded like `scene.ts`.
 pub fn aspect_canvas(pw: f32, ph: f32, aspect: f64) -> (f32, f32) {
     if !(aspect > 0.05) {
-        return (f32::max(2.0, js_round(pw as f64) as f32), f32::max(2.0, js_round(ph as f64) as f32));
+        return (
+            f32::max(2.0, js_round(pw as f64) as f32),
+            f32::max(2.0, js_round(ph as f64) as f32),
+        );
     }
     let a = aspect as f32;
     if pw / ph >= a {
-        (f32::max(2.0, js_round((ph * a) as f64) as f32), f32::max(2.0, js_round(ph as f64) as f32))
+        (
+            f32::max(2.0, js_round((ph * a) as f64) as f32),
+            f32::max(2.0, js_round(ph as f64) as f32),
+        )
     } else {
-        (f32::max(2.0, js_round(pw as f64) as f32), f32::max(2.0, js_round((pw / a) as f64) as f32))
+        (
+            f32::max(2.0, js_round(pw as f64) as f32),
+            f32::max(2.0, js_round((pw / a) as f64) as f32),
+        )
     }
 }
 
@@ -296,7 +353,7 @@ pub fn logo_scale(env: &LayoutEnv) -> f32 {
 
 // ── text (draw.ts:331 fitSize / :369 drawFitted) ───────────────────────────
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct FittedOpts<'a> {
     pub family: &'a str,
     pub weight: u16,
@@ -305,6 +362,13 @@ pub struct FittedOpts<'a> {
     pub tracking: f64,
     pub min: f32,
     pub shadow: bool,
+    /// Explicit logical row ID within the current template/variant scope.
+    /// `None` means the row is rendered without a stable editing contract.
+    pub slot: Option<&'a str>,
+    /// Existing declared rows (currently brandFooter) apply their historical
+    /// `slotValues`/`slotSizes` in the template, but flat text/visibility still
+    /// resolves here. Their flat scale is applied by the template's size helper.
+    pub declared_slot: bool,
 }
 
 impl<'a> FittedOpts<'a> {
@@ -317,6 +381,8 @@ impl<'a> FittedOpts<'a> {
             tracking: 0.0,
             min: 0.0,
             shadow: false,
+            slot: None,
+            declared_slot: false,
         }
     }
     pub fn weight(mut self, w: u16) -> Self {
@@ -341,6 +407,20 @@ impl<'a> FittedOpts<'a> {
     }
     pub fn shadow(mut self, s: bool) -> Self {
         self.shadow = s;
+        self
+    }
+    /// Adds a stable hand text slot and enables the flat `slotText`/`slotOff`/
+    /// `slotScale` params contract for this row.
+    pub fn slot(mut self, id: &'a str) -> Self {
+        self.slot = Some(id);
+        self.declared_slot = false;
+        self
+    }
+    /// Adds stable report identity for a row whose template code already
+    /// applies its legacy declared-slot values and sizing.
+    pub fn declared_slot(mut self, id: &'a str) -> Self {
+        self.slot = Some(id);
+        self.declared_slot = true;
         self
     }
 }
@@ -368,11 +448,85 @@ pub struct FacePick {
 
 fn pick_face(fonts: &HandFonts, ctx: &mut Ctx2D, family: &str, weight: u16) -> Option<FacePick> {
     match fonts.resolve(family, weight) {
-        Some(r) => Some(FacePick { tf: r.tf, synthetic: r.synthetic_bold }),
+        Some(r) => Some(FacePick {
+            tf: r.tf,
+            synthetic: r.synthetic_bold,
+        }),
         None => {
-            ctx.record_gap(format!("font family '{family}' weight {weight} not resolved"));
+            ctx.record_gap(format!(
+                "{FONT_ERROR_PREFIX}required font family '{family}' weight {weight} was not resolved"
+            ));
             None
         }
+    }
+}
+
+fn ensure_text_glyphs(
+    env: &mut Env,
+    text: &str,
+    family: &str,
+    weight: u16,
+    pick: &FacePick,
+) -> String {
+    let missing = env.te.missing_glyphs(&pick.tf, text);
+    if missing.is_empty() {
+        return text.to_string();
+    }
+
+    let mut drawable = String::with_capacity(text.len());
+    let mut substitutions = Vec::new();
+    for c in text.chars() {
+        if !missing.contains(&c) {
+            drawable.push(c);
+            continue;
+        }
+        let replacement = replacement_for(c, |candidate| {
+            env.te
+                .missing_glyphs(&pick.tf, &candidate.to_string())
+                .is_empty()
+        });
+        if let Some(replacement) = replacement {
+            substitutions.push(format!("U+{:04X} '{}' -> '{}'", c as u32, c, replacement));
+            drawable.push(replacement);
+        } else {
+            substitutions.push(format!("U+{:04X} '{}' -> removed", c as u32, c));
+        }
+    }
+    if !substitutions.is_empty() {
+        env.ctx.record_gap(format!(
+            "font substitution for {family} {weight}: {}",
+            substitutions.join(", ")
+        ));
+    }
+    drawable
+}
+
+fn compatibility_char(c: char) -> Option<char> {
+    match c {
+        '\u{3000}' => Some(' '),
+        '\u{2212}' => Some('-'),
+        '\u{FF01}'..='\u{FF5E}' => char::from_u32(c as u32 - 0xFEE0),
+        _ => None,
+    }
+}
+
+fn replacement_for(c: char, supported: impl Fn(char) -> bool) -> Option<char> {
+    compatibility_char(c)
+        .filter(|candidate| *candidate != c && supported(*candidate))
+        .or_else(|| ['\u{FFFD}', '?', ' '].into_iter().find(|candidate| supported(*candidate)))
+}
+
+#[cfg(test)]
+mod text_fallback_tests {
+    use super::*;
+
+    #[test]
+    fn unsupported_symbols_keep_the_rest_of_the_line_visible() {
+        let compatible = replacement_for('\u{FF0D}', |c| c.is_ascii());
+        let substituted = replacement_for('\u{1F626}', |c| c.is_ascii());
+
+        assert_eq!(compatible, Some('-'));
+        assert_eq!(substituted, Some('?'));
     }
 }
 
@@ -390,7 +544,11 @@ pub fn fit_size(
     // #69 A5: the measured ink is `size * scale`, so the slot's painted room is
     // `max_width * scale`; comparing against the design width would eat a ladder
     // step. `scale == 1` keeps `max_width` byte-for-byte.
-    let cap = if te.scale == 1.0 { max_width } else { max_width * te.scale + 1e-6 };
+    let cap = if te.scale == 1.0 {
+        max_width
+    } else {
+        max_width * te.scale + 1e-6
+    };
     let tracking_px = (tracking_em as f32) * start;
     let mut size = start;
     while size > min {
@@ -415,22 +573,78 @@ pub fn draw_fitted(
     color: &str,
     opts: &FittedOpts,
 ) -> f32 {
-    if text.is_empty() {
-        return 0.0;
+    let (current_text, slot_scale, meta) = if let Some(slot) = opts.slot {
+        match begin_text_slot(env, slot, text) {
+            Some((meta, resolved)) => (
+                resolved.text,
+                if opts.declared_slot {
+                    1.0
+                } else {
+                    resolved.scale
+                },
+                Some(meta),
+            ),
+            None => (text.to_string(), 1.0, None),
+        }
+    } else {
+        (text.to_string(), 1.0, None)
+    };
+    if current_text.is_empty() {
+        let Some(meta) = meta else { return 0.0 };
+        let rect = fitted_slot_rect(
+            x,
+            y,
+            max_width,
+            size * slot_scale as f32,
+            opts.align,
+            opts.baseline,
+        );
+        return draw_text_exact_resolved(
+            env,
+            &current_text,
+            x,
+            y,
+            size * slot_scale as f32,
+            color,
+            opts.family,
+            opts.weight,
+            opts.align,
+            opts.baseline,
+            0.0,
+            opts.shadow,
+            None,
+            text,
+            Some(meta),
+            Some(rect),
+        );
     }
     let Some(pick) = pick_face(env.fonts, &mut env.ctx, opts.family, opts.weight) else {
         return 0.0;
     };
-    let min = if opts.min > 0.0 { opts.min } else { size * 0.45 };
+    let current_text = ensure_text_glyphs(env, &current_text, opts.family, opts.weight, &pick);
+    let min = if opts.min > 0.0 {
+        opts.min
+    } else {
+        size * 0.45
+    };
     let tracking_em = opts.tracking;
-    let final_size = fit_size(env.te, &pick.tf, text, max_width, size, min, tracking_em);
+    let final_size = fit_size(
+        env.te,
+        &pick.tf,
+        &current_text,
+        max_width,
+        size,
+        min,
+        tracking_em,
+    );
     let tracking_px = (tracking_em as f32) * final_size;
-    draw_text_exact(
+    let scaled_size = final_size * slot_scale as f32;
+    draw_text_exact_resolved(
         env,
-        text,
+        &current_text,
         x,
         y,
-        final_size,
+        scaled_size,
         color,
         opts.family,
         opts.weight,
@@ -439,10 +653,114 @@ pub fn draw_fitted(
         tracking_px,
         opts.shadow,
         Some(&pick),
+        text,
+        meta,
+        None,
     );
     // #69 A1/A2: stacked rows advance by the ink they took, i.e. the painted
     // size, so 1.22 pitch stays proportional to the glyphs.
-    if env.te.scale == 1.0 { final_size } else { final_size * env.te.scale }
+    if env.te.scale == 1.0 {
+        scaled_size
+    } else {
+        scaled_size * env.te.scale
+    }
+}
+
+#[derive(Clone)]
+struct TextSlotMeta {
+    key: String,
+    source: lines::Source,
+    hidden: bool,
+    stable: bool,
+}
+
+fn begin_text_slot(
+    env: &mut Env,
+    slot: &str,
+    raw: &str,
+) -> Option<(TextSlotMeta, lines::Resolution)> {
+    let scope = env
+        .design
+        .variant_id
+        .clone()
+        .unwrap_or_else(|| env.design.template_id.clone());
+    let key = lines::stable_key(&scope, slot);
+    if !env.lines.borrow_mut().claim(&key) {
+        env.ctx
+            .record_gap(format!("duplicate hand text slot '{key}'"));
+        return None;
+    }
+    let source = lines::classify(raw, env.text, env.exif, &title_of(env));
+    let resolved = lines::resolve(env.params, &key, raw);
+    let meta = TextSlotMeta {
+        key,
+        source,
+        hidden: resolved.hidden,
+        stable: true,
+    };
+    Some((meta, resolved))
+}
+
+/// Preview the flat slot value for layout decisions made before the row is
+/// drawn (for example, whether an edited subtitle reserves a second line).
+/// Claiming and reporting still happen only in `draw_fitted`/`draw_text_exact`.
+pub fn resolve_text_slot(env: &Env, slot: &str, raw: &str) -> lines::Resolution {
+    let scope = env
+        .design
+        .variant_id
+        .clone()
+        .unwrap_or_else(|| env.design.template_id.clone());
+    lines::resolve(env.params, &lines::stable_key(&scope, slot), raw)
+}
+
+fn fitted_slot_rect(
+    x: f32,
+    y: f32,
+    width: f32,
+    size: f32,
+    align: &str,
+    baseline: &str,
+) -> RectJson {
+    let left = match halign(align) {
+        HAlign::Left => x,
+        HAlign::Center => x - width / 2.0,
+        HAlign::Right => x - width,
+    };
+    let top = match baseline {
+        "top" => y,
+        "middle" => y - 0.465 * size,
+        _ => y - 0.72 * size,
+    };
+    RectJson::new(left, top, width.max(0.0), 0.93 * size)
+}
+
+fn transform_report_rect(matrix: skia_safe::Matrix, rect: RectJson) -> RectJson {
+    let src_pts = [
+        skia_safe::Point::new(rect.x, rect.y),
+        skia_safe::Point::new(rect.x + rect.w, rect.y),
+        skia_safe::Point::new(rect.x, rect.y + rect.h),
+        skia_safe::Point::new(rect.x + rect.w, rect.y + rect.h),
+    ];
+    let mut pts = [skia_safe::Point::default(); 4];
+    matrix.map_points(&mut pts, &src_pts);
+    let (min_x, max_x) = pts
+        .iter()
+        .map(|point| point.x)
+        .fold((f32::MAX, f32::MIN), |(min, max), value| {
+            (min.min(value), max.max(value))
+        });
+    let (min_y, max_y) = pts
+        .iter()
+        .map(|point| point.y)
+        .fold((f32::MAX, f32::MIN), |(min, max), value| {
+            (min.min(value), max.max(value))
+        });
+    RectJson::new(
+        min_x,
+        min_y,
+        (max_x - min_x).max(0.0),
+        (max_y - min_y).max(0.0),
+    )
 }
 
 /// `measureFitted()` (templates.ts:182) — (painted size, painted width).
@@ -462,9 +780,16 @@ pub fn measure_fitted(
     let Some(pick) = pick_face(env.fonts, &mut env.ctx, family, weight) else {
         return (size, 0.0);
     };
-    let fitted = fit_size(env.te, &pick.tf, text, max_width, size, min, tracking_em);
-    let (_, width) = env.te.shape(text, &pick.tf, fitted, (tracking_em as f32) * fitted);
-    let painted = if env.te.scale == 1.0 { fitted } else { env.te.painted_size(fitted) };
+    let text = ensure_text_glyphs(env, text, family, weight, &pick);
+    let fitted = fit_size(env.te, &pick.tf, &text, max_width, size, min, tracking_em);
+    let (_, width) = env
+        .te
+        .shape(&text, &pick.tf, fitted, (tracking_em as f32) * fitted);
+    let painted = if env.te.scale == 1.0 {
+        fitted
+    } else {
+        env.te.painted_size(fitted)
+    };
     (painted, width)
 }
 
@@ -486,7 +811,171 @@ pub fn draw_text_exact(
     shadow: bool,
     pick: Option<&FacePick>,
 ) -> f32 {
+    draw_text_exact_with_slot_internal(
+        env,
+        text,
+        x,
+        y,
+        size,
+        color,
+        family,
+        weight,
+        align,
+        baseline,
+        tracking_px,
+        shadow,
+        pick,
+        None,
+    )
+}
+
+/// Exact-size text with an explicit stable hand slot. Used for transformed
+/// text paths such as vertical labels; it shares the same resolver and report
+/// path as `draw_fitted` rather than maintaining a second implementation.
+#[allow(clippy::too_many_arguments)]
+pub fn draw_text_exact_slot(
+    env: &mut Env,
+    text: &str,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: &str,
+    family: &str,
+    weight: u16,
+    align: &str,
+    baseline: &str,
+    tracking_px: f32,
+    shadow: bool,
+    pick: Option<&FacePick>,
+    slot: &str,
+) -> f32 {
+    draw_text_exact_with_slot_internal(
+        env,
+        text,
+        x,
+        y,
+        size,
+        color,
+        family,
+        weight,
+        align,
+        baseline,
+        tracking_px,
+        shadow,
+        pick,
+        Some(slot),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_text_exact_with_slot_internal(
+    env: &mut Env,
+    raw: &str,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: &str,
+    family: &str,
+    weight: u16,
+    align: &str,
+    baseline: &str,
+    tracking_px: f32,
+    shadow: bool,
+    pick: Option<&FacePick>,
+    slot: Option<&str>,
+) -> f32 {
+    let (current, size, meta) = if let Some(slot) = slot {
+        match begin_text_slot(env, slot, raw) {
+            Some((meta, resolved)) => (
+                resolved.text,
+                (size as f64 * resolved.scale) as f32,
+                Some(meta),
+            ),
+            None => (raw.to_string(), size, None),
+        }
+    } else {
+        (raw.to_string(), size, None)
+    };
+    draw_text_exact_resolved(
+        env,
+        &current,
+        x,
+        y,
+        size,
+        color,
+        family,
+        weight,
+        align,
+        baseline,
+        tracking_px,
+        shadow,
+        pick,
+        raw,
+        meta,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_text_exact_resolved(
+    env: &mut Env,
+    text: &str,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: &str,
+    family: &str,
+    weight: u16,
+    align: &str,
+    baseline: &str,
+    tracking_px: f32,
+    shadow: bool,
+    pick: Option<&FacePick>,
+    raw: &str,
+    meta: Option<TextSlotMeta>,
+    empty_rect: Option<RectJson>,
+) -> f32 {
     if text.is_empty() {
+        if let Some(meta) = meta {
+            let matrix = env.ctx.matrix();
+            let rect = empty_rect
+                .map(|rect| transform_report_rect(matrix, rect))
+                .unwrap_or_else(|| transform_report_rect(matrix, RectJson::new(x, y, 0.0, 0.0)));
+            let m = matrix;
+            env.ctx.record_text(TextDraw {
+                seq: 0,
+                s: String::new(),
+                raw: raw.to_string(),
+                family: family.to_string(),
+                weight,
+                size: if env.te.scale == 1.0 {
+                    size
+                } else {
+                    env.te.painted_size(size)
+                },
+                x,
+                y,
+                align: align.to_string(),
+                baseline: baseline.to_string(),
+                tracking: tracking_px,
+                measure: 0.0,
+                shadow,
+                rect,
+                matrix: [
+                    m.scale_x(),
+                    m.skew_y(),
+                    m.skew_x(),
+                    m.scale_y(),
+                    m.translate_x(),
+                    m.translate_y(),
+                ],
+                key: meta.key,
+                source: meta.source.tag().to_string(),
+                hidden: meta.hidden,
+                stable: true,
+                present: true,
+            });
+        }
         return 0.0;
     }
     let owned;
@@ -501,9 +990,16 @@ pub fn draw_text_exact(
         },
     };
     let Some(vb) = vbaseline(baseline) else {
-        env.ctx.record_gap(format!("textBaseline '{baseline}' not ported"));
+        env.ctx
+            .record_gap(format!("textBaseline '{baseline}' not ported"));
         return 0.0;
     };
+    let text = ensure_text_glyphs(env, text, family, weight, pick);
+    let line_source = meta
+        .as_ref()
+        .map(|slot| slot.source)
+        .unwrap_or_else(|| lines::classify(raw, env.text, env.exif, &title_of(env)));
+    let hidden = meta.as_ref().map(|slot| slot.hidden).unwrap_or(false);
     // Canvas2D 'top' puts the em-box top at y: draw on the alphabetic baseline
     // shifted down by the font ascent.
     let top_shift = if baseline == "top" {
@@ -512,7 +1008,7 @@ pub fn draw_text_exact(
     } else {
         0.0
     };
-    let (_, width) = env.te.shape(text, &pick.tf, size, tracking_px);
+    let (_, width) = env.te.shape(&text, &pick.tf, size, tracking_px);
     let alpha = env.ctx.global_alpha();
     let col = match css::parse(color) {
         Some(c) => c.to_color(alpha),
@@ -527,7 +1023,9 @@ pub fn draw_text_exact(
         0.0
     };
     let shadow_spec = if shadow {
-        let sc = css::parse("rgba(0,0,0,0.5)").map(|c| c.to_color(1.0)).unwrap_or(Color::BLACK);
+        let sc = css::parse("rgba(0,0,0,0.5)")
+            .map(|c| c.to_color(1.0))
+            .unwrap_or(Color::BLACK);
         let k = std::env::var("E4H_SHADOW_SIGMA")
             .ok()
             .and_then(|v| v.parse::<f32>().ok())
@@ -536,14 +1034,19 @@ pub fn draw_text_exact(
             .ok()
             .and_then(|v| v.parse::<f32>().ok())
             .unwrap_or(0.08);
-        Some(Shadow { color: sc, sigma: size * 0.35 * 0.5 * k, dx: 0.0, dy: size * off })
+        Some(Shadow {
+            color: sc,
+            sigma: size * 0.35 * 0.5 * k,
+            dx: 0.0,
+            dy: size * off,
+        })
     } else {
         None
     };
     let matrix = env.ctx.matrix();
     let canvas = env.ctx.canvas_ref();
     let spec = TextSpec {
-        text,
+        text: &text,
         typeface: pick.tf.clone(),
         size,
         x,
@@ -556,7 +1059,9 @@ pub fn draw_text_exact(
         matrix: Some(matrix),
         embolden: pick.synthetic,
     };
-    env.te.draw(canvas, &spec);
+    if !hidden {
+        env.te.draw(canvas, &spec);
+    }
     let left = match halign(align) {
         HAlign::Left => x,
         HAlign::Center => x - width / 2.0,
@@ -589,6 +1094,7 @@ pub fn draw_text_exact(
     let rec = TextDraw {
         seq: 0,
         s: text.to_string(),
+        raw: raw.to_string(),
         family: family.to_string(),
         weight,
         // The oracle recorder reads back `ctx.font`, which scaledContext has
@@ -601,8 +1107,28 @@ pub fn draw_text_exact(
         tracking: tracking_px,
         measure: width,
         shadow,
-        rect: RectJson::new(min_x, min_y, (max_x - min_x).max(1.0), (max_y - min_y).max(1.0)),
-        matrix: [m.scale_x(), m.skew_y(), m.skew_x(), m.scale_y(), m.translate_x(), m.translate_y()],
+        rect: RectJson::new(
+            min_x,
+            min_y,
+            (max_x - min_x).max(1.0),
+            (max_y - min_y).max(1.0),
+        ),
+        matrix: [
+            m.scale_x(),
+            m.skew_y(),
+            m.skew_x(),
+            m.scale_y(),
+            m.translate_x(),
+            m.translate_y(),
+        ],
+        key: meta
+            .as_ref()
+            .map(|slot| slot.key.clone())
+            .unwrap_or_default(),
+        source: line_source.tag().to_string(),
+        hidden,
+        stable: meta.as_ref().is_some_and(|slot| slot.stable),
+        present: true,
     };
     env.ctx.record_text(rec);
     width
@@ -659,10 +1185,20 @@ pub fn draw_brand_logo(env: &mut Env, x: f32, y: f32, w: f32, h: f32, color: &st
                 match mode.as_str() {
                     "trilinear" => {
                         let l0 = (lod.floor() as usize).min(levels.len() - 1);
-                        let frac = if l0 + 1 < levels.len() { lod - lod.floor() } else { 0.0 };
+                        let frac = if l0 + 1 < levels.len() {
+                            lod - lod.floor()
+                        } else {
+                            0.0
+                        };
                         let lo = &levels[l0];
                         let hi = &levels[(l0 + 1).min(levels.len() - 1)];
-                        env.ctx.draw_image_trilinear(lo, hi, frac, Rect::from_xywh(dx, dy, dw, dh), "logo");
+                        env.ctx.draw_image_trilinear(
+                            lo,
+                            hi,
+                            frac,
+                            Rect::from_xywh(dx, dy, dw, dh),
+                            "logo",
+                        );
                     }
                     "floor" | "round" | "roundh" => {
                         let lod_h = (ih / dh.max(0.001)).log2().max(0.0);
@@ -700,7 +1236,11 @@ pub fn draw_brand_logo(env: &mut Env, x: f32, y: f32, w: f32, h: f32, color: &st
                 return true;
             }
         }
-        let img = if halve && s < 0.5 { pyramid_down(&logo, dw.max(1.0), dh.max(1.0)) } else { logo.clone() };
+        let img = if halve && s < 0.5 {
+            pyramid_down(&logo, dw.max(1.0), dh.max(1.0))
+        } else {
+            logo.clone()
+        };
         let (sw, sh) = (img.width() as f32, img.height() as f32);
         env.ctx.draw_image(
             &img,
@@ -772,7 +1312,13 @@ fn resample_lanczos3(src: &Image, dw: usize, dh: usize) -> Option<Image> {
         Some(skia_safe::ColorSpace::new_srgb()),
     );
     let mut data = vec![0u8; sw * sh * 4];
-    if !src.read_pixels(&info, &mut data, sw * 4, (0, 0), skia_safe::image::CachingHint::Allow) {
+    if !src.read_pixels(
+        &info,
+        &mut data,
+        sw * 4,
+        (0, 0),
+        skia_safe::image::CachingHint::Allow,
+    ) {
         return None;
     }
     let f: Vec<f32> = data.iter().map(|v| *v as f32 / 255.0).collect();
@@ -834,7 +1380,10 @@ fn resample_lanczos3(src: &Image, dw: usize, dh: usize) -> Option<Image> {
             }
         }
     }
-    let bytes: Vec<u8> = out.iter().map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8).collect();
+    let bytes: Vec<u8> = out
+        .iter()
+        .map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8)
+        .collect();
     let info2 = skia_safe::ImageInfo::new(
         (dw as i32, dh as i32),
         skia_safe::ColorType::RGBA8888,
@@ -863,7 +1412,10 @@ fn pyramid_levels(src: &Image, target_w: f32, target_h: f32) -> Vec<Image> {
             samp.filter = FilterMode::Linear;
             canvas.draw_image_rect_with_sampling_options(
                 &img,
-                Some((&Rect::from_xywh(0.0, 0.0, w, h), skia_safe::canvas::SrcRectConstraint::Strict)),
+                Some((
+                    &Rect::from_xywh(0.0, 0.0, w, h),
+                    skia_safe::canvas::SrcRectConstraint::Strict,
+                )),
                 &Rect::from_xywh(0.0, 0.0, nw, nh),
                 samp,
                 &p,
@@ -906,7 +1458,10 @@ fn pyramid_down(src: &Image, target_w: f32, target_h: f32) -> Image {
             }
             canvas.draw_image_rect_with_sampling_options(
                 &img,
-                Some((&Rect::from_xywh(0.0, 0.0, w, h), skia_safe::canvas::SrcRectConstraint::Strict)),
+                Some((
+                    &Rect::from_xywh(0.0, 0.0, w, h),
+                    skia_safe::canvas::SrcRectConstraint::Strict,
+                )),
                 &Rect::from_xywh(0.0, 0.0, nw, nh),
                 samp,
                 &p,
@@ -921,7 +1476,16 @@ fn pyramid_down(src: &Image, target_w: f32, target_h: f32) -> Image {
 
 // ── lines ──────────────────────────────────────────────────────────────────
 
-pub fn line(ctx: &mut Ctx2D, x1: f32, y1: f32, x2: f32, y2: f32, color: &str, width: f32, dash: Option<&[f32]>) {
+pub fn line(
+    ctx: &mut Ctx2D,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    color: &str,
+    width: f32,
+    dash: Option<&[f32]>,
+) {
     ctx.stroke_line(x1, y1, x2, y2, color, width, dash);
 }
 
@@ -977,10 +1541,8 @@ pub fn draw_tech_text(
     align: &str,
     alpha: f32,
     scale_x: f32,
+    slot: &str,
 ) {
-    if text.is_empty() {
-        return;
-    }
     env.ctx.save();
     env.ctx.set_global_alpha(alpha);
     env.ctx.translate(cx, cy);
@@ -993,7 +1555,8 @@ pub fn draw_tech_text(
         .baseline("middle")
         .tracking(0.03)
         .min(size * 0.7)
-        .shadow(color == "#ffffff");
+        .shadow(color == "#ffffff")
+        .slot(slot);
     draw_fitted(env, text, 0.0, 0.0, target_w, size, color, &opts);
     env.ctx.restore();
 }
@@ -1031,7 +1594,9 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
     let small_w = if no_blur {
         w.max(1.0)
     } else {
-        420.0_f64.min(160.0_f64.max(js_round(w as f64 / blur_div))).max(1.0) as f32
+        420.0_f64
+            .min(160.0_f64.max(js_round(w as f64 / blur_div)))
+            .max(1.0) as f32
     };
     let small_h = if no_blur {
         h.max(1.0)
@@ -1049,8 +1614,22 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
         env.ctx.draw_image(
             env.photo,
             Some(Rect::from_xywh(sx, sy, sw, sh)),
-            Rect::from_xywh(-w * (over - 1.0) / 2.0, -h * (over - 1.0) / 2.0, w * over, h * over),
-            image_sampling_at(sw, sh, Rect::from_xywh(-w * (over - 1.0) / 2.0, -h * (over - 1.0) / 2.0, w * over, h * over)),
+            Rect::from_xywh(
+                -w * (over - 1.0) / 2.0,
+                -h * (over - 1.0) / 2.0,
+                w * over,
+                h * over,
+            ),
+            image_sampling_at(
+                sw,
+                sh,
+                Rect::from_xywh(
+                    -w * (over - 1.0) / 2.0,
+                    -h * (over - 1.0) / 2.0,
+                    w * over,
+                    h * over,
+                ),
+            ),
             "backdrop",
         );
     } else {
@@ -1086,19 +1665,30 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
             _ => TileMode::Clamp,
         };
         let filter = image_filters::blur((blur, blur), tile, None, None);
-        let dst = Rect::from_xywh(-w * (over - 1.0) / 2.0, -h * (over - 1.0) / 2.0, w * over, h * over);
+        let dst = Rect::from_xywh(
+            -w * (over - 1.0) / 2.0,
+            -h * (over - 1.0) / 2.0,
+            w * over,
+            h * over,
+        );
         let samp = image_sampling_at(small_w, small_h, dst);
         let use_layer = std::env::var("E4H_BLUR_LAYER").ok().as_deref() != Some("0");
         match (filter, use_layer) {
-            (Some(f), true) => env.ctx.draw_image_layer_filtered(&image, None, dst, samp, f, "backdrop"),
-            (Some(f), false) => env.ctx.draw_image_filtered(&image, None, dst, samp, Some(f), "backdrop"),
+            (Some(f), true) => env
+                .ctx
+                .draw_image_layer_filtered(&image, None, dst, samp, f, "backdrop"),
+            (Some(f), false) => {
+                env.ctx
+                    .draw_image_filtered(&image, None, dst, samp, Some(f), "backdrop")
+            }
             (None, _) => env.ctx.draw_image(&image, None, dst, samp, "backdrop"),
         }
     }
     env.ctx.set_global_alpha(tint_alpha);
     env.ctx.fill_rect_color(0.0, 0.0, w, h, &theme.bg);
     env.ctx.set_global_alpha(1.0);
-    env.ctx.record_underlay("backdrop", Rect::from_xywh(0.0, 0.0, w, h), None);
+    env.ctx
+        .record_underlay("backdrop", Rect::from_xywh(0.0, 0.0, w, h), None);
 }
 
 /// The 360-px-wide cover photo the glass cards blur behind their panel
@@ -1157,27 +1747,68 @@ pub fn draw_glass_panel(
 ) {
     let s = env.pw.min(env.ph);
     let panel = Rect::from_xywh(x, y, w, h);
-    env.ctx.fill_linear_gradient(x, y, x, y + h, &[(0.0, tint_top), (1.0, tint_bottom)], panel);
-    env.ctx.clip_round_rect(x, y, w, h, radius);
-    let (img, tw, th) = cover_temp_image(env, 360);
-    let src = Rect::from_xywh((x / env.w) * tw, (y / env.h) * th, (w / env.w) * tw, (h / env.h) * th);
-    if let Some(f) = image_filters::blur((blur_px.max(1.0), blur_px.max(1.0)), TileMode::Clamp, None, None) {
-        let mut samp = SamplingOptions::default();
-        samp.filter = FilterMode::Linear;
-        env.ctx.draw_image_layer_filtered(&img, Some(src), panel, samp, f, "backdrop");
-    }
-    env.ctx.fill_rect_color(x, y, w, h, &format!("rgba(255,255,255,{white_alpha})"));
     env.ctx.fill_linear_gradient(
         x,
         y,
         x,
         y + h,
-        &[(0.0, "rgba(255,255,255,0.22)"), (0.35, "rgba(255,255,255,0.04)"), (1.0, "rgba(255,255,255,0)")],
+        &[(0.0, tint_top), (1.0, tint_bottom)],
+        panel,
+    );
+    env.ctx.clip_round_rect(x, y, w, h, radius);
+    let (img, tw, th) = cover_temp_image(env, 360);
+    let src = Rect::from_xywh(
+        (x / env.w) * tw,
+        (y / env.h) * th,
+        (w / env.w) * tw,
+        (h / env.h) * th,
+    );
+    if let Some(f) = image_filters::blur(
+        (blur_px.max(1.0), blur_px.max(1.0)),
+        TileMode::Clamp,
+        None,
+        None,
+    ) {
+        let mut samp = SamplingOptions::default();
+        samp.filter = FilterMode::Linear;
+        env.ctx
+            .draw_image_layer_filtered(&img, Some(src), panel, samp, f, "backdrop");
+    }
+    env.ctx
+        .fill_rect_color(x, y, w, h, &format!("rgba(255,255,255,{white_alpha})"));
+    env.ctx.fill_linear_gradient(
+        x,
+        y,
+        x,
+        y + h,
+        &[
+            (0.0, "rgba(255,255,255,0.22)"),
+            (0.35, "rgba(255,255,255,0.04)"),
+            (1.0, "rgba(255,255,255,0)"),
+        ],
         panel,
     );
     env.ctx.restore_clip();
-    env.ctx.stroke_round_rect(x, y, w, h, radius, "rgba(255,255,255,0.42)", stroke_px, None);
-    line(&mut env.ctx, x + radius, y + 1.0, x + w - radius, y + 1.0, "rgba(255,255,255,0.5)", (s * 0.001).max(1.0), None);
+    env.ctx.stroke_round_rect(
+        x,
+        y,
+        w,
+        h,
+        radius,
+        "rgba(255,255,255,0.42)",
+        stroke_px,
+        None,
+    );
+    line(
+        &mut env.ctx,
+        x + radius,
+        y + 1.0,
+        x + w - radius,
+        y + 1.0,
+        "rgba(255,255,255,0.5)",
+        (s * 0.001).max(1.0),
+        None,
+    );
     env.ctx.record_shape("glass-panel", panel, None, true);
 }
 
@@ -1199,7 +1830,12 @@ pub fn draw_barcode(ctx: &mut Ctx2D, x: f32, y: f32, w: f32, h: f32, color: &str
         let adv = ((seed as i32) >> 4) % 3;
         cx += bw + 1.0 + adv as f32;
     }
-    ctx.record_shape("barcode", Rect::from_xywh(x, y, w, h), Some(color.to_string()), true);
+    ctx.record_shape(
+        "barcode",
+        Rect::from_xywh(x, y, w, h),
+        Some(color.to_string()),
+        true,
+    );
 }
 
 pub fn draw_sprockets(ctx: &mut Ctx2D, x: f32, y: f32, w: f32, h: f32, count: usize, color: &str) {
@@ -1208,9 +1844,21 @@ pub fn draw_sprockets(ctx: &mut Ctx2D, x: f32, y: f32, w: f32, h: f32, count: us
     let hole_h = h * 0.42;
     for i in 0..count {
         let cx = x + i as f32 * gap + gap / 2.0;
-        ctx.fill_round_rect(cx - hole_w / 2.0, y + (h - hole_h) / 2.0, hole_w, hole_h, hole_h * 0.22, color);
+        ctx.fill_round_rect(
+            cx - hole_w / 2.0,
+            y + (h - hole_h) / 2.0,
+            hole_w,
+            hole_h,
+            hole_h * 0.22,
+            color,
+        );
     }
-    ctx.record_shape("sprockets", Rect::from_xywh(x, y, w, h), Some(color.to_string()), true);
+    ctx.record_shape(
+        "sprockets",
+        Rect::from_xywh(x, y, w, h),
+        Some(color.to_string()),
+        true,
+    );
 }
 
 pub fn draw_grain(ctx: &mut Ctx2D, w: f32, h: f32, opacity: f32) {
@@ -1243,9 +1891,19 @@ pub fn draw_grain(ctx: &mut Ctx2D, w: f32, h: f32, opacity: f32) {
     ctx.record_underlay("grain", Rect::from_xywh(0.0, 0.0, w, h), None);
 }
 
-pub fn measure_text(env: &mut Env, text: &str, family: &str, weight: u16, size: f32, tracking_px: f32) -> f32 {
+pub fn measure_text(
+    env: &mut Env,
+    text: &str,
+    family: &str,
+    weight: u16,
+    size: f32,
+    tracking_px: f32,
+) -> f32 {
     match pick_face(env.fonts, &mut env.ctx, family, weight) {
-        Some(p) => env.te.shape(text, &p.tf, size, tracking_px).1,
+        Some(p) => {
+            let text = ensure_text_glyphs(env, text, family, weight, &p);
+            env.te.shape(&text, &p.tf, size, tracking_px).1
+        }
         None => 0.0,
     }
 }
@@ -1264,10 +1922,64 @@ pub fn draw_vertical_text(
     weight: u16,
     tracking_em: f64,
 ) {
+    draw_vertical_text_inner(
+        env,
+        text,
+        x,
+        y,
+        size,
+        color,
+        family,
+        weight,
+        tracking_em,
+        None,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn draw_vertical_text_slot(
+    env: &mut Env,
+    text: &str,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: &str,
+    family: &str,
+    weight: u16,
+    tracking_em: f64,
+    slot: &str,
+) {
+    draw_vertical_text_inner(
+        env,
+        text,
+        x,
+        y,
+        size,
+        color,
+        family,
+        weight,
+        tracking_em,
+        Some(slot),
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_vertical_text_inner(
+    env: &mut Env,
+    text: &str,
+    x: f32,
+    y: f32,
+    size: f32,
+    color: &str,
+    family: &str,
+    weight: u16,
+    tracking_em: f64,
+    slot: Option<&str>,
+) {
     env.ctx.save();
     env.ctx.translate(x, y);
     env.ctx.rotate(-std::f32::consts::FRAC_PI_2);
-    draw_text_exact(
+    draw_text_exact_with_slot_internal(
         env,
         text,
         0.0,
@@ -1281,6 +1993,7 @@ pub fn draw_vertical_text(
         (tracking_em as f32) * size,
         false,
         None,
+        slot,
     );
     env.ctx.restore();
 }
@@ -1296,31 +2009,79 @@ pub fn draw_swatches(
     size: f32,
     label_color: &str,
     spread: bool,
+    slot_prefix: &str,
 ) {
     let gap = size * 0.34;
     let n = colors.len();
     let total = n as f32 * size + (n as f32 - 1.0) * gap;
     let spread = spread && n > 1;
-    let start = if spread { x + size / 2.0 } else { x + (max_width - total).max(0.0) / 2.0 };
-    let step = if spread { (max_width - size) / (n as f32 - 1.0) } else { size + gap };
+    let start = if spread {
+        x + size / 2.0
+    } else {
+        x + (max_width - total).max(0.0) / 2.0
+    };
+    let step = if spread {
+        (max_width - size) / (n as f32 - 1.0)
+    } else {
+        size + gap
+    };
+    const SWATCH_SLOT_IDS: [&str; 8] = [
+        "cell-01.label",
+        "cell-02.label",
+        "cell-03.label",
+        "cell-04.label",
+        "cell-05.label",
+        "cell-06.label",
+        "cell-07.label",
+        "cell-08.label",
+    ];
     for (i, c) in colors.iter().enumerate() {
-        let cx = if spread { start + i as f32 * step } else { start + i as f32 * (size + gap) + size / 2.0 };
+        let cx = if spread {
+            start + i as f32 * step
+        } else {
+            start + i as f32 * (size + gap) + size / 2.0
+        };
         env.ctx.fill_circle(cx, y + size / 2.0, size / 2.0, c);
-        draw_text_exact(
-            env,
-            &c.replace('#', "").to_uppercase(),
-            cx,
-            y + size + size * 0.22,
-            size * 0.3,
-            label_color,
-            "JetBrains Mono",
-            400,
-            "center",
-            "top",
-            0.0,
-            false,
-            None,
-        );
+        if let Some(cell_slot) = SWATCH_SLOT_IDS.get(i) {
+            let slot = format!("{slot_prefix}.{cell_slot}");
+            draw_text_exact_slot(
+                env,
+                &c.replace('#', "").to_uppercase(),
+                cx,
+                y + size + size * 0.22,
+                size * 0.3,
+                label_color,
+                "JetBrains Mono",
+                400,
+                "center",
+                "top",
+                0.0,
+                false,
+                None,
+                &slot,
+            );
+        } else {
+            env.ctx.record_gap(format!(
+                "palette has {} swatches but only {} stable label slots are declared",
+                colors.len(),
+                SWATCH_SLOT_IDS.len()
+            ));
+            draw_text_exact(
+                env,
+                &c.replace('#', "").to_uppercase(),
+                cx,
+                y + size + size * 0.22,
+                size * 0.3,
+                label_color,
+                "JetBrains Mono",
+                400,
+                "center",
+                "top",
+                0.0,
+                false,
+                None,
+            );
+        }
     }
 }
 
@@ -1340,7 +2101,9 @@ fn js_bucket_key(r: f64, g: f64, b: f64) -> i32 {
 /// matching once it grows — replicated bit for bit.
 pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
     let w = 48usize;
-    let h = (w as f64 * (env.ph as f64 / env.pw as f64)).round().max(24.0) as usize;
+    let h = (w as f64 * (env.ph as f64 / env.pw as f64))
+        .round()
+        .max(24.0) as usize;
     if let Some((buf, pw48, ph48)) = env.palette48 {
         if *pw48 == w && *ph48 == h {
             return palette_from_rgba(buf, w, h, count);
@@ -1362,12 +2125,17 @@ pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
                 samp.use_cubic = true;
                 samp.cubic = skia_safe::CubicResampler::mitchell();
             }
-            Some("mipmap") => samp = SamplingOptions::new(FilterMode::Linear, skia_safe::MipmapMode::Linear),
+            Some("mipmap") => {
+                samp = SamplingOptions::new(FilterMode::Linear, skia_safe::MipmapMode::Linear)
+            }
             _ => {}
         }
         let src_img;
         let img = if std::env::var("E4H_PALETTE_SRC").ok().as_deref() == Some("mipmap") {
-            src_img = env.photo.with_default_mipmaps().unwrap_or_else(|| env.photo.clone());
+            src_img = env
+                .photo
+                .with_default_mipmaps()
+                .unwrap_or_else(|| env.photo.clone());
             &src_img
         } else {
             env.photo
@@ -1391,9 +2159,21 @@ pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
     );
     let mut data = vec![0u8; w * h * 4];
     let img = surface.image_snapshot();
-    if !img.read_pixels(&info, &mut data, w * 4, (0, 0), skia_safe::image::CachingHint::Allow) {
+    if !img.read_pixels(
+        &info,
+        &mut data,
+        w * 4,
+        (0, 0),
+        skia_safe::image::CachingHint::Allow,
+    ) {
         env.ctx.record_gap("palette read_pixels failed".into());
-        return vec!["#2b2b2b".into(), "#6f6a61".into(), "#a99f8c".into(), "#d6cfc1".into(), "#f2eee6".into()];
+        return vec![
+            "#2b2b2b".into(),
+            "#6f6a61".into(),
+            "#a99f8c".into(),
+            "#d6cfc1".into(),
+            "#f2eee6".into(),
+        ];
     }
     // Diagnostics only: writing the bucketed buffer is what lets the sampling
     // model be diffed against Chromium's. Requires the env var, so the default
@@ -1409,7 +2189,12 @@ pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
 fn palette_from_rgba(data: &[u8], w: usize, h: usize, count: usize) -> Vec<String> {
     let mut buckets: Vec<PaletteBucket> = Vec::new();
     for i in (0..w * h).map(|i| i * 4) {
-        let (r, g, b, a) = (data[i] as f64, data[i + 1] as f64, data[i + 2] as f64, data[i + 3] as f64);
+        let (r, g, b, a) = (
+            data[i] as f64,
+            data[i + 1] as f64,
+            data[i + 2] as f64,
+            data[i + 3] as f64,
+        );
         if a < 200.0 {
             continue;
         }
@@ -1423,7 +2208,10 @@ fn palette_from_rgba(data: &[u8], w: usize, h: usize, count: usize) -> Vec<Strin
             continue;
         }
         let key = js_bucket_key(r, g, b);
-        if let Some(found) = buckets.iter_mut().find(|x| js_bucket_key(x.r, x.g, x.b) == key) {
+        if let Some(found) = buckets
+            .iter_mut()
+            .find(|x| js_bucket_key(x.r, x.g, x.b) == key)
+        {
             found.r += r;
             found.g += g;
             found.b += b;
@@ -1458,7 +2246,11 @@ fn palette_from_rgba(data: &[u8], w: usize, h: usize, count: usize) -> Vec<Strin
         }
     }
     while picked.len() < count {
-        picked.push(if picked.len() % 2 == 0 { "#d8d3c8".into() } else { "#8f887c".into() });
+        picked.push(if picked.len() % 2 == 0 {
+            "#d8d3c8".into()
+        } else {
+            "#8f887c".into()
+        });
     }
     picked
 }
@@ -1482,7 +2274,11 @@ pub fn simple_footer_metrics(pw: f32, ph: f32, params: &Params) -> SimpleFooterM
     let scale = long / 3000.0;
     let text_scale = {
         let v = pct(params, "footerTextScale", 1.0) as f32;
-        if v == 0.0 { 1.0 } else { v }
+        if v == 0.0 {
+            1.0
+        } else {
+            v
+        }
     };
     let auto_h = 0.1 * long - 5.0 + 80.0 * (aspect - 1.0).max(0.0);
     let min_h = 60.0_f32.max((54.0 + 2.0 * 96.0 * 0.6) * scale);
@@ -1520,9 +2316,20 @@ pub fn title_of(env: &Env) -> String {
     if !t.is_empty() {
         return t.to_string();
     }
-    let make = if env.text.show_make { env.exif.make.trim() } else { "" };
-    let model = if env.text.show_model { env.exif.model_without_make() } else { String::new() };
-    let parts: Vec<&str> = [make, model.trim()].into_iter().filter(|s| !s.is_empty()).collect();
+    let make = if env.text.show_make {
+        env.exif.make.trim()
+    } else {
+        ""
+    };
+    let model = if env.text.show_model {
+        env.exif.model_without_make()
+    } else {
+        String::new()
+    };
+    let parts: Vec<&str> = [make, model.trim()]
+        .into_iter()
+        .filter(|s| !s.is_empty())
+        .collect();
     if !parts.is_empty() {
         parts.join(" ")
     } else {

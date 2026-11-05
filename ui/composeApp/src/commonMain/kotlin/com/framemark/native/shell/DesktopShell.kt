@@ -30,10 +30,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,7 +77,10 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -89,6 +97,8 @@ import com.framemark.native.inspector.RegistryPorts
 import com.framemark.native.workflow.PresetStore
 import com.framemark.native.inspector.InspectorModelFactory
 import com.framemark.native.inspector.InspectorSection
+import com.framemark.native.inspector.LogoBrandPanel
+import com.framemark.native.inspector.NativeTextSlotControls
 import com.framemark.native.inspector.SectionCard
 import com.framemark.native.inspector.SectionCardShell
 import com.framemark.native.inspector.WatermarkSection
@@ -120,11 +130,18 @@ import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.ProjectPhotoStage
 import com.framemark.native.workflow.ProjectPhotoStrip
+import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.ProjectStatusBanner
 import com.framemark.native.workflow.ProjectPresetSheet
 import com.framemark.native.workflow.PrimaryButton
+import com.framemark.native.workflow.PhotoThumbnail
 import com.framemark.native.workflow.SampleFormat
+import com.framemark.native.workflow.TextSlotRegistry
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.workflow.groupTextSlots
+import com.framemark.native.workflow.textFallbackControls
+import com.framemark.native.workflow.withNativeTextSlots
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 /**
@@ -137,9 +154,22 @@ class DesktopLayoutState {
     var rightWidth by mutableStateOf(FmDesktop.inspectorWidth)
     var leftCollapsed by mutableStateOf(false)
     var rightCollapsed by mutableStateOf(false)
+
+    /**
+     * Which pane a narrow window shows: 0 = photo stage, 1 = border library,
+     * 2 = parameters. Hoisted here (not local to the column layout) so the top
+     * bar's 「参数」 entry can bring the inspector up from anywhere, and so the
+     * choice survives a resize that folds the three columns into one pane.
+     */
+    var narrowPane by mutableIntStateOf(0)
 }
 
 private enum class StageMode { Edit, Batch }
+
+/** Narrow-window pane indices, `DesktopLayoutState.narrowPane`. */
+private const val STAGE_PANE = 0
+private const val LIBRARY_PANE = 1
+private const val PARAMS_PANE = 2
 
 private enum class DesktopTab(val label: String, val section: InspectorSection?) {
     Border("边框", InspectorSection.Border),
@@ -189,8 +219,12 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
     }
     val focusRequester = remember { FocusRequester() }
-
     var selectedCard by remember { mutableStateOf<LibraryCard?>(null) }
+
+    // Renderer-backed text rows belong to one card/photo pair. Replacing the
+    // registry with the selection keeps an old report out of the next frame
+    // synchronously; an in-flight render can only finish into its old instance.
+    val textSlots = remember(selectedCard?.id, projects.activePhotoId) { TextSlotRegistry() }
     var removeTarget by remember { mutableStateOf<PhotoRef?>(null) }
     var importNotice by remember { mutableStateOf<String?>(null) }
     var libraryState by remember { mutableStateOf<LibraryLoadState>(LibraryLoadState.Loading) }
@@ -203,6 +237,12 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     var presetSheetOpen by remember { mutableStateOf(false) }
     var exportSheetOpen by remember { mutableStateOf(false) }
     var helpOpen by remember { mutableStateOf(false) }
+
+    // §3.1/§3.3: stable key of the text row whose input has focus. The 文字 tab
+    // reports it, the stage draws its frame. Every path that swaps what is on
+    // screen — photo, card, inspector tab, folded inspector — clears it, so a
+    // highlight can never outlive the frame it described.
+    var focusedTextSlotKey by remember { mutableStateOf<String?>(null) }
 
     fun requestExport(): Boolean {
         val photo = projects.activePhoto
@@ -238,6 +278,12 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     }
 
     LaunchedEffect(selectedCard?.id) { session.onCardChanged() }
+
+    // The registry itself is replaced on a pair switch. Clear the focus marker
+    // too so a highlight from the previous frame cannot survive that switch.
+    LaunchedEffect(selectedCard?.id, projects.activePhotoId) {
+        focusedTextSlotKey = null
+    }
 
     // Load the frozen E1a bundle once; retry only re-runs this effect.
     LaunchedEffect(libraryReload) {
@@ -286,18 +332,35 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         val state = registryState ?: return@remember null
         state.modelFor(card.id, card.name, card.category, card.categoryName)
     }
+    // The 文字 tab lists the rows the renderer actually drew, so the panel model
+    // carries their per-row controls. `model` itself stays the declared model the
+    // export/design paths read; only the inspector gets the derived copy.
+    val panelModel = remember(model, textSlots.slots) { model?.withNativeTextSlots(textSlots.slots) }
 
     // P2a: project is the source of truth; the DesignSession is a hydrated view
     // that writes every change back through the controller.
-    val currentModel by rememberUpdatedState(model)
+    //
+    // The panel model is the write path: only it carries the renderer-backed text
+    // rows, so a `slotText:`/`slotOff:`/`slotScale:` edit is owned (and therefore
+    // persisted and re-applied) instead of being dropped as an unknown consumer.
+    val currentPanelModel by rememberUpdatedState(panelModel)
     LaunchedEffect(Unit) {
         session.onValuesChanged = { _, overrides ->
-            currentModel?.let { projects.applyControlOverrides(it, overrides) }
+            currentPanelModel?.let { projects.applyControlOverrides(it, overrides) }
         }
         session.onExportChanged = { projects.setExportSettings(it) }
     }
-    LaunchedEffect(model?.cardId, projects.activePhotoId, projects.hydrationVersion) {
-        val built = model ?: return@LaunchedEffect
+    // Re-hydrate when the *control set* changes (rows arriving or disappearing),
+    // not on every render: typing must not be interrupted, and re-reading the
+    // design here is what keeps a stored slot override from being swept away by
+    // the next unrelated edit.
+    LaunchedEffect(
+        panelModel?.cardId,
+        panelModel?.controls?.size,
+        projects.activePhotoId,
+        projects.hydrationVersion,
+    ) {
+        val built = currentPanelModel ?: return@LaunchedEffect
         session.seed(built.controls)
         session.replaceValues(projects.designValues(built))
         session.setExportSilently(projects.exportSettingsForUi())
@@ -400,6 +463,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         val card = ready.snapshot.cards.firstOrNull { it.id == id }
         if (card != null) {
             selectedCard = card
+            projects.applyCard(card.id, card.systemStyle)
             if (!LaunchOptions.openBatch) stageMode = StageMode.Edit
             autoOpened = true
             println("FM_OPEN_CARD ${card.id} name=${card.name}")
@@ -466,18 +530,26 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             .background(FmPalette.canvas)
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
-        val windowWidth = maxWidth
-        val narrow = windowWidth < 688.dp
-        val rightVisible = !layout.rightCollapsed && (!narrow || layout.leftCollapsed)
+        // The content box the top bar and the columns share. Both compare it
+        // against the same derived three-column floor (desktopColumnMinWidth),
+        // so the bar can never call a window narrow while the columns still show
+        // both rails — the old 688-vs-664 pair did exactly that.
+        val contentWidth = (maxWidth - FmDesktop.edge * 2).coerceAtLeast(0.dp)
+        val columns = computeDesktopColumns(
+            availableWidthDp = contentWidth.value,
+            requestedLeft = layout.leftWidth.value,
+            requestedRight = layout.rightWidth.value,
+            leftCollapsed = layout.leftCollapsed,
+            rightCollapsed = layout.rightCollapsed,
+        )
+        val rightVisible = columns.showRight
 
         fun collapseLeft() {
             layout.leftCollapsed = true
-            if (narrow) layout.rightCollapsed = true
         }
 
         fun expandLeft() {
             layout.leftCollapsed = false
-            if (narrow) layout.rightCollapsed = true
         }
 
         fun collapseRight() {
@@ -486,11 +558,39 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
 
         fun expandRight() {
             layout.rightCollapsed = false
-            if (narrow) layout.leftCollapsed = true
         }
 
         fun toggleLeft() = if (layout.leftCollapsed) expandLeft() else collapseLeft()
-        fun toggleRight() = if (rightVisible) collapseRight() else expandRight()
+        fun toggleRight() = if (layout.rightCollapsed) expandRight() else collapseRight()
+
+        /** 顶栏「参数」: narrow windows switch pane, wide ones un-fold the inspector. */
+        fun openParams() {
+            layout.narrowPane = PARAMS_PANE
+            layout.rightCollapsed = false
+        }
+
+        LaunchedEffect(columns.left, columns.right, columns.stage, columns.compact, columns.showRight, contentWidth) {
+            val line = "FM_DESKTOP_COLUMNS content=%.0f left=%.0f right=%.0f stage=%.0f " +
+                "compact=%s showL=%s showR=%s"
+            println(
+                line.format(
+                    contentWidth.value,
+                    columns.left,
+                    columns.right,
+                    columns.stage,
+                    columns.compact,
+                    columns.showLeft,
+                    columns.showRight,
+                ),
+            )
+        }
+
+        // Focus belongs to the 文字 tab: switching tab, folding the inspector or
+        // collapsing into the single-pane layout drops it, so the stage never
+        // frames a row whose editor is no longer on screen.
+        LaunchedEffect(tab, rightVisible) {
+            if (tab != DesktopTab.Text || !rightVisible) focusedTextSlotKey = null
+        }
 
         val openCard: (LibraryCard) -> Unit = { card ->
             FeelProbe.begin("card", card.id)
@@ -498,6 +598,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             projects.applyCard(card.id, card.systemStyle)
             stageMode = StageMode.Edit
             tab = DesktopTab.Border
+            focusedTextSlotKey = null
         }
 
         val addPhoto: () -> Unit = {
@@ -522,6 +623,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 .focusRequester(focusRequester)
                 .focusable()
                 .onPreviewKeyEvent { event ->
+                    if (projects.projectWritesBlocked) return@onPreviewKeyEvent true
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen
                     if (event.key == Key.Escape) {
@@ -591,16 +693,25 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     card = selectedCard,
                     mode = stageMode,
                     photoCount = projects.photos.size,
+                    narrow = columns.compact,
+                    inspectorVisible = rightVisible,
+                    canUndo = session.history.canUndo,
+                    canRedo = session.history.canRedo,
+                    onUndo = { session.undo() },
+                    onRedo = { session.redo() },
                     onAddPhoto = addPhoto,
-                    onToggleBatch = {
-                        stageMode = if (stageMode == StageMode.Batch) StageMode.Edit else StageMode.Batch
-                    },
+                    onSelectEdit = { stageMode = StageMode.Edit },
+                    onSelectBatch = { stageMode = StageMode.Batch },
+                    presetSheetOpen = presetSheetOpen,
                     onOpenPresets = {
                         FeelProbe.begin("preset", "topbar")
                         presetSheetOpen = true
                     },
                     onOpenExport = { requestExport() },
                     onOpenHelp = { helpOpen = true },
+                    onShowParams = ::openParams,
+                    onToggleLeft = ::toggleLeft,
+                    onToggleRight = ::toggleRight,
                 )
                 ProjectStatusBanner(
                     projects = projects,
@@ -614,10 +725,12 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
                 Spacer(Modifier.height(FmDesktop.gap))
 
-                DesktopColumns(
+                DesktopColumnLayout(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    columns = columns,
+                    availableWidthDp = contentWidth.value,
                     layout = layout,
                     filters = filters,
                     libraryState = libraryState,
@@ -630,17 +743,37 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     onExpandRight = ::expandRight,
                     selectedCard = selectedCard,
                     model = model,
+                    panelModel = panelModel,
+                    textSlots = textSlots,
                     session = session,
                     inspectorState = inspectorState,
                     onRetryInspector = { inspectorReload++ },
                     tab = tab,
                     onSelectTab = { tab = it },
+                    onTextSlotFocus = { focusedTextSlotKey = it },
+                    highlightedTextSlotKey = focusedTextSlotKey,
                     onUndo = { session.undo() },
                     onRedo = { session.redo() },
                     stageMode = stageMode,
                     projects = projects,
                     onAddPhoto = addPhoto,
                     onRemovePhoto = { id -> removeTarget = projects.photos.firstOrNull { it.id == id } },
+                    onSavePreset = { name ->
+                        val saved = projects.savePreset(name)
+                        importNotice = if (saved != null) {
+                            "已保存预设「${saved.name}」"
+                        } else {
+                            projects.presetError ?: "保存预设失败"
+                        }
+                        println("FM_DESIGN_PRESET_SAVE name=$name ok=${saved != null}")
+                    },
+                    onResetDesign = {
+                        val current = selectedCard
+                        if (current != null) {
+                            session.resetCard(current.id)
+                            println("FM_DESIGN_RESET ${current.id}")
+                        }
+                    },
                 )
             }
 
@@ -672,7 +805,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     design = if (activePhoto != null) {
                         activeDesign?.takeIf { it.cardId == exportCard?.id }?.toDesignSnapshot()
                     } else {
-                        exportCard?.let { NativeEngine.designOf(it, model, session) }
+                        exportCard?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
                     },
                     photoPath = activePhoto?.path,
                     photoDisplayName = activePhoto?.displayName,
@@ -700,6 +833,17 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     },
                 )
             }
+            if (projects.projectWritesBlocked) {
+                ProjectReadRecoveryBlock(
+                    loading = !projects.loaded,
+                    error = projects.loadError ?: projects.saveError,
+                    onRetry = {
+                        println("FM_PROJECT_RETRY_REQUESTED surface=desktop")
+                        val recovered = projects.retryProjectLoad()
+                        println("FM_PROJECT_RETRY_RESULT recovered=$recovered error=${projects.loadError ?: "-"}")
+                    },
+                )
+            }
         }
     }
 }
@@ -708,79 +852,91 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
 // Top bar
 // ---------------------------------------------------------------------------
 
+/**
+ * V06 top bar: brand, the 工作台 / 预设 / 任务 first-level navigation, and the
+ * actions that must stay reachable (undo, redo, import, export). Secondary
+ * actions (help, rail visibility) live in the ⋯ overflow so the bar never turns
+ * into a wall of buttons; below the derived three-column minimum it wraps into
+ * two rows and the action row scrolls instead of dropping anything.
+ */
 @Composable
 private fun DesktopTopBar(
     card: LibraryCard?,
     mode: StageMode,
     photoCount: Int,
+    narrow: Boolean,
+    inspectorVisible: Boolean,
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
     onAddPhoto: () -> Unit,
-    onToggleBatch: () -> Unit,
+    onSelectEdit: () -> Unit,
+    onSelectBatch: () -> Unit,
+    presetSheetOpen: Boolean,
     onOpenPresets: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenHelp: () -> Unit,
+    onShowParams: () -> Unit,
+    onToggleLeft: () -> Unit,
+    onToggleRight: () -> Unit,
 ) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        if (maxWidth < 688.dp) {
-            Column(Modifier.fillMaxWidth().height(108.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (narrow) {
+        Column(Modifier.fillMaxWidth().height(108.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 BrandBlock(compact = true)
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-                ) {
-                    BarAction("添加", onAddPhoto)
-                    BarAction(if (mode == StageMode.Batch) "编辑" else "批量", onToggleBatch)
-                    BarAction("预设", onOpenPresets)
-                    BarAction("导出", onOpenExport, primary = true)
-                    BarAction("帮助", onOpenHelp)
-                }
+                Spacer(Modifier.width(FmSpacing.sm))
+                StatusPill(card = card, mode = mode, photoCount = photoCount, compact = true)
+                Spacer(Modifier.weight(1f))
+                TopBarOverflow(
+                    inspectorVisible = inspectorVisible,
+                    onOpenHelp = onOpenHelp,
+                    onShowParams = onShowParams,
+                    onToggleLeft = onToggleLeft,
+                    onToggleRight = onToggleRight,
+                )
             }
-            return@BoxWithConstraints
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                NavTabs(
+                    mode = mode,
+                    presetSheetOpen = presetSheetOpen,
+                    onSelectEdit = onSelectEdit,
+                    onSelectBatch = onSelectBatch,
+                    onOpenPresets = onOpenPresets,
+                )
+                Spacer(Modifier.width(FmSpacing.xs))
+                BarAction("导出", onOpenExport, primary = true)
+                if (!inspectorVisible) BarAction("参数", onShowParams)
+                BarAction("导入照片", onAddPhoto)
+                HistoryButton(label = "撤销", redo = false, enabled = canUndo, onClick = onUndo)
+                HistoryButton(label = "重做", redo = true, enabled = canRedo, onClick = onRedo)
+            }
         }
-        val compact = maxWidth < 860.dp
+        return
+    }
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val roomy = maxWidth >= 860.dp
         Row(
             modifier = Modifier.fillMaxWidth().height(FmDesktop.topBarHeight),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BrandBlock(compact = compact)
+            BrandBlock(compact = !roomy)
             Spacer(Modifier.width(FmSpacing.md))
-            if (!compact) {
-                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = 460.dp)
-                            .fillMaxWidth(0.92f)
-                            .height(38.dp)
-                            .clip(RoundedCornerShape(FmRadii.pill))
-                            .background(FmPalette.surface)
-                            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
-                            .padding(horizontal = FmSpacing.lg),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = when {
-                                    mode == StageMode.Batch -> "批量队列 · 原生导出"
-                                    card != null -> "当前边框 · ${card.name}"
-                                    else -> "尚未选择边框"
-                                },
-                                style = FmType.labelMedium,
-                                color = if (card != null) FmPalette.onSurface else FmPalette.onSurfaceMuted,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                            if (photoCount > 0) {
-                                Spacer(Modifier.width(FmSpacing.sm))
-                                Text(
-                                    text = "$photoCount 张照片",
-                                    style = FmType.labelSmall,
-                                    color = FmPalette.onSurfaceFaint,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
-                    }
-                }
+            NavTabs(
+                mode = mode,
+                presetSheetOpen = presetSheetOpen,
+                onSelectEdit = onSelectEdit,
+                onSelectBatch = onSelectBatch,
+                onOpenPresets = onOpenPresets,
+            )
+            if (roomy) {
+                Spacer(Modifier.weight(1f))
+                StatusPill(card = card, mode = mode, photoCount = photoCount, compact = false)
+                Spacer(Modifier.weight(1f))
             } else {
                 Spacer(Modifier.weight(1f))
             }
@@ -789,12 +945,155 @@ private fun DesktopTopBar(
                 horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                BarAction("添加照片", onAddPhoto)
-                BarAction(if (mode == StageMode.Batch) "返回编辑" else "批量", onToggleBatch)
-                BarAction("预设", onOpenPresets)
                 BarAction("导出", onOpenExport, primary = true)
-                BarAction("帮助", onOpenHelp)
+                if (!inspectorVisible) BarAction("参数", onShowParams)
+                BarAction("导入照片", onAddPhoto)
+                HistoryButton(label = "撤销", redo = false, enabled = canUndo, onClick = onUndo)
+                HistoryButton(label = "重做", redo = true, enabled = canRedo, onClick = onRedo)
+                TopBarOverflow(
+                    inspectorVisible = inspectorVisible,
+                    onOpenHelp = onOpenHelp,
+                    onShowParams = onShowParams,
+                    onToggleLeft = onToggleLeft,
+                    onToggleRight = onToggleRight,
+                )
             }
+        }
+    }
+}
+
+/** 工作台 / 预设 / 任务. 预设 is the existing sheet, not a fourth mode. */
+@Composable
+private fun NavTabs(
+    mode: StageMode,
+    presetSheetOpen: Boolean,
+    onSelectEdit: () -> Unit,
+    onSelectBatch: () -> Unit,
+    onOpenPresets: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .selectableGroup()
+            .height(36.dp)
+            .clip(RoundedCornerShape(FmRadii.pill))
+            .background(FmPalette.surfaceMuted)
+            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
+            .padding(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NavTab(label = "工作台", selected = mode == StageMode.Edit, onClick = onSelectEdit)
+        NavTab(label = "预设", selected = presetSheetOpen, onClick = onOpenPresets)
+        NavTab(label = "任务", selected = mode == StageMode.Batch, onClick = onSelectBatch)
+    }
+}
+
+@Composable
+private fun NavTab(label: String, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(FmRadii.pill))
+            .background(if (selected) FmPalette.surface else Color.Transparent)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+            .padding(horizontal = FmSpacing.md),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = FmType.labelMedium,
+            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
+            maxLines = 1,
+        )
+    }
+}
+
+/** Photo count / current border capsule; the photo count survives the narrow bar. */
+@Composable
+private fun StatusPill(card: LibraryCard?, mode: StageMode, photoCount: Int, compact: Boolean) {
+    Row(
+        modifier = Modifier
+            .height(if (compact) 28.dp else 38.dp)
+            .clip(RoundedCornerShape(FmRadii.pill))
+            .background(FmPalette.surface)
+            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
+            .padding(horizontal = if (compact) FmSpacing.sm else FmSpacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = when {
+                compact && photoCount > 0 -> "$photoCount 张"
+                compact -> "未选边框"
+                mode == StageMode.Batch -> "批量队列 · 原生导出"
+                card != null -> "当前边框 · ${card.name}"
+                else -> "尚未选择边框"
+            },
+            style = FmType.labelMedium,
+            color = if (card != null || photoCount > 0) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (!compact && photoCount > 0) {
+            Spacer(Modifier.width(FmSpacing.sm))
+            Text(
+                text = "$photoCount 张照片",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceFaint,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/**
+ * ⋯ overflow: everything secondary. The rail toggles live here because a folded
+ * rail's own affordance can be small, and the 「参数」 entry repeats inside the
+ * menu whenever the inspector is not on screen.
+ */
+@Composable
+private fun TopBarOverflow(
+    inspectorVisible: Boolean,
+    onOpenHelp: () -> Unit,
+    onShowParams: () -> Unit,
+    onToggleLeft: () -> Unit,
+    onToggleRight: () -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(FmRadii.input))
+                .background(FmPalette.surface)
+                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
+                .clickable(onClick = { open = true })
+                .semantics {
+                    contentDescription = "更多"
+                    role = Role.Button
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("⋯", style = FmType.titleMedium, color = FmPalette.onSurfaceSecondary)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text("帮助与快捷键（F1）", style = FmType.bodyMedium) },
+                onClick = { open = false; onOpenHelp() },
+            )
+            if (!inspectorVisible) {
+                DropdownMenuItem(
+                    text = { Text("打开参数面板", style = FmType.bodyMedium) },
+                    onClick = { open = false; onShowParams() },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("显示/折叠边框库（Ctrl+B）", style = FmType.bodyMedium) },
+                onClick = { open = false; onToggleLeft() },
+            )
+            DropdownMenuItem(
+                text = { Text("显示/折叠参数面板（Ctrl+Shift+B）", style = FmType.bodyMedium) },
+                onClick = { open = false; onToggleRight() },
+            )
         }
     }
 }
@@ -829,16 +1128,7 @@ private fun BrandBlock(compact: Boolean) {
             }
         }
         Spacer(Modifier.width(FmSpacing.sm))
-        Column {
-            Text("FrameMark", style = FmType.titleSmall, color = FmPalette.onSurface)
-            if (!compact) {
-                Text(
-                    "桌面版 · ${WorkflowEnv.platform?.buildLabel()?.takeIf { it.isNotBlank() } ?: "开发构建"}",
-                    style = FmType.labelSmall,
-                    color = FmPalette.onSurfaceFaint,
-                )
-            }
-        }
+        Text("FrameMark", style = FmType.titleSmall, color = FmPalette.onSurface)
     }
 }
 
@@ -876,8 +1166,10 @@ private fun BarAction(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun DesktopColumns(
+private fun DesktopColumnLayout(
     modifier: Modifier,
+    columns: DesktopColumns,
+    availableWidthDp: Float,
     layout: DesktopLayoutState,
     filters: LibraryFilterState,
     libraryState: LibraryLoadState,
@@ -890,77 +1182,93 @@ private fun DesktopColumns(
     onExpandRight: () -> Unit,
     selectedCard: LibraryCard?,
     model: InspectorCardModel?,
+    /** [model] plus the text rows the stage renderer reported; panel only. */
+    panelModel: InspectorCardModel?,
+    textSlots: TextSlotRegistry,
     session: DesignSession,
     inspectorState: InspectorLoadState,
     onRetryInspector: () -> Unit,
     tab: DesktopTab,
     onSelectTab: (DesktopTab) -> Unit,
+    onTextSlotFocus: (String?) -> Unit,
+    highlightedTextSlotKey: String?,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     stageMode: StageMode,
     projects: ProjectHolder,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit,
+    onSavePreset: (String) -> Unit,
+    onResetDesign: () -> Unit,
 ) {
-    BoxWithConstraints(modifier = modifier) {
-        if (maxWidth < 688.dp) {
-            var pane by remember { mutableIntStateOf(0) }
-            Column(Modifier.fillMaxSize()) {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("照片", "边框库", "参数").forEachIndexed { index, label ->
-                        com.framemark.native.workflow.ChoiceChip(label, pane == index, { pane = index })
-                    }
+    val gap = FmDesktop.gap
+
+    if (columns.compact) {
+        // Not enough content width for three columns: one pane at a time, chosen
+        // by the hoisted [DesktopLayoutState.narrowPane] so the top bar's
+        // 「参数」 entry lands on the inspector instead of guessing.
+        val pane = layout.narrowPane
+        Column(modifier.fillMaxSize()) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            ) {
+                listOf("照片", "边框库", "参数").forEachIndexed { index, label ->
+                    com.framemark.native.workflow.ChoiceChip(
+                        label = label,
+                        selected = pane == index,
+                        onClick = { layout.narrowPane = index },
+                    )
                 }
-                Spacer(Modifier.height(FmSpacing.sm))
-                Box(Modifier.weight(1f).fillMaxWidth()) {
-                    when (pane) {
-                        1 -> LibraryScreen(
-                            loadState = libraryState, filters = filters, gridState = libraryGrid,
-                            onRetry = onRetryLibrary, onOpenCard = { onOpenCard(it); pane = 0 },
-                            rail = true, selectedCardId = selectedCard?.id,
-                        )
-                        2 -> DesktopInspector(
-                            card = selectedCard, model = model, session = session, projects = projects,
-                            inspectorState = inspectorState, onRetry = onRetryInspector, tab = tab,
-                            onSelectTab = onSelectTab, onUndo = onUndo, onRedo = onRedo,
-                            onCollapse = { pane = 0 },
-                        )
-                        else -> if (stageMode == StageMode.Batch) ProjectBatchPanel(projects) else EditStage(
+            }
+            Spacer(Modifier.height(FmSpacing.sm))
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (pane) {
+                    LIBRARY_PANE -> LibraryScreen(
+                        loadState = libraryState, filters = filters, gridState = libraryGrid,
+                        onRetry = onRetryLibrary,
+                        onOpenCard = { onOpenCard(it); layout.narrowPane = STAGE_PANE },
+                        rail = true, selectedCardId = selectedCard?.id,
+                    )
+                    PARAMS_PANE -> DesktopInspector(
+                        card = selectedCard, model = model, panelModel = panelModel,
+                        textSlots = textSlots, session = session, projects = projects,
+                        inspectorState = inspectorState, onRetry = onRetryInspector, tab = tab,
+                        onSelectTab = onSelectTab, onTextSlotFocus = onTextSlotFocus,
+                        onUndo = onUndo, onRedo = onRedo,
+                        onCollapse = { layout.narrowPane = STAGE_PANE },
+                    )
+                    else -> if (stageMode == StageMode.Batch) {
+                        ProjectBatchPanel(projects)
+                    } else {
+                        EditStage(
                             card = selectedCard, session = session, model = model, projects = projects,
+                            textSlots = textSlots,
+                            highlightedTextSlotKey = highlightedTextSlotKey,
+                            stageWidthDp = availableWidthDp,
                             onAddPhoto = onAddPhoto, onRemovePhoto = onRemovePhoto,
+                            onSavePreset = onSavePreset, onResetDesign = onResetDesign,
                         )
                     }
                 }
             }
-            return@BoxWithConstraints
         }
-        val gap = FmDesktop.gap
-        val collapsedWidth = FmDesktop.collapsedWidth
-        val bothFit = maxWidth >= FmDesktop.libraryMin + FmDesktop.inspectorMin + FmDesktop.stageMin + gap * 2
-        val showLeft = !layout.leftCollapsed
-        val showRight = !layout.rightCollapsed && (bothFit || layout.leftCollapsed)
-        val rightReserve = if (showRight) layout.rightWidth else collapsedWidth
-        val maxLeft = (maxWidth - rightReserve - gap * 2 - FmDesktop.stageMin)
-            .coerceIn(FmDesktop.libraryMin, FmDesktop.libraryMax)
-        val leftWidth = if (showLeft) {
-            layout.leftWidth.coerceIn(FmDesktop.libraryMin, maxLeft)
-        } else {
-            collapsedWidth
-        }
-        val maxRight = (maxWidth - leftWidth - gap * 2 - FmDesktop.stageMin)
-            .coerceIn(FmDesktop.inspectorMin, FmDesktop.inspectorMax)
-        val rightWidth = if (showRight) {
-            layout.rightWidth.coerceIn(FmDesktop.inspectorMin, maxRight)
-        } else {
-            collapsedWidth
-        }
-        val stageWidth = maxWidth - leftWidth - rightWidth - gap * 2
+        return
+    }
 
+    val leftWidth = columns.left.dp
+    val rightWidth = columns.right.dp
+    val stageWidth = columns.stage.dp
+    val handleWidth = FmDesktop.handleWidth
+    // Centre the drag strip in the gap so it never covers a panel's edge.
+    val handleInset = (gap - handleWidth) / 2
+
+    Box(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(gap),
         ) {
-            if (showLeft) {
+            if (columns.showLeft) {
                 DesktopPanel(width = leftWidth) {
                     LibraryScreen(
                         loadState = libraryState,
@@ -992,23 +1300,31 @@ private fun DesktopColumns(
                         session = session,
                         model = model,
                         projects = projects,
+                        textSlots = textSlots,
+                        highlightedTextSlotKey = highlightedTextSlotKey,
+                        stageWidthDp = columns.stage,
                         onAddPhoto = onAddPhoto,
                         onRemovePhoto = onRemovePhoto,
+                        onSavePreset = onSavePreset,
+                        onResetDesign = onResetDesign,
                     )
                 }
             }
 
-            if (showRight) {
+            if (columns.showRight) {
                 DesktopPanel(width = rightWidth) {
                     DesktopInspector(
                         card = selectedCard,
                         model = model,
+                        panelModel = panelModel,
+                        textSlots = textSlots,
                         session = session,
                         projects = projects,
                         inspectorState = inspectorState,
                         onRetry = onRetryInspector,
                         tab = tab,
                         onSelectTab = onSelectTab,
+                        onTextSlotFocus = onTextSlotFocus,
                         onUndo = onUndo,
                         onRedo = onRedo,
                         onCollapse = onCollapseRight,
@@ -1019,23 +1335,25 @@ private fun DesktopColumns(
             }
         }
 
-        if (showLeft) {
+        if (columns.showLeft) {
             ResizeHandle(
-                x = leftWidth,
+                x = leftWidth + handleInset,
+                width = handleWidth,
                 onDrag = { delta ->
-                    val limit = (maxWidth - rightWidth - gap * 2 - FmDesktop.stageMin)
-                        .coerceIn(FmDesktop.libraryMin, FmDesktop.libraryMax)
-                    layout.leftWidth = (leftWidth + delta).coerceIn(FmDesktop.libraryMin, limit)
+                    // The requested width is user intent; computeDesktopColumns
+                    // clamps it to what the window can pay for on every frame.
+                    layout.leftWidth = (leftWidth + delta)
+                        .coerceIn(desktopLibraryMinWidth().dp, desktopLibraryMaxWidth().dp)
                 },
             )
         }
-        if (showRight) {
+        if (columns.showRight) {
             ResizeHandle(
-                x = leftWidth + gap + stageWidth,
+                x = leftWidth + gap + stageWidth + handleInset,
+                width = handleWidth,
                 onDrag = { delta ->
-                    val limit = (maxWidth - leftWidth - gap * 2 - FmDesktop.stageMin)
-                        .coerceIn(FmDesktop.inspectorMin, FmDesktop.inspectorMax)
-                    layout.rightWidth = (rightWidth - delta).coerceIn(FmDesktop.inspectorMin, limit)
+                    layout.rightWidth = (rightWidth - delta)
+                        .coerceIn(desktopInspectorMinWidth().dp, desktopInspectorMaxWidth().dp)
                 },
             )
         }
@@ -1109,13 +1427,18 @@ private fun ChevronButton(glyph: String, description: String, onClick: () -> Uni
     }
 }
 
+/**
+ * Drag strip between a rail and the stage. Width is `FmDesktop.handleWidth` and
+ * the caller centres it in the 12 dp gap, so the strip never covers a panel
+ * edge and the hit area is a token instead of the gap's leftover space.
+ */
 @Composable
-private fun ResizeHandle(x: Dp, onDrag: (Dp) -> Unit) {
+private fun ResizeHandle(x: Dp, width: Dp, onDrag: (Dp) -> Unit) {
     val currentOnDrag by rememberUpdatedState(onDrag)
     Box(
         modifier = Modifier
             .offset(x = x)
-            .width(FmDesktop.gap)
+            .width(width)
             .fillMaxHeight()
             .resizeCursor()
             .pointerInput(Unit) {
@@ -1146,21 +1469,101 @@ private fun EditStage(
     session: DesignSession,
     model: InspectorCardModel?,
     projects: ProjectHolder,
+    /** Filled by the stage render; read by the 文字 tab. */
+    textSlots: TextSlotRegistry,
+    /** §3.3: row being edited in the 文字 tab; null draws no frame. */
+    highlightedTextSlotKey: String?,
+    /** Stage width in dp: the title row keeps its status tag only when it fits. */
+    stageWidthDp: Float,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit,
+    onSavePreset: (String) -> Unit,
+    onResetDesign: () -> Unit,
 ) {
     val native = card != null && NativeEngine.supports(card.id)
     val activeDesign = projects.activeDesign
+    // The sample preview (no imported photo) is rendered straight from the
+    // session, so it has to see the renderer-backed text rows as well.
+    val panelModel = remember(model, textSlots.slots) { model?.withNativeTextSlots(textSlots.slots) }
     val design = when {
         projects.activePhoto != null -> activeDesign?.takeIf { it.cardId == card?.id }?.toDesignSnapshot()
         activeDesign != null && activeDesign.cardId == card?.id -> activeDesign.toDesignSnapshot()
-        else -> card?.let { NativeEngine.designOf(it, model, session) }
+        else -> card?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
     }
+
+    var zoom by remember { mutableFloatStateOf(1f) }
+    var pan by remember { mutableStateOf(Offset.Zero) }
+    var stagePx by remember { mutableStateOf(IntSize.Zero) }
+    // Pixel size of the last valid render and of the box it was fitted into;
+    // together they turn the 「100%」 button into a real 1:1 mapping instead of a
+    // second "fit" button. Both stay empty until a render arrives.
+    var renderedPx by remember { mutableStateOf(IntSize.Zero) }
+    var previewPx by remember { mutableStateOf(IntSize.Zero) }
+    var comparing by remember { mutableStateOf(false) }
+    var designMenuOpen by remember { mutableStateOf(false) }
+    var savePresetOpen by remember { mutableStateOf(false) }
+    var presetName by remember { mutableStateOf("") }
+    var resetConfirmOpen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(projects.activePhotoId) {
+        // A hold-compare cannot survive the photo it was comparing.
+        comparing = false
+    }
+
+    /** 100 % = one rendered preview pixel per screen pixel, clamped to the zoom range. */
+    val zoom100 = remember(renderedPx, previewPx) {
+        if (renderedPx.width > 0 && renderedPx.height > 0 && previewPx.width > 0 && previewPx.height > 0) {
+            val factor = maxOf(
+                renderedPx.width.toFloat() / previewPx.width,
+                renderedPx.height.toFloat() / previewPx.height,
+            )
+            factor.coerceIn(0.25f, 4f)
+        } else {
+            null
+        }
+    }
+    val atHundred = zoom100 != null && abs(zoom - zoom100) < 0.01f && pan == Offset.Zero
+    val atFit = zoom == 1f && pan == Offset.Zero
+
+    fun fitToWindow() {
+        zoom = 1f
+        pan = Offset.Zero
+        println("FM_WHEEL fit zoom=1.000")
+    }
+
+    fun clampPan(next: Offset, z: Float = zoom): Offset {
+        if (z <= 1f) return Offset.Zero
+        val maxX = stagePx.width * (z - 1f) / 2f
+        val maxY = stagePx.height * (z - 1f) / 2f
+        return Offset(next.x.coerceIn(-maxX, maxX), next.y.coerceIn(-maxY, maxY))
+    }
+
+    /** 25%..400% with a 100% detent; zoom steps are multiplicative. */
+    fun wheelZoom(anchor: Offset, dy: Float) {
+        val factor = if (dy < 0f) 1.1f else 1f / 1.1f
+        val raw = (zoom * factor).coerceIn(0.25f, 4f)
+        val next = if (raw in 0.94f..1.06f) 1f else raw
+        if (next == zoom) return
+        if (next <= 1f) {
+            zoom = next
+            pan = Offset.Zero
+        } else {
+            val center = Offset(stagePx.width / 2f, stagePx.height / 2f)
+            val proposed = anchor - center - (anchor - center - pan) * (next / zoom)
+            zoom = next
+            pan = clampPan(proposed, next)
+        }
+        println(
+            "FM_WHEEL dy=${"%.0f".format(dy)} anchor=${"%.0f".format(anchor.x)},${"%.0f".format(anchor.y)} " +
+                "zoom=${"%.3f".format(zoom)} pan=${"%.1f".format(pan.x)},${"%.1f".format(pan.y)}",
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -1174,9 +1577,10 @@ private fun EditStage(
                 Spacer(Modifier.height(1.dp))
                 Text(
                     text = when {
+                        comparing -> "原图对比 · 松开恢复"
                         projects.activePhoto != null && activeDesign == null -> "未应用边框 · 选择边框开始"
-                        native -> "原生引擎渲染 · 参数实时"
-                        card != null -> "静态边框预览 · 参数未渲染"
+                        native -> "实时预览"
+                        card != null -> "静态预览"
                         projects.activePhoto != null -> "自己的照片 · 尚未选择边框"
                         else -> "尚未添加照片"
                     },
@@ -1186,47 +1590,67 @@ private fun EditStage(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.width(FmSpacing.sm))
-            Tag(
-                text = when {
-                    projects.activePhoto != null && activeDesign == null -> "未应用边框"
-                    native -> "原生渲染"
-                    card != null -> "静态预览"
-                    else -> "占位"
-                },
-                onSurface = false,
-            )
-        }
-
-        var zoom by remember { mutableFloatStateOf(1f) }
-        var pan by remember { mutableStateOf(Offset.Zero) }
-        var stagePx by remember { mutableStateOf(IntSize.Zero) }
-
-        fun clampPan(next: Offset, z: Float = zoom): Offset {
-            if (z <= 1f) return Offset.Zero
-            val maxX = stagePx.width * (z - 1f) / 2f
-            val maxY = stagePx.height * (z - 1f) / 2f
-            return Offset(next.x.coerceIn(-maxX, maxX), next.y.coerceIn(-maxY, maxY))
-        }
-
-        /** 25%..400% with a 100% detent; zoom steps are multiplicative. */
-        fun wheelZoom(anchor: Offset, dy: Float) {
-            val factor = if (dy < 0f) 1.1f else 1f / 1.1f
-            val raw = (zoom * factor).coerceIn(0.25f, 4f)
-            val next = if (raw in 0.94f..1.06f) 1f else raw
-            if (next == zoom) return
-            if (next <= 1f) {
-                zoom = next
-                pan = Offset.Zero
-            } else {
-                val center = Offset(stagePx.width / 2f, stagePx.height / 2f)
-                val proposed = anchor - center - (anchor - center - pan) * (next / zoom)
-                zoom = next
-                pan = clampPan(proposed, next)
+            if (stageWidthDp >= 420f) {
+                Spacer(Modifier.width(FmSpacing.sm))
+                Tag(
+                    text = when {
+                        projects.activePhoto != null && activeDesign == null -> "未应用边框"
+                        native -> "原生渲染"
+                        card != null -> "静态预览"
+                        else -> "占位"
+                    },
+                    onSurface = false,
+                )
             }
-            println(
-                "FM_WHEEL dy=${"%.0f".format(dy)} anchor=${"%.0f".format(anchor.x)},${"%.0f".format(anchor.y)} " +
-                    "zoom=${"%.3f".format(zoom)} pan=${"%.1f".format(pan.x)},${"%.1f".format(pan.y)}",
+            Spacer(Modifier.width(FmSpacing.sm))
+            // Lightweight view tools: a 30 dp pill inside a 40 dp hit box, so the
+            // stage keeps its room while the target stays a pointer target.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StageHoldTool(
+                    label = "原图",
+                    description = "按住查看原图",
+                    active = comparing,
+                    enabled = projects.activePhoto != null,
+                    onHoldChange = { comparing = it },
+                )
+                StageClickTool(
+                    label = "适合",
+                    description = "适合窗口显示",
+                    active = atFit,
+                    enabled = true,
+                    onClick = ::fitToWindow,
+                )
+                StageClickTool(
+                    label = "100%",
+                    description = if (zoom100 == null) "100%（等待渲染帧）" else "按预览像素 1:1 显示",
+                    active = atHundred,
+                    enabled = zoom100 != null,
+                    onClick = {
+                        val target = zoom100
+                        if (target != null) {
+                            zoom = target
+                            pan = Offset.Zero
+                            println("FM_WHEEL hundred zoom=${"%.3f".format(target)}")
+                        }
+                    },
+                )
+            }
+            Spacer(Modifier.width(FmSpacing.xs))
+            DesignMenuButton(
+                enabled = card != null,
+                expanded = designMenuOpen,
+                onExpandedChange = { designMenuOpen = it },
+                canSavePreset = projects.activePhoto != null,
+                onSavePreset = {
+                    presetName = card?.name?.let { "$it 预设" }
+                        ?: projects.activePhoto?.displayName?.substringBeforeLast('.')
+                        ?: "我的预设"
+                    savePresetOpen = true
+                },
+                onResetDesign = { resetConfirmOpen = true },
             )
         }
 
@@ -1236,7 +1660,8 @@ private fun EditStage(
                 .weight(1f)
                 .padding(start = FmSpacing.lg, end = FmSpacing.lg, bottom = FmSpacing.md)
                 .clip(RoundedCornerShape(FmRadii.card))
-                .background(FmPalette.surfaceMuted)
+                // V06: neutral dark photo canvas, no dot matrix / grid decoration.
+                .background(FmPalette.stage)
                 .onSizeChanged { stagePx = it }
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
@@ -1282,8 +1707,41 @@ private fun EditStage(
                             translationY = pan.y
                         },
                 ) {
-                    ProjectPhotoStage(projects = projects, card = card, design = design)
+                    val activePhoto = projects.activePhoto
+                    // The shared wrapper (workflow.ProjectPhotoStage) owns the
+                    // native branch but exposes no `onTextSlots`, so the desktop
+                    // stage mirrors that exact branch to receive the renderer's
+                    // text rows. Everything else (watermark-only photo, static
+                    // card, placeholder) still goes through the shared wrapper.
+                    when {
+                        // Hold-to-compare shows the imported photo itself, never a
+                        // rendered frame and never a highlight.
+                        comparing && activePhoto != null -> PhotoThumbnail(
+                            path = activePhoto.path,
+                            modifier = Modifier.fillMaxSize(),
+                            maxEdge = 1600,
+                            cornerRadius = FmRadii.stage,
+                            contentScale = ContentScale.Fit,
+                        )
+                        card != null && design != null && NativeEngine.supports(card.id) -> DesktopNativeStage(
+                            card = card,
+                            design = design,
+                            projects = projects,
+                            textSlots = textSlots,
+                            highlightedTextSlotKey = highlightedTextSlotKey,
+                            onRenderedPx = { w, h -> renderedPx = IntSize(w, h) },
+                            onPreviewPx = { previewPx = it },
+                        )
+                        else -> ProjectPhotoStage(projects = projects, card = card, design = design)
+                    }
                 }
+            }
+            if (comparing) {
+                Tag(
+                    text = "原图 · 对比中",
+                    modifier = Modifier.align(Alignment.BottomStart).padding(FmSpacing.md),
+                    onSurface = true,
+                )
             }
         }
 
@@ -1292,6 +1750,242 @@ private fun EditStage(
                 projects = projects,
                 onAddPhoto = onAddPhoto,
                 onRemovePhoto = onRemovePhoto,
+            )
+        }
+    }
+
+    // 设计上下文: saving a preset and resetting the border live with the design,
+    // not in a strip under the stage.
+    if (savePresetOpen) {
+        AlertDialog(
+            onDismissRequest = { savePresetOpen = false },
+            title = { Text("保存预设") },
+            text = {
+                Column {
+                    Text(
+                        "把当前边框的参数与文字保存为预设，之后可以一键套用到其他照片。",
+                        style = FmType.bodyMedium,
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                    Spacer(Modifier.height(FmSpacing.md))
+                    OutlinedTextField(
+                        value = presetName,
+                        onValueChange = { presetName = it },
+                        singleLine = true,
+                        label = { Text("预设名称") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = presetName.isNotBlank(),
+                    onClick = {
+                        val clean = presetName.trim()
+                        savePresetOpen = false
+                        if (clean.isNotEmpty()) onSavePreset(clean)
+                    },
+                ) { Text("保存") }
+            },
+            dismissButton = {
+                TextButton(onClick = { savePresetOpen = false }) { Text("取消") }
+            },
+        )
+    }
+    if (resetConfirmOpen) {
+        AlertDialog(
+            onDismissRequest = { resetConfirmOpen = false },
+            title = { Text("恢复当前设计？") },
+            text = {
+                Text("只清空当前边框的参数修改，回到刚应用的设计；照片和水印保留，可以撤销。")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    resetConfirmOpen = false
+                    onResetDesign()
+                }) { Text("恢复") }
+            },
+            dismissButton = {
+                TextButton(onClick = { resetConfirmOpen = false }) { Text("取消") }
+            },
+        )
+    }
+}
+
+/**
+ * Desktop stage for a card the native engine renders.
+ *
+ * The composition (padding, centred fill, overlay re-anchor after the first
+ * frame) is the native branch of the shared `workflow.ProjectPhotoStage`, plus
+ * the two things that wrapper cannot pass through:
+ * `NativeStagePreview(onTextSlots = …)`, which is how the 文字 tab learns the
+ * geometry of the rows the engine actually drew, and
+ * `NativeStagePreview(highlightedTextSlotKey = …)`, which frames the row being
+ * edited. Keep the two in sync if the wrapper's native branch ever changes.
+ */
+@Composable
+private fun DesktopNativeStage(
+    card: LibraryCard,
+    design: DesignSnapshot,
+    projects: ProjectHolder,
+    textSlots: TextSlotRegistry,
+    highlightedTextSlotKey: String?,
+    onRenderedPx: (Int, Int) -> Unit,
+    onPreviewPx: (IntSize) -> Unit,
+) {
+    // The watermark anchor needs the render's photo rect, which only exists after
+    // the first frame; bumping the version re-keys the overlay so the mark lands
+    // on the rendered image instead of the placeholder.
+    var geometryVersion by remember { mutableIntStateOf(0) }
+    val overlay = remember(projects.activePhotoId, projects.activeDesign?.overlay, geometryVersion) {
+        projects.overlaySpec()
+    }
+    Box(
+        modifier = Modifier.fillMaxSize().padding(FmSpacing.lg),
+        contentAlignment = Alignment.Center,
+    ) {
+        NativeStagePreview(
+            card = card,
+            design = design,
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged(onPreviewPx),
+            overlay = overlay,
+            photoPath = projects.activePhoto?.path,
+            onRendered = { w, h, _ ->
+                geometryVersion++
+                onRenderedPx(w, h)
+            },
+            onTextSlots = textSlots::update,
+            highlightedTextSlotKey = highlightedTextSlotKey,
+        )
+    }
+}
+
+/** The visible ~30 dp stage pill; callers wrap it in a ≥40 dp hit box. */
+@Composable
+private fun StagePill(label: String, active: Boolean, enabled: Boolean) {
+    Box(
+        modifier = Modifier
+            .height(30.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .background(if (active) FmPalette.primary else FmPalette.stageLine)
+            .padding(horizontal = FmSpacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = FmType.labelSmall,
+            color = if (active) FmPalette.onPrimary else if (enabled) FmPalette.stageInk else FmPalette.stageMuted,
+            maxLines = 1,
+        )
+    }
+}
+
+/** Tap tool on the stage: 30 dp visible, 40 dp target (V06 §5). */
+@Composable
+private fun StageClickTool(
+    label: String,
+    description: String,
+    active: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .height(40.dp)
+            .widthIn(min = 44.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        StagePill(label = label, active = active, enabled = enabled)
+    }
+}
+
+/** Hold-to-compare tool: the original photo is visible only while pressed. */
+@Composable
+private fun StageHoldTool(
+    label: String,
+    description: String,
+    active: Boolean,
+    enabled: Boolean,
+    onHoldChange: (Boolean) -> Unit,
+) {
+    val currentOnHoldChange by rememberUpdatedState(onHoldChange)
+    Box(
+        modifier = Modifier
+            .height(40.dp)
+            .widthIn(min = 44.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .then(
+                if (enabled) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = {
+                                currentOnHoldChange(true)
+                                tryAwaitRelease()
+                                currentOnHoldChange(false)
+                            },
+                        )
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .semantics {
+                contentDescription = description
+                role = Role.Button
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        StagePill(label = label, active = active, enabled = enabled)
+    }
+}
+
+/**
+ * 设计上下文 menu on the stage title row: 保存预设 / 恢复当前设计. Both act on the
+ * design, so they sit with the design instead of a tool strip under the stage;
+ * the reset is confirmed and the watermark is deliberately left untouched.
+ */
+@Composable
+private fun DesignMenuButton(
+    enabled: Boolean,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    canSavePreset: Boolean,
+    onSavePreset: () -> Unit,
+    onResetDesign: () -> Unit,
+) {
+    Box {
+        Box(
+            modifier = Modifier
+                .height(40.dp)
+                .widthIn(min = 44.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .clickable(enabled = enabled, role = Role.Button, onClick = { onExpandedChange(true) })
+                .semantics { contentDescription = "设计菜单：保存预设、恢复当前设计" },
+            contentAlignment = Alignment.Center,
+        ) {
+            StagePill(label = "⋯", active = expanded, enabled = enabled)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+            DropdownMenuItem(
+                text = { Text("保存预设…", style = FmType.bodyMedium) },
+                enabled = canSavePreset,
+                onClick = {
+                    onExpandedChange(false)
+                    onSavePreset()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("恢复当前设计…", style = FmType.bodyMedium) },
+                enabled = enabled,
+                onClick = {
+                    onExpandedChange(false)
+                    onResetDesign()
+                },
             )
         }
     }
@@ -1485,12 +2179,17 @@ private fun Filmstrip(
 private fun DesktopInspector(
     card: LibraryCard?,
     model: InspectorCardModel?,
+    /** [model] plus one control group per row the stage renderer reported. */
+    panelModel: InspectorCardModel?,
+    textSlots: TextSlotRegistry,
     session: DesignSession,
     projects: ProjectHolder,
     inspectorState: InspectorLoadState,
     onRetry: () -> Unit,
     tab: DesktopTab,
     onSelectTab: (DesktopTab) -> Unit,
+    /** §3.1: stable key of the row whose 替换文字 input holds focus. */
+    onTextSlotFocus: (String?) -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onCollapse: () -> Unit,
@@ -1561,53 +2260,37 @@ private fun DesktopInspector(
                         loadState = inspectorState,
                         onRetry = onRetry,
                     )
-                    DesktopTab.Watermark -> DesktopWatermarkPanel(projects, modifier = Modifier.fillMaxWidth())
+                    DesktopTab.Watermark -> {
+                        DesktopWatermarkPanel(projects, modifier = Modifier.fillMaxWidth())
+                    }
+                    DesktopTab.Logo -> {
+                        // N1's single-column Logo page: brand entry → auto match →
+                        // one cut list → the non-Brand Logo adjustments.
+                        val logoModel = panelModel ?: model
+                        if (logoModel != null) {
+                            LogoBrandPanel(model = logoModel, session = session, modifier = Modifier.fillMaxWidth())
+                        } else {
+                            EmptySectionCard(title = tab.label, inspectorState = inspectorState, onRetry = onRetry)
+                        }
+                    }
+                    DesktopTab.Text -> TextTabPanel(
+                        model = panelModel,
+                        textSlots = textSlots,
+                        session = session,
+                        inspectorState = inspectorState,
+                        onRetry = onRetry,
+                        onTextSlotFocus = onTextSlotFocus,
+                    )
                     else -> {
                         val section = model?.sections?.firstOrNull { it.section == tab.section }
                         if (section != null && section.controls.isNotEmpty()) {
                             SectionCard(section = section, session = session)
                         } else {
-                            SectionCardShell(title = tab.label) {
-                                Text(
-                                    text = if (inspectorState is InspectorLoadState.Ready) {
-                                        "该边框暂无此段参数"
-                                    } else {
-                                        "正在载入可调参数…"
-                                    },
-                                    style = FmType.bodyMedium,
-                                    color = FmPalette.onSurfaceMuted,
-                                )
-                                if (inspectorState is InspectorLoadState.Failed) {
-                                    Text(
-                                        "暂时无法加载参数。",
-                                        style = FmType.bodyMedium,
-                                        color = FmPalette.onSurfaceMuted,
-                                    )
-                                    Text(
-                                        "重试",
-                                        style = FmType.labelMedium,
-                                        color = FmPalette.primaryStrong,
-                                        modifier = Modifier
-                                            .padding(top = FmSpacing.sm)
-                                            .clip(RoundedCornerShape(FmRadii.pill))
-                                            .clickable(onClick = onRetry)
-                                            .padding(horizontal = FmSpacing.md, vertical = 4.dp),
-                                    )
-                                }
-                            }
+                            EmptySectionCard(title = tab.label, inspectorState = inspectorState, onRetry = onRetry)
                         }
                     }
                 }
             }
-            Text(
-                if (card != null && NativeEngine.supports(card.id)) {
-                    "预览由原生引擎渲染；参数实时套用。"
-                } else {
-                    "预览为静态边框图；参数只改本地值。"
-                },
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
-            )
         }
         Row(
             modifier = Modifier
@@ -1632,12 +2315,91 @@ private fun DesktopInspector(
     }
 }
 
+/**
+ * 文字 tab: one block per canvas position of the live renderer rows
+ * (`左上`/`右上`/`待定位` …). When no reliable row exists yet, the
+ * current card's enabled static text controls remain as the fallback.
+ *
+ * [model] must be the shell's panel model (`withNativeTextSlots`), because that
+ * is what drops the static rows a renderer row supersedes. The generated
+ * per-row controls are filtered back out of the declared card — they are
+ * rendered by [NativeTextSlotControls], so keeping them in both places would
+ * show every renderer row twice.
+ */
+@Composable
+private fun TextTabPanel(
+    model: InspectorCardModel?,
+    textSlots: TextSlotRegistry,
+    session: DesignSession,
+    inspectorState: InspectorLoadState,
+    onRetry: () -> Unit,
+    onTextSlotFocus: (String?) -> Unit,
+) {
+    val grouped = groupTextSlots(textSlots.slots, textSlots.width, textSlots.height)
+    if (grouped.isNotEmpty() && model != null) {
+        NativeTextSlotControls(
+            model = model,
+            slots = textSlots.slots,
+            outputWidth = textSlots.width,
+            outputHeight = textSlots.height,
+            session = session,
+            onTextSlotFocus = onTextSlotFocus,
+        )
+        return
+    }
+    val section = model?.sections?.firstOrNull { it.section == InspectorSection.Text }
+    val fallback = model?.textFallbackControls().orEmpty()
+    if (section == null || fallback.isEmpty()) {
+        EmptySectionCard(title = DesktopTab.Text.label, inspectorState = inspectorState, onRetry = onRetry)
+        return
+    }
+    SectionCard(section = section.copy(controls = fallback), session = session)
+}
+
+/** Placeholder card for a tab with nothing to render (or a failed load). */
+@Composable
+private fun EmptySectionCard(
+    title: String,
+    inspectorState: InspectorLoadState,
+    onRetry: () -> Unit,
+) {
+    SectionCardShell(title = title) {
+        Text(
+            text = if (inspectorState is InspectorLoadState.Ready) {
+                "该边框暂无此段参数"
+            } else {
+                "正在载入可调参数…"
+            },
+            style = FmType.bodyMedium,
+            color = FmPalette.onSurfaceMuted,
+        )
+        if (inspectorState is InspectorLoadState.Failed) {
+            Text(
+                "暂时无法加载参数。",
+                style = FmType.bodyMedium,
+                color = FmPalette.onSurfaceMuted,
+            )
+            Text(
+                "重试",
+                style = FmType.labelMedium,
+                color = FmPalette.primaryStrong,
+                modifier = Modifier
+                    .padding(top = FmSpacing.sm)
+                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .clickable(onClick = onRetry)
+                    .padding(horizontal = FmSpacing.md, vertical = 4.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun TabStrip(selected: DesktopTab, onSelect: (DesktopTab) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
+            .selectableGroup()
             .padding(horizontal = FmSpacing.md, vertical = FmSpacing.xs),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -1648,7 +2410,8 @@ private fun TabStrip(selected: DesktopTab, onSelect: (DesktopTab) -> Unit) {
                     .height(30.dp)
                     .clip(RoundedCornerShape(FmRadii.chip))
                     .background(if (active) FmPalette.primarySoft else Color.Transparent)
-                    .clickable { onSelect(item) }
+                    .selectable(selected = active, role = Role.Tab, onClick = { onSelect(item) })
+                    .semantics { contentDescription = "参数分栏：${item.label}" }
                     .padding(horizontal = FmSpacing.sm),
                 contentAlignment = Alignment.Center,
             ) {

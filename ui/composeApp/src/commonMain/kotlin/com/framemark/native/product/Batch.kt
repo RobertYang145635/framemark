@@ -94,7 +94,7 @@ internal object BatchKeys {
      * outlive a scheme change, so a stale queue cannot silently swallow a job
      * whose design gained a field that the old key did not look at.
      */
-    const val SCHEME = "batch-key/2"
+    const val SCHEME = "batch-key/3"
 
     /** Identity of everything a [PhotoDesign] renders, watermark included. */
     fun designKey(design: PhotoDesign): String = digest(
@@ -118,7 +118,7 @@ internal object BatchKeys {
      * because it drives the drawn aspect ratio.
      */
     fun overlayKey(spec: WatermarkSpec): String = digest(
-        "batch-overlay/2",
+        "batch-overlay/3",
         listOf(
             "asset.sha256" to spec.asset.sha256.lowercase(),
             "asset.name" to spec.asset.name,
@@ -130,6 +130,8 @@ internal object BatchKeys {
             "opacity" to ProductJson.number(spec.opacity),
             "dx" to ProductJson.number(spec.dx),
             "dy" to ProductJson.number(spec.dy),
+            "rotation" to ProductJson.number(spec.rotation),
+            "photoAspect" to ProductJson.number(spec.photoAspect),
         ),
     )
 

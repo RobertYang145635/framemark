@@ -518,7 +518,11 @@ private fun BatchJobStatus.label(): String = when (this) {
 private fun BatchJob.overlayMaterialized(): OverlaySpec? {
     val spec = overlay ?: return null
     val file = PhoneOverlayFiles.materialize(spec) ?: return null
-    val aspect = PreviewGeometry.aspectOf(design.cardId) ?: 1.5f
+    val aspect = if (spec.photoAspect.isFinite() && spec.photoAspect > 0.01f) {
+        spec.photoAspect
+    } else {
+        PreviewGeometry.aspectOf(design.cardId) ?: 1.5f
+    }
     return spec.toOverlaySpec(file, aspect)
 }
 

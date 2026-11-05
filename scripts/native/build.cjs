@@ -6,6 +6,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { spawn } = require('node:child_process')
+const { createRequire } = require('node:module')
 
 const ROOT = path.resolve(__dirname, '../..')
 const UI = path.join(ROOT, 'ui')
@@ -257,20 +258,134 @@ function verifySharedLogoData () {
   return { status: sourceSha256 === bundledSha256 ? 'PASS' : 'FAIL', source: path.relative(ROOT, source).replaceAll(path.sep, '/'), bundled: path.relative(ROOT, bundled).replaceAll(path.sep, '/'), sourceSha256, bundledSha256 }
 }
 
+function verifyLogoImageToolchain () {
+  const manifestPath = path.join(__dirname, 'logo-tools/package.json')
+  const lockPath = path.join(__dirname, 'logo-tools/package-lock.json')
+  const rootManifestPath = path.join(ROOT, 'package.json')
+  const rootLockPath = path.join(ROOT, 'package-lock.json')
+  const prefixValue = process.env.FM_NATIVE_SHARP_PREFIX || ''
+  const installReportPath = prefixValue && path.isAbsolute(prefixValue)
+    ? path.join(path.resolve(prefixValue), 'framemark-logo-tools-install.json')
+    : ''
+  const checks = []
+  const check = (id, ok, detail) => checks.push({ id, status: ok ? 'PASS' : 'FAIL', detail })
+  let manifest
+  let lock
+  let rootManifest
+  let rootLock
+  try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) } catch (error) { check('logo-tools-manifest', false, error.message) }
+  try { lock = JSON.parse(fs.readFileSync(lockPath, 'utf8')) } catch (error) { check('logo-tools-lock', false, error.message) }
+  try { rootManifest = JSON.parse(fs.readFileSync(rootManifestPath, 'utf8')) } catch (error) { check('repository-manifest', false, error.message) }
+  try { rootLock = JSON.parse(fs.readFileSync(rootLockPath, 'utf8')) } catch (error) { check('repository-lock', false, error.message) }
+
+  const lockedSharp = lock?.packages?.['node_modules/sharp']
+  const repoSharp = rootLock?.packages?.['node_modules/sharp']
+  const expectedVersion = manifest?.dependencies?.sharp
+  check('pinned-version-source-integrity', Boolean(
+    expectedVersion === '0.35.5' && lock?.lockfileVersion === 3 && lockedSharp?.version === expectedVersion &&
+    lockedSharp?.resolved === repoSharp?.resolved && lockedSharp?.integrity === repoSharp?.integrity &&
+    rootManifest?.dependencies?.sharp === expectedVersion && lockedSharp?.resolved?.startsWith('https://registry.npmjs.org/sharp/-/sharp-') &&
+    lockedSharp?.integrity?.startsWith('sha512-')
+  ), 'isolated and repository package manifests/locks must pin sharp 0.35.5 to the same registry URL and SHA-512 integrity')
+
+  let prefix = null
+  let installedVersion = null
+  let installedPackageJsonSha256 = null
+  let installReportSha256 = null
+  let resolvedEntry = null
+  if (!prefixValue || !path.isAbsolute(prefixValue)) {
+    check('isolated-install-prefix', false, 'Set FM_NATIVE_SHARP_PREFIX to an absolute isolated install directory outside the checkout')
+  } else {
+    prefix = path.resolve(prefixValue)
+    const rootPrefix = ROOT.replace(/[\\/]+$/, '') + path.sep
+    const outsideCheckout = !prefix.toLowerCase().startsWith(rootPrefix.toLowerCase()) && prefix.toLowerCase() !== ROOT.toLowerCase()
+    check('isolated-install-prefix', outsideCheckout && fs.existsSync(prefix), outsideCheckout ? prefix : 'Install prefix must be outside the source checkout')
+    const stagedManifest = path.join(prefix, 'package.json')
+    const stagedLock = path.join(prefix, 'package-lock.json')
+    const manifestsMatch = fs.existsSync(stagedManifest) && fs.existsSync(stagedLock) &&
+      sha256File(stagedManifest) === sha256File(manifestPath) && sha256File(stagedLock) === sha256File(lockPath)
+    check('isolated-install-manifest-lock', manifestsMatch, 'the installed prefix must retain byte-identical checked-in package.json and package-lock.json')
+    let installedPackage = null
+    try {
+      const resolver = createRequire(path.join(prefix, 'package.json'))
+      resolvedEntry = path.resolve(resolver.resolve('sharp'))
+      const modulesRoot = path.join(prefix, 'node_modules') + path.sep
+      const resolvedInsidePrefix = resolvedEntry.toLowerCase().startsWith(modulesRoot.toLowerCase())
+      check('resolved-from-isolated-prefix', resolvedInsidePrefix, resolvedInsidePrefix ? path.relative(prefix, resolvedEntry).replaceAll(path.sep, '/') : resolvedEntry)
+      let search = path.dirname(resolvedEntry)
+      while (search.toLowerCase().startsWith(modulesRoot.toLowerCase())) {
+        const candidate = path.join(search, 'package.json')
+        if (fs.existsSync(candidate) && JSON.parse(fs.readFileSync(candidate, 'utf8')).name === 'sharp') {
+          installedPackage = candidate
+          break
+        }
+        search = path.dirname(search)
+      }
+      if (!installedPackage) throw new Error('Could not find the sharp package manifest under the isolated node_modules directory')
+      const installed = JSON.parse(fs.readFileSync(installedPackage, 'utf8'))
+      installedVersion = installed.version
+      installedPackageJsonSha256 = sha256File(installedPackage)
+      check('installed-sharp-version', installed.name === 'sharp' && installedVersion === expectedVersion, `expected ${expectedVersion}; found ${installedVersion || '<missing>'}`)
+      resolver('sharp')
+      check('sharp-native-module-loads', true, 'sharp module loaded from the isolated prefix')
+    } catch (error) {
+      check('sharp-native-module-loads', false, error.message)
+    }
+    try {
+      if (!installReportPath || !fs.existsSync(installReportPath)) throw new Error('Run scripts/native/prepare-logo-tools.ps1 to create isolated install provenance')
+      const installReport = JSON.parse(fs.readFileSync(installReportPath, 'utf8').replace(/^\uFEFF/, ''))
+      const installReportOkay = installReport.package === 'sharp' && installReport.version === expectedVersion &&
+        installReport.source === lockedSharp.resolved && installReport.integrity === lockedSharp.integrity &&
+        installReport.packageManifestSha256 === sha256File(manifestPath) && installReport.packageLockSha256 === sha256File(lockPath) &&
+        installReport.installedPackageJsonSha256 === installedPackageJsonSha256
+      if (!installReportOkay) throw new Error('Install report must match the checked-in lock and installed sharp package')
+      installReportSha256 = sha256File(installReportPath)
+      check('isolated-install-provenance', true, installReportPath)
+    } catch (error) {
+      check('isolated-install-provenance', false, error.message)
+    }
+  }
+  const sourceInputs = [manifestPath, lockPath, rootManifestPath, rootLockPath]
+  const present = sourceInputs.every((filename) => fs.existsSync(filename))
+  return {
+    status: checks.length > 0 && checks.every((row) => row.status === 'PASS') ? 'PASS' : 'FAIL',
+    package: 'sharp',
+    version: expectedVersion || null,
+    resolved: lockedSharp?.resolved || null,
+    integrity: lockedSharp?.integrity || null,
+    prefix,
+    resolvedEntry: resolvedEntry && prefix ? path.relative(prefix, resolvedEntry).replaceAll(path.sep, '/') : null,
+    installedVersion,
+    installedPackageJsonSha256,
+    installReportSha256,
+    packageManifestSha256: present ? sha256File(manifestPath) : null,
+    packageLockSha256: present ? sha256File(lockPath) : null,
+    repositoryPackageLockSha256: present ? sha256File(rootLockPath) : null,
+    checks
+  }
+}
+
 function verifyDesktopRuntimeInputs () {
   const paths = [
     'ui/composeApp/src/androidMain/assets/x1ir.zip',
     'bridge/desktop/cards-175.json',
     'bridge/desktop/ir-slot-binding.json',
     'engine/data/taxonomy.json', 'engine/data/capabilities.json', 'engine/data/controls.json', 'engine/data/logos.json',
+    'ui/composeApp/src/commonMain/composeResources/files/data/logos.json',
+    'ui/composeApp/src/commonMain/composeResources/files/logov',
     'ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json',
+    'scripts/native/runtime.cjs',
+    'scripts/native/logo-tools/package.json', 'scripts/native/logo-tools/package-lock.json',
+    'scripts/native/prepare-logo-tools.ps1', 'scripts/native/verify-logo-version-stage.cjs',
     'src/renderer/src/core/controls/data/controls.oppo.json',
     'src/renderer/src/core/controls/data/controls.xiaomi.json',
     'src/renderer/src/core/controls/data/controls.vivo.json'
   ]
   const rows = paths.map((relative) => {
     const filename = path.join(ROOT, relative)
-    return { path: relative, status: fs.existsSync(filename) ? 'PASS' : 'FAIL', sha256: fs.existsSync(filename) ? sha256File(filename) : null }
+    const exists = fs.existsSync(filename)
+    const hash = exists ? (fs.statSync(filename).isDirectory() ? sha256Tree([relative]) : sha256File(filename)) : null
+    return { path: relative, status: exists ? 'PASS' : 'FAIL', sha256: hash }
   })
   let manifest = null
   let cardCounts = null
@@ -382,6 +497,7 @@ async function main () {
   const releaseSurface = verifyReleaseSurface()
   const buildConfiguration = verifyPinnedBuildConfiguration()
   const sharedLogoData = verifySharedLogoData()
+  const logoImageToolchain = verifyLogoImageToolchain()
   const desktopRuntimeInputs = verifyDesktopRuntimeInputs()
   const androidPackageSourceInputs = verifyAndroidPackageSourceInputs()
   const plan = [
@@ -399,6 +515,7 @@ async function main () {
     releaseSurface,
     buildConfiguration,
     sharedLogoData,
+    logoImageToolchain,
     desktopRuntimeInputs,
     androidPackageSourceInputs,
     plan
@@ -475,6 +592,10 @@ async function main () {
   gates.push(requiredCheck('release-intent-source-guard', releaseSurface.status, JSON.stringify(releaseSurface)))
   gates.push(requiredCheck('pinned-build-configuration', buildConfiguration.status, JSON.stringify(buildConfiguration.checks)))
   gates.push(requiredCheck('shared-logo-data-sha256', sharedLogoData.status, JSON.stringify(sharedLogoData)))
+  gates.push({
+    ...requiredCheck('isolated-logo-image-toolchain', options.skipEngine ? 'SKIP' : logoImageToolchain.status, JSON.stringify(logoImageToolchain)),
+    required: !options.skipEngine
+  })
   gates.push(requiredCheck('desktop-runtime-inputs', desktopRuntimeInputs.status, JSON.stringify(desktopRuntimeInputs)))
   gates.push({
     ...requiredCheck('android-package-source-inputs', androidPackageSourceInputs.status, JSON.stringify(androidPackageSourceInputs)),
@@ -664,8 +785,8 @@ async function main () {
   const runtimeStepRequired = !options.skipEngine
   if (options.skipEngine) {
     steps.push({ id: 'desktop-runtime', title: 'Stage the complete relocatable desktop QA runtime', required: options.release, status: 'SKIP', exitCode: 0, detail: '--skip-engine means e2b was not built from repository sources; no complete runtime was staged', log: null })
-  } else if (desktopEnginesProvenance.length !== 3 || desktopEnginesProvenance.some((row) => row.status !== 'PASS') || !desktopRuntimeInputs.status || desktopRuntimeInputs.status !== 'PASS') {
-    steps.push({ id: 'desktop-runtime', title: 'Stage the complete relocatable desktop QA runtime', required: runtimeStepRequired, status: 'SKIP', exitCode: 0, detail: 'runtime staging requires all three source-built engines and valid repository asset inputs', log: null })
+  } else if (desktopEnginesProvenance.length !== 3 || desktopEnginesProvenance.some((row) => row.status !== 'PASS') || desktopRuntimeInputs.status !== 'PASS' || logoImageToolchain.status !== 'PASS') {
+    steps.push({ id: 'desktop-runtime', title: 'Stage the complete relocatable desktop QA runtime', required: runtimeStepRequired, status: 'SKIP', exitCode: 0, detail: 'runtime staging requires all three source-built engines, valid repository asset inputs, and the isolated pinned sharp toolchain', log: null })
   } else {
     const runtimeOut = path.join(buildRoot, 'desktop-runtime')
     const runtimeExtract = path.join(tmpRoot, 'desktop-runtime-extract')
@@ -691,7 +812,27 @@ async function main () {
         if (row) { row.status = 'FAIL'; row.exitCode = 1; row.detail = 'Runtime packager returned success without a valid provenance report' }
       }
       const row = steps.find((entry) => entry.id === 'desktop-runtime')
-      if (row && desktopRuntimeProvenance) row.artifact = desktopRuntimeProvenance.runtime
+      if (row && desktopRuntimeProvenance) {
+        // The packager proves the exact-version logo map is inside the package
+        // and readable from both roots; a run that reports success without it
+        // cannot ship a chosen logo version, so it must not pass the build.
+        const logo = desktopRuntimeProvenance.logoVersions
+        const expected = desktopRuntimeProvenance.registry?.logoVersions?.uniqueSelectedAssetKeys
+        if (!logo || !Number.isInteger(logo.entries) || logo.entries <= 0) {
+          row.status = 'FAIL'
+          row.exitCode = 1
+          row.detail = 'Runtime provenance carries no verified exact-logo version map'
+        } else if (expected != null && logo.entries !== expected) {
+          row.status = 'FAIL'
+          row.exitCode = 1
+          row.detail = `Runtime logo version count mismatch: registry=${expected}, verified=${logo.entries}`
+        } else if (logo.verifiedBothRoots !== logo.entries) {
+          row.status = 'FAIL'
+          row.exitCode = 1
+          row.detail = `Runtime logo versions verified in both roots: ${logo.verifiedBothRoots}/${logo.entries}`
+        }
+        row.artifact = desktopRuntimeProvenance.runtime
+      }
     } else if (result.status === 'PASS') {
       const row = steps.find((entry) => entry.id === 'desktop-runtime')
       if (row) { row.status = 'FAIL'; row.exitCode = 1; row.detail = `Runtime provenance report is missing: ${runtimeReport}` }

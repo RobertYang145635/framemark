@@ -69,7 +69,10 @@ pub fn parse(b: &[u8]) -> Result<JpegInfo, String> {
         let payload = &b[i + 4..i + 2 + len];
         let mut id = String::new();
         if marker == 0xE0 && payload.len() >= 5 {
-            id = format!("APP0:{}", String::from_utf8_lossy(&payload[..5]).replace('\0', ""));
+            id = format!(
+                "APP0:{}",
+                String::from_utf8_lossy(&payload[..5]).replace('\0', "")
+            );
         } else if marker == 0xE1 && payload.len() >= 6 && &payload[..6] == b"Exif\0\0" {
             id = "APP1:Exif".into();
             has_exif = true;
@@ -80,7 +83,11 @@ pub fn parse(b: &[u8]) -> Result<JpegInfo, String> {
         } else if marker == 0xE2 && payload.len() >= 11 && &payload[..11] == b"MPF\0" {
             id = "APP2:MPF".into();
         }
-        if (0xC0..=0xC3).contains(&marker) || (0xC5..=0xC7).contains(&marker) || (0xC9..=0xCB).contains(&marker) || (0xCD..=0xCF).contains(&marker) {
+        if (0xC0..=0xC3).contains(&marker)
+            || (0xC5..=0xC7).contains(&marker)
+            || (0xC9..=0xCB).contains(&marker)
+            || (0xCD..=0xCF).contains(&marker)
+        {
             if payload.len() >= 6 {
                 let precision = payload[0];
                 let h = u16::from_be_bytes([payload[1], payload[2]]);
@@ -99,7 +106,13 @@ pub fn parse(b: &[u8]) -> Result<JpegInfo, String> {
                         tq: payload[o + 2],
                     });
                 }
-                sof = Some(Sof { marker, precision, w, h, comps });
+                sof = Some(Sof {
+                    marker,
+                    precision,
+                    w,
+                    h,
+                    comps,
+                });
             }
         } else if marker == 0xDB {
             let mut p = 0usize;
@@ -115,7 +128,12 @@ pub fn parse(b: &[u8]) -> Result<JpegInfo, String> {
                 p += 1 + n;
             }
         }
-        segments.push(Segment { marker, start: i, end: i + 2 + len, id });
+        segments.push(Segment {
+            marker,
+            start: i,
+            end: i + 2 + len,
+            id,
+        });
         if marker == 0xDA {
             scan_start = i;
             break;
@@ -140,7 +158,15 @@ pub fn parse(b: &[u8]) -> Result<JpegInfo, String> {
         }
         Some(v)
     };
-    Ok(JpegInfo { segments, sof, dqt_tables, has_exif, icc, scan_start, scan_end })
+    Ok(JpegInfo {
+        segments,
+        sof,
+        dqt_tables,
+        has_exif,
+        icc,
+        scan_start,
+        scan_end,
+    })
 }
 
 /// Bytes from the SOS marker through the EOI marker — the entropy-coded scan plus

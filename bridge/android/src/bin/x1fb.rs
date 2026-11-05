@@ -25,6 +25,7 @@ fn main() {
     let mut overlay_path: Option<String> = None;
     let mut overlay_rect: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
     let mut overlay_opacity: f32 = 1.0;
+    let mut overlay_angle: f32 = 0.0;
     let mut i = 6;
     while i < args.len() {
         match args[i].as_str() {
@@ -68,7 +69,10 @@ fn main() {
             }
             "--overlay-rect" => {
                 if let Some(spec) = args.get(i + 1) {
-                    let v: Vec<f32> = spec.split(',').filter_map(|p| p.trim().parse().ok()).collect();
+                    let v: Vec<f32> = spec
+                        .split(',')
+                        .filter_map(|p| p.trim().parse().ok())
+                        .collect();
                     if v.len() != 4 {
                         eprintln!("--overlay-rect needs x,y,w,h");
                         std::process::exit(2);
@@ -81,6 +85,10 @@ fn main() {
                 overlay_opacity = args.get(i + 1).and_then(|v| v.parse().ok()).unwrap_or(1.0);
                 i += 2;
             }
+            "--overlay-angle" => {
+                overlay_angle = args.get(i + 1).and_then(|v| v.parse().ok()).unwrap_or(0.0);
+                i += 2;
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 std::process::exit(2);
@@ -89,19 +97,28 @@ fn main() {
     }
 
     let overlay = match overlay_path.as_deref() {
-        Some(path) => Some(match fm_android_engine::overlay_layer(path, overlay_rect, overlay_opacity) {
-            Ok(layer) => layer,
-            Err(e) => {
-                eprintln!("X1FB_FAIL {e}");
-                std::process::exit(2);
-            }
-        }),
+        Some(path) => Some(
+            match fm_android_engine::overlay_layer(
+                path,
+                overlay_rect,
+                overlay_opacity,
+                overlay_angle,
+            ) {
+                Ok(layer) => layer,
+                Err(e) => {
+                    eprintln!("X1FB_FAIL {e}");
+                    std::process::exit(2);
+                }
+            },
+        ),
         None => None,
     };
     // Host-side A/B for the design glue: FM_DESIGN_JSON=<file> feeds the same
     // document the phone would hand to `fm_render_design`, so the bridge's
     // parse can be compared against e2b `--design` without a device.
-    let design = std::env::var("FM_DESIGN_JSON").ok().filter(|p| !p.is_empty())
+    let design = std::env::var("FM_DESIGN_JSON")
+        .ok()
+        .filter(|p| !p.is_empty())
         .and_then(|p| std::fs::read_to_string(p).ok());
     let options = fm_android_engine::RenderOptions {
         theme: theme.as_deref(),

@@ -101,7 +101,13 @@ pub fn decode(path: &std::path::Path) -> Result<TiffImage, String> {
     let img = dec.read_image().map_err(|e| format!("read_image: {e}"))?;
     let color_name = format!("{color:?}");
     let rgba = to_rgba(img, color, (w as usize) * (h as usize))?;
-    Ok(TiffImage { w, h, rgba, color: color_name, orientation })
+    Ok(TiffImage {
+        w,
+        h,
+        rgba,
+        color: color_name,
+        orientation,
+    })
 }
 
 fn to_rgba(img: DecodingResult, color: ColorType, px: usize) -> Result<Vec<u8>, String> {

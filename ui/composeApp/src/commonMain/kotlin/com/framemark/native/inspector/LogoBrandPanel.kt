@@ -1,0 +1,979 @@
+package com.framemark.native.inspector
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmSpacing
+import com.framemark.native.theme.FmType
+import com.framemark.native.workflow.DesignSession
+import com.framemark.native.workflow.UserLogo
+import com.framemark.native.workflow.UserLogoEnv
+import com.framemark.native.workflow.UserLogoImportStatus
+import com.framemark.native.workflow.UserLogoLibrary
+import com.framemark.native.workflow.UserLogoRepository
+import com.framemark.native.workflow.UserLogoSupport
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.decodeToImageBitmap
+
+/**
+ * The 品牌 Logo page of the shared inspector (V06, both platforms).
+ *
+ * One column, fixed order:
+ *  1. current browsing brand + 选择品牌 › (opens the brand page);
+ *  2. 自动匹配照片品牌 (setting it back to the auto value is the only write here);
+ *  3. the browsing brand's cuts, one row per exact catalog asset;
+ *  4. 调整字标: this card's non-Brand Logo controls.
+ *
+ * Only tapping one specific cut writes `session.set(brandControl, cut.assetKey)`.
+ * Browsing a brand never changes the applied value: the brand page only sets the
+ * local `browseBrandKey` filter and returns.
+ *
+ * This composable is deliberately a plain `Column` — it is hosted inside the
+ * phone `EditorTabList` `LazyColumn` item and the desktop inspector scroll, so a
+ * nested vertical lazy list here would be unbounded. The brand page is a
+ * full-screen dialog and may use its own `LazyColumn`.
+ */
+@Composable
+fun LogoBrandPanel(
+    model: InspectorCardModel,
+    session: DesignSession,
+    modifier: Modifier = Modifier,
+    dense: Boolean = false,
+) {
+    val brandControl = model.controls.firstOrNull { it.type == ControlType.Brand }
+    val logoControls = model.sections.firstOrNull { it.section == InspectorSection.Logo }?.controls
+        ?: model.controls.filter { it.section == InspectorSection.Logo }
+    val adjustments = logoControls.filterNot { it.type == ControlType.Brand }
+    when (logoBrandMode(brandControl, logoControls)) {
+        LogoBrandMode.Absent -> Column(modifier = modifier.fillMaxWidth()) {
+            FixedLogoNote(
+                title = "这套边框未收录可替换 Logo",
+                body = "当前模板不支持可替换字标，也没有字标参数；不会从品牌库外生成或替换。",
+            )
+        }
+        LogoBrandMode.Fixed -> Column(modifier = modifier.fillMaxWidth()) {
+            FixedLogoNote(
+                title = "当前模板使用固定品牌字标",
+                body = "品牌字标由模板固定，不能替换为其他品牌；下面的字标参数仍可调整。",
+            )
+            if (adjustments.isNotEmpty()) {
+                LogoAdjustments(controls = adjustments, session = session, dense = dense)
+            }
+        }
+        LogoBrandMode.Branded -> BrandedLogoPanel(
+            brandControl = brandControl!!,
+            session = session,
+            adjustments = adjustments,
+            modifier = modifier,
+            dense = dense,
+            userSupported = UserLogoEnv.repository != null && UserLogoSupport.supports(model.cardId),
+        )
+    }
+}
+
+@Composable
+private fun BrandedLogoPanel(
+    brandControl: InspectorControl,
+    session: DesignSession,
+    adjustments: List<InspectorControl>,
+    modifier: Modifier,
+    dense: Boolean,
+    userSupported: Boolean,
+) {
+    val raw = session.value(brandControl) as? String ?: ""
+    val isAuto = isAutoMatchBrandValue(raw)
+    val userRepo = UserLogoEnv.repository
+    var userTab by remember(brandControl.key) {
+        mutableStateOf(userSupported && UserLogoLibrary.isUserLogo(raw))
+    }
+    var catalog by remember { mutableStateOf<List<LogoBrand>?>(null) }
+    LaunchedEffect(Unit) { catalog = LogoBrandCatalog.load() }
+    var browseBrandKey by remember(brandControl.key) { mutableStateOf<String?>(null) }
+    var brandPageOpen by remember(brandControl.key) { mutableStateOf(false) }
+
+    val loaded = catalog
+    val appliedBrand = loaded?.let { logoBrandForAssetKey(it, raw) }
+    val appliedVersion = loaded?.let { logoVersionForAssetKey(it, raw) }
+    // Browsing wins while the user compares brands; otherwise show the brand of
+    // the applied cut so the list is useful straight after a selection.
+    val browsingBrand = loaded?.let { brands ->
+        brands.firstOrNull { it.key == browseBrandKey } ?: appliedBrand
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text("品牌 Logo", style = FmType.titleSmall, color = FmPalette.onSurface)
+        Spacer(Modifier.height(if (dense) FmSpacing.sm else FmSpacing.md))
+        if (userSupported) {
+            LogoLibraryTabs(
+                userSelected = userTab,
+                dense = dense,
+                onBrand = { userTab = false },
+                onUser = { userTab = true },
+            )
+            Spacer(Modifier.height(FmSpacing.xs))
+        }
+        if (!userSupported && UserLogoLibrary.isUserLogo(raw)) {
+            Text(
+                text = "当前边框不支持用户 Logo；请改选品牌库字标。",
+                style = FmType.labelSmall,
+                color = FmPalette.error,
+                modifier = Modifier.padding(bottom = FmSpacing.xs),
+            )
+        }
+        if (userTab) {
+            UserLogoPanel(
+                control = brandControl,
+                session = session,
+                repo = userRepo,
+                dense = dense,
+            )
+            if (adjustments.isNotEmpty()) {
+                LogoAdjustments(controls = adjustments, session = session, dense = dense)
+            }
+        } else {
+        BrandEntryRow(
+            brand = browsingBrand,
+            loading = loaded == null,
+            catalogEmpty = loaded?.isEmpty() == true,
+            appliedLabel = when {
+                appliedBrand != null && appliedVersion != null -> "${appliedBrand.label} · ${appliedVersion.name}"
+                isAuto -> "自动匹配（按照片品牌）"
+                else -> null
+            },
+            dense = dense,
+            onOpenBrandPage = { brandPageOpen = true },
+        )
+        LogoDivider()
+        AutoMatchRow(
+            isAuto = isAuto,
+            dense = dense,
+            onEnable = { session.set(brandControl, "") },
+        )
+        if (isAuto) {
+            Text(
+                text = "选择具体版本可覆盖自动匹配。",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+                modifier = Modifier.padding(top = FmSpacing.xxs, bottom = FmSpacing.xs),
+            )
+        }
+        LogoDivider()
+
+        when {
+            loaded == null -> LogoHint("正在载入品牌库…", dense)
+            loaded.isEmpty() -> LogoHint("暂时无法载入品牌库；自动匹配仍然可用。", dense)
+            browsingBrand == null -> LogoHint(
+                "在“选择品牌”里挑一个品牌，这里会列出它的具体字标版本。",
+                dense,
+            )
+            else -> {
+                Text(
+                    text = "字标版本 · ${browsingBrand.label} · ${browsingBrand.cn}",
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurfaceSecondary,
+                    modifier = Modifier.padding(top = FmSpacing.sm, bottom = FmSpacing.xxs),
+                )
+                logoCutRows(browsingBrand).forEach { row ->
+                    LogoCutRowItem(
+                        brandLabel = browsingBrand.label,
+                        row = row,
+                        selected = row.cut.assetKey == raw,
+                        dense = dense,
+                        onPick = { session.set(brandControl, row.cut.assetKey) },
+                    )
+                }
+            }
+        }
+
+        if (adjustments.isNotEmpty()) {
+            LogoAdjustments(controls = adjustments, session = session, dense = dense)
+        }
+        }
+    }
+
+    if (brandPageOpen) {
+        LogoBrandPage(
+            brands = loaded.orEmpty(),
+            loading = loaded == null,
+            currentBrandKey = browsingBrand?.key,
+            appliedAssetKey = raw,
+            onBack = { brandPageOpen = false },
+            onPick = { brand ->
+                // Browse only: the applied cut keeps rendering until the user
+                // taps one exact cut back on the main page.
+                browseBrandKey = brand.key
+                brandPageOpen = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun LogoLibraryTabs(
+    userSelected: Boolean,
+    dense: Boolean,
+    onBrand: () -> Unit,
+    onUser: () -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        LibraryTab("品牌库", !userSelected, dense, onBrand, Modifier.weight(1f))
+        Spacer(Modifier.width(FmSpacing.xs))
+        LibraryTab("用户", userSelected, dense, onUser, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun LibraryTab(
+    label: String,
+    selected: Boolean,
+    dense: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    Box(
+        modifier = modifier
+            .heightIn(min = if (dense) 48.dp else 44.dp)
+            .clip(RoundedCornerShape(FmRadii.input))
+            .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted)
+            .border(1.dp, if (selected) FmPalette.primary else FmPalette.outline, RoundedCornerShape(FmRadii.input))
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label }
+            .padding(horizontal = FmSpacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = FmType.labelMedium,
+            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
+        )
+    }
+}
+
+@Composable
+private fun UserLogoPanel(
+    control: InspectorControl,
+    session: DesignSession,
+    repo: UserLogoRepository?,
+    dense: Boolean,
+) {
+    if (repo == null) {
+        LogoHint("用户 Logo 库未安装。", dense)
+        return
+    }
+    val revision = UserLogoLibrary.revision
+    val raw = session.value(control) as? String ?: ""
+    val selectedId = UserLogoLibrary.idOf(raw)
+    var entries by remember(repo) { mutableStateOf<List<UserLogo>?>(null) }
+    var loadError by remember(repo) { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(repo, revision) {
+        entries = runCatching { repo.list() }
+            .onFailure { loadError = it.message ?: "用户 Logo 库读取失败" }
+            .getOrElse { emptyList() }
+    }
+
+    Text(
+        text = "用户 Logo 只从本机用户库选择；缺失时显示“未收录”，不会替换成品牌库图片。",
+        style = FmType.labelSmall,
+        color = FmPalette.onSurfaceMuted,
+        modifier = Modifier.padding(bottom = FmSpacing.xs),
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(RoundedCornerShape(FmRadii.input))
+            .background(FmPalette.primarySoft)
+            .clickable(enabled = UserLogoEnv.picker != null) {
+                UserLogoImportStatus.clear()
+                UserLogoEnv.picker?.invoke()
+            }
+            .semantics { contentDescription = "导入用户 Logo" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = if (UserLogoEnv.picker == null) "当前平台不支持导入" else "导入 PNG / WebP Logo",
+            style = FmType.labelMedium,
+            color = FmPalette.primaryStrong,
+        )
+    }
+    UserLogoImportStatus.error?.let {
+        Text(
+            text = it,
+            style = FmType.labelSmall,
+            color = FmPalette.error,
+            modifier = Modifier.padding(top = FmSpacing.xxs),
+        )
+    }
+    loadError?.let {
+        Text(
+            text = it,
+            style = FmType.labelSmall,
+            color = FmPalette.error,
+            modifier = Modifier.padding(top = FmSpacing.xxs),
+        )
+    }
+    LogoDivider()
+    val list = entries
+    when {
+        list == null -> LogoHint("正在读取用户 Logo…", dense)
+        list.isEmpty() -> {
+            LogoHint("还没有用户 Logo。导入一张透明 PNG/WebP 后会出现在这里。", dense)
+            if (selectedId != null) {
+                Text(
+                    text = "所选用户 Logo 未收录；不会替换成品牌库图片。",
+                    style = FmType.labelSmall,
+                    color = FmPalette.error,
+                    modifier = Modifier.padding(top = FmSpacing.xs),
+                )
+            }
+        }
+        else -> {
+            list.forEach { entry ->
+                UserLogoRow(
+                    entry = entry,
+                    selected = entry.id == selectedId,
+                    repo = repo,
+                    dense = dense,
+                    onPick = { session.set(control, entry.designValue) },
+                    onDelete = {
+                        scope.launch {
+                            runCatching { repo.delete(entry.id) }
+                                .onSuccess {
+                                    // Clear the selection only after the library
+                                    // mutation committed; a failed delete must keep
+                                    // the current design usable.
+                                    val current = UserLogoLibrary.idOf(session.value(control) as? String)
+                                    if (current == entry.id) session.set(control, "")
+                                }
+                                .onFailure {
+                                    UserLogoImportStatus.fail("删除失败：${it.message ?: "用户 Logo 库写入失败"}")
+                                }
+                        }
+                    },
+                )
+            }
+            if (selectedId != null && list.none { it.id == selectedId }) {
+                Text(
+                    text = "所选用户 Logo 未收录；不会替换成品牌库图片。",
+                    style = FmType.labelSmall,
+                    color = FmPalette.error,
+                    modifier = Modifier.padding(top = FmSpacing.xs),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserLogoRow(
+    entry: UserLogo,
+    selected: Boolean,
+    repo: UserLogoRepository,
+    dense: Boolean,
+    onPick: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var bitmap by remember(entry.id, UserLogoLibrary.revision) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(entry.id, UserLogoLibrary.revision) {
+        val asset = runCatching { repo.load(entry.id) }.getOrNull()
+        bitmap = withContext(Dispatchers.Default) {
+            runCatching { asset?.bytes?.decodeToImageBitmap() }.getOrNull()
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (dense) 56.dp else 48.dp)
+            .clip(RoundedCornerShape(FmRadii.input))
+            .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted)
+            .clickable(onClick = onPick)
+            .semantics { contentDescription = "用户 Logo：${entry.name}" }
+            .padding(horizontal = FmSpacing.sm, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 64.dp, height = 36.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(FmPalette.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            val art = bitmap
+            if (art != null) {
+                Image(bitmap = art, contentDescription = entry.name, modifier = Modifier.fillMaxWidth(0.8f).height(24.dp))
+            } else {
+                Text("未收录", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
+            }
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Text(
+            text = entry.name,
+            style = FmType.bodyMedium,
+            color = FmPalette.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = if (selected) "已选" else "选择",
+            style = FmType.labelSmall,
+            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
+        )
+        Spacer(Modifier.width(FmSpacing.xs))
+        Box(
+            modifier = Modifier
+                .heightIn(min = 40.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .clickable(onClick = onDelete)
+                .semantics { contentDescription = "删除用户 Logo：${entry.name}" }
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("删除", style = FmType.labelSmall, color = FmPalette.error)
+        }
+    }
+}
+
+/** 1. 当前浏览品牌 + 选择品牌 ›. Opening the page never changes the applied cut. */
+@Composable
+private fun BrandEntryRow(    brand: LogoBrand?,
+    loading: Boolean,
+    catalogEmpty: Boolean,
+    appliedLabel: String?,
+    dense: Boolean,
+    onOpenBrandPage: () -> Unit,
+) {
+    val preview = rememberLogoPreview(brand?.preview)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (dense) 48.dp else 0.dp)
+            .clip(RoundedCornerShape(FmRadii.input))
+            .background(FmPalette.surfaceMuted)
+            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
+            .clickable(onClick = onOpenBrandPage)
+            .semantics {
+                contentDescription = "选择品牌；当前浏览品牌：" +
+                    (brand?.let { "${it.label} ${it.cn}" } ?: "未选择")
+            }
+            .padding(horizontal = FmSpacing.md, vertical = if (dense) 6.dp else FmSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 56.dp, height = 32.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(FmPalette.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            val artwork = preview.bitmap
+            if (artwork != null) {
+                Image(
+                    bitmap = artwork,
+                    contentDescription = brand?.label,
+                    modifier = Modifier.fillMaxWidth(0.8f).height(20.dp),
+                )
+            } else {
+                Text(
+                    text = brand?.label?.take(2) ?: "—",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+            }
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Column(modifier = Modifier.weight(1f)) {
+            Text("当前浏览品牌", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
+            Text(
+                text = when {
+                    brand != null -> "${brand.label} · ${brand.cn}"
+                    loading -> "正在载入品牌库…"
+                    catalogEmpty -> "品牌库暂不可用"
+                    else -> "自动匹配照片品牌"
+                },
+                style = FmType.bodyMedium,
+                color = if (brand != null) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (appliedLabel != null) {
+                Text(
+                    text = "已应用：$appliedLabel",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Text("选择品牌 ›", style = FmType.labelMedium, color = FmPalette.primaryStrong)
+    }
+}
+
+/** 2. 自动匹配照片品牌: one row, 已启用 / 启用. */
+@Composable
+private fun AutoMatchRow(isAuto: Boolean, dense: Boolean, onEnable: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (dense) 48.dp else 0.dp)
+            .clickable(enabled = !isAuto, onClick = onEnable)
+            .padding(vertical = if (dense) 6.dp else FmSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("自动匹配照片品牌", style = FmType.bodyMedium, color = FmPalette.onSurface)
+            Text(
+                text = "按照片里的品牌自动选择字标。",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Text(
+            text = if (isAuto) "已启用" else "启用",
+            style = FmType.labelMedium,
+            color = if (isAuto) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
+            modifier = Modifier
+                .clip(RoundedCornerShape(FmRadii.pill))
+                .background(if (isAuto) FmPalette.primarySoft else FmPalette.surfaceMuted)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/** 3. One row per exact catalog cut; unavailable rows stay visible but disabled. */
+@Composable
+private fun LogoCutRowItem(
+    brandLabel: String,
+    row: LogoCutRow,
+    selected: Boolean,
+    dense: Boolean,
+    onPick: () -> Unit,
+) {
+    val preview = rememberLogoPreview(row.cut.preview)
+    val missing = preview.missing
+    val enabled = preview.available
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (dense) 48.dp else 0.dp)
+            .clip(RoundedCornerShape(FmRadii.input))
+            .clickable(enabled = enabled, onClick = onPick)
+            .semantics {
+                contentDescription = buildString {
+                    append("字标：")
+                    append(brandLabel)
+                    append(" ")
+                    append(row.version.name)
+                    if (row.variantCount > 1) append(" 变体${row.variantIndex}/${row.variantCount}")
+                    if (selected) append("，已选") else if (missing) append("，未收录")
+                }
+            }
+            .padding(vertical = if (dense) 4.dp else 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 92.dp, height = 40.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted),
+            contentAlignment = Alignment.Center,
+        ) {
+            val artwork = preview.bitmap
+            if (artwork != null) {
+                Image(
+                    bitmap = artwork,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(0.78f).height(24.dp),
+                )
+            } else if (missing) {
+                Text("未收录", style = FmType.labelSmall, color = FmPalette.error)
+            }
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = row.version.name,
+                    style = FmType.bodyMedium,
+                    color = if (enabled) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(FmSpacing.xs))
+                Text(
+                    text = when {
+                        selected -> "已选"
+                        missing -> "未收录"
+                        else -> surfaceBadge(row.version.surface)
+                    },
+                    style = FmType.labelSmall,
+                    color = when {
+                        selected -> FmPalette.primaryStrong
+                        missing -> FmPalette.error
+                        else -> FmPalette.onSurfaceMuted
+                    },
+                )
+            }
+            Text(
+                text = "${eraLabel(row.version.era)} · ${row.version.years}",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+            if (row.variantCount > 1) {
+                Text(
+                    text = "变体 ${row.variantIndex}/${row.variantCount}",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+            }
+        }
+    }
+}
+
+/** 4. 调整字标: this card's non-Brand Logo controls, same rows as every other tab. */
+@Composable
+private fun LogoAdjustments(
+    controls: List<InspectorControl>,
+    session: DesignSession,
+    dense: Boolean,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "调整字标",
+            style = FmType.titleSmall,
+            color = FmPalette.onSurface,
+            modifier = Modifier.padding(top = if (dense) FmSpacing.sm else FmSpacing.md),
+        )
+        controls.forEachIndexed { index, control ->
+            if (index > 0) LogoDivider()
+            ControlItem(control = control, session = session, dense = dense)
+        }
+    }
+}
+
+/** Brand page: single column, browse only, always has a way back. */
+@Composable
+private fun LogoBrandPage(
+    brands: List<LogoBrand>,
+    loading: Boolean,
+    currentBrandKey: String?,
+    appliedAssetKey: String,
+    onBack: () -> Unit,
+    onPick: (LogoBrand) -> Unit,
+) {
+    val currentBrand = brands.firstOrNull { it.key == currentBrandKey }
+    Dialog(
+        onDismissRequest = onBack,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(FmSpacing.md)
+                .background(FmPalette.surface, RoundedCornerShape(FmRadii.card))
+                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.card))
+                .padding(FmSpacing.md),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "‹ 返回 Logo",
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurfaceSecondary,
+                    modifier = Modifier
+                        .heightIn(min = 40.dp)
+                        .clip(RoundedCornerShape(FmRadii.pill))
+                        .background(FmPalette.surfaceMuted)
+                        .clickable(onClick = onBack)
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .semantics { contentDescription = "返回 Logo 页面" },
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = currentBrand?.let { "当前浏览：${it.label}" } ?: "未选择品牌",
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+            }
+            Spacer(Modifier.height(FmSpacing.sm))
+            Text("选择品牌", style = FmType.titleMedium, color = FmPalette.onSurface)
+            Text(
+                text = "浏览只决定主页面列出的版本；返回不会改变已经应用的品牌字标。",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+            Spacer(Modifier.height(FmSpacing.sm))
+            when {
+                loading -> Text(
+                    text = "正在载入品牌库…",
+                    style = FmType.bodyMedium,
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.padding(vertical = FmSpacing.md),
+                )
+                brands.isEmpty() -> Text(
+                    text = "暂时无法载入品牌库。",
+                    style = FmType.bodyMedium,
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.padding(vertical = FmSpacing.md),
+                )
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                ) {
+                    items(brands, key = { it.key }) { brand ->
+                        BrandPageRow(
+                            brand = brand,
+                            browsing = brand.key == currentBrandKey,
+                            applied = brand.versions.any { version ->
+                                version.cuts.any { it.assetKey == appliedAssetKey }
+                            },
+                            onPick = { onPick(brand) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BrandPageRow(
+    brand: LogoBrand,
+    browsing: Boolean,
+    applied: Boolean,
+    onPick: () -> Unit,
+) {
+    val preview = rememberLogoPreview(brand.preview)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clip(RoundedCornerShape(FmRadii.card))
+            .background(if (browsing) FmPalette.primarySoft else FmPalette.surface)
+            .border(
+                width = 1.dp,
+                color = if (browsing) FmPalette.primary else FmPalette.outline,
+                shape = RoundedCornerShape(FmRadii.card),
+            )
+            .clickable(onClick = onPick)
+            .semantics {
+                contentDescription = "浏览品牌：${brand.label} ${brand.cn}" +
+                    (if (browsing) "，当前浏览" else "")
+            }
+            .padding(horizontal = FmSpacing.sm, vertical = FmSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 64.dp, height = 36.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(FmPalette.surfaceMuted),
+            contentAlignment = Alignment.Center,
+        ) {
+            val artwork = preview.bitmap
+            if (artwork != null) {
+                Image(
+                    bitmap = artwork,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(0.82f).height(22.dp),
+                )
+            } else {
+                Text(
+                    text = brand.label.take(2),
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+            }
+        }
+        Spacer(Modifier.width(FmSpacing.sm))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "${brand.label} · ${brand.cn}",
+                style = FmType.bodyMedium,
+                color = FmPalette.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val mergedLabel = if (brand.merged.isNotEmpty()) {
+                " · 含 ${brand.merged.joinToString(" / ")}"
+            } else {
+                ""
+            }
+            Text(
+                text = logoBrandCountLabel(brand) + mergedLabel,
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (applied) {
+            Text("已选", style = FmType.labelSmall, color = FmPalette.primaryStrong)
+            Spacer(Modifier.width(FmSpacing.xs))
+        }
+        if (browsing) {
+            Text("✓", style = FmType.labelMedium, color = FmPalette.primaryStrong)
+        }
+    }
+}
+
+@Composable
+private fun FixedLogoNote(title: String, body: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(title, style = FmType.bodyMedium, color = FmPalette.onSurface)
+        Text(
+            text = body,
+            style = FmType.labelSmall,
+            color = FmPalette.onSurfaceMuted,
+            modifier = Modifier.padding(top = FmSpacing.xxs),
+        )
+    }
+}
+
+@Composable
+private fun LogoHint(text: String, dense: Boolean) {
+    Text(
+        text = text,
+        style = FmType.bodyMedium,
+        color = FmPalette.onSurfaceMuted,
+        modifier = Modifier.padding(vertical = if (dense) FmSpacing.xs else FmSpacing.sm),
+    )
+}
+
+@Composable
+private fun LogoDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(FmPalette.outline),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Pure state helpers (unit-tested in commonTest; no Compose, no resources)
+// ---------------------------------------------------------------------------
+
+/** What the Logo tab can actually do for one card. */
+internal enum class LogoBrandMode {
+    /** No Logo section and no Brand control: nothing may be offered. */
+    Absent,
+
+    /** The template draws a fixed brand mark: explain it, keep the other Logo rows. */
+    Fixed,
+
+    /** A brand picker exists: brand page + exact cuts + auto match. */
+    Branded,
+}
+
+/**
+ * Classifies a card's Logo capability. [logoControls] is the card's Logo section
+ * (empty when the card has none), [brandControl] is the single `ControlType.Brand`
+ * row if the card declares one.
+ */
+internal fun logoBrandMode(
+    brandControl: InspectorControl?,
+    logoControls: List<InspectorControl>,
+): LogoBrandMode = when {
+    brandControl != null -> LogoBrandMode.Branded
+    logoControls.any { it.type != ControlType.Brand } -> LogoBrandMode.Fixed
+    else -> LogoBrandMode.Absent
+}
+
+/** The value the renderer treats as 自动匹配. The picker writes `""`. */
+internal fun isAutoMatchBrandValue(raw: String): Boolean = raw.isBlank() || raw == "auto"
+
+/** The brand that owns one exact catalog [assetKey], or null when the key is unknown. */
+internal fun logoBrandForAssetKey(brands: List<LogoBrand>, assetKey: String): LogoBrand? {
+    if (assetKey.isBlank()) return null
+    return brands.firstOrNull { brand ->
+        brand.versions.any { version -> version.cuts.any { it.assetKey == assetKey } }
+    }
+}
+
+/** The exact version of one applied [assetKey]; never a same-brand substitute. */
+internal fun logoVersionForAssetKey(brands: List<LogoBrand>, assetKey: String): LogoVersion? {
+    if (assetKey.isBlank()) return null
+    brands.forEach { brand ->
+        brand.versions.forEach { version ->
+            if (version.cuts.any { it.assetKey == assetKey }) return version
+        }
+    }
+    return null
+}
+
+/** Total exact cuts a brand offers (one row per cut is rendered). */
+internal fun logoCutCount(brand: LogoBrand): Int = brand.versions.sumOf { it.cuts.size }
+
+/** Subtitle of a brand page row: version count and exact cut count. */
+internal fun logoBrandCountLabel(brand: LogoBrand): String =
+    "${brand.versions.size} 个版本 · ${logoCutCount(brand)} 个字标"
+
+/** One rendered row: an exact cut plus the version that carries it. */
+internal data class LogoCutRow(
+    val version: LogoVersion,
+    val cut: LogoCut,
+    val variantIndex: Int,
+    val variantCount: Int,
+)
+
+/**
+ * Flattens a brand into one row per exact cut, in catalog order. A version with
+ * several cuts (black/white pairs) yields several rows; no cut is skipped,
+ * merged or replaced.
+ */
+internal fun logoCutRows(brand: LogoBrand): List<LogoCutRow> = buildList {
+    brand.versions.forEach { version ->
+        version.cuts.forEachIndexed { index, cut ->
+            add(
+                LogoCutRow(
+                    version = version,
+                    cut = cut,
+                    variantIndex = index + 1,
+                    variantCount = version.cuts.size,
+                ),
+            )
+        }
+    }
+}

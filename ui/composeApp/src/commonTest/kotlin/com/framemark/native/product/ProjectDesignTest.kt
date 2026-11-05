@@ -199,6 +199,23 @@ class ProjectDesignTest {
         val design = PhotoDesign.base("simple-4").withParam("inset", 0.2).withParam("inset", null)
         assertTrue(design.params.isEmpty())
     }
+
+    @Test
+    fun blank_logo_normalizes_to_auto_and_is_recoverable() {
+        val design = PhotoDesign.base("simple-4").withLogo("  ")
+        assertEquals(null, design.logo, "blank logo must persist as unset")
+        val decoded = decodeDesign(
+            mapOf(
+                "cardId" to "simple-4",
+                "logo" to "",
+                "params" to emptyMap<String, Any?>(),
+                "text" to emptyMap<String, Any?>(),
+                "baseDesign" to false,
+            ),
+            "test",
+        )
+        assertEquals(null, decoded.logo, "empty logo from an older build must stay readable")
+    }
 }
 
 class WatermarkSpecTest {
@@ -249,6 +266,40 @@ class WatermarkSpecTest {
         assertEquals(rect.w, overlay.w)
         assertEquals(rect.h, overlay.h)
         assertEquals(spec.opacity, overlay.opacity)
+        assertEquals(0f, overlay.angle)
+    }
+
+    @Test
+    fun rotation_keeps_draw_rect_and_aabb_inside_the_photo() {
+        val base = watermarkSpec(1)
+        for (angle in listOf(45f, 90f, -90f, 180f)) {
+            val spec = base.copy(rotation = angle)
+            val rect = spec.rect(photoAspect = 1.5f)
+            val box = spec.aabb(photoAspect = 1.5f)
+            assertTrue(rect.x >= -1e-4f && rect.y >= -1e-4f, "$angle rect 原点越界")
+            assertTrue(rect.x + rect.w <= 1.0001f && rect.y + rect.h <= 1.0001f, "$angle rect 越界")
+            assertTrue(box.x >= -1e-4f && box.y >= -1e-4f, "$angle aabb 原点越界")
+            assertTrue(box.x + box.w <= 1.0001f && box.y + box.h <= 1.0001f, "$angle aabb 越界")
+            assertEquals(
+                rect.x + rect.w / 2f,
+                box.x + box.w / 2f,
+                1e-4f,
+                "$angle 旋转中心漂移",
+            )
+            assertEquals(
+                rect.y + rect.h / 2f,
+                box.y + box.h / 2f,
+                1e-4f,
+                "$angle 旋转中心漂移",
+            )
+        }
+    }
+
+    @Test
+    fun rotation_angle_survives_overlay_conversion() {
+        val overlay = watermarkSpec(1).copy(rotation = 37f)
+            .toOverlaySpec("/tmp/fm/signature.png", photoAspect = 1.5f)
+        assertEquals(37f, overlay.angle)
     }
 
     @Test

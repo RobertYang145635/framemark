@@ -108,6 +108,22 @@ object FmPalette {
     val error = Color(0xFFC2413B)
     val warning = Color(0xFFB26A00)
     val scrim = Color(0x52101828)
+
+    // Stage (photo canvas) -----------------------------------------------------
+    // V06 appends these four roles; no existing token above is changed. The photo
+    // stage is a neutral dark canvas with no dot matrix / grid decoration, so the
+    // marks and the floating view tools need their own ink levels.
+    /** Neutral dark stage behind the photo. */
+    val stage = Color(0xFF25282D)
+
+    /** Hairline on the stage: frame edges and tool separators. */
+    val stageLine = Color(0xFF3A3F47)
+
+    /** Primary ink on the stage. */
+    val stageInk = Color(0xFFD4DAE3)
+
+    /** Muted ink on the stage (secondary labels, hints). */
+    val stageMuted = Color(0xFF969AA4)
 }
 
 object FmType {

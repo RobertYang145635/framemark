@@ -2,12 +2,10 @@ package com.framemark.native.shell
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -39,60 +36,64 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
-/** The editor's two tools (old WebView `.mobile-editor-bar`). */
+/**
+ * The editor's five phone tools (V06). The names are UI routing only: no design
+ * state, project field or engine binding is keyed on them.
+ */
 enum class EditorTool(val label: String) {
     Border("边框"),
-    Watermark("水印"),
+    Params("调整"),
+    Text("文字"),
+    Logo("Logo"),
+    Watermark("图片水印"),
 }
 
+/** 1 dp hairline + 51 dp of cells, so every cell clears the 48 dp touch target. */
+private val ToolBarDivider = 1.dp
+
 /**
- * Bottom segment bar of the editor: exactly 边框 / 水印. Tapping 边框 while it is
- * already active opens the border library (same double duty as the old app);
- * the caller decides that, this bar only reports the tap.
+ * Bottom tool bar: equal-width cells for [availableTools] (Logo only when the
+ * card has a Logo capability, so 4 or 5 cells). The bar only reports the tap;
+ * the caller decides which panel a tool opens.
  */
 @Composable
 fun FmEditorToolBar(
     height: Dp,
     tool: EditorTool,
-    onSelectBorder: () -> Unit,
-    onSelectWatermark: () -> Unit,
+    availableTools: List<EditorTool>,
+    onSelect: (EditorTool) -> Unit,
 ) {
-    // Area budget block (62dp / 58dp compact) holding the old floating pill.
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
-            .background(FmPalette.surface)
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+            .background(FmPalette.surface),
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(ToolBarDivider)
+                .background(FmPalette.outline),
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .shadow(12.dp, RoundedCornerShape(FmRadii.pill))
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .background(FmPalette.surface)
-                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
                 .selectableGroup()
-                .padding(horizontal = 6.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ToolCell(
-                tool = EditorTool.Border,
-                selected = tool == EditorTool.Border,
-                onClick = onSelectBorder,
-                modifier = Modifier.weight(1f),
-            )
-            ToolCell(
-                tool = EditorTool.Watermark,
-                selected = tool == EditorTool.Watermark,
-                onClick = onSelectWatermark,
-                modifier = Modifier.weight(1f),
-            )
+            availableTools.forEach { entry ->
+                ToolCell(
+                    tool = entry,
+                    selected = entry == tool,
+                    onClick = { onSelect(entry) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
@@ -109,6 +110,7 @@ private fun ToolCell(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(FmRadii.tile))
+            .background(if (selected) FmPalette.primarySoft else Color.Transparent)
             .semantics(mergeDescendants = true) {
                 contentDescription = tool.label
                 stateDescription = if (selected) "已选中" else "未选中"
@@ -118,10 +120,10 @@ private fun ToolCell(
         verticalArrangement = Arrangement.Center,
     ) {
         ToolGlyph(tool = tool, tint = tint, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.height(3.dp))
+        Box(modifier = Modifier.height(2.dp))
         Text(
-            tool.label,
-            style = FmType.labelMedium.copy(fontSize = 12.sp),
+            text = tool.label,
+            style = FmType.labelSmall.copy(fontSize = 11.sp),
             color = tint,
             maxLines = 1,
         )
@@ -149,6 +151,38 @@ private fun ToolGlyph(tool: EditorTool, tint: Color, modifier: Modifier = Modifi
                     cornerRadius = CornerRadius(w * 0.07f),
                     style = stroke,
                 )
+            }
+            EditorTool.Params -> {
+                // Three sliders with their knobs at different stops.
+                val rows = listOf(0.24f, 0.5f, 0.76f)
+                val knobs = listOf(0.68f, 0.36f, 0.58f)
+                rows.forEachIndexed { index, y ->
+                    drawLine(
+                        tint,
+                        Offset(w * 0.14f, w * y),
+                        Offset(w * 0.86f, w * y),
+                        stroke.width,
+                        StrokeCap.Round,
+                    )
+                    drawCircle(tint, radius = w * 0.08f, center = Offset(w * knobs[index], w * y))
+                }
+            }
+            EditorTool.Text -> {
+                drawLine(tint, Offset(w * 0.18f, w * 0.24f), Offset(w * 0.82f, w * 0.24f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.5f, w * 0.24f), Offset(w * 0.5f, w * 0.84f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.34f, w * 0.84f), Offset(w * 0.66f, w * 0.84f), stroke.width, StrokeCap.Round)
+            }
+            EditorTool.Logo -> {
+                drawRoundRect(
+                    color = tint,
+                    topLeft = Offset(w * 0.1f, w * 0.2f),
+                    size = Size(w * 0.8f, w * 0.6f),
+                    cornerRadius = CornerRadius(w * 0.16f),
+                    style = stroke,
+                )
+                drawCircle(tint, radius = w * 0.12f, center = Offset(w * 0.5f, w * 0.5f), style = stroke)
+                drawLine(tint, Offset(w * 0.28f, w * 0.5f), Offset(w * 0.4f, w * 0.5f), stroke.width, StrokeCap.Round)
+                drawLine(tint, Offset(w * 0.6f, w * 0.5f), Offset(w * 0.72f, w * 0.5f), stroke.width, StrokeCap.Round)
             }
             EditorTool.Watermark -> {
                 val path = Path().apply {

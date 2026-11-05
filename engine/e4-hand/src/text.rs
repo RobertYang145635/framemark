@@ -15,10 +15,14 @@
 use std::collections::HashMap;
 
 use skia_safe::{
+    font_arguments::{variation_position::Coordinate, FontArguments, VariationPosition},
+    shaper::{
+        self,
+        run_handler::{Buffer, RunInfo},
+        RunHandler,
+    },
     Canvas, Color, Data, Font, FontHinting, FontMgr, FontStyle, GlyphId, Matrix, Paint, Point,
     Rect, Shaper, TextBlob, TextBlobBuilder, Typeface, Vector,
-    font_arguments::{variation_position::Coordinate, FontArguments, VariationPosition},
-    shaper::{self, RunHandler, run_handler::{Buffer, RunInfo}},
 };
 
 struct Family {
@@ -29,16 +33,37 @@ struct Family {
 }
 
 impl Family {
-    fn new(regular: Typeface, medium: Option<Typeface>, demibold: Option<Typeface>, bold: Option<Typeface>) -> Self {
-        Self { regular, medium, demibold, bold }
+    fn new(
+        regular: Typeface,
+        medium: Option<Typeface>,
+        demibold: Option<Typeface>,
+        bold: Option<Typeface>,
+    ) -> Self {
+        Self {
+            regular,
+            medium,
+            demibold,
+            bold,
+        }
     }
     fn pick(&self, weight: i32) -> &Typeface {
         if weight >= 700 {
-            self.bold.as_ref().or(self.demibold.as_ref()).or(self.medium.as_ref()).unwrap_or(&self.regular)
+            self.bold
+                .as_ref()
+                .or(self.demibold.as_ref())
+                .or(self.medium.as_ref())
+                .unwrap_or(&self.regular)
         } else if weight >= 600 {
-            self.demibold.as_ref().or(self.medium.as_ref()).or(self.bold.as_ref()).unwrap_or(&self.regular)
+            self.demibold
+                .as_ref()
+                .or(self.medium.as_ref())
+                .or(self.bold.as_ref())
+                .unwrap_or(&self.regular)
         } else if weight >= 500 {
-            self.medium.as_ref().or(self.demibold.as_ref()).unwrap_or(&self.regular)
+            self.medium
+                .as_ref()
+                .or(self.demibold.as_ref())
+                .unwrap_or(&self.regular)
         } else {
             &self.regular
         }
@@ -51,7 +76,8 @@ pub struct FontSet {
 }
 
 fn load_face(mgr: &FontMgr, path: &std::path::Path) -> Result<Typeface, String> {
-    let data = Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
+    let data =
+        Data::from_filename(path).ok_or_else(|| format!("font missing: {}", path.display()))?;
     mgr.new_from_data(data, None)
         .ok_or_else(|| format!("font unreadable: {}", path.display()))
 }
@@ -74,9 +100,11 @@ fn weighted_face(base: &Typeface, weight: f32) -> Typeface {
             value: 1010.0,
         },
     ];
-    let args = FontArguments::new()
-        .set_variation_design_position(VariationPosition { coordinates: &coords });
-    base.clone_with_arguments(&args).unwrap_or_else(|| base.clone())
+    let args = FontArguments::new().set_variation_design_position(VariationPosition {
+        coordinates: &coords,
+    });
+    base.clone_with_arguments(&args)
+        .unwrap_or_else(|| base.clone())
 }
 
 impl FontSet {
@@ -94,7 +122,10 @@ impl FontSet {
         let avenir_med = load_face(&mgr, &oppo.join("AvenirNext-Medium.ttf")).ok();
         let avenir_demi = load_face(&mgr, &oppo.join("AvenirNext-DemiBold.ttf")).ok();
         let avenir_bold = load_face(&mgr, &oppo.join("AvenirNext-Bold.ttf")).ok();
-        families.insert("StockAvenir", Family::new(avenir_reg, avenir_med, avenir_demi, avenir_bold));
+        families.insert(
+            "StockAvenir",
+            Family::new(avenir_reg, avenir_med, avenir_demi, avenir_bold),
+        );
 
         let sys_base = load_face(&mgr, &oppo.join("SysSans-En-Regular.ttf"))?;
         // SysSans is a variable wght 100..700 face; the oracle asks for 600/500,
@@ -140,7 +171,10 @@ impl FontSet {
         let butler_med = load_face(&mgr, &oppo.join("ButlerMedium.otf")).ok();
         let butler_bold = load_face(&mgr, &oppo.join("ButlerBold.otf")).ok();
         if let Some(reg) = butler_med.clone() {
-            families.insert("StockButler", Family::new(reg, butler_med, butler_bold.clone(), butler_bold));
+            families.insert(
+                "StockButler",
+                Family::new(reg, butler_med, butler_bold.clone(), butler_bold),
+            );
         }
         if let Ok(fz) = load_face(&mgr, &oppo.join("FZCYSK.TTF")) {
             families.insert("StockFZ", Family::new(fz, None, None, None));
@@ -154,20 +188,29 @@ impl FontSet {
         let fallback = mgr
             .match_family_style("Microsoft YaHei", FontStyle::normal())
             .or_else(|| mgr.match_family_style("Microsoft YaHei UI", FontStyle::normal()))
-            .or_else(|| mgr.match_family_style_character("", FontStyle::normal(), &["zh-Hans"], 0x5468))
+            .or_else(|| {
+                mgr.match_family_style_character("", FontStyle::normal(), &["zh-Hans"], 0x5468)
+            })
             .or_else(|| load_face(&mgr, &oppo.join("FZCYSK.TTF")).ok());
         println!(
             "e2b.fonts root={} families={} fallback={}",
             assets.display(),
             families.len(),
-            fallback.as_ref().map(|f| f.family_name()).unwrap_or_else(|| "<none>".into())
+            fallback
+                .as_ref()
+                .map(|f| f.family_name())
+                .unwrap_or_else(|| "<none>".into())
         );
         Ok(Self { families, fallback })
     }
 
     pub fn resolve(&self, key: &str, weight: i32) -> &Typeface {
         let family = font_key_family(key);
-        let fam = self.families.get(family).or_else(|| self.families.get("StockSysSans")).expect("StockSysSans");
+        let fam = self
+            .families
+            .get(family)
+            .or_else(|| self.families.get("StockSysSans"))
+            .expect("StockSysSans");
         fam.pick(weight)
     }
 
@@ -301,6 +344,14 @@ impl RunHandler for Collector {
     fn commit_line(&mut self) {}
 }
 
+fn needs_glyph(c: char) -> bool {
+    !c.is_control()
+        && !c.is_whitespace()
+        && !matches!(c as u32,
+            0x200B..=0x200F | 0x202A..=0x202E | 0x2060..=0x206F |
+            0xFE00..=0xFE0F | 0xE0100..=0xE01EF)
+}
+
 pub struct TextEngine {
     shaper: Shaper,
     pub subpixel: bool,
@@ -319,8 +370,8 @@ pub struct TextEngine {
 
 impl TextEngine {
     pub fn new() -> Self {
-        let shaper = Shaper::new_shape_dont_wrap_or_reorder(None)
-            .expect("HarfBuzz shaper unavailable");
+        let shaper =
+            Shaper::new_shape_dont_wrap_or_reorder(None).expect("HarfBuzz shaper unavailable");
         let embolden = match std::env::var("T1C_EMBOLDEN").ok() {
             Some(v) => v == "1" || v.parse::<f32>().map(|f| f > 0.0).unwrap_or(false),
             None => false,
@@ -350,10 +401,15 @@ impl TextEngine {
         (painted * 100.0).trunc() as f32 / 100.0
     }
 
-    /// Missing CJK glyphs fall through to Microsoft YaHei at the requested CSS
-    /// weight (Blink's family fallback keeps the weight; >=600 reaches Bold).
+    /// Missing CJK glyphs fall through to the selected fallback face at the
+    /// requested CSS weight (Blink's family fallback keeps the weight; >=600
+    /// reaches Bold). The whole line switches faces, matching Chromium's line
+    /// shaping for these card stacks.
     fn face_for(&self, base: &Typeface, text: &str) -> Typeface {
-        let missing = text.chars().any(|c| base.unichar_to_glyph(c as i32) == 0);
+        let missing = text
+            .chars()
+            .filter(|c| needs_glyph(*c))
+            .any(|c| base.unichar_to_glyph(c as i32) == 0);
         if !missing {
             return base.clone();
         }
@@ -364,6 +420,20 @@ impl TextEngine {
             self.fallback.as_ref()
         };
         pick.cloned().unwrap_or_else(|| base.clone())
+    }
+
+    /// Characters that neither the chosen face nor its selected fallback can
+    /// draw. Callers turn a non-empty result into a hard render error instead
+    /// of accepting Skia's .notdef boxes as a finished frame.
+    pub fn missing_glyphs(&self, base: &Typeface, text: &str) -> Vec<char> {
+        let face = self.face_for(base, text);
+        let mut missing = Vec::new();
+        for c in text.chars().filter(|c| needs_glyph(*c)) {
+            if face.unichar_to_glyph(c as i32) == 0 && !missing.contains(&c) {
+                missing.push(c);
+            }
+        }
+        missing
     }
 
     fn make_font(&self, tf: &Typeface, size: f32, embolden: bool) -> Font {
@@ -394,7 +464,11 @@ impl TextEngine {
         // scaledContext. Convert through the painted size so the shaper adds
         // exactly `tracking` px per gap at any font scale.
         let shaped_size = self.painted_size(size);
-        let tracking_em = if shaped_size > 0.0 { tracking / shaped_size } else { 0.0 };
+        let tracking_em = if shaped_size > 0.0 {
+            tracking / shaped_size
+        } else {
+            0.0
+        };
         let font = self.make_font(&tf, size, false);
         let mut font_run = Shaper::new_trivial_font_run_iterator(&font, text.len());
         let mut bidi = Shaper::new_trivial_bidi_run_iterator(0, text.len());
@@ -445,7 +519,10 @@ impl TextEngine {
             VBaseline::Alphabetic => 0.0,
             VBaseline::Middle => {
                 let default = -(metrics.ascent + metrics.descent) * 0.5;
-                match std::env::var("T1B_BASELINE_SHIFT").ok().and_then(|v| v.parse::<f32>().ok()) {
+                match std::env::var("T1B_BASELINE_SHIFT")
+                    .ok()
+                    .and_then(|v| v.parse::<f32>().ok())
+                {
                     Some(shift) => default + shift,
                     None => default,
                 }

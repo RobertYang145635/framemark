@@ -6,7 +6,9 @@ use std::path::Path;
 use std::time::Instant;
 
 use serde_json::json;
-use skia_safe::{AlphaType, ColorSpace, ColorType, Data, EncodedImageFormat, Image, ImageInfo, Surface};
+use skia_safe::{
+    AlphaType, ColorSpace, ColorType, Data, EncodedImageFormat, Image, ImageInfo, Surface,
+};
 
 use crate::canvas::{Ctx2D, OverlaySpec};
 use crate::draw::{Env, Images, LayoutEnv};
@@ -68,12 +70,17 @@ fn exif_orientation(bytes: &[u8]) -> u16 {
         let mut i = 12usize;
         while i + 8 <= bytes.len() {
             let fourcc = &bytes[i..i + 4];
-            let size = u32::from_le_bytes([bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]]) as usize;
+            let size = u32::from_le_bytes([bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]])
+                as usize;
             let start = i + 8;
             let end = start.saturating_add(size).min(bytes.len());
             if fourcc == b"EXIF" {
                 let d = &bytes[start..end];
-                let tiff = if d.len() > 6 && &d[..6] == b"Exif\0\0" { &d[6..] } else { d };
+                let tiff = if d.len() > 6 && &d[..6] == b"Exif\0\0" {
+                    &d[6..]
+                } else {
+                    d
+                };
                 return crate::tiffsrc::orientation(tiff);
             }
             i = start + size + (size & 1);
@@ -110,7 +117,13 @@ fn rotate_by_orientation(image: Image, orientation: u16) -> Result<Image, String
         Some(skia_safe::ColorSpace::new_srgb()),
     );
     let mut rgba = vec![0u8; (w as usize) * (h as usize) * 4];
-    let ok = image.read_pixels(&info, &mut rgba, (w as usize) * 4, (0, 0), skia_safe::image::CachingHint::Disallow);
+    let ok = image.read_pixels(
+        &info,
+        &mut rgba,
+        (w as usize) * 4,
+        (0, 0),
+        skia_safe::image::CachingHint::Disallow,
+    );
     if !ok {
         return Err("read_pixels failed for orientation".into());
     }
@@ -163,7 +176,10 @@ fn text_engine() -> TextEngine {
     te.edging = skia_safe::font::Edging::AntiAlias;
     te.embolden = false;
     te.stroke_w = 0.0;
-    te.hinting = match std::env::var("E4H_HINTING").unwrap_or_else(|_| "slight".into()).as_str() {
+    te.hinting = match std::env::var("E4H_HINTING")
+        .unwrap_or_else(|_| "slight".into())
+        .as_str()
+    {
         "none" => skia_safe::FontHinting::None,
         "normal" => skia_safe::FontHinting::Normal,
         "full" => skia_safe::FontHinting::Full,
@@ -174,7 +190,11 @@ fn text_engine() -> TextEngine {
 
 /// `draw.ts textScaleOf`: clamp 0.5..2; anything within 0.001 of 1 is exactly 1.
 fn text_scale_of(raw: f64) -> f32 {
-    let s = if raw.is_finite() { raw.clamp(0.5, 2.0) } else { 1.0 };
+    let s = if raw.is_finite() {
+        raw.clamp(0.5, 2.0)
+    } else {
+        1.0
+    };
     if (s - 1.0).abs() < 0.001 {
         1.0
     } else {
@@ -257,6 +277,7 @@ fn draw_pass(
             te,
             themes,
             palette48: None,
+            lines: RefCell::new(crate::lines::LineState::new()),
         };
         match crate::templates::render(&mut env) {
             Ok(r) => photo_rect = [r.left, r.top, r.width(), r.height()],
@@ -266,10 +287,18 @@ fn draw_pass(
     if let Some(e) = render_err {
         return Err(e);
     }
+    let report = report_cell.into_inner();
+    if let Some(font_error) = report
+        .gaps
+        .iter()
+        .find(|gap| gap.starts_with(crate::draw::FONT_ERROR_PREFIX))
+    {
+        return Err(font_error.clone());
+    }
     Ok(PassOut {
         surface,
         photo_rect,
-        report: report_cell.into_inner(),
+        report,
     })
 }
 
@@ -282,13 +311,95 @@ pub fn render_card(
     extra_fonts: &str,
     fallback_cjk: Option<&str>,
     photo_override: Option<&Path>,
-    mut overlay: Option<OverlaySpec>,
-    // The app's design document (`{"design":{params,text}}`), merged over the card's
-    // own design exactly like the desktop `--design` path; `None` keeps the card as is.
+    overlay: Option<OverlaySpec>,
     app_design: Option<&serde_json::Value>,
     out_png: &str,
     max_edge: i32,
 ) -> Result<HandRender, String> {
+    let geom_path = format!("{out_png}.geom.json");
+    render_card_impl(
+        cards_path,
+        card_id,
+        hand_dir,
+        fonts_dir,
+        extra_fonts,
+        fallback_cjk,
+        photo_override,
+        overlay,
+        app_design,
+        Some(out_png),
+        &geom_path,
+        max_edge,
+    )
+    .map(|product| product.render)
+}
+
+pub struct RgbaCardRender {
+    pub rgba: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+}
+
+struct CardRenderProduct {
+    render: HandRender,
+    rgba: Option<Vec<u8>>,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_card_rgba(
+    cards_path: &str,
+    card_id: &str,
+    hand_dir: &str,
+    fonts_dir: &str,
+    extra_fonts: &str,
+    fallback_cjk: Option<&str>,
+    photo_override: Option<&Path>,
+    overlay: Option<OverlaySpec>,
+    app_design: Option<&serde_json::Value>,
+    geom_path: &str,
+    max_edge: i32,
+) -> Result<RgbaCardRender, String> {
+    let product = render_card_impl(
+        cards_path,
+        card_id,
+        hand_dir,
+        fonts_dir,
+        extra_fonts,
+        fallback_cjk,
+        photo_override,
+        overlay,
+        app_design,
+        None,
+        geom_path,
+        max_edge,
+    )?;
+    let rgba = product
+        .rgba
+        .ok_or_else(|| "raw renderer produced no pixels".to_string())?;
+    Ok(RgbaCardRender {
+        rgba,
+        width: product.render.width as u32,
+        height: product.render.height as u32,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_card_impl(
+    cards_path: &str,
+    card_id: &str,
+    hand_dir: &str,
+    fonts_dir: &str,
+    extra_fonts: &str,
+    fallback_cjk: Option<&str>,
+    photo_override: Option<&Path>,
+    mut overlay: Option<OverlaySpec>,
+    // The app's design document (`{"design":{params,text}}`), merged over the card's
+    // own design exactly like the desktop `--design` path; `None` keeps the card as is.
+    app_design: Option<&serde_json::Value>,
+    out_png: Option<&str>,
+    geom_path: &str,
+    max_edge: i32,
+) -> Result<CardRenderProduct, String> {
     let started = Instant::now();
     let cards = hand::load_cards(Path::new(cards_path))?;
     let card: &Card = cards
@@ -297,6 +408,9 @@ pub fn render_card(
         .find(|c| c.card == card_id)
         .ok_or_else(|| format!("card '{card_id}' not in {cards_path}"))?;
     let mut design = hand::load_design(&card.design)?;
+    let app_logo_override = app_design
+        .and_then(|app| app.get("design").unwrap_or(app).get("logo"))
+        .is_some();
     if let Some(app) = app_design {
         apply_app_design(&mut design, app)?;
         note(&format!(
@@ -333,7 +447,12 @@ pub fn render_card(
             let v = serde_json::Value::from((iw / ih) as f64);
             params.insert("canvasAspect".into(), v.clone());
             params.insert("photoAspect".into(), v);
-            println!("e4hand.fit=native photo={}x{} lockedAspect={:.6}", iw, ih, iw / ih);
+            println!(
+                "e4hand.fit=native photo={}x{} lockedAspect={:.6}",
+                iw,
+                ih,
+                iw / ih
+            );
             hand::crop_full(iw, ih)
         }
     };
@@ -344,6 +463,8 @@ pub fn render_card(
         Some(p) if !p.is_empty() => crate::exif::read_photo(Path::new(p)),
         _ => card.exif.clone().unwrap_or_default(),
     };
+    let fallback_text = text_needing_fallback(&design.text, &exif, &params);
+    let requires_bundled_cjk = crate::fonts::contains_cjk(&fallback_text);
     let layout_env = LayoutEnv {
         pw: crop.pw,
         ph: crop.ph,
@@ -357,7 +478,15 @@ pub fn render_card(
     let ch = (crate::jsval::js_round(lh as f64) as i32).max(2);
 
     let mut images = Images::empty();
-    if let Some(logo) = &card.logo {
+    if app_logo_override {
+        if let Some(logo) = &design.logo {
+            let bytes = decode_logo_data_url(&logo.data_url)?;
+            images.logo = Some(
+                Image::from_encoded(Data::new_copy(&bytes))
+                    .ok_or_else(|| "design.logo.dataUrl image decode failed".to_string())?,
+            );
+        }
+    } else if let Some(logo) = &card.logo {
         images.logo = Some(load_image(&logo.path)?);
     }
     for extra in &card.extras {
@@ -373,19 +502,18 @@ pub fn render_card(
     let mut te = text_engine();
     te.fallback = fonts.fallback.clone();
     te.fallback_bold = fonts.fallback_bold.clone();
-    // Deterministic CJK fallback: when the card's design carries CJK and a
-    // bundled face is provided, use it instead of the platform's system face.
-    if let Some(path) = fallback_cjk {
-        let design_raw = std::fs::read_to_string(&card.design).unwrap_or_default();
-        let has_cjk = design_raw.chars().any(|c| ('一'..='鿿').contains(&c) || ('　'..='〿').contains(&c));
-        if has_cjk {
-            if let Some(data) = Data::from_filename(path) {
-                if let Some(face) = skia_safe::FontMgr::new().new_from_data(data, None) {
-                    te.fallback = Some(face.clone());
-                    te.fallback_bold = Some(face);
-                }
-            }
-        }
+    // Select the packaged CJK face from all text the renderer can emit,
+    // including camera metadata supplied by the active photo.
+    if requires_bundled_cjk {
+        let path = fallback_cjk
+            .filter(|path| !path.trim().is_empty())
+            .ok_or_else(|| {
+                "required CJK fallback font path is empty for non-empty Chinese text".to_string()
+            })?;
+        let face = crate::fonts::load_required_face(Path::new(path))
+            .map_err(|e| format!("required CJK fallback font cannot be loaded ({path}): {e}"))?;
+        te.fallback = Some(face.clone());
+        te.fallback_bold = Some(face);
     }
     te.scale = text_scale_of(design.text.font_scale);
     let themes = tables.themes.clone();
@@ -413,8 +541,23 @@ pub fn render_card(
         let cw_a = (crate::jsval::js_round(lw_a as f64) as i32).max(2);
         let ch_a = (crate::jsval::js_round(lh_a as f64) as i32).max(2);
         let probe = draw_pass(
-            card, &design, &params, &exif, &photo, &images, &fonts, &te, &themes,
-            hand::crop_full(piw, pih), piw, pih, cw_a, ch_a, 1.0, None, None,
+            card,
+            &design,
+            &params,
+            &exif,
+            &photo,
+            &images,
+            &fonts,
+            &te,
+            &themes,
+            hand::crop_full(piw, pih),
+            piw,
+            pih,
+            cw_a,
+            ch_a,
+            1.0,
+            None,
+            None,
         )?;
         let (box_w, box_h) = (probe.photo_rect[2], probe.photo_rect[3]);
         if !(box_w > 0.0) || !(box_h > 0.0) {
@@ -462,10 +605,27 @@ pub fn render_card(
         // The real crop (full photo) stays the source rect; snap forces the draw
         // box onto the photo's own pixels.
         let out = draw_pass(
-            card, &design, &params, &exif, &photo, &images, &fonts, &te, &themes,
-            crop, pw_b, ph_b, cw_b, ch_b, scale, Some((iw, ih)), overlay.take(),
+            card,
+            &design,
+            &params,
+            &exif,
+            &photo,
+            &images,
+            &fonts,
+            &te,
+            &themes,
+            crop,
+            pw_b,
+            ph_b,
+            cw_b,
+            ch_b,
+            scale,
+            Some((iw, ih)),
+            overlay.take(),
         )?;
-        let resid_px = (out.photo_rect[2] - iw).abs().max((out.photo_rect[3] - ih).abs());
+        let resid_px = (out.photo_rect[2] - iw)
+            .abs()
+            .max((out.photo_rect[3] - ih).abs());
         if resid_px > 1.0 {
             return Err(format!(
                 "E4H-FIT-NATIVE-UNSTABLE card='{}': after scale {:.6} the photo box is {:.2}x{:.2}, expected {:.0}x{:.0} (off {:.2}px)",
@@ -497,8 +657,23 @@ pub fn render_card(
         };
         (
             draw_pass(
-                card, &design, &params, &exif, &photo, &images, &fonts, &te, &themes,
-                crop, crop.pw, crop.ph, cw, ch, scale, None, overlay.take(),
+                card,
+                &design,
+                &params,
+                &exif,
+                &photo,
+                &images,
+                &fonts,
+                &te,
+                &themes,
+                crop,
+                crop.pw,
+                crop.ph,
+                cw,
+                ch,
+                scale,
+                None,
+                overlay.take(),
             )?,
             scale,
         )
@@ -511,13 +686,34 @@ pub fn render_card(
     let rep = pass.report;
 
     let snapshot = surface.image_snapshot();
-    let data = snapshot
-        .encode_to_data(EncodedImageFormat::PNG)
-        .ok_or_else(|| "PNG encode failed".to_string())?;
-    if let Some(parent) = Path::new(out_png).parent() {
-        std::fs::create_dir_all(parent).ok();
-    }
-    std::fs::write(out_png, data.as_bytes()).map_err(|e| format!("write {out_png}: {e}"))?;
+    let raw_rgba = if let Some(out_png) = out_png {
+        let data = snapshot
+            .encode_to_data(EncodedImageFormat::PNG)
+            .ok_or_else(|| "PNG encode failed".to_string())?;
+        if let Some(parent) = Path::new(out_png).parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
+        std::fs::write(out_png, data.as_bytes()).map_err(|e| format!("write {out_png}: {e}"))?;
+        None
+    } else {
+        let info = ImageInfo::new(
+            (out_w, out_h),
+            ColorType::RGBA8888,
+            AlphaType::Opaque,
+            Some(ColorSpace::new_srgb()),
+        );
+        let mut rgba = vec![0u8; (out_w as usize) * (out_h as usize) * 4];
+        if !snapshot.read_pixels(
+            &info,
+            &mut rgba,
+            (out_w as usize) * 4,
+            (0, 0),
+            skia_safe::image::CachingHint::Disallow,
+        ) {
+            return Err("read raster pixels failed".into());
+        }
+        Some(rgba)
+    };
 
     let geom_doc = json!({
         "card": card.card,
@@ -539,9 +735,9 @@ pub fn render_card(
         photo_rect,
         json: geom_json.clone(),
     };
-    std::fs::write(format!("{out_png}.geom.json"), &geom_json).ok();
+    std::fs::write(geom_path, &geom_json).ok();
 
-    Ok(HandRender {
+    let render = HandRender {
         card: card.card.clone(),
         width: out_w,
         height: out_h,
@@ -550,6 +746,10 @@ pub fn render_card(
         photo_rect,
         geom: Some(geom),
         ms: started.elapsed().as_millis(),
+    };
+    Ok(CardRenderProduct {
+        render,
+        rgba: raw_rgba,
     })
 }
 /**
@@ -561,7 +761,9 @@ pub fn render_card(
 fn apply_app_design(design: &mut hand::Design, app: &serde_json::Value) -> Result<(), String> {
     let node = app.get("design").unwrap_or(app);
     if let Some(fit) = node.get("fitMode") {
-        let raw = fit.as_str().ok_or_else(|| "design.fitMode must be a string".to_string())?;
+        let raw = fit
+            .as_str()
+            .ok_or_else(|| "design.fitMode must be a string".to_string())?;
         hand::resolve_fit("", Some(raw))?;
         design.fit_mode = Some(raw.to_string());
     }
@@ -573,10 +775,50 @@ fn apply_app_design(design: &mut hand::Design, app: &serde_json::Value) -> Resul
     if let Some(t) = node.get("text") {
         let base = serde_json::to_value(&design.text).map_err(|e| e.to_string())?;
         let merged = deep_merge(base, t.clone());
-        design.text =
-            serde_json::from_value(merged).map_err(|e| format!("design.text: {e}"))?;
+        design.text = serde_json::from_value(merged).map_err(|e| format!("design.text: {e}"))?;
+    }
+    if let Some(logo) = node.get("logo") {
+        design.logo = if logo.is_null() {
+            None
+        } else {
+            Some(serde_json::from_value(logo.clone()).map_err(|e| format!("design.logo: {e}"))?)
+        };
     }
     Ok(())
+}
+
+fn decode_logo_data_url(url: &str) -> Result<Vec<u8>, String> {
+    let (header, payload) = url
+        .split_once(',')
+        .ok_or_else(|| "design.logo.dataUrl is not a valid data URL".to_string())?;
+    if !header.starts_with("data:image/") || !header.ends_with(";base64") {
+        return Err("design.logo.dataUrl must be a base64 image data URL".to_string());
+    }
+    let mut out = Vec::with_capacity(payload.len() * 3 / 4);
+    let mut acc = 0u32;
+    let mut bits = 0u8;
+    for byte in payload.bytes() {
+        let value = match byte {
+            b'A'..=b'Z' => byte - b'A',
+            b'a'..=b'z' => byte - b'a' + 26,
+            b'0'..=b'9' => byte - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            b'=' => break,
+            b'\r' | b'\n' | b' ' | b'\t' => continue,
+            _ => return Err("design.logo.dataUrl contains invalid base64".to_string()),
+        };
+        acc = (acc << 6) | value as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+        }
+    }
+    if out.is_empty() {
+        return Err("design.logo.dataUrl is empty".to_string());
+    }
+    Ok(out)
 }
 
 fn note(msg: &str) {
@@ -596,6 +838,48 @@ fn note(msg: &str) {
     println!("{msg}");
 }
 
+fn final_user_text(text: &hand::TextSettings) -> String {
+    let mut out = String::new();
+    for value in [
+        &text.title,
+        &text.subtitle,
+        &text.signature,
+        &text.custom_line,
+        &text.location,
+    ] {
+        out.push_str(value);
+        out.push('\n');
+    }
+    for value in text
+        .line_text
+        .iter()
+        .flat_map(|values| values.values())
+        .chain(text.slot_values.iter().flat_map(|values| values.values()))
+    {
+        out.push_str(value);
+        out.push('\n');
+    }
+    out
+}
+
+fn text_needing_fallback(
+    text: &hand::TextSettings,
+    exif: &Exif,
+    params: &hand::Params,
+) -> String {
+    let mut out = format!(
+        "{}\n{}\n{}\n{}\n{}\n{}",
+        final_user_text(text), exif.make, exif.model, exif.lens, exif.date_time, exif.line(" ")
+    );
+    for key in ["stubTitle", "stubLabel"] {
+        if let Some(value) = params.get(key).and_then(serde_json::Value::as_str) {
+            out.push('\n');
+            out.push_str(value);
+        }
+    }
+    out
+}
+
 fn deep_merge(base: serde_json::Value, over: serde_json::Value) -> serde_json::Value {
     match (base, over) {
         (serde_json::Value::Object(mut a), serde_json::Value::Object(b)) => {
@@ -609,5 +893,63 @@ fn deep_merge(base: serde_json::Value, over: serde_json::Value) -> serde_json::V
             serde_json::Value::Object(a)
         }
         (_, over) => over,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_app_design, final_user_text, text_needing_fallback};
+
+    #[test]
+    fn merged_text_controls_cjk_fallback_selection() {
+        let mut design: crate::hand::Design = serde_json::from_value(serde_json::json!({
+            "templateId": "all-latin",
+            "text": { "title": "FRAME MARK" }
+        }))
+        .unwrap();
+        assert!(!crate::fonts::contains_cjk(&final_user_text(&design.text)));
+
+        let override_doc = serde_json::json!({
+            "design": { "text": { "title": "中文边框" } }
+        });
+        apply_app_design(&mut design, &override_doc).unwrap();
+        assert!(crate::fonts::contains_cjk(&final_user_text(&design.text)));
+
+        let mapped: crate::hand::Design = serde_json::from_value(serde_json::json!({
+            "templateId": "all-latin",
+            "text": {
+                "lineText": { "caption": "中文行" },
+                "slotValues": { "custom": "中文槽" }
+            }
+        }))
+        .unwrap();
+        assert!(crate::fonts::contains_cjk(&final_user_text(&mapped.text)));
+    }
+
+    #[test]
+    fn exif_fullwidth_camera_punctuation_selects_cjk_fallback() {
+        let text: crate::hand::TextSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        let exif = crate::hand::Exif {
+            make: "PANASONIC".into(),
+            model: "DC－S1".into(),
+            ..Default::default()
+        };
+        assert!(crate::fonts::contains_cjk(&text_needing_fallback(
+            &text,
+            &exif,
+            &Default::default(),
+        )));
+
+        let params = serde_json::from_value(serde_json::json!({ "stubTitle": "中文标题" })).unwrap();
+        let latin_exif = crate::hand::Exif {
+            make: "PANASONIC".into(),
+            model: "DC-S1".into(),
+            ..Default::default()
+        };
+        assert!(crate::fonts::contains_cjk(&text_needing_fallback(
+            &text,
+            &latin_exif,
+            &params,
+        )));
     }
 }

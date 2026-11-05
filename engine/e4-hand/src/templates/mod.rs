@@ -11,41 +11,41 @@
 //! ... (full table in _research/native/E4.md)
 
 pub mod bare_cover;
+pub mod blur;
 pub mod brand_footer;
 pub mod editorial;
 pub mod film;
 pub mod glass;
 pub mod glass_palette_portrait;
 pub mod glass_side_card;
+pub mod grad_footer;
 pub mod location_card;
 pub mod logo_footer;
-pub mod spec_footer;
 pub mod matte_footer;
 pub mod matte_overlay;
 pub mod movie;
 pub mod overlay;
+pub mod palette_card;
 pub mod param_stack;
 pub mod personal_border;
 pub mod poetry_card;
 pub mod polaroid;
 pub mod polaroid_frame;
 pub mod portrait_ticket;
-pub mod split_reveal;
 pub mod profile_frame;
 pub mod ratio_blur_square;
 pub mod ratio_matte;
-pub mod blur;
-pub mod side_ticket;
 pub mod side_card;
-pub mod palette_card;
+pub mod side_ticket;
+pub mod spec_footer;
+pub mod split_reveal;
 pub mod vendor_footer;
-pub mod grad_footer;
 pub mod vertical;
 pub mod xiaomi_leica;
 
 use skia_safe::Rect;
 
-use crate::draw::{LayoutEnv, Env};
+use crate::draw::{Env, LayoutEnv};
 
 pub type RenderResult = Result<Rect, String>;
 

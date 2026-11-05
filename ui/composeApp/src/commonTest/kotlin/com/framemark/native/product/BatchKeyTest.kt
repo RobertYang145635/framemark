@@ -56,8 +56,11 @@ class BatchKeyTest {
             "ratio" to job("j-ratio", design = baseDesign().withRatio("4:5")),
             "fontScale" to job("j-font-scale", design = baseDesign().withFontScale(1.5)),
             "logo" to job("j-logo", design = baseDesign().withLogo("leica")),
+            "用户 Logo" to job("j-user-logo", design = baseDesign().withLogo("user:ul-1")),
             "水印位置" to job("j-overlay-position", overlay = watermarkSpec(1).copy(dx = 0.12f, dy = -0.08f)),
             "水印透明度" to job("j-overlay-opacity", overlay = watermarkSpec(1).copy(opacity = 0.35f)),
+            "水印角度" to job("j-overlay-angle", overlay = watermarkSpec(1).copy(rotation = 45f)),
+            "照片比例" to job("j-overlay-aspect", overlay = watermarkSpec(1).copy(photoAspect = 1.2f)),
         )
 
         val keys = mutableSetOf(base.idempotencyKey)

@@ -183,7 +183,12 @@ fn read_ifd_full(t: &Tiff, off: usize) -> Option<(Vec<Entry>, u32)> {
                 }
             }
         }
-        out.push(Entry { tag, typ, count, data });
+        out.push(Entry {
+            tag,
+            typ,
+            count,
+            data,
+        });
     }
     let next = t.u32(off + 2 + n * 12).unwrap_or(0);
     Some((out, next))
@@ -225,17 +230,30 @@ pub fn load(jpeg: &[u8]) -> Result<Block, String> {
     } else {
         None
     };
-    Ok(Block { ifd0, exif, gps, thumbnail })
+    Ok(Block {
+        ifd0,
+        exif,
+        gps,
+        thumbnail,
+    })
 }
 
 fn read_thumbnail(t: &Tiff, off: usize) -> Option<Thumbnail> {
     let ifd1 = read_ifd(t, off)?;
-    let data_off = ifd1.iter().find(|e| e.tag == 0x0201).map(|e| le_u32(&e.data) as usize)?;
-    let len = ifd1.iter().find(|e| e.tag == 0x0202).map(|e| le_u32(&e.data) as usize)?;
+    let data_off = ifd1
+        .iter()
+        .find(|e| e.tag == 0x0201)
+        .map(|e| le_u32(&e.data) as usize)?;
+    let len = ifd1
+        .iter()
+        .find(|e| e.tag == 0x0202)
+        .map(|e| le_u32(&e.data) as usize)?;
     if len == 0 || data_off + len > t.d.len().saturating_sub(t.base) {
         return None;
     }
-    let data = t.d.get(t.base + data_off..t.base + data_off + len)?.to_vec();
+    let data =
+        t.d.get(t.base + data_off..t.base + data_off + len)?
+            .to_vec();
     Some(Thumbnail { ifd1, data })
 }
 
@@ -281,19 +299,34 @@ impl Block {
         data.push(0);
         self.put(
             ifd,
-            Entry { tag, typ: 2, count: data.len() as u32, data },
+            Entry {
+                tag,
+                typ: 2,
+                count: data.len() as u32,
+                data,
+            },
         );
     }
     pub fn set_u32(&mut self, ifd: Ifd, tag: u16, v: u32) {
         self.put(
             ifd,
-            Entry { tag, typ: 4, count: 1, data: v.to_le_bytes().to_vec() },
+            Entry {
+                tag,
+                typ: 4,
+                count: 1,
+                data: v.to_le_bytes().to_vec(),
+            },
         );
     }
     pub fn set_u16(&mut self, ifd: Ifd, tag: u16, v: u16) {
         self.put(
             ifd,
-            Entry { tag, typ: 3, count: 1, data: v.to_le_bytes().to_vec() },
+            Entry {
+                tag,
+                typ: 3,
+                count: 1,
+                data: v.to_le_bytes().to_vec(),
+            },
         );
     }
     /// piexif writes `FocalLengthIn35mmFilm = [mm*100, 100]` as two SHORTs (the
@@ -302,16 +335,40 @@ impl Block {
     pub fn set_short_pair(&mut self, ifd: Ifd, tag: u16, a: u16, b: u16) {
         let mut data = a.to_le_bytes().to_vec();
         data.extend_from_slice(&b.to_le_bytes());
-        self.put(ifd, Entry { tag, typ: 3, count: 2, data });
+        self.put(
+            ifd,
+            Entry {
+                tag,
+                typ: 3,
+                count: 2,
+                data,
+            },
+        );
     }
     /// Raw entry insert (GPS fixtures, unknown tags).
     pub fn put_raw(&mut self, tag: u16, typ: u16, count: u32, data: Vec<u8>) {
-        self.put(Ifd::Gps, Entry { tag, typ, count, data });
+        self.put(
+            Ifd::Gps,
+            Entry {
+                tag,
+                typ,
+                count,
+                data,
+            },
+        );
     }
     pub fn set_rational(&mut self, ifd: Ifd, tag: u16, num: u32, den: u32) {
         let mut data = num.to_le_bytes().to_vec();
         data.extend_from_slice(&den.to_le_bytes());
-        self.put(ifd, Entry { tag, typ: 5, count: 1, data });
+        self.put(
+            ifd,
+            Entry {
+                tag,
+                typ: 5,
+                count: 1,
+                data,
+            },
+        );
     }
     pub fn get_ascii(&self, ifd: Ifd, tag: u16) -> Option<String> {
         let e = self.get(ifd, tag)?;
@@ -359,7 +416,12 @@ pub fn dump(block: &Block) -> Vec<u8> {
                     .cloned()
                     .collect(),
             );
-            v.push(Entry { tag: 0x0201, typ: 4, count: 1, data: vec![0; 4] });
+            v.push(Entry {
+                tag: 0x0201,
+                typ: 4,
+                count: 1,
+                data: vec![0; 4],
+            });
             v.push(Entry {
                 tag: 0x0202,
                 typ: 4,
@@ -373,19 +435,44 @@ pub fn dump(block: &Block) -> Vec<u8> {
     let has_ifd1 = !ifd1.is_empty();
 
     if has_exif {
-        ifd0.push(Entry { tag: 0x8769, typ: 4, count: 1, data: vec![0; 4] });
+        ifd0.push(Entry {
+            tag: 0x8769,
+            typ: 4,
+            count: 1,
+            data: vec![0; 4],
+        });
     }
     if has_gps {
-        ifd0.push(Entry { tag: 0x8825, typ: 4, count: 1, data: vec![0; 4] });
+        ifd0.push(Entry {
+            tag: 0x8825,
+            typ: 4,
+            count: 1,
+            data: vec![0; 4],
+        });
     }
     ifd0 = sorted_dedup(ifd0);
 
     let ifd_bytes = |n: usize| 2 + 12 * n + 4;
     let off_ifd0 = 8u32;
     let off_exif = off_ifd0 + ifd_bytes(ifd0.len()) as u32;
-    let off_gps = off_exif + if has_exif { ifd_bytes(exif.len()) as u32 } else { 0 };
-    let off_ifd1 = off_gps + if has_gps { ifd_bytes(gps.len()) as u32 } else { 0 };
-    let mut data_off = off_ifd1 + if has_ifd1 { ifd_bytes(ifd1.len()) as u32 } else { 0 };
+    let off_gps = off_exif
+        + if has_exif {
+            ifd_bytes(exif.len()) as u32
+        } else {
+            0
+        };
+    let off_ifd1 = off_gps
+        + if has_gps {
+            ifd_bytes(gps.len()) as u32
+        } else {
+            0
+        };
+    let mut data_off = off_ifd1
+        + if has_ifd1 {
+            ifd_bytes(ifd1.len()) as u32
+        } else {
+            0
+        };
 
     for e in ifd0.iter_mut() {
         if e.tag == 0x8769 {
@@ -479,9 +566,9 @@ pub fn read(jpeg: &[u8]) -> Result<Exif, String> {
     exif.make = block.get_ascii(Ifd::Ifd0, 0x010F).unwrap_or_default();
     exif.model = block.get_ascii(Ifd::Ifd0, 0x0110).unwrap_or_default();
     exif.lens = block.get_ascii(Ifd::Exif, 0xA434).unwrap_or_default();
-    exif.date_time = block.get_ascii(Ifd::Exif, 0x9003).unwrap_or_else(|| {
-        block.get_ascii(Ifd::Ifd0, 0x0132).unwrap_or_default()
-    });
+    exif.date_time = block
+        .get_ascii(Ifd::Exif, 0x9003)
+        .unwrap_or_else(|| block.get_ascii(Ifd::Ifd0, 0x0132).unwrap_or_default());
     let rat = |tag: u16| -> Option<f32> {
         let e = block.get(Ifd::Exif, tag)?;
         if e.typ != 5 || e.data.len() < 8 {
@@ -500,7 +587,9 @@ pub fn read(jpeg: &[u8]) -> Result<Exif, String> {
         if e.typ == 3 && e.data.len() >= 2 {
             Some(u16::from_le_bytes([e.data[0], e.data[1]]) as u32)
         } else if e.typ == 4 && e.data.len() >= 4 {
-            Some(u32::from_le_bytes([e.data[0], e.data[1], e.data[2], e.data[3]]))
+            Some(u32::from_le_bytes([
+                e.data[0], e.data[1], e.data[2], e.data[3],
+            ]))
         } else {
             None
         }
@@ -536,7 +625,9 @@ pub fn model_without_make(make: &str, model: &str) -> String {
     if m.is_empty() || d.is_empty() {
         return d.to_string();
     }
-    if d.to_lowercase().starts_with(&format!("{} ", m.to_lowercase())) {
+    if d.to_lowercase()
+        .starts_with(&format!("{} ", m.to_lowercase()))
+    {
         d[m.len()..].trim().to_string()
     } else {
         d.to_string()

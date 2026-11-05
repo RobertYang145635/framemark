@@ -1,5 +1,11 @@
 package com.framemark.native.product
 
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
+
 /**
  * A watermark asset carried by the document itself (PRD §8 decision 4: presets
  * embed the PNG, a bigger file is the accepted cost). There is deliberately no
@@ -80,10 +86,15 @@ data class WatermarkSpec(
     val opacity: Float = 0.8f,
     val dx: Float = 0f,
     val dy: Float = 0f,
+    /** Degrees, clockwise, around the final dst centre; default 0. */
+    val rotation: Float = 0f,
+    /** Photo draw-box aspect (w/h) used to derive the height; persisted for export. */
+    val photoAspect: Float = 1.5f,
 ) {
     fun rect(photoAspect: Float): OverlayRect {
+        val aspect = photoAspectSafe(photoAspect)
         var w = width.coerceIn(MIN_WIDTH, MAX_WIDTH)
-        var h = (w * photoAspectSafe(photoAspect) / asset.aspect.coerceAtLeast(0.01f)).coerceIn(0.02f, 1f)
+        var h = (w * aspect / asset.aspect.coerceAtLeast(0.01f)).coerceIn(0.02f, 1f)
         val col = (anchor.coerceIn(0, 8)) % 3
         val row = (anchor.coerceIn(0, 8)) / 3
         val baseX = when (col) {
@@ -98,6 +109,50 @@ data class WatermarkSpec(
         }
         var x = baseX + dx
         var y = baseY + dy
+        val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
+        if (abs(angle) < 0.0001f) return clampUnrotated(x, y, w, h)
+        // Work in square pixel units (width = 1, height = aspect) so the AABB
+        // is a real rotation, then map the height back to normalised y.
+        val rad = angle * PI.toFloat() / 180f
+        val cx0 = x + w / 2f
+        val cy0 = y + h / 2f
+        var bw = abs(w * cos(rad)) + abs(h * aspect * sin(rad))
+        var bh = (abs(w * sin(rad)) + abs(h * aspect * cos(rad))) / aspect
+        val k = min(1f, min(1f / bw.coerceAtLeast(0.0001f), 1f / bh.coerceAtLeast(0.0001f)))
+        if (k < 1f) {
+            w *= k
+            h *= k
+            bw *= k
+            bh *= k
+        }
+        val cx = cx0.coerceIn(bw / 2f, (1f - bw / 2f).coerceAtLeast(bw / 2f))
+        val cy = cy0.coerceIn(bh / 2f, (1f - bh / 2f).coerceAtLeast(bh / 2f))
+        return OverlayRect(cx - w / 2f, cy - h / 2f, w, h)
+    }
+
+    /**
+     * Bounding box of the rotated image in the same normalised photo space.
+     * At 0° it equals [rect]; the UI clips the live overlay to this box so the
+     * rotated corners are never cut by the unrotated draw rect.
+     */
+    fun aabb(photoAspect: Float): OverlayRect {
+        val r = rect(photoAspect)
+        val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
+        if (abs(angle) < 0.0001f) return r
+        val aspect = photoAspectSafe(photoAspect)
+        val rad = angle * PI.toFloat() / 180f
+        val bw = abs(r.w * cos(rad)) + abs(r.h * aspect * sin(rad))
+        val bh = (abs(r.w * sin(rad)) + abs(r.h * aspect * cos(rad))) / aspect
+        val cx = r.x + r.w / 2f
+        val cy = r.y + r.h / 2f
+        return OverlayRect(cx - bw / 2f, cy - bh / 2f, bw, bh)
+    }
+
+    private fun clampUnrotated(xIn: Float, yIn: Float, wIn: Float, hIn: Float): OverlayRect {
+        var x = xIn
+        var y = yIn
+        var w = wIn
+        var h = hIn
         // Never let the box leave the photo draw box: shrink w/h together so the
         // asset keeps its aspect, then clamp the origin.
         if (x + w > 1f || y + h > 1f || x < 0f || y < 0f) {
@@ -117,11 +172,11 @@ data class WatermarkSpec(
     }
 
     fun nudged(dxNorm: Float, dyNorm: Float, photoAspect: Float): WatermarkSpec {
-        val r = rect(photoAspect)
-        val baseX = r.x - dx
-        val baseY = r.y - dy
-        val ndx = (dx + dxNorm).coerceIn(-baseX, (1f - r.w) - baseX)
-        val ndy = (dy + dyNorm).coerceIn(-baseY, (1f - r.h) - baseY)
+        val box = aabb(photoAspect)
+        val baseX = box.x - dx
+        val baseY = box.y - dy
+        val ndx = (dx + dxNorm).coerceIn(-baseX, (1f - box.w) - baseX)
+        val ndy = (dy + dyNorm).coerceIn(-baseY, (1f - box.h) - baseY)
         return copy(dx = ndx, dy = ndy)
     }
 
@@ -129,6 +184,7 @@ data class WatermarkSpec(
         const val MARGIN = 0.05f
         const val MIN_WIDTH = 0.05f
         const val MAX_WIDTH = 0.60f
+        const val MAX_ROTATION = 180f
 
         private fun photoAspectSafe(aspect: Float): Float =
             if (aspect.isFinite() && aspect > 0.01f) aspect else 1.5f

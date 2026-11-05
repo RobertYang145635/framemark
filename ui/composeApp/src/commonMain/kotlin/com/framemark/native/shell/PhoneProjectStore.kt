@@ -23,13 +23,13 @@ import com.framemark.native.product.WatermarkSpec as ProjectWatermark
 import com.framemark.native.product.ExportFormat as ProductExportFormat
 import com.framemark.native.product.ExportSettings as ProductExportSettings
 import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
-import com.framemark.native.product.applyConsumer
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.workflow.BatchInputs
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.ExportSizeMode
 import com.framemark.native.workflow.PhoneOverlayFiles
 import com.framemark.native.workflow.PresetJson
+import com.framemark.native.workflow.applyInspectorOverrides
 import com.framemark.native.workflow.ExportSettings as UiExportSettings
 import com.framemark.native.workflow.Preset as UiPreset
 import com.framemark.native.workflow.SampleFormat
@@ -39,13 +39,11 @@ import com.framemark.native.workflow.WorkflowPlatform
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** e2b slot override families: the value belongs on one key per bound node. */
-private val SLOT_CONSUMERS = setOf("slotText", "slotOff", "slotAlpha", "slotGravity")
-
-
 /** The bundled sample photo has no file; a fixed id keeps its design persistent. */
 const val SAMPLE_PHOTO_ID = "photo:sample"
 
@@ -128,7 +126,10 @@ class PhoneProjectStore(
     val fileSystem: ProductFileSystem = fs
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val saveLock = Any()
+    private val writeLock = Any()
+    private val saveWakeup = Channel<Unit>(Channel.CONFLATED)
     private var dirty = false
+    private var changeVersion = 0L
 
     private val nowMillis: Long get() = platform?.nowMillis() ?: 0L
 
@@ -144,6 +145,10 @@ class PhoneProjectStore(
     var saveCount by mutableStateOf(0)
         private set
 
+    /** An existing but unreadable project is never replaced by the startup model. */
+    var projectWritesBlocked by mutableStateOf(true)
+        private set
+
     var presets by mutableStateOf<List<ProjectPreset>>(emptyList())
         private set
     var presetError by mutableStateOf<String?>(null)
@@ -155,26 +160,68 @@ class PhoneProjectStore(
     val activePhoto: PhotoRef? get() = project.activePhoto
     val activeDesign: PhotoDesign? get() = project.activeDesign
 
+    init {
+        // One worker coalesces all edit bursts. Disk serialization happens on IO
+        // and never holds saveLock, so pointer events cannot wait behind a large
+        // project write.
+        scope.launch {
+            for (unused in saveWakeup) {
+                delay(AUTOSAVE_MS)
+                while (saveWakeup.tryReceive().isSuccess) {
+                    // A newer edit resets the debounce to the latest project state.
+                }
+                if (synchronized(saveLock) { dirty && !projectWritesBlocked }) saveNow()
+            }
+        }
+    }
+
     // ---- lifecycle ---------------------------------------------------------
 
     fun load() {
-        if (loaded) return
+        synchronized(saveLock) {
+            if (loaded) return
+            loadProjectLocked()
+        }
+        loadPresets()
+    }
+
+    /** Explicit recovery entry; only a successful read (or Missing) releases writes. */
+    fun retryProjectLoad(): Boolean = synchronized(saveLock) {
+        if (loaded && !projectWritesBlocked) return@synchronized true
+        loadProjectLocked()
+    }
+
+    private fun loadProjectLocked(): Boolean {
         loaded = true
-        when (val result = store.loadProject()) {
+        dirty = false
+        changeVersion++
+        projectWritesBlocked = true
+        loadError = null
+        return when (val result = store.loadProject()) {
             is StoreResult.Ok -> {
-                project = result.value
+                project = normalizeLoadedSamplePath(result.value)
+                projectWritesBlocked = false
+                saveError = null
                 println(
                     "FM_PROJECT_LOADED photos=${project.photos.size} designs=${project.designs.size} " +
                         "active=${project.activePhotoId ?: "-"} wm=${project.designs.values.count { it.overlay != null }}",
                 )
+                true
             }
-            StoreResult.Missing -> println("FM_PROJECT_NONE")
+            StoreResult.Missing -> {
+                project = Project(id = "phone", createdAt = 0, updatedAt = 0)
+                projectWritesBlocked = false
+                saveError = null
+                println("FM_PROJECT_NONE")
+                true
+            }
             is StoreResult.Failed -> {
                 loadError = "${result.error.code} ${result.error.message}"
+                saveError = projectReadProtectionMessage()
                 println("FM_PROJECT_LOAD_FAIL code=${result.error.code} msg=${result.error.message}")
+                false
             }
         }
-        loadPresets()
     }
 
     fun loadPresets() {
@@ -220,13 +267,28 @@ class PhoneProjectStore(
      * failure keeps the previous document and raises [saveError] rather than
      * pretending the change was saved.
      */
-    fun saveNow(): Boolean = synchronized(saveLock) {
-        val snapshot = project
+    fun saveNow(): Boolean = synchronized(writeLock) {
+        val captured = synchronized(saveLock) {
+            if (projectWritesBlocked) {
+                dirty = false
+                saveError = projectReadProtectionMessage()
+                println("FM_PROJECT_SAVE_BLOCKED reason=project-read-failed")
+                return@synchronized null
+            }
+            project to changeVersion
+        } ?: return@synchronized false
+
+        val snapshot = projectForPersistence(captured.first)
+        val snapshotVersion = captured.second
         when (val result = store.saveProject(snapshot)) {
             is StoreResult.Ok -> {
-                dirty = false
-                if (saveError != null) saveError = null
-                saveCount++
+                synchronized(saveLock) {
+                    // A commit may arrive while the IO is running. Keep dirty set so
+                    // its follow-up wakeup writes that newer state as well.
+                    if (changeVersion == snapshotVersion) dirty = false
+                    if (saveError != null) saveError = null
+                    saveCount++
+                }
                 println(
                     "FM_PROJECT_SAVED photos=${snapshot.photos.size} designs=${snapshot.designs.size} " +
                         "wm=${snapshot.designs.values.count { it.overlay != null }} saves=$saveCount",
@@ -235,7 +297,9 @@ class PhoneProjectStore(
             }
             StoreResult.Missing -> false
             is StoreResult.Failed -> {
-                saveError = "${result.error.code} ${result.error.message}"
+                synchronized(saveLock) {
+                    saveError = "${result.error.code} ${result.error.message}"
+                }
                 println("FM_PROJECT_SAVE_FAIL code=${result.error.code} msg=${result.error.message}")
                 false
             }
@@ -244,19 +308,26 @@ class PhoneProjectStore(
 
     /** Lands any debounced write before the caller leaves the foreground. */
     fun flushBlocking(): Boolean {
+        if (projectWritesBlocked) {
+            saveNow()
+            return false
+        }
         val pending = synchronized(saveLock) { dirty }
         if (!pending) return true
-        val saved = saveNow()
+        var saved = saveNow()
+        while (saved && synchronized(saveLock) { dirty }) saved = saveNow()
         println("FM_PROJECT_FLUSH pending=true saved=$saved")
         return saved
     }
 
     private fun scheduleSave() {
-        synchronized(saveLock) { dirty = true }
-        scope.launch {
-            delay(AUTOSAVE_MS)
-            if (synchronized(saveLock) { dirty }) saveNow()
+        val scheduled = synchronized(saveLock) {
+            if (projectWritesBlocked) false else {
+                dirty = true
+                true
+            }
         }
+        if (scheduled) saveWakeup.trySend(Unit)
     }
 
     // ---- photos ------------------------------------------------------------
@@ -434,7 +505,7 @@ class PhoneProjectStore(
         project.designs[photoId]?.let { return it }
         val resolved = cardId?.takeIf { it.isNotBlank() } ?: project.selectedCardId ?: return null
         val created = PhotoDesign.base(resolved, styleId)
-        commit(project.setDesign(photoId, created))
+        if (!commit(project.setDesign(photoId, created))) return null
         return created
     }
 
@@ -453,6 +524,9 @@ class PhoneProjectStore(
         cardId: String? = null,
         styleId: String? = null,
     ): StoreError? {
+        if (projectWritesBlocked) {
+            return StoreError("FM-E-IO-002", projectReadProtectionMessage(), path)
+        }
         // A photo that has not been given a border yet still gets the signature: the
         // card the editor is showing becomes its design. Only a photo with no card at
         // all can be refused, and it is refused loudly rather than silently dropped.
@@ -485,8 +559,12 @@ class PhoneProjectStore(
             dx = previous?.dx ?: 0f,
             dy = previous?.dy ?: 0f,
         )
-        commit(project.setDesign(photoId, design.withOverlay(spec)))
-        saveNow()
+        if (!commit(project.setDesign(photoId, design.withOverlay(spec)))) {
+            return StoreError("FM-E-IO-003", saveError ?: "工程修改未保存", path)
+        }
+        if (!saveNow()) {
+            return StoreError("FM-E-IO-003", saveError ?: "工程修改未保存", path)
+        }
         println("FM_WM_EMBED photo=$photoId sha=${asset.sha256.take(12)} bytes=${asset.byteSize} ${asset.widthPx}x${asset.heightPx}")
         return null
     }
@@ -532,7 +610,12 @@ class PhoneProjectStore(
             opacity = spec.opacity,
             dx = spec.dx,
             dy = spec.dy,
-            photoAspect = photoAspect,
+            photoAspect = if (spec.photoAspect.isFinite() && spec.photoAspect > 0.01f) {
+                spec.photoAspect
+            } else {
+                photoAspect
+            },
+            rotation = spec.rotation,
         )
     }
 
@@ -540,7 +623,16 @@ class PhoneProjectStore(
     fun projectWatermark(current: ProjectWatermark?, ui: UiWatermarkSpec?): ProjectWatermark? {
         if (ui == null) return null
         val asset = current?.asset ?: return null
-        return ProjectWatermark(asset = asset, anchor = ui.anchor, width = ui.width, opacity = ui.opacity, dx = ui.dx, dy = ui.dy)
+        return ProjectWatermark(
+            asset = asset,
+            anchor = ui.anchor,
+            width = ui.width,
+            opacity = ui.opacity,
+            dx = ui.dx,
+            dy = ui.dy,
+            rotation = ui.rotation,
+            photoAspect = ui.photoAspect,
+        )
     }
 
     // ---- export settings ---------------------------------------------------
@@ -597,6 +689,10 @@ class PhoneProjectStore(
      * (no watermark) still restores its parameters; nothing is invented for it.
      */
     fun applyPreset(preset: ProjectPreset, styleId: String?): Boolean {
+        if (projectWritesBlocked) {
+            presetError = projectReadProtectionMessage()
+            return false
+        }
         val photoId = project.activePhotoId ?: return false
         val cardId = preset.design.cardId.takeIf { it.isNotBlank() } ?: project.selectedCardId ?: return false
         val existing = ensureDesign(photoId, cardId, styleId) ?: return false
@@ -612,14 +708,22 @@ class PhoneProjectStore(
             baseDesign = preset.design.isUntouched,
             overlay = preset.overlay,
         )
-        commit(
+        val committed = commit(
             project.setDesign(photoId, design)
                 .withExportSettings(
                     preset.exportSettings.copy(quality = platform?.preferredJpegQuality() ?: project.exportSettings.quality),
                 )
                 .copy(selectedCardId = cardId),
         )
-        saveNow()
+        if (!committed && projectWritesBlocked) {
+            presetError = projectReadProtectionMessage()
+            return false
+        }
+        if (!saveNow()) {
+            presetError = saveError ?: "FM-E-IO-003 预设已应用，但工程未写入磁盘"
+            println("FM_PRESET_APPLY_FAIL id=${preset.id} save=$saveError")
+            return false
+        }
         println(
             "FM_PRESET_APPLY id=${preset.id} card=$cardId photo=$photoId " +
                 "wm=${preset.overlay?.asset?.sha256?.take(12) ?: "none"} params=${design.params.size} text=${design.text.size}",
@@ -845,14 +949,54 @@ class PhoneProjectStore(
         return design.copy(overlay = null) != shared.copy(overlay = null)
     }
 
-    private fun commit(next: Project) = synchronized(saveLock) {
-        if (next == project) return
-        project = next.touched(nowMillis)
-        scheduleSave()
+    private fun commit(next: Project): Boolean {
+        val committed = synchronized(saveLock) {
+            if (projectWritesBlocked) {
+                saveError = projectReadProtectionMessage()
+                return@synchronized false
+            }
+            if (next == project) return@synchronized false
+            project = next.touched(nowMillis)
+            changeVersion++
+            true
+        }
+        if (committed) scheduleSave()
+        return committed
     }
+
+    private fun projectReadProtectionMessage(): String {
+        val reason = loadError ?: "工程尚未成功读取"
+        return "FM-E-IO-002 已阻止写入以保护原工程；请重试读取。$reason"
+    }
+
+    /**
+     * The built-in sample has no file path while it is in memory. The project
+     * schema requires a non-empty persisted path, so use an internal sentinel in
+     * the document and restore the blank in-memory path after every read.
+     */
+    private fun projectForPersistence(current: Project): Project = current.copy(
+        photos = current.photos.map { photo ->
+            if (photo.id == SAMPLE_PHOTO_ID && photo.path.isBlank()) {
+                photo.copy(path = SAMPLE_PERSISTED_PATH)
+            } else {
+                photo
+            }
+        },
+    )
+
+    private fun normalizeLoadedSamplePath(loaded: Project): Project = loaded.copy(
+        photos = loaded.photos.map { photo ->
+            if (photo.id == SAMPLE_PHOTO_ID && photo.path == SAMPLE_PERSISTED_PATH) {
+                photo.copy(path = "")
+            } else {
+                photo
+            }
+        },
+    )
 
     private companion object {
         const val AUTOSAVE_MS = 400L
+        const val SAMPLE_PERSISTED_PATH = "framemark:sample"
     }
 }
 
@@ -885,52 +1029,7 @@ fun PhotoDesign.toPhoneSnapshot(): DesignSnapshot {
 
 /** Rebuilds params/text/theme/fontScale/logo from the card's changed controls. */
 fun foldOverrides(design: PhotoDesign, model: InspectorCardModel, changes: Map<String, Any>): PhotoDesign {
-    var next = design.copy(
-        params = emptyMap(),
-        text = emptyMap(),
-        theme = null,
-        fontScale = null,
-        logo = null,
-        baseDesign = changes.isEmpty(),
-    )
-    model.controls.forEach { control ->
-        val raw = changes[control.key] ?: return@forEach
-        next = when (control.param) {
-            "theme" -> next.withTheme(raw.toString())
-            "text.fontScale" -> next.withFontScale((raw as? Number)?.toDouble() ?: raw.toString().toDoubleOrNull())
-            "design.logo" -> next.withLogo(raw.toString())
-            // Bare design fields the render request already carries (theme/ratio ride in
-            // params, fontScale and the brand-logo pick are folded by toPhoneSnapshot).
-            "theme", "ratio", "fontScale", "logo" -> next.applyConsumer(control.param, raw)
-            else -> if (control.param.startsWith("params.") || control.param.startsWith("text.")) {
-                var d = next.applyConsumer(control.param, raw)
-                // A slot control hides / retitles a NODE SET: the same value has to land
-                // on every bound node, not only on the primary one.
-                control.companions.forEach { c ->
-                    if (c.startsWith("params.") || c.startsWith("text.")) d = d.applyConsumer(c, raw)
-                }
-                d
-            } else if (control.param in SLOT_CONSUMERS && control.companions.isNotEmpty()) {
-                var d = next
-                control.companions.forEach { c ->
-                    if (c.startsWith("params.") || c.startsWith("text.")) d = d.applyConsumer(c, raw)
-                }
-                println("FM_DESIGN_SLOT controlId=${control.controlId} consumer=${control.param} nodes=${control.companions.size} value=$raw")
-                d
-            } else {
-                // A consumer the render request cannot carry must not vanish silently —
-                // the user would believe the edit took effect. Keep it on the design under
-                // a clearly marked key so it is visible on disk, and say so in the log.
-                println(
-                    "FM_DESIGN_DROP controlId=${control.controlId} consumer=${control.param} " +
-                        "value=$raw bound=${control.companions.size} reason=no-engine-binding",
-                )
-                if (control.param.isBlank()) next
-                else next.withParam("unmapped_" + control.param.replace('.', '_').replace(':', '_'), raw)
-            }
-        }
-    }
-    return next
+    return design.applyInspectorOverrides(model, changes)
 }
 
 /** Session values for one card: the design's overrides on top of the card defaults. */
@@ -946,8 +1045,11 @@ fun sessionValuesFor(model: InspectorCardModel, design: PhotoDesign?): Map<Strin
 
 private fun valueFor(design: PhotoDesign, param: String): Any? = when (param) {
     "theme" -> design.theme
+    "ratio" -> design.ratio
+    "fontScale" -> design.fontScale
     "text.fontScale" -> design.fontScale
     "design.logo" -> design.logo
+    "logo", "brandLogoFile" -> design.logo
     // The brand picker's control param is `brandLogoFile` (IR rows) or
     // `params.brandLogoFile` (capability rows), but the value is stored on the design's
     // own `logo` field (consumer == "logo"). Reading only params made a saved pick show

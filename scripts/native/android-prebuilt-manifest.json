@@ -3,25 +3,25 @@
   "targetAbi": "arm64-v8a",
   "sourceBuildReproduced": false,
   "provenanceStatus": "unverified",
-  "provenanceNote": "SHA-256 values record the current archives only. Their source/toolchain build was not reproduced from a clean checkout; release builds must use libraries compiled by the in-repository driver.",
+  "provenanceNote": "SHA-256 values were re-pinned from the real 2026-11-04 02:16-02:17 source build that added N4 overlay angle to both bridge crates; the prebuilt archives are those exact artifacts. Release builds still use the in-repository driver.",
   "libraries": [
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_engine.a",
       "crateManifest": "bridge/android/Cargo.toml",
       "cargoLock": "bridge/android/Cargo.lock",
-      "sha256": "481c9a4f03455e45399d7fc3bed43c5c54006f347d95582f242551c4f2a2606c"
+      "sha256": "da2bd753b93e17824424db0d1b680ddd45b73058b4d73b113b163637256c2056"
     },
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_hand.a",
       "crateManifest": "bridge/android-hand/Cargo.toml",
       "cargoLock": "bridge/android-hand/Cargo.lock",
-      "sha256": "da9b2d4f5743aaedea01bf378d18d47f3cd70d5e92710a716708d6025b7a79c5"
+      "sha256": "0896ba067b2c42f517980193e3f9df77183276d0d4135539e1d760598578b673"
     },
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_export.a",
       "crateManifest": "bridge/android-export/Cargo.toml",
       "cargoLock": "bridge/android-export/Cargo.lock",
-      "sha256": "ef77bbe873b5dd28d7e20206ee2ebbbf02b8203a2207e9a8d95ec0f9c73cc143"
+      "sha256": "aab3d416589d6c78a3810f34cd8931b5082922f3f6796036bce9f6e5291bb2a1"
     }
   ]
 }

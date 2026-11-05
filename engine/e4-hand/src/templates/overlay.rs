@@ -4,8 +4,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    date_text, draw_fitted, draw_photo, exif_text, line, theme_of, title_of, Env, FittedOpts,
-    LayoutEnv,
+    date_text, draw_fitted, draw_photo, exif_text, line, resolve_text_slot, theme_of, title_of,
+    Env, FittedOpts, LayoutEnv,
 };
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
@@ -16,19 +16,35 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let (w, h) = (env.w, env.h);
     let s = w.min(h);
     let theme = theme_of(env.themes, env.params);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        w,
+        h,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     env.ctx.fill_linear_gradient(
         0.0,
         h * 0.48,
         0.0,
         h,
-        &[(0.0, "rgba(0,0,0,0)"), (0.55, "rgba(0,0,0,0.28)"), (1.0, "rgba(0,0,0,0.82)")],
+        &[
+            (0.0, "rgba(0,0,0,0)"),
+            (0.55, "rgba(0,0,0,0.28)"),
+            (1.0, "rgba(0,0,0,0.82)"),
+        ],
         Rect::from_xywh(0.0, 0.0, w, h),
     );
     let x = w * 0.06;
     let max_w = w * 0.84;
     let mut y = h * 0.885;
-    let dt = date_text(env);
+    let dt = resolve_text_slot(env, "overlay.date", &date_text(env)).text;
     if !dt.is_empty() {
         draw_fitted(
             env,
@@ -38,11 +54,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             max_w,
             s * 0.015,
             "rgba(255,255,255,0.68)",
-            &FittedOpts::new("JetBrains Mono").min(s * 0.009).shadow(true),
+            &FittedOpts::new("JetBrains Mono")
+                .min(s * 0.009)
+                .shadow(true)
+                .slot("overlay.date"),
         );
         y -= s * 0.035;
     }
-    let ex = exif_text(env);
+    let ex = resolve_text_slot(env, "overlay.exif", &exif_text(env)).text;
     if !ex.is_empty() {
         draw_fitted(
             env,
@@ -52,11 +71,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             max_w,
             s * 0.019,
             "rgba(255,255,255,0.82)",
-            &FittedOpts::new("JetBrains Mono").min(s * 0.01).shadow(true),
+            &FittedOpts::new("JetBrains Mono")
+                .min(s * 0.01)
+                .shadow(true)
+                .slot("overlay.exif"),
         );
         y -= s * 0.06;
     }
-    let title = title_of(env);
+    let title = resolve_text_slot(env, "overlay.title", &title_of(env)).text;
     draw_fitted(
         env,
         &title,
@@ -65,10 +87,22 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         max_w,
         s * 0.058,
         "#ffffff",
-        &FittedOpts::new("YouShe").min(s * 0.025).shadow(true),
+        &FittedOpts::new("YouShe")
+            .min(s * 0.025)
+            .shadow(true)
+            .slot("overlay.title"),
     );
     let accent_w = (s * 0.0016).max(1.0);
-    line(&mut env.ctx, x, y - s * 0.10, x + s * 0.08, y - s * 0.10, &theme.accent, accent_w, None);
+    line(
+        &mut env.ctx,
+        x,
+        y - s * 0.10,
+        x + s * 0.08,
+        y - s * 0.10,
+        &theme.accent,
+        accent_w,
+        None,
+    );
     env.ctx.record_shape(
         "rule",
         skia_safe::Rect::from_xywh(x, y - s * 0.10 - accent_w / 2.0, s * 0.08, accent_w),
@@ -80,28 +114,39 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     } else {
         String::new()
     };
+    let cam = resolve_text_slot(env, "overlay.camera", &cam.to_uppercase()).text;
     if !cam.is_empty() {
         draw_fitted(
             env,
-            &cam.to_uppercase(),
+            &cam,
             x,
             y - s * 0.075,
             max_w,
             s * 0.015,
             "rgba(255,255,255,0.72)",
-            &FittedOpts::new("Inter").weight(600).tracking(0.16).min(s * 0.008).shadow(true),
+            &FittedOpts::new("Inter")
+                .weight(600)
+                .tracking(0.16)
+                .min(s * 0.008)
+                .shadow(true)
+                .slot("overlay.camera"),
         );
     }
-    if !env.text.signature.trim().is_empty() {
+    let signature = resolve_text_slot(env, "overlay.signature", env.text.signature.trim()).text;
+    if !signature.is_empty() {
         draw_fitted(
             env,
-            env.text.signature.trim(),
+            &signature,
             w - x,
             h * 0.885,
             w * 0.35,
             s * 0.032,
             "rgba(255,255,255,0.85)",
-            &FittedOpts::new("Caveat").align("right").min(s * 0.016).shadow(true),
+            &FittedOpts::new("Caveat")
+                .align("right")
+                .min(s * 0.016)
+                .shadow(true)
+                .slot("overlay.signature"),
         );
     }
     Ok(Rect::from_xywh(0.0, 0.0, w, h))

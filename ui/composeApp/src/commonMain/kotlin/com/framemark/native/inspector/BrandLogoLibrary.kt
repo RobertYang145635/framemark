@@ -63,13 +63,12 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
  * architecture as the shipped webview version: brand grid with search + 相机/手机 filter,
  * a version page grouped by era, a 已选 badge, and 自动匹配 as an explicit choice.
  *
- * Deviations that come from the native build, not from taste:
- *  - Only cuts whose PNG ships in this app can be applied; the rest are listed as
- *    「资源未内置」 instead of being silently dropped.
+ * Native rendering keeps the catalog asset key as the persisted value. A cut is
+ * selectable only when its exact preview resource is packaged; the renderers
+ * resolve that same key to a platform-safe asset without substituting another cut.
  *  - Light/dark surface locking is not evaluated at runtime (no per-card surface here),
  *    so the surface of a version is shown as a badge instead of a lock.
  */
-private const val LOGO_DIR = "files/logos/"
 private const val LOGO_PREVIEW_DIR = "files/logov/"
 
 data class LogoCut(val assetKey: String, val file: String, val preview: String)
@@ -174,17 +173,36 @@ object LogoBrandCatalog {
             )
         }
     }.getOrDefault(emptyList())
+
+    /** Exact cut lookup. The returned key is the value persisted by the project. */
+    suspend fun cutForAssetKey(assetKey: String): LogoCut? {
+        if (assetKey.isBlank()) return null
+        return load().asSequence()
+            .flatMap { it.versions.asSequence() }
+            .flatMap { it.cuts.asSequence() }
+            .firstOrNull { it.assetKey == assetKey }
+    }
+
+    /** Read the exact catalog WebP bytes used by both native platform adapters. */
+    suspend fun readCutBytes(assetKey: String): ByteArray {
+        val cut = cutForAssetKey(assetKey)
+            ?: throw IllegalArgumentException("Logo asset is not in the selected catalog: $assetKey")
+        val preview = cut.preview.takeIf { it.matches(Regex("[A-Za-z0-9_.-]+(?:__[A-Za-z0-9_.-]+)*\\.webp")) }
+            ?: throw IllegalArgumentException("Logo asset has no packaged WebP: $assetKey")
+        return Res.readBytes("$LOGO_PREVIEW_DIR$preview")
+    }
 }
 
 /** Version art exactly as the signed-off webview page draws it (webp from `assets/`). */
-private object LogoPreviewBits {
+internal object LogoPreviewBits {
     private val cache = mutableStateMapOf<String, ImageBitmap?>()
     private val order = ArrayDeque<String>()
 
     fun get(key: String): ImageBitmap? = cache[key]
 
-    suspend fun load(key: String) {
-        if (key.isBlank() || cache.containsKey(key)) return
+    suspend fun load(key: String): ImageBitmap? {
+        if (key.isBlank()) return null
+        if (cache.containsKey(key)) return cache[key]
         val bitmap = runCatching {
             withContext(Dispatchers.Default) {
                 Res.readBytes("$LOGO_PREVIEW_DIR$key").decodeToImageBitmap()
@@ -193,17 +211,46 @@ private object LogoPreviewBits {
         cache[key] = bitmap
         order.addLast(key)
         while (order.size > 128) cache.remove(order.removeFirst())
+        return bitmap
     }
 }
 
 @Composable
-private fun rememberPreview(key: String?): ImageBitmap? {
+internal fun rememberPreview(key: String?): ImageBitmap? {
     if (key.isNullOrBlank()) return null
     val bitmap = LogoPreviewBits.get(key)
     LaunchedEffect(key) {
         if (bitmap == null) LogoPreviewBits.load(key)
     }
     return bitmap
+}
+
+/**
+ * Preview bitmap plus "the exact asset was already looked up" for one catalog
+ * WebP. [LogoBrandPanel] needs the difference between *still loading* and
+ * *missing on disk* to disable a version row and label it 不可用; a plain null
+ * bitmap cannot express that. Reading [LogoPreviewBits] is observable, so a
+ * preview loaded by another call is picked up without a second decode.
+ */
+internal data class LogoPreviewState(val bitmap: ImageBitmap?, val resolved: Boolean) {
+    val available: Boolean get() = bitmap != null
+    /** The asset was looked up and is not packaged: the row must not be selectable. */
+    val missing: Boolean get() = resolved && bitmap == null
+}
+
+@Composable
+internal fun rememberLogoPreview(key: String?): LogoPreviewState {
+    if (key.isNullOrBlank()) return LogoPreviewState(bitmap = null, resolved = true)
+    val cached = LogoPreviewBits.get(key)
+    var bitmap by remember(key) { mutableStateOf(cached) }
+    var resolved by remember(key) { mutableStateOf(cached != null) }
+    LaunchedEffect(key) {
+        val loaded = LogoPreviewBits.load(key)
+        bitmap = loaded
+        resolved = true
+    }
+    val effective = bitmap ?: cached
+    return LogoPreviewState(bitmap = effective, resolved = resolved || effective != null)
 }
 
 /** Human label for a stored render key (a brand key or one specific cut stem). */
@@ -219,75 +266,19 @@ suspend fun logoValueLabel(value: String): String? {
     return null
 }
 
-private object LogoBitmaps {    private val cache = mutableStateMapOf<String, ImageBitmap?>()
-    private val order = ArrayDeque<String>()
-
-    fun get(stem: String): ImageBitmap? = cache[stem]
-
-    fun known(stem: String): Boolean = cache.containsKey(stem)
-
-    suspend fun load(stem: String) {
-        if (cache.containsKey(stem)) return
-        val bitmap = runCatching {
-            withContext(Dispatchers.Default) {
-                Res.readBytes("$LOGO_DIR$stem.png").decodeToImageBitmap()
-            }
-        }.getOrNull()
-        cache[stem] = bitmap
-        order.addLast(stem)
-        while (order.size > 96) cache.remove(order.removeFirst())
-    }
-
-    /**
-     * First candidate whose PNG actually ships. Catalog cuts point at webp assets that
-     * this build does not carry, so a version falls back to its brand wordmark instead
-     * of showing an empty box (and instead of applying a key the engine cannot resolve).
-     */
-    suspend fun resolve(candidates: List<String>): String? {
-        for (candidate in candidates) {
-            if (candidate.isBlank()) continue
-            load(candidate)
-            if (cache[candidate] != null) return candidate
-        }
-        return null
-    }
-}
-
-@Composable
-private fun rememberLogo(stem: String?): ImageBitmap? {
-    if (stem == null) return null
-    val bitmap = LogoBitmaps.get(stem)
-    LaunchedEffect(stem) {
-        if (bitmap == null) LogoBitmaps.load(stem)
-    }
-    return bitmap
-}
-
-/** Resolves a renderable stem for a brand or version, with the brand wordmark as fallback. */
-@Composable
-private fun rememberStem(cutStem: String?, brandKey: String): String? {
-    var resolved by remember(cutStem, brandKey) { mutableStateOf<String?>(null) }
-    LaunchedEffect(cutStem, brandKey) {
-        resolved = LogoBitmaps.resolve(
-            listOfNotNull(cutStem, brandKey, "${brandKey}_black", "${brandKey}_white"),
-        )
-    }
-    return resolved
-}
-
 private fun groupLabel(group: String): String = when (group) {
     "camera" -> "相机"
     "phone" -> "手机"
     else -> group
 }
 
-private fun surfaceBadge(surface: String): String = when (surface) {
+internal fun surfaceBadge(surface: String): String = when (surface) {
     "dark" -> "仅深底"
     "both" -> "黑白双版"
     else -> "仅浅底"
 }
 
-private fun eraLabel(era: String): String = when (era) {
+internal fun eraLabel(era: String): String = when (era) {
     "current" -> "现行"
     "classic" -> "经典"
     "historical" -> "历史"
@@ -388,10 +379,10 @@ fun BrandLogoLibraryDialog(
                             BrandCard(
                                 brand = brand,
                                 active = brand.versions.any { it.primaryStem == current } || brand.key == current,
-                                onClick = { stem ->
+                                onClick = {
                                     // One-version brands apply directly, like the webview page.
                                     if (brand.versions.size <= 1) {
-                                        session.set(control, stem ?: brand.key)
+                                        brand.versions.singleOrNull()?.primaryStem?.let { session.set(control, it) }
                                         onDismiss()
                                     } else {
                                         openedBrand = brand
@@ -489,9 +480,14 @@ private fun Toolbar(
 }
 
 @Composable
-private fun BrandCard(brand: LogoBrand, active: Boolean, onClick: (String?) -> Unit) {
-    val renderStem = rememberStem(brand.stemFor(null), brand.key)
+private fun BrandCard(brand: LogoBrand, active: Boolean, onClick: () -> Unit) {
     val bitmap = rememberPreview(brand.preview)
+    val singleAssetKey = brand.versions.singleOrNull()?.primaryStem
+    var available by remember(singleAssetKey) { mutableStateOf(brand.versions.size > 1) }
+    LaunchedEffect(singleAssetKey, brand.versions.size) {
+        available = if (brand.versions.size > 1) true
+        else singleAssetKey?.let { key -> LogoPreviewBits.load(brand.versions.single().preview.orEmpty()) != null } == true
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,7 +498,7 @@ private fun BrandCard(brand: LogoBrand, active: Boolean, onClick: (String?) -> U
                 if (active) FmPalette.primary else FmPalette.outline,
                 RoundedCornerShape(FmRadii.card),
             )
-            .clickable { onClick(renderStem) }
+            .clickable(enabled = available, onClick = onClick)
             .padding(FmSpacing.sm),
     ) {
         Box(
@@ -583,7 +579,6 @@ private fun VersionPage(
                 items(versions, key = { it.id }) { version ->
                     VersionRow(
                         version = version,
-                        brandKey = brand.key,
                         selected = version.primaryStem == current,
                         onPick = onPick,
                     )
@@ -594,15 +589,14 @@ private fun VersionPage(
 }
 
 @Composable
-private fun VersionRow(version: LogoVersion, brandKey: String, selected: Boolean, onPick: (String) -> Unit) {
-    // Art = the version's own webp; render key = a stem the engine can resolve.
+private fun VersionRow(version: LogoVersion, selected: Boolean, onPick: (String) -> Unit) {
+    // Preview and render both use the exact catalog cut selected by the user.
     val bitmap = rememberPreview(version.preview)
-    val renderStem = rememberStem(version.primaryStem, brandKey)
-    var exact by remember(version.primaryStem) { mutableStateOf(false) }
-    LaunchedEffect(version.primaryStem) {
-        exact = LogoBitmaps.resolve(listOfNotNull(version.primaryStem)) != null
+    val exactKey = version.primaryStem
+    var available by remember(version.preview, exactKey) { mutableStateOf(false) }
+    LaunchedEffect(version.preview, exactKey) {
+        available = exactKey != null && version.preview?.let { LogoPreviewBits.load(it) != null } == true
     }
-    val available = renderStem != null
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -613,7 +607,7 @@ private fun VersionRow(version: LogoVersion, brandKey: String, selected: Boolean
                 if (selected) FmPalette.primary else FmPalette.outline,
                 RoundedCornerShape(FmRadii.card),
             )
-            .clickable(enabled = available) { renderStem?.let(onPick) }
+            .clickable(enabled = available) { exactKey?.let(onPick) }
             .padding(FmSpacing.sm),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -640,13 +634,9 @@ private fun VersionRow(version: LogoVersion, brandKey: String, selected: Boolean
                         style = FmType.labelSmall,
                         color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
                     )
-                    if (!exact) {
-                        Spacer(Modifier.width(FmSpacing.xs))
-                        Text("回退品牌标", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
-                    }
                     if (!available) {
                         Spacer(Modifier.width(FmSpacing.xs))
-                        Text("不可用", style = FmType.labelSmall, color = FmPalette.error)
+                        Text("未收录", style = FmType.labelSmall, color = FmPalette.error)
                     }
                 }
                 Text(

@@ -45,7 +45,8 @@ data class PhotoDesign(
 
     fun withFontScale(value: Double?): PhotoDesign = copy(fontScale = value, baseDesign = false)
 
-    fun withLogo(value: String?): PhotoDesign = copy(logo = value, baseDesign = false)
+    fun withLogo(value: String?): PhotoDesign =
+        copy(logo = value?.takeIf { it.isNotBlank() }, baseDesign = false)
 
     fun withOverlay(spec: WatermarkSpec?): PhotoDesign = copy(overlay = spec)
 

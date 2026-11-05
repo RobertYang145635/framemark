@@ -5,10 +5,18 @@ import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
 import com.framemark.native.library.jsonString
 import com.framemark.native.workflow.OverlaySpec
+import com.framemark.native.workflow.isWritableTextSlotKey
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
+import java.io.BufferedReader
+import java.io.BufferedWriter
 import java.io.File
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import javax.imageio.ImageIO
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -26,24 +34,8 @@ data class EngineRenderResult(
     val responseJson: String,
 )
 
-data class TextSlot(
-    val id: String,
-    val text: String,
-    val x: Double,
-    val y: Double,
-    val w: Double,
-    val h: Double,
-    val fontSize: Double?,
-    val baseline: Double?,
-    val lines: Int,
-    /** Declared node with no draw for this photo (never dropped from the model). */
-    val present: Boolean = true,
-    /** Report draw with no declared node; [id] is the report path (or draw seq). */
-    val unmapped: Boolean = false,
-    val optional: Boolean = false,
-    /** Engine node path (`b…/g…`) the slot was declared with. */
-    val nodePath: String? = null,
-)
+/** Compatibility import for existing desktop callers; the model is now shared. */
+typealias TextSlot = com.framemark.native.workflow.TextSlot
 
 /**
  * render-v1 bridge over the current engine binaries (process transport).
@@ -67,6 +59,72 @@ class DesktopEngineBridge(
     ).apply { mkdirs() }
     private val workingDir: File = RuntimePaths.engineWorkingDir(layout)
     private val e5 = E5Worker()
+
+    private data class PreviewWorkerKey(
+        val backend: String,
+        val cardId: String,
+        val photoPath: String,
+    )
+
+    private class PreviewWorkerConnection(
+        val key: PreviewWorkerKey,
+        private val process: Process,
+    ) {
+        private val writer = BufferedWriter(OutputStreamWriter(process.outputStream, Charsets.UTF_8))
+        private val reader = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8))
+
+        val isAlive: Boolean
+            get() = process.isAlive
+
+        fun request(requestArgs: List<String>): RunResult {
+            writer.write(BridgeJson.write(requestArgs))
+            writer.newLine()
+            writer.flush()
+            val output = StringBuilder()
+            while (true) {
+                val line = reader.readLine()
+                    ?: return RunResult(-1, (output.toString() + "\nworker EOF").takeLast(65_536))
+                output.appendLine(line)
+                when {
+                    line.startsWith("FM_PREVIEW_WORKER_STAGE") ||
+                        line.startsWith("FM_ENGINE_PREVIEW_SIZE") -> println(line)
+                }
+                if (line.startsWith("FM_PREVIEW_WORKER_DONE")) {
+                    val code = Regex("""\bcode=(-?\d+)""")
+                        .find(line)
+                        ?.groupValues
+                        ?.get(1)
+                        ?.toIntOrNull()
+                        ?: -1
+                    return RunResult(code, output.toString().takeLast(65_536))
+                }
+            }
+        }
+
+        fun close() {
+            // Kill first: closing a stream may take its read/write monitor and
+            // strand a worker request blocked in BufferedReader.readLine().
+            runCatching { if (process.isAlive) process.destroyForcibly() }
+            runCatching { process.waitFor(1, TimeUnit.SECONDS) }
+            runCatching { writer.close() }
+            runCatching { reader.close() }
+        }
+    }
+
+    private val previewWorkerExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "framemark-preview-worker").apply { isDaemon = true }
+    }
+    private val previewWorkerLock = Any()
+    private var previewWorker: PreviewWorkerConnection? = null
+
+    init {
+        Runtime.getRuntime().addShutdownHook(Thread({
+            synchronized(previewWorkerLock) {
+                previewWorker?.close()
+                previewWorker = null
+            }
+        }, "framemark-preview-worker-shutdown"))
+    }
 
     fun supports(cardId: String): Boolean = catalog.supports(cardId)
 
@@ -180,7 +238,30 @@ class DesktopEngineBridge(
             )
         }
 
-        var run = exec(argv, cardId)
+        if (mode == "preview" && maxEdge != null) {
+            if (maxEdge <= 0) {
+                throw EngineConfigException("FM-E-INPUT-001", "预览长边必须为正整数", cardId = cardId)
+            }
+            // The native renderer now owns preview resizing. Passing the target
+            // here avoids allocating and encoding a full-resolution raw canvas.
+            argv += listOf("--preview-max-edge", maxEdge.toString())
+            println("FM_ENGINE_PREVIEW_SIZE card=$cardId maxEdge=$maxEdge")
+        }
+
+        val previewWorkerKey = if (mode == "preview") {
+            PreviewWorkerKey(card.backend, card.cardId, photoAbs)
+        } else {
+            null
+        }
+        var run = if (previewWorkerKey != null) {
+            println(
+                "FM_ENGINE_TRANSPORT mode=worker card=$cardId backend=${card.backend} " +
+                    "maxEdge=${maxEdge ?: "-"}",
+            )
+            runPreviewWorker(argv, cardId, previewWorkerKey)
+        } else {
+            exec(argv, cardId)
+        }
         var nativeFitFellBack = false
         if (run.code != 0 && nativeFit && run.output.contains("E4H-FIT-NATIVE-")) {
             // The template's photo box cannot hold the whole photo (fixed-ratio
@@ -237,7 +318,9 @@ class DesktopEngineBridge(
             )
         }
         val rawEdge = max(rep.width, rep.height)
-        val requested = if (mode == "preview") maxEdge else longEdge
+        // Preview dimensions are finalized by the native engine. Applying maxEdge
+        // again here would both add ImageIO work and scale the report twice.
+        val requested = if (mode == "export") longEdge else null
         val scale = if (requested != null && requested in 1 until rawEdge) requested.toDouble() / rawEdge else 1.0
         val outW = (rep.width * scale).roundToInt().coerceAtLeast(1)
         val outH = (rep.height * scale).roundToInt().coerceAtLeast(1)
@@ -313,27 +396,21 @@ class DesktopEngineBridge(
     // slot binding: node identity, never array position for declared paths
     // -----------------------------------------------------------------------
 
-    /**
-     * Binds engine draw reports to the manifest's text node declarations.
-     *
-     * - IR: `rep.texts[].path` → `slot.nodePath`; a photo whose EXIF adds or
-     *   drops nodes can never shift another slot. Declared-but-not-drawn slots
-     *   stay in the result with `present=false`; draws without a declaration
-     *   are appended with `unmapped=true` (id = report path).
-     * - hand: e4hand reports no path, so the frozen `sampleText` is the
-     *   identity. Slots whose text changed on this photo are matched by the
-     *   remaining order only when the counts agree; otherwise they are
-     *   `present=false` / `unmapped=true` instead of being silently shifted.
-     * - legacy string manifests: index binding (old behaviour).
-     */
+    /** Binds report metadata only through explicit stable renderer identities. */
     private fun bindTextSlots(
         card: EngineCard,
         rep: RawReport,
         scale: Double,
         warnings: MutableList<String>,
     ): List<TextSlot> {
-        fun slotFrom(id: String, draw: RawText, unmapped: Boolean, optional: Boolean, nodePath: String?) =
-            TextSlot(
+        fun slotFrom(id: String, draw: RawText, unmapped: Boolean, optional: Boolean, nodePath: String?) : TextSlot {
+            val key = when (card.backend) {
+                "ir" -> draw.path?.takeIf(::isWritableTextSlotKey)
+                    ?: draw.key?.takeIf { draw.stable && isWritableTextSlotKey(it) }
+                "hand" -> draw.key?.takeIf { draw.stable && isWritableTextSlotKey(it) }
+                else -> null
+            }
+            return TextSlot(
                 id = id,
                 text = draw.text,
                 x = draw.x * scale,
@@ -343,117 +420,118 @@ class DesktopEngineBridge(
                 fontSize = draw.fontSize?.let { it * scale },
                 baseline = draw.baseline?.let { it * scale },
                 lines = draw.lines,
-                present = true,
+                present = draw.present,
                 unmapped = unmapped,
                 optional = optional,
                 nodePath = nodePath,
+                key = key,
+                raw = draw.raw,
+                hidden = draw.hidden,
+                stable = key != null,
+                located = draw.located,
             )
+        }
 
-        fun absent(slot: EngineSlot) = TextSlot(
-            id = slot.slotId,
-            text = "",
-            x = 0.0,
-            y = 0.0,
-            w = 0.0,
-            h = 0.0,
-            fontSize = null,
-            baseline = null,
-            lines = 0,
-            present = false,
-            unmapped = false,
-            optional = slot.optional,
-            nodePath = slot.nodePath,
-        )
+        fun absent(slot: EngineSlot): TextSlot {
+            val key = slot.nodePath?.takeIf { card.backend == "ir" && isWritableTextSlotKey(it) }
+            return TextSlot(
+                id = slot.slotId,
+                text = "",
+                x = 0.0,
+                y = 0.0,
+                w = 0.0,
+                h = 0.0,
+                fontSize = null,
+                baseline = null,
+                lines = 0,
+                present = false,
+                unmapped = false,
+                optional = slot.optional,
+                nodePath = slot.nodePath,
+                key = key,
+                raw = "",
+                hidden = false,
+                stable = key != null,
+                located = false,
+            )
+        }
 
         val declared = card.slots
         val bound = LinkedHashMap<String, TextSlot>()
         val extras = ArrayList<TextSlot>()
-        val pathMode = card.backend == "ir" && declared.any { it.nodePath != null }
-        val textMode = card.backend == "hand" && declared.any { it.sampleText != null }
+        val pathMode = card.backend == "ir" && (declared.any { it.nodePath != null } || rep.texts.any { it.path != null })
 
         when {
             pathMode -> {
                 val byPath = HashMap<String, RawText>()
-                for (t in rep.texts) t.path?.let { byPath[it] = t }
+                for (text in rep.texts) text.path?.let { byPath[it] = text }
                 val declaredPaths = declared.mapNotNull { it.nodePath }.toHashSet()
-                for (s in declared) {
-                    val draw = s.nodePath?.let { byPath[it] }
+                for (slot in declared) {
+                    val draw = slot.nodePath?.let { byPath[it] }
                     if (draw == null) {
-                        warnings += "slot '${s.slotId}' (${s.nodePath}) has no draw for this photo (present=false)"
+                        warnings += "slot '${slot.slotId}' (${slot.nodePath}) has no report declaration (present=false)"
                     } else {
-                        bound[s.slotId] = slotFrom(s.slotId, draw, false, s.optional, s.nodePath)
+                        bound[slot.slotId] = slotFrom(slot.slotId, draw, false, slot.optional, slot.nodePath)
                     }
                 }
-                rep.texts.forEachIndexed { i, draw ->
-                    val p = draw.path
-                    if (p != null && p in declaredPaths) return@forEachIndexed
-                    val id = p ?: "draw#${draw.seq ?: i}"
-                    warnings += "text draw '$id' has no declared slot (unmapped)"
-                    extras += slotFrom(id, draw, true, false, p)
+                rep.texts.forEachIndexed { index, draw ->
+                    val path = draw.path
+                    if (path != null && path in declaredPaths) return@forEachIndexed
+                    val id = path ?: draw.key ?: "draw#${draw.seq ?: index}"
+                    warnings += "text draw '$id' has no catalog slot declaration; retaining explicit path metadata"
+                    extras += slotFrom(id, draw, true, false, path)
                 }
             }
-            textMode -> {
-                val used = BooleanArray(rep.texts.size)
-                val pending = ArrayList<EngineSlot>()
-                for (s in declared) {
-                    val sample = s.sampleText
-                    val idx = if (sample == null) {
-                        -1
+            card.backend == "hand" -> {
+                val byKey = rep.texts.filter { it.stable && isWritableTextSlotKey(it.key) }
+                    .associateBy { it.key }
+                val claimed = mutableSetOf<String>()
+                for (slot in declared) {
+                    val draw = byKey[slot.slotId]
+                    if (draw == null) {
+                        warnings += "hand slot '${slot.slotId}' has no explicit stable-key draw (present=false)"
                     } else {
-                        rep.texts.indices.firstOrNull { !used[it] && rep.texts[it].text == sample } ?: -1
-                    }
-                    if (idx >= 0) {
-                        used[idx] = true
-                        bound[s.slotId] = slotFrom(s.slotId, rep.texts[idx], false, false, null)
-                    } else {
-                        pending += s
+                        val key = draw.key.orEmpty()
+                        claimed += key
+                        bound[slot.slotId] = slotFrom(key, draw, false, slot.optional, null)
                     }
                 }
-                val rest = rep.texts.indices.filter { !used[it] }
-                if (pending.size == rest.size) {
-                    if (pending.isNotEmpty()) {
-                        warnings += "${pending.size} hand slot(s) differ from the sample text; bound by remaining order"
-                    }
-                    for ((k, s) in pending.withIndex()) {
-                        val idx = rest[k]
-                        used[idx] = true
-                        bound[s.slotId] = slotFrom(s.slotId, rep.texts[idx], false, false, null)
-                    }
-                } else {
-                    for (s in pending) {
-                        warnings += "hand slot '${s.slotId}' has no draw for this photo (present=false)"
-                    }
-                    for (idx in rest) {
-                        val draw = rep.texts[idx]
-                        val id = "draw#${draw.seq ?: idx}"
-                        warnings += "text draw '$id' has no declared slot (unmapped)"
+                rep.texts.forEachIndexed { index, draw ->
+                    val key = draw.key
+                    if (draw.stable && isWritableTextSlotKey(key)) {
+                        if (key in claimed) return@forEachIndexed
+                        warnings += "stable hand text '$key' has no catalog slot entry; retaining report key"
+                        extras += slotFrom(key.orEmpty(), draw, false, false, null)
+                    } else {
+                        val id = "draw#${draw.seq ?: index}"
+                        warnings += "hand text draw '$id' has no explicit stable key (not editable)"
                         extras += slotFrom(id, draw, true, false, null)
                     }
                 }
             }
             else -> {
-                if (declared.isNotEmpty()) warnings += "legacy string slots bound by array index"
-                declared.forEachIndexed { i, s ->
-                    val draw = rep.texts.getOrNull(i)
+                if (declared.isNotEmpty()) warnings += "legacy string slots bound by array index; report-only rows are not editable"
+                declared.forEachIndexed { index, slot ->
+                    val draw = rep.texts.getOrNull(index)
                     if (draw == null) {
-                        warnings += "legacy slot '${s.slotId}' has no draw for this photo (present=false)"
+                        warnings += "legacy slot '${slot.slotId}' has no draw (present=false)"
                     } else {
-                        bound[s.slotId] = slotFrom(s.slotId, draw, false, false, null)
+                        bound[slot.slotId] = slotFrom(slot.slotId, draw, false, slot.optional, slot.nodePath)
                     }
                 }
-                rep.texts.drop(declared.size).forEachIndexed { k, draw ->
-                    val id = draw.path ?: "draw#${draw.seq ?: (declared.size + k)}"
-                    warnings += "text draw '$id' has no declared slot (unmapped)"
+                rep.texts.drop(declared.size).forEachIndexed { offset, draw ->
+                    val id = draw.path ?: draw.key ?: "draw#${draw.seq ?: (declared.size + offset)}"
+                    warnings += "text draw '$id' has no stable declared slot"
                     extras += slotFrom(id, draw, true, false, draw.path)
                 }
             }
         }
-        val out = ArrayList<TextSlot>(declared.size + extras.size)
-        for (s in declared) out += bound[s.slotId] ?: absent(s)
-        out += extras
-        return out
-    }
 
+        return buildList {
+            declared.forEach { slot -> add(bound[slot.slotId] ?: absent(slot)) }
+            addAll(extras)
+        }
+    }
     // -----------------------------------------------------------------------
     // design / hand inputs
     // -----------------------------------------------------------------------
@@ -552,6 +630,12 @@ class DesktopEngineBridge(
         val path: String? = null,
         /** e4hand paint sequence, used only to name an unmapped draw. */
         val seq: Long? = null,
+        val key: String? = null,
+        val raw: String = text,
+        val stable: Boolean = false,
+        val hidden: Boolean = false,
+        val present: Boolean = true,
+        val located: Boolean = false,
     )
 
     private class RawReport(
@@ -584,14 +668,18 @@ class DesktopEngineBridge(
                         ?: error("report photo[$index] missing or invalid")
                 }
                 if (photo[2] <= 0.0 || photo[3] <= 0.0) error("report photo dimensions must be positive")
-                val rawItems = doc["items"] as? List<*> ?: error("report items missing or invalid")
-                val items = rawItems.mapIndexed { index, item ->
+                // Desktop reports currently use root `items`; accept the Android
+                // geom shape too so report fixtures and shared tooling can feed
+                // either nesting without inventing geometry.
+                val rawItems = (doc["items"] as? List<*>) ?: doc["bands"].jsonList().flatMap { band ->
+                    band.jsonMap()["items"].jsonList()
+                }
+                val items = rawItems.mapIndexedNotNull { index, item ->
                     val map = item as? Map<*, *> ?: error("report items[$index] must be an object")
-                    if (map["kind"] !is String || (map["kind"] as String).isBlank()) {
-                        error("report items[$index].kind missing or invalid")
-                    }
+                    val kind = map["kind"] as? String
+                    if (kind.isNullOrBlank()) error("report items[$index].kind missing or invalid")
                     @Suppress("UNCHECKED_CAST")
-                    (map as Map<String, Any?>)
+                    map as Map<String, Any?>
                 }
                 // `gaps` mixes informational env/rule/layout notes with failures.
                 // Gate only on report items that prove a required image or selected
@@ -603,21 +691,64 @@ class DesktopEngineBridge(
                     val path = m["path"]?.toString()?.let { " path=$it" }.orEmpty()
                     "$kind asset=$asset$path"
                 }
-                val texts = items.mapNotNull { m ->
-                    if (m["kind"] != "text") return@mapNotNull null
-                    val rect = m["rect"].jsonList().map { (it as? Number)?.toDouble() ?: 0.0 }
-                    RawText(
-                        text = m["lines"].jsonList().joinToString("\n") { it?.toString().orEmpty() },
-                        x = rect.getOrElse(0) { 0.0 },
-                        y = rect.getOrElse(1) { 0.0 },
-                        w = rect.getOrElse(2) { 0.0 },
-                        h = rect.getOrElse(3) { 0.0 },
+                fun rawItemText(m: Map<String, Any?>): RawText? {
+                    if (m["kind"] != "text") return null
+                    val rect = m["rect"] as? List<*> ?: emptyList<Any?>()
+                    val nums = (0..3).map { index ->
+                        (rect.getOrNull(index) as? Number)?.toDouble()?.takeIf { it.isFinite() }
+                    }
+                    val located = nums.size == 4 && nums.all { it != null } && nums[2]!! > 0.0 && nums[3]!! > 0.0
+                    val lines = m["lines"].jsonList().mapNotNull { it?.toString() }
+                    val text = (m["text"] as? String) ?: lines.joinToString("\n")
+                    val path = m["path"] as? String
+                    return RawText(
+                        text = text,
+                        x = nums[0] ?: 0.0,
+                        y = nums[1] ?: 0.0,
+                        w = nums[2] ?: 0.0,
+                        h = nums[3] ?: 0.0,
                         fontSize = (m["fs"] as? Number)?.toDouble(),
                         baseline = (m["baseline"] as? Number)?.toDouble(),
-                        lines = m["lines"].jsonList().size.coerceAtLeast(1),
-                        path = m["path"] as? String,
+                        lines = lines.size.coerceAtLeast(1),
+                        path = path,
+                        key = m["key"] as? String ?: path,
+                        raw = m["raw"] as? String ?: text,
+                        stable = (m["stable"] as? Boolean ?: isWritableTextSlotKey(path)) && isWritableTextSlotKey(path),
+                        hidden = m["hidden"] as? Boolean ?: false,
+                        present = m["present"] as? Boolean ?: true,
+                        located = located,
                     )
                 }
+                val draws = items.mapNotNull(::rawItemText)
+                val drawByPath = draws.mapNotNull { draw -> draw.path?.let { it to draw } }.toMap()
+                val declarations = doc["textSlots"].jsonList().map { item ->
+                    val m = item.jsonMap()
+                    val path = m["path"] as? String
+                    val geometry = path?.let(drawByPath::get)
+                    val text = m["text"] as? String ?: geometry?.text.orEmpty()
+                    val key = m["key"] as? String ?: path
+                    val stable = (m["stable"] as? Boolean ?: isWritableTextSlotKey(path)) && isWritableTextSlotKey(path)
+                    RawText(
+                        text = text,
+                        x = geometry?.x ?: 0.0,
+                        y = geometry?.y ?: 0.0,
+                        w = geometry?.w ?: 0.0,
+                        h = geometry?.h ?: 0.0,
+                        fontSize = geometry?.fontSize,
+                        baseline = geometry?.baseline,
+                        lines = geometry?.lines ?: text.count { it == '\n' }.plus(1),
+                        path = path,
+                        key = key,
+                        raw = m["raw"] as? String ?: geometry?.raw ?: text,
+                        stable = stable,
+                        hidden = m["hidden"] as? Boolean ?: false,
+                        present = m["present"] as? Boolean ?: geometry?.present ?: false,
+                        located = geometry?.located ?: false,
+                    )
+                }
+                val declaredPaths = declarations.mapNotNull { it.path }.toSet()
+                val extras = draws.filter { it.path !in declaredPaths }
+                val texts = declarations + extras
                 RawReport(w, h, photo.toDoubleArray(), texts, resourceErrors)
             }
             "hand" -> {
@@ -628,16 +759,27 @@ class DesktopEngineBridge(
                 val texts = doc["report"].jsonMap()["texts"].jsonList().map { item ->
                     val m = item.jsonMap()
                     val rect = m["rect"].jsonMap()
+                    val x = (rect["x"] as? Number)?.toDouble()
+                    val y = (rect["y"] as? Number)?.toDouble()
+                    val rectW = (rect["w"] as? Number)?.toDouble()
+                    val rectH = (rect["h"] as? Number)?.toDouble()
+                    val located = listOf(x, y, rectW, rectH).all { it != null && it.isFinite() } && rectW!! > 0.0 && rectH!! > 0.0
                     RawText(
                         text = m["s"]?.toString().orEmpty(),
-                        x = (rect["x"] as? Number)?.toDouble() ?: 0.0,
-                        y = (rect["y"] as? Number)?.toDouble() ?: 0.0,
-                        w = (rect["w"] as? Number)?.toDouble() ?: 0.0,
-                        h = (rect["h"] as? Number)?.toDouble() ?: 0.0,
+                        x = x ?: 0.0,
+                        y = y ?: 0.0,
+                        w = rectW ?: 0.0,
+                        h = rectH ?: 0.0,
                         fontSize = (m["size"] as? Number)?.toDouble(),
                         baseline = null,
                         lines = 1,
                         seq = (m["seq"] as? Number)?.toLong(),
+                        key = m["key"] as? String,
+                        raw = m["raw"] as? String ?: m["s"]?.toString().orEmpty(),
+                        stable = m["stable"] as? Boolean ?: false,
+                        hidden = m["hidden"] as? Boolean ?: false,
+                        present = m["present"] as? Boolean ?: true,
+                        located = located,
                     )
                 }
                 RawReport(w, h, photo.toDoubleArray(), texts)
@@ -744,6 +886,70 @@ class DesktopEngineBridge(
 
     private class RunResult(val code: Int, val output: String)
 
+    private fun closePreviewWorker(connection: PreviewWorkerConnection? = null) {
+        synchronized(previewWorkerLock) {
+            val current = previewWorker
+            if (current != null && (connection == null || current === connection)) {
+                current.close()
+                previewWorker = null
+            }
+        }
+    }
+
+    private fun runPreviewWorker(
+        argv: List<String>,
+        cardId: String,
+        key: PreviewWorkerKey,
+    ): RunResult {
+        val startArgs = listOf(argv.first(), "preview-server")
+        var lastFailure: RunResult? = null
+        repeat(2) { attempt ->
+            val connection = try {
+                synchronized(previewWorkerLock) {
+                    val current = previewWorker
+                    if (current != null && current.key == key && current.isAlive) {
+                        current
+                    } else {
+                        current?.close()
+                        println("FM_PREVIEW_WORKER_START backend=${key.backend} card=$cardId attempt=$attempt")
+                        val process = ProcessBuilder(startArgs)
+                            .directory(workingDir)
+                            .redirectErrorStream(true)
+                            .start()
+                        PreviewWorkerConnection(key, process).also { previewWorker = it }
+                    }
+                }
+            } catch (t: Throwable) {
+                lastFailure = RunResult(-1, "worker start failed: ${t.message ?: t::class.simpleName}")
+                return@repeat
+            }
+
+            val pending = previewWorkerExecutor.submit<RunResult> {
+                connection.request(argv.drop(1))
+            }
+            try {
+                val result = pending.get(60, TimeUnit.SECONDS)
+                if (result.code == 0) return result
+                lastFailure = result
+            } catch (e: InterruptedException) {
+                // The request task continues draining the worker stream so the
+                // persistent worker remains usable; only this caller is stale.
+                Thread.currentThread().interrupt()
+                throw e
+            } catch (e: TimeoutException) {
+                lastFailure = RunResult(-1, "preview worker timeout")
+            } catch (t: Throwable) {
+                val cause = t.cause?.message ?: t.message ?: t::class.simpleName
+                lastFailure = RunResult(-1, "preview worker failure: $cause")
+            }
+            closePreviewWorker(connection)
+        }
+        println(
+            "FM_PREVIEW_WORKER_FALLBACK backend=${key.backend} card=$cardId " +
+                "reason=${lastFailure?.output?.lineSequence()?.lastOrNull()?.take(240)}",
+        )
+        return exec(argv, cardId)
+    }
     private fun exec(argv: List<String>, cardId: String): RunResult {
         println("FM_ENGINE_EXEC ${argv.joinToString(" ")}")
         val result = ProcessRunner.run(argv, workingDir)
@@ -800,11 +1006,17 @@ class DesktopEngineBridge(
         if (!overlay.opacity.isFinite() || overlay.opacity < 0f || overlay.opacity > 1f) {
             throw EngineConfigException("FM-E-RES-001", "水印透明度越界（${overlay.opacity}）")
         }
-        return listOf(
-            "--overlay", overlay.path,
-            "--overlay-rect", rect.joinToString(",") { it.toString() },
-            "--overlay-opacity", overlay.opacity.toString(),
-        )
+        if (!overlay.angle.isFinite() || overlay.angle < -180f || overlay.angle > 180f) {
+            throw EngineConfigException("FM-E-RES-001", "水印角度越界（${overlay.angle}）")
+        }
+        return buildList {
+            add("--overlay"); add(overlay.path)
+            add("--overlay-rect"); add(rect.joinToString(",") { it.toString() })
+            add("--overlay-opacity"); add(overlay.opacity.toString())
+            if (overlay.angle != 0f) {
+                add("--overlay-angle"); add(overlay.angle.toString())
+            }
+        }
     }
 
     private fun scaleImage(source: BufferedImage, width: Int, height: Int): BufferedImage {

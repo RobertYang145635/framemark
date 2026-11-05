@@ -9,7 +9,10 @@ use crate::jsval::{js_round, pct as js_pct};
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
     let aspect = js_pct(env.params.get("canvasAspect"), 1.5015).max(0.5);
-    Ok((env.pw, f32::max(2.0, js_round(env.pw as f64 / aspect) as f32)))
+    Ok((
+        env.pw,
+        f32::max(2.0, js_round(env.pw as f64 / aspect) as f32),
+    ))
 }
 
 pub fn render(env: &mut Env) -> Result<Rect, String> {
@@ -21,6 +24,17 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let x = (w - side) / 2.0;
     let y = (h - side) / 2.0;
     let radius = side * (pct(env.params, "radiusPct", 2.6) as f32) / 100.0;
-    draw_photo_cover(&mut env.ctx, env.photo, &env.crop, x, y, side, side, radius, 0.0, w.min(h));
+    draw_photo_cover(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        x,
+        y,
+        side,
+        side,
+        radius,
+        0.0,
+        w.min(h),
+    );
     Ok(Rect::from_xywh(x, y, side, side))
 }

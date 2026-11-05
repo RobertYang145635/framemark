@@ -77,6 +77,10 @@ class LibraryFilterState {
     }
 }
 
+/** Data provenance labels are internal shorthand; keep them out of user-facing filters. */
+internal fun friendlyVendorLabel(label: String): String =
+    if (label == "未在固件中证实") "其他模板" else label
+
 @Composable
 fun LibraryScreen(
     loadState: LibraryLoadState,
@@ -233,28 +237,16 @@ private fun LibraryReady(
                     )
                 }
             }
-            // Old BorderLibrary: one collapsible 分类 row (name · count) that
-            // expands into 全部 + the 7 categories; vendor chips are level two and
-            // only exist inside 厂商边框.
-            CategoryPicker(
-                categories = snapshot.categories,
-                total = snapshot.cards.size,
-                selectedKey = filters.categoryKey,
-                onSelect = { key ->
-                    filters.categoryKey = if (filters.categoryKey == key) null else key
-                    filters.vendorKey = null
-                },
-            )
-            Spacer(Modifier.height(FmSpacing.xs))
-            // Desktop rail parity: 7 category chips in a 4 + 3 grid, never clipped.
-            CategoryChipGrid(
-                categories = snapshot.categories,
-                selectedKey = filters.categoryKey,
-                onSelect = { key ->
-                    filters.categoryKey = if (filters.categoryKey == key) null else key
-                    filters.vendorKey = null
-                },
-            )
+            // One filter hierarchy only. A compact horizontal rail preserves the
+            // full labels without spending two rows before the card grid starts.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            ) {
+                categoryChips()
+            }
             if (filters.categoryKey == "vendor" && filters.query.isBlank()) {
                 Spacer(Modifier.height(FmSpacing.xs))
                 FlowRow(
@@ -264,7 +256,7 @@ private fun LibraryReady(
                 ) {
                     vendors.filter { it.key != null }.forEach { vendor ->
                         LibraryChip(
-                            label = vendor.label,
+                            label = friendlyVendorLabel(vendor.label),
                             count = vendor.count,
                             selected = filters.vendorKey == vendor.key,
                             onClick = {
@@ -679,7 +671,7 @@ private fun VendorFilter(
     Box {
         Row(
             modifier = Modifier
-                .height(32.dp)
+                .height(40.dp)
                 .clip(shape)
                 .background(if (selectedKey != null) FmPalette.primarySoft else FmPalette.surface)
                 .border(
@@ -699,7 +691,7 @@ private fun VendorFilter(
             Text("按厂商", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
             Spacer(Modifier.width(6.dp))
             Text(
-                text = selected.label,
+                text = friendlyVendorLabel(selected.label),
                 style = FmType.labelMedium,
                 color = if (selectedKey != null) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
                 maxLines = 1,
@@ -725,7 +717,7 @@ private fun VendorFilter(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = vendor.label,
+                                text = friendlyVendorLabel(vendor.label),
                                 style = FmType.bodyMedium,
                                 color = if (vendor.key == selectedKey) FmPalette.primaryStrong else FmPalette.onSurface,
                                 maxLines = 1,
@@ -763,7 +755,7 @@ private fun LibraryChip(
     val shape = RoundedCornerShape(FmRadii.pill)
     Row(
         modifier = Modifier
-            .height(32.dp)
+            .height(40.dp)
             .clip(shape)
             .background(if (selected) FmPalette.primarySoft else FmPalette.surface)
             .border(
@@ -804,7 +796,7 @@ private fun VendorHeader(section: LibrarySection) {
     Column(modifier = Modifier.padding(top = FmSpacing.md, bottom = 2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = section.label,
+                text = friendlyVendorLabel(section.label),
                 style = FmType.titleMedium,
                 color = FmPalette.onSurface,
             )

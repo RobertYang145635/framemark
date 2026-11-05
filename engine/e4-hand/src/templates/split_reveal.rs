@@ -17,12 +17,36 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let split = w / 2.0;
     let single = str_param(env.params, "frameMode", "single") == "single";
     if single {
-        draw_photo_cover(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, s);
+        draw_photo_cover(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            0.0,
+            0.0,
+            w,
+            h,
+            0.0,
+            0.0,
+            s,
+        );
     } else {
         // Legacy split needs `ctx.filter = 'grayscale(1)'` on half the photo;
         // the Ctx2D port has no color-filter path. No frozen card uses it.
-        draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, w, h, 0.0, 0.0, &theme_of(env.themes, env.params), s);
-        env.ctx.record_gap("splitReveal: frameMode 'split' (grayscale half) not ported".into());
+        draw_photo(
+            &mut env.ctx,
+            env.photo,
+            &env.crop,
+            0.0,
+            0.0,
+            w,
+            h,
+            0.0,
+            0.0,
+            &theme_of(env.themes, env.params),
+            s,
+        );
+        env.ctx
+            .record_gap("splitReveal: frameMode 'split' (grayscale half) not ported".into());
     }
     let palette = extract_palette(env, 5);
     let vertical = str_param(env.params, "dotOrientation", "vertical") == "vertical";
@@ -31,12 +55,32 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         v if v.round() == 0.0 => 3,
         v => (v.round() as i64).clamp(1, 6),
     };
-    let r = if vertical { s * ((pct(env.params, "dotSizePct", 2.45) as f32) / 100.0) } else { s * 0.0105 };
-    let gap = if vertical { h * ((pct(env.params, "dotGapPct", 7.7) as f32) / 100.0) } else { r * 2.9 };
-    let cx = if vertical { w * ((pct(env.params, "dotXPct", 50.0) as f32) / 100.0) } else { split };
-    let cy = if vertical { h * ((pct(env.params, "dotTopPct", 46.3) as f32) / 100.0) } else { h * 0.62 };
+    let r = if vertical {
+        s * ((pct(env.params, "dotSizePct", 2.45) as f32) / 100.0)
+    } else {
+        s * 0.0105
+    };
+    let gap = if vertical {
+        h * ((pct(env.params, "dotGapPct", 7.7) as f32) / 100.0)
+    } else {
+        r * 2.9
+    };
+    let cx = if vertical {
+        w * ((pct(env.params, "dotXPct", 50.0) as f32) / 100.0)
+    } else {
+        split
+    };
+    let cy = if vertical {
+        h * ((pct(env.params, "dotTopPct", 46.3) as f32) / 100.0)
+    } else {
+        h * 0.62
+    };
     for i in 0..count {
-        let x = if vertical { cx } else { split + (i as f32 - (count - 1) as f32 / 2.0) * gap };
+        let x = if vertical {
+            cx
+        } else {
+            split + (i as f32 - (count - 1) as f32 / 2.0) * gap
+        };
         let y = if vertical { cy + i as f32 * gap } else { cy };
         let color = palette
             .get(i as usize + 1)
@@ -44,8 +88,19 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             .cloned()
             .unwrap_or_else(|| "#ffffff".into());
         env.ctx.fill_circle(x, y, r, &color);
-        env.ctx.stroke_circle(x, y, r, "rgba(255,255,255,0.82)", (s * if vertical { 0.0025 } else { 0.0012 }).max(1.0));
-        env.ctx.record_shape("dot", Rect::from_xywh(x - r, y - r, r * 2.0, r * 2.0), None, true);
+        env.ctx.stroke_circle(
+            x,
+            y,
+            r,
+            "rgba(255,255,255,0.82)",
+            (s * if vertical { 0.0025 } else { 0.0012 }).max(1.0),
+        );
+        env.ctx.record_shape(
+            "dot",
+            Rect::from_xywh(x - r, y - r, r * 2.0, r * 2.0),
+            None,
+            true,
+        );
     }
     Ok(Rect::from_xywh(0.0, 0.0, w, h))
 }

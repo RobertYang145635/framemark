@@ -18,6 +18,29 @@ environment variables so another checkout can use its own SDK locations:
 | Rust | 1.99.1 (checked on each run) | `FM_CARGO_EXE`, `FM_RUSTC_EXE`, `FM_RUSTUP_EXE`; `RUSTUP_HOME` and `CARGO_HOME` |
 | MSVC | x64 host tools | `FM_VSDEVCMD` (required for both Windows and Android Rust builds) |
 
+The Windows runtime packager uses `sharp` only to decode the WebP logos already
+packaged in Compose resources. It does not need the Electron/WebView dependency
+tree. The checked-in `logo-tools/package.json` and `package-lock.json` pin
+`sharp` 0.35.5; the build preflight checks that this registry URL and integrity
+match the repository lock and that the installed module resolves from the
+isolated prefix. `runtime.cjs` refuses to fall back to a checkout or global
+`node_modules` directory.
+
+Prepare the small tool install in a directory outside the source checkout on
+the project data drive, then build in the same PowerShell session:
+
+```powershell
+$env:FM_NATIVE_SHARP_PREFIX = 'E:\FrameMark\execution-external-agent-20261103\tool-cache\native-logo-tools'
+.\scripts\native\prepare-logo-tools.ps1
+.\build-native.cmd
+```
+
+The installer copies only the minimal package manifest and lock, runs `npm ci`
+for that package, keeps its npm cache under the selected prefix, and writes an
+install provenance JSON there. The packager records the sharp version, registry
+integrity, lock hash, and installed package hash in runtime provenance. Logo
+resources and their source hashes are checked again when staging each runtime.
+
 The two Skia archives also have pinned SHA-256 values. Set
 `FM_SKIA_WINDOWS_ARCHIVE` and `FM_SKIA_ANDROID_ARCHIVE` to local copies of those
 archives. The Cargo build uses repository Cargo.lock files and writes Cargo

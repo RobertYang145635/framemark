@@ -25,8 +25,6 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /** Runtime preview failures, surfaced in the UI instead of a silent blank tile. */
 object PreviewDiagnostics {
@@ -46,9 +44,8 @@ private sealed interface PreviewState {
 }
 
 /**
- * Lazily reads + decodes one bundled preview (480×360 webp). The bitmap lives only
- * while the tile is composed, so the 175-image library does not hold 175 decoded
- * frames (≈121 MB) in memory at once.
+ * Loads one bundled preview through the bounded shared cache. Tile composition
+ * never touches resource IO or image decoding on the UI thread.
  */
 @Composable
 fun LibraryPreview(
@@ -62,11 +59,7 @@ fun LibraryPreview(
             PreviewState.Failed(reason)
         } else {
             try {
-                val bytes = withContext(Dispatchers.Default) {
-                    LibraryPreviewLoader.loadBytes(card)
-                }
-                val bitmap = withContext(Dispatchers.Default) { LibraryPreviewLoader.decode(bytes) }
-                PreviewState.Ready(bitmap)
+                PreviewState.Ready(LibraryPreviewLoader.load(card))
             } catch (c: kotlinx.coroutines.CancellationException) {
                 // The tile left the viewport / the tab changed: not an image failure.
                 throw c
@@ -87,7 +80,7 @@ fun LibraryPreview(
             is PreviewState.Ready -> Image(
                 bitmap = s.bitmap,
                 contentDescription = card.name,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
 

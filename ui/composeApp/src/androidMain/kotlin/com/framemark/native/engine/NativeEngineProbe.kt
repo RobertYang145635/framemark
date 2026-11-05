@@ -51,12 +51,14 @@ object NativeEngineProbe {
         overlayW: Float = 1f,
         overlayH: Float = 1f,
         overlayOpacity: Float = 1f,
+        overlayAngle: Float = 0f,
         outPng: String,
         maxEdge: Int,
     ): String? = runCatching {
         nativeRenderDesign(
             style, photo, photoOverride, exif, assetsJson, fontsDir, brandsDir, fallbackDir, theme, ratio,
-            designJson, overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, outPng, maxEdge,
+            designJson, overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, overlayAngle,
+            outPng, maxEdge,
         )
     }.getOrElse { "engine call failed: ${it.message}" }
 
@@ -78,6 +80,7 @@ object NativeEngineProbe {
         overlayW: Float,
         overlayH: Float,
         overlayOpacity: Float,
+        overlayAngle: Float,
         outPng: String,
         maxEdge: Int,
     ): String?
@@ -106,6 +109,7 @@ object NativeEngineProbe {
         overlayW: Float = 1f,
         overlayH: Float = 1f,
         overlayOpacity: Float = 1f,
+        overlayAngle: Float = 0f,
         /** render-v1 design document; empty keeps the bundled card design. */
         designJson: String = "",
         outPng: String,
@@ -113,7 +117,8 @@ object NativeEngineProbe {
     ): String? = runCatching {
         nativeRenderHand(
             cardsPath, cardId, handDir, fontsDir, extraFontsDir, fallbackCjk, photoPath, photoOverride,
-            overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, designJson, outPng, maxEdge,
+            overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, overlayAngle, designJson,
+            outPng, maxEdge,
         )
     }.getOrElse { "hand engine call failed: ${it.message}" }
 
@@ -132,10 +137,155 @@ object NativeEngineProbe {
         overlayW: Float,
         overlayH: Float,
         overlayOpacity: Float,
+        overlayAngle: Float,
         designJson: String,
         outPng: String,
         maxEdge: Int,
     ): String?
+
+    /** Render and encode JPEG/WebP from the same RGBA raster in one native call. */
+    fun renderExportDesign(
+        style: String,
+        photo: String,
+        photoOverride: String,
+        exif: String,
+        assetsJson: String,
+        fontsDir: String,
+        brandsDir: String,
+        fallbackDir: String,
+        theme: String,
+        ratio: String,
+        designJson: String,
+        overlayPath: String,
+        overlayX: Float,
+        overlayY: Float,
+        overlayW: Float,
+        overlayH: Float,
+        overlayOpacity: Float,
+        overlayAngle: Float,
+        geomPath: String,
+        maxEdge: Int,
+        iccPath: String,
+        exifSrc: String,
+        outPath: String,
+        reportPath: String,
+        webp: Boolean,
+        lossless: Boolean,
+        quality: Int,
+        removeGps: Boolean = true,
+        keepThumbnail: Boolean = true,
+    ): String = runCatching {
+        nativeRenderExportDesign(
+            style, photo, photoOverride, exif, assetsJson, fontsDir, brandsDir, fallbackDir,
+            theme, ratio, designJson, overlayPath, overlayX, overlayY, overlayW, overlayH,
+            overlayOpacity, overlayAngle, geomPath, maxEdge, iccPath, exifSrc, outPath,
+            reportPath, if (webp) 1 else 0, if (lossless) 1 else 0, quality.toFloat(),
+            if (removeGps) 1 else 0, if (keepThumbnail) 1 else 0,
+        )
+    }.getOrElse { exportFailure(it.message ?: "render/export call failed") }
+
+    private external fun nativeRenderExportDesign(
+        style: String,
+        photo: String,
+        photoOverride: String,
+        exif: String,
+        assetsJson: String,
+        fontsDir: String,
+        brandsDir: String,
+        fallbackDir: String,
+        theme: String,
+        ratio: String,
+        designJson: String,
+        overlayPath: String,
+        overlayX: Float,
+        overlayY: Float,
+        overlayW: Float,
+        overlayH: Float,
+        overlayOpacity: Float,
+        overlayAngle: Float,
+        geomPath: String,
+        maxEdge: Int,
+        iccPath: String,
+        exifSrc: String,
+        outPath: String,
+        reportPath: String,
+        webp: Int,
+        lossless: Int,
+        quality: Float,
+        removeGps: Int,
+        keepThumbnail: Int,
+    ): String
+
+    fun renderExportHand(
+        cardsPath: String,
+        cardId: String,
+        handDir: String,
+        fontsDir: String,
+        extraFontsDir: String,
+        fallbackCjk: String,
+        photoPath: String,
+        photoOverride: String,
+        overlayPath: String,
+        overlayX: Float,
+        overlayY: Float,
+        overlayW: Float,
+        overlayH: Float,
+        overlayOpacity: Float,
+        overlayAngle: Float,
+        designJson: String,
+        geomPath: String,
+        maxEdge: Int,
+        iccPath: String,
+        exifSrc: String,
+        outPath: String,
+        reportPath: String,
+        webp: Boolean,
+        lossless: Boolean,
+        quality: Int,
+        removeGps: Boolean = true,
+        keepThumbnail: Boolean = true,
+    ): String = runCatching {
+        nativeRenderExportHand(
+            cardsPath, cardId, handDir, fontsDir, extraFontsDir, fallbackCjk, photoPath,
+            photoOverride, overlayPath, overlayX, overlayY, overlayW, overlayH,
+            overlayOpacity, overlayAngle, designJson, geomPath, maxEdge, iccPath,
+            exifSrc, outPath, reportPath, if (webp) 1 else 0, if (lossless) 1 else 0,
+            quality.toFloat(), if (removeGps) 1 else 0, if (keepThumbnail) 1 else 0,
+        )
+    }.getOrElse { exportFailure(it.message ?: "hand render/export call failed") }
+
+    private external fun nativeRenderExportHand(
+        cardsPath: String,
+        cardId: String,
+        handDir: String,
+        fontsDir: String,
+        extraFontsDir: String,
+        fallbackCjk: String,
+        photoPath: String,
+        photoOverride: String,
+        overlayPath: String,
+        overlayX: Float,
+        overlayY: Float,
+        overlayW: Float,
+        overlayH: Float,
+        overlayOpacity: Float,
+        overlayAngle: Float,
+        designJson: String,
+        geomPath: String,
+        maxEdge: Int,
+        iccPath: String,
+        exifSrc: String,
+        outPath: String,
+        reportPath: String,
+        webp: Int,
+        lossless: Int,
+        quality: Float,
+        removeGps: Int,
+        keepThumbnail: Int,
+    ): String
+
+    private fun exportFailure(message: String): String =
+        "{\"ok\":false,\"error\":\"${message.replace("\\", "\\\\").replace("\"", "'")}\"}"
 
     /**
      * TIFF → PNG through the engine's decoder (the import path uses it so the

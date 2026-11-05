@@ -35,7 +35,11 @@ import com.framemark.native.workflow.AndroidPhoneAssetIo
 import com.framemark.native.shell.PhoneProjectRuntime
 import com.framemark.native.shell.PhoneProjectStore
 import com.framemark.native.shell.PhoneWatermarkPick
+import com.framemark.native.userlogo.AndroidUserLogoRepository
 import com.framemark.native.workflow.PhotoSelection
+import com.framemark.native.workflow.UserLogoEnv
+import com.framemark.native.workflow.UserLogoImportStatus
+import com.framemark.native.workflow.UserLogoSupport
 import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.workflow.PresetTransfer
@@ -226,6 +230,51 @@ class MainActivity : ComponentActivity() {
     }
 
     /** The engine overlay reads PNG, so every picked asset lands as PNG. */
+    private val pickUserLogo = registerForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            println("FM_USER_LOGO_PICK cancelled")
+            return@registerForActivityResult
+        }
+        val repo = UserLogoEnv.repository
+        if (repo == null) {
+            UserLogoImportStatus.fail("用户 Logo 库不可用")
+            return@registerForActivityResult
+        }
+        val mime = contentResolver.getType(uri).orEmpty()
+        val name = runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull().orEmpty().ifBlank { "用户 Logo" }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val bytes = contentResolver.openInputStream(uri)?.use { stream ->
+                    val out = ByteArrayOutputStream()
+                    val buffer = ByteArray(16 * 1024)
+                    var total = 0
+                    while (true) {
+                        val read = stream.read(buffer)
+                        if (read < 0) break
+                        total += read
+                        if (total > com.framemark.native.workflow.UserLogoLibrary.MAX_BYTES) {
+                            throw IllegalArgumentException("图片不能超过 4 MB")
+                        }
+                        out.write(buffer, 0, read)
+                    }
+                    out.toByteArray()
+                } ?: error("无法读取所选图片")
+                repo.import(name, mime, bytes)
+            }.onSuccess {
+                println("FM_USER_LOGO_IMPORTED id=${it.id} ${it.width}x${it.height} ${it.sizeBytes}B")
+            }.onFailure {
+                println("FM_USER_LOGO_IMPORT_FAIL ${it.message}")
+                UserLogoImportStatus.fail(it.message ?: "导入失败")
+            }
+        }
+    }
+
     private fun importWatermarkBitmap(bitmap: Bitmap, mime: String) {
         val dir = File(filesDir, "Watermarks").apply { mkdirs() }
         val out = File(dir, "wm-${System.currentTimeMillis()}.png")
@@ -432,6 +481,13 @@ class MainActivity : ComponentActivity() {
         // U4: presets live in the app's private files dir; sample exports go to
         // the cache dir. Installed before the first composition.
         WorkflowEnv.platform = AndroidWorkflowPlatform(applicationContext)
+        // Global user logos are shared across projects; install before the first
+        // composition so the Logo user tab can list and import immediately.
+        UserLogoEnv.repository = AndroidUserLogoRepository(applicationContext)
+        UserLogoEnv.picker = {
+            UserLogoImportStatus.clear()
+            pickUserLogo.launch(arrayOf("image/*"))
+        }
         // P4: the project document (photos, per-photo design, embedded watermarks,
         // export settings) is owned by product.Project and written atomically by
         // product.SessionStore. Installed before the first composition so the shell
@@ -456,6 +512,7 @@ class MainActivity : ComponentActivity() {
         // ABIs without the Rust lib keep the placeholder workflow.
         val renderer = AndroidNativeRender(applicationContext)
         WorkflowEnv.nativeRender = renderer
+        UserLogoSupport.probe = { renderer.supportsUserLogo(it) }
         InspectorHints.provider = AndroidInspectorHints { renderer.hintedIrStyles }
         WorkflowEnv.photoPicker = {
             // PickVisualMedia.ImageOnly is the media *type*; the multi-select

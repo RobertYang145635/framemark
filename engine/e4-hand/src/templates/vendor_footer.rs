@@ -4,7 +4,10 @@
 
 use skia_safe::Rect;
 
-use crate::draw::{draw_brand_logo, draw_fitted, draw_photo, date_text, exif_text, theme_of, title_of, Env, FittedOpts, LayoutEnv};
+use crate::draw::{
+    date_text, draw_brand_logo, draw_fitted, draw_photo, exif_text, resolve_text_slot, theme_of,
+    title_of, Env, FittedOpts, LayoutEnv,
+};
 use crate::hand::{pct, Exif};
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
@@ -32,7 +35,11 @@ pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
         return Ok((env.pw + 2.0 * side, env.ph + top + bottom));
     }
     let default_footer = if vendor == "hasselblad" {
-        if style == "h2" { 18.89 } else { 16.67 }
+        if style == "h2" {
+            18.89
+        } else {
+            16.67
+        }
     } else if vendor == "lumo" {
         16.67
     } else {
@@ -63,7 +70,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let s = pw.min(ph);
     let u = s / 360.0;
     let model = env.exif.model_without_make();
-    let device = {
+    let device_raw = {
         let parts: Vec<String> = [env.exif.make.trim().to_string(), model.clone()]
             .into_iter()
             .filter(|x| !x.is_empty())
@@ -74,6 +81,10 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             parts.join(" ")
         }
     };
+    // The three watermark rows are declared up front so a slotText override is
+    // honoured by every style branch, including the ones that would otherwise
+    // skip an empty source row.
+    let device = resolve_text_slot(env, "vendorFooter.device", &device_raw).text;
     let full = {
         let cam = env.exif.camera_line("");
         if !cam.is_empty() {
@@ -84,7 +95,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             title_of(env)
         }
     };
-    let sub_text = {
+    let sub_raw = {
         let d = date_text(env);
         if !d.is_empty() {
             d
@@ -92,9 +103,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             env.text.subtitle.trim().to_string()
         }
     };
-    let exif_line = exif_text(env);
+    let sub_text = resolve_text_slot(env, "vendorFooter.sub", &sub_raw).text;
+    let exif_line = resolve_text_slot(env, "vendorFooter.exif", &exif_text(env)).text;
     let matte = style == "h3" || style == "l2" || style == "h4" || style == "l3";
-    let side = if matte { (s * (pct(env.params, "sidePadPct", 2.78) as f32)) / 100.0 } else { 0.0 };
+    let side = if matte {
+        (s * (pct(env.params, "sidePadPct", 2.78) as f32)) / 100.0
+    } else {
+        0.0
+    };
     let top_pad = if style == "h4" || style == "l3" {
         (s * (pct(env.params, "topPadPct", 21.94) as f32)) / 100.0
     } else {
@@ -103,7 +119,19 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let footer_h = h - ph - top_pad;
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, side, top_pad, pw, ph, 0.0, 0.0, &theme, s);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        side,
+        top_pad,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
     let photo_bottom = top_pad + ph;
     let fg = theme.fg.clone();
     if style == "h2" {
@@ -119,7 +147,11 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             230.0 * u,
             11.0 * u,
             &fg,
-            &FittedOpts::new("OplusSans").weight(500).baseline("middle").min(8.0 * u),
+            &FittedOpts::new("OplusSans")
+                .weight(500)
+                .baseline("middle")
+                .min(8.0 * u)
+                .slot("vendorFooter.device"),
         );
         if !sub_text.is_empty() {
             env.ctx.save();
@@ -132,11 +164,21 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 230.0 * u,
                 11.0 * u,
                 &fg,
-                &FittedOpts::new("OplusSans").baseline("middle").min(8.0 * u),
+                &FittedOpts::new("OplusSans")
+                    .baseline("middle")
+                    .min(8.0 * u)
+                    .slot("vendorFooter.sub"),
             );
             env.ctx.restore();
         }
-        draw_brand_logo(env, w - pad - 36.0 * u, cy - 18.0 * u, 36.0 * u, 36.0 * u, &fg);
+        draw_brand_logo(
+            env,
+            w - pad - 36.0 * u,
+            cy - 18.0 * u,
+            36.0 * u,
+            36.0 * u,
+            &fg,
+        );
         return Ok(Rect::from_xywh(side, top_pad, pw, ph));
     }
     if style == "h3" || style == "l2" {
@@ -165,7 +207,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 .align("center")
                 .baseline("middle")
                 .tracking(if style == "l2" { 0.02 } else { 0.0 })
-                .min(model_size * 0.55),
+                .min(model_size * 0.55)
+                .slot("vendorFooter.device"),
         );
         if !sub_text.is_empty() {
             env.ctx.save();
@@ -182,7 +225,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                     .align("center")
                     .baseline("middle")
                     .tracking(if style == "l2" { 0.06 } else { 0.0 })
-                    .min(sub_size * 0.55),
+                    .min(sub_size * 0.55)
+                    .slot("vendorFooter.sub"),
             );
             env.ctx.restore();
         }
@@ -191,9 +235,23 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     if style == "h4" || style == "l3" {
         let top_area = top_pad;
         if style == "h4" {
-            draw_brand_logo(env, (w - 116.0 * u) / 2.0, (top_area - 9.0 * u) / 2.0, 116.0 * u, 9.0 * u, &fg);
+            draw_brand_logo(
+                env,
+                (w - 116.0 * u) / 2.0,
+                (top_area - 9.0 * u) / 2.0,
+                116.0 * u,
+                9.0 * u,
+                &fg,
+            );
         } else {
-            draw_brand_logo(env, (w - 65.0 * u) / 2.0, (top_area - 40.0 * u) / 2.0, 65.0 * u, 40.0 * u, &fg);
+            draw_brand_logo(
+                env,
+                (w - 65.0 * u) / 2.0,
+                (top_area - 40.0 * u) / 2.0,
+                65.0 * u,
+                40.0 * u,
+                &fg,
+            );
         }
         let area_top = photo_bottom;
         let area_h = footer_h;
@@ -215,7 +273,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                     .align("center")
                     .baseline("middle")
                     .tracking(0.03)
-                    .min(8.0 * u),
+                    .min(8.0 * u)
+                    .slot("vendorFooter.device"),
             );
             if !exif_line.is_empty() {
                 env.ctx.save();
@@ -233,7 +292,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                         .align("center")
                         .baseline("middle")
                         .tracking(0.03)
-                        .min(6.0 * u),
+                        .min(6.0 * u)
+                        .slot("vendorFooter.exif"),
                 );
                 env.ctx.restore();
             }
@@ -255,7 +315,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                     .align("center")
                     .baseline("middle")
                     .tracking(0.04)
-                    .min(8.0 * u),
+                    .min(8.0 * u)
+                    .slot("vendorFooter.device"),
             );
             if !sub_text.is_empty() {
                 draw_fitted(
@@ -270,7 +331,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                         .align("center")
                         .baseline("middle")
                         .tracking(0.08)
-                        .min(6.0 * u),
+                        .min(6.0 * u)
+                        .slot("vendorFooter.sub"),
                 );
             }
         }
@@ -291,7 +353,12 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             w * 0.6,
             12.0 * u,
             &fg,
-            &FittedOpts::new("OplusSans").weight(600).baseline("middle").tracking(0.04).min(8.0 * u),
+            &FittedOpts::new("OplusSans")
+                .weight(600)
+                .baseline("middle")
+                .tracking(0.04)
+                .min(8.0 * u)
+                .slot("vendorFooter.device"),
         );
         if !sub_text.is_empty() {
             draw_fitted(
@@ -302,10 +369,21 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 w * 0.6,
                 7.0 * u,
                 &fg,
-                &FittedOpts::new("OplusSans").baseline("middle").tracking(0.08).min(5.0 * u),
+                &FittedOpts::new("OplusSans")
+                    .baseline("middle")
+                    .tracking(0.08)
+                    .min(5.0 * u)
+                    .slot("vendorFooter.sub"),
             );
         }
-        draw_brand_logo(env, w - 16.0 * u - 52.0 * u, cy - 16.0 * u, 52.0 * u, 32.0 * u, &fg);
+        draw_brand_logo(
+            env,
+            w - 16.0 * u - 52.0 * u,
+            cy - 16.0 * u,
+            52.0 * u,
+            32.0 * u,
+            &fg,
+        );
         return Ok(Rect::from_xywh(0.0, 0.0, pw, ph));
     }
     // h1 (Hasselblad) / zeiss / leica / lumo default
@@ -328,7 +406,11 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             w * 0.5 - pad,
             (s * 13.0) / 360.0,
             &fg,
-            &FittedOpts::new("OplusSans").weight(500).baseline("middle").min(s * 0.018),
+            &FittedOpts::new("OplusSans")
+                .weight(500)
+                .baseline("middle")
+                .min(s * 0.018)
+                .slot("vendorFooter.left"),
         );
         if env.text.show_logo && env.images.logo.is_some() {
             let lw = (s * 112.8) / 360.0;
@@ -342,10 +424,15 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let y0 = cy - total / 2.0;
             draw_brand_logo(env, x, y0, lw, lh, &fg);
             let row_y = y0 + lh + gap + text_size / 2.0;
-            env.ctx.fill_circle(x + dot / 2.0, row_y, dot / 2.0, "#FF8933");
+            env.ctx
+                .fill_circle(x + dot / 2.0, row_y, dot / 2.0, "#FF8933");
             env.ctx.save();
             env.ctx.set_global_alpha(0.7);
-            let right = if !model.is_empty() { model.clone() } else { full.clone() };
+            let right = if !model.is_empty() {
+                model.clone()
+            } else {
+                full.clone()
+            };
             draw_fitted(
                 env,
                 &right,
@@ -354,7 +441,11 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 lw - dot,
                 text_size,
                 &fg,
-                &FittedOpts::new("OplusSans").weight(700).baseline("middle").min(text_size * 0.5),
+                &FittedOpts::new("OplusSans")
+                    .weight(700)
+                    .baseline("middle")
+                    .min(text_size * 0.5)
+                    .slot("vendorFooter.right"),
             );
             env.ctx.restore();
         } else {
@@ -366,22 +457,51 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 w * 0.42,
                 s * 0.03,
                 &fg,
-                &FittedOpts::new("OplusSans").weight(700).align("right").baseline("middle").min(s * 0.015),
+                &FittedOpts::new("OplusSans")
+                    .weight(700)
+                    .align("right")
+                    .baseline("middle")
+                    .min(s * 0.015),
             );
         }
         return Ok(Rect::from_xywh(0.0, 0.0, pw, ph));
     }
     let pad = w * 0.04;
     let square = vendor == "zeiss";
-    let logo_h = if square { footer_h * 0.55 } else { footer_h * 0.32 };
-    let logo_w = if square { logo_h } else { (w * 0.15).min(footer_h * 1.2) };
+    let logo_h = if square {
+        footer_h * 0.55
+    } else {
+        footer_h * 0.32
+    };
+    let logo_w = if square {
+        logo_h
+    } else {
+        (w * 0.15).min(footer_h * 1.2)
+    };
     let logo_x = w - pad - logo_w;
     let text_max = (w * 0.2).max(logo_x - pad - w * 0.03);
-    let exif = if env.text.show_exif { env.exif.line(" ") } else { String::new() };
-    let date = if env.text.show_date { crate::hand::format_date_only(&env.exif.date_time) } else { String::new() };
+    let exif = if env.text.show_exif {
+        env.exif.line(" ")
+    } else {
+        String::new()
+    };
+    let date = if env.text.show_date {
+        crate::hand::format_date_only(&env.exif.date_time)
+    } else {
+        String::new()
+    };
     let title_size = w * 0.024;
     let sub_size = w * 0.016;
-    let lines: Vec<String> = [full.clone(), exif, date].into_iter().filter(|s| !s.is_empty()).collect();
+    let declared: [(&str, String); 3] = [
+        ("vendorFooter.device", full.clone()),
+        ("vendorFooter.exif", exif),
+        ("vendorFooter.date", date),
+    ];
+    let lines: Vec<(&str, String)> = declared
+        .into_iter()
+        .map(|(slot, raw)| (slot, resolve_text_slot(env, slot, &raw).text))
+        .filter(|(_, text)| !text.is_empty())
+        .collect();
     let line_gap = sub_size * 0.55;
     let block_h: f32 = lines
         .iter()
@@ -389,7 +509,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         .map(|(i, _)| if i == 0 { title_size } else { sub_size } + if i > 0 { line_gap } else { 0.0 })
         .sum();
     let mut y = cy - block_h / 2.0 + title_size * 0.52;
-    for (i, text) in lines.iter().enumerate() {
+    for (i, (slot, text)) in lines.iter().enumerate() {
         let size = if i == 0 { title_size } else { sub_size };
         draw_fitted(
             env,
@@ -402,7 +522,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             &FittedOpts::new("OplusSans")
                 .weight(if i == 0 { 600 } else { 400 })
                 .baseline("middle")
-                .min(size * 0.5),
+                .min(size * 0.5)
+                .slot(slot),
         );
         y += size + line_gap;
     }

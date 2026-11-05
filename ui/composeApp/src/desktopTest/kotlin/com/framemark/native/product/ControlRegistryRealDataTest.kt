@@ -102,6 +102,37 @@ class ControlRegistryRealDataTest {
     }
 
     @Test
+    fun every_card_has_unique_visible_controls_with_labels() {
+        val registry = RealData.registry()
+        for (card in registry.cards) {
+            val visible = card.controls.filter { it.visible }
+            assertEquals(
+                visible.map { it.controlId }.distinct().size,
+                visible.size,
+                "${card.cardId} has duplicate visible control ids",
+            )
+            visible.forEach { control ->
+                assertTrue(control.label.isNotBlank(), "${card.cardId}::${control.controlId} has blank label")
+                assertTrue(control.consumer.isNotBlank(), "${card.cardId}::${control.controlId} has blank consumer")
+            }
+        }
+    }
+
+    @Test
+    fun representative_hand_controls_use_plain_display_labels() {
+        val registry = RealData.registry()
+        fun label(cardId: String, controlId: String): String =
+            registry.card(cardId)!!.controls.single { it.controlId == controlId }.label
+
+        assertEquals("模糊强度", label("blur-classic", "slider.params:blur"))
+        assertEquals("照片留白", label("blur-classic", "slider.params:marginPct"))
+        assertEquals("整体文字大小", label("blur-classic", "slider.text:fontScale"))
+        assertEquals("照片比例", label("ratio-3", "slider.params:canvasAspect"))
+        assertEquals("方形区域大小", label("ratio-3", "slider.params:squarePct"))
+        assertEquals("背景透明度", label("ratio-3", "slider.params:tintAlpha"))
+    }
+
+    @Test
     fun registry_covers_all_180_cards_without_join_loss() {
         val registry = RealData.registry()
         val stats = registry.stats

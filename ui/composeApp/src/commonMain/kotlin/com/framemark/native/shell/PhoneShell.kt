@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -56,12 +55,10 @@ import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.InspectorDataSource
 import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.InspectorModelFactory
-import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
-import com.framemark.native.library.LibraryFilterState
 import com.framemark.native.library.LibraryLoadState
-import com.framemark.native.library.LibraryScreen
+import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -82,7 +79,10 @@ import com.framemark.native.workflow.PhotoSelection
 import com.framemark.native.workflow.PhotoTray
 import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.PresetStore
+import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.TrayPhoto
+import com.framemark.native.workflow.TextSlotRegistry
+import com.framemark.native.workflow.withNativeTextSlots
 import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowEnv
@@ -105,8 +105,6 @@ internal fun createPhoneBatchDemoRunner(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PhoneShell() {
-    val filters = remember { LibraryFilterState() }
-    val libraryGrid = remember { LazyGridState() }
     val panelState = rememberLazyListState()
     val batchScroll = rememberLazyListState()
     val settingsScroll = rememberLazyListState()
@@ -119,6 +117,18 @@ fun PhoneShell() {
         }
     }
     LaunchedEffect(Unit) { store.load() }
+    if (!store.loaded || store.projectWritesBlocked) {
+        ProjectReadRecoveryBlock(
+            loading = !store.loaded,
+            error = store.loadError ?: store.saveError,
+            onRetry = {
+                println("FM_PROJECT_RETRY_REQUESTED surface=phone")
+                val recovered = store.retryProjectLoad()
+                println("FM_PROJECT_RETRY_RESULT recovered=$recovered error=${store.loadError ?: "-"}")
+            },
+        )
+        return
+    }
     val tray = remember { PhotoTray() }
     // One design session (values + undo history) hydrated from the active design.
     val session = remember { DesignSession() }
@@ -129,8 +139,6 @@ fun PhoneShell() {
     var watermarkError by remember { mutableStateOf<String?>(null) }
     // A watermark picked before any border exists yet; applied once the card does.
     var pendingWatermark by remember { mutableStateOf<String?>(null) }
-    // Home「先逛边框」: picking a card drops the sample photo into the editor.
-    var browsingBorders by remember { mutableStateOf(false) }
     var pairDemoSeeded by remember { mutableStateOf(false) }
     val batch = remember(store, LaunchOptions.openBatch) {
         createPhoneBatchDemoRunner(LaunchOptions.openBatch) {
@@ -152,9 +160,11 @@ fun PhoneShell() {
     var inspectorReload by remember { mutableIntStateOf(0) }
     var autoOpened by remember { mutableStateOf(false) }
 
+    // Replaced on every card/photo switch. A late callback from the outgoing
+    // render therefore updates a dead registry instead of the visible text tab.
+    val textSlots = remember(selectedCard?.id, store.activePhotoId) { TextSlotRegistry() }
+
     var tool by rememberSaveable { mutableStateOf(EditorTool.Border) }
-    var tab by rememberSaveable { mutableStateOf(InspectorSection.Logo) }
-    var librarySheetOpen by remember { mutableStateOf(false) }
     var presetSheetOpen by remember { mutableStateOf(false) }
     var exportSheetOpen by remember { mutableStateOf(false) }
     var batchSheetOpen by remember { mutableStateOf(false) }
@@ -219,7 +229,8 @@ fun PhoneShell() {
     fun activeOverlay(aspectCardId: String? = store.activeDesign?.cardId): OverlaySpec? {
         val id = store.activePhotoId ?: return null
         val aspect = PreviewGeometry.aspectOf(aspectCardId) ?: 1.5f
-        return store.uiWatermark(id, aspect)?.toOverlay(aspect)
+        val spec = store.uiWatermark(id, aspect) ?: return null
+        return spec.toOverlay(spec.photoAspect)
     }
 
     /** The editor's watermark state for the active photo, read straight from the project. */
@@ -528,21 +539,29 @@ fun PhoneShell() {
         val snapshot = inspectorSnapshot
         if (card != null && snapshot != null) InspectorModelFactory.build(card, snapshot) else null
     }
+    // The 文字 tab lists renderer-backed rows by canvas position, so the panel
+    // model has to carry the per-row controls for the current render.
+    val panelModel = remember(model, textSlots.slots) { model?.withNativeTextSlots(textSlots.slots) }
 
     // P4 write-through: the session is a view of the active photo's design. Every
     // edit is addressed to the photo that is active *now*, so a photo switch cannot
     // re-key a snapshot onto the wrong photo (the old shell's 串图 defect).
-    val currentModel by rememberUpdatedState(model)
+    //
+    // The write-back model is the panel model: only it carries the renderer-backed
+    // text rows, so a `slotText:`/`slotOff:`/`slotScale:` edit becomes a value the
+    // design owns (persisted, exported, re-applied) instead of being dropped as an
+    // unknown consumer.
+    val currentPanelModel by rememberUpdatedState(panelModel)
     LaunchedEffect(Unit) {
         session.onValuesChanged = { _, overrides ->
-            currentModel?.let { store.writeActiveValues(it, styleOf(it.cardId), overrides) }
+            currentPanelModel?.let { store.writeActiveValues(it, styleOf(it.cardId), overrides) }
         }
         session.onExportChanged = { store.setExportSettings(it) }
     }
 
     // Hydrate the editor from the project: card defaults + this photo's overrides.
-    LaunchedEffect(model?.cardId, store.activePhotoId, hydrateToken) {
-        val built = model ?: return@LaunchedEffect
+    LaunchedEffect(panelModel?.cardId, store.activePhotoId, hydrateToken) {
+        val built = currentPanelModel ?: return@LaunchedEffect
         val photoId = store.activePhotoId ?: return@LaunchedEffect
         session.seed(built.controls)
         session.replaceValues(sessionValuesFor(built, store.designOf(photoId)))
@@ -560,6 +579,23 @@ fun PhoneShell() {
             "FM_PHOTO_DESIGN load=$photoId card=${built.cardId} " +
                 "wm=${store.overlayOf(photoId)?.asset?.sha256?.take(8) ?: "-"} values=${session.values.size}",
         )
+    }
+
+    // Rows arrive after the first render. Merge their stored values without
+    // touching keys the editor already holds, so a report refresh cannot roll back
+    // text being typed and cannot clear an existing edit or its undo step. Keyed on
+    // the control identities, not on a count, so a different card with the same
+    // number of rows still re-hydrates.
+    LaunchedEffect(panelModel?.controls?.map { it.key }, store.activePhotoId) {
+        val built = currentPanelModel ?: return@LaunchedEffect
+        val photoId = store.activePhotoId ?: return@LaunchedEffect
+        session.seed(built.controls)
+        val stored = sessionValuesFor(built, store.designOf(photoId))
+        val missing = stored.filterKeys { it !in session.values }
+        if (missing.isNotEmpty()) {
+            session.mergeMissingValues(missing)
+            println("FM_TEXT_ROWS_HYDRATE photo=$photoId keys=${missing.size} total=${session.values.size}")
+        }
     }
 
     // Legacy presets (no watermark, session-keyed values) are folded into the
@@ -595,7 +631,7 @@ fun PhoneShell() {
         }
     }
 
-    val anySheet = librarySheetOpen || presetSheetOpen || exportSheetOpen || batchSheetOpen || settingsSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
+    val anySheet = presetSheetOpen || exportSheetOpen || batchSheetOpen || settingsSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
     fun openExport() {
         if (activeDesignSnapshot() == null) {
             watermarkError = "请先选择并应用边框，再导出这张照片。"
@@ -603,11 +639,13 @@ fun PhoneShell() {
             exportSheetOpen = true
         }
     }
-    BackHandler(enabled = anySheet || tool == EditorTool.Watermark) {        when {
+    // Back order: the editor's own focus/parameter-page handlers compose later and
+    // win first; here sheets close, then any edit tool falls back to 边框.
+    BackHandler(enabled = anySheet || tool != EditorTool.Border) {
+        when {
             pendingPhotoBatch != null -> pendingPhotoBatch = null
             confirmApplyAll -> confirmApplyAll = false
             photoBatchOpen -> photoBatchOpen = false
-            librarySheetOpen -> librarySheetOpen = false
             presetSheetOpen -> presetSheetOpen = false
             exportSheetOpen -> exportSheetOpen = false
             batchSheetOpen -> batchSheetOpen = false
@@ -651,6 +689,21 @@ fun PhoneShell() {
         syncTray()
     }
 
+    /**
+     * A border picked in the in-panel browser: apply it and stay in the browser,
+     * so neighbouring styles can be compared without leaving the row.
+     */
+    fun openCardFromBrowser(card: LibraryCard) {
+        selectedCard = card
+        tool = EditorTool.Border
+        if (tray.isEmpty) {
+            store.adoptSample()
+            PhotoSelection.set(null)
+            println("FM_TRAY_SAMPLE browse")
+        }
+        println("FM_OPEN_CARD ${card.id} name=${card.name} inPanel=true")
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -686,28 +739,35 @@ fun PhoneShell() {
                     println("FM_TRAY_SAMPLE")
                 },
                 onBrowseBorders = {
-                    browsingBorders = true
-                    librarySheetOpen = true
-                    println("FM_BROWSE_BORDERS open")
+                    // 先逛边框 now lands in the editor with the in-panel browser
+                    // open: the phone shell no longer pushes a full-screen library.
+                    if (tray.isEmpty) {
+                        store.adoptSample()
+                        PhotoSelection.set(null)
+                    }
+                    tool = EditorTool.Border
+                    println("FM_BROWSE_BORDERS open photos=${store.photos.size}")
                 },
             )
         } else {
             PhoneEditorScreen(
                 card = selectedCard,
+                model = panelModel,
+                activeDesign = store.activePhotoId
+                    ?.let { store.designOf(it) }
+                    ?.takeIf { it.cardId == selectedCard?.id }
+                    ?.toDesignSnapshot(),
                 inspectorState = inspectorState,
+                libraryState = libraryState,
                 session = session,
                 tray = tray,
                 tool = tool,
                 onToolChange = { tool = it },
-                tab = tab,
-                onTabChange = { tab = it },
                 onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
                 onSelectPhoto = ::selectPhoto,
                 onRemovePhoto = ::removePhoto,
-                onOpenLibrary = {
-                    librarySheetOpen = true
-                    println("FM_OPEN_SHEET library")
-                },
+                onOpenCard = ::openCardFromBrowser,
+                onRetryLibrary = { libraryReload++ },
                 onOpenPresets = { presetSheetOpen = true },
                 onOpenExport = ::openExport,
                 onOpenBatch = { batchSheetOpen = true },
@@ -750,37 +810,15 @@ fun PhoneShell() {
                             "undesigned=${preflight.undesignedCount}",
                     )
                 },
+                textSlots = textSlots.slots,
+                textOutputWidth = textSlots.width,
+                textOutputHeight = textSlots.height,
+                onTextSlots = textSlots::update,
             )
         }
 
         watermarkError?.let { message ->
             PhoneNotice(text = message, onClose = { watermarkError = null })
-        }
-
-        if (librarySheetOpen) {
-            PhoneOverlay(onDismiss = { librarySheetOpen = false }) {
-                LibraryScreen(
-                    loadState = libraryState,
-                    filters = filters,
-                    gridState = libraryGrid,
-                    onRetry = { libraryReload++ },
-                    onOpenCard = { card ->
-                        selectedCard = card
-                        librarySheetOpen = false
-                        tool = EditorTool.Border
-                        if (tray.isEmpty) {
-                            store.adoptSample()
-                            PhotoSelection.set(null)
-                            println("FM_TRAY_SAMPLE browse")
-                        }
-                        println("FM_OPEN_CARD ${card.id} name=${card.name} browse=$browsingBorders")
-                        browsingBorders = false
-                    },
-                    headerTrailing = { CloseChip { librarySheetOpen = false } },
-                    selectedCardId = selectedCard?.id,
-                    sheet = true,
-                )
-            }
         }
 
         if (photoBatchOpen) {
@@ -953,21 +991,6 @@ private fun PhoneNotice(text: String, onClose: () -> Unit) {
                     .padding(horizontal = FmSpacing.md, vertical = FmSpacing.xs),
             )
         }
-    }
-}
-
-@Composable
-private fun CloseChip(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(34.dp)
-            .clip(CircleShape)
-            .background(FmPalette.surface)
-            .border(1.dp, FmPalette.outline, CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("✕", style = FmType.labelMedium, color = FmPalette.onSurfaceSecondary)
     }
 }
 

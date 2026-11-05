@@ -21,8 +21,19 @@ mod gpu;
 mod ir;
 mod text;
 
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::io::{BufRead, Write};
 use std::path::{Path as FsPath, PathBuf};
+use std::time::Instant;
+
+thread_local! {
+    static PREVIEW_PHOTO: RefCell<Option<(PathBuf, Image)>> = const { RefCell::new(None) };
+    static PREVIEW_GPU: RefCell<Option<gpu::Gpu>> = const { RefCell::new(None) };
+    static PREVIEW_STYLE: RefCell<Option<(PathBuf, ir::Style)>> = const { RefCell::new(None) };
+    static PREVIEW_FONTS: RefCell<Option<(PathBuf, FontSet)>> = const { RefCell::new(None) };
+    static PREVIEW_SERVER_ACTIVE: Cell<bool> = const { Cell::new(false) };
+}
 
 use serde_json::{json, Value};
 use skia_safe::{
@@ -56,6 +67,10 @@ fn parse_overrides(doc: &Value) -> ir::Overrides {
         } else if let Some(p) = k.strip_prefix("slotOff:") {
             if v.as_bool() == Some(false) {
                 ov.slot_off.insert(p.to_string());
+            }
+        } else if let Some(p) = k.strip_prefix("slotScale:") {
+            if let Some(n) = v.as_f64().filter(|n| n.is_finite()) {
+                ov.slot_scale.insert(p.to_string(), n.clamp(0.6, 1.6) as f32);
             }
         } else if let Some(p) = k.strip_prefix("slotAlpha:") {
             if let Some(n) = v.as_f64() {
@@ -151,6 +166,7 @@ struct OverlaySpec {
     image: Image,
     rect: [f32; 4],
     opacity: f32,
+    angle: f32,
 }
 
 fn sampling_high() -> SamplingOptions {    // Blink `imageSmoothingQuality:'high'` == SkCubicResampler::Mitchell() and
@@ -477,6 +493,21 @@ fn load_image(p: &FsPath) -> Result<Image, String> {
     Image::from_encoded(data).ok_or_else(|| format!("decode failed {}", p.display()))
 }
 
+/// Worker mode keeps the one active source photo decoded between requests.
+fn load_cached_photo(p: &FsPath) -> Result<Image, String> {
+    PREVIEW_PHOTO.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        if let Some((cached_path, image)) = slot.as_ref() {
+            if cached_path == p {
+                return Ok(image.clone());
+            }
+        }
+        let image = load_image(p)?;
+        *slot = Some((p.to_path_buf(), image.clone()));
+        Ok(image)
+    })
+}
+
 fn walk_basename(root: &FsPath, name: &str, depth: usize) -> Option<PathBuf> {
     if depth == 0 {
         return None;
@@ -553,8 +584,43 @@ fn resolve_asset(file: &str, roots: &[PathBuf]) -> Option<PathBuf> {
     None
 }
 
+fn preview_server_loop() -> Result<(), String> {
+    PREVIEW_SERVER_ACTIVE.with(|active| active.set(true));
+    let stdin = std::io::stdin();
+    let mut stdout = std::io::stdout().lock();
+    println!("FM_PREVIEW_WORKER_READY backend=ir");
+    stdout.flush().map_err(|e| format!("stdout flush: {e}"))?;
+    for line in stdin.lock().lines() {
+        let line = line.map_err(|e| format!("stdin read: {e}"))?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        let request: Vec<String> =
+            serde_json::from_str(&line).map_err(|e| format!("worker request JSON: {e}"))?;
+        let mut args = Vec::with_capacity(request.len() + 1);
+        args.push("e2b".to_string());
+        args.extend(request);
+        render_once(args);
+        println!("FM_PREVIEW_WORKER_DONE code=0");
+        stdout.flush().map_err(|e| format!("stdout flush: {e}"))?;
+    }
+    Ok(())
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("preview-server") {
+        if let Err(e) = preview_server_loop() {
+            eprintln!("e2b.worker.error={e}");
+            std::process::exit(2);
+        }
+    } else {
+        render_once(args);
+    }
+}
+
+fn render_once(args: Vec<String>) {
+    let stage_started = Instant::now();
     let get = |name: &str, dflt: &str| -> String {
         args.iter()
             .position(|a| a == &format!("--{name}"))
@@ -664,10 +730,24 @@ fn main() {
     let adapter = get("adapter", "nvidia");
     let location = get("location", "");
     let custom = get("custom", "");
+    let preview_max_edge = match get("preview-max-edge", "").trim() {
+        "" => None,
+        raw => Some(
+            raw.parse::<i32>()
+                .ok()
+                .filter(|edge| *edge > 0)
+                .unwrap_or_else(|| panic!("--preview-max-edge must be a positive integer, got '{raw}'")),
+        ),
+    };
 
     println!("e2b.style={}", style_path.display());
-    let raw = std::fs::read_to_string(&style_path).expect("read style");
-    let style = ir::parse_style(&raw).expect("parse style");
+    let style = match PREVIEW_STYLE.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_path, style)) if cached_path == style_path => style,
+        _ => {
+            let raw = std::fs::read_to_string(&style_path).expect("read style");
+            ir::parse_style(&raw).expect("parse style")
+        }
+    };
     println!("e2b.style_id={} bands={}", style.id, style.bands.len());
 
     // paint.ts: `style.themes.find(t => t.id === (params.theme ?? style.defaultTheme))`.
@@ -711,7 +791,7 @@ fn main() {
         }
     };
 
-    let photo = load_image(&photo_path).expect("photo");
+    let photo = load_cached_photo(&photo_path).expect("photo");
     let (pw, ph) = (photo.width() as f32, photo.height() as f32);
     println!("e2b.photo={}x{}", pw as i32, ph as i32);
 
@@ -764,15 +844,23 @@ fn main() {
             if !opacity.is_finite() || !(0.0..=1.0).contains(&opacity) {
                 fail(format!("overlay: --overlay-opacity must be in 0..1, got {opacity}"));
             }
+            let angle = match get("overlay-angle", "0").parse::<f32>() {
+                Ok(v) => v,
+                Err(_) => fail("overlay: --overlay-angle is not a number".to_string()),
+            };
+            if !angle.is_finite() || angle.abs() > 180.0 {
+                fail(format!("overlay: --overlay-angle must be in -180..180, got {angle}"));
+            }
             println!(
-                "e2b.overlay={} {}x{} rect={:?} opacity={}",
+                "e2b.overlay={} {}x{} rect={:?} opacity={} angle={}",
                 path,
                 image.width(),
                 image.height(),
                 rect,
-                opacity
+                opacity,
+                angle
             );
-            Some(OverlaySpec { image, rect, opacity })
+            Some(OverlaySpec { image, rect, opacity, angle })
         }
     };
 
@@ -815,7 +903,12 @@ fn main() {
     );
     gaps.add("rule: isBrandLogo substitutes the EXIF brand wordmark (matchBrand/chooseBrandSlot/brandSlotRect from core/system/assets.ts+paint.ts); baked vendor bitmap only supplies the box/ink");
 
-    let fonts = FontSet::load(&fonts_root).expect("fonts");
+    let fonts = match PREVIEW_FONTS.with(|cell| cell.borrow_mut().take()) {
+        Some((cached_root, fonts)) if cached_root == fonts_root => fonts,
+        _ => FontSet::load(&fonts_root).expect("fonts"),
+    };
+    let worker_prep_ms = stage_started.elapsed().as_millis();
+    let gpu_started = Instant::now();
     let mut te = TextEngine::new();
     te.subpixel = true;
     te.linear_metrics = true;
@@ -859,10 +952,23 @@ fn main() {
         ov: &overrides,
     };
     let layout = ir::solve(&style, &env, &mut gaps).expect("layout");
+    let text_slots = ir::text_slot_manifest(&style, &env, &layout, &mut gaps);
     let base_w = layout.photo.w;
-    let k = pw / base_w;
-    let cw = (layout.w * k).round() as i32;
-    let ch = (layout.h * k).round() as i32;
+    let full_k = pw / base_w;
+    let full_cw = (layout.w * full_k).round() as i32;
+    let full_ch = (layout.h * full_k).round() as i32;
+    let preview_scale = preview_max_edge
+        .map(|edge| (edge as f32 / full_cw.max(full_ch).max(1) as f32).min(1.0))
+        .unwrap_or(1.0);
+    let k = full_k * preview_scale;
+    let cw = (layout.w * k).round().max(1.0) as i32;
+    let ch = (layout.h * k).round().max(1.0) as i32;
+    if let Some(edge) = preview_max_edge {
+        println!(
+            "e2b.preview max_edge={} scale={:.6} source_canvas={}x{} canvas={}x{}",
+            edge, preview_scale, full_cw, full_ch, cw, ch
+        );
+    }
     println!(
         "e2b.layout_units={}x{} base_w={} k={:.6} canvas={}x{} margins={:?}",
         layout.w, layout.h, base_w, k, cw, ch, style.margins
@@ -876,19 +982,27 @@ fn main() {
     );
 
     let backend = backend.as_str();
-    let mut gpu = match backend {
-        "angle" => {
-            let dir = std::env::var("T1C_ANGLE_DIR").unwrap_or_else(|_| {
-                r"C:\Program Files (x86)\Steam\bin\cef\cef.win64".to_string()
-            });
-            let mode = std::env::var("T1C_EGLMODE").unwrap_or_else(|_| "device".to_string());
-            let want = std::env::var("T1C_ADAPTER").unwrap_or_else(|_| adapter.clone());
-            gpu::Gpu::new_angle(&dir, &want, &mode).expect("ANGLE context")
-        }
-        _ => gpu::Gpu::new_d3d12(&adapter).expect("D3D12 context"),
+    let mut gpu = match PREVIEW_GPU.with(|cell| cell.borrow_mut().take()) {
+        Some(gpu) => gpu,
+        None => match backend {
+            "angle" => {
+                let dir = std::env::var("T1C_ANGLE_DIR").unwrap_or_else(|_| {
+                    r"C:\Program Files (x86)\Steam\bin\cef\cef.win64".to_string()
+                });
+                let mode = std::env::var("T1C_EGLMODE").unwrap_or_else(|_| "device".to_string());
+                let want = std::env::var("T1C_ADAPTER").unwrap_or_else(|_| adapter.clone());
+                gpu::Gpu::new_angle(&dir, &want, &mode).expect("ANGLE context")
+            }
+            _ => gpu::Gpu::new_d3d12(&adapter).expect("D3D12 context"),
+        },
     };
+    let worker_gpu_ms = gpu_started.elapsed().as_millis();
     if get("probe", "0") == "1" {
-        gpu.abandon();
+        if PREVIEW_SERVER_ACTIVE.with(Cell::get) {
+            PREVIEW_GPU.with(|cell| *cell.borrow_mut() = Some(gpu));
+        } else {
+            gpu.abandon();
+        }
         return;
     }
 
@@ -1439,6 +1553,10 @@ fn main() {
                 op.set_anti_alias(true);
                 op.set_alpha_f(ov.opacity.clamp(0.0, 1.0));
                 overlay_drawn.set(true);
+                let _ = canvas.save();
+                if ov.angle.abs() > 0.0001 {
+                    canvas.rotate(ov.angle, Some(od.center()));
+                }
                 draw_image_rect(
                     canvas,
                     &ov.image,
@@ -1447,11 +1565,13 @@ fn main() {
                     image_sampling(iw, odw),
                     Some(&op),
                 );
+                let _ = canvas.restore();
                 Some(json!({
                     "kind": "overlay",
                     "dst": [od.left(), od.top(), od.width(), od.height()],
                     "rect_norm": ov.rect,
                     "opacity": ov.opacity,
+                    "angle": ov.angle,
                 }))
             };
             // paint.ts drawPhoto(): roundRectPath(radius 0) + ctx.clip() then
@@ -1506,6 +1626,7 @@ fn main() {
             }
         })
         .expect("render");
+    drop(env);
     gpu::encode_png(&pixels, cw, ch, &out).expect("png");
 
     println!(
@@ -1518,7 +1639,7 @@ fn main() {
     );
     println!("e2b.raw_png={} bytes={}", out.display(), std::fs::metadata(&out).unwrap().len());
 
-    let report = json!({
+    let mut report = json!({
         "style": style.id,
         "style_path": style_path.display().to_string(),
         "canvas": {"w": cw, "h": ch},
@@ -1530,6 +1651,7 @@ fn main() {
         "overlay": overlay.as_ref().map(|o| json!({
             "rect_norm": o.rect,
             "opacity": o.opacity,
+            "angle": o.angle,
             "image": [o.image.width(), o.image.height()],
         })),
         "background": {
@@ -1549,6 +1671,7 @@ fn main() {
             "items": b.items.len(),
         })).collect::<Vec<_>>(),
         "items": items_out.borrow().clone(),
+        "textSlots": text_slots,
         "text_settings": {
             "hinting": format!("{:?}", te.hinting),
             "edging": format!("{:?}", te.edging),
@@ -1560,9 +1683,54 @@ fn main() {
         "exif_source": exif_source.display().to_string(),
         "gaps": gaps.notes,
     });
+    if let Some(edge) = preview_max_edge {
+        report["preview"] = json!({
+            "max_edge": edge,
+            "scale": preview_scale,
+            "source_canvas": [full_cw, full_ch],
+            "canvas": [cw, ch],
+        });
+    }
     std::fs::write(&report_path, serde_json::to_string_pretty(&report).unwrap()).ok();
     println!("e2b.report={}", report_path.display());
-    gpu.abandon();
+    println!(
+        "FM_PREVIEW_WORKER_STAGE backend=ir prepMs={} gpuMs={} totalMs={}",
+        worker_prep_ms,
+        worker_gpu_ms,
+        stage_started.elapsed().as_millis()
+    );
+    if PREVIEW_SERVER_ACTIVE.with(Cell::get) {
+        PREVIEW_STYLE.with(|cell| *cell.borrow_mut() = Some((style_path, style)));
+        PREVIEW_FONTS.with(|cell| *cell.borrow_mut() = Some((fonts_root, fonts)));
+        PREVIEW_GPU.with(|cell| *cell.borrow_mut() = Some(gpu));
+    } else {
+        // One-shot CLI/smoke/export keeps the V06 teardown contract.
+        gpu.abandon();
+    }
+}
+
+#[cfg(test)]
+mod row_override_tests {
+    use super::parse_overrides;
+    use serde_json::json;
+
+    #[test]
+    fn row_size_and_visibility_keep_the_existing_flat_parameter_contract() {
+        let ov = parse_overrides(&json!({ "design": { "params": {
+            "slotScale:b0/g0": 1.24,
+            "slotScale:b0/g1": "invalid",
+            "slotScale:b0/g2": 9,
+            "slotText:b0/g0": "replacement",
+            "slotOff:b0/g0": false,
+            "slotOff:b0/g1": true
+        }}}));
+        assert_eq!(ov.text_scale("b0/g0"), 1.24);
+        assert_eq!(ov.text_scale("b0/g1"), 1.0);
+        assert_eq!(ov.text_scale("b0/g2"), 1.6);
+        assert_eq!(ov.text("b0/g0"), Some("replacement"));
+        assert!(ov.is_off("b0/g0"));
+        assert!(!ov.is_off("b0/g1"));
+    }
 }
 
 #[cfg(test)]

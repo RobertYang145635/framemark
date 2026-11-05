@@ -39,7 +39,16 @@ class PresetCodecTest {
             design = PhotoDesign.base("simple-4")
                 .withParam("inset", 0.1)
                 .withText("model", "X-T5")
-                .withOverlay(WatermarkSpec(asset, anchor = 8, width = 0.3f, opacity = 0.65f)),
+                .withOverlay(
+                    WatermarkSpec(
+                        asset,
+                        anchor = 8,
+                        width = 0.3f,
+                        opacity = 0.65f,
+                        rotation = 33f,
+                        photoAspect = 1.5f,
+                    ),
+                ),
             exportSettings = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 6000),
             createdAt = 10,
             updatedAt = 20,
@@ -58,6 +67,7 @@ class PresetCodecTest {
         assertTrue(restored.design.overlay!!.asset.isIntact())
         assertEquals(1600, restored.design.overlay!!.asset.widthPx)
         assertEquals(asset.sha256, restored.design.overlay!!.asset.sha256)
+        assertEquals(33f, restored.design.overlay!!.rotation)
     }
 
     @Test
@@ -177,6 +187,16 @@ class PresetCodecTest {
         val legacy = portable.replace(",\"sizeMode\":", ",\"quality\":73,\"sizeMode\":")
         assertTrue(legacy != portable)
         assertEquals(73, PresetCodec.decodeDocument(ProductJson.parseRoot(legacy)).exportSettings.quality)
+    }
+
+    @Test
+    fun user_logo_id_survives_preset_round_trip() {
+        val preset = samplePreset().copy(design = samplePreset().design.withLogo("user:ul-test"))
+        val fs = FakeFs()
+        val store = SessionStore(fs)
+        assertTrue(store.savePresets(listOf(preset)) is StoreResult.Ok)
+        val restored = store.loadPresets().ok().single()
+        assertEquals("user:ul-test", restored.design.logo)
     }
 
     @Test

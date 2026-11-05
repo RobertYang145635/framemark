@@ -5,8 +5,8 @@
 use skia_safe::Rect;
 
 use crate::draw::{
-    draw_brand_logo, draw_fitted, draw_photo, measure_text, theme_of, title_of, Env, FittedOpts,
-    LayoutEnv,
+    draw_brand_logo, draw_fitted, draw_photo, measure_text, resolve_text_slot, theme_of, title_of,
+    Env, FittedOpts, LayoutEnv,
 };
 use crate::hand::{format_date_time, model_without_make, pct};
 
@@ -25,7 +25,19 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let footer_h = h - ph;
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
-    draw_photo(&mut env.ctx, env.photo, &env.crop, 0.0, 0.0, pw, ph, 0.0, 0.0, &theme, pw.min(ph));
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        0.0,
+        0.0,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        pw.min(ph),
+    );
     let pad = 50.0 * ratio;
     let brand = {
         let mut parts: Vec<String> = Vec::new();
@@ -36,9 +48,17 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         if !model.trim().is_empty() {
             parts.push(model.trim().to_string());
         }
-        if parts.is_empty() { title_of(env) } else { parts.join(" ") }
+        if parts.is_empty() {
+            title_of(env)
+        } else {
+            parts.join(" ")
+        }
     };
-    let exif = if env.text.show_exif { env.exif.line("  ") } else { String::new() };
+    let exif = if env.text.show_exif {
+        env.exif.line("  ")
+    } else {
+        String::new()
+    };
     let brand_size = 30.0 * ratio;
     let small_size = 22.0 * ratio;
     let top_line_h = brand_size * 1.2;
@@ -50,7 +70,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let brand_opts = FittedOpts::new("OplusSans")
         .weight(500)
         .baseline("middle")
-        .min(brand_size * 0.45);
+        .min(brand_size * 0.45)
+        .slot("xiaomiLeica.brand");
     draw_fitted(
         env,
         &brand,
@@ -61,42 +82,65 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         &theme.fg,
         &brand_opts,
     );
-    if !exif.is_empty() {
-        let opts = FittedOpts::new("OplusSans")
-            .weight(500)
-            .align("right")
-            .baseline("middle")
-            .min(brand_size * 0.45);
-        draw_fitted(env, &exif, w - pad, top_center, w * 0.46, brand_size, &theme.fg, &opts);
-    }
-    let exif_w = if exif.is_empty() { 0.0 } else { measure_text(env, &exif, "OplusSans", 500, brand_size, 0.0) };
+    let exif_resolved = resolve_text_slot(env, "xiaomiLeica.exif", &exif);
+    let opts = FittedOpts::new("OplusSans")
+        .weight(500)
+        .align("right")
+        .baseline("middle")
+        .min(brand_size * 0.45)
+        .slot("xiaomiLeica.exif");
+    draw_fitted(
+        env,
+        &exif,
+        w - pad,
+        top_center,
+        w * 0.46,
+        brand_size,
+        &theme.fg,
+        &opts,
+    );
+    let exif_w = if exif_resolved.text.is_empty() || exif_resolved.hidden {
+        0.0
+    } else {
+        measure_text(env, &exif_resolved.text, "OplusSans", 500, brand_size, 0.0)
+    };
     if multi {
         let dt = format_date_time(&env.exif.date_time).replace('-', ".");
-        if !dt.is_empty() {
-            let opts = FittedOpts::new("OplusSans")
-                .weight(400)
-                .baseline("middle")
-                .tracking(0.05)
-                .min(small_size * 0.5);
-            draw_fitted(
-                env,
-                &dt,
-                w - pad - exif_w,
-                bottom_center,
-                (w * 0.2).max(exif_w),
-                small_size,
-                "rgba(0,0,0,0.55)",
-                &opts,
-            );
-        }
+        let opts = FittedOpts::new("OplusSans")
+            .weight(400)
+            .baseline("middle")
+            .tracking(0.05)
+            .min(small_size * 0.5)
+            .slot("xiaomiLeica.date");
+        draw_fitted(
+            env,
+            &dt,
+            w - pad - exif_w,
+            bottom_center,
+            (w * 0.2).max(exif_w),
+            small_size,
+            "rgba(0,0,0,0.55)",
+            &opts,
+        );
     }
     if exif_w > 0.0 {
         let divider_x = w - pad - exif_w - 22.0 * ratio;
         let divider_top = ph + if multi { 52.0 } else { 44.0 } * ratio;
-        env.ctx.fill_rect_color(divider_x, divider_top, (2.0 * ratio).max(1.0), h - divider_top, "rgba(0,0,0,0.2)");
+        env.ctx.fill_rect_color(
+            divider_x,
+            divider_top,
+            (2.0 * ratio).max(1.0),
+            h - divider_top,
+            "rgba(0,0,0,0.2)",
+        );
         env.ctx.record_shape(
             "divider",
-            Rect::from_xywh(divider_x, divider_top, (2.0 * ratio).max(1.0), h - divider_top),
+            Rect::from_xywh(
+                divider_x,
+                divider_top,
+                (2.0 * ratio).max(1.0),
+                h - divider_top,
+            ),
             None,
             true,
         );

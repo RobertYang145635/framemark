@@ -5,13 +5,17 @@ use std::path::PathBuf;
 fn main() {
     let a: Vec<String> = std::env::args().collect();
     if a.len() < 7 {
-        eprintln!("usage: x1hand <cards> <card> <hand> <fonts> <extra-fonts> <out.png> [--max-edge N]");
+        eprintln!(
+            "usage: x1hand <cards> <card> <hand> <fonts> <extra-fonts> <out.png> [--max-edge N]"
+        );
         std::process::exit(2);
     }
     let mut max_edge = 0i32;
     let fallback = {
         let i = a.iter().position(|x| x == "--fallback-cjk");
-        i.and_then(|i| a.get(i + 1)).cloned().filter(|v| !v.is_empty())
+        i.and_then(|i| a.get(i + 1))
+            .cloned()
+            .filter(|v| !v.is_empty())
     };
     if let Some(i) = a.iter().position(|x| x == "--max-edge") {
         max_edge = a.get(i + 1).and_then(|v| v.parse().ok()).unwrap_or(0);
@@ -33,7 +37,11 @@ fn main() {
         .iter()
         .position(|x| x == "--overlay-rect")
         .and_then(|i| a.get(i + 1))
-        .map(|spec| spec.split(',').filter_map(|p| p.trim().parse::<f32>().ok()).collect::<Vec<_>>())
+        .map(|spec| {
+            spec.split(',')
+                .filter_map(|p| p.trim().parse::<f32>().ok())
+                .collect::<Vec<_>>()
+        })
         .filter(|v| v.len() == 4)
         .map(|v| [v[0], v[1], v[2], v[3]])
         .unwrap_or([0.0, 0.0, 1.0, 1.0]);
@@ -43,14 +51,23 @@ fn main() {
         .and_then(|i| a.get(i + 1))
         .and_then(|v| v.parse::<f32>().ok())
         .unwrap_or(1.0);
+    let overlay_angle = a
+        .iter()
+        .position(|x| x == "--overlay-angle")
+        .and_then(|i| a.get(i + 1))
+        .and_then(|v| v.parse::<f32>().ok())
+        .unwrap_or(0.0);
     let overlay = match overlay.as_deref() {
-        Some(path) => Some(match fm_android_hand::overlay_spec(path, overlay_rect, overlay_opacity) {
-            Ok(spec) => spec,
-            Err(e) => {
-                eprintln!("X1HAND_FAIL {e}");
-                std::process::exit(2);
-            }
-        }),
+        Some(path) => Some(
+            match fm_android_hand::overlay_spec(path, overlay_rect, overlay_opacity, overlay_angle)
+            {
+                Ok(spec) => spec,
+                Err(e) => {
+                    eprintln!("X1HAND_FAIL {e}");
+                    std::process::exit(2);
+                }
+            },
+        ),
         None => None,
     };
     let design_arg = a
@@ -76,7 +93,17 @@ fn main() {
         None => None,
     };
     match fm_android_hand::render_card(
-        &a[1], &a[2], &a[3], &a[4], &a[5], fallback.as_deref(), photo.as_deref(), overlay, design_doc.as_ref(), &a[6], max_edge,
+        &a[1],
+        &a[2],
+        &a[3],
+        &a[4],
+        &a[5],
+        fallback.as_deref(),
+        photo.as_deref(),
+        overlay,
+        design_doc.as_ref(),
+        &a[6],
+        max_edge,
     ) {
         Ok(r) => {
             println!(
