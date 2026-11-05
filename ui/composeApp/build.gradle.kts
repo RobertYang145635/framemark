@@ -51,6 +51,12 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                // WP-T: "follow the system appearance" (Advapi32Util registry read)
+                // and the DWM dark caption. Both jars are already in the
+                // E:\FrameMark\gradle-home cache; desktop-only, so the Android
+                // target never sees them.
+                implementation("net.java.dev.jna:jna:5.6.0")
+                implementation("net.java.dev.jna:jna-platform:5.6.0")
             }
         }
         val androidMain by getting {

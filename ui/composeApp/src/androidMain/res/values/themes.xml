@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      WP-T: the launch window background matches the resolved light canvas
+      (#F0F2F5 = FmColors.Light.canvas) so the first frame does not flash white
+      while Compose starts. values-night\themes.xml overrides the same name with
+      the dark tokens (#121316 = FmColors.Dark.canvas) and a dark Material base so
+      the status-bar icons start out light.
+    -->
+    <style name="Theme.FrameMark" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F0F2F5</item>
+    </style>
+</resources>
