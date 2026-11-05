@@ -22,6 +22,12 @@ data class LibraryCard(
     val en: String?,
     val systemStyle: String?,
     /**
+     * taxonomy `templateCategory`：非厂商卡的子类（如“文字边框 → 厂商水印”）。现有分组不读这个字段，
+     * 新边框库用它做非厂商类别的子类分组（报告 §6“其他类别是各自的子类”、§7 搜索示例“文字 · 厂商水印”）。
+     * 有默认值，两处现有构造点不受影响。
+     */
+    val templateCategory: String? = null,
+    /**
      * D-035 三级族（落盘后由 `engine/data/taxonomy.json` 提供）：`styleFamily` 是带命名空间的族键
      * （`"<厂商> / <固件中文族>"`），`styleFamilyLabel` 是固件中文族名，`familyNameProvenance` 是来路等级
      * （verified-in-file / name-exists-in-package / key-token-derived / unverified / no-family-by-design）。
@@ -118,6 +124,7 @@ object LibraryDataSource {
                 badge = c.jsonString("badge"),
                 en = c.jsonString("en"),
                 systemStyle = c.jsonString("systemStyle"),
+                templateCategory = c.jsonString("templateCategory"),
                 styleFamily = c.jsonString("styleFamily"),
                 styleFamilyLabel = c.jsonString("styleFamilyLabel"),
                 familyNameProvenance = c.jsonString("familyNameProvenance"),
