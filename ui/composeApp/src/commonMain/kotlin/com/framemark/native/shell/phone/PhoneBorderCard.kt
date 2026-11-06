@@ -36,14 +36,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreviewLoader
+import com.framemark.native.shell.PHONE_FRAME_CARD_SIZE_DP
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.LocalFmDark
 
-/** Strip card width (report §7.5: 104 → 128 dp). */
-internal val PhoneFrameCardSize = 128.dp
+/**
+ * Strip card width (report §7.5: 104 → 128 dp). The number itself lives in
+ * [PHONE_FRAME_CARD_SIZE_DP] because the 收起 sheet height is budgeted from it
+ * (WP-P1-2): the card is a spec, the chrome around it is what gives way.
+ */
+internal val PhoneFrameCardSize = PHONE_FRAME_CARD_SIZE_DP.dp
 
 /**
  * One border card: a square dark tile that shows the **whole** frame, like OPPO's
@@ -61,6 +66,8 @@ fun PhoneBorderCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     width: Dp? = null,
+    nameGap: Dp = 3.dp,
+    nameLineSp: Float = 14f,
 ) {
     val dark = LocalFmDark.current
     val shape = RoundedCornerShape(FmRadii.tile)
@@ -109,11 +116,12 @@ fun PhoneBorderCard(
                 )
             }
         }
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(nameGap))
         Text(
             text = card.name,
             style = FmType.labelSmall.copy(
                 fontSize = 11.sp,
+                lineHeight = nameLineSp.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             ),
             color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,

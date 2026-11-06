@@ -29,25 +29,33 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.framemark.native.shell.PhoneCompactSheetMetrics
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import kotlin.math.abs
 
-/** Demo `.psheet .grab`: an 18 dp band with a 36 × 4 dp handle. */
-private val GrabberHeight = 18.dp
-private val SheetHeadHeight = 48.dp
+/** Title-row and chevron ceilings: the 收起 sheet may sit below both (WP-P1-2). */
+private val SheetHeadMaxHeight = 48.dp
+private val SheetHeadChevronSize = 40.dp
 
 /**
- * The sheet's drag handle. It owns one pointer detector for both gestures: a tap
- * toggles the two levels, a vertical drag resizes between them. Keeping one
- * detector means the click and the drag can never steal each other's gesture.
+ * Demo `.psheet .grab`: a band with a 36 × 4 dp handle. It owns one pointer
+ * detector for both gestures: a tap toggles the two levels, a vertical drag
+ * resizes between them. Keeping one detector means the click and the drag can
+ * never steal each other's gesture.
+ *
+ * The band height comes from [PhoneCompactSheetMetrics.grabber] (WP-P1-2): the
+ * 收起 sheet gives every dp it can spare to the 128 dp card and its name instead
+ * of a fixed 18 dp band.
  */
 @Composable
 fun PhoneSheetGrabber(
+    height: Dp,
     onToggle: () -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
@@ -60,7 +68,7 @@ fun PhoneSheetGrabber(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(GrabberHeight)
+            .height(height)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -110,15 +118,17 @@ fun PhoneSheetHead(
     subtitle: String,
     modified: Int,
     expanded: Boolean,
+    height: Dp,
     onToggleExpanded: () -> Unit,
     onReset: (() -> Unit)? = null,
     onOpenPresets: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val actionHeight = height.coerceAtMost(SheetHeadMaxHeight)
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(SheetHeadHeight)
+            .height(height)
             .padding(start = FmSpacing.md, end = FmSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -141,6 +151,7 @@ fun PhoneSheetHead(
             HeadAction(
                 label = "预设",
                 description = "打开预设",
+                height = actionHeight,
                 onClick = onOpenPresets,
             )
         }
@@ -149,12 +160,13 @@ fun PhoneSheetHead(
                 label = "恢复默认 $modified",
                 description = "恢复本页默认，$modified 项",
                 accent = true,
+                height = actionHeight,
                 onClick = onReset,
             )
         }
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(height.coerceAtMost(SheetHeadChevronSize))
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .semantics {
                     contentDescription = if (expanded) "收起参数" else "展开参数"
@@ -172,12 +184,13 @@ fun PhoneSheetHead(
 private fun HeadAction(
     label: String,
     description: String,
+    height: Dp,
     onClick: () -> Unit,
     accent: Boolean = false,
 ) {
     Box(
         modifier = Modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = height)
             .clip(RoundedCornerShape(FmRadii.pill))
             .semantics {
                 contentDescription = description

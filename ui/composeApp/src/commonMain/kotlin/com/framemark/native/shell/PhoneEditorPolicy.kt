@@ -50,7 +50,20 @@ private const val EXPANDED_STAGE_MIN_FRACTION = 0.26f
 /** Below this the sheet is not usable: fall back to the full parameter page. */
 private const val MIN_SHEET_DP = 120f
 
-/** Border browser compact level: 一行类别 + 一行分组 + the 128 dp card strip. */
+/**
+ * The border card is a hard product spec (report §7.5; WP-P1-2 §3 may not change
+ * it): a 128 dp square tile with the name on its own line underneath. The compact
+ * sheet content model below is built on this number, so the tile, the name line and
+ * the sheet height can never drift apart again.
+ */
+const val PHONE_FRAME_CARD_SIZE_DP = 128f
+
+/**
+ * Border sheet design ceiling: 一行类别 + 一行分组 + the 128 dp card + its name.
+ * It is only an upper bound — the compact level is as tall as the card stack in
+ * [PhoneCompactSheetMetrics.contentHeight] actually needs (≤ this), so the sheet
+ * never carries a dead band and the stage keeps every dp the 50 % floor leaves.
+ */
 private const val BORDER_SHEET_DP = 326f
 
 /** Expanded sheet target, i.e. the demo's 478 px on an 886 px tall screen. */
@@ -64,22 +77,36 @@ data class PhoneSheetLevels(val compact: Float, val expanded: Float)
  * + group row + the card strip) and 展开 (the 3-column grid).
  *
  * `null` means the window cannot hold a usable compact sheet above the 50 % stage
- * reserve; the caller then keeps the full parameter page. The compact level is
- * capped so the stage keeps [STAGE_MIN_FRACTION] of the window, which is what the
- * 390×844 / 360×800 / 412×915 acceptance checks.
+ * reserve; the caller then keeps the full parameter page.
+ *
+ * On the border tool the compact level is exactly as tall as its first screenful
+ * needs ([PhoneCompactSheetMetrics.contentHeight]) and never taller: the card, its
+ * name and the bands around them decide the height, and the stage keeps everything
+ * the floor leaves. The compact level is still capped by [STAGE_MIN_FRACTION], so
+ * "128 dp 卡片 + 一行名称 fits" and "舞台 ≥ 50 %" are decided by one number instead
+ * of one being traded for the other. The other tools keep their fractional targets
+ * because their pages scroll.
  */
 fun phoneSheetLevels(
     availableHeightDp: Float,
     tool: EditorTool,
     photosOpen: Boolean,
     small: Boolean,
+    fontScale: Float = 1f,
 ): PhoneSheetLevels? {
     val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
     val strip = if (photosOpen) STRIP_DP else 0f
     val chrome = TOP_BAR_DP + TOOL_BAR_DP + strip
     val compactMax = available - chrome - available * STAGE_MIN_FRACTION
     if (compactMax < MIN_SHEET_DP) return null
-    val compact = compactSheetTarget(available, tool, small).coerceIn(MIN_SHEET_DP, compactMax)
+    val compact = if (tool == EditorTool.Border) {
+        // The roomiest tier the floor allows. When even the tightest tier is taller
+        // than the floor leaves, the sheet gets the cap and the body scrolls (see
+        // PhoneCompactSheetMetrics.overflowAt) instead of cutting the name off.
+        phoneCompactSheetMetrics(compactMax, fontScale).contentHeight.coerceAtMost(compactMax)
+    } else {
+        compactSheetTarget(available, tool, small).coerceIn(MIN_SHEET_DP, compactMax)
+    }
     val expandedMax = (available - chrome - available * EXPANDED_STAGE_MIN_FRACTION)
         .coerceAtLeast(compact)
     val expanded = (available * EXPANDED_SHEET_FRACTION).coerceIn(compact, expandedMax)
@@ -88,11 +115,110 @@ fun phoneSheetLevels(
 
 /** Height the compact sheet aims for on this tool, before the 50 % stage cap. */
 private fun compactSheetTarget(available: Float, tool: EditorTool, small: Boolean): Float = when (tool) {
+    // Ceiling only: the border sheet takes its content height (see phoneSheetLevels).
     EditorTool.Border -> BORDER_SHEET_DP
     EditorTool.Params -> available * (if (small) 0.34f else 0.36f)
     EditorTool.Text -> available * (if (small) 0.40f else 0.42f)
     EditorTool.Logo -> available * (if (small) 0.34f else 0.38f)
     EditorTool.Watermark -> available * (if (small) 0.38f else 0.40f)
+}
+
+// ---------------------------------------------------------------------------
+// Compact sheet stack: what the 收起 sheet is made of, top to bottom
+// ---------------------------------------------------------------------------
+
+/**
+ * Vertical stack of the compact phone sheet, in dp. Every field is one of the bands
+ * WP-P1-2 §3 allows to be squeezed (handle, title row, category row, group-chip row,
+ * the strip's padding, the gap under the tile, the name's line height). The card is
+ * deliberately **not** a field: it stays [PHONE_FRAME_CARD_SIZE_DP] at every tier.
+ *
+ * The composable renders exactly these numbers, so the layout and the budget below
+ * cannot disagree — that is what caused the 收起 名称被截断 bug (a 48 dp title row +
+ * 48 dp category row + 48 dp chip row + a 157 dp strip needed 319 dp while the 50 %
+ * floor only granted 260–308 dp).
+ */
+data class PhoneCompactSheetMetrics(
+    val grabber: Float,
+    val head: Float,
+    val categoryRow: Float,
+    val anchorRow: Float,
+    val stripTop: Float,
+    val cardNameGap: Float,
+    val cardNameLineSp: Float,
+    /** One name line resolved to dp at this window's font scale. */
+    val cardNameLine: Float,
+    val stripBottom: Float,
+) {
+    /** Card strip: top padding + the 128 dp tile + the name line + bottom padding. */
+    val stripHeight: Float
+        get() = stripTop + PHONE_FRAME_CARD_SIZE_DP + cardNameGap + cardNameLine + stripBottom
+
+    /** The whole first screenful of the 收起 border sheet: card + name + every band. */
+    val contentHeight: Float
+        get() = grabber + head + categoryRow + anchorRow + stripHeight
+
+    /** How much taller the content is than the sheet; `> 0` means the body must scroll. */
+    fun overflowAt(sheetHeightDp: Float): Float =
+        (contentHeight - sheetHeightDp).coerceAtLeast(0f)
+}
+
+/**
+ * The name keeps 11 sp / 14 sp leading at every tier: the 收起 sheet squeezes the
+ * bands around the card, never the text the user reads.
+ */
+private const val CARD_NAME_LINE_SP = 14f
+
+private fun compactTier(
+    grabber: Float,
+    head: Float,
+    categoryRow: Float,
+    anchorRow: Float,
+    stripTop: Float,
+    cardNameGap: Float,
+    stripBottom: Float,
+    fontScale: Float,
+): PhoneCompactSheetMetrics = PhoneCompactSheetMetrics(
+    grabber = grabber,
+    head = head,
+    categoryRow = categoryRow,
+    anchorRow = anchorRow,
+    stripTop = stripTop,
+    cardNameGap = cardNameGap,
+    cardNameLineSp = CARD_NAME_LINE_SP,
+    cardNameLine = CARD_NAME_LINE_SP * fontScale.coerceIn(1f, 1.5f),
+    stripBottom = stripBottom,
+)
+
+/**
+ * The ladder, roomiest first; each step gives up ~20 dp of chrome. Tier 0 is the
+ * WP-P1 design (unchanged), tier 4 is the floor before bands stop being usable.
+ *
+ * | tier | grabber | head | 类别 | 分组 | strip | content |
+ * |------|---------|------|------|------|-------|---------|
+ * | 0    | 18      | 48   | 48   | 48   | 157   | 319     |
+ * | 1    | 14      | 44   | 44   | 44   | 154   | 300     |
+ * | 2    | 12      | 40   | 40   | 36   | 152   | 280     |
+ * | 3    | 8       | 36   | 36   | 32   | 150   | 262     |
+ * | 4    | 8       | 32   | 34   | 32   | 148   | 254     |
+ */
+private fun compactTiers(fontScale: Float): List<PhoneCompactSheetMetrics> = listOf(
+    compactTier(18f, 48f, 48f, 48f, 4f, 3f, 8f, fontScale),
+    compactTier(14f, 44f, 44f, 44f, 3f, 3f, 6f, fontScale),
+    compactTier(12f, 40f, 40f, 36f, 3f, 2f, 5f, fontScale),
+    compactTier(8f, 36f, 36f, 32f, 2f, 2f, 4f, fontScale),
+    compactTier(8f, 32f, 34f, 32f, 2f, 2f, 2f, fontScale),
+)
+
+/**
+ * The roomiest tier whose first screenful fits [sheetHeightDp], or the tightest
+ * tier when none does — the caller then lets the body scroll
+ * ([PhoneCompactSheetMetrics.overflowAt]) instead of clipping the name.
+ */
+fun phoneCompactSheetMetrics(sheetHeightDp: Float, fontScale: Float = 1f): PhoneCompactSheetMetrics {
+    val height = if (sheetHeightDp.isFinite()) sheetHeightDp.coerceAtLeast(0f) else 0f
+    val tiers = compactTiers(fontScale)
+    return tiers.firstOrNull { it.contentHeight <= height } ?: tiers.last()
 }
 
 /**
@@ -115,7 +241,7 @@ fun computePhoneEditorHeights(
     if (useFullPhoneParameterPage(available, fontScale, imeVisible)) {
         return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     }
-    val levels = phoneSheetLevels(available, tool, photosOpen, small)
+    val levels = phoneSheetLevels(available, tool, photosOpen, small, fontScale)
         ?: return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     val strip = if (photosOpen) STRIP_DP else 0f
     val stage = available - TOP_BAR_DP - TOOL_BAR_DP - strip - levels.compact

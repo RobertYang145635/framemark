@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,19 +37,17 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryIndex
+import com.framemark.native.shell.PhoneCompactSheetMetrics
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import kotlinx.coroutines.launch
-
-// C-07: 48 dp is the minimum touch target; the visuals stay inside it.
-private val CategoryRowHeight = 48.dp
-private val AnchorRowHeight = 48.dp
 
 /**
  * V2 phone border sheet body (report §7.5): 一行类别 → 一行分组跳转 → 卡片.
@@ -57,12 +56,17 @@ private val AnchorRowHeight = 48.dp
  * only lays it out. The 收起 level is the horizontal strip with 128 dp square
  * cards, the 展开 level is the 3-column grid with sticky group titles; the 厂商
  * category gets the 系列 directory and a 系列 chip on the group header.
+ *
+ * [metrics] is the vertical stack the 收起 level was budgeted with (WP-P1-2), so the
+ * category row, the chip row, the strip padding and the name line are exactly the
+ * numbers the height budget assumed.
  */
 @Composable
 fun PhoneLibrarySheet(
     index: LibraryIndex?,
     selectedCardId: String?,
     expanded: Boolean,
+    metrics: PhoneCompactSheetMetrics,
     categoryKey: String,
     onCategoryChange: (String) -> Unit,
     query: String,
@@ -107,6 +111,7 @@ fun PhoneLibrarySheet(
         if (searchOpen) {
             PhoneLibrarySearchRow(
                 query = query,
+                height = metrics.categoryRow.dp,
                 onQueryChange = onQueryChange,
                 onClose = {
                     searchOpen = false
@@ -117,6 +122,7 @@ fun PhoneLibrarySheet(
             CategoryTabs(
                 view = view,
                 categoryKey = categoryKey,
+                height = metrics.categoryRow.dp,
                 onCategoryChange = onCategoryChange,
                 onSearch = { searchOpen = true },
             )
@@ -124,6 +130,7 @@ fun PhoneLibrarySheet(
         if (view.anchors.isNotEmpty()) {
             AnchorRow(
                 anchors = view.anchors,
+                height = metrics.anchorRow.dp,
                 showSeries = categoryKey == LibraryIndex.CATEGORY_VENDOR && !searchOpen,
                 onJump = { anchor ->
                     jumpTo(anchor.groupKey)
@@ -147,16 +154,26 @@ fun PhoneLibrarySheet(
                         null
                     },
                 )
-                else -> PhoneBorderStrip(
-                    groups = view.groups,
-                    selectedCardId = selectedCardId,
-                    state = stripState,
-                    onPick = onPick,
-                    onJumpGroup = { key ->
-                        val indexOfGroup = view.anchors.firstOrNull { it.groupKey == key }
-                        if (indexOfGroup != null) jumpTo(key)
-                    },
-                )
+                else -> Column(
+                    // The strip is exactly as tall as the card plus its name. If the
+                    // 50 % stage floor left the sheet shorter than that (the tightest
+                    // window + 3-button nav corner, see
+                    // PhoneCompactSheetMetrics.overflowAt) this body scrolls instead of
+                    // letting the tool bar cut the name in half.
+                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                ) {
+                    PhoneBorderStrip(
+                        groups = view.groups,
+                        selectedCardId = selectedCardId,
+                        state = stripState,
+                        metrics = metrics,
+                        onPick = onPick,
+                        onJumpGroup = { key ->
+                            val indexOfGroup = view.anchors.firstOrNull { it.groupKey == key }
+                            if (indexOfGroup != null) jumpTo(key)
+                        },
+                    )
+                }
             }
         }
     }
@@ -201,13 +218,14 @@ private fun LibraryUnavailable(onRetry: (() -> Unit)?, modifier: Modifier) {
 private fun CategoryTabs(
     view: PhoneLibraryView,
     categoryKey: String,
+    height: Dp,
     onCategoryChange: (String) -> Unit,
     onSearch: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(CategoryRowHeight)
+            .height(height)
             .background(FmPalette.surface),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -223,7 +241,7 @@ private fun CategoryTabs(
                 val active = category.key == categoryKey
                 Column(
                     modifier = Modifier
-                        .height(CategoryRowHeight)
+                        .height(height)
                         .widthIn(min = 48.dp)
                         .semantics(mergeDescendants = true) {
                             contentDescription = "${category.name}，${category.count} 个"
@@ -277,6 +295,7 @@ private fun CategoryTabs(
 @Composable
 private fun AnchorRow(
     anchors: List<PhoneLibraryAnchor>,
+    height: Dp,
     showSeries: Boolean,
     onJump: (PhoneLibraryAnchor) -> Unit,
     onOpenSeries: () -> Unit,
@@ -284,7 +303,7 @@ private fun AnchorRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(AnchorRowHeight)
+            .height(height)
             .background(FmPalette.surface)
             .padding(start = FmSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
@@ -297,10 +316,11 @@ private fun AnchorRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             anchors.forEach { anchor ->
-                // 48 dp tap band around a 30 dp pill (C-07), same as the V06 chips.
+                // The C-07 48 dp tap band around a 30 dp pill; the tight tiers shrink
+                // the band, never the pill.
                 Box(
                     modifier = Modifier
-                        .height(AnchorRowHeight)
+                        .height(height)
                         .semantics(mergeDescendants = true) {
                             contentDescription = "${anchor.label}，${anchor.count} 个"
                             role = Role.Button
@@ -335,21 +355,27 @@ private fun AnchorRow(
             }
         }
         if (showSeries) {
-            Text(
-                text = "系列",
-                style = FmType.labelSmall.copy(fontSize = 12.sp),
-                color = FmPalette.onSurfaceSecondary,
-                maxLines = 1,
+            // Same shape as the chips: a full-height hit band around the label, so the
+            // tighter tiers shrink the band instead of clipping the text.
+            Box(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
+                    .height(height)
                     .clip(RoundedCornerShape(FmRadii.pill))
                     .semantics {
                         contentDescription = "系列目录"
                         role = Role.Button
                     }
                     .clickable(onClick = onOpenSeries)
-                    .padding(horizontal = 10.dp, vertical = 14.dp),
-            )
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "系列",
+                    style = FmType.labelSmall.copy(fontSize = 12.sp),
+                    color = FmPalette.onSurfaceSecondary,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -357,13 +383,14 @@ private fun AnchorRow(
 @Composable
 private fun PhoneLibrarySearchRow(
     query: String,
+    height: Dp,
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(CategoryRowHeight)
+            .height(height)
             .background(FmPalette.surface)
             .padding(start = FmSpacing.md, end = FmSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -398,10 +425,10 @@ private fun PhoneLibrarySearchRow(
             color = FmPalette.primaryStrong,
             maxLines = 1,
             modifier = Modifier
-                .heightIn(min = 48.dp)
+                .heightIn(min = height)
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .clickable(onClick = onClose)
-                .padding(horizontal = 10.dp, vertical = 12.dp),
+                .padding(horizontal = 10.dp),
         )
     }
 }

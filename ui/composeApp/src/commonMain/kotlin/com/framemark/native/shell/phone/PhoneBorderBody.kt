@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
+import com.framemark.native.shell.PhoneCompactSheetMetrics
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -61,20 +62,31 @@ fun phoneGridJumpIndex(groups: List<LibraryCardGroup>, groupKey: String?): Int =
 /**
  * 收起: one continuous horizontal strip — a group tile, then that group's cards, so
  * the compact sheet keeps the "分组 + 卡片" reading in one row.
+ *
+ * The strip's height is [PhoneCompactSheetMetrics.stripHeight] (strip padding + the
+ * 128 dp card + the name line + padding), not "whatever is left": that is what keeps
+ * the name under each card whole instead of cutting it at the sheet's bottom edge
+ * (WP-P1-2).
  */
 @Composable
 fun PhoneBorderStrip(
     groups: List<LibraryCardGroup>,
     selectedCardId: String?,
     state: LazyListState,
+    metrics: PhoneCompactSheetMetrics,
     onPick: (LibraryCard) -> Unit,
     onJumpGroup: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyRow(
         state = state,
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 8.dp),
+        modifier = modifier.fillMaxWidth().height(metrics.stripHeight.dp),
+        contentPadding = PaddingValues(
+            start = 14.dp,
+            end = 14.dp,
+            top = metrics.stripTop.dp,
+            bottom = metrics.stripBottom.dp,
+        ),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.Top,
     ) {
@@ -88,6 +100,8 @@ fun PhoneBorderStrip(
                     selected = card.id == selectedCardId,
                     onClick = { onPick(card) },
                     width = PhoneFrameCardSize,
+                    nameGap = metrics.cardNameGap.dp,
+                    nameLineSp = metrics.cardNameLineSp,
                 )
             }
         }
