@@ -39,6 +39,8 @@ import com.framemark.native.theme.resolveDark
 import com.framemark.native.workflow.AndroidProductFileSystem
 import com.framemark.native.workflow.AndroidWorkflowPlatform
 import com.framemark.native.workflow.AndroidPhoneAssetIo
+import com.framemark.native.library.RecentFramesEnv
+import com.framemark.native.shell.phone.AndroidRecentFramesStore
 import com.framemark.native.shell.PhoneProjectRuntime
 import com.framemark.native.shell.PhoneProjectStore
 import com.framemark.native.shell.PhoneWatermarkPick
@@ -485,6 +487,12 @@ class MainActivity : ComponentActivity() {
             "FM_APPEARANCE_PRECOMPOSE systemDark=$initialSystemDark dark=${appearance.dark} " +
                 "mode=${appearance.settings.mode.wire} source=configuration",
         )
+        // WP-D1 phase 2: install the Android 最近使用 file store before the first
+        // composition (same `settings/recent-frames.json` format as desktop).
+        // Deliberately *above* the first `if (BuildConfig.DEBUG)` block: the
+        // release-intent-source-guard gate requires the DEBUG block's closing
+        // brace to sit immediately before `setContent {`, with nothing between.
+        RecentFramesEnv.store = AndroidRecentFramesStore.forContext(applicationContext)
         // W3 crash/migration controls have to be configured before the phone
         // project loads: preset migration is synchronous during installed.load().
         // This entire block is absent from the release behavior by design.

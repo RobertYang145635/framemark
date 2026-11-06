@@ -102,7 +102,7 @@ internal fun DesktopLibraryCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(DesktopCardSize - 30.dp)
+                .height(DesktopCardSize - 42.dp)
                 .background(FmPalette.stage),
         ) {
             LibraryPreview(
@@ -166,5 +166,15 @@ internal fun DesktopLibraryCard(
                 modifier = Modifier.weight(1f, fill = false),
             )
         }
+        Text(
+            // V2: “类别 · 来源”副标题（01-desktop.png）。来源只取数据字段。
+            text = "${card.categoryName.removeSuffix("边框").ifBlank { card.category }} · " +
+                (card.fidelity ?: card.badge ?: "内置"),
+            style = FmType.labelSmall.copy(fontSize = 9.sp),
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp).padding(bottom = 3.dp),
+        )
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -290,22 +291,43 @@ private fun LibraryFilterZone(
             modifier = Modifier.fillMaxWidth().height(32.dp),
         )
         Spacer(Modifier.height(6.dp))
+        // V2: all eight categories on one text-tab row (no horizontal clipping).
         Row(
-            modifier = Modifier.fillMaxWidth().height(30.dp).horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth().height(30.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             categories.forEach { category ->
-                DesktopFilterChip(
-                    label = category.name,
-                    count = category.count,
-                    selected = !filters.isSearching && filters.categoryKey == category.key,
-                    onClick = {
-                        filters.selectCategory(
-                            if (filters.categoryKey == category.key) null else category.key,
-                        )
-                    },
-                )
+                val selected = !filters.isSearching && filters.categoryKey == category.key
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable {
+                            filters.selectCategory(
+                                if (filters.categoryKey == category.key) null else category.key,
+                            )
+                        }
+                        .semantics {
+                            contentDescription = "类别：${category.name}，${category.count} 个"
+                            role = Role.Tab
+                        },
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = category.name,
+                        style = FmType.labelSmall.copy(fontSize = 11.sp),
+                        color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip,
+                    )
+                    Box(
+                        Modifier
+                            .width(if (selected) 14.dp else 0.dp)
+                            .height(2.dp)
+                            .background(if (selected) FmPalette.primary else androidx.compose.ui.graphics.Color.Transparent),
+                    )
+                }
             }
         }
         Spacer(Modifier.height(4.dp))

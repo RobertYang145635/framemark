@@ -2,8 +2,6 @@ package com.framemark.native.shell.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,17 +30,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.framemark.native.inspector.InspectorDesktopTabBar
+import com.framemark.native.inspector.InspectorPage
+import com.framemark.native.inspector.InspectorTabModel
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
 /**
- * 右栏外框（第一阶段）：标题区（边框名 / 类别 / 渲染方式）+ “⋯”菜单 + 页签 + 底栏，
- * 中间嵌入现有的 `EditorTabList`（由调用方作为 [content] 传入）。
+ * 右栏外框（第二阶段）：标题 / 渲染方式 + “⋯”菜单 + WP-C 的四页签条 + 底栏，
+ * 页内容由调用方作为 [content] 传入（`InspectorPageContent` / `WatermarkPane`）。
  *
- * 第二阶段（WP-C 合并后）由 WP-C 的页签模型、页签条、页签内容替换 [tabs] 与 [content]，
- * 外框与底栏保留。
+ * 页签模型与页签条都来自 WP-C（`inspectorTabsFor` / `InspectorDesktopTabBar`），
+ * 每页显示自己的已改项数；底栏的“恢复本页默认”只作用于当前页。
  */
 @Composable
 fun DesktopInspectorRail(
@@ -51,10 +51,11 @@ fun DesktopInspectorRail(
     categoryLine: String,
     renderMode: String,
     tags: List<String>,
-    tabs: List<String>,
-    selectedTab: Int,
-    onSelectTab: (Int) -> Unit,
-    adjustedCount: Int,
+    tabModel: InspectorTabModel,
+    selectedPage: InspectorPage,
+    onSelectPage: (InspectorPage) -> Unit,
+    totalModified: Int,
+    pageModified: Int,
     onResetPage: () -> Unit,
     onSavePreset: () -> Unit,
     onApplyToOtherPhotos: () -> Unit,
@@ -118,7 +119,7 @@ fun DesktopInspectorRail(
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text("应用到其他照片", style = FmType.bodyMedium) },
+                        text = { Text("应用到其他照片…", style = FmType.bodyMedium) },
                         onClick = { menuOpen = false; onApplyToOtherPhotos() },
                     )
                     DropdownMenuItem(
@@ -142,38 +143,14 @@ fun DesktopInspectorRail(
                 Text("›", style = FmType.titleMedium, color = FmPalette.onSurfaceMuted)
             }
         }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = FmSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            tabs.forEachIndexed { index, label ->
-                val active = index == selectedTab
-                Box(
-                    modifier = Modifier
-                        .height(32.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .background(if (active) FmPalette.primarySoft else androidx.compose.ui.graphics.Color.Transparent)
-                        .clickable { onSelectTab(index) }
-                        .semantics {
-                            contentDescription = "参数分栏：$label"
-                            role = Role.Tab
-                        }
-                        .padding(horizontal = FmSpacing.sm),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = label,
-                        style = FmType.labelMedium,
-                        color = if (active) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
-                        maxLines = 1,
-                    )
-                }
-            }
+        if (tabModel.tabs.isNotEmpty()) {
+            InspectorDesktopTabBar(
+                model = tabModel,
+                selected = selectedPage,
+                onSelect = onSelectPage,
+            )
+            Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
         Box(Modifier.weight(1f).fillMaxWidth()) { content() }
         Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
         Row(
@@ -183,13 +160,13 @@ fun DesktopInspectorRail(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "已修改 $adjustedCount 项",
+                text = if (totalModified == 0) "全部为默认值" else "已修改 $totalModified 项",
                 style = FmType.labelSmall,
-                color = if (adjustedCount > 0) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
+                color = if (totalModified > 0) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 modifier = Modifier.weight(1f),
             )
-            if (adjustedCount > 0) {
+            if (pageModified > 0) {
                 Text(
                     text = "恢复本页默认",
                     style = FmType.labelSmall,

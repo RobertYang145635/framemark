@@ -31,21 +31,19 @@ import com.framemark.native.theme.fmElevated
 data class OtherPhotoDesign(
     val photoId: String,
     val photoLabel: String,
-    val cardId: String,
-    val styleId: String?,
 )
 
 /**
  * 舞台空状态（报告 §6）：照片还没有边框时，提供“沿用其他照片的设计”。
  *
- * 只用现有接口：点一条就读那张照片存的 `cardId` / `styleId` 调
- * `ProjectHolder.applyCard`。选中照片自己的参数覆盖（params/text）没有接口可搬，
- * 这一点写进报告，不动数据模型。
+ * 点击一条会调 `ProjectHolder.applyDesignFromPhoto(source, targets)`：把那张照片的
+ * `cardId/styleId/params/text` 复制到当前照片。数据模型与项目格式不变，实现见
+ * `DesktopProjectController`；不支持的平台返回 -1，界面如实说明。
  */
 @Composable
 fun DesktopStageEmptyState(
     candidates: List<OtherPhotoDesign>,
-    onReuse: (String, String?) -> Unit,
+    onReuse: (String) -> Unit,
     onPickBorder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -96,7 +94,7 @@ fun DesktopStageEmptyState(
                             .padding(top = 4.dp)
                             .clip(RoundedCornerShape(FmRadii.chip))
                             .background(FmPalette.surfaceMuted)
-                            .clickable { onReuse(candidate.cardId, candidate.styleId) }
+                            .clickable { onReuse(candidate.photoId) }
                             .padding(horizontal = FmSpacing.sm, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs),
