@@ -124,9 +124,16 @@ data class CuratedTextSlots(
     val heightPx: Int,
 )
 
-/** Null on the phone sheet: it renders the plain control list instead. */
+/**
+ * Null on the phone sheet: it renders the plain control list instead.
+ *
+ * **必须是动态 local**（`compositionLocalOf`，不是 `staticCompositionLocalOf`）：
+ * slot 表是引擎渲染完成后才到的，静态 local 不会通知读取方重组，于是「Logo 自动匹配」
+ * 在打开 Logo 页时可能一直读到 null（品牌行还没到），显示成「自动匹配 · 按边框自己的品牌」。
+ * WP-R 补拍时实测到过这个时序（`FM_LOGO_PANE make=null` 而文字页四行齐全）。
+ */
 val LocalCuratedTextSlots =
-    androidx.compose.runtime.staticCompositionLocalOf<CuratedTextSlots?> { null }
+    androidx.compose.runtime.compositionLocalOf<CuratedTextSlots?> { null }
 
 /**
  * Supplied by [com.framemark.native.shell.desktop.DesktopInspectorRail] from the

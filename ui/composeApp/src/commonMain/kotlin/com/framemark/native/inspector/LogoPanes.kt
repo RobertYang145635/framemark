@@ -54,6 +54,8 @@ internal fun CuratedLogoPane(
     session: DesignSession,
     dense: Boolean = false,
     modifier: Modifier = Modifier,
+    /** 舞台渲染报告的 slot 表；空时退回 [LocalCuratedTextSlots]。 */
+    textSlots: List<com.framemark.native.workflow.TextSlot> = emptyList(),
 ) {
     val brandControl = model.controls.firstOrNull { it.type == ControlType.Brand }
     val logoControls = model.sections.firstOrNull { it.section == InspectorSection.Logo }?.controls
@@ -87,6 +89,7 @@ internal fun CuratedLogoPane(
             session = session,
             dense = dense,
             modifier = modifier,
+            textSlots = textSlots.ifEmpty { LocalCuratedTextSlots.current?.slots.orEmpty() },
         )
     }
 }
@@ -105,6 +108,7 @@ private fun BrandedCuratedLogo(
     session: DesignSession,
     dense: Boolean,
     modifier: Modifier,
+    textSlots: List<com.framemark.native.workflow.TextSlot>,
 ) {
     val raw = session.value(brandControl) as? String ?: ""
     var catalog by remember { mutableStateOf<List<LogoBrand>?>(null) }
@@ -139,14 +143,17 @@ private fun BrandedCuratedLogo(
     val isUser = UserLogoLibrary.isUserLogo(raw)
     // 引擎渲染报告里「品牌」那一行的内容 = 照片 EXIF 的 Make。只有真·自动匹配时
     // 才有这一行：一旦指定了某个品牌字标，引擎画的是那枚字标，品牌文字行就没了。
-    val photoBrand = LogoPhotoBrand.resolve(LocalCuratedTextSlots.current?.slots, brands)
-    val photoMake = LogoPhotoBrand.makeText(LocalCuratedTextSlots.current?.slots)
+    val photoBrand = LogoPhotoBrand.resolve(textSlots, brands)
+    val photoMake = LogoPhotoBrand.makeText(textSlots)
     // 现场诊断（与仓库里其它 FM_ 钩子同风格）：自动匹配/品牌键的分支很难从截图区分，
     // 打一行就够定位「未收录」到底是没读到品牌、还是值不在库里。
     println(
         "FM_LOGO_PANE raw=${raw.take(48)} isAuto=$isAuto isUser=$isUser brands=${brands.size} " +
             "cutKey=${logoBrandForAssetKey(brands, raw)?.key} brandKey=${logoBrandForKeyValue(brands, raw)?.key} " +
-            "make=$photoMake photoBrand=${photoBrand?.brand?.key}",
+            "make=$photoMake photoBrand=${photoBrand?.brand?.key} " +
+            "slots=${textSlots.size} " +
+            "brandRows=${textSlots.filter { (it.key ?: it.id).contains("make") || (it.key ?: it.id).contains("brand") }
+                .joinToString("|") { (it.key ?: it.id) + "=" + it.text.take(16) }}",
     )
     // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
     // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
