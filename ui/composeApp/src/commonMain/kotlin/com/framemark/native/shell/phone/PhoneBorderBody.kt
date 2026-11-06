@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,8 +83,8 @@ fun PhoneBorderStrip(
         state = state,
         modifier = modifier.fillMaxWidth().height(metrics.stripHeight.dp),
         contentPadding = PaddingValues(
-            start = 14.dp,
-            end = 14.dp,
+            start = 18.dp,
+            end = 18.dp,
             top = metrics.stripTop.dp,
             bottom = metrics.stripBottom.dp,
         ),
@@ -102,6 +103,7 @@ fun PhoneBorderStrip(
                     width = PhoneFrameCardSize,
                     nameGap = metrics.cardNameGap.dp,
                     nameLineSp = metrics.cardNameLineSp,
+                    descGap = metrics.cardDescGap.dp,
                 )
             }
         }
@@ -126,8 +128,8 @@ fun PhoneBorderGrid(
     LazyColumn(
         state = state,
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 2.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         groups.forEach { group ->
             stickyHeader(key = "head:${group.key}") {
@@ -156,42 +158,58 @@ fun PhoneBorderGrid(
     }
 }
 
+/**
+ * Group tile of the 收起 strip (showcase `.pstrip .gtile`: 78 dp wide, as tall as a
+ * card, `--muted-bg` fill with the 3 px accent bar on its left edge, the group name
+ * in 12.5/700 and its count under it).
+ */
 @Composable
 private fun GroupTile(group: LibraryCardGroup, onClick: () -> Unit) {
+    val accent = FmPalette.primary
     Column(
         modifier = Modifier
             .width(GroupTileWidth)
             .height(PhoneFrameCardSize)
             .clip(RoundedCornerShape(FmRadii.tile))
             .background(FmPalette.surfaceMuted)
+            // `.gtile`'s `box-shadow: inset 3px 0 0 var(--accent)`: a 3 dp accent bar on
+            // the tile's left edge, full height.
+            .drawBehind {
+                drawRect(
+                    color = accent,
+                    topLeft = androidx.compose.ui.geometry.Offset.Zero,
+                    size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height),
+                )
+            }
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp),
+            .padding(start = 11.dp, end = 6.dp),
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = group.label,
-            style = GroupTitleStyle,
+            style = FmType.labelMedium.copy(fontSize = 12.5.sp, fontWeight = FontWeight.Bold),
             color = FmPalette.onSurface,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(2.dp))
         Text(
             text = "${group.count} 个",
             style = GroupCountStyle,
-            color = FmPalette.onSurfaceMuted,
+            color = FmPalette.onSurfaceFaint,
             maxLines = 1,
         )
     }
 }
 
+/** Sticky group title (showcase `.gsec-h`: 12 px / 2 px padding, 12.5/600 + 11 count). */
 @Composable
 private fun GroupHeader(group: LibraryCardGroup, onOpenSeries: (() -> Unit)?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(FmPalette.surface)
-            .padding(vertical = 6.dp),
+            .padding(start = 2.dp, end = 2.dp, top = 12.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -268,3 +286,4 @@ fun PhoneLibraryNote(text: String, modifier: Modifier = Modifier) {
         Text(text = text, style = FmType.bodyMedium, color = FmPalette.onSurfaceMuted)
     }
 }
+

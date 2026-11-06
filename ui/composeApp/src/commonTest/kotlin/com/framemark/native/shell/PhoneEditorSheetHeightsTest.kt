@@ -56,17 +56,17 @@ class PhoneEditorSheetHeightsTest {
 
     @Test
     fun the_border_sheet_is_exactly_as_tall_as_its_card_stack() {
-        // WP-P1-2 changed the compact border sheet from "the 326 dp design target capped
-        // by the floor" to "the card stack's own height": 844 - 52 - 62 - 300 = 430 dp of
-        // stage. The stage still keeps more than half the window and the sheet no longer
-        // carries a dead band (was 308 dp, i.e. 11 dp short of the 319 dp stack, which is
-        // what cut the card names in half on the device).
+        // WP-PV2 re-derived the stack from the showcase: grabber 22, title row 30, 14 px
+        // tab row 38, 30 dp chip row 42, a `12 / 10` strip around the 128 dp tile, then
+        // the 12 sp name **and** its 11 sp description (`.card .nm` + `.card .ds`).
+        // Tier 1 is 300 dp, so 844 - 52 - 62 - 300 = 430 dp of stage: the stage still
+        // keeps more than half the window and the sheet carries no dead band.
         val h = computePhoneEditorHeights(844f, 1f, false, EditorTool.Border, false, false)
         assertEquals(300f, h.sheet, 0.01f)
         assertEquals(430f, h.stage, 0.01f)
         assertTrue(
             phoneCompactSheetMetrics(h.sheet).contentHeight <= h.sheet + 0.01f,
-            "the sheet must hold the 128 dp card and its name",
+            "the sheet must hold the 128 dp card, its name and its description",
         )
 
         val levels = assertNotNull(phoneSheetLevels(844f, EditorTool.Border, false, false))
@@ -111,3 +111,5 @@ class PhoneEditorSheetHeightsTest {
         assertTrue(phoneSheetLevels(390f, EditorTool.Border, photosOpen = false, small = true) == null)
     }
 }
+
+

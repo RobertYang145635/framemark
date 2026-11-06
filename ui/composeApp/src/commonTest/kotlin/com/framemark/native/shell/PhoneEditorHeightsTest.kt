@@ -26,7 +26,9 @@ class PhoneEditorHeightsTest {
         assertEquals(52f, h.topBar)
         assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
-        assertTrue(h.sheet >= 300f, "border sheet=${h.sheet}")
+        // WP-PV2: with the card's 11 sp description line the stack needs 300 dp at this
+        // window (tier 1), so the border sheet is exactly as tall as its content.
+        assertEquals(300f, h.sheet, 0.01f)
         // WP-P1 §4.1: the compact sheet leaves the stage at least half the window.
         assertTrue(h.stage >= 844f * 0.5f - 0.01f, "stage=${h.stage}")
         assertTrue(sum(h) <= 844f + 0.01f, "sum=${sum(h)}")
@@ -159,3 +161,4 @@ class PhoneEditorHeightsTest {
         )
     }
 }
+

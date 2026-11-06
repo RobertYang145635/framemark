@@ -72,7 +72,9 @@ fun phoneLibraryView(
     val anchors = if (view.query.isBlank() && categoryKey == LibraryIndex.CATEGORY_VENDOR) {
         vendorAnchors(groups, index.vendors)
     } else {
-        groups.map { group -> PhoneLibraryAnchor(group.key, group.label, group.count, group.key) }
+        groups.map { group ->
+            PhoneLibraryAnchor(group.key, phoneAnchorLabel(group.label), group.count, group.key)
+        }
     }
     return PhoneLibraryView(
         categories = index.categories(inUse = inUse, recent = recent),
@@ -80,6 +82,18 @@ fun phoneLibraryView(
         anchors = anchors,
         vendors = index.vendors,
     )
+}
+
+/**
+ * Chip wording of the 常用 groups. WP-L names them for the desktop rail
+ * (`本项目在用` / `最近使用`); the showcase's phone row says `在用` / `最近` / `热门`
+ * (`ANCHOR_LABEL` in core.js), which is what fits a 30 dp chip. Only these three
+ * library labels are shortened — every other group keeps its own name.
+ */
+internal fun phoneAnchorLabel(label: String): String = when (label) {
+    LibraryIndex.LABEL_USE -> "在用"
+    LibraryIndex.LABEL_RECENT -> "最近"
+    else -> label
 }
 
 /**

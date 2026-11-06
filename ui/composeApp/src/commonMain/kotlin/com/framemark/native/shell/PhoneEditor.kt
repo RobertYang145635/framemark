@@ -651,6 +651,13 @@ fun PhoneEditorScreen(
                                 // 编辑中直接套用预设 (hand-off §3 decision 5): the phone keeps
                                 // the entry on the border sheet's title.
                                 onOpenPresets = if (tool == EditorTool.Border) onOpenPresets else null,
+                                // Demo `.psh .adj`: 调整样式 › jumps from the border sheet to
+                                // the 样式 page of the applied card.
+                                onAdjustStyle = if (tool == EditorTool.Border && card != null) {
+                                    { onToolChange(EditorTool.Params) }
+                                } else {
+                                    null
+                                },
                             )
                         }
                         if (card == null && tool != EditorTool.Border) {
@@ -720,29 +727,19 @@ fun PhoneEditorScreen(
                                     null
                                 },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
-                                footer = if (tool == EditorTool.Params) {
-                                    {
-                                        val edge = session.export.longEdge
-                                        val pw = previewGeo?.w ?: 0
-                                        val ph = previewGeo?.h ?: 0
-                                        val outW = if (pw > 0) edge else 0
-                                        val outH = if (pw > 0 && ph > 0) {
-                                            (edge.toFloat() * ph / pw).roundToInt()
-                                        } else {
-                                            0
-                                        }
-                                        Column(modifier = Modifier.padding(horizontal = FmSpacing.sm)) {
-                                            ReferenceAndOutput(
-                                                card = card,
-                                                outputW = outW,
-                                                outputH = outH,
-                                                exportEdge = edge,
-                                                fileName = tray.selected?.label ?: "示例照片",
-                                            )
-                                        }
-                                    }
+                                // 样式's own 导出尺寸 row (showcase `paneClassicStyle`'s
+                                // `.outsz`): the pixels this photo will actually be
+                                // written at, never a guess.
+                                card = card,
+                                outputWidth = if (previewGeo != null && previewGeo!!.w > 0) {
+                                    session.export.longEdge
                                 } else {
-                                    null
+                                    0
+                                },
+                                outputHeight = if (previewGeo != null && previewGeo!!.w > 0 && previewGeo!!.h > 0) {
+                                    (session.export.longEdge.toFloat() * previewGeo!!.h / previewGeo!!.w).roundToInt()
+                                } else {
+                                    0
                                 },
                             )
                         }
@@ -927,9 +924,22 @@ private val SheetRadius = 22.dp
 private val StageEdge = 12.dp
 
 /**
+ * Showcase `.pstage .stage-area { --pad: 14px 16px 58px }`: the photo band keeps
+ * 14 dp above and 16 dp on both sides, and the 58 dp below is the strip the two
+ * floating pills (`.pchip` / `.pcmp`, bottom 12) sit in — so the pills never cover
+ * the printed frame.
+ */
+private val StagePhotoTop = 14.dp
+private val StagePhotoSide = 16.dp
+private val StagePhotoBottom = 58.dp
+
+/** The two stage pills sit 12 dp from the stage's bottom-left / bottom-right. */
+private val StagePillInset = 12.dp
+
+/**
  * The dark photo stage. The photo takes every dp the chrome leaves (report §7.2);
  * the two V2 hints — the current border name (bottom-left) and 按住看原图
- * (bottom-right) — float over it, so no bottom band is reserved any more.
+ * (bottom-right) — sit in the band under it (demo `.pchip` / `.pcmp`).
  *
  * Gestures: pinch / drag while zoomed / double-tap reset, the live watermark
  * overlay, and (border tool, unzoomed) the left/right swipe that switches frames
@@ -981,7 +991,12 @@ private fun StageArea(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = StageEdge, end = StageEdge, top = 10.dp, bottom = StageEdge),
+                .padding(
+                    start = StagePhotoSide,
+                    end = StagePhotoSide,
+                    top = StagePhotoTop,
+                    bottom = if (focusMode) StageEdge else StagePhotoBottom,
+                ),
         ) {
             Box(
                 modifier = Modifier
@@ -1021,17 +1036,6 @@ private fun StageArea(
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        Text(
-                            text = "原图",
-                            style = FmType.labelSmall,
-                            color = FmPalette.stageInk,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(FmSpacing.sm)
-                                .clip(RoundedCornerShape(FmRadii.pill))
-                                .background(FmPalette.stageLine)
-                                .padding(horizontal = FmSpacing.sm, vertical = 3.dp),
-                        )
                     }
                 } else when {
                     card == null -> StagePlaceholder(tray = tray, onOpenBorder = onOpenBorder)
@@ -1055,17 +1059,6 @@ private fun StageArea(
                     )
                     else -> Box(modifier = Modifier.fillMaxSize()) {
                         LibraryPreview(card = card, modifier = Modifier.fillMaxSize())
-                        Text(
-                            text = "静态预览",
-                            style = FmType.labelSmall,
-                            color = FmPalette.stageInk,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(FmSpacing.md)
-                                .clip(RoundedCornerShape(FmRadii.pill))
-                                .background(FmPalette.stageLine)
-                                .padding(horizontal = FmSpacing.sm, vertical = 3.dp),
-                        )
                     }
                 }
                 if (!compare) {
@@ -1081,19 +1074,6 @@ private fun StageArea(
                         }
                     }
                 }
-            }
-            if (renderFailure != null) {
-                Text(
-                    text = "预览失败 · 显示静态图",
-                    style = FmType.labelSmall,
-                    color = FmPalette.stageInk,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(FmSpacing.md)
-                        .clip(RoundedCornerShape(FmRadii.pill))
-                        .background(FmPalette.stageLine)
-                        .padding(horizontal = FmSpacing.sm, vertical = 3.dp),
-                )
             }
         }
         // The two V2 stage hints float over the photo (report §7.2): the applied
@@ -1114,12 +1094,25 @@ private fun StageArea(
             )
         }
         if (!focusMode) {
+            // `.pchip` says which border is applied (or 原图 while comparing) and,
+            // like the showcase, appends the one hint that explains what the stage
+            // can do right now. A non-native card and a failed render say so here
+            // instead of stacking another floating badge over the photo.
+            val hint = when {
+                compare -> null
+                renderFailure != null -> "预览失败 · 显示静态图"
+                card == null -> null
+                !NativeEngine.supports(card.id) -> "静态预览"
+                swipeEnabled -> "左右滑动换边框"
+                else -> null
+            }
             PhoneStageChip(
-                text = borderName ?: "未选边框",
+                text = if (compare) "原图" else borderName ?: "未选边框",
                 description = "当前边框",
+                hint = hint,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = StageEdge, bottom = StageEdge),
+                    .padding(start = StagePillInset, bottom = StagePillInset),
             )
             if (card != null) {
                 PhoneHoldCompareChip(
@@ -1127,61 +1120,9 @@ private fun StageArea(
                     onCompareChange = onCompareChange,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = StageEdge, bottom = StageEdge),
+                        .padding(end = StagePillInset, bottom = StagePillInset),
                 )
             }
-        }
-    }
-}
-
-/**
- * The three V06 actions that the V2 top bar no longer carries (report §7.2 lists
- * only 返回/照片切换/撤销/重做/导出) stay reachable from a compact stage menu:
- * 应用到全部照片, 批量导出, 设置. Nothing is silently dropped.
- */
-@Composable
-private fun StageOverflowChip(
-    onApplyAll: (() -> Unit)?,
-    onOpenPhotoBatch: (() -> Unit)?,
-    onOpenBatch: () -> Unit,
-    onOpenSettings: () -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        PhoneStageChip(
-            text = "⋯",
-            description = "更多操作",
-            onClick = { expanded = true },
-        )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = if (onOpenPhotoBatch != null) "批量导出 · 按照片" else "批量导出",
-                        style = FmType.bodyMedium,
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    if (onOpenPhotoBatch != null) onOpenPhotoBatch() else onOpenBatch()
-                },
-            )
-            if (onApplyAll != null) {
-                DropdownMenuItem(
-                    text = { Text("应用到全部照片", style = FmType.bodyMedium) },
-                    onClick = {
-                        expanded = false
-                        onApplyAll()
-                    },
-                )
-            }
-            DropdownMenuItem(
-                text = { Text("设置", style = FmType.bodyMedium) },
-                onClick = {
-                    expanded = false
-                    onOpenSettings()
-                },
-            )
         }
     }
 }
