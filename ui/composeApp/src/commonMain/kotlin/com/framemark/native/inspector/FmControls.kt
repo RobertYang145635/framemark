@@ -1,5 +1,7 @@
 package com.framemark.native.inspector
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,12 +11,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -32,19 +37,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmElevated
+import com.framemark.native.workflow.DesignSession
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -212,52 +225,61 @@ internal fun FmDesktopSliderRow(
     onReset: (() -> Unit)? = null,
     /** D1-3: fixed decimals for the value box (watermark margins use 1). */
     decimalPlaces: Int = 3,
+    /** `.fs .lab .hint` — 11.5 `ink-4`, e.g. 「占照片宽度」. */
+    hint: String? = null,
 ) {
     val modified = FmSliderMath.isModified(value, default)
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth().padding(top = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = label,
-                style = FmType.bodyMedium,
-                color = if (enabled) FmPalette.onSurface else FmPalette.onSurfaceFaint,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
             if (modified) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(FmPalette.primary),
-                )
+                Box(Modifier.size(4.dp).clip(CircleShape).background(FmPalette.primary))
                 Spacer(Modifier.width(6.dp))
             }
-            FmNumberBox(
+            Text(
+                text = label,
+                style = CuratedSliderLabel,
+                color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (!hint.isNullOrBlank()) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = hint,
+                    style = CuratedSliderHint,
+                    color = FmPalette.onSurfaceFaint,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            if (modified && onReset != null) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Button, onClick = onReset)
+                        .semantics { contentDescription = "$label 复位" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "↺",
+                        style = CuratedSliderHint.copy(fontSize = 13.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
+            }
+            FmSliderValueBox(
                 value = value,
                 min = min,
                 max = max,
-                scale = scale,
                 unit = unit,
                 label = label,
-                enabled = enabled,
+                scale = scale,
                 decimalPlaces = decimalPlaces,
-                modifier = Modifier.width(76.dp),
                 onCommit = onValueChange,
             )
-            if (modified && onReset != null) {
-                Spacer(Modifier.width(FmSpacing.xs))
-                Text(
-                    text = "复位",
-                    style = FmType.labelSmall,
-                    color = FmPalette.primaryStrong,
-                    modifier = Modifier
-                        .heightIn(min = 28.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .clickable(role = Role.Button, onClick = onReset)
-                        .padding(horizontal = 6.dp),
-                )
-            }
         }
         FmSlider(
             value = value,
@@ -627,10 +649,285 @@ internal fun FmTextRow(
 
 /** Stable colour for a swatch id the data describes instead of a hex string. */
 internal fun swatchColor(themeId: String): Color = when {
-    themeId.contains("black", ignoreCase = true) || themeId.contains("ink") -> Color(0xFF14181F)
-    themeId.contains("white", ignoreCase = true) || themeId.contains("paper") -> Color(0xFFFFFFFF)
-    themeId.contains("cream", ignoreCase = true) -> Color(0xFFF3ECDD)
-    themeId.contains("stone", ignoreCase = true) -> Color(0xFFD9D5CC)
+    themeId.contains("black", ignoreCase = true) -> Color(0xFF08090A)
+    themeId.contains("ink", ignoreCase = true) -> Color(0xFF111214)
+    themeId.contains("cream", ignoreCase = true) -> Color(0xFFEEE6D7)
+    themeId.contains("stone", ignoreCase = true) -> Color(0xFFD9D4C9)
+    themeId.contains("paper", ignoreCase = true) -> Color(0xFFF6F3EC)
+    themeId.contains("white", ignoreCase = true) -> Color(0xFFFFFFFF)
     themeId.contains("glass", ignoreCase = true) -> Color(0x33FFFFFF)
     else -> Color(0xFFE3E7EC)
 }
+
+/**
+ * Foreground (ink) colour of a swatch id — the 12 × 2 bar drawn inside the disc
+ * (showcase `theme(k).fg`). Data colours, like [swatchColor]: the swatch *is* a
+ * preview of the border's own plate, so it cannot come from the app palette.
+ */
+internal fun swatchForeground(themeId: String): Color = when {
+    themeId.contains("black", ignoreCase = true) || themeId.contains("ink", ignoreCase = true) -> Color(0xFFF5F2EA)
+    themeId.contains("paper", ignoreCase = true) -> Color(0xFF151515)
+    themeId.contains("cream", ignoreCase = true) -> Color(0xFF1D1811)
+    themeId.contains("stone", ignoreCase = true) -> Color(0xFF191714)
+    else -> Color(0xFF0C0C0D)
+}
+
+// ---------------------------------------------------------------------------
+// WP-V3 spec controls (PARITY-SPEC §3, 10-spec.png "FmSlider 结构与状态")
+// ---------------------------------------------------------------------------
+
+/**
+ * `.fs` — one FmSlider row: label (+ changed dot) · value box (+ ↺ when changed)
+ * · 4 dp track with the default notch. The value box is editable and clamps.
+ */
+@Composable
+internal fun CuratedSliderRow(
+    control: InspectorControl,
+    session: DesignSession,
+    label: String,
+    modifier: Modifier = Modifier,
+    hint: String? = null,
+    unit: String? = control.unit,
+    decimalPlaces: Int = 3,
+) {
+    val value = (session.value(control) as? Number)?.toFloat()
+        ?: control.min ?: 0f
+    val min = control.min ?: 0f
+    val max = control.max ?: 1f
+    val default = control.declaredDefault?.toFloatOrNull()
+    val scale = if (control.unitScale > 0f) control.unitScale else 1f
+    val modified = FmSliderMath.isModified(value, default)
+    Column(modifier = modifier.fillMaxWidth().padding(top = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            if (modified) {
+                Box(Modifier.size(4.dp).clip(CircleShape).background(FmPalette.primary))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                text = label,
+                style = CuratedSliderLabel,
+                color = FmPalette.onSurfaceSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (!hint.isNullOrBlank()) {
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = hint,
+                    style = CuratedSliderHint,
+                    color = FmPalette.onSurfaceFaint,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            if (modified) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Button) { session.resetControl(control) }
+                        .semantics { contentDescription = "$label 复位" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "↺",
+                        style = CuratedSliderHint.copy(fontSize = 13.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
+            }
+            Spacer(Modifier.width(6.dp))
+            FmSliderValueBox(
+                value = value,
+                min = min,
+                max = max,
+                unit = unit,
+                label = label,
+                decimalPlaces = decimalPlaces,
+                scale = scale,
+                onCommit = { session.set(control, it) },
+            )
+        }
+        FmSlider(
+            value = value,
+            onValueChange = { session.set(control, it) },
+            valueRange = min..max,
+            step = control.step,
+            defaultValue = default,
+            onReset = if (default != null) ({ session.resetControl(control) }) else null,
+            modified = modified,
+            valueText = { FmUnits.formatNumber(it * scale, decimalPlaces) + (unit ?: "") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** `.fs .lab` — 12.5 `ink-2`. */
+internal val CuratedSliderLabel = TextStyle(
+    fontSize = 12.5.sp,
+    lineHeight = 16.sp,
+    fontWeight = FontWeight.Normal,
+)
+
+/** `.fs .lab .hint` — 11.5 `ink-4`. */
+internal val CuratedSliderHint = TextStyle(
+    fontSize = 11.5.sp,
+    lineHeight = 15.sp,
+    fontWeight = FontWeight.Normal,
+)
+
+/** `.fs .box` — h26, radius 6, `muted-bg`, right-aligned value + unit. */
+internal val ValueBoxWidth = 76.dp
+
+/**
+ * `.fs .box` — h26, radius 6, `muted-bg`, right-aligned value + unit.
+ *
+ * NOTE(WP-V3): the value is numeric — after `theme\FmNumeric.kt` (WP-V1) lands,
+ * this text and the 导出尺寸 / 「已修改 N 项」 counts should switch to it.
+ */
+@Composable
+internal fun FmSliderValueBox(
+    value: Float,
+    min: Float,
+    max: Float,
+    unit: String?,
+    label: String,
+    onCommit: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    decimalPlaces: Int = 3,
+    /** Display multiplier (alpha / logo centre ×100); the stored value stays raw. */
+    scale: Float = 1f,
+) {
+    val display = FmUnits.formatNumber(value * scale, decimalPlaces)
+    var text by remember(value) { mutableStateOf(display) }
+    fun commit() {
+        val next = FmSliderMath.parseTyped(text, value, min, max, scale)
+        onCommit(next)
+        text = FmUnits.formatNumber(next * scale, decimalPlaces)
+    }
+    BasicTextField(
+        value = text,
+        onValueChange = { text = it },
+        singleLine = true,
+        textStyle = TextStyle(
+            fontSize = 11.5.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = FmPalette.onSurface,
+            textAlign = TextAlign.End,
+        ),
+        cursorBrush = SolidColor(FmPalette.primary),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { commit() }),
+        modifier = modifier
+            .height(26.dp)
+            .width(ValueBoxWidth)
+            .clip(RoundedCornerShape(6.dp))
+            .background(FmPalette.surfaceMuted)
+            .border(1.dp, FmPalette.outlineStrong, RoundedCornerShape(6.dp))
+            .onFocusChanged { state -> if (!state.isFocused) commit() }
+            .semantics { contentDescription = "$label 数值" }
+            .padding(horizontal = 8.dp),
+        decorationBox = { inner ->
+            Row(
+                modifier = Modifier.fillMaxHeight(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Box {
+                    if (text.isEmpty()) {
+                        Text(display, style = CuratedSliderHint, color = FmPalette.onSurfaceFaint)
+                    }
+                    inner()
+                }
+                if (!unit.isNullOrEmpty()) {
+                    Text(
+                        text = unit,
+                        style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp),
+                        color = FmPalette.onSurfaceFaint,
+                        modifier = Modifier.padding(start = 2.dp),
+                    )
+                }
+            }
+        },
+    )
+}
+
+/**
+ * `.seg` — `--seg` slot, 2 dp padding, radius 8; buttons h28 / 12.5 px; the
+ * selected thumb is a white surface with a soft shadow that slides (300 ms
+ * spring). Content-sized, so it also works inside a lazy row.
+ */
+@Composable
+internal fun CuratedSegmented(
+    options: List<ControlOption>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    touch: Boolean = false,
+) {
+    var widthPx by remember { mutableStateOf(0f) }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val cellPx = if (options.isEmpty()) 0f else (widthPx - 4f * density) / options.size
+    val index = options.indexOfFirst { it.value == selected }.coerceAtLeast(0)
+    val thumbX by androidx.compose.animation.core.animateDpAsState(
+        targetValue = ((2f + cellPx * index) / density).dp,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 700f),
+        label = "segThumbX",
+    )
+    val thumbW = ((cellPx) / density).dp
+    val surface = FmPalette.surface
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .background(FmPalette.surfaceMuted)
+            .padding(2.dp)
+            .onGloballyPositioned { widthPx = it.size.width.toFloat() },
+    ) {
+        if (thumbW > 0.dp) {
+            Box(
+                Modifier
+                    .padding(top = 2.dp, bottom = 2.dp)
+                    .offset(x = thumbX - 2.dp, y = 0.dp)
+                    .width(thumbW)
+                    .height((if (touch) 40 else 28).dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(surface)
+                    .fmElevated(FmElevation.card, RoundedCornerShape(6.dp)),
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            options.forEach { option ->
+                val active = option.value == selected
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height((if (touch) 40 else 28).dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Tab) { if (!active) onSelect(option.value) }
+                        .semantics {
+                            contentDescription = option.display
+                            stateDescription = if (active) "已选" else "未选"
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = option.display,
+                        style = TextStyle(
+                            fontSize = 12.5.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                        ),
+                        color = if (active) FmPalette.onSurface else FmPalette.onSurfaceSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+

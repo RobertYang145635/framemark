@@ -24,6 +24,12 @@ object LaunchOptions {
 
     /** Open the export sheet once the editor has a loaded card. */
     var openExportSheet: Boolean = false
+    /**
+     * WP-V3 capture hook: `FM_LOGO_PAGE=brands|versions` opens the inspector's
+     * Logo page on that sub-page, so the brand/version screens can be screenshotted
+     * without a click. Consumed by `inspector/LogoPanes.kt`; never written by UI.
+     */
+    var logoPage: String? = null
 
     /** Generate the sample export right away (with the export sheet). */
     var runSampleExport: Boolean = false

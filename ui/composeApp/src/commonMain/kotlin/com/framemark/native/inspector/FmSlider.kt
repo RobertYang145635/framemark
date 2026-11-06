@@ -210,14 +210,15 @@ fun FmSlider(
                 cornerRadius = radius,
             )
             // Default tick: always visible, even when the value is at the default.
+            // PARITY-SPEC §3: 12 × 2 dp notch.
             defaultFraction?.let { f ->
                 val x = left + usable * f
-                val tickHeight = (if (touch) 12f else 10f) * density.density
+                val tickHeight = (if (touch) 14f else 12f) * density.density
                 drawLine(
                     color = tickColor,
                     start = Offset(x, centerY - tickHeight / 2f),
                     end = Offset(x, centerY + tickHeight / 2f),
-                    strokeWidth = 1.dp.toPx(),
+                    strokeWidth = 2.dp.toPx(),
                 )
             }
             // Thumb: white disc with a hairline edge, matching the reference.

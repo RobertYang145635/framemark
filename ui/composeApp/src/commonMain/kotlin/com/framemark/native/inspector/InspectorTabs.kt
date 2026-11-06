@@ -85,12 +85,15 @@ internal fun inspectorPageOf(control: InspectorControl): InspectorPage {
     val param = control.param
     val label = control.label
     return when {
+        // 演示稿 TAB_KEYS.logo 含 showLogo：显示 Logo 属于 Logo 页，不属于文字页。
+        param.endsWith("showLogo") -> InspectorPage.Logo
         control.kind == "brandPicker" ||
             param.contains("logo", ignoreCase = true) ||
             param.endsWith("vendor") ||
             label.contains("标志") ||
             label.contains("字标") -> InspectorPage.Logo
         control.kind == "text" || param.startsWith("text.") ||
+            param == "fontScale" ||
             control.kind == "native_text_slot" ||
             param.startsWith("params.slotText:") ||
             param.startsWith("params.slotOff:") ||
@@ -278,6 +281,12 @@ fun InspectorPageContent(
 ) {
     if (tab.page == InspectorPage.Watermark) {
         watermarkPane?.invoke()
+        return
+    }
+    // 桌面右栏走按演示稿重做的分页（WP-V3）；手机底板（dense）保持原控件列表，
+    // 免得同一份模型在两种宽度下换一套布局。
+    if (!dense) {
+        CuratedPage(tab = tab, session = session, modifier = modifier)
         return
     }
     val sections = tab.controls.groupBy { it.section }.toList()

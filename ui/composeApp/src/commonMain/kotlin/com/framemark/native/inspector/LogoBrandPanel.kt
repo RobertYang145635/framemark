@@ -79,35 +79,12 @@ fun LogoBrandPanel(
     modifier: Modifier = Modifier,
     dense: Boolean = false,
 ) {
-    val brandControl = model.controls.firstOrNull { it.type == ControlType.Brand }
-    val logoControls = model.sections.firstOrNull { it.section == InspectorSection.Logo }?.controls
-        ?: model.controls.filter { it.section == InspectorSection.Logo }
-    val adjustments = logoControls.filterNot { it.type == ControlType.Brand }
-    when (logoBrandMode(brandControl, logoControls)) {
-        LogoBrandMode.Absent -> Column(modifier = modifier.fillMaxWidth()) {
-            FixedLogoNote(
-                title = "这套边框未收录可替换 Logo",
-                body = "当前模板不支持可替换字标，也没有字标参数；不会从品牌库外生成或替换。",
-            )
-        }
-        LogoBrandMode.Fixed -> Column(modifier = modifier.fillMaxWidth()) {
-            FixedLogoNote(
-                title = "当前模板使用固定品牌字标",
-                body = "品牌字标由模板固定，不能替换为其他品牌；下面的字标参数仍可调整。",
-            )
-            if (adjustments.isNotEmpty()) {
-                LogoAdjustments(controls = adjustments, session = session, dense = dense)
-            }
-        }
-        LogoBrandMode.Branded -> BrandedLogoPanel(
-            brandControl = brandControl!!,
-            session = session,
-            adjustments = adjustments,
-            modifier = modifier,
-            dense = dense,
-            userSupported = UserLogoEnv.repository != null && UserLogoSupport.supports(model.cardId),
-        )
-    }
+    // WP-V3: the page body moved to `LogoPanes.kt` so the desktop rail and the
+    // phone sheet render the showcase structure (`logo.js` lgPaneLive / brand /
+    // version pages). Signature and behaviour inputs are unchanged; the legacy
+    // body below stays compiled (still reachable by tests via `logoBrandMode`)
+    // but is no longer the rendered page.
+    CuratedLogoPane(model = model, session = session, dense = dense, modifier = modifier)
 }
 
 @Composable
