@@ -197,6 +197,11 @@ fun PhoneShell() {
                 borderName = store.designOf(photo.id)?.cardId?.let { id -> cardOf(id)?.name },
                 index = index + 1,
                 count = total,
+                // 演示稿的「最近编辑」第二行是「边框名 · 主题」，主题取这张照片自己的覆盖。
+                themeKey = store.designOf(photo.id)?.theme,
+                // 首页扇形按照片自己的长宽比摆，和演示稿的 aspectRatio 一致。
+                widthPx = photo.widthPx,
+                heightPx = photo.heightPx,
             )
         }
         PhoneHomePolicy.recentEdits(rows)
@@ -792,17 +797,9 @@ fun PhoneShell() {
     ) {
         when (page) {
             PhonePage.Home -> PhoneHomeScreen(
-                libraryState = libraryState,
                 recent = recentEdits,
-                photoCount = store.photos.size,
+                presetCount = store.presets.size,
                 onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
-                onPickMany = WorkflowEnv.multiPhotoPicker,
-                onUseSample = {
-                    store.adoptSample()
-                    PhotoSelection.set(null)
-                    page = PhonePagePolicy.afterPhotosAdded()
-                    println("FM_TRAY_SAMPLE")
-                },
                 onOpenSettings = {
                     page = PhonePage.Settings
                     println("FM_PHONE_PAGE Home->Settings viaGear")
@@ -833,14 +830,21 @@ fun PhoneShell() {
                     page = PhonePagePolicy.afterOpenRecent(exists)
                     println("FM_HOME_RECENT photo=${edit.photoId} exists=$exists -> ${page.name}")
                 },
+                // 演示稿的「全部」只是个演示链接；手机上全部照片就在编辑页的胶片条里，
+                // 所以这里选中最上面那张并进编辑页，不做成一枚死按钮。
+                onOpenAll = {
+                    val newest = recentEdits.firstOrNull()
+                    val exists = newest != null && store.photos.any { it.id == newest.photoId }
+                    if (exists) {
+                        store.select(newest!!.photoId)
+                        syncTray()
+                    }
+                    page = PhonePagePolicy.afterOpenRecent(exists)
+                    println("FM_HOME_ALL photos=${store.photos.size} exists=$exists -> ${page.name}")
+                },
             )
 
             PhonePage.Settings -> PhoneSettingsPage(
-                photoCount = store.photos.size,
-                designCount = store.project.designs.size,
-                presetCount = store.presets.size,
-                saveCount = store.saveCount,
-                lastExportName = session.lastExport?.fileName,
                 errorText = store.saveError,
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.Settings) ?: PhonePage.Home
