@@ -209,6 +209,9 @@ fun PhoneEditorScreen(
     textSlots: List<TextSlot> = emptyList(),
     textOutputWidth: Int = 0,
     textOutputHeight: Int = 0,
+    /** 舞台当前照片的像素尺寸；样式页「导出尺寸」用它算真实成片（不再用导出长边顶替）。 */
+    photoWidthPx: Int = 0,
+    photoHeightPx: Int = 0,
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)? = null,
     /** Border ids currently used by any photo of the project (for 常用 → 本项目在用). */
     inUseCardIds: List<String> = emptyList(),
@@ -728,19 +731,11 @@ fun PhoneEditorScreen(
                                 },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                                 // 样式's own 导出尺寸 row (showcase `paneClassicStyle`'s
-                                // `.outsz`): the pixels this photo will actually be
-                                // written at, never a guess.
+                                // `.outsz`): 由照片像素 + 版式留白算出，和桌面 rail
+                                // 同一个 `curatedOutputSize`；不再用导出长边顶替尺寸。
                                 card = card,
-                                outputWidth = if (previewGeo != null && previewGeo!!.w > 0) {
-                                    session.export.longEdge
-                                } else {
-                                    0
-                                },
-                                outputHeight = if (previewGeo != null && previewGeo!!.w > 0 && previewGeo!!.h > 0) {
-                                    (session.export.longEdge.toFloat() * previewGeo!!.h / previewGeo!!.w).roundToInt()
-                                } else {
-                                    0
-                                },
+                                photoWidthPx = photoWidthPx,
+                                photoHeightPx = photoHeightPx,
                             )
                         }
                     }

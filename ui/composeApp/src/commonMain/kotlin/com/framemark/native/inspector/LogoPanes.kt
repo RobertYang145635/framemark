@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -125,13 +126,36 @@ private fun BrandedCuratedLogo(
     }
 
     val brands = catalog.orEmpty()
-    val appliedBrand = logoBrandForAssetKey(brands, raw)
+    // 取值域是「auto / 品牌键 / 精确 cut 键」：先按 cut 键找版本，找不到再按品牌键
+    // 落回品牌条目（`laika` 这类值就是「这本边框用徕卡品牌」）。
+    val appliedBrandByCut = logoBrandForAssetKey(brands, raw)
+    val appliedBrandByKey = if (appliedBrandByCut == null) logoBrandForKeyValue(brands, raw) else null
+    val appliedBrand = appliedBrandByCut ?: appliedBrandByKey
     val appliedVersion = logoVersionForAssetKey(brands, raw)
+        ?: appliedBrandByKey?.let { brand ->
+            brand.versions.firstOrNull { it.id == brand.canonicalVersion } ?: brand.versions.firstOrNull()
+        }
     val isAuto = isAutoMatchBrandValue(raw)
     val isUser = UserLogoLibrary.isUserLogo(raw)
+    // 引擎渲染报告里「品牌」那一行的内容 = 照片 EXIF 的 Make。只有真·自动匹配时
+    // 才有这一行：一旦指定了某个品牌字标，引擎画的是那枚字标，品牌文字行就没了。
+    val photoBrand = LogoPhotoBrand.resolve(LocalCuratedTextSlots.current?.slots, brands)
+    val photoMake = LogoPhotoBrand.makeText(LocalCuratedTextSlots.current?.slots)
+    // 现场诊断（与仓库里其它 FM_ 钩子同风格）：自动匹配/品牌键的分支很难从截图区分，
+    // 打一行就够定位「未收录」到底是没读到品牌、还是值不在库里。
+    println(
+        "FM_LOGO_PANE raw=${raw.take(48)} isAuto=$isAuto isUser=$isUser brands=${brands.size} " +
+            "cutKey=${logoBrandForAssetKey(brands, raw)?.key} brandKey=${logoBrandForKeyValue(brands, raw)?.key} " +
+            "make=$photoMake photoBrand=${photoBrand?.brand?.key}",
+    )
+    // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
+    // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
+    // 值既不是 auto 也不在库里（老工程 / 手改文档）时，引擎同样落到自动解析，
+    // 所以界面也按自动匹配显示，不谎报「未收录」。
+    val effectivelyAuto = isAuto || appliedBrand == null
     val mode = when {
         isUser -> "user"
-        isAuto || appliedBrand == null -> "auto"
+        effectivelyAuto -> "auto"
         else -> "lib"
     }
 
@@ -209,19 +233,36 @@ private fun BrandedCuratedLogo(
             )
             Spacer(Modifier.height(10.dp))
             CuratedLogoNowCard(
-                assetKey = raw,
+                assetKey = when {
+                    isUser -> raw
+                    appliedVersion != null && appliedBrand != null -> raw
+                    // 自动匹配画的是引擎按照片品牌选中的那枚字标（`_black` app-logo）。
+                    effectivelyAuto -> photoBrand?.assetKey
+                    else -> raw
+                },
+                plateFallback = when {
+                    // 没有照片品牌可画时，「自动匹配」这四个字比「未收录」准确：
+                    // 未收录说的是品牌库里没有，而这里常常是这一帧没报告品牌行。
+                    effectivelyAuto && photoBrand == null -> "自动"
+                    isUser -> "—"
+                    else -> null
+                },
                 title = when {
                     isUser -> "我的 Logo"
                     appliedVersion != null && appliedBrand != null ->
                         "${logoBrandTitle(appliedBrand)} · ${appliedVersion.name}"
-                    isAuto -> "自动匹配"
+                    // 演示稿 `lgPaneLive`：有照片品牌时显示品牌名。
+                    effectivelyAuto -> photoBrand?.brand?.label ?: "自动匹配"
                     else -> "未收录"
                 },
                 sub = when {
                     isUser -> "我的 Logo · 保存在全局 Logo 库"
                     appliedVersion != null && appliedBrand != null -> "边框自带标志 · 已选版本"
-                    isAuto -> "自动匹配 · 按边框自己的品牌"
-                    else -> "参数不在品牌库里，不会用同品牌别的图代替"
+                    effectivelyAuto && photoBrand != null -> "自动匹配 · 按照片品牌 ${photoBrand.brand.label}"
+                    // 指定了品牌字标时引擎不画品牌文字行，这一帧就读不到照片品牌。
+                    effectivelyAuto -> "自动匹配 · 按边框自己的品牌"
+                    // 演示稿：照片品牌“X”未收录，可从品牌库选择（没有 make 时写“未知”）。
+                    else -> "照片品牌“${photoMake ?: "未知"}”未收录，可从品牌库选择"
                 },
             )
             Spacer(Modifier.height(10.dp))
@@ -255,7 +296,12 @@ private enum class LogoPage { Logo, Brands, Versions }
 
 /** `lgp-now` — 64 × 40 plate + title + subtitle. */
 @Composable
-private fun CuratedLogoNowCard(assetKey: String, title: String, sub: String) {
+private fun CuratedLogoNowCard(
+    assetKey: String?,
+    title: String,
+    sub: String,
+    plateFallback: String? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -264,7 +310,7 @@ private fun CuratedLogoNowCard(assetKey: String, title: String, sub: String) {
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LogoPlate(assetKey, 64.dp, 40.dp)
+        LogoNowPlate(assetKey = assetKey, fallback = plateFallback)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
@@ -283,6 +329,28 @@ private fun CuratedLogoNowCard(assetKey: String, title: String, sub: String) {
             )
         }
     }
+}
+
+/**
+ * 「当前 Logo」卡的字标位：入参是**持久化的 cut 键**（`panasionic_black`、
+ * `ver:laika:…`），而 [LogoPlate] 认的是打包的 webp 名，中间差一步
+ * [LogoBrandCatalog.previewForAssetKey]。这一步以前缺失，于是选中的版本在卡片上
+ * 显示「未收录」（WP-Q 的 `desktop-afterback` 就是这样），自动匹配也画不出图。
+ */
+@Composable
+private fun LogoNowPlate(assetKey: String?, fallback: String?) {
+    val key = assetKey?.takeIf { it.isNotBlank() && !isAutoMatchBrandValue(it) }
+    var resolved by remember(key) { mutableStateOf(false) }
+    var preview by remember(key) { mutableStateOf<String?>(null) }
+    LaunchedEffect(key) {
+        preview = if (key == null) null else LogoBrandCatalog.previewForAssetKey(key)
+        resolved = true
+    }
+    val placeholder = when {
+        !resolved -> "—"
+        else -> fallback ?: if (key != null) "未收录" else "自动"
+    }
+    LogoPlate(preview, 64.dp, 40.dp, fallback = if (preview != null) null else placeholder)
 }
 
 /** `lgp-entry` — 「选择品牌」 + subtitle + 「进入 ›」. */
@@ -312,7 +380,13 @@ private fun CuratedLogoEntry(subtitle: String, onClick: () -> Unit) {
 
 /** Logo artwork plate — stays a light surface in both appearances. */
 @Composable
-internal fun LogoPlate(assetKey: String?, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
+internal fun LogoPlate(
+    assetKey: String?,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    /** 无图时的占位文字；null 时沿用「自动 / 未收录 / —」的原判定。 */
+    fallback: String? = null,
+) {
     // 自动匹配 没有具体字标资源（由引擎按照片品牌解析），不画「未收录」。
     val isAutoKey = assetKey.isNullOrBlank() || isAutoMatchBrandValue(assetKey)
     val preview = rememberLogoPreview(if (isAutoKey) null else assetKey)
@@ -334,6 +408,7 @@ internal fun LogoPlate(assetKey: String?, width: androidx.compose.ui.unit.Dp, he
         } else {
             Text(
                 text = when {
+                    fallback != null -> fallback
                     isAutoKey -> "自动"
                     preview.missing -> "未收录"
                     else -> "—"
@@ -406,33 +481,47 @@ private fun orderedLogoOptions(options: List<ControlOption>): List<ControlOption
 // 品牌页 / 版本页（`logo.js` lgBrandPage / lgVersionPage），内联在右栏里
 // ---------------------------------------------------------------------------
 
-/** `.lgp-back` — 「‹ 返回」 breadcrumb. */
+/**
+ * `.lgp-top` — 返回 chip 与「当前在哪」**同一行**，面包屑右对齐
+ * （`logo.css:8` `.lgp-top` + `.lgp-crumb{margin-left:auto}`）。
+ * WP-Q D3：两行堆叠比演示稿多一行，折叠成一行。
+ */
 @Composable
-private fun LogoBack(text: String, onClick: () -> Unit) {
+private fun LogoTop(back: String, crumb: String, onBack: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("‹", style = CuratedNote.copy(fontSize = 15.sp), color = FmPalette.onSurfaceSecondary)
-        Text(text, style = CuratedNote, color = FmPalette.onSurfaceSecondary)
+        Row(
+            modifier = Modifier
+                .height(26.dp)
+                .clip(RoundedCornerShape(FmRadii.pill))
+                .background(FmPalette.surfaceMuted)
+                .clickable(role = Role.Button, onClick = onBack)
+                .semantics { contentDescription = back }
+                .padding(start = 7.dp, end = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text("‹", style = CuratedNote.copy(fontSize = 13.sp), color = FmPalette.onSurfaceMuted)
+            Text(
+                text = back,
+                style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                color = FmPalette.onSurfaceSecondary,
+                maxLines = 1,
+            )
+        }
+        Text(
+            text = crumb,
+            style = CuratedNote.copy(fontSize = 11.sp),
+            color = FmPalette.onSurfaceFaint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
+        )
     }
-}
-
-@Composable
-private fun LogoCrumb(text: String) {
-    Text(
-        text = text,
-        style = CuratedNote,
-        color = FmPalette.onSurfaceFaint,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-    )
 }
 
 /** Brand page: search · group chips · one row per brand. */
@@ -453,8 +542,13 @@ private fun CuratedLogoBrandPage(
                 brand.versions.any { it.name.lowercase().contains(q) })
     }
     Column(Modifier.fillMaxWidth()) {
-        LogoBack("返回 Logo", onBack)
-        LogoCrumb(browsing ?: appliedBrand?.key ?: "未选择品牌")
+        // 演示稿：`kb ? '当前浏览：' + lgBrandTitle : '未选择品牌'`，右对齐在返回 chip 同一行。
+        val browsingBrand = brands.firstOrNull { it.key == browsing } ?: appliedBrand
+        LogoTop(
+            back = "返回 Logo",
+            crumb = browsingBrand?.let { "当前浏览：${logoBrandTitle(it)}" } ?: "未选择品牌",
+            onBack = onBack,
+        )
         CuratedGroup(
             title = "选择品牌",
             right = { CuratedCount("${rows.size} / ${brands.size}") },
@@ -597,8 +691,11 @@ private fun CuratedLogoVersionPage(
     onPick: (String) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth()) {
-        LogoBack("返回品牌", onBack)
-        LogoCrumb("${logoBrandTitle(brand)} · ${brand.versions.size} 个版本")
+        LogoTop(
+            back = "返回品牌",
+            crumb = "${logoBrandTitle(brand)} · ${brand.versions.size} 个版本",
+            onBack = onBack,
+        )
         CuratedGroup(
             title = logoBrandTitle(brand),
             right = { CuratedCount("单列 · 按年代") },
@@ -628,15 +725,16 @@ private fun CuratedLogoVersionPage(
                 .sortedBy { era -> eraOrder.indexOf(era).takeIf { it >= 0 } ?: eraOrder.size }
             eras.forEach { era ->
                 val versions = brand.versions.filter { it.era == era }
+                // 演示稿 `.lgp-era`：年代 + 紧跟的计数（`gap:6`），不是右对齐的徽标。
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 5.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
                         text = eraLabel(era),
-                        style = CuratedNote.copy(fontWeight = FontWeight.SemiBold),
+                        style = CuratedNote.copy(fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold),
                         color = FmPalette.onSurfaceSecondary,
-                        modifier = Modifier.weight(1f),
                     )
                     CuratedCount(versions.size.toString())
                 }

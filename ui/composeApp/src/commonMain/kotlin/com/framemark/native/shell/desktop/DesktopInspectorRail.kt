@@ -210,16 +210,14 @@ fun DesktopInspectorRail(
                         text = { Text("全部恢复默认", style = FmType.bodyMedium) },
                         onClick = { menuOpen = false; onResetAll() },
                     )
+                    // 折叠是原生窄栏需要的操作，但演示稿的 ihead 只有「⋯」一个按钮，
+                    // 所以收进菜单，不再占标题行的第二个图标位（WP-Q D2）。
+                    DropdownMenuItem(
+                        text = { Text("折叠参数面板", style = FmType.bodyMedium) },
+                        onClick = { menuOpen = false; onCollapse() },
+                    )
                 }
             }
-            // 演示稿的 ihead 只有「⋯」；折叠是原生窄栏需要的操作，收成一个更小的箭头。
-            Box(Modifier.width(6.dp))
-            InspectorIconButton(
-                glyph = "›",
-                description = "折叠参数面板",
-                onClick = onCollapse,
-                size = 22.dp,
-            )
         }
 
         // ---------------------------------------------------------------- itabs

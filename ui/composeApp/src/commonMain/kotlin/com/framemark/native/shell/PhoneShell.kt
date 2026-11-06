@@ -896,6 +896,8 @@ fun PhoneShell() {
                 textSlots = textSlots.slots,
                 textOutputWidth = textSlots.width,
                 textOutputHeight = textSlots.height,
+                photoWidthPx = store.activePhoto?.widthPx ?: 0,
+                photoHeightPx = store.activePhoto?.heightPx ?: 0,
                 onTextSlots = textSlots::update,
                 // 常用 → 本项目在用: every border a photo of this project already uses
                 // (WP-L `LibraryIndex.common` expects these ids).

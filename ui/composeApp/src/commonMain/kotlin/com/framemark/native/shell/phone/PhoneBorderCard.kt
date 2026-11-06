@@ -40,6 +40,9 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.shell.PHONE_FRAME_CARD_SIZE_DP
+import com.framemark.native.shell.PhoneProjectRuntime
+import com.framemark.native.shell.desktop.DesktopLibraryThumb
+import com.framemark.native.shell.desktop.desktopActivePhotoPath
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -249,6 +252,22 @@ internal fun phoneCardDescription(card: LibraryCard): String {
 /** The frame's own thumbnail, fitted (never cropped) onto the dark tile. */
 @Composable
 fun PhoneFramePreview(card: LibraryCard, modifier: Modifier = Modifier) {
+    // WP-R：卡片缩略图 = **当前照片**套该边框，和桌面左栏同一条能力
+    // （`DesktopLibraryThumb` → `DesktopLibraryPhotoThumbs` → `NativeEngine.preview`）。
+    // 照片来源与两端各自的项目持有者一致：桌面是 `WorkflowEnv.projectHolder`，
+    // 手机是 `PhoneProjectRuntime`（Android 不设 projectHolder）。都没有时退回随包预览。
+    val photoPath = desktopActivePhotoPath()
+        ?: PhoneProjectRuntime.current?.activePhoto?.path?.takeIf { it.isNotBlank() }
+    if (photoPath != null) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            DesktopLibraryThumb(
+                card = card,
+                photoPath = photoPath,
+                modifier = Modifier.fillMaxSize().padding(2.dp),
+            )
+        }
+        return
+    }
     val bitmap by produceState<ImageBitmap?>(initialValue = null, card.id, card.previewFile) {
         value = if (card.previewFile.isBlank()) {
             null

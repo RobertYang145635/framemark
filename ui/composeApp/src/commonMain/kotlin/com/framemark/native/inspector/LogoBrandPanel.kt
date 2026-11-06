@@ -934,6 +934,35 @@ internal fun logoBrandForAssetKey(brands: List<LogoBrand>, assetKey: String): Lo
     }
 }
 
+/**
+ * 品牌键（不是某一枚 cut）落回品牌条目：`PhotoDesign.logo` 的取值域是
+ * `auto` / 品牌键（`laika`）/ 精确 cut 键三者的并集，所以只认 cut 键会让
+ * **已经生效的品牌**显示成「未收录」（WP-Q D1 的桌面/手机同源症状之一）。
+ *
+ * 规则照演示稿 `core.js` 的 `brandKey()`：去掉 `_black` / `_white` / `_long`
+ * 后缀，再按 `BRAND_ALIAS` 把英文名折回目录键。
+ */
+internal fun logoBrandForKeyValue(brands: List<LogoBrand>, raw: String): LogoBrand? {
+    val trimmed = raw.trim().lowercase()
+    if (trimmed.isEmpty()) return null
+    val stripped = trimmed.replace(LOGO_TONE_SUFFIX, "")
+    val key = BrandKeyAlias[stripped] ?: stripped
+    return brands.firstOrNull { it.key.lowercase() == key }
+}
+
+/** `core.js` `BRAND_ALIAS`（英文名 → 目录键），另加目录折叠里的 LUMIX。 */
+private val BrandKeyAlias = mapOf(
+    "leica" to "laika",
+    "panasonic" to "panasionic",
+    "lumix" to "panasionic",
+    "hasselblad" to "hasu",
+    "fujifilm" to "fushi",
+    "olympus" to "aolinbasi",
+    "pentax" to "binde",
+)
+
+private val LOGO_TONE_SUFFIX = Regex("_(black|white|long|loing)$")
+
 /** The exact version of one applied [assetKey]; never a same-brand substitute. */
 internal fun logoVersionForAssetKey(brands: List<LogoBrand>, assetKey: String): LogoVersion? {
     if (assetKey.isBlank()) return null

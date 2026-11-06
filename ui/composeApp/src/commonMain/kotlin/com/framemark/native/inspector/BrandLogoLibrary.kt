@@ -185,6 +185,14 @@ object LogoBrandCatalog {
             .firstOrNull { it.assetKey == assetKey }
     }
 
+    /**
+     * 持久化的 cut 键 → 打包的预览 webp 名（`files/logov/` 里的文件名）。
+     * 「当前 Logo」卡拿到的值是 cut 键，而占位图加载器认的是 webp 名，两者不同，
+     * 中间这一步不能省；找不到就是真的没有这枚字标，返回 null。
+     */
+    suspend fun previewForAssetKey(assetKey: String): String? =
+        cutForAssetKey(assetKey)?.preview?.takeIf { it.isNotBlank() }
+
     /** Read the exact catalog WebP bytes used by both native platform adapters. */
     suspend fun readCutBytes(assetKey: String): ByteArray {
         val cut = cutForAssetKey(assetKey)
