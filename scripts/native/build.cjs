@@ -35,8 +35,6 @@ const ANDROID_PACKAGE_SOURCE_INPUTS = [
   'ui/composeApp/src/androidMain/cpp/CMakeLists.txt',
   'ui/composeApp/build.gradle.kts'
 ]
-const options = parseArgs(process.argv.slice(2))
-
 function parseArgs (args) {
   const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, jobName: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
   for (let i = 0; i < args.length; i++) {
@@ -211,16 +209,53 @@ function verifyCheckedPrebuilt () {
 function verifyReleaseSurface () {
   const sourcePath = path.join(ROOT, 'ui/composeApp/src/androidMain/kotlin/com/framemark/native/MainActivity.kt')
   const manifestPath = path.join(ROOT, 'ui/composeApp/src/androidMain/AndroidManifest.xml')
-  const source = fs.readFileSync(sourcePath, 'utf8').replaceAll('\r\n', '\n')
-  const manifest = fs.readFileSync(manifestPath, 'utf8').replaceAll('\r\n', '\n')
-  const guard = source.indexOf('if (BuildConfig.DEBUG) {')
-  const content = source.indexOf('setContent { FrameMarkApp() }')
-  const close = source.lastIndexOf('\n        }\n        setContent { FrameMarkApp() }', content)
-  const qaStart = source.indexOf('LaunchOptions.openCardId = intent?.getStringExtra("fmCard")')
-  const contained = guard >= 0 && qaStart > guard && close >= guard && content > close
-  const exportedLauncher = /<activity[\s\S]*?android:exported="true"[\s\S]*?<\/activity>/.test(manifest) &&
-    /<action android:name="android\.intent\.action\.MAIN"\s*\/>/.test(manifest) &&
-    /<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/.test(manifest)
+  const source = fs.readFileSync(sourcePath, 'utf8')
+  const manifest = fs.readFileSync(manifestPath, 'utf8')
+  return checkReleaseSurface(source, manifest)
+}
+
+// Returns the index of the "}" that closes the "{" at openIndex. Only brace
+// characters are counted: the guarded QA hooks are plain statements, so their
+// braces balance and no string or comment parsing is needed.
+function findBlockEnd (text, openIndex) {
+  let depth = 0
+  for (let index = openIndex; index >= 0 && index < text.length; index++) {
+    if (text[index] === '{') depth += 1
+    else if (text[index] === '}') {
+      depth -= 1
+      if (depth === 0) return index
+    }
+  }
+  return -1
+}
+
+// The normal UI entry is a setContent call at the eight-space content indent.
+// It may open a single-line or a multi-line block, so only the opening is
+// matched. The debug-only QA intent hooks must live inside the debug guard and
+// the guard block must end on the line immediately above that entry: a bare
+// "}" line followed by setContent, with no code in between.
+function checkReleaseSurface (source, manifest) {
+  const text = String(source).replaceAll('\r\n', '\n')
+  const manifestText = String(manifest).replaceAll('\r\n', '\n')
+  const qaStart = text.indexOf('LaunchOptions.openCardId = intent?.getStringExtra("fmCard")')
+  // The guard that matters is the one nearest before the hooks. Taking the
+  // first guard in the file would accept hooks sitting outside every debug
+  // block as long as some earlier debug block exists.
+  const guard = qaStart >= 0 ? text.lastIndexOf('if (BuildConfig.DEBUG) {', qaStart) : -1
+  const content = text.search(/\n        setContent\s*\{/)
+  let close = -1
+  if (content >= 0) {
+    const closeLineStart = text.lastIndexOf('\n', content - 1) + 1
+    if (text.slice(closeLineStart, content) === '        }') close = closeLineStart
+  }
+  const guardBlockEnd = guard >= 0 ? findBlockEnd(text, text.indexOf('{', guard)) : -1
+  // The close line must be the end of the guard block itself, not of a later
+  // block that happens to sit between the hooks and the UI entry.
+  const contained = guard >= 0 && qaStart > guard && close > qaStart && content > close &&
+    guardBlockEnd >= 0 && guardBlockEnd === close + 8
+  const exportedLauncher = /<activity[\s\S]*?android:exported="true"[\s\S]*?<\/activity>/.test(manifestText) &&
+    /<action android:name="android\.intent\.action\.MAIN"\s*\/>/.test(manifestText) &&
+    /<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/.test(manifestText)
   return { status: contained && exportedLauncher ? 'PASS' : 'FAIL', debugGuardContainsQaHooks: contained, normalExportedLauncherPreserved: exportedLauncher }
 }
 
@@ -488,7 +523,7 @@ function requiredCheck (id, status, detail) {
   return { id, required: true, status, detail }
 }
 
-async function main () {
+async function main (options) {
   if (options.help) { process.stdout.write(usage()); return 0 }
   if (process.platform !== 'win32') throw new Error('This build entry point requires Windows; use the Gradle/Cargo commands directly on other hosts.')
 
@@ -1069,7 +1104,16 @@ async function signRelease (apk, tools, envBase, runRoot, step) {
   return { status: verify.status === 'PASS' && actual.toLowerCase() === expected ? 'PASS' : 'FAIL', signedApk, detail: actual.toLowerCase() === expected ? 'certificate fingerprint verified' : 'certificate fingerprint mismatch' }
 }
 
-main().then((code) => { process.exitCode = code }).catch((error) => {
-  process.stderr.write(`FrameMark build error: ${error.stack || error.message}\n`)
-  process.exitCode = 2
-})
+function runCli () {
+  const options = parseArgs(process.argv.slice(2))
+  return main(options).then((code) => { process.exitCode = code }).catch((error) => {
+    process.stderr.write(`FrameMark build error: ${error.stack || error.message}\n`)
+    process.exitCode = 2
+  })
+}
+
+// Only execute the build when this file is the CLI entry point; node:test
+// requires the module to expose checkReleaseSurface without starting a build.
+if (require.main === module) runCli()
+
+module.exports = { checkReleaseSurface }

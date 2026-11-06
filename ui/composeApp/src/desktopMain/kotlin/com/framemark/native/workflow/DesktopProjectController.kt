@@ -197,6 +197,48 @@ class DesktopProjectController(
         mutate { it.applyCard(cardId, styleId) }
     }
 
+    /**
+     * WP-D1 phase 2: copy a source photo's border + parameter/text overrides onto
+     * other photos. Only `cardId`, `styleId`, `params` and `text` move; the target
+     * keeps its own theme, ratio, logo, font scale and watermark, so this cannot
+     * silently duplicate a signature or re-flow a photo. Returns the number of
+     * designs that actually changed.
+     */
+    override fun applyDesignFromPhoto(sourcePhotoId: String, targetPhotoIds: List<String>): Int {
+        if (!requireWritableProject()) return -1
+        val source = project.designs[sourcePhotoId] ?: return 0
+        val targets = targetPhotoIds
+            .distinct()
+            .filter { it != sourcePhotoId && project.designs.containsKey(it) }
+        if (targets.isEmpty()) return 0
+        var changed = 0
+        val mutated = mutate { current ->
+            var next = current
+            targets.forEach { photoId ->
+                val before = next.designs[photoId] ?: return@forEach
+                val after = before.copy(
+                    cardId = source.cardId,
+                    styleId = source.styleId,
+                    params = source.params,
+                    text = source.text,
+                    baseDesign = source.baseDesign,
+                )
+                if (after != before) {
+                    next = next.setDesign(photoId, after)
+                    changed++
+                }
+            }
+            next
+        }
+        if (mutated && changed > 0) {
+            // The active photo may be one of the targets: make the shell re-read it.
+            hydrationVersion++
+            saveNow()
+            println("FM_DESIGN_COPY source=$sourcePhotoId targets=${targets.size} changed=$changed")
+        }
+        return changed
+    }
+
     override fun setExportSettings(settings: ExportSettings) {
         val mapped = settings.toProduct()
         if (mapped == project.exportSettings) return
