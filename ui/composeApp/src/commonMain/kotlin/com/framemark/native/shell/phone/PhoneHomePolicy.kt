@@ -42,7 +42,19 @@ data class PhoneRecentEdit(
     /** 1-based position in the project, shown as 2/3. */
     val index: Int = 1,
     val count: Int = 1,
+    /** The photo's own theme override (`white` / `ink` / …); null keeps the card default. */
+    val themeKey: String? = null,
+    /** Source aspect (width / height) for the hero fan; 0 keeps the 4:3 default. */
+    val widthPx: Int = 0,
+    val heightPx: Int = 0,
 ) {
+    /** The hero fan's card shape: the photo's own aspect when known, else 4:3. */
+    fun aspectRatio(): Float =
+        if (widthPx > 0 && heightPx > 0) widthPx.toFloat() / heightPx.toFloat() else DEFAULT_ASPECT
+
+    private companion object {
+        const val DEFAULT_ASPECT = 4f / 3f
+    }
     /** The second line of the row: border · position, never an empty string. */
     fun subtitle(): String {
         val border = borderName?.takeIf { it.isNotBlank() } ?: "未应用边框"
