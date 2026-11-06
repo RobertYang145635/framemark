@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -69,11 +75,28 @@ fun PhoneEditorTopBar(
 ) {
     // The bar sits under the status bar and is dark in both themes.
     SystemBarsOnDarkSurface(true)
+    // The shell applies the safe-drawing inset, so the strip *above* this node is
+    // still the light canvas while the icons are already white — in light mode the
+    // clock was unreadable, and dark mode showed a #121316 seam over the #2B2C2F bar
+    // (MID-APK-REPORT §6 item 2). Painting upward keeps the bar's own layout budget
+    // untouched and puts the same stage colour behind the status bar in both modes.
+    val stageColor = FmPalette.stage
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Column(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .background(FmPalette.stage),
+            .background(stageColor)
+            .drawBehind {
+                val strip = statusBarTop.toPx()
+                if (strip > 0f) {
+                    drawRect(
+                        color = stageColor,
+                        topLeft = Offset(0f, -strip),
+                        size = Size(size.width, strip),
+                    )
+                }
+            },
     ) {
         Row(
             modifier = Modifier

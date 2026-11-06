@@ -212,6 +212,12 @@ fun PhoneEditorScreen(
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)? = null,
     /** Border ids currently used by any photo of the project (for 常用 → 本项目在用). */
     inUseCardIds: List<String> = emptyList(),
+    /**
+     * 返回 with nothing left to collapse: leaves the editor for 首页 (WP-P2 shell
+     * page state; MID-APK-REPORT §6 item 1). Null keeps the old no-op behaviour for
+     * any other caller.
+     */
+    onRequestHome: (() -> Unit)? = null,
 ) {
     // Seed declared values once per card; a preset applied beforehand wins.
     // Evidence hooks (FM_DEMO_EDITS / FM_UNDO / FM_AUTO_SAVE_PRESET) run here too.
@@ -463,7 +469,7 @@ fun PhoneEditorScreen(
                                         fullParameterPage -> closeFullParametersOrHideKeyboard()
                                         focusMode -> focusMode = false
                                         sheetExpanded -> sheetExpanded = false
-                                        else -> Unit
+                                        else -> onRequestHome?.invoke()
                                     }
                                 },
                                 onTogglePhotos = { photosOpen = !photosOpen },
@@ -1114,28 +1120,6 @@ private fun StageArea(
                         .padding(end = StageEdge, bottom = StageEdge),
                 )
             }
-        }
-        // Top-start: the render badge of NativeStagePreview lives at the top end.
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(FmSpacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 专注查看 stays available, as a compact stage chip instead of the
-            // removed V06 tool band.
-            PhoneStageChip(
-                text = if (focusMode) "退出专注" else "专注",
-                description = if (focusMode) "退出专注" else "专注查看",
-                onClick = onFocusToggle,
-            )
-            StageOverflowChip(
-                onApplyAll = onApplyAll,
-                onOpenPhotoBatch = onOpenPhotoBatch,
-                onOpenBatch = onOpenBatch,
-                onOpenSettings = onOpenSettings,
-            )
         }
     }
 }
