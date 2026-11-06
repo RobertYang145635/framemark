@@ -133,7 +133,9 @@ import com.framemark.native.shell.desktop.OtherPhotoDesign
 import com.framemark.native.shell.desktop.desktopPageForLaunchTab
 import com.framemark.native.shell.desktop.desktopStageBackdrop
 import com.framemark.native.shell.desktop.desktopWorkflowWatermark
+import com.framemark.native.shell.desktop.BatchWorkspace
 import com.framemark.native.shell.desktop.DesktopApplyDesignDialog
+import com.framemark.native.shell.desktop.DesktopExportDialog
 import com.framemark.native.shell.desktop.DesktopCollapsedRail
 import com.framemark.native.shell.desktop.DesktopFilmstrip
 import com.framemark.native.shell.desktop.DesktopInspectorRail
@@ -150,11 +152,9 @@ import com.framemark.native.ui.resizeCursor
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.toDesignSnapshot
-import com.framemark.native.workflow.ProjectBatchPanel
-import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesktopWatermarkPanel
+import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
-import com.framemark.native.workflow.ExportSheet
 import com.framemark.native.workflow.InMemoryProjectHolder
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeStagePreview
@@ -913,6 +913,27 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
                 Spacer(Modifier.height(FmDesktop.gap))
 
+                if (stageMode == StageMode.Batch) {
+                    // WP-D2: 顶栏切到「批量导出」时整个工作区换成 V2 批量工作区
+                    // （左勾选 · 中联系表 · 右设置摘要 + 队列）。
+                    BatchWorkspace(
+                        projects = projects,
+                        cardName = { id ->
+                            (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards
+                                ?.firstOrNull { it.id == id }?.name
+                        },
+                        // 批量与单张共用同一份导出设置：这里直接开同一个对话框，
+                        // 关掉后摘要按 project.exportSettings 重新算。
+                        onOpenExportSettings = { requestExport() },
+                        onBackToEdit = { photoId ->
+                            projects.selectPhoto(photoId)
+                            stageMode = StageMode.Edit
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    )
+                } else {
                 DesktopColumnLayout(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -940,7 +961,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         println("FM_TEXT_FOCUS key=${key ?: "-"} page=${paramsPage.name}")
                     },
                     highlightedTextSlotKey = focusedTextSlotKey,
-                    stageMode = stageMode,
                     projects = projects,
                     onAddPhoto = addPhoto,
                     onRemovePhoto = { id -> removeTarget = projects.photos.firstOrNull { it.id == id } },
@@ -979,6 +999,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         }
                     },
                 )
+                }
             }
 
             trialNotice?.let { notice ->
@@ -1019,19 +1040,20 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 } else {
                     selectedCard
                 }
-                ExportSheet(
+                // WP-D2: Windows 用 V2 导出对话框（预览 / 格式 / 尺寸 / 质量 / 文件名
+                // 变量 / 保存位置 / 结果页）。workflow.ExportSheet 保留给手机，见报告 §5。
+                DesktopExportDialog(
                     session = session,
                     card = exportCard,
-                    autoGenerate = LaunchOptions.runSampleExport,
                     design = if (activePhoto != null) {
                         activeDesign?.takeIf { it.cardId == exportCard?.id }?.toDesignSnapshot()
                     } else {
                         exportCard?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
                     },
-                    photoPath = activePhoto?.path,
-                    photoDisplayName = activePhoto?.displayName,
+                    photo = activePhoto,
                     photoIndex = projects.photoIndex(projects.activePhotoId),
                     overlay = { projects.overlaySpec() },
+                    autoRun = LaunchOptions.runSampleExport,
                     onDismiss = { exportSheetOpen = false },
                 )
             }
@@ -1433,7 +1455,6 @@ private fun DesktopColumnLayout(
     onSelectPage: (InspectorPage) -> Unit,
     onTextSlotFocus: (String?) -> Unit,
     highlightedTextSlotKey: String?,
-    stageMode: StageMode,
     projects: ProjectHolder,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit,
@@ -1602,20 +1623,18 @@ private fun DesktopColumnLayout(
                 when (pane) {
                     LIBRARY_PANE -> libraryContent()
                     PARAMS_PANE -> inspectorRail { layout.narrowPane = STAGE_PANE }()
-                    else -> if (stageMode == StageMode.Batch) {
-                        ProjectBatchPanel(projects)
-                    } else {
-                        EditStage(
-                            card = selectedCard, session = session, model = model, projects = projects,
-                            textSlots = textSlots,
-                            highlightedTextSlotKey = highlightedTextSlotKey,
-                            stageWidthDp = availableWidthDp,
-                            onAddPhoto = onAddPhoto, onRemovePhoto = onRemovePhoto,
-                            onSavePreset = onSavePreset, onResetDesign = onResetDesign,
-                            hoveredCard = hoveredCard, holdOriginal = holdOriginal,
-                            onReuseDesign = onReuseDesign, onPickBorder = onPickBorder,
-                        )
-                    }
+                    // WP-D2: 批量导出由 [BatchWorkspace] 在外层整块替换工作区，
+                    // 这里只会是编辑舞台。
+                    else -> EditStage(
+                        card = selectedCard, session = session, model = model, projects = projects,
+                        textSlots = textSlots,
+                        highlightedTextSlotKey = highlightedTextSlotKey,
+                        stageWidthDp = availableWidthDp,
+                        onAddPhoto = onAddPhoto, onRemovePhoto = onRemovePhoto,
+                        onSavePreset = onSavePreset, onResetDesign = onResetDesign,
+                        hoveredCard = hoveredCard, holdOriginal = holdOriginal,
+                        onReuseDesign = onReuseDesign, onPickBorder = onPickBorder,
+                    )
                 }
             }
         }
@@ -1643,27 +1662,23 @@ private fun DesktopColumnLayout(
             }
 
             DesktopPanel(modifier = Modifier.weight(1f)) {
-                if (stageMode == StageMode.Batch) {
-                    ProjectBatchPanel(projects)
-                } else {
-                    EditStage(
-                        card = selectedCard,
-                        session = session,
-                        model = model,
-                        projects = projects,
-                        textSlots = textSlots,
-                        highlightedTextSlotKey = highlightedTextSlotKey,
-                        stageWidthDp = columns.stage,
-                        onAddPhoto = onAddPhoto,
-                        onRemovePhoto = onRemovePhoto,
-                        onSavePreset = onSavePreset,
-                        onResetDesign = onResetDesign,
-                        hoveredCard = hoveredCard,
-                        holdOriginal = holdOriginal,
-                        onReuseDesign = onReuseDesign,
-                        onPickBorder = onPickBorder,
-                    )
-                }
+                EditStage(
+                    card = selectedCard,
+                    session = session,
+                    model = model,
+                    projects = projects,
+                    textSlots = textSlots,
+                    highlightedTextSlotKey = highlightedTextSlotKey,
+                    stageWidthDp = columns.stage,
+                    onAddPhoto = onAddPhoto,
+                    onRemovePhoto = onRemovePhoto,
+                    onSavePreset = onSavePreset,
+                    onResetDesign = onResetDesign,
+                    hoveredCard = hoveredCard,
+                    holdOriginal = holdOriginal,
+                    onReuseDesign = onReuseDesign,
+                    onPickBorder = onPickBorder,
+                )
             }
 
             if (columns.showRight) {
