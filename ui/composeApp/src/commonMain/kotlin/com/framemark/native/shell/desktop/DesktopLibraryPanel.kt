@@ -301,7 +301,7 @@ private fun LibraryPanelHeader(
                         Text(
                             text = count.toString(),
                             style = DesktopLibraryType.tabCount,
-                            color = FmPalette.onSurfaceFaint,
+                            color = FmPalette.onSurfaceMuted,
                             maxLines = 1,
                         )
                     }
@@ -516,7 +516,7 @@ private fun LibraryAnchorRow(
                             color = when {
                                 !enabled -> FmPalette.onSurfaceFaint
                                 on -> FmPalette.primary
-                                else -> FmPalette.onSurfaceFaint
+                                else -> FmPalette.onSurfaceMuted
                             },
                             maxLines = 1,
                         )
@@ -810,7 +810,7 @@ private fun LibraryGroupHeader(group: LibraryCardGroup) {
         Text(
             text = group.count.toString(),
             style = DesktopLibraryType.chipCount,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
             modifier = Modifier.padding(bottom = 2.dp),
         )
@@ -819,7 +819,7 @@ private fun LibraryGroupHeader(group: LibraryCardGroup) {
             Text(
                 text = group.note.orEmpty(),
                 style = DesktopLibraryType.groupNote,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(bottom = 1.dp),

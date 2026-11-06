@@ -33,35 +33,38 @@ internal fun PhoneBackGlyph(tint: Color, modifier: Modifier = Modifier) {
     }
 }
 
-/** 撤销 / 重做: the V06 curved arrow, kept identical so the gesture reads the same. */
+/**
+ * 撤销 / 重做: the V06 curved arrow.
+ *
+ * WP-F2 D5 / WP-X3 §5: the arrow head decides which way the glyph reads. Undo
+ * must point back (**left**), redo forward (**right**) — that is what the desktop
+ * top bar draws (`DesktopLayout.kt` `DeskHistoryGlyph` puts the head at `x(0.20)`
+ * for undo) and what every platform convention expects. This glyph used to draw
+ * the head at `endX`, which the `startX/endX` split flipped: undo's head landed
+ * on the right and redo's on the left, i.e. the two arrows were swapped on the
+ * phone only. Both ends are now mirrored through one `x()` helper, so the head
+ * is on the left for undo and on the right for redo.
+ */
 @Composable
 internal fun PhoneHistoryGlyph(tint: Color, redo: Boolean, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width
+        val h = size.height
         val stroke = 1.7.dp.toPx()
-        val startX = if (redo) w * 0.84f else w * 0.16f
-        val endX = if (redo) w * 0.16f else w * 0.84f
+        // Same mirror trick as the desktop glyph: undo uses the plain coordinates,
+        // redo the mirrored ones, so a single geometry serves both directions.
+        fun x(v: Float): Float = if (redo) w - v * w else v * w
         val path = Path().apply {
-            moveTo(startX, w * 0.42f)
-            cubicTo(w * 0.2f, w * 0.1f, w * 0.8f, w * 0.1f, endX, w * 0.42f)
+            moveTo(x(0.84f), h * 0.42f)
+            cubicTo(x(0.80f), h * 0.10f, x(0.20f), h * 0.10f, x(0.16f), h * 0.42f)
         }
         drawPath(path, tint, style = Stroke(width = stroke, cap = StrokeCap.Round))
-        drawLine(tint, Offset(endX, w * 0.42f), Offset(endX, w * 0.72f), stroke, StrokeCap.Round)
-        val tip = w * 0.74f
-        drawLine(
-            tint,
-            Offset(endX, tip),
-            Offset(endX - (if (redo) -1f else 1f) * w * 0.16f, w * 0.6f),
-            stroke,
-            StrokeCap.Round,
-        )
-        drawLine(
-            tint,
-            Offset(endX, tip),
-            Offset(endX + (if (redo) -1f else 1f) * w * 0.16f, w * 0.6f),
-            stroke,
-            StrokeCap.Round,
-        )
+        // The head sits at x(0.16): left for undo, right for redo.
+        val headX = x(0.16f)
+        val tipY = h * 0.74f
+        drawLine(tint, Offset(headX, h * 0.42f), Offset(headX, h * 0.72f), stroke, StrokeCap.Round)
+        drawLine(tint, Offset(headX, tipY), Offset(headX - w * 0.16f, h * 0.60f), stroke, StrokeCap.Round)
+        drawLine(tint, Offset(headX, tipY), Offset(headX + w * 0.16f, h * 0.60f), stroke, StrokeCap.Round)
     }
 }
 

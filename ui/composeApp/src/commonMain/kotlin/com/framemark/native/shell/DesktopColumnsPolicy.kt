@@ -155,3 +155,44 @@ private fun clampWidth(value: Float, minimum: Float, maximum: Float): Float {
     val requested = if (value.isFinite()) value else minimum
     return requested.coerceIn(minimum, ceiling)
 }
+
+// ---------------------------------------------------------------------------
+// 顶栏紧凑态（AU4-02）
+// ---------------------------------------------------------------------------
+
+/**
+ * Content width from which the **full** top bar fits.
+ *
+ * Measured from the parts the demo deck puts in the bar (1440 dp capture, then
+ * re-measured at 1280 after the compact form was added):
+ *
+ *   词标 65 + 分隔线 13 + 项目卡（名字上限 260 + chevron 14 + `● 已自动保存` 70
+ *   + 内边距 16）= 373 + 中缝 24 + 段控 220 + 中缝 24 +
+ *   右组（撤销 32 + 重做 32 + 分隔线 5 + 导入照片 102 + 导出 Ctrl E 123 + ⚙ 32
+ *   + 6 × 6 间距）= 362 + 左右内边距 30
+ *
+ * ≈ 1038 dp. Anything narrower than the threshold switches to the compact bar,
+ * which keeps every action and every label AU4-02 asks for and only drops the
+ * decoration (词标、`Ctrl E` 提示、「导入照片」的文字), measured ≈ 630 dp — well
+ * inside the smallest window ([DESKTOP_WINDOW_MIN_WIDTH], 600 dp).
+ */
+const val DESKTOP_TOP_BAR_FULL_WIDTH: Float = 1040f
+
+/**
+ * Smallest content width the compact bar was measured at: 项目卡（可收缩的项目名 +
+ * chevron + `● 已自动保存`）+ 段控 160 + 撤销/重做 + 导入图标 + `导出` + ⚙ + 内边距
+ * ≈ 630 dp, minus the 90 dp the project name may give up → 540 dp. The floor
+ * window is 600 dp of content, so the compact bar always has room to spare.
+ */
+const val DESKTOP_TOP_BAR_COMPACT_MIN_WIDTH: Float = 540f
+
+/**
+ * True when the top bar must use its compact form at this content width.
+ *
+ * Same input as [computeDesktopColumns] (content width, i.e. the window width
+ * under the flush V2 layout), so the bar and the columns agree by construction.
+ * A NaN / non-positive width is treated as "no room" → compact.
+ */
+fun desktopTopBarCompact(contentWidthDp: Float): Boolean =
+    !(contentWidthDp.isFinite() && contentWidthDp >= DESKTOP_TOP_BAR_FULL_WIDTH)
+

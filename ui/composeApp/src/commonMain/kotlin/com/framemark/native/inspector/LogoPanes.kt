@@ -421,7 +421,7 @@ internal fun LogoPlate(
                     else -> "—"
                 },
                 style = TextStyle(fontSize = 10.sp, lineHeight = 12.sp),
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
             )
         }
     }
@@ -584,7 +584,7 @@ private fun LogoTop(back: String, crumb: String, onBack: () -> Unit) {
         Text(
             text = crumb,
             style = CuratedNote.copy(fontSize = 11.sp),
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,

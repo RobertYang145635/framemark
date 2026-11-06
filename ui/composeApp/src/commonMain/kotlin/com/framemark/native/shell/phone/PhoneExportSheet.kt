@@ -413,7 +413,7 @@ private fun ColumnScope.ExportDoneContent(
         Text(
             text = "相册 / FrameMark",
             style = FmType.labelSmall.copy(fontSize = 11.5.sp),
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
         )
         val message = listOfNotNull(result.note, note).distinct().joinToString("；").ifBlank { null }
         if (message != null) {

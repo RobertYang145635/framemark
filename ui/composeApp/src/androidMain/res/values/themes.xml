@@ -6,8 +6,28 @@
       while Compose starts. values-night\themes.xml overrides the same name with
       the dark tokens (#121316 = FmColors.Dark.canvas) and a dark Material base so
       the status-bar icons start out light.
+
+      WP-X3 §3 (WP-F2 D2): the pair above follows the **system** night mode, but the
+      in-app 外观 setting can be 深色 while the system is 浅色. In that case the
+      launch window was the light one and the user saw a 700–800 ms white flash
+      before the first dark Compose frame. MainActivity now reads the stored
+      appearance in onCreate *before* `super.onCreate` and calls `setTheme` with one
+      of the two explicit styles below, so the launch window always matches the
+      resolved appearance. They are declared in values/ (no -night variant) on
+      purpose: an explicit `setTheme` must not be re-resolved against the system
+      night mode.
     -->
     <style name="Theme.FrameMark" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#F0F2F5</item>
+    </style>
+
+    <!-- Light appearance, forced regardless of the system night mode. -->
+    <style name="Theme.FrameMark.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F0F2F5</item>
+    </style>
+
+    <!-- Dark appearance, forced regardless of the system night mode. -->
+    <style name="Theme.FrameMark.Dark" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121316</item>
     </style>
 </resources>

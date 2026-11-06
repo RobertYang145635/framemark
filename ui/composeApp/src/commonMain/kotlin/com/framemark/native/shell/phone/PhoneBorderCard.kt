@@ -180,7 +180,7 @@ fun PhoneBorderCard(
             Text(
                 text = desc,
                 style = FmType.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 2.dp),

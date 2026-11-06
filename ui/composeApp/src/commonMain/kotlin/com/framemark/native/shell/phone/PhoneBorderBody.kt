@@ -196,7 +196,7 @@ private fun GroupTile(group: LibraryCardGroup, onClick: () -> Unit) {
         Text(
             text = "${group.count} 个",
             style = GroupCountStyle,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
         )
     }

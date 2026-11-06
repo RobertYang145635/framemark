@@ -209,7 +209,7 @@ fun ProjectPresetSheet(
                 color = FmPalette.onSurfaceMuted,
             )
             Spacer(Modifier.weight(1f))
-            Text("新保存的排在最前", style = FmType.labelSmall, color = FmPalette.onSurfaceFaint)
+            Text("新保存的排在最前", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
         }
         Spacer(Modifier.height(FmSpacing.sm))
 
@@ -639,7 +639,7 @@ private fun BatchJobRow(
             Text(
                 text = path,
                 style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

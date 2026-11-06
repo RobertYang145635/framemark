@@ -13,6 +13,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.framemark.native.engine.DesktopNativeRender
 import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_HEIGHT
 import com.framemark.native.shell.DESKTOP_WINDOW_DEFAULT_WIDTH
+import com.framemark.native.qa.QaSurface
 import com.framemark.native.shell.MotionProbe
 import com.framemark.native.shell.fitWindowToScreen
 import com.framemark.native.theme.AppearanceController
@@ -64,7 +65,7 @@ fun main() = application {
     // Computed inside `remember`: the `application {}` body recomposes, and this
     // probe must log exactly once per launch.
     val windowSize = remember {
-        val spec = System.getenv("FM_WINDOW")
+        val spec = QaSurface.windowSpec()
             ?.split("x")
             ?.mapNotNull { it.toFloatOrNull() }
         val desiredWidth = spec?.getOrNull(0) ?: DESKTOP_WINDOW_DEFAULT_WIDTH
@@ -90,8 +91,8 @@ fun main() = application {
     // reloads and engine re-creations per minute. One-time wiring belongs in remember.
     remember {
         println("FM_START_MAIN elapsedMs=${startupElapsedMs()}")
-        MotionProbe.enabled = System.getenv("FM_MOTION_LOG") == "1"
-        FeelProbe.enabled = System.getenv("FM_G5_PROBE") == "1"
+        MotionProbe.enabled = QaSurface.motionLog()
+        FeelProbe.enabled = QaSurface.g5Probe()
 
         WorkflowEnv.platform = DesktopWorkflowPlatform()
         // WP-D1 phase 2: install the desktop 最近使用 file store before the first
@@ -126,28 +127,10 @@ fun main() = application {
             desktopRender?.let { render -> { id: String -> render.supportsUserLogo(id) } }
         println("FM_START_ENGINE elapsedMs=${startupElapsedMs()}")
 
-        LaunchOptions.openCardId = System.getenv("FM_OPEN_CARD")?.takeIf { it.isNotBlank() }
-        LaunchOptions.editorItem = System.getenv("FM_EDITOR_ITEM")?.toIntOrNull()
-        LaunchOptions.openPresetSheet = System.getenv("FM_OPEN_PRESETS") == "1"
-        LaunchOptions.openExportSheet = System.getenv("FM_OPEN_EXPORT") == "1"
-        LaunchOptions.logoPage = System.getenv("FM_LOGO_PAGE")?.takeIf { it.isNotBlank() }
-        LaunchOptions.logoBrowseBrand = System.getenv("FM_LOGO_BROWSE")?.takeIf { it.isNotBlank() }
-        LaunchOptions.logoPickVersion = System.getenv("FM_LOGO_PICK")?.takeIf { it.isNotBlank() }
-        LaunchOptions.logoAfterBack = System.getenv("FM_LOGO_AFTER_BACK") == "1"
-        LaunchOptions.runSampleExport = System.getenv("FM_RUN_EXPORT") == "1"
-        LaunchOptions.openBatch = System.getenv("FM_OPEN_BATCH") == "1"
-        LaunchOptions.batchCount = System.getenv("FM_BATCH_COUNT")?.toIntOrNull() ?: LaunchOptions.batchCount
-        LaunchOptions.batchReset = System.getenv("FM_BATCH_RESET") == "1"
-        LaunchOptions.samplePhoto = System.getenv("FM_SAMPLE_PHOTO") == "1"
-        LaunchOptions.libraryQuery = System.getenv("FM_LIB_QUERY")?.takeIf { it.isNotBlank() }
-        LaunchOptions.openTab = System.getenv("FM_OPEN_TAB")?.takeIf { it.isNotBlank() }
-        LaunchOptions.demoEdits = System.getenv("FM_DEMO_EDITS")?.toIntOrNull() ?: 0
-        LaunchOptions.undoSteps = System.getenv("FM_UNDO")?.toIntOrNull() ?: 0
-        LaunchOptions.autoSavePreset = System.getenv("FM_AUTO_SAVE_PRESET")?.takeIf { it.isNotBlank() }
-        LaunchOptions.exportFormat = System.getenv("FM_EXPORT_FORMAT")?.takeIf { it.isNotBlank() }
-        LaunchOptions.exportWebpLossless = System.getenv("FM_EXPORT_WEBP_LOSSLESS") != "0"
-        LaunchOptions.exportLongEdge = System.getenv("FM_EXPORT_EDGE")?.toIntOrNull()
-        LaunchOptions.controlProbe = System.getenv("FM_CONTROL_PROBE") == "1"
+        // WP-X3 §7: every `FM_*` launch hook moved to the QA-only surface
+        // (`com.framemark.native.qaenv`, excluded from release builds). In a packaged
+        // product this is a no-op: QaSurface.hooks is null because the class is absent.
+        QaSurface.applyLaunchOptions()
         Unit
     }
 
@@ -163,7 +146,7 @@ fun main() = application {
     // WP-T: appearance is resolved before the first composition. FM_APPEARANCE
     // forces a mode for this run only and is never written to the settings file.
     val appearance = remember {
-        val forcedMode = when (System.getenv("FM_APPEARANCE")?.trim()?.lowercase()) {
+        val forcedMode = when (QaSurface.forcedAppearance()?.trim()?.lowercase()) {
             "system" -> ThemeMode.System
             "light" -> ThemeMode.Light
             "dark" -> ThemeMode.Dark
@@ -199,7 +182,7 @@ fun main() = application {
             size = windowSize,
             position = WindowPosition(Alignment.Center),
         ),
-        undecorated = System.getenv("FM_UNDECORATED") == "1",
+        undecorated = QaSurface.undecorated(),
     ) {
         // T-1: AWT paints the frame before Compose paints its first frame, and a
         // plain JFrame starts on the Metal content-pane grey. Paint the window with

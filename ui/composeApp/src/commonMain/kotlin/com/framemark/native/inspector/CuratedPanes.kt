@@ -148,7 +148,7 @@ internal fun CuratedSubNote(text: String) {
     Text(
         text = text,
         style = CuratedNote,
-        color = FmPalette.onSurfaceFaint,
+        color = FmPalette.onSurfaceMuted,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
     )
 }
