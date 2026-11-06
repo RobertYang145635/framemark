@@ -45,7 +45,9 @@ import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
 import com.framemark.native.library.jsonString
 import com.framemark.native.product.ControlOption
+import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.fmElevated
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
@@ -491,6 +493,7 @@ private fun BrandCard(brand: LogoBrand, active: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fmElevated(FmElevation.card, RoundedCornerShape(FmRadii.card))
             .clip(RoundedCornerShape(FmRadii.card))
             .background(if (active) FmPalette.primarySoft else FmPalette.surface)
             .border(
@@ -600,6 +603,7 @@ private fun VersionRow(version: LogoVersion, selected: Boolean, onPick: (String)
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fmElevated(FmElevation.card, RoundedCornerShape(FmRadii.card))
             .clip(RoundedCornerShape(FmRadii.card))
             .background(if (selected) FmPalette.primarySoft else FmPalette.surface)
             .border(

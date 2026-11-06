@@ -1,19 +1,8 @@
 package com.framemark.native.theme
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
+import com.framemark.native.inspector.FmSegmented
 
 /** Labels in on-screen order. Fixed copy — the design brief spells them out. */
 private val APPEARANCE_SEGMENTS: List<Pair<ThemeMode, String>> = listOf(
@@ -30,8 +19,8 @@ private val APPEARANCE_SEGMENTS: List<Pair<ThemeMode, String>> = listOf(
  * does **not** place an entry point: WP-D1 puts it behind the desktop top-bar
  * gear and WP-P2 behind the phone home gear.
  *
- * This is a local, token-only implementation so WP-T closes on its own. WP-C's
- * shared segmented control replaces the body later; the signature stays.
+ * WP-C §3: the body is now the shared V2 segmented control ([FmSegmented]); the
+ * signature and the copy are unchanged, so existing callers keep compiling.
  *
  * @param modifier applied to the outer row; the caller owns placement and any
  *   label above the switch.
@@ -44,30 +33,13 @@ fun AppearancePicker(
     controller: AppearanceController = LocalAppearance.current,
 ) {
     val selected = controller.settings.mode
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.surfaceMuted)
-            .padding(FmSpacing.xxs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        APPEARANCE_SEGMENTS.forEach { (mode, label) ->
-            val active = mode == selected
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(FmRadii.pill))
-                    .then(if (active) Modifier.background(FmPalette.surface) else Modifier)
-                    .selectable(selected = active, role = Role.RadioButton) { controller.setMode(mode) }
-                    .defaultMinSize(minWidth = 76.dp)
-                    .padding(horizontal = FmSpacing.md, vertical = FmSpacing.sm),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    style = FmType.labelMedium,
-                    color = if (active) FmPalette.onSurface else FmPalette.onSurfaceMuted,
-                )
-            }
-        }
-    }
+    FmSegmented(
+        options = APPEARANCE_SEGMENTS.map { it.first.wire },
+        selected = selected.wire,
+        onSelect = { wire ->
+            ThemeMode.entries.firstOrNull { it.wire == wire }?.let(controller::setMode)
+        },
+        labels = APPEARANCE_SEGMENTS.associate { (mode, label) -> mode.wire to label },
+        modifier = modifier,
+    )
 }
