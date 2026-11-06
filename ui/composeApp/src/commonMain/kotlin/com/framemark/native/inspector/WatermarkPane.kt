@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -28,8 +29,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -72,77 +76,90 @@ fun WatermarkPane(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         if (spec == null) {
+            // `core.js:778 paneWm` 空态：标题 + 一句说明 + primary「添加图片水印」。
+            CuratedEmptyPane(
+                title = "还没有图片水印",
+                body = "签名、印章等透明 PNG，可放在九宫格任一位置再微调。",
+            )
             if (onUpload != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 64.dp)
-                        .clip(RoundedCornerShape(FmRadii.input))
-                        .background(FmPalette.surfaceMuted)
-                        .border(1.dp, FmPalette.outlineStrong, RoundedCornerShape(FmRadii.input))
+                        .padding(horizontal = 18.dp)
+                        .heightIn(min = 32.dp)
+                        .clip(RoundedCornerShape(FmRadii.chip))
+                        .background(FmPalette.primary)
                         .clickable(role = Role.Button, onClick = onUpload)
-                        .semantics { contentDescription = uploadLabel }
-                        .padding(FmSpacing.lg),
-                    contentAlignment = Alignment.CenterStart,
+                        .semantics { contentDescription = uploadLabel },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Column {
-                        Text("＋ $uploadLabel", style = FmType.bodyMedium, color = FmPalette.onSurfaceSecondary)
-                        Text(
-                            "加一张透明 PNG，再在照片上拖到想要的位置。",
-                            style = FmType.labelSmall,
-                            color = FmPalette.onSurfaceMuted,
-                        )
-                    }
+                    Text("＋ 添加图片水印", style = FmType.labelMedium, color = FmPalette.onPrimary)
                 }
-            } else {
-                Text("先添加一张照片，再上传水印。", style = FmType.bodyMedium, color = FmPalette.onSurfaceMuted)
             }
             return@Column
         }
 
-        assetName?.let {
-            Text(
-                text = it,
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        // Layer switch and upload live at the top: "图层（显示、移除）".
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (onUpload != null) {
-                Text(
-                    text = "更换水印",
-                    style = FmType.labelMedium,
-                    color = FmPalette.primaryStrong,
+        val zone = WatermarkZones.zoneFor(spec.anchor)
+        CuratedGroup("图层") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(FmRadii.tile))
+                    .background(FmPalette.surfaceMuted)
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
                     modifier = Modifier
-                        .heightIn(min = 32.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .clickable(role = Role.Button, onClick = onUpload)
-                        .padding(horizontal = 6.dp),
-                )
-            }
-            Spacer(Modifier.weight(1f))
-            if (onClear != null) {
-                Text(
-                    text = "移除",
-                    style = FmType.labelMedium,
-                    color = FmPalette.error,
-                    modifier = Modifier
-                        .heightIn(min = 32.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .clickable(role = Role.Button, onClick = onClear)
-                        .padding(horizontal = 6.dp),
-                )
+                        .size(width = 48.dp, height = 36.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(FmPalette.surface)
+                        .border(1.dp, FmPalette.outline, RoundedCornerShape(6.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("PNG", style = CuratedSliderHint, color = FmPalette.onSurfaceFaint)
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = assetName ?: "图片水印",
+                        style = TextStyle(
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = FmPalette.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "透明 PNG · 可拖动位置",
+                        style = CuratedSliderHint,
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                    )
+                }
+                if (onUpload != null) {
+                    WatermarkIconAction("↻", uploadLabel, FmPalette.onSurfaceMuted, onUpload)
+                }
+                if (onClear != null) {
+                    WatermarkIconAction("🗑", "移除水印", FmPalette.error, onClear)
+                }
             }
         }
-
-        Text("位置", style = FmType.labelMedium, color = FmPalette.onSurface)
+        CuratedRule()
+        // 位置：九宫格 + 该格可改的「距…」滑块（`paneWm` 的 位置 组）。
+        CuratedGroup(
+            title = "位置",
+            right = {
+                if (onReset != null) {
+                    CuratedLink("回到右下", onClick = onReset)
+                }
+            },
+        ) {
         WatermarkZoneGrid(
             anchor = spec.anchor,
             onAnchor = { next ->
@@ -159,7 +176,6 @@ fun WatermarkPane(
             dense = dense,
         )
 
-        val zone = WatermarkZones.zoneFor(spec.anchor)
         val legacyOffset = legacyCentredOffset(spec)
         if (legacyOffset != null) {
             Text(
@@ -191,6 +207,9 @@ fun WatermarkPane(
             )
         }
 
+        } // 位置 组结束
+        CuratedRule()
+        CuratedGroup("外观") {
         // Width: capped by the column (47 % sides / 60 % middle).
         val cap = zone.widthCap
         val widthPercent = spec.width.coerceIn(0.05f, cap) * 100f
@@ -248,19 +267,39 @@ fun WatermarkPane(
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-            if (onApplyAll != null) {
-                GhostAction("应用到全部", onApplyAll)
-            }
-            if (onReset != null) {
-                GhostAction("恢复默认", onReset)
+        CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")
+        if (onApplyAll != null || onReset != null) {
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
+                if (onApplyAll != null) {
+                    GhostAction("应用到全部", onApplyAll)
+                }
+                if (onReset != null) {
+                    GhostAction("恢复默认", onReset)
+                }
             }
         }
-        Text(
-            text = "也可以直接在照片上拖动；拖动时会框出这一格能到的范围。",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-        )
+        }
+    }
+}
+
+/** `.ibtn.sm` in the layer card — a 26 dp square glyph action. */
+@Composable
+private fun WatermarkIconAction(
+    glyph: String,
+    description: String,
+    tint: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(26.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(glyph, style = CuratedSliderHint.copy(fontSize = 14.sp), color = tint)
     }
 }
 

@@ -1464,7 +1464,8 @@ private fun DesktopColumnLayout(
         val pageTab = tabModel.tab(paramsPage)
         DesktopInspectorRail(
             cardName = selectedCard?.name ?: "未选择边框",
-            categoryLine = selectedCard?.categoryName.orEmpty(),
+            categoryLine = listOfNotNull(selectedCard?.categoryName, selectedCard?.templateCategory)
+                .filter { it.isNotBlank() }.joinToString(" · "),
             renderMode = when {
                 selectedCard == null -> "等待选择"
                 NativeEngine.supports(selectedCard.id) -> "实时渲染"
@@ -1495,6 +1496,8 @@ private fun DesktopColumnLayout(
             onApplyToOtherPhotos = onApplyToOtherPhotos,
             onResetAll = onResetDesign,
             onCollapse = collapse,
+            photoWidthPx = activePhoto?.widthPx ?: 0,
+            photoHeightPx = activePhoto?.heightPx ?: 0,
             content = {
                 Column(
                     modifier = Modifier
