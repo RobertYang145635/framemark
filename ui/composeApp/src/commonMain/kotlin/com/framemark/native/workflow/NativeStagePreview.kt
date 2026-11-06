@@ -146,6 +146,12 @@ fun NativeStagePreview(
      * margin sliders write.
      */
     onWatermarkNudge: ((dx: Float, dy: Float) -> Unit)? = null,
+    /**
+     * WP-R D8: 水印的虚线区域框 + 十字辅助线只在**编辑水印时**画。
+     * 演示稿的普通编辑态（样式/文字/Logo 页）既有水印也没有这层线，
+     * 所以默认 false，由桌面 shell 在打开水印页时打开。
+     */
+    watermarkGuides: Boolean = false,
 ) {
     BoxWithConstraints(modifier = modifier) {
         val displayEdge = if (constraints.hasBoundedWidth && constraints.hasBoundedHeight) {
@@ -743,11 +749,18 @@ fun NativeStagePreview(
                 val zoneEdge = FmPalette.primary
                 val zoneWash = FmPalette.primary.copy(alpha = 0.06f)
                 val markRect = watermarkRectPx(mark, photoAspect, frame)
+                // 拖动中也要能看到区域框；其余时间只有水印页才画（WP-R D8）。
+                var watermarkDragging by remember(mark.anchor) { mutableStateOf(false) }
+                val showWatermarkGuides = watermarkGuides || watermarkDragging
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(mark.anchor, mark.width, mark.aspect, photoAspect, frame, ready.photoRect) {
-                            detectDragGestures { change, dragAmount ->
+                            detectDragGestures(
+                                onDragStart = { watermarkDragging = true },
+                                onDragEnd = { watermarkDragging = false },
+                                onDragCancel = { watermarkDragging = false },
+                            ) { change, dragAmount ->
                                 change.consume()
                                 val (dx, dy) = com.framemark.native.inspector.WatermarkZones.moveByPixels(
                                     spec = mark,
@@ -779,31 +792,35 @@ fun NativeStagePreview(
                             }
                         },
                 ) {
-                    val zone = com.framemark.native.inspector.WatermarkZones.zoneFor(mark.anchor)
-                    val zoneLeft = frame.left + frame.width * zone.xMin
-                    val zoneTop = frame.top + frame.height * zone.yMin
-                    val zoneRectW = frame.width * (zone.xMax - zone.xMin)
-                    val zoneRectH = frame.height * (zone.yMax - zone.yMin)
-                    drawRect(
-                        color = zoneWash,
-                        topLeft = Offset(zoneLeft, zoneTop),
-                        size = Size(zoneRectW, zoneRectH),
-                    )
-                    drawRect(
-                        color = zoneEdge.copy(alpha = 0.75f),
-                        topLeft = Offset(zoneLeft, zoneTop),
-                        size = Size(zoneRectW, zoneRectH),
-                        style = Stroke(
-                            width = 1.2.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
-                        ),
-                    )
-                    drawRect(
-                        color = zoneEdge,
-                        topLeft = Offset(markRect[0], markRect[1]),
-                        size = Size(markRect[2].coerceAtLeast(1f), markRect[3].coerceAtLeast(1f)),
-                        style = Stroke(width = 1.5.dp.toPx()),
-                    )
+                    // 拖动把手始终在（命中区域在 pointerInput 里），但虚线区域框只在
+                    // 水印页 / 拖动中显示：普通编辑态不该多一层引导线（WP-R D8）。
+                    if (showWatermarkGuides) {
+                        val zone = com.framemark.native.inspector.WatermarkZones.zoneFor(mark.anchor)
+                        val zoneLeft = frame.left + frame.width * zone.xMin
+                        val zoneTop = frame.top + frame.height * zone.yMin
+                        val zoneRectW = frame.width * (zone.xMax - zone.xMin)
+                        val zoneRectH = frame.height * (zone.yMax - zone.yMin)
+                        drawRect(
+                            color = zoneWash,
+                            topLeft = Offset(zoneLeft, zoneTop),
+                            size = Size(zoneRectW, zoneRectH),
+                        )
+                        drawRect(
+                            color = zoneEdge.copy(alpha = 0.75f),
+                            topLeft = Offset(zoneLeft, zoneTop),
+                            size = Size(zoneRectW, zoneRectH),
+                            style = Stroke(
+                                width = 1.2.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
+                            ),
+                        )
+                        drawRect(
+                            color = zoneEdge,
+                            topLeft = Offset(markRect[0], markRect[1]),
+                            size = Size(markRect[2].coerceAtLeast(1f), markRect[3].coerceAtLeast(1f)),
+                            style = Stroke(width = 1.5.dp.toPx()),
+                        )
+                    }
                 }
             }
             if (busy || (ready != null && !readyIsCurrent)) {

@@ -1724,6 +1724,7 @@ private fun DesktopColumnLayout(
                         onOpenBatch = onOpenBatch,
                         hoveredCard = hoveredCard, holdOriginal = holdOriginal,
                         onReuseDesign = onReuseDesign, onPickBorder = onPickBorder,
+                        inspectorPage = paramsPage,
                     )
                 }
             }
@@ -1766,6 +1767,7 @@ private fun DesktopColumnLayout(
                     holdOriginal = holdOriginal,
                     onReuseDesign = onReuseDesign,
                     onPickBorder = onPickBorder,
+                    inspectorPage = paramsPage,
                 )
             }
 
@@ -1893,6 +1895,8 @@ private fun EditStage(
     holdOriginal: Boolean = false,
     onReuseDesign: (String) -> Unit = {},
     onPickBorder: () -> Unit = {},
+    /** 右栏当前页签；水印引导线只在 水印 页显示（WP-R D8）。 */
+    inspectorPage: InspectorPage? = null,
 ) {
     val native = card != null && NativeEngine.supports(card.id)
     val activeDesign = projects.activeDesign
@@ -2069,6 +2073,7 @@ private fun EditStage(
                                 null
                             },
                             onRenderedPx = { w, h -> renderedPx = IntSize(w, h) },
+                            watermarkGuides = inspectorPage == InspectorPage.Watermark,
                         )
                         else -> ProjectPhotoStage(projects = projects, card = card, design = design)
                     }
@@ -2176,6 +2181,8 @@ private fun DesktopNativeStage(
     /** 渲染帧宽高比：`.print` 的投影要贴着成品，不能围着整块舞台。 */
     printAspect: Float?,
     onRenderedPx: (Int, Int) -> Unit,
+    /** 水印引导线是否显示（只有打开水印页时为真，见 WP-R D8）。 */
+    watermarkGuides: Boolean = false,
 ) {
     // The watermark anchor needs the render's photo rect, which only exists after
     // the first frame; bumping the version re-keys the overlay so the mark lands
@@ -2225,6 +2232,9 @@ private fun DesktopNativeStage(
                 // same absolute dx/dy the 水印 page sliders use.
                 watermark = desktopWorkflowWatermark(projects.watermark()),
                 onWatermarkNudge = { dx, dy -> projects.updateWatermark(dx = dx, dy = dy) },
+                // WP-R D8：虚线区域框/十字辅助线只在编辑水印时出现。演示稿的普通
+                // 编辑态（有水印）没有这层线，所以按当前页签开关。
+                watermarkGuides = watermarkGuides,
             )
         }
     }

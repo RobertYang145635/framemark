@@ -13,20 +13,28 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.inspector.ControlType
 import com.framemark.native.inspector.ControlValue
+import com.framemark.native.inspector.CuratedPhotoSize
+import com.framemark.native.inspector.CuratedTextSlots
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.InspectorPage
 import com.framemark.native.inspector.InspectorPageContent
 import com.framemark.native.inspector.InspectorTabInfo
+import com.framemark.native.inspector.LocalCuratedPhotoSize
+import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
+import com.framemark.native.inspector.curatedOutputSize
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.shell.desktop.ExportEstimate
+import com.framemark.native.shell.desktop.ExportPixels
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
@@ -68,9 +76,12 @@ fun PhoneParameterPage(
     footer: (@Composable () -> Unit)? = null,
     /** Current card, for the 边框规格 block's 来源 row. */
     card: LibraryCard? = null,
-    /** Pixels the chosen export step produces; 0 while the stage has no geometry yet. */
-    outputWidth: Int = 0,
-    outputHeight: Int = 0,
+    /**
+     * 舞台当前照片的像素尺寸。样式页的「导出尺寸」由它 + 版式参数算出
+     * （与桌面 rail 同一个 [curatedOutputSize]），不再用导出设置里的长边顶替。
+     */
+    photoWidthPx: Int = 0,
+    photoHeightPx: Int = 0,
 ) {
     if (tab == null) {
         PanelNote(
@@ -96,6 +107,13 @@ fun PhoneParameterPage(
         return
     }
     val hasRows = page == InspectorPage.Text && textSlots.isNotEmpty() && textOutputWidth > 0
+    CompositionLocalProvider(
+        LocalCuratedPhotoSize provides if (photoWidthPx > 0 && photoHeightPx > 0) {
+            CuratedPhotoSize(photoWidthPx, photoHeightPx)
+        } else {
+            null
+        },
+    ) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -104,15 +122,23 @@ fun PhoneParameterPage(
         when {
             page == InspectorPage.Logo && model != null ->
                 Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                    LogoBrandPanel(model = model, session = session, dense = true)
+                    // 自动匹配要读「照片品牌」：与桌面 rail 同一个 CompositionLocal，
+                    // 数据就是舞台渲染报告里的那张 slot 表（不再另造一份）。
+                    CompositionLocalProvider(
+                        LocalCuratedTextSlots provides if (textSlots.isEmpty()) {
+                            null
+                        } else {
+                            CuratedTextSlots(textSlots, textOutputWidth, textOutputHeight)
+                        },
+                    ) {
+                        LogoBrandPanel(model = model, session = session, dense = true)
+                    }
                 }
             page == InspectorPage.Style && model != null -> PhoneStylePane(
                 model = model,
                 session = session,
                 card = card,
                 tab = tab,
-                outputWidth = outputWidth,
-                outputHeight = outputHeight,
             )
             hasRows && model != null -> Column {
                 Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
@@ -138,6 +164,7 @@ fun PhoneParameterPage(
         }
         footer?.invoke()
     }
+    }
 }
 
 /**
@@ -153,8 +180,6 @@ private fun PhoneStylePane(
     session: DesignSession,
     card: LibraryCard?,
     tab: InspectorTabInfo,
-    outputWidth: Int,
-    outputHeight: Int,
 ) {
     val controls = phonePageControls(tab)
     val theme = controls.firstOrNull { it.param == "theme" || it.kind == "themeSwatches" }
@@ -168,6 +193,14 @@ private fun PhoneStylePane(
     }
     val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key)
     val rest = controls.filterNot { it.key in handled }
+    // 导出尺寸 = 真实成片：照片像素 + 版式留白（与桌面 rail 同一 `curatedOutputSize`），
+    // 再按导出设置的长边档缩放（[ExportEstimate]，与导出对话框同一口径）。
+    // 照片尺寸还没接进来时返回 null → 这一行留空，不显示猜的值。
+    val outPixels = ExportEstimate.output(
+        canvas = curatedOutputSize(controls, session)?.let { (w, h) -> ExportPixels(w, h) },
+        sizeMode = session.export.sizeMode,
+        longEdge = session.export.longEdge,
+    )
     Column(modifier = Modifier.fillMaxWidth()) {
         if (theme != null) {
             PhoneGroup(title = "底色") {
@@ -194,7 +227,7 @@ private fun PhoneStylePane(
                         hint = if (session.value(mode)?.toString() == "overlay") "文字区高度" else "占照片宽度",
                     )
                 }
-                if (outputWidth > 0 && outputHeight > 0) {
+                if (outPixels != null) {
                     Spacer(
                         modifier = Modifier
                             .padding(top = 10.dp)
@@ -202,7 +235,7 @@ private fun PhoneStylePane(
                             .height(1.dp)
                             .background(FmPalette.outline),
                     )
-                    PhoneKeyValueRow(label = "导出尺寸", value = "$outputWidth × $outputHeight px")
+                    PhoneKeyValueRow(label = "导出尺寸", value = outPixels.toString())
                 }
             }
         } else if (footerPct != null) {

@@ -30,13 +30,17 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.framemark.native.theme.AppearancePicker
+import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.LocalAppearance
+import com.framemark.native.theme.ThemeMode
 
 /**
  * 顶栏（`styles.css` 98-108 `.appbar`；PARITY-SPEC §2A）。
@@ -271,6 +275,8 @@ private fun ChevronDown(tint: androidx.compose.ui.graphics.Color) {
 @Composable
 private fun AppearanceGear() {
     var open by remember { mutableStateOf(false) }
+    val controller = LocalAppearance.current
+    val selected = controller.settings.mode
     Box {
         DeskIconButton(
             description = "外观设置",
@@ -278,17 +284,61 @@ private fun AppearanceGear() {
             onClick = { open = true },
         ) { DeskGearGlyph(tint = FmPalette.onSurfaceSecondary) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            Column(Modifier.width(260.dp).padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text("外观", style = FmType.desktopHeading, color = FmPalette.onSurface)
-                Spacer(Modifier.height(4.dp))
+            // WP-R D5：演示稿是紧凑勾选菜单（appearance.css:13-18）——
+            // 11px 大写小节标题 + 三条 34dp 菜单项，勾选态显示 accent 的 ✓ 并加粗，
+            // 不是带说明文字的分段控件卡片。
+            Column(Modifier.width(200.dp).padding(6.dp)) {
                 Text(
-                    "跟随系统，或固定浅色 / 深色。照片区始终保持深色。",
-                    style = FmType.desktopCaption,
-                    color = FmPalette.onSurfaceMuted,
+                    text = "外观",
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp,
+                        letterSpacing = 0.08.sp,
+                    ),
+                    color = FmPalette.onSurfaceFaint,
+                    modifier = Modifier.padding(start = 8.dp, top = 6.dp, bottom = 4.dp),
                 )
-                Spacer(Modifier.height(8.dp))
-                AppearancePicker(modifier = Modifier.fillMaxWidth())
+                AppearanceMenuOrder.forEach { mode ->
+                    val on = mode == selected
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(34.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(role = Role.Button) {
+                                controller.setMode(mode)
+                                open = false
+                            }
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "✓",
+                            style = TextStyle(fontSize = 13.sp, lineHeight = 16.sp),
+                            color = if (on) FmPalette.primary else FmPalette.onSurfaceFaint.copy(alpha = 0f),
+                        )
+                        Text(
+                            text = appearanceMenuLabel(mode),
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp,
+                                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+                            ),
+                            color = FmPalette.onSurface,
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+/** `appearance.js` 的 `A.opts` 顺序：跟随系统 / 浅色 / 深色。 */
+private val AppearanceMenuOrder = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
+
+private fun appearanceMenuLabel(mode: ThemeMode): String = when (mode) {
+    ThemeMode.System -> "跟随系统"
+    ThemeMode.Light -> "浅色"
+    ThemeMode.Dark -> "深色"
 }
