@@ -336,6 +336,49 @@ internal fun footerPctControlOf(controls: List<InspectorControl>): InspectorCont
     controls.firstOrNull { it.param.endsWith("footerPct") }
 
 /**
+ * The 文字大小 control. The registry normalises `text.fontScale` to the consumer
+ * name `fontScale` (`ControlRegistry.kt:559`), while the phone used to compare the
+ * literal `"text.fontScale"` — so the slider never appeared on any hand card
+ * (AU2 A-05). Desktop and phone now share this one predicate.
+ */
+internal fun fontScaleControlOf(controls: List<InspectorControl>): InspectorControl? =
+    controls.firstOrNull { control ->
+        control.type == ControlType.Slider &&
+            (control.param == "fontScale" || control.param.endsWith(".fontScale"))
+    }
+
+/** The 页脚字号 control (`footerTextScale`): engine-side simple-footer text scale. */
+internal fun footerTextScaleControlOf(controls: List<InspectorControl>): InspectorControl? =
+    controls.firstOrNull { it.param.endsWith("footerTextScale") }
+
+/** The Logo 位置 control (`params.logoPos`). */
+internal fun logoPosControlOf(controls: List<InspectorControl>): InspectorControl? =
+    controls.firstOrNull { it.param.endsWith("logoPos") }
+
+/**
+ * 底部留白在某个版式下是否不生效；返回一句原因，null = 生效（AU2 A-03）。
+ *
+ * 引擎的 `render_overlay` 一次都不读 `footerPct`（`brand_footer.rs:423-560`），
+ * 所以叠加版式下这条滑杆置灰，并说清楚为什么。桌面与手机共用这一句。
+ */
+internal fun footerPctDisabledReason(modeValue: String): String? =
+    if (modeValue == "overlay") "叠加版式把文字压在照片上，画布不加高，这一项不生效。" else null
+
+/**
+ * 底部留白的**生效下限**（百分比）。引擎取 `max(pw·pct/100, s·0.085)`，
+ * 所以 `pct ≤ 8.5·s/pw` 这一段的拖动在成片上没有任何变化（AU2 A-07）。
+ * 返回 null 表示没有照片尺寸、算不出来（保持声明下限）。
+ */
+internal fun footerPctFloor(
+    photoWidthPx: Int,
+    photoHeightPx: Int,
+): Float? {
+    if (photoWidthPx <= 0 || photoHeightPx <= 0) return null
+    val shortSide = minOf(photoWidthPx, photoHeightPx).toFloat()
+    return OutputSize.FOOTER_FLOOR_OF_SHORT_SIDE * shortSide * 100f / photoWidthPx
+}
+
+/**
  * 样式页 (showcase `paneClassicStyle`): 底色色板 → 版式段控 + 说明 + 底部留白 →
  * 导出尺寸。可调边框才走这里；厂商规格卡走 [CuratedSpecPane]。
  */
@@ -377,14 +420,33 @@ internal fun CuratedStylePane(
                     CuratedSubNote(FooterModeNote[modeValue] ?: "")
                 }
                 if (pct != null) {
+                    // AU2 A-03：叠加版式的 `render_overlay` 一次都不读 `footerPct`，
+                    // 所以把滑杆置灰并说明；AU2 A-07：引擎按
+                    // `max(pw·pct/100, 短边·8.5%)` 取留白，低于地板的那一段拖动
+                    // 在成片上没有变化，滑杆下限直接抬到地板（不再留死区）。
+                    val disabledReason = footerPctDisabledReason(modeValue)
+                    val photo = LocalCuratedPhotoSize.current
                     CuratedSliderRow(
                         control = pct,
                         session = session,
                         label = "底部留白",
-                        hint = if (modeValue == "overlay") "文字区高度" else "占照片宽度",
+                        hint = if (disabledReason != null) "叠加版式不生效" else "占照片宽度",
                         unit = "%",
                         decimalPlaces = 1,
+                        enabled = disabledReason == null,
+                        disabledReason = disabledReason,
+                        effectiveMin = if (disabledReason != null) {
+                            null
+                        } else {
+                            photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
+                        },
                     )
+                    if (disabledReason == null) {
+                        val floor = photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
+                        if (floor != null && floor > (pct.min ?: 0f)) {
+                            CuratedSubNote("低于 ${FmUnits.formatNumber(floor, 2)}% 与地板等价：引擎按短边 8.5% 兜底，画布不再变矮。")
+                        }
+                    }
                 }
                 if (outputSize != null) {
                     CuratedOutSize("导出尺寸", "${outputSize.first} × ${outputSize.second} px")
@@ -396,6 +458,12 @@ internal fun CuratedStylePane(
             if (!first) CuratedRule()
             CuratedGroup("更多参数") {
                 rest.forEach { control -> GenericControlRow(control, session) }
+                // AU2 A-07：`footerAuto` 只在简约版式的 `layout()` 里被读，
+                // 经典/叠加下改它没有任何效果（引擎 `brand_footer.rs:124,130`）。
+                // 这张卡把它露出来时，至少在这里说清楚它的作用范围。
+                if (rest.any { it.param.endsWith("footerAuto") }) {
+                    CuratedSubNote("「页脚自适应」只影响简约版式的页脚高度，经典与叠加版式不读它。")
+                }
             }
         }
     }

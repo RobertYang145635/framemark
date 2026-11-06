@@ -23,6 +23,13 @@ interface WorkflowPlatform {
     fun preferredJpegQuality(): Int = 100
     fun setPreferredJpegQuality(value: Int): String? = "当前平台 JPEG 质量固定为 100"
 
+    /**
+     * 本机**显式设置过**的 JPEG 质量；null = 这台机器没有偏好，用工程文档里的值
+     * （D-2：`local-export.properties` 的 `jpegQuality` 必须真的到编码器，
+     * 而不是被工程里的默认 100 盖掉）。
+     */
+    fun configuredJpegQuality(): Int? = null
+
     /** Publish without replacing an existing target. False means a naming conflict. */
     fun commitExport(temporaryPath: String, finalPath: String): Boolean =
         throw UnsupportedOperationException("当前平台不支持安全提交导出")

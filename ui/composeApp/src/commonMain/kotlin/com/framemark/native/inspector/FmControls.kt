@@ -689,14 +689,28 @@ internal fun CuratedSliderRow(
     hint: String? = null,
     unit: String? = control.unit,
     decimalPlaces: Int = 3,
+    /**
+     * AU2 A-03/A-04/A-07：该参数在当前状态下是否真的生效。false 时滑杆置灰不可拖，
+     * 并在下面写一句原因 —— 不让用户「拖了没反应」。
+     */
+    enabled: Boolean = true,
+    disabledReason: String? = null,
+    /**
+     * 生效下限（引擎侧的等价区间下限）。例如底部留白会被引擎按
+     * `max(pw·pct/100, s·0.085)` 抬到地板，低于地板的拖动在成片上没有任何变化，
+     * 所以滑杆下限直接抬到地板，不再留一段死区。
+     */
+    effectiveMin: Float? = null,
 ) {
-    val value = (session.value(control) as? Number)?.toFloat()
-        ?: control.min ?: 0f
-    val min = control.min ?: 0f
+    val declaredMin = control.min ?: 0f
     val max = control.max ?: 1f
+    val min = effectiveMin?.takeIf { it > declaredMin }?.coerceAtMost(max) ?: declaredMin
+    val rawValue = (session.value(control) as? Number)?.toFloat()
+        ?: control.min ?: 0f
+    val value = rawValue.coerceIn(min, max)
     val default = control.declaredDefault?.toFloatOrNull()
     val scale = if (control.unitScale > 0f) control.unitScale else 1f
-    val modified = FmSliderMath.isModified(value, default)
+    val modified = FmSliderMath.isModified(rawValue, default)
     Column(modifier = modifier.fillMaxWidth().padding(top = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (modified) {
@@ -706,7 +720,7 @@ internal fun CuratedSliderRow(
             Text(
                 text = label,
                 style = CuratedSliderLabel,
-                color = FmPalette.onSurfaceSecondary,
+                color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -722,7 +736,7 @@ internal fun CuratedSliderRow(
                 )
             }
             Spacer(Modifier.width(6.dp))
-            if (modified) {
+            if (modified && enabled) {
                 Box(
                     modifier = Modifier
                         .size(22.dp)
@@ -747,7 +761,7 @@ internal fun CuratedSliderRow(
                 label = label,
                 decimalPlaces = decimalPlaces,
                 scale = scale,
-                onCommit = { session.set(control, it) },
+                onCommit = { if (enabled) session.set(control, it) },
             )
         }
         FmSlider(
@@ -758,9 +772,18 @@ internal fun CuratedSliderRow(
             defaultValue = default,
             onReset = if (default != null) ({ session.resetControl(control) }) else null,
             modified = modified,
+            enabled = enabled,
             valueText = { FmUnits.formatNumber(it * scale, decimalPlaces) + (unit ?: "") },
             modifier = Modifier.fillMaxWidth(),
         )
+        if (!enabled && !disabledReason.isNullOrBlank()) {
+            Text(
+                text = disabledReason,
+                style = CuratedSliderHint,
+                color = FmPalette.onSurfaceMuted,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 

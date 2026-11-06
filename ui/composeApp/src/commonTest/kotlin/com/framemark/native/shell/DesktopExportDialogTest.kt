@@ -153,7 +153,9 @@ class DesktopExportDialogTest {
     fun a_downscaled_export_never_claims_original_resolution() {
         val line = ExportCopy.summaryLine(ExportSizeMode.LongEdge, 2048, SampleFormat.Jpeg, 100, true)
         assertFalse(line.contains("原分辨率"), "缩小尺寸时不写「原分辨率」：$line")
-        assertTrue(line.contains("长边缩到 2048 px"), line)
+        // D-1 设计变化（WP-X2）：长边档是「归一」，目标比画布大时也会放大，所以
+        // 文案从「长边缩到」改成「长边归一到」——否则小图导出时界面承诺与成片不符。
+        assertTrue(line.contains("长边归一到 2048 px"), line)
     }
 
     @Test
@@ -210,16 +212,18 @@ class DesktopExportDialogTest {
     }
 
     @Test
-    fun the_long_edge_mode_scales_only_when_it_has_to() {
+    fun the_long_edge_mode_normalises_both_directions() {
         val canvas = ExportPixels(4000, 3200)
         assertEquals(canvas, ExportEstimate.output(canvas, ExportSizeMode.Original, 2048))
         val scaled = ExportEstimate.output(canvas, ExportSizeMode.LongEdge, 2048)
         assertEquals(2048, scaled?.longEdge)
         assertEquals(ExportPixels(2048, 1638), scaled)
+        // D-1 设计变化（WP-X2）：所选长边大于成片长边时放大，不再静默返回原尺寸
+        // —— 旧行为让「选 2048 导出仍是 1600×1245」，顶栏/弹层/成片三处互相矛盾。
         assertEquals(
-            canvas,
+            ExportPixels(8000, 6400),
             ExportEstimate.output(canvas, ExportSizeMode.LongEdge, 8000),
-            "所选长边大于成片长边时不放大",
+            "所选长边大于成片长边时按同一比例放大",
         )
     }
 

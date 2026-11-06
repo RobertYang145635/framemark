@@ -136,7 +136,9 @@ object ExportCopy {
     /** 尺寸那一句；长边档不写「原分辨率」。 */
     fun resolutionLine(sizeMode: ExportSizeMode, longEdge: Int): String = when (sizeMode) {
         ExportSizeMode.Original -> "原分辨率，不缩放"
-        ExportSizeMode.LongEdge -> "长边缩到 $longEdge px 后再编码"
+        // D-1：长边档放大与缩小都算（桥接与这里同一个 [OutputSize.applyLongEdge]），
+        // 所以文案写「归一」而不是「缩到」，避免小图时界面承诺与成片不符。
+        ExportSizeMode.LongEdge -> "长边归一到 $longEdge px 后再编码"
     }
 
     /** 尺寸 + 编码，一句话摘要（预览列、结果页、批量设置摘要共用）。 */
@@ -193,16 +195,45 @@ object ExportEstimate {
         )
     }
 
-    /** 指定长边档：只有成片长边大于所选值时才缩（与引擎 `scale` 分支一致）。 */
+    /** 指定长边档：把画布长边归一到所选值（放大与缩小同式，D-1）。 */
     fun output(canvas: ExportPixels?, sizeMode: ExportSizeMode, longEdge: Int): ExportPixels? {
         if (canvas == null) return null
-        if (sizeMode == ExportSizeMode.Original) return canvas
-        if (longEdge <= 0) return null
-        val scale = if (longEdge < canvas.longEdge) longEdge.toDouble() / canvas.longEdge else 1.0
-        return ExportPixels(
-            width = (canvas.width * scale).roundToInt().coerceAtLeast(1),
-            height = (canvas.height * scale).roundToInt().coerceAtLeast(1),
-        )
+        // 公式只有一处：与右栏/顶栏/手机/桥接同一个 [OutputSize.applyLongEdge]。
+        val scaled = com.framemark.native.inspector.OutputSize.applyLongEdge(
+            com.framemark.native.inspector.OutputPixels(canvas.width, canvas.height),
+            sizeMode,
+            longEdge,
+        ) ?: return null
+        return ExportPixels(scaled.width, scaled.height)
+    }
+
+    /**
+     * 原尺寸档会不会裁照片（AU2 A-19）。
+     *
+     * 预览帧报告的照片框与照片原图宽高比不一致，就说明这个模板按自己的版式铺满
+     * 画幅（`personal-simple` 这类固定比例模板），`--fit native` 会被引擎拒绝
+     * （`E4H-FIT-NATIVE-LOCKED … would crop Npx`）并回退到裁切。返回被裁掉的像素
+     * 数与方向，供对话框在**导出前**预告，而不是等结果页。
+     *
+     * 例如 2667 × 2000 的照片铺进 2667 × 1790 的照片框：`约 210 px（上下）`。
+     */
+    fun cropEstimate(photoWidthPx: Int, photoHeightPx: Int, previewPhotoBox: ImageRect?): CropEstimate? {
+        val box = previewPhotoBox ?: return null
+        if (photoWidthPx <= 0 || photoHeightPx <= 0) return null
+        if (box.w <= 0f || box.h <= 0f || !box.w.isFinite() || !box.h.isFinite()) return null
+        val photoAspect = photoWidthPx.toFloat() / photoHeightPx
+        val boxAspect = box.w / box.h
+        if (photoAspect <= 0f || boxAspect <= 0f) return null
+        if (kotlin.math.abs(photoAspect - boxAspect) / photoAspect < 0.005f) return null
+        return if (boxAspect > photoAspect) {
+            // 框更宽 → 照片上下被裁。
+            val keep = photoWidthPx / boxAspect
+            CropEstimate(pixels = (photoHeightPx - keep).roundToInt(), vertical = true)
+        } else {
+            // 框更高（窄）→ 照片左右被裁。
+            val keep = photoHeightPx * boxAspect
+            CropEstimate(pixels = (photoWidthPx - keep).roundToInt(), vertical = false)
+        }
     }
 
     fun estimatedBytes(
@@ -251,4 +282,10 @@ object ExportEstimate {
             ?: ""
         return size + bytes
     }
+}
+
+/** 原尺寸档下模板会裁掉的像素（[vertical] 为真表示上下裁）。 */
+data class CropEstimate(val pixels: Int, val vertical: Boolean) {
+    val text: String
+        get() = "该模板按版式裁切：照片${if (vertical) "上下" else "左右"}会被裁掉约 $pixels px。"
 }

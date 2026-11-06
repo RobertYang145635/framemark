@@ -246,7 +246,19 @@ class DesktopProjectController(
     }
 
     /** Project export options in the UI session's type. */
-    override fun exportSettingsForUi(): ExportSettings = project.exportSettings.toWorkflow()
+    /**
+     * D-2：导出对话框的设置必须带上**本机**的 JPEG 质量偏好。
+     *
+     * 这里以前直接返回工程文档里的 `exportSettings`，于是
+     * `data/local-export.properties` 写 `jpegQuality=60` 也照样按 100 编码 ——
+     * 质量轴看着在动，成片字节与 SHA 却完全一样。批量入队与预设套用本来就
+     * 读这份偏好，单张导出走同一条路才对得上。
+     */
+    override fun exportSettingsForUi(): ExportSettings {
+        val settings = project.exportSettings.toWorkflow()
+        val local = WorkflowEnv.platform?.configuredJpegQuality() ?: return settings
+        return settings.copy(quality = local)
+    }
 
     /** Writes the inspector's overrides onto the active photo's design. */
     override fun applyControlOverrides(model: InspectorCardModel, overrides: Map<String, Any>) {
