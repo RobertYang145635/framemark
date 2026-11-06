@@ -68,7 +68,7 @@ internal val CuratedNumeric = TextStyle(
     fontSize = 12.sp,
     lineHeight = 17.sp,
     fontWeight = FontWeight.Medium,
-)
+).withNumericDigits()
 
 /**
  * One `.group`: 14 top / 12 bottom padding, a 12.5/600 title row (with an
@@ -110,6 +110,23 @@ internal fun CuratedRule() {
 
 /** Pixel size of the photo the stage is showing (`导出尺寸` needs it). */
 data class CuratedPhotoSize(val widthPx: Int, val heightPx: Int)
+
+/**
+ * 文字页的行数据：舞台最近一次渲染报告的文本 slot，加上那张成片的像素画布。
+ *
+ * 尺寸只给每行的位置示意图用（`core.js:360 diagram`）：slot 的 x/y/w/h 以成片像素
+ * 表示，除以画布宽高就得到归一化矩形。桌面 rail 提供，手机底板不提供，所以手机
+ * 保持原来的控件列表。
+ */
+data class CuratedTextSlots(
+    val slots: List<com.framemark.native.workflow.TextSlot>,
+    val widthPx: Int,
+    val heightPx: Int,
+)
+
+/** Null on the phone sheet: it renders the plain control list instead. */
+val LocalCuratedTextSlots =
+    androidx.compose.runtime.staticCompositionLocalOf<CuratedTextSlots?> { null }
 
 /**
  * Supplied by [com.framemark.native.shell.desktop.DesktopInspectorRail] from the

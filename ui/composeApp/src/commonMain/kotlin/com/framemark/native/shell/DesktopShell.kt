@@ -1606,6 +1606,9 @@ private fun DesktopColumnLayout(
             onCollapse = collapse,
             photoWidthPx = activePhoto?.widthPx ?: 0,
             photoHeightPx = activePhoto?.heightPx ?: 0,
+            textSlots = textSlots.slots,
+            textSlotWidthPx = textSlots.width,
+            textSlotHeightPx = textSlots.height,
             content = {
                 Column(
                     modifier = Modifier

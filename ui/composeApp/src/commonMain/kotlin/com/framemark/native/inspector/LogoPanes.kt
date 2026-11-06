@@ -110,14 +110,19 @@ private fun BrandedCuratedLogo(
     LaunchedEffect(Unit) { catalog = LogoBrandCatalog.load() }
     var page by remember(brandControl.key) {
         mutableStateOf(
-            when (com.framemark.native.LaunchOptions.logoPage) {
-                "brands" -> LogoPage.Brands
-                "versions" -> LogoPage.Versions
+            when {
+                com.framemark.native.LaunchOptions.logoPage == "brands" -> LogoPage.Brands
+                // WP-V4: a pick implies the version page, so the capture hook needs
+                // only `FM_LOGO_PICK` to reach 14/16.
+                com.framemark.native.LaunchOptions.logoPage == "versions" -> LogoPage.Versions
+                !com.framemark.native.LaunchOptions.logoPickVersion.isNullOrBlank() -> LogoPage.Versions
                 else -> LogoPage.Logo
             },
         )
     }
-    var browseBrandKey by remember(brandControl.key) { mutableStateOf<String?>(null) }
+    var browseBrandKey by remember(brandControl.key) {
+        mutableStateOf(com.framemark.native.LaunchOptions.logoBrowseBrand?.takeIf { it.isNotBlank() })
+    }
 
     val brands = catalog.orEmpty()
     val appliedBrand = logoBrandForAssetKey(brands, raw)
@@ -128,6 +133,25 @@ private fun BrandedCuratedLogo(
         isUser -> "user"
         isAuto || appliedBrand == null -> "auto"
         else -> "lib"
+    }
+
+    // WP-V4 evidence hook: click one named version once the catalog is available.
+    // The write is the same `session.set(brandControl, assetKey)` a real click does,
+    // so undo/modified-count/stage all behave exactly as in the demo.
+    var autoPicked by remember(brandControl.key) { mutableStateOf(false) }
+    LaunchedEffect(brands, page) {
+        val pick = com.framemark.native.LaunchOptions.logoPickVersion
+        if (autoPicked || pick.isNullOrBlank() || brands.isEmpty() || page != LogoPage.Versions) {
+            return@LaunchedEffect
+        }
+        val brand = brands.firstOrNull { it.key == browseBrandKey } ?: appliedBrand ?: return@LaunchedEffect
+        val version = brand.versions.firstOrNull { it.name.contains(pick, ignoreCase = true) }
+            ?: return@LaunchedEffect
+        val cut = version.cuts.firstOrNull() ?: return@LaunchedEffect
+        autoPicked = true
+        browseBrandKey = brand.key
+        session.set(brandControl, cut.assetKey)
+        if (com.framemark.native.LaunchOptions.logoAfterBack) page = LogoPage.Logo
     }
 
     when (page) {
@@ -146,7 +170,12 @@ private fun BrandedCuratedLogo(
         }
         LogoPage.Versions -> {
             val brand = brands.firstOrNull { it.key == browseBrandKey } ?: appliedBrand
-            if (brand == null) { page = LogoPage.Brands; return }
+            // 目录是异步加载的：首帧 brands 为空时不能把页面判成「品牌不存在」，
+            // 否则 `FM_LOGO_PAGE=versions` 会被自己弹回品牌页。
+            if (brand == null) {
+                if (brands.isNotEmpty()) page = LogoPage.Brands
+                return
+            }
             CuratedLogoVersionPage(
                 brand = brand,
                 appliedRaw = raw,
@@ -593,7 +622,10 @@ private fun CuratedLogoVersionPage(
                     )
                 }
             }
+            // `logo.js` lgVersionPage 的年代顺序：现行 → 经典 → 历史 → 既有。
+            val eraOrder = listOf("current", "classic", "historical", "legacy")
             val eras = brand.versions.map { it.era }.distinct()
+                .sortedBy { era -> eraOrder.indexOf(era).takeIf { it >= 0 } ?: eraOrder.size }
             eras.forEach { era ->
                 val versions = brand.versions.filter { it.era == era }
                 Row(

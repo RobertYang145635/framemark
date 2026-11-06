@@ -51,13 +51,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.inspector.CuratedPhotoSize
+import com.framemark.native.inspector.CuratedTextSlots
 import com.framemark.native.inspector.InspectorPage
 import com.framemark.native.inspector.InspectorTabModel
 import com.framemark.native.inspector.LocalCuratedPhotoSize
+import com.framemark.native.inspector.LocalCuratedTextSlots
+import com.framemark.native.theme.FmNumeric
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.workflow.TextSlot
 
 /**
  * 右栏外框（WP-V3）：标题 · 分类行 · 分页条 · 底栏。
@@ -90,6 +94,14 @@ fun DesktopInspectorRail(
     /** 舞台当前照片的像素尺寸，用于样式页的「导出尺寸」；未传则不显示该行。 */
     photoWidthPx: Int = 0,
     photoHeightPx: Int = 0,
+    /**
+     * 舞台最近一次渲染报告的文本 slot（`TextSlotRegistry`），用于文字页的四行：
+     * 品牌 / 机型 / 拍摄参数 / 日期。空列表时文字页保持原控件列表。
+     */
+    textSlots: List<TextSlot> = emptyList(),
+    /** slot 坐标所在的成片像素画布（位置示意图的归一化基准）。 */
+    textSlotWidthPx: Int = 0,
+    textSlotHeightPx: Int = 0,
     content: @Composable () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -98,7 +110,15 @@ fun DesktopInspectorRail(
     } else {
         null
     }
-    CompositionLocalProvider(LocalCuratedPhotoSize provides photoSize) {
+    val textSlotInfo = if (textSlots.isNotEmpty()) {
+        CuratedTextSlots(textSlots, textSlotWidthPx, textSlotHeightPx)
+    } else {
+        null
+    }
+    CompositionLocalProvider(
+        LocalCuratedPhotoSize provides photoSize,
+        LocalCuratedTextSlots provides textSlotInfo,
+    ) {
     Column(modifier = Modifier.fillMaxSize().background(FmPalette.surface)) {
         // ---------------------------------------------------------------- ihead
         Row(
@@ -224,13 +244,39 @@ fun DesktopInspectorRail(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
         ) {
-            Text(
-                text = if (totalModified == 0) "全部为默认值" else "已修改 $totalModified 项",
-                style = FmType.labelMedium.copy(fontSize = 12.sp),
-                color = if (totalModified > 0) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
-                maxLines = 1,
+            Row(
                 modifier = Modifier.weight(1f),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (totalModified == 0) {
+                    Text(
+                        text = "全部为默认值",
+                        style = FmType.labelMedium.copy(fontSize = 12.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                    )
+                } else {
+                    Text(
+                        text = "已修改 ",
+                        style = FmType.labelMedium.copy(fontSize = 12.sp),
+                        color = FmPalette.primaryStrong,
+                        maxLines = 1,
+                    )
+                    // 演示稿 `.ifoot .n`：数字是 accent + `--num`，中文仍是 `--font`。
+                    Text(
+                        text = totalModified.toString(),
+                        style = FmNumeric.value.copy(fontWeight = FontWeight.SemiBold),
+                        color = FmPalette.primaryStrong,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = " 项",
+                        style = FmType.labelMedium.copy(fontSize = 12.sp),
+                        color = FmPalette.primaryStrong,
+                        maxLines = 1,
+                    )
+                }
+            }
             InspectorFootButton(
                 text = "恢复本页默认",
                 leading = "↺",
@@ -370,7 +416,7 @@ private fun InspectorPageTabs(
                             ) {
                                 Text(
                                     text = tab.modified.toString(),
-                                    style = TextStyle(
+                                    style = FmNumeric.frameNumber.copy(
                                         fontSize = 10.sp,
                                         lineHeight = 16.sp,
                                         fontWeight = FontWeight.SemiBold,

@@ -31,6 +31,19 @@ object LaunchOptions {
      */
     var logoPage: String? = null
 
+    /**
+     * WP-V4 capture hooks for the three version screens (14/15/16):
+     *  - `FM_LOGO_BROWSE=<brandKey>` opens that brand's version page without writing;
+     *  - `FM_LOGO_PICK=<version name fragment>` clicks that exact version once the
+     *    catalog has loaded (so `desktop-selected` shows the 已选 badge);
+     *  - `FM_LOGO_AFTER_BACK=1` returns to the Logo page after the pick
+     *    (`desktop-afterback`).
+     * Consumed by `inspector/LogoPanes.kt`; never written by UI.
+     */
+    var logoBrowseBrand: String? = null
+    var logoPickVersion: String? = null
+    var logoAfterBack: Boolean = false
+
     /** Generate the sample export right away (with the export sheet). */
     var runSampleExport: Boolean = false
 
