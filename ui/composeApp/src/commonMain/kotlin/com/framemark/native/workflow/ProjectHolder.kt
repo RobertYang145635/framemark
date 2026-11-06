@@ -45,6 +45,20 @@ interface ProjectHolder {
     fun selectPhoto(id: String)
     fun removePhoto(id: String)
     fun applyCard(cardId: String, styleId: String?)
+
+    /**
+     * Copies another photo's design — border (`cardId`, `styleId`) plus its
+     * `params` and `text` overrides — onto [targetPhotoIds]. Returns how many
+     * designs changed (0 when there is nothing to copy), or -1 when the platform
+     * does not implement cross-photo design copy.
+     *
+     * Concrete holders (`PhoneProjectStore`, in-memory test doubles) are not
+     * required to implement it: the default keeps them compiling and the UI
+     * treats -1 as "this platform cannot do it yet". The project format and the
+     * data model are unchanged.
+     */
+    fun applyDesignFromPhoto(sourcePhotoId: String, targetPhotoIds: List<String>): Int = -1
+
     fun setExportSettings(settings: ExportSettings)
     fun exportSettingsForUi(): ExportSettings
     fun applyControlOverrides(model: InspectorCardModel, overrides: Map<String, Any>)

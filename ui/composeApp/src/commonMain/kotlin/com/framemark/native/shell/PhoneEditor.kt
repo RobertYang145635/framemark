@@ -109,6 +109,7 @@ import com.framemark.native.inspector.inspectorTabsFor
 import com.framemark.native.inspector.resetInspectorPage
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.InMemoryRecentFramesStore
+import com.framemark.native.library.RecentFramesEnv
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.library.LibraryPreview
@@ -257,11 +258,9 @@ fun PhoneEditorScreen(
     val density = LocalDensity.current
 
     val libraryIndex = (libraryState as? LibraryLoadState.Ready)?.let { LibraryIndex.of(it.snapshot) }
-    // 最近使用 wiring point: WP-L's codec over an in-memory store until the shared
-    // `library/RecentFramesEnv` seam lands. `AndroidRecentFramesStore` (androidMain,
-    // `<data dir>/settings/recent-frames.json`, atomic write) only needs that one
-    // install line in the platform entry; nothing in this file changes then.
-    val recentFramesStore = remember { InMemoryRecentFramesStore() }
+    // 最近使用 wiring: the platform entry installs the file-backed store in
+    // `library/RecentFramesEnv`; tests/previews fall back to the in-memory codec.
+    val recentFramesStore = remember { RecentFramesEnv.store ?: InMemoryRecentFramesStore() }
 
     // 最近使用: one read per catalog; the codec/fallback is WP-L's RecentFrames.
     LaunchedEffect(libraryIndex) {

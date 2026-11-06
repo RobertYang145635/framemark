@@ -94,6 +94,11 @@ fun main() = application {
         FeelProbe.enabled = System.getenv("FM_G5_PROBE") == "1"
 
         WorkflowEnv.platform = DesktopWorkflowPlatform()
+        // WP-D1 phase 2: install the desktop 最近使用 file store before the first
+        // composition. Same seam as Android's MainActivity; the UI reads
+        // `RecentFramesEnv.store` and falls back to an in-memory store.
+        com.framemark.native.library.RecentFramesEnv.store =
+            com.framemark.native.shell.desktop.DesktopRecentFramesStore()
         com.framemark.native.workflow.UserLogoEnv.repository =
             runCatching { com.framemark.native.userlogo.DesktopUserLogoRepository() }
                 .onFailure { println("FM_USER_LOGO_UNAVAILABLE ${it.message}") }
