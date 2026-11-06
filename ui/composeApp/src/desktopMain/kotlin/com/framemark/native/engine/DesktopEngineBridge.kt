@@ -4,6 +4,7 @@ import com.framemark.native.library.Json
 import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
 import com.framemark.native.library.jsonString
+import com.framemark.native.product.EngineArgs
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.isWritableTextSlotKey
 import java.awt.RenderingHints
@@ -118,6 +119,7 @@ class DesktopEngineBridge(
     private var previewWorker: PreviewWorkerConnection? = null
 
     init {
+        sweepWorkDir()
         Runtime.getRuntime().addShutdownHook(Thread({
             synchronized(previewWorkerLock) {
                 previewWorker?.close()
@@ -163,233 +165,259 @@ class DesktopEngineBridge(
             )
         }
 
-        val photoAbs = photoPath?.let { File(it).absoluteFile.path } ?: catalog.photoPath
-        if (!File(photoAbs).isFile) {
-            throw EngineConfigException("FM-E-INPUT-001", "照片不存在或不可读", cardId = cardId, expectedPath = photoAbs)
-        }
-        val exifAbs = when {
-            exifSource != null -> File(exifSource).absoluteFile.path
-            photoPath != null -> photoAbs
-            else -> catalog.exifSource
-        }
-        if (!File(exifAbs).isFile) {
-            throw EngineConfigException("FM-E-INPUT-001", "EXIF 源不存在或不可读", cardId = cardId, expectedPath = exifAbs)
-        }
-        val overlayArgs = overlayArgs(overlay)
+        try {
+            val photoAbs = photoPath?.let { File(it).absoluteFile.path } ?: catalog.photoPath
+            if (!File(photoAbs).isFile) {
+                throw EngineConfigException("FM-E-INPUT-001", "照片不存在或不可读", cardId = cardId, expectedPath = photoAbs)
+            }
+            val exifAbs = when {
+                exifSource != null -> File(exifSource).absoluteFile.path
+                photoPath != null -> photoAbs
+                else -> catalog.exifSource
+            }
+            if (!File(exifAbs).isFile) {
+                throw EngineConfigException("FM-E-INPUT-001", "EXIF 源不存在或不可读", cardId = cardId, expectedPath = exifAbs)
+            }
+            val overlayArgs = overlayArgs(overlay)
 
-        val started = System.nanoTime()
-        var nativeFit = false
-        val argv = when (card.backend) {
-            "ir" -> {
-                val args = mutableListOf(
-                    e2bExe,
-                    "--style", catalog.engineArg(card.style ?: error("card $cardId has no style file")),
-                    "--photo", if (photoPath != null) photoAbs else catalog.engineArg(catalog.photoPackagePath),
-                    "--exif-source", if (exifSource != null || photoPath != null) {
-                        exifAbs
+            val started = System.nanoTime()
+            var nativeFit = false
+            val argv = when (card.backend) {
+                "ir" -> {
+                    val args = mutableListOf(
+                        e2bExe,
+                        "--style", catalog.engineArg(card.style ?: error("card $cardId has no style file")),
+                        "--photo", if (photoPath != null) photoAbs else catalog.engineArg(catalog.photoPackagePath),
+                        "--exif-source", if (exifSource != null || photoPath != null) {
+                            exifAbs
+                        } else {
+                            catalog.engineArg(catalog.exifPackagePath)
+                        },
+                        "--fonts", packageDataArg("fonts"),
+                        "--decoded", packageDataArg("decoded"),
+                        "--assets", packageDataArg("assets"),
+                        "--t1b", packageDataArg("t1b/assets", fallbackRelative = "assets"),
+                        "--out", raw.path,
+                        "--report", report.path,
+                    )
+                    val irParams = if (brandPick != null && params["brandLogoFile"] == null) {
+                        params + ("brandLogoFile" to brandPick)
                     } else {
-                        catalog.engineArg(catalog.exifPackagePath)
-                    },
-                    "--fonts", packageDataArg("fonts"),
-                    "--decoded", packageDataArg("decoded"),
-                    "--assets", packageDataArg("assets"),
-                    "--t1b", packageDataArg("t1b/assets", fallbackRelative = "assets"),
-                    "--out", raw.path,
-                    "--report", report.path,
-                )
-                val irParams = if (brandPick != null && params["brandLogoFile"] == null) {
-                    params + ("brandLogoFile" to brandPick)
-                } else {
-                    params
+                        params
+                    }
+                    prepareIrDesign(card, irParams, text, id)?.let { args += listOf("--design", it) }
+                    // AU1-05: one argv element must never be splittable. `irParams` can
+                    // carry a value that bypassed the preset codec (UI state, a
+                    // hand-written project.json), and a quote inside it makes the OS hand
+                    // the engine several arguments — so only an argv-safe literal goes
+                    // out, and the engine keeps its own default otherwise.
+                    EngineArgs.themeForArgv(params["theme"] as? String) { rejected ->
+                        println("FM_THEME_REJECTED card=$cardId value=${rejected.take(64)} mode=drop")
+                    }?.let { args += listOf("--theme", it) }
+                    args += overlayArgs
+                    args
                 }
-                prepareIrDesign(card, irParams, text, id)?.let { args += listOf("--design", it) }
-                (params["theme"] as? String)?.takeIf { it.isNotBlank() }?.let { args += listOf("--theme", it) }
-                args += overlayArgs
-                args
-            }
-            "hand" -> {
-                val cardsArg = prepareHandInputs(card, params, text, id, logo)
-                val args = mutableListOf(
-                    e4handExe, "render",
-                    "--card", card.engineId,
-                    "--cards", cardsArg,
-                    "--hand", dataArg(layout.handDir ?: throw EngineConfigException("FM-E-RES-001", "缺少 data/hand")),
-                    "--fonts", dataArg(layout.handFontsDir ?: throw EngineConfigException("FM-E-RES-001", "缺少 data/fonts")),
-                    "--out", raw.path,
-                    "--report", report.path,
-                )
-                layout.handExtraFontsDir?.let { args += listOf("--extra-fonts", dataArg(it)) }
-                if (photoPath != null) args += listOf("--photo", photoAbs)
-                // A2: an export with no requested long edge is 原尺寸 — keep the
-                // whole photo and grow the template instead of cropping to its
-                // ratio. `nativeFit` remembers the flag so a template that cannot
-                // hold the photo can be re-run on the design path below.
-                if (mode == "export" && longEdge == null) {
-                    nativeFit = true
-                    args += listOf("--fit", "native")
+                "hand" -> {
+                    val cardsArg = prepareHandInputs(card, params, text, id, logo)
+                    val args = mutableListOf(
+                        e4handExe, "render",
+                        "--card", card.engineId,
+                        "--cards", cardsArg,
+                        "--hand", dataArg(layout.handDir ?: throw EngineConfigException("FM-E-RES-001", "缺少 data/hand")),
+                        "--fonts", dataArg(layout.handFontsDir ?: throw EngineConfigException("FM-E-RES-001", "缺少 data/fonts")),
+                        "--out", raw.path,
+                        "--report", report.path,
+                    )
+                    layout.handExtraFontsDir?.let { args += listOf("--extra-fonts", dataArg(it)) }
+                    if (photoPath != null) args += listOf("--photo", photoAbs)
+                    // A2: an export with no requested long edge is 原尺寸 — keep the
+                    // whole photo and grow the template instead of cropping to its
+                    // ratio. `nativeFit` remembers the flag so a template that cannot
+                    // hold the photo can be re-run on the design path below.
+                    if (mode == "export" && longEdge == null) {
+                        nativeFit = true
+                        args += listOf("--fit", "native")
+                    }
+                    args += overlayArgs
+                    args
                 }
-                args += overlayArgs
-                args
-            }
-            else -> throw EngineConfigException(
-                "FM-E-ENGINE-002",
-                "未知 backend '${card.backend}'",
-                cardId = cardId,
-            )
-        }
-
-        if (mode == "preview" && maxEdge != null) {
-            if (maxEdge <= 0) {
-                throw EngineConfigException("FM-E-INPUT-001", "预览长边必须为正整数", cardId = cardId)
-            }
-            // The native renderer now owns preview resizing. Passing the target
-            // here avoids allocating and encoding a full-resolution raw canvas.
-            argv += listOf("--preview-max-edge", maxEdge.toString())
-            println("FM_ENGINE_PREVIEW_SIZE card=$cardId maxEdge=$maxEdge")
-        }
-
-        val previewWorkerKey = if (mode == "preview") {
-            PreviewWorkerKey(card.backend, card.cardId, photoAbs)
-        } else {
-            null
-        }
-        var run = if (previewWorkerKey != null) {
-            println(
-                "FM_ENGINE_TRANSPORT mode=worker card=$cardId backend=${card.backend} " +
-                    "maxEdge=${maxEdge ?: "-"}",
-            )
-            runPreviewWorker(argv, cardId, previewWorkerKey)
-        } else {
-            exec(argv, cardId)
-        }
-        var nativeFitFellBack = false
-        if (run.code != 0 && nativeFit && run.output.contains("E4H-FIT-NATIVE-")) {
-            // The template's photo box cannot hold the whole photo (fixed-ratio
-            // side/square layouts). Keep the template ratio, and carry the
-            // caveat into the result instead of failing the export.
-            println("FM_NATIVE_FIT_FALLBACK card=$cardId reason=${run.output.lines().firstOrNull { it.contains("E4H-FIT-NATIVE-") }?.take(200)}")
-            val retry = argv.toMutableList()
-            val at = retry.indexOf("--fit")
-            if (at >= 0) {
-                retry.removeAt(at)
-                retry.removeAt(at)
-            }
-            nativeFitFellBack = true
-            run = exec(retry, cardId)
-        }
-        val engineMs = ((System.nanoTime() - started) / 1_000_000L)
-        if (run.code != 0 || !raw.isFile) {
-            throw EngineConfigException(
-                "FM-E-ENGINE-002",
-                "引擎渲染失败（exit ${run.code}）",
-                cardId = cardId,
-                cause = IllegalStateException(run.output.takeLast(1200)),
-            )
-        }
-
-        println("FM_ENGINE_RAW path=${raw.path}")
-        // IR export is not successful unless this invocation produced a readable
-        // report. Refuse a missing or malformed report rather than inferring success
-        // from the raw PNG.
-        val rep = if (card.backend == "ir") {
-            try {
-                if (!report.isFile) throw IllegalStateException("IR report was not created")
-                parseReport(card, report)
-            } catch (e: EngineConfigException) {
-                throw e
-            } catch (e: Exception) {
-                throw EngineConfigException(
-                    "FM-E-RES-003",
-                    "IR 引擎报告缺失或不可解析",
+                else -> throw EngineConfigException(
+                    "FM-E-ENGINE-002",
+                    "未知 backend '${card.backend}'",
                     cardId = cardId,
-                    expectedPath = report.absolutePath,
-                    cause = e,
                 )
             }
-        } else {
-            parseReport(card, report)
-        }
-        if (rep.requiredResourceErrors.isNotEmpty()) {
-            throw EngineConfigException(
-                "FM-E-RES-002",
-                "IR 引擎报告包含必需素材缺失项",
-                cardId = cardId,
-                cause = IllegalStateException(rep.requiredResourceErrors.take(8).joinToString("; ")),
-            )
-        }
-        val rawEdge = max(rep.width, rep.height)
-        // Preview dimensions are finalized by the native engine. Applying maxEdge
-        // again here would both add ImageIO work and scale the report twice.
-        val requested = if (mode == "export") longEdge else null
-        val scale = if (requested != null && requested in 1 until rawEdge) requested.toDouble() / rawEdge else 1.0
-        val outW = (rep.width * scale).roundToInt().coerceAtLeast(1)
-        val outH = (rep.height * scale).roundToInt().coerceAtLeast(1)
 
-        val target = File(
-            outputPath ?: File(work, "preview-$cardId-$id.${if (mode == "preview") "png" else format ?: "png"}").path,
-        )
-        target.parentFile?.mkdirs()
-        val warnings = mutableListOf<String>()
-        if (nativeFitFellBack) warnings += "该模板按版式比例裁切（不支持完整原尺寸）"
-        if (brandPick != null && card.backend == "ir") {
-            warnings += "品牌字标按所选品牌替换（IR 引擎品牌槽）"
-        }
-        val pngOut = format == null || format.equals("png", ignoreCase = true)
-        if (mode == "preview") {
-            // Preview rendering is its own path: engine -> downscale -> PNG. The
-            // export encoder (E5 worker) is never involved in a preview.
-            if (scale == 1.0 && target.path != raw.path) {
-                raw.copyTo(target, overwrite = true)
-            } else {
-                val source = ImageIO.read(raw) ?: error("engine output is not a decodable image: ${raw.path}")
-                writePng(if (scale == 1.0) source else scaleImage(source, outW, outH), target)
+            if (mode == "preview" && maxEdge != null) {
+                if (maxEdge <= 0) {
+                    throw EngineConfigException("FM-E-INPUT-001", "预览长边必须为正整数", cardId = cardId)
+                }
+                // The native renderer now owns preview resizing. Passing the target
+                // here avoids allocating and encoding a full-resolution raw canvas.
+                argv += listOf("--preview-max-edge", maxEdge.toString())
+                println("FM_ENGINE_PREVIEW_SIZE card=$cardId maxEdge=$maxEdge")
             }
-        } else {
-            val source = ImageIO.read(raw) ?: error("engine output is not a decodable image: ${raw.path}")
-            val scaled = if (scale == 1.0) source else scaleImage(source, outW, outH)
-            val webp = format.equals("webp", ignoreCase = true)
-            if (pngOut) {
-                // E5 worker is JPEG-only; PNG stays on ImageIO until E5 exposes
-                // its L6 encoder through a separate process (GAP).
-                writePng(scaled, target)
-                warnings += "PNG export encoded by ImageIO (E5 worker protocol v1 is JPEG-only)"
+
+            val previewWorkerKey = if (mode == "preview") {
+                PreviewWorkerKey(card.backend, card.cardId, photoAbs)
             } else {
-                val exif = JpegExif.tiffBlock(File(exifAbs), outW, outH)
-                if (exif == null) warnings += "EXIF block not found in $exifAbs"
-                if (webp) {
-                    e5.encodeWebp(scaled, target, work, exif, lossless = webpLossless, quality = 100)
-                    warnings += if (webpLossless) "WebP VP8L lossless" else "WebP VP8 q100 lossy"
+                null
+            }
+            var run = if (previewWorkerKey != null) {
+                println(
+                    "FM_ENGINE_TRANSPORT mode=worker card=$cardId backend=${card.backend} " +
+                        "maxEdge=${maxEdge ?: "-"}",
+                )
+                runPreviewWorker(argv, cardId, previewWorkerKey)
+            } else {
+                exec(argv, cardId)
+            }
+            var nativeFitFellBack = false
+            if (run.code != 0 && nativeFit && run.output.contains("E4H-FIT-NATIVE-")) {
+                // The template's photo box cannot hold the whole photo (fixed-ratio
+                // side/square layouts). Keep the template ratio, and carry the
+                // caveat into the result instead of failing the export.
+                println("FM_NATIVE_FIT_FALLBACK card=$cardId reason=${run.output.lines().firstOrNull { it.contains("E4H-FIT-NATIVE-") }?.take(200)}")
+                val retry = argv.toMutableList()
+                val at = retry.indexOf("--fit")
+                if (at >= 0) {
+                    retry.removeAt(at)
+                    retry.removeAt(at)
+                }
+                nativeFitFellBack = true
+                run = exec(retry, cardId)
+            }
+            val engineMs = ((System.nanoTime() - started) / 1_000_000L)
+            if (run.code != 0 || !raw.isFile) {
+                throw EngineConfigException(
+                    "FM-E-ENGINE-002",
+                    "引擎渲染失败（exit ${run.code}）",
+                    cardId = cardId,
+                    cause = IllegalStateException(run.output.takeLast(1200)),
+                )
+            }
+
+            println("FM_ENGINE_RAW path=${raw.path}")
+            // IR export is not successful unless this invocation produced a readable
+            // report. Refuse a missing or malformed report rather than inferring success
+            // from the raw PNG.
+            val rep = if (card.backend == "ir") {
+                try {
+                    if (!report.isFile) throw IllegalStateException("IR report was not created")
+                    parseReport(card, report)
+                } catch (e: EngineConfigException) {
+                    throw e
+                } catch (e: Exception) {
+                    throw EngineConfigException(
+                        "FM-E-RES-003",
+                        "IR 引擎报告缺失或不可解析",
+                        cardId = cardId,
+                        expectedPath = report.absolutePath,
+                        cause = e,
+                    )
+                }
+            } else {
+                parseReport(card, report)
+            }
+            if (rep.requiredResourceErrors.isNotEmpty()) {
+                throw EngineConfigException(
+                    "FM-E-RES-002",
+                    "IR 引擎报告包含必需素材缺失项",
+                    cardId = cardId,
+                    cause = IllegalStateException(rep.requiredResourceErrors.take(8).joinToString("; ")),
+                )
+            }
+            val rawEdge = max(rep.width, rep.height)
+            // Preview dimensions are finalized by the native engine. Applying maxEdge
+            // again here would both add ImageIO work and scale the report twice.
+            val requested = if (mode == "export") longEdge else null
+            val scale = if (requested != null && requested in 1 until rawEdge) requested.toDouble() / rawEdge else 1.0
+            val outW = (rep.width * scale).roundToInt().coerceAtLeast(1)
+            val outH = (rep.height * scale).roundToInt().coerceAtLeast(1)
+
+            val target = File(
+                outputPath ?: File(work, "preview-$cardId-$id.${if (mode == "preview") "png" else format ?: "png"}").path,
+            )
+            target.parentFile?.mkdirs()
+            val warnings = mutableListOf<String>()
+            if (nativeFitFellBack) warnings += "该模板按版式比例裁切（不支持完整原尺寸）"
+            if (brandPick != null && card.backend == "ir") {
+                warnings += "品牌字标按所选品牌替换（IR 引擎品牌槽）"
+            }
+            val pngOut = format == null || format.equals("png", ignoreCase = true)
+            if (mode == "preview") {
+                // Preview rendering is its own path: engine -> downscale -> PNG. The
+                // export encoder (E5 worker) is never involved in a preview.
+                if (scale == 1.0 && target.path != raw.path) {
+                    raw.copyTo(target, overwrite = true)
                 } else {
-                    val jpegQuality = (quality ?: 100).coerceIn(60, 100)
-                    e5.encodeJpeg(scaled, target, work, exif, quality = jpegQuality)
+                    val source = PhotoSizes.readSubsampled(raw, outW, outH)
+                        ?: error("engine output is not a decodable image: ${raw.path}")
+                    writePng(if (scale == 1.0) source else scaleImage(source, outW, outH), target)
+                }
+            } else if (pngOut && scale == 1.0 && target.path != raw.path) {
+                // AU1-03: a full-size PNG export is already exactly the engine's bytes.
+                // Move the file instead of decoding a 233 MB canvas into the JVM heap
+                // just to re-encode the same pixels.
+                moveOrCopy(raw, target)
+                warnings += "PNG export re-uses the engine canvas (no re-encode)"
+            } else {
+                // Subsampled read: decode straight to ~the export size instead of the
+                // whole canvas (the old `ImageIO.read(raw)` peak).
+                val source = PhotoSizes.readSubsampled(raw, outW, outH)
+                    ?: error("engine output is not a decodable image: ${raw.path}")
+                val scaled = if (scale == 1.0) source else scaleImage(source, outW, outH)
+                val webp = format.equals("webp", ignoreCase = true)
+                if (pngOut) {
+                    // E5 worker is JPEG-only; PNG stays on ImageIO until E5 exposes
+                    // its L6 encoder through a separate process (GAP).
+                    writePng(scaled, target)
+                    warnings += "PNG export encoded by ImageIO (E5 worker protocol v1 is JPEG-only)"
+                } else {
+                    val exif = JpegExif.tiffBlock(File(exifAbs), outW, outH)
+                    if (exif == null) warnings += "EXIF block not found in $exifAbs"
+                    if (webp) {
+                        e5.encodeWebp(scaled, target, work, exif, lossless = webpLossless, quality = 100)
+                        warnings += if (webpLossless) "WebP VP8L lossless" else "WebP VP8 q100 lossy"
+                    } else {
+                        val jpegQuality = (quality ?: 100).coerceIn(60, 100)
+                        e5.encodeJpeg(scaled, target, work, exif, quality = jpegQuality)
+                    }
                 }
             }
-        }
-        val slots = bindTextSlots(card, rep, scale, warnings)
+            val slots = bindTextSlots(card, rep, scale, warnings)
 
-        val requestJson = normalizedRequest(card, params, text, mode, maxEdge, outW, outH, photoAbs)
-        val responseJson = responseJson(
-            path = target.path,
-            width = outW,
-            height = outH,
-            photoRect = rep.photoRect.map { it * scale }.toDoubleArray(),
-            slots = slots,
-            ms = engineMs,
-            warnings = warnings,
-        )
-        trace(card, mode, requestJson, responseJson)
-        return EngineRenderResult(
-            path = target.path,
-            width = outW,
-            height = outH,
-            ms = engineMs,
-            rawWidth = rep.width,
-            rawHeight = rep.height,
-            photoRect = rep.photoRect.map { it * scale }.toDoubleArray(),
-            textSlots = slots,
-            warnings = warnings,
-            responseJson = responseJson,
-        )
+            val requestJson = normalizedRequest(card, params, text, mode, maxEdge, outW, outH, photoAbs)
+            val responseJson = responseJson(
+                path = target.path,
+                width = outW,
+                height = outH,
+                photoRect = rep.photoRect.map { it * scale }.toDoubleArray(),
+                slots = slots,
+                ms = engineMs,
+                warnings = warnings,
+            )
+            trace(card, mode, requestJson, responseJson)
+            return EngineRenderResult(
+                path = target.path,
+                width = outW,
+                height = outH,
+                ms = engineMs,
+                rawWidth = rep.width,
+                rawHeight = rep.height,
+                photoRect = rep.photoRect.map { it * scale }.toDoubleArray(),
+                textSlots = slots,
+                warnings = warnings,
+                responseJson = responseJson,
+            )
+        } finally {
+            // AU1-02: engine scratch files are deleted on both the success and
+            // the failure path. Nothing downstream reads them after this call —
+            // the finished pixels are already in `target` — so a render no longer
+            // leaves a canvas-sized PNG plus a report behind on every export.
+            discardTemp(raw)
+            discardTemp(report)
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -811,7 +839,9 @@ class DesktopEngineBridge(
         )
         if (mode == "export") design["canvas"] = linkedMapOf("w" to outW, "h" to outH)
         val defaultPhoto = photoAbs == catalog.photoPath
-        val size = if (defaultPhoto) null else imageSize(photoAbs)
+        // AU1-01: header-only size (prime-first, then a memoised header read) —
+        // never `ImageIO.read` of the whole photo just to fill this document.
+        val size = if (defaultPhoto) null else PhotoSizes.of(photoAbs)
         val photo = linkedMapOf<String, Any?>(
             "path" to photoAbs,
             "w" to (catalog.photoW.takeIf { defaultPhoto && it > 0 } ?: size?.first ?: 0),
@@ -1036,9 +1066,42 @@ class DesktopEngineBridge(
         ImageIO.write(image, "png", target)
     }
 
-    private fun imageSize(path: String): Pair<Int, Int> {
-        val image = ImageIO.read(File(path)) ?: return 0 to 0
-        return image.width to image.height
+    /** Delete one engine scratch file (AU1-02); failures are logged, never thrown. */
+    private fun discardTemp(file: File) {
+        TempJanitor.discard(file)
+    }
+
+    /** Move [source] onto [target] without decoding it; falls back to a copy. */
+    private fun moveOrCopy(source: File, target: File) {
+        target.parentFile?.mkdirs()
+        try {
+            java.nio.file.Files.move(
+                source.toPath(),
+                target.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+            )
+            return
+        } catch (e: Throwable) {
+            // Cross-volume or a lock on the target: a byte copy is still cheaper
+            // than decode + re-encode, and the original is removed by the caller.
+            println("FM_PHOTO_MOVE_FALLBACK from=${source.name} error=${e.message ?: e::class.simpleName}")
+            source.copyTo(target, overwrite = true)
+        }
+    }
+
+    /**
+     * Remove leftovers from earlier runs (AU1-02).
+     *
+     * A crashed or killed process cannot run its `finally`, so the work directory
+     * is swept once at construction. Anything younger than
+     * [TempJanitor.DEFAULT_STALE_MS] may belong to another live instance, so only
+     * the age decides.
+     */
+    private fun sweepWorkDir() {
+        val result = TempJanitor.sweep(work)
+        if (result.removed > 0) {
+            println("FM_TEMP_SWEEP dir=${work.absolutePath} files=${result.removed} bytes=${result.bytes} kept=${result.kept}")
+        }
     }
 
     private companion object {

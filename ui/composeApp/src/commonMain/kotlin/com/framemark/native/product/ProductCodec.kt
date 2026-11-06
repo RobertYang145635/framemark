@@ -162,6 +162,17 @@ internal fun decodeDesign(raw: Any?, where: String): PhotoDesign {
     if (cardId.isBlank()) throw ProductDecodeException("$where.cardId 为空")
     val theme = map.optionalString("theme", where)?.also {
         if (it.isBlank()) throw ProductDecodeException("$where.theme 为空")
+        // AU1-05: a preset is shared input whose `theme` becomes an engine argv
+        // element (`e2b --theme <value>`). One element carrying quotes or spaces is
+        // re-split by the OS into several arguments, so only a value that survives
+        // as a single argument is accepted here — the hand engine's six theme names
+        // are a subset of that set, while the IR engine legitimately accepts its
+        // own swatch ids (`glass`, `texture_*`, …).
+        if (!EngineArgs.isArgvSafeLiteral(it)) {
+            throw ProductDecodeException(
+                "$where.theme 含有无法安全传给引擎的字符：'${it.take(32)}'（只接受字母/数字/-/_/.，长度不超过 64）",
+            )
+        }
     }
     val ratio = map.optionalString("ratio", where)?.also {
         if (it.isBlank()) throw ProductDecodeException("$where.ratio 为空")

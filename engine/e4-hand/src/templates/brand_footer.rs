@@ -108,21 +108,29 @@ fn flat_resolution(env: &Env, id: &str, raw: &str) -> lines::Resolution {
     resolve_text_slot(env, id, raw)
 }
 
-fn mode_of(env: &Env) -> String {
-    env.params
+/// The single mode decision shared by [`layout`] and [`render`] (WP-X1 / AU2-A01).
+///
+/// `footerAuto` is deliberately **not** part of it. It used to gate only the
+/// layout branch (`mode=="simple" && footerAuto !== false`) while `render` drew
+/// the simple footer unconditionally, so `footerMode=simple` + `footerAuto=false`
+/// reserved a classic-footer band for a canvas that `render_simple` then drew
+/// with the taller content-height simple footer — the date row fell outside the
+/// canvas. `footerAuto` therefore never had a reachable "off" geometry: the
+/// simple footer is always content-sized, and the classic footer is always
+/// `footerPct`-derived (see the classic branch below). The key stays accepted
+/// for preset/param compatibility, and stays written back by the inspector, but
+/// it moves no pixels. If a real classic auto-height is ever wanted it belongs
+/// in the classic branch only — never in the simple/classic branch selection.
+fn mode_of(params: &crate::hand::Params) -> String {
+    params
         .get("footerMode")
         .map(|v| crate::jsval::js_string(Some(v)))
         .unwrap_or_else(|| "classic".into())
 }
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
-    let mode = env
-        .params
-        .get("footerMode")
-        .map(|v| crate::jsval::js_string(Some(v)))
-        .unwrap_or_else(|| "classic".into());
-    let footer_auto = !matches!(env.params.get("footerAuto"), Some(Value::Bool(false)));
-    if mode == "simple" && footer_auto {
+    let mode = mode_of(env.params);
+    if mode == "simple" {
         let m = simple_footer_metrics(env.pw, env.ph, env.params);
         return Ok((env.pw, env.ph + m.footer_h));
     }
@@ -150,15 +158,13 @@ pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
 }
 
 pub fn render(env: &mut Env) -> Result<Rect, String> {
-    let mode = mode_of(env);
-    let footer_auto = !matches!(env.params.get("footerAuto"), Some(Value::Bool(false)));
+    let mode = mode_of(env.params);
     if mode == "simple" {
         return render_simple(env);
     }
     if mode == "overlay" {
         return render_overlay(env);
     }
-    let _ = footer_auto;
     render_classic(env)
 }
 
@@ -166,6 +172,57 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
 mod slot_tests {
     use super::*;
     use crate::hand::Params;
+
+    /// WP-X1 / AU2-A01: `footerMode=simple` must reserve exactly the height the
+    /// simple footer draws, for every `footerAuto`/`footerPct` combination.
+    ///
+    /// The bug: `layout()` only took the simple branch when `footerAuto != false`,
+    /// while `render()` always drew the simple footer. With `footerAuto=false` the
+    /// canvas got the shorter classic band and the date row was painted past the
+    /// bottom edge (pct=5 on 2667×2000 → the row ended 14.6 px outside the canvas).
+    #[test]
+    fn simple_footer_layout_reserves_what_render_draws() {
+        use crate::draw::{simple_footer_metrics, LayoutEnv};
+        let exif = crate::hand::Exif::default();
+        let text = crate::hand::TextSettings::default();
+        let crop = crate::hand::crop_full(2667.0, 2000.0);
+        for footer_auto in [true, false] {
+            for footer_pct in [5.0f64, 11.1, 25.0] {
+                let mut params = Params::new();
+                params.insert("footerMode".into(), serde_json::json!("simple"));
+                params.insert("footerAuto".into(), serde_json::json!(footer_auto));
+                params.insert("footerPct".into(), serde_json::json!(footer_pct));
+                let env = LayoutEnv {
+                    pw: 2667.0,
+                    ph: 2000.0,
+                    crop: crop.clone(),
+                    exif: &exif,
+                    params: &params,
+                    text: &text,
+                };
+                let (w, h) = layout(&env).expect("simple layout");
+                let m = simple_footer_metrics(2667.0, 2000.0, &params);
+                assert_eq!(w, 2667.0);
+                assert_eq!(
+                    h,
+                    2000.0 + m.footer_h,
+                    "footerAuto={footer_auto} footerPct={footer_pct}: layout must match the drawn footer"
+                );
+
+                // The two right-hand rows are centred on the footer band; the last
+                // row's em box must stay inside the canvas.
+                let cy = 2000.0 + m.footer_h / 2.0;
+                let line_gap = m.font_right * 0.95;
+                let block_h = m.font_right + line_gap;
+                let last_row_y = cy - block_h / 2.0 + m.font_right * 0.52 + line_gap;
+                let last_row_bottom = last_row_y + m.font_right * 0.78 * 0.72;
+                assert!(
+                    last_row_bottom <= h,
+                    "footerAuto={footer_auto} footerPct={footer_pct}: last row bottom {last_row_bottom} outside canvas {h}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn flat_brand_footer_slots_override_legacy_content_visibility_and_scale() {

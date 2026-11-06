@@ -634,7 +634,7 @@ impl TextEngine {
         tf: &Typeface,
         size: f32,
         tracking: f32,
-    ) -> (TextBlob, f32, usize) {
+    ) -> (Option<TextBlob>, f32, usize) {
         self.shape_with(text, tf, size, tracking, self.fallback.as_ref())
     }
 
@@ -645,7 +645,15 @@ impl TextEngine {
         size: f32,
         tracking: f32,
         fb: Option<&Typeface>,
-    ) -> (TextBlob, f32, usize) {
+    ) -> (Option<TextBlob>, f32, usize) {
+        // WP-X1 / F2-D1: empty text shapes to nothing and Skia's
+        // `TextBlobBuilder::make()` returns `None` for it. `expect`-ing here
+        // aborted the Android process (the same defect the hand backend had) —
+        // a photo without an Exif sub-IFD leaves EXIF rows empty and reaches this
+        // through measureText/drawFitted. Empty text also measures 0 in Canvas2D.
+        if text.is_empty() {
+            return (None, 0.0, 0);
+        }
         let tf = match fb {
             Some(fb) => self.face_for(tf, text, fb),
             None => tf.clone(),
@@ -686,8 +694,10 @@ impl TextEngine {
                 end = end.max(p.x + w);
             }
         }
-        let blob = builder.make().expect("empty text blob");
-        (blob, end + tracking, notdef)
+        match builder.make() {
+            Some(blob) => (Some(blob), end + tracking, notdef),
+            None => (None, end + tracking, notdef),
+        }
     }
 
     /// Returns `(advance width, baseline y, .notdef glyph count)`. A non-zero
@@ -744,14 +754,16 @@ impl TextEngine {
         if let Some(m) = spec.matrix {
             canvas.concat(&m);
         }
-        canvas.draw_text_blob(&blob, (spec.x + dx, spec.y + baseline_dy), &paint);
-        if self.stroke_w > 0.0 {
-            let mut sp = paint.clone();
-            sp.set_style(skia_safe::PaintStyle::Stroke);
-            sp.set_stroke_width(self.stroke_w);
-            sp.set_stroke_join(skia_safe::PaintJoin::Round);
-            sp.set_stroke_cap(skia_safe::PaintCap::Round);
-            canvas.draw_text_blob(&blob, (spec.x + dx, spec.y + baseline_dy), &sp);
+        if let Some(blob) = &blob {
+            canvas.draw_text_blob(blob, (spec.x + dx, spec.y + baseline_dy), &paint);
+            if self.stroke_w > 0.0 {
+                let mut sp = paint.clone();
+                sp.set_style(skia_safe::PaintStyle::Stroke);
+                sp.set_stroke_width(self.stroke_w);
+                sp.set_stroke_join(skia_safe::PaintJoin::Round);
+                sp.set_stroke_cap(skia_safe::PaintCap::Round);
+                canvas.draw_text_blob(blob, (spec.x + dx, spec.y + baseline_dy), &sp);
+            }
         }
         canvas.restore();
         (width, spec.y + baseline_dy, notdef)
@@ -776,7 +788,7 @@ impl TextEngine {
             Some(fb) => self.face_for(&spec.typeface, spec.text, fb),
             None => spec.typeface.clone(),
         };
-        let mut blobs: Vec<(TextBlob, f32)> = Vec::with_capacity(clusters.len());
+        let mut blobs: Vec<(Option<TextBlob>, f32)> = Vec::with_capacity(clusters.len());
         let mut notdef = 0usize;
         let mut width = 0.0f32;
         for c in clusters {
@@ -828,7 +840,9 @@ impl TextEngine {
         }
         let mut acc = 0.0f32;
         for (blob, w) in &blobs {
-            canvas.draw_text_blob(blob, (spec.x + dx + acc, spec.y + baseline_dy), &paint);
+            if let Some(blob) = blob {
+                canvas.draw_text_blob(blob, (spec.x + dx + acc, spec.y + baseline_dy), &paint);
+            }
             acc += w + spec.tracking;
         }
         if self.stroke_w > 0.0 {
@@ -839,7 +853,9 @@ impl TextEngine {
             sp.set_stroke_cap(skia_safe::PaintCap::Round);
             let mut acc = 0.0f32;
             for (blob, w) in &blobs {
-                canvas.draw_text_blob(blob, (spec.x + dx + acc, spec.y + baseline_dy), &sp);
+                if let Some(blob) = blob {
+                    canvas.draw_text_blob(blob, (spec.x + dx + acc, spec.y + baseline_dy), &sp);
+                }
                 acc += w + spec.tracking;
             }
         }

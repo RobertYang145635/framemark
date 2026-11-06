@@ -25,6 +25,7 @@ import com.framemark.native.product.WatermarkAsset
 import com.framemark.native.product.WatermarkSpec
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.product.toOverlaySpec
+import com.framemark.native.engine.PhotoSizes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -180,7 +181,10 @@ class DesktopProjectController(
     override fun selectPhoto(id: String) {
         if (!requireWritableProject()) return
         if (project.activePhotoId == id) return
-        if (project.photos.none { it.id == id }) return
+        val selected = project.photos.firstOrNull { it.id == id } ?: return
+        // AU1-01: the dimensions are already in the project; publish them to the
+        // renderer's single size source so a render never re-reads the photo.
+        PhotoSizes.prime(selected.path, selected.widthPx, selected.heightPx)
         saveNow() // 先存后载：当前照片的编辑先落盘
         if (!mutate { it.selectPhoto(id) }) return
         saveNow() // 新选中项也立刻持久化，重启/崩溃后仍回到这张照片
@@ -306,9 +310,12 @@ class DesktopProjectController(
                 failures += ImportFailure(path, "已在工程中")
                 continue
             }
-            val meta = PhotoMetadata.read(file)
-            if (meta == null) {
-                failures += ImportFailure(path, "无法解码（坏图或格式不支持）")
+            // AU1-04: header size + pixel/byte caps + one light decode before the
+            // photo becomes part of the project. A truncated or absurd header used
+            // to be accepted and then failed on every render.
+            val validated = PhotoMetadata.validate(file)
+            val meta = validated.getOrElse {
+                failures += ImportFailure(path, it.message ?: "无法解码（坏图或格式不支持）")
                 continue
             }
             val ref = PhotoRef(
@@ -320,6 +327,8 @@ class DesktopProjectController(
                 heightPx = meta.height,
                 fingerprint = PhotoMetadata.fingerprint(file),
             )
+            // AU1-01: these are the dimensions every render chain reuses.
+            PhotoSizes.prime(ref.path, ref.widthPx, ref.heightPx)
             if (mutate { it.addPhoto(ref) }) {
                 added++
                 if (firstAdded == null) firstAdded = ref.id

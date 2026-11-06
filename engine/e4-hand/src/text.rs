@@ -457,7 +457,24 @@ impl TextEngine {
 
     /// HarfBuzz shaping with Canvas2D `letterSpacing` semantics. Returns the
     /// blob and the measured width (trailing spacing included, as `measureText`).
-    pub fn shape(&self, text: &str, tf: &Typeface, size: f32, tracking: f32) -> (TextBlob, f32) {
+    ///
+    /// The blob is `None` for text that shapes to nothing. Skia's
+    /// `TextBlobBuilder::make()` returns `None` when no run produced a glyph
+    /// (`empty text blob`), and `expect`-ing on it aborted the Android process
+    /// (WP-X1 / F2-D1: a photo without an Exif sub-IFD leaves the EXIF rows
+    /// empty, and `measureText("")` on the glass/vertical templates hit it).
+    /// Empty text also measures 0 in Canvas2D, so the short-circuit is the
+    /// contract, not a patch around it.
+    pub fn shape(
+        &self,
+        text: &str,
+        tf: &Typeface,
+        size: f32,
+        tracking: f32,
+    ) -> (Option<TextBlob>, f32) {
+        if text.is_empty() {
+            return (None, 0.0);
+        }
         let tf = self.face_for(tf, text);
         // SkShaper takes letter spacing in em of the font it shapes (the
         // PAINTED size); Blink keeps `letterSpacing` in design px, unscaled by
@@ -506,8 +523,12 @@ impl TextEngine {
                 end = end.max(last.x + widths[0]);
             }
         }
-        let blob = builder.make().expect("empty text blob");
-        (blob, end + tracking)
+        // Not `expect`: a run can still be empty (e.g. a whitespace-only string
+        // whose glyphs the shaper drops), and the process must survive it.
+        match builder.make() {
+            Some(blob) => (Some(blob), end + tracking),
+            None => (None, end + tracking),
+        }
     }
 
     pub fn draw(&self, canvas: &Canvas, spec: &TextSpec) -> (f32, f32) {
@@ -553,14 +574,16 @@ impl TextEngine {
         if let Some(m) = spec.matrix {
             canvas.concat(&m);
         }
-        canvas.draw_text_blob(&blob, (spec.x + dx, spec.y + baseline_dy), &paint);
-        if self.stroke_w > 0.0 {
-            let mut sp = paint.clone();
-            sp.set_style(skia_safe::PaintStyle::Stroke);
-            sp.set_stroke_width(self.stroke_w);
-            sp.set_stroke_join(skia_safe::PaintJoin::Round);
-            sp.set_stroke_cap(skia_safe::PaintCap::Round);
-            canvas.draw_text_blob(&blob, (spec.x + dx, spec.y + baseline_dy), &sp);
+        if let Some(blob) = &blob {
+            canvas.draw_text_blob(blob, (spec.x + dx, spec.y + baseline_dy), &paint);
+            if self.stroke_w > 0.0 {
+                let mut sp = paint.clone();
+                sp.set_style(skia_safe::PaintStyle::Stroke);
+                sp.set_stroke_width(self.stroke_w);
+                sp.set_stroke_join(skia_safe::PaintJoin::Round);
+                sp.set_stroke_cap(skia_safe::PaintCap::Round);
+                canvas.draw_text_blob(blob, (spec.x + dx, spec.y + baseline_dy), &sp);
+            }
         }
         canvas.restore();
         (width, spec.y + baseline_dy)
