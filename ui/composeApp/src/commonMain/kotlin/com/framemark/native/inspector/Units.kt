@@ -80,6 +80,22 @@ internal object FmUnits {
         return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
     }
 
+    /**
+     * D1-3: fixed-decimal variant for the watermark margins, which move on a
+     * 0.1 % grid and must read like "6.0 %" after a drag. Only 1 or 2 decimals
+     * are used; any other count falls back to the historical 3-decimal rule.
+     */
+    fun formatNumber(value: Float, decimals: Int): String {
+        if (decimals != 1 && decimals != 2) return formatNumber(value)
+        if (value.isNaN() || value.isInfinite()) return value.toString()
+        val factor = if (decimals == 1) 10.0 else 100.0
+        val rounded = round(value * factor) / factor
+        val text = rounded.toString()
+        val intPart = text.substringBefore('.')
+        val frac = text.substringAfter('.', "").padEnd(decimals, '0').take(decimals)
+        return "$intPart.$frac"
+    }
+
     /** Number as the user sees it (already scaled) plus its display suffix. */
     fun displayText(value: Float, unit: String?, scale: Float): String =
         formatNumber(value * scale) + (unit ?: "")

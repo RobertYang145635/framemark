@@ -334,6 +334,7 @@ private fun MarginSlider(
             step = 0.1f,
             default = defaultPct,
             unit = "%",
+            decimalPlaces = 1,
             onValueChange = onChange,
         )
     } else {
@@ -345,6 +346,7 @@ private fun MarginSlider(
             step = 0.1f,
             default = defaultPct,
             unit = "%",
+            decimalPlaces = 1,
             onValueChange = onChange,
         )
     }

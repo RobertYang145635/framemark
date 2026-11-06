@@ -726,11 +726,16 @@ fun NativeStagePreview(
             if (mark != null && onWatermarkNudge != null && ready != null && readyIsCurrent &&
                 boxPx.width > 0 && boxPx.height > 0
             ) {
-                val frame = fitPhotoFrame(
+                // The engine places the watermark inside its photo draw box, not in
+                // the whole bordered canvas. Use the engine-reported photoRect (in
+                // bitmap pixels) mapped through the same ContentScale.Fit; without it
+                // the frame drifts down by exactly the bottom border band (D1-3).
+                val frame = photoFrameFor(
                     boxW = boxPx.width.toFloat(),
                     boxH = boxPx.height.toFloat(),
                     bitmapW = ready.bitmap.width.toFloat(),
                     bitmapH = ready.bitmap.height.toFloat(),
+                    photoRect = ready.photoRect,
                 )
                 val photoAspect = ready.photoRect
                     ?.let { it.w / it.h.coerceAtLeast(1f) }
@@ -741,7 +746,7 @@ fun NativeStagePreview(
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(mark.anchor, mark.width, mark.aspect, photoAspect, frame) {
+                        .pointerInput(mark.anchor, mark.width, mark.aspect, photoAspect, frame, ready.photoRect) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
                                 val (dx, dy) = com.framemark.native.inspector.WatermarkZones.moveByPixels(
@@ -752,7 +757,25 @@ fun NativeStagePreview(
                                     photoWidthPx = frame.width,
                                     photoHeightPx = frame.height,
                                 )
-                                onWatermarkNudge(dx, dy)
+                                // D1-3: write the same 0.1 % grid the margin sliders use,
+                                // so the stored dx/dy and the displayed percentage agree.
+                                val qx = com.framemark.native.inspector.FmSliderMath.quantize(
+                                    value = dx,
+                                    min = -4f,
+                                    max = 4f,
+                                    step = 0.001f,
+                                )
+                                val qy = com.framemark.native.inspector.FmSliderMath.quantize(
+                                    value = dy,
+                                    min = -4f,
+                                    max = 4f,
+                                    step = 0.001f,
+                                )
+                                println(
+                                    "FM_WATERMARK_DRAG dx=${"%.4f".format(qx)} " +
+                                        "dy=${"%.4f".format(qy)}",
+                                )
+                                onWatermarkNudge(qx, qy)
                             }
                         },
                 ) {
@@ -905,5 +928,37 @@ internal fun watermarkRectPx(
         frame.top + r[1] * frame.height,
         r[2] * frame.width,
         r[3] * frame.height,
+    )
+}
+
+/**
+ * D1-3: map the engine's photo draw box (in bitmap pixels) onto the same
+ * `ContentScale.Fit` rectangle as the rendered bitmap. The watermark UI (drag
+ * handle + dashed zone) and the engine both use this box, so a card with a
+ * bottom border band no longer draws the frame one band lower than the mark.
+ *
+ * `photoRect == null` (old cached frame or a platform that does not report it)
+ * keeps the historical full-canvas frame so nothing regresses.
+ */
+internal fun photoFrameFor(
+    boxW: Float,
+    boxH: Float,
+    bitmapW: Float,
+    bitmapH: Float,
+    photoRect: ImageRect?,
+): StagePhotoFrame {
+    val canvas = fitPhotoFrame(boxW, boxH, bitmapW, bitmapH)
+    if (photoRect == null || photoRect.w <= 0f || photoRect.h <= 0f ||
+        bitmapW <= 0f || bitmapH <= 0f
+    ) {
+        return canvas
+    }
+    val sx = canvas.width / bitmapW
+    val sy = canvas.height / bitmapH
+    return StagePhotoFrame(
+        left = canvas.left + photoRect.x * sx,
+        top = canvas.top + photoRect.y * sy,
+        width = photoRect.w * sx,
+        height = photoRect.h * sy,
     )
 }
