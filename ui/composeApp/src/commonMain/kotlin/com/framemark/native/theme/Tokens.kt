@@ -548,17 +548,19 @@ object FmBreakpoints {
  * native Compose, not a copy of the web DOM.
  */
 object FmDesktop {
-    val topBarHeight = 72.dp
-    val edge = 12.dp
-    val gap = 12.dp
+    /** V2 single-line top bar (UI report §6): project · tabs · undo/redo · import · export. */
+    val topBarHeight = 52.dp
+    /** V2: the three columns are separated by hairlines, so the panes sit flush. */
+    val edge = 0.dp
+    val gap = 0.dp
     val panelRadius = 18.dp
 
-    /** Default rail widths = P3 panel widths at 1280×800. */
-    val libraryWidth = 248.dp
+    /** Default rail widths from V2 (UI report §6): border library 296 px, parameters 336 px. */
+    val libraryWidth = 296.dp
     val libraryMin = 180.dp
     val libraryMax = 340.dp
 
-    val inspectorWidth = 320.dp
+    val inspectorWidth = 336.dp
     val inspectorMin = 240.dp
     val inspectorMax = 420.dp
 
@@ -567,9 +569,11 @@ object FmDesktop {
 
     /** Drag strip between a rail and the stage, and the collapsed-rail affordance. */
     val handleWidth = 10.dp
-    val collapsedWidth = 24.dp
 
-    val filmstripHeight = 104.dp
+    /** V2: the left rail folds down to a 52 px strip (UI report §6). */
+    val collapsedWidth = 52.dp
+
+    val filmstripHeight = 120.dp
 }
 
 /**

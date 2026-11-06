@@ -14,12 +14,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.framemark.native.library.LibraryPreviewLoader
+import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -163,7 +163,11 @@ fun PhotoThumbnail(
     }
 
     val shape = RoundedCornerShape(cornerRadius)
-    Box(modifier = modifier.clip(shape).background(PhotoPlaceholder)) {
+    // WP-D1 §4.9: placeholder gradient is token-driven now (no hard-coded hex).
+    val placeholder = Brush.linearGradient(
+        listOf(FmPalette.surfaceMuted, FmPalette.track),
+    )
+    Box(modifier = modifier.clip(shape).background(placeholder)) {
         val ready = bitmap
         if (ready != null) {
             Image(
@@ -176,6 +180,3 @@ fun PhotoThumbnail(
     }
 }
 
-private val PhotoPlaceholder = Brush.linearGradient(
-    listOf(Color(0xFFDCE6EE), Color(0xFFF2F5F7)),
-)

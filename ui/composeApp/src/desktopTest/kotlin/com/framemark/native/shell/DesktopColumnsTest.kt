@@ -20,9 +20,9 @@ import kotlin.test.assertTrue
  */
 class DesktopColumnsTest {
 
-    /** FmDesktop.libraryWidth / inspectorWidth: the shipped default panel widths. */
-    private val defaultLeft = 248f
-    private val defaultRight = 320f
+    /** FmDesktop.libraryWidth / inspectorWidth: the shipped V2 default panel widths (296 / 336). */
+    private val defaultLeft = 296f
+    private val defaultRight = 336f
     private val epsilon = 0.01f
 
     private fun assertNear(expected: Float, actual: Float, message: String) {
@@ -98,7 +98,11 @@ class DesktopColumnsTest {
 
     @Test
     fun collapsed_left_rail_lets_the_inspector_stay() {
-        val content = 520f
+        // V2 collapsed rail is 52 px (was 24), so the narrowest content width that
+        // still holds a folded rail + inspector minimum + stage minimum moved up by
+        // 28 dp. Derive it instead of pinning the old 520.
+        val content = desktopCollapsedRailWidth() + desktopInspectorMinWidth() +
+            desktopColumnGapWidth() * 2f + desktopStageMinWidth()
         val c = columns(content, leftCollapsed = true)
         assertFalse(c.showLeft)
         assertEquals(desktopCollapsedRailWidth(), c.left)
