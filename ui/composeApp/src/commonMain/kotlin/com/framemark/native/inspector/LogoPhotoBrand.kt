@@ -99,8 +99,15 @@ internal object LogoPhotoBrand {
      * 不能拿来当「照片品牌」。
      */
     fun makeText(slots: List<TextSlot>?): String? {
-        val slot = makeSlot(slots ?: return null) ?: return null
-        return (slot.raw.ifBlank { slot.text }).trim().takeIf { it.isNotEmpty() }
+        val list = slots ?: return null
+        // 一张卡可能同时报多行品牌（`wm-classic#make#0` 与 `hand:wm-classic:brand`）：
+        // 逐行取第一份**有字**的内容。品牌画成图片时该行会没有文字，不能因此判成「没有品牌」。
+        for (slot in list) {
+            if (logicalName(slot) !in BrandSlotNames) continue
+            val text = (slot.raw.ifBlank { slot.text }).trim()
+            if (text.isNotEmpty()) return text
+        }
+        return null
     }
 
     /** 那一行 slot 本身（供调用方判断「有没有这一行」）。 */

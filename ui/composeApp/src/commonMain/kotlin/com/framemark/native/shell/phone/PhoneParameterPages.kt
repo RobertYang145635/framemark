@@ -131,7 +131,7 @@ fun PhoneParameterPage(
                             CuratedTextSlots(textSlots, textOutputWidth, textOutputHeight)
                         },
                     ) {
-                        LogoBrandPanel(model = model, session = session, dense = true)
+                        LogoBrandPanel(model = model, session = session, dense = true, textSlots = textSlots)
                     }
                 }
             page == InspectorPage.Style && model != null -> PhoneStylePane(

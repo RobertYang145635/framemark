@@ -1652,6 +1652,8 @@ private fun DesktopColumnLayout(
                             model = panelModel,
                             session = session,
                             modifier = Modifier.fillMaxWidth(),
+                            // 自动匹配要按照片品牌：slot 是异步到的，显式传参保证到货后重新解析。
+                            textSlots = textSlots.slots,
                         )
                         paramsPage == InspectorPage.Watermark -> WatermarkPane(
                             spec = wm,

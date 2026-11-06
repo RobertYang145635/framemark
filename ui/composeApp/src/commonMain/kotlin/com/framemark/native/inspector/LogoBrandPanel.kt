@@ -78,13 +78,18 @@ fun LogoBrandPanel(
     session: DesignSession,
     modifier: Modifier = Modifier,
     dense: Boolean = false,
+    /**
+     * 舞台最近一次渲染报告的文本 slot。显式传进来（而不是只靠 CompositionLocal）：
+     * slot 是异步到的，显式参数能保证槽表更新后自动匹配重新解析。
+     */
+    textSlots: List<com.framemark.native.workflow.TextSlot> = emptyList(),
 ) {
     // WP-V3: the page body moved to `LogoPanes.kt` so the desktop rail and the
     // phone sheet render the showcase structure (`logo.js` lgPaneLive / brand /
     // version pages). Signature and behaviour inputs are unchanged; the legacy
     // body below stays compiled (still reachable by tests via `logoBrandMode`)
     // but is no longer the rendered page.
-    CuratedLogoPane(model = model, session = session, dense = dense, modifier = modifier)
+    CuratedLogoPane(model = model, session = session, dense = dense, modifier = modifier, textSlots = textSlots)
 }
 
 @Composable
