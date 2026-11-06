@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -42,8 +44,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.framemark.native.inspector.withNumericDigits
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
@@ -155,7 +161,8 @@ fun BatchWorkspace(
             onSelectAll = { selected = BatchSelection.selectAll(rows) },
             onSelectNone = { selected = emptySet() },
             onCreateDesign = onBackToEdit,
-            modifier = Modifier.width(272.dp).fillMaxHeight(),
+            // `styles.css:513` `.batch { grid-template-columns: 296px … 336px }`
+            modifier = Modifier.width(296.dp).fillMaxHeight(),
         )
         Box(Modifier.width(1.dp).fillMaxHeight().background(FmPalette.outline))
         BatchContactSheet(
@@ -187,7 +194,7 @@ fun BatchWorkspace(
                     else -> platform?.revealInFolder(path) ?: notice
                 }
             },
-            modifier = Modifier.width(324.dp).fillMaxHeight(),
+            modifier = Modifier.width(336.dp).fillMaxHeight(),
         )
     }
 }
@@ -206,20 +213,39 @@ private fun BatchPhotoList(
 ) {
     Column(modifier) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
         ) {
-            Text("照片", style = FmType.titleSmall, color = FmPalette.onSurface, maxLines = 1)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = BatchSelection.summaryLine(rows, selected),
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 2,
-            )
-            Spacer(Modifier.height(FmSpacing.sm))
-            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs)) {
-                DlgButton(text = "全选", style = DlgButtonStyle.Ghost, onClick = onSelectAll)
-                DlgButton(text = "清空", style = DlgButtonStyle.Ghost, onClick = onSelectNone)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "照片",
+                    style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+                    color = FmPalette.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${selected.size} / ${rows.size} 已选",
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp).withNumericDigits(),
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "全选",
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClick = onSelectAll)
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+                Text(
+                    text = "清空",
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClick = onSelectNone)
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
             }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
@@ -265,39 +291,42 @@ private fun BatchPhotoListRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .clip(RoundedCornerShape(6.dp))
             .clickable(role = Role.Checkbox, onClick = interactive)
-            .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.sm),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
-                .size(18.dp)
+                .size(16.dp)
                 .clip(RoundedCornerShape(4.dp))
                 .background(if (checked) FmPalette.primary else FmPalette.surfaceMuted)
-                .border(1.dp, if (checked) FmPalette.primary else FmPalette.outline, RoundedCornerShape(4.dp))
+                .border(1.dp, if (checked) FmPalette.primary else FmPalette.outlineStrong, RoundedCornerShape(4.dp))
                 .semantics { contentDescription = if (checked) "已勾选 ${row.displayName}" else "未勾选 ${row.displayName}" },
             contentAlignment = Alignment.Center,
         ) {
             if (checked) Text("✓", style = FmType.labelSmall, color = FmPalette.onPrimary)
         }
-        Spacer(Modifier.width(FmSpacing.sm))
+        Spacer(Modifier.width(10.dp))
         BatchThumbnail(
             photoPath = row.photoPath,
             projects = projects,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.width(52.dp).height(40.dp),
         )
-        Spacer(Modifier.width(FmSpacing.sm))
+        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = row.displayName,
-                style = FmType.bodyMedium,
+                style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
+                    .withNumericDigits(),
                 color = if (row.designed) FmPalette.onSurface else FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = row.detail,
-                style = FmType.labelSmall,
+                style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp),
                 color = if (row.designed) FmPalette.onSurfaceMuted else FmPalette.warning,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -386,22 +415,7 @@ private fun BatchContactSheet(
     onOpenPhoto: (String) -> Unit,
     modifier: Modifier,
 ) {
-    Column(modifier.background(FmPalette.canvas)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text("成品联系表", style = FmType.titleSmall, color = FmPalette.onSurface, maxLines = 1)
-                Text(
-                    text = "导出完成的成片直接出现在这里 · 双击回到编辑",
-                    style = FmType.labelSmall,
-                    color = FmPalette.onSurfaceMuted,
-                    maxLines = 1,
-                )
-            }
-            DlgTag("${photos.size} 张")
-        }
+    Column(modifier.background(FmPalette.surfaceMuted)) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
         if (photos.isEmpty()) {
             Text(
@@ -412,11 +426,12 @@ private fun BatchContactSheet(
             )
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(168.dp),
+                // `.sheetgrid`：minmax(240px, 1fr)、gap 22、padding 24、底 `--seg`。
+                columns = GridCells.Adaptive(240.dp),
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(FmSpacing.lg),
-                horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
-                verticalArrangement = Arrangement.spacedBy(FmSpacing.md),
+                contentPadding = PaddingValues(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(22.dp),
+                verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
                 gridItems(photos, key = { it.id }) { photo ->
                     ContactSheetCell(
@@ -440,7 +455,6 @@ private fun ContactSheetCell(
     projects: ProjectHolder,
     onOpenPhoto: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(FmRadii.card)
     val status = when (job?.status) {
         BatchJobStatus.Done -> "完成"
         BatchJobStatus.Failed -> "失败"
@@ -459,15 +473,17 @@ private fun ContactSheetCell(
         modifier = Modifier
             .fillMaxWidth()
             .pointerInput(photo.id) { detectTapGestures(onDoubleTap = { onOpenPhoto() }) },
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(124.dp)
-                .clip(shape)
-                .fmElevated(FmElevation.card, shape)
-                .background(FmPalette.stageDark)
-                .padding(FmSpacing.xs),
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(6.dp))
+                .fmElevated(FmElevation.card, RoundedCornerShape(6.dp))
+                .background(FmPalette.surface)
+                .padding(18.dp),
+            contentAlignment = Alignment.Center,
         ) {
             BatchThumbnail(
                 photoPath = job?.outputPath ?: photo.path,
@@ -476,32 +492,44 @@ private fun ContactSheetCell(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
+            // `.sheetcell .st`：左上角徽标，h22、圆角 6、白底 95%、11.5/600。
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(FmSpacing.xs)
-                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .align(Alignment.TopStart)
+                    .offset(x = (-8).dp, y = (-8).dp)
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(6.dp))
                     .background(FmPalette.surface)
-                    .padding(horizontal = FmSpacing.xs, vertical = 1.dp),
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(status, style = FmType.labelSmall, color = statusColor, maxLines = 1)
+                Text(
+                    text = status,
+                    style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold),
+                    color = statusColor,
+                    maxLines = 1,
+                )
             }
         }
-        Spacer(Modifier.height(FmSpacing.xs))
-        Text(
-            text = photo.displayName,
-            style = FmType.labelMedium,
-            color = FmPalette.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = row?.detail ?: "未选边框",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // `.sheetcell .cap`：文件名（numeric 500）左、边框名右。
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = photo.displayName,
+                style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+                    .withNumericDigits(),
+                color = FmPalette.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = row?.cardName ?: "未选边框",
+                style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp),
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -524,65 +552,92 @@ private fun BatchQueuePanel(
     modifier: Modifier,
 ) {
     Column(modifier) {
-        Column(Modifier.fillMaxWidth().padding(FmSpacing.lg)) {
+        // `.bq .sum`：标题 + 修改 link + 4 行 kv（64 px 标签列）。
+        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("导出设置", style = FmType.titleSmall, color = FmPalette.onSurface, maxLines = 1)
-                Spacer(Modifier.weight(1f))
-                DlgButton(text = "修改", style = DlgButtonStyle.Ghost, onClick = onOpenExportSettings)
+                Text(
+                    text = "导出设置",
+                    style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+                    color = FmPalette.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "修改",
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp),
+                    color = FmPalette.primaryStrong,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Button, onClick = onOpenExportSettings)
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             batchSettingsSummary(settings, directory).forEach { (key, value) ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                    Text(key, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted, modifier = Modifier.width(52.dp))
+                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        key,
+                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                        modifier = Modifier.width(64.dp),
+                    )
                     Text(
                         text = value,
-                        style = FmType.labelSmall,
-                        color = FmPalette.onSurfaceSecondary,
+                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp).withNumericDigits(),
+                        color = FmPalette.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             DlgNote("批量与单张共用这份设置；单张在「导出」对话框里改。")
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
-        Column(Modifier.weight(1f).fillMaxWidth().padding(FmSpacing.lg)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("队列", style = FmType.titleSmall, color = FmPalette.onSurface, maxLines = 1)
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "完成 ${summary.done} · 失败 ${summary.failed} · 共 ${summary.total}",
-                    style = FmType.labelSmall,
-                    color = FmPalette.onSurfaceMuted,
-                    maxLines = 1,
-                )
-            }
-            Spacer(Modifier.height(6.dp))
-            BatchProgressBar(summary.percent)
-            Spacer(Modifier.height(3.dp))
-            Text(
-                text = "${summary.percent}%" + if (summary.isRunning) " · 正在导出" else "",
-                style = FmType.labelSmall,
-                color = if (summary.isRunning) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
-            )
-            Spacer(Modifier.height(FmSpacing.sm))
-            if (queueRows.isEmpty()) {
+        // `.qlist`：导出队列（每行 = 文件名 + 状态 + 失败原因/成片名）。
+        if (queueRows.isEmpty()) {
+            Column(Modifier.weight(1f).fillMaxWidth().padding(16.dp)) {
                 Text(
                     text = "队列为空。勾选照片后点下面的「开始导出」。",
                     style = FmType.bodyMedium,
                     color = FmPalette.onSurfaceMuted,
                 )
-            } else {
-                LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-                    items(queueRows, key = { it.id }) { row -> BatchQueueRowView(row) }
-                }
             }
-            notice?.let {
-                Spacer(Modifier.height(FmSpacing.xs))
-                DlgNote(it)
+        } else {
+            LazyColumn(
+                Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                items(queueRows, key = { it.id }) { row -> BatchQueueRowView(row) }
             }
-            Spacer(Modifier.height(FmSpacing.sm))
+        }
+        notice?.let {
+            Box(Modifier.padding(horizontal = 16.dp)) { DlgNote(it) }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // `.qfoot`：全队列进度 + 一个主操作。
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "完成 ${summary.done} · 失败 ${summary.failed} · 共 ${summary.total}",
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp).withNumericDigits(),
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${summary.percent}%" + if (summary.isRunning) " · 正在导出" else "",
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp).withNumericDigits(),
+                    color = if (summary.isRunning) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            BatchProgressBar(summary.percent)
+            Spacer(Modifier.height(10.dp))
             val action = BatchQueueView.primaryAction(running, jobs)
             val retryCount = queueRows.count {
                 it.state == BatchRowState.Failed || it.state == BatchRowState.Cancelled
@@ -634,32 +689,41 @@ private fun BatchQueueRowView(row: BatchQueueRow) {
         BatchRowState.Queued -> FmPalette.onSurfaceSecondary
         BatchRowState.Cancelled -> FmPalette.onSurfaceMuted
     }
-    Column(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(vertical = 9.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = row.displayName,
-                style = FmType.labelMedium,
+                style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+                    .withNumericDigits(),
                 color = FmPalette.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
+            Spacer(Modifier.width(10.dp))
             if (row.state == BatchRowState.Running) {
-                Text("导出中…", style = FmType.labelSmall, color = color, maxLines = 1)
+                Text("导出中…", style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp), color = color, maxLines = 1)
             } else {
-                Text(BatchQueueView.statusLabel(row.state), style = FmType.labelSmall, color = color, maxLines = 1)
+                Text(
+                    BatchQueueView.statusLabel(row.state),
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                    color = color,
+                    maxLines = 1,
+                )
             }
         }
         val detail = row.reason ?: row.outputPath?.substringAfterLast('/')?.substringAfterLast('\\')
         if (detail != null) {
             Text(
                 text = detail,
-                style = FmType.labelSmall,
+                style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp).withNumericDigits(),
                 color = if (row.reason != null) FmPalette.error else FmPalette.onSurfaceFaint,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
     }
 }
 

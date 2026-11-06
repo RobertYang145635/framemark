@@ -784,8 +784,7 @@ internal val ValueBoxWidth = 76.dp
 /**
  * `.fs .box` — h26, radius 6, `muted-bg`, right-aligned value + unit.
  *
- * NOTE(WP-V3): the value is numeric — after `theme\FmNumeric.kt` (WP-V1) lands,
- * this text and the 导出尺寸 / 「已修改 N 项」 counts should switch to it.
+ * WP-V4 B: 数值与单位都走 `--num` 字族（[withNumericDigits]），字号层级不变。
  */
 @Composable
 internal fun FmSliderValueBox(
@@ -817,7 +816,7 @@ internal fun FmSliderValueBox(
             fontWeight = FontWeight.Medium,
             color = FmPalette.onSurface,
             textAlign = TextAlign.End,
-        ),
+        ).withNumericDigits(),
         cursorBrush = SolidColor(FmPalette.primary),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit() }),
@@ -845,7 +844,7 @@ internal fun FmSliderValueBox(
                 if (!unit.isNullOrEmpty()) {
                     Text(
                         text = unit,
-                        style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp),
+                        style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp).withNumericDigits(),
                         color = FmPalette.onSurfaceFaint,
                         modifier = Modifier.padding(start = 2.dp),
                     )

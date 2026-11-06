@@ -126,6 +126,9 @@ class DesktopNativeRender(
                     ImageRect(it[0].toFloat(), it[1].toFloat(), it[2].toFloat(), it[3].toFloat())
                 },
                 note = result.warnings.firstOrNull { it.contains("不支持完整原尺寸") },
+                // WP-V4 A: 桌面渲染结果必须把报告里的文本行带回 UI；丢掉它，右栏
+                // 文字页只能退化成「页脚行选择」一条静态控件。
+                textSlots = result.textSlots,
             )
         }
     }

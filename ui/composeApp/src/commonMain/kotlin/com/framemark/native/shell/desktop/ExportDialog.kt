@@ -39,12 +39,17 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.framemark.native.inspector.FmSlider
+import com.framemark.native.inspector.withNumericDigits
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.theme.FmElevation
@@ -84,7 +89,7 @@ internal fun DlgButton(
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(FmRadii.pill)
+    val shape = RoundedCornerShape(FmRadii.chip)
     val background = when {
         !enabled -> FmPalette.surfaceMuted
         style == DlgButtonStyle.Primary -> FmPalette.primary
@@ -111,7 +116,7 @@ internal fun DlgButton(
     }
 }
 
-/** 两段式选择（格式 / 尺寸）。 */
+/** `.seg` 两段式选择（格式 / 尺寸）：槽 `--seg`、2 dp 内边距、圆角 8；按钮 h28、12.5 px。 */
 @Composable
 internal fun DlgSegment(
     options: List<Pair<String, String>>,
@@ -123,7 +128,7 @@ internal fun DlgSegment(
     Row(
         modifier = modifier
             .height(32.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
+            .clip(RoundedCornerShape(FmRadii.chip))
             .background(FmPalette.surfaceMuted)
             .semantics { contentDescription = description }
             .padding(2.dp),
@@ -135,17 +140,18 @@ internal fun DlgSegment(
             Box(
                 modifier = Modifier
                     .height(28.dp)
-                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .clip(RoundedCornerShape(FmRadii.input))
                     .background(if (on) FmPalette.surface else Color.Transparent)
-                    .border(1.dp, if (on) FmPalette.outlineStrong else Color.Transparent, RoundedCornerShape(FmRadii.pill))
                     .clickable(role = Role.RadioButton, onClick = { onSelect(key) })
+                    .semantics { stateDescription = if (on) "已选" else "未选" }
                     .padding(horizontal = FmSpacing.md),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
-                    style = FmType.labelMedium,
-                    color = if (on) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 16.sp),
+                    color = if (on) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+                    fontWeight = if (on) androidx.compose.ui.text.font.FontWeight.Medium else null,
                     maxLines = 1,
                 )
             }
@@ -175,14 +181,19 @@ internal fun DlgNote(text: String, error: Boolean = false) {
 }
 
 @Composable
-internal fun DlgTag(text: String, modifier: Modifier = Modifier) {
+internal fun DlgTag(text: String, modifier: Modifier = Modifier, numeric: Boolean = false) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(FmRadii.pill))
             .background(FmPalette.surfaceMuted)
             .padding(horizontal = FmSpacing.sm, vertical = 3.dp),
     ) {
-        Text(text, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted, maxLines = 1)
+        Text(
+            text,
+            style = if (numeric) FmType.labelSmall.withNumericDigits() else FmType.labelSmall,
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
+        )
     }
 }
 
@@ -195,22 +206,23 @@ internal fun DlgTextField(
     enabled: Boolean = true,
     aria: String? = null,
 ) {
-    val shape = RoundedCornerShape(FmRadii.input)
+    val shape = RoundedCornerShape(FmRadii.chip)
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
         enabled = enabled,
-        textStyle = FmType.bodyMedium.copy(color = if (enabled) FmPalette.onSurface else FmPalette.onSurfaceFaint),
+        textStyle = TextStyle(fontSize = 13.sp, lineHeight = 18.sp).withNumericDigits()
+            .copy(color = if (enabled) FmPalette.onSurface else FmPalette.onSurfaceFaint),
         cursorBrush = SolidColor(FmPalette.primary),
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 34.dp)
+            .heightIn(min = 32.dp)
             .clip(shape)
-            .background(FmPalette.surfaceMuted)
-            .border(1.dp, FmPalette.outline, shape)
+            .background(FmPalette.surface)
+            .border(1.dp, FmPalette.outlineStrong, shape)
             .then(if (aria != null) Modifier.semantics { contentDescription = aria } else Modifier)
-            .padding(horizontal = FmSpacing.sm, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 7.dp),
         decorationBox = { inner ->
             Box {
                 if (value.isEmpty()) {
@@ -328,8 +340,9 @@ fun DesktopExportDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            val dialogWidth = minOf(maxWidth * 0.92f, 880.dp)
-            val dialogHeight = minOf(maxHeight * 0.9f, 640.dp)
+            // `styles.css:466` `.dialog { width: 680px }`；高度按内容收，上限 600。
+            val dialogWidth = minOf(maxWidth * 0.92f, 680.dp)
+            val dialogHeight = minOf(maxHeight * 0.92f, 600.dp)
             Column(
                 modifier = Modifier
                     .width(dialogWidth)
@@ -343,7 +356,6 @@ fun DesktopExportDialog(
                         (card?.name ?: "原图"),
                     onClose = { if (!exporting) onDismiss() },
                 )
-                Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
                 if (result != null && !exporting) {
                     ExportResultPage(
                         result = result!!,
@@ -362,7 +374,12 @@ fun DesktopExportDialog(
                         onBackToEdit = onDismiss,
                     )
                 } else {
-                    Row(Modifier.weight(1f).fillMaxWidth()) {
+                    Row(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(start = 22.dp, end = 22.dp, top = 4.dp, bottom = 18.dp),
+                    ) {
                         ExportPreviewColumn(
                             card = card,
                             design = design,
@@ -371,10 +388,10 @@ fun DesktopExportDialog(
                             settings = settings,
                             qualityValue = qualityValue,
                             previewPixels = outPixels,
-                            modifier = Modifier.width(300.dp).fillMaxHeight(),
+                            modifier = Modifier.width(220.dp).fillMaxHeight(),
                             onFrame = { width, height, box -> frame = PreviewFrame(width, height, box) },
                         )
-                        Box(Modifier.width(1.dp).fillMaxSize().background(FmPalette.outline))
+                        Spacer(Modifier.width(22.dp))
                         ExportFormColumn(
                             settings = settings,
                             formats = formats,
@@ -388,7 +405,7 @@ fun DesktopExportDialog(
                             cardName = card?.name ?: "边框",
                             photoStem = ExportNaming.photoStem(photo?.displayName ?: photo?.path),
                             photoIndex = photoIndex,
-                            modifier = Modifier.weight(1f).fillMaxSize(),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
                             onChange = { next -> session.export = next; error = null },
                             onQualityText = { raw ->
                                 qualityText = raw
@@ -416,7 +433,6 @@ fun DesktopExportDialog(
                         )
                     }
                 }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
                 if (result == null || exporting) {
                     ExportDialogFooter(
                         exporting = exporting,
@@ -434,25 +450,30 @@ fun DesktopExportDialog(
 
 @Composable
 private fun ExportDialogHeader(subtitle: String, onClose: () -> Unit) {
+    // `.dlg-h`：16/700 标题 + 12.5 副题同一行，右侧关闭；padding 16 16 14 22。
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+        modifier = Modifier.fillMaxWidth().padding(start = 22.dp, end = 16.dp, top = 16.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            Text("导出照片", style = FmType.titleMedium, color = FmPalette.onSurface, maxLines = 1)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = subtitle,
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Text(
+            text = "导出照片",
+            style = TextStyle(fontSize = 16.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold),
+            color = FmPalette.onSurface,
+            maxLines = 1,
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = subtitle,
+            style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp),
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
         Box(
             modifier = Modifier
                 .size(28.dp)
-                .clip(RoundedCornerShape(FmRadii.input))
+                .clip(RoundedCornerShape(FmRadii.chip))
                 .clickable(role = Role.Button, onClick = onClose)
                 .semantics { contentDescription = "关闭导出对话框" },
             contentAlignment = Alignment.Center,
@@ -462,7 +483,7 @@ private fun ExportDialogHeader(subtitle: String, onClose: () -> Unit) {
     }
 }
 
-/** 左列：成品预览 + 原图像素 + 估算尺寸与体积 + 当前格式徽标。 */
+/** 左列（`.dlg-prev`）：暗底成品预览 + `.dspec` 两行数值 + 原图尺寸。 */
 @Composable
 private fun ExportPreviewColumn(
     card: LibraryCard?,
@@ -475,18 +496,23 @@ private fun ExportPreviewColumn(
     modifier: Modifier,
     onFrame: (Int, Int, ImageRect?) -> Unit,
 ) {
+    val estimate = ExportEstimate.estimatedBytes(
+        previewPixels,
+        settings.format,
+        qualityValue,
+        settings.webpLossless,
+    )
     Column(
-        modifier = modifier.padding(FmSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("成品预览", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp)
-                .clip(RoundedCornerShape(FmRadii.card))
+                .height(190.dp)
+                .clip(RoundedCornerShape(8.dp))
                 .background(FmPalette.stageDark)
-                .padding(FmSpacing.sm),
+                .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
             when {
@@ -511,21 +537,28 @@ private fun ExportPreviewColumn(
                 )
             }
         }
+        // `.dlg-prev .dspec`：尺寸 13/600，其余 12/400，全部 `--num`。
+        Text(
+            text = previewPixels?.let { "约 $it" } ?: "成片尺寸待定",
+            style = TextStyle(fontSize = 13.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold)
+                .withNumericDigits(),
+            color = FmPalette.onSurface,
+        )
+        Text(
+            text = formatBadge(settings, qualityValue) +
+                (estimate?.let { " · 约 " + ExportEstimate.formatBytes(it) } ?: ""),
+            style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp).withNumericDigits(),
+            color = FmPalette.onSurfaceMuted,
+        )
         Text(
             text = if (photo != null) "原图 ${photo.widthPx} × ${photo.heightPx} px" else "示例照片（引擎样张）",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
+            style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp).withNumericDigits(),
+            color = FmPalette.onSurfaceFaint,
         )
         Text(
-            text = ExportEstimate.previewLine(previewPixels, settings.format, qualityValue, settings.webpLossless),
-            style = FmType.labelMedium,
-            color = FmPalette.onSurfaceSecondary,
-        )
-        DlgTag(formatBadge(settings, qualityValue))
-        Text(
-            text = "预览就是成片版式：同一模板、同一照片，导出后像素尺寸在结果页复述。",
+            text = "预览就是成片版式：同一模板、同一照片；成片像素以结果页为准。",
             style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
+            color = FmPalette.onSurfaceFaint,
         )
     }
 }
@@ -536,7 +569,10 @@ private fun formatBadge(settings: ExportSettings, quality: Int): String = when (
     SampleFormat.WebP -> if (settings.webpLossless) "WebP · 无损" else "WebP · 质量 $quality"
 }
 
-/** 右列：格式 / 尺寸 / 质量 / 文件名 / 保存位置 + 拍摄信息去留。 */
+/**
+ * 右列（`.form` / `.field`）：72 px 标签列 + 控件列，行距 14。
+ * 字段顺序与演示稿一致：格式 / 尺寸 / 质量 / 文件名 / 位置。
+ */
 @Composable
 private fun ExportFormColumn(
     settings: ExportSettings,
@@ -558,157 +594,254 @@ private fun ExportFormColumn(
     onChooseDirectory: () -> Unit,
 ) {
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(FmSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.md),
+        modifier = modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Column {
-            DlgLabel("格式")
-            DlgSegment(
-                options = formats.map { it.extension to it.label },
-                selected = settings.format.extension,
-                onSelect = { key ->
-                    formats.firstOrNull { it.extension == key }?.let { onChange(settings.copy(format = it)) }
-                },
-                description = "导出格式",
-            )
-            Spacer(Modifier.height(6.dp))
-            DlgNote(ExportCopy.encoderLine(settings.format, qualityValue, settings.webpLossless))
+        ExportField("格式") {
+            Column {
+                DlgSegment(
+                    options = formats.map { it.extension to it.label },
+                    selected = settings.format.extension,
+                    onSelect = { key ->
+                        formats.firstOrNull { it.extension == key }?.let { onChange(settings.copy(format = it)) }
+                    },
+                    description = "导出格式",
+                )
+                Spacer(Modifier.height(4.dp))
+                DlgNote(ExportCopy.encoderLine(settings.format, qualityValue, settings.webpLossless))
+            }
         }
 
-        Column {
-            DlgLabel("尺寸")
-            DlgSegment(
-                options = listOf("original" to "原尺寸", "longEdge" to "指定长边"),
-                selected = if (settings.sizeMode == ExportSizeMode.Original) "original" else "longEdge",
-                onSelect = { key ->
-                    onChange(
-                        settings.copy(
-                            sizeMode = if (key == "original") ExportSizeMode.Original else ExportSizeMode.LongEdge,
-                        ),
-                    )
-                },
-                description = "导出尺寸",
-            )
-            if (settings.sizeMode == ExportSizeMode.LongEdge) {
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                    DlgTextField(
-                        value = longEdgeText,
-                        onValueChange = onLongEdgeText,
-                        placeholder = "2048",
-                        modifier = Modifier.width(120.dp),
-                        aria = "长边像素",
-                    )
-                    Text("px", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
-                    ExportRules.LONG_EDGE_PRESETS.forEach { preset ->
-                        DlgButton(
-                            text = preset.toString(),
-                            style = DlgButtonStyle.Ghost,
-                            onClick = { onLongEdgeText(preset.toString()) },
+        ExportField("尺寸") {
+            Column {
+                DlgSegment(
+                    options = listOf("original" to "原尺寸", "longEdge" to "指定长边"),
+                    selected = if (settings.sizeMode == ExportSizeMode.Original) "original" else "longEdge",
+                    onSelect = { key ->
+                        onChange(
+                            settings.copy(
+                                sizeMode = if (key == "original") ExportSizeMode.Original else ExportSizeMode.LongEdge,
+                            ),
                         )
+                    },
+                    description = "导出尺寸",
+                )
+                if (settings.sizeMode == ExportSizeMode.LongEdge) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        DlgTextField(
+                            value = longEdgeText,
+                            onValueChange = onLongEdgeText,
+                            placeholder = "2048",
+                            modifier = Modifier.width(104.dp),
+                            aria = "长边像素",
+                        )
+                        Text(
+                            text = "px",
+                            style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp).withNumericDigits(),
+                            color = FmPalette.onSurfaceFaint,
+                        )
+                        ExportRules.LONG_EDGE_PRESETS.forEach { preset ->
+                            ExportTokenChip("$preset") { onLongEdgeText(preset.toString()) }
+                        }
                     }
+                    Spacer(Modifier.height(4.dp))
+                    DlgNote(
+                        longEdgeError ?: "把长边缩到所选像素后再编码；1 – 20000。",
+                        error = longEdgeError != null,
+                    )
+                } else {
+                    Spacer(Modifier.height(4.dp))
+                    DlgNote("保留照片原始像素，画布随边框扩展。")
                 }
-                Spacer(Modifier.height(6.dp))
-                DlgNote(longEdgeError ?: "把长边缩到所选像素后再编码。", error = longEdgeError != null)
-            } else {
-                Spacer(Modifier.height(6.dp))
-                DlgNote("保留照片原始像素，画布随边框扩展。")
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "成片 " + (pixels?.let { "约 $it" } ?: "尺寸在导出后显示") + "（估算）",
-                style = FmType.labelMedium,
-                color = FmPalette.onSurfaceSecondary,
-            )
         }
 
         if (ExportRules.qualityApplies(settings.format, settings.webpLossless)) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DlgLabel("质量")
-                    Spacer(Modifier.weight(1f))
-                    Text("$qualityValue", style = FmType.labelMedium, color = FmPalette.onSurface)
-                }
-                FmSlider(
-                    value = qualityValue.toFloat(),
-                    onValueChange = { onQualityText(it.toInt().toString()) },
-                    valueRange = ExportRules.QUALITY_MIN.toFloat()..ExportRules.QUALITY_MAX.toFloat(),
-                    step = 1f,
-                    defaultValue = ExportRules.QUALITY_DEFAULT.toFloat(),
-                    modified = qualityValue != ExportRules.QUALITY_DEFAULT,
-                )
-                DlgNote(qualityError ?: "默认 ${ExportRules.QUALITY_DEFAULT}。只保存在本机，不写入跨端预设。", error = qualityError != null)
-            }
-        }
-
-        Column {
-            DlgLabel("文件名")
-            DlgTextField(
-                value = settings.filenamePattern,
-                onValueChange = { onChange(settings.copy(filenamePattern = it)) },
-                placeholder = "{photo}-{index}",
-                aria = "文件名模板",
-            )
-            Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs)) {
-                ExportNameToken.entries.forEach { token ->
-                    DlgButton(
-                        text = token.label,
-                        style = DlgButtonStyle.Ghost,
-                        onClick = {
-                            val next = ExportFileName.insertToken(
-                                pattern = settings.filenamePattern,
-                                tokenKey = token.key,
-                                selectionStart = settings.filenamePattern.length,
-                                selectionEnd = settings.filenamePattern.length,
+            ExportField("质量") {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FmSlider(
+                            value = qualityValue.toFloat(),
+                            onValueChange = { onQualityText(it.toInt().toString()) },
+                            valueRange = ExportRules.QUALITY_MIN.toFloat()..ExportRules.QUALITY_MAX.toFloat(),
+                            step = 1f,
+                            defaultValue = ExportRules.QUALITY_DEFAULT.toFloat(),
+                            modified = qualityValue != ExportRules.QUALITY_DEFAULT,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .height(26.dp)
+                                .width(64.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(FmPalette.surfaceMuted)
+                                .padding(horizontal = 8.dp),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            Text(
+                                text = "$qualityValue",
+                                style = TextStyle(fontSize = 11.5.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium)
+                                    .withNumericDigits(),
+                                color = FmPalette.onSurface,
+                                maxLines = 1,
                             )
-                            onChange(settings.copy(filenamePattern = next))
-                        },
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    DlgNote(
+                        qualityError ?: "默认 ${ExportRules.QUALITY_DEFAULT}。只保存在本机，不写入跨端预设。",
+                        error = qualityError != null,
                     )
                 }
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "将保存为 " + ExportFileName.previewFile(
-                    pattern = settings.filenamePattern,
-                    cardName = cardName,
-                    photoStem = photoStem,
-                    index = photoIndex,
-                    extension = settings.format.extension,
-                ),
-                style = FmType.labelMedium,
-                color = FmPalette.onSurfaceSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
 
-        Column {
-            DlgLabel("保存位置")
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(FmRadii.input))
-                        .background(FmPalette.surfaceMuted)
-                        .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
-                        .padding(horizontal = FmSpacing.sm, vertical = 8.dp),
-                ) {
+        ExportField("文件名", top = true) {
+            Column {
+                DlgTextField(
+                    value = settings.filenamePattern,
+                    onValueChange = { onChange(settings.copy(filenamePattern = it)) },
+                    placeholder = "{photo}-{index}",
+                    aria = "文件名模板",
+                )
+                Spacer(Modifier.height(6.dp))
+                // `.tokens`：+照片名 / +序号 / …，h24、圆角 6、`--plate`。
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    val tokens = ExportNameToken.entries
+                    tokens.chunked(4).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            row.forEach { token ->
+                                ExportTokenChip(token.label) {
+                                    val next = ExportFileName.insertToken(
+                                        pattern = settings.filenamePattern,
+                                        tokenKey = token.key,
+                                        selectionStart = settings.filenamePattern.length,
+                                        selectionEnd = settings.filenamePattern.length,
+                                    )
+                                    onChange(settings.copy(filenamePattern = next))
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = directory,
-                        style = FmType.bodyMedium,
-                        color = FmPalette.onSurfaceSecondary,
+                        text = "将保存为 ",
+                        style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = ExportFileName.previewFile(
+                            pattern = settings.filenamePattern,
+                            cardName = cardName,
+                            photoStem = photoStem,
+                            index = photoIndex,
+                            extension = settings.format.extension,
+                        ),
+                        style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+                            .withNumericDigits(),
+                        color = FmPalette.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                DlgButton(text = "更改…", onClick = onChooseDirectory)
             }
-            Spacer(Modifier.height(6.dp))
-            DlgNote("目录会记住，下次仍用它；同名文件不会被覆盖（自动加 -2）。")
+        }
+
+        ExportField("位置") {
+            Column {
+                // `.inp.ro`：只读路径 + 「更改…」在同一个框里。
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(FmPalette.surfaceMuted)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = directory,
+                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp).withNumericDigits(),
+                        color = FmPalette.onSurfaceSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "更改…",
+                        style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                        color = FmPalette.primaryStrong,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .heightIn(min = 24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(role = Role.Button, onClick = onChooseDirectory)
+                            .padding(horizontal = 6.dp),
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                DlgNote("目录会记住，下次仍用它；同名文件不会被覆盖（自动加 -2）。")
+            }
         }
 
         ExportCopy.metadataLines(settings.format).forEach { line -> DlgNote(line) }
+    }
+}
+
+/** `.field`：72 px 标签列 + 控件列。 */
+@Composable
+private fun ExportField(label: String, top: Boolean = false, content: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = if (top) Alignment.Top else Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
+            modifier = Modifier
+                .width(72.dp)
+                .then(if (top) Modifier.padding(top = 6.dp) else Modifier),
+        )
+        Box(Modifier.weight(1f)) { content() }
+    }
+}
+
+/** `.tokens button`：h24、圆角 6、`--plate`、12 px，前缀「+」。 */
+@Composable
+private fun ExportTokenChip(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .height(24.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(FmPalette.surfaceMuted)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = "插入 $label" }
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "+",
+            style = TextStyle(fontSize = 12.sp, lineHeight = 14.sp).withNumericDigits(),
+            color = FmPalette.onSurfaceFaint,
+        )
+        Spacer(Modifier.width(3.dp))
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 12.sp, lineHeight = 14.sp),
+            color = FmPalette.onSurfaceSecondary,
+            maxLines = 1,
+        )
     }
 }
 
@@ -721,25 +854,32 @@ private fun ExportDialogFooter(
     onCancel: () -> Unit,
     onExport: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-    ) {
-        Column(Modifier.weight(1f)) {
-            DlgNote(qualityNote)
-            if (error != null) {
-                Spacer(Modifier.height(2.dp))
-                DlgNote(error, error = true)
+    // `.dlg-f`：`--muted-bg` 底 + 1 px `--line` 上边线，padding 14 22。
+    Column(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(FmPalette.surfaceMuted)
+                .padding(horizontal = 22.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                DlgNote(qualityNote)
+                if (error != null) {
+                    Spacer(Modifier.height(2.dp))
+                    DlgNote(error, error = true)
+                }
             }
+            DlgButton(text = "取消", style = DlgButtonStyle.Ghost, enabled = !exporting, onClick = onCancel)
+            DlgButton(
+                text = if (exporting) "正在导出…" else "导出",
+                style = DlgButtonStyle.Primary,
+                enabled = canExport,
+                onClick = onExport,
+            )
         }
-        DlgButton(text = "取消", style = DlgButtonStyle.Ghost, enabled = !exporting, onClick = onCancel)
-        DlgButton(
-            text = if (exporting) "正在导出…" else "导出",
-            style = DlgButtonStyle.Primary,
-            enabled = canExport,
-            onClick = onExport,
-        )
     }
 }
 
@@ -773,7 +913,7 @@ private fun ExportResultPage(
         Spacer(Modifier.height(4.dp))
         Text(
             text = result.fileName,
-            style = FmType.bodyMedium,
+            style = FmType.bodyMedium.withNumericDigits(),
             color = FmPalette.onSurfaceSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -786,7 +926,7 @@ private fun ExportResultPage(
                 append(" · ")
                 append(ExportEstimate.formatBytes(result.bytes.toLong()))
             },
-            style = FmType.labelMedium,
+            style = FmType.labelMedium.withNumericDigits(),
             color = FmPalette.onSurfaceSecondary,
         )
         Spacer(Modifier.height(2.dp))
