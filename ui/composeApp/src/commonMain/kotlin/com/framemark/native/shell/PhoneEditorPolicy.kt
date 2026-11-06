@@ -149,10 +149,15 @@ data class PhoneCompactSheetMetrics(
     /** One name line resolved to dp at this window's font scale. */
     val cardNameLine: Float,
     val stripBottom: Float,
+    /** Gap between the name and the 11 sp description line (showcase `.card .ds`). */
+    val cardDescGap: Float = 0f,
+    /** One description line resolved to dp at this window's font scale. */
+    val cardDescLine: Float = 0f,
 ) {
-    /** Card strip: top padding + the 128 dp tile + the name line + bottom padding. */
+    /** Card strip: top padding + the 128 dp tile + name + description + bottom padding. */
     val stripHeight: Float
-        get() = stripTop + PHONE_FRAME_CARD_SIZE_DP + cardNameGap + cardNameLine + stripBottom
+        get() = stripTop + PHONE_FRAME_CARD_SIZE_DP + cardNameGap + cardNameLine +
+            cardDescGap + cardDescLine + stripBottom
 
     /** The whole first screenful of the 收起 border sheet: card + name + every band. */
     val contentHeight: Float
@@ -164,10 +169,12 @@ data class PhoneCompactSheetMetrics(
 }
 
 /**
- * The name keeps 11 sp / 14 sp leading at every tier: the 收起 sheet squeezes the
- * bands around the card, never the text the user reads.
+ * The name keeps 12 sp / 16 sp leading and the description 11 sp / 14 sp at every
+ * tier (showcase `.card .nm` / `.card .ds`): the 收起 sheet squeezes the bands
+ * around the card, never the text the user reads.
  */
-private const val CARD_NAME_LINE_SP = 14f
+private const val CARD_NAME_LINE_SP = 16f
+private const val CARD_DESC_LINE_SP = 14f
 
 private fun compactTier(
     grabber: Float,
@@ -178,6 +185,7 @@ private fun compactTier(
     cardNameGap: Float,
     stripBottom: Float,
     fontScale: Float,
+    cardDescGap: Float = 0f,
 ): PhoneCompactSheetMetrics = PhoneCompactSheetMetrics(
     grabber = grabber,
     head = head,
@@ -188,26 +196,34 @@ private fun compactTier(
     cardNameLineSp = CARD_NAME_LINE_SP,
     cardNameLine = CARD_NAME_LINE_SP * fontScale.coerceIn(1f, 1.5f),
     stripBottom = stripBottom,
+    cardDescGap = cardDescGap,
+    cardDescLine = CARD_DESC_LINE_SP * fontScale.coerceIn(1f, 1.5f),
 )
 
 /**
- * The ladder, roomiest first; each step gives up ~20 dp of chrome. Tier 0 is the
- * WP-P1 design (unchanged), tier 4 is the floor before bands stop being usable.
+ * The ladder, roomiest first; each step gives up ~14 dp of chrome. Tier 0 is the
+ * showcase's own stack (grabber 22, title row 30, 14 px tab row 38, 30 dp chip row
+ * 42, strip `12 / 10` around the 128 dp tile, then a 12 sp name and an 11 sp
+ * description), tier 4 is the floor before bands stop being usable. The title row
+ * never goes below 28 dp: it carries a 16 sp / 700 page name, which must not clip at
+ * a large font scale.
  *
  * | tier | grabber | head | 类别 | 分组 | strip | content |
  * |------|---------|------|------|------|-------|---------|
- * | 0    | 18      | 48   | 48   | 48   | 157   | 319     |
- * | 1    | 14      | 44   | 44   | 44   | 154   | 300     |
- * | 2    | 12      | 40   | 40   | 36   | 152   | 280     |
- * | 3    | 8       | 36   | 36   | 32   | 150   | 262     |
- * | 4    | 8       | 32   | 34   | 32   | 148   | 254     |
+ * | 0    | 22      | 30   | 38   | 42   | 183   | 315     |
+ * | 1    | 18      | 30   | 36   | 38   | 178   | 300     |
+ * | 2    | 14      | 28   | 34   | 36   | 174   | 286     |
+ * | 3    | 10      | 28   | 32   | 34   | 170   | 274     |
+ * | 4    | 8       | 28   | 30   | 32   | 166   | 264     |
+ * | 5    | 8       | 28   | 30   | 30   | 164   | 260     |
  */
 private fun compactTiers(fontScale: Float): List<PhoneCompactSheetMetrics> = listOf(
-    compactTier(18f, 48f, 48f, 48f, 4f, 3f, 8f, fontScale),
-    compactTier(14f, 44f, 44f, 44f, 3f, 3f, 6f, fontScale),
-    compactTier(12f, 40f, 40f, 36f, 3f, 2f, 5f, fontScale),
-    compactTier(8f, 36f, 36f, 32f, 2f, 2f, 4f, fontScale),
-    compactTier(8f, 32f, 34f, 32f, 2f, 2f, 2f, fontScale),
+    compactTier(22f, 30f, 38f, 42f, 12f, 3f, 10f, fontScale),
+    compactTier(18f, 30f, 36f, 38f, 10f, 2f, 8f, fontScale),
+    compactTier(14f, 28f, 34f, 36f, 8f, 2f, 6f, fontScale),
+    compactTier(10f, 28f, 32f, 34f, 6f, 2f, 4f, fontScale),
+    compactTier(8f, 28f, 30f, 32f, 4f, 2f, 2f, fontScale),
+    compactTier(8f, 28f, 30f, 30f, 2f, 2f, 2f, fontScale),
 )
 
 /**

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -214,6 +215,14 @@ private fun LibraryUnavailable(onRetry: (() -> Unit)?, modifier: Modifier) {
     }
 }
 
+/**
+ * Category row (showcase `.ptabs`: `padding 0 8px`, `justify-content: space-between`,
+ * 14 px labels, 700 + a 3 px underline on the active one, 38 dp tall).
+ *
+ * The magnifier at the right end is the only addition: the showcase's phone screens
+ * have no search surface at all, and dropping the entry would make the library's
+ * query unreachable on the phone (registered as a kept difference in the report).
+ */
 @Composable
 private fun CategoryTabs(
     view: PhoneLibraryView,
@@ -226,32 +235,24 @@ private fun CategoryTabs(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
-            .background(FmPalette.surface),
+            .background(FmPalette.surface)
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .horizontalScroll(rememberScrollState())
-                .padding(start = FmSpacing.md),
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            view.categories.forEach { category ->
-                val active = category.key == categoryKey
-                Column(
-                    modifier = Modifier
-                        .height(height)
-                        .widthIn(min = 48.dp)
-                        .semantics(mergeDescendants = true) {
-                            contentDescription = "${category.name}，${category.count} 个"
-                            role = Role.Tab
-                        }
-                        .clickable { onCategoryChange(category.key) }
-                        .padding(horizontal = 6.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
+        view.categories.forEach { category ->
+            val active = category.key == categoryKey
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${category.name}，${category.count} 个"
+                        role = Role.Tab
+                    }
+                    .clickable { onCategoryChange(category.key) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = category.name,
                         style = FmType.labelMedium.copy(
@@ -260,11 +261,12 @@ private fun CategoryTabs(
                         ),
                         color = if (active) FmPalette.onSurface else FmPalette.onSurfaceMuted,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Box(modifier = Modifier.height(3.dp))
+                    Spacer(Modifier.height(3.dp))
                     Box(
                         modifier = Modifier
-                            .width(20.dp)
+                            .fillMaxWidth(0.6f)
                             .height(3.dp)
                             .clip(RoundedCornerShape(FmRadii.pill))
                             .background(if (active) FmPalette.onSurface else FmPalette.surface),
@@ -274,7 +276,7 @@ private fun CategoryTabs(
         }
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(36.dp)
                 .semantics {
                     contentDescription = "搜索边框"
                     role = Role.Button
@@ -282,16 +284,16 @@ private fun CategoryTabs(
                 .clickable(onClick = onSearch),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "搜索",
-                style = FmType.labelSmall.copy(fontSize = 12.sp),
-                color = FmPalette.primaryStrong,
-                maxLines = 1,
-            )
+            PhoneSearchGlyph(tint = FmPalette.onSurfaceMuted)
         }
     }
 }
 
+/**
+ * Group-jump chips (showcase `.panchors` + `.chip.touch.on`): 30 dp pills, 13 px,
+ * `--surface` with a hairline when idle and `--accent-soft` + accent-strong ink when
+ * the matching group is the one the body is showing.
+ */
 @Composable
 private fun AnchorRow(
     anchors: List<PhoneLibraryAnchor>,
@@ -305,19 +307,17 @@ private fun AnchorRow(
             .fillMaxWidth()
             .height(height)
             .background(FmPalette.surface)
-            .padding(start = FmSpacing.md),
+            .padding(start = 18.dp, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             anchors.forEach { anchor ->
-                // The C-07 48 dp tap band around a 30 dp pill; the tight tiers shrink
-                // the band, never the pill.
                 Box(
                     modifier = Modifier
                         .height(height)
@@ -330,15 +330,15 @@ private fun AnchorRow(
                 ) {
                     Row(
                         modifier = Modifier
-                            .heightIn(min = 30.dp)
+                            .height(30.dp)
                             .clip(RoundedCornerShape(FmRadii.pill))
                             .background(FmPalette.surfaceMuted)
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                            .padding(horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = anchor.label,
-                            style = FmType.labelSmall.copy(fontSize = 12.sp),
+                            style = FmType.labelSmall.copy(fontSize = 13.sp),
                             color = FmPalette.onSurfaceSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -347,7 +347,7 @@ private fun AnchorRow(
                         Text(
                             text = anchor.count.toString(),
                             style = FmType.labelSmall.copy(fontSize = 11.sp),
-                            color = FmPalette.onSurfaceMuted,
+                            color = FmPalette.onSurfaceFaint,
                             maxLines = 1,
                         )
                     }
@@ -355,8 +355,6 @@ private fun AnchorRow(
             }
         }
         if (showSeries) {
-            // Same shape as the chips: a full-height hit band around the label, so the
-            // tighter tiers shrink the band instead of clipping the text.
             Box(
                 modifier = Modifier
                     .height(height)
@@ -366,12 +364,12 @@ private fun AnchorRow(
                         role = Role.Button
                     }
                     .clickable(onClick = onOpenSeries)
-                    .padding(horizontal = 10.dp),
+                    .padding(horizontal = 11.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "系列",
-                    style = FmType.labelSmall.copy(fontSize = 12.sp),
+                    style = FmType.labelSmall.copy(fontSize = 13.sp),
                     color = FmPalette.onSurfaceSecondary,
                     maxLines = 1,
                 )
@@ -432,3 +430,4 @@ private fun PhoneLibrarySearchRow(
         )
     }
 }
+

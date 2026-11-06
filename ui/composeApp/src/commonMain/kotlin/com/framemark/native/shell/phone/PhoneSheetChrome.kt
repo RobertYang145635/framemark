@@ -107,10 +107,14 @@ fun PhoneSheetGrabber(
 }
 
 /**
- * Sheet head (demo `.psh`): the tool name, the current card, 恢复默认 with the
- * changed-item count of this page (only when non-zero), the 预设 entry on the
- * border sheet (hand-off §3 decision 5: the phone keeps "编辑中直接套用预设")
- * and the expand / collapse arrow.
+ * Sheet head (demo `.psh`: padding `0 12 6 18`, gap 8): 16/700 page name, the
+ * 12.5 sp ink-3 subtitle (`当前：经典双行` on the border sheet, the card name on a
+ * parameter page), then the accent actions — `恢复默认 N` (`.rst`, 32 dp, 13 sp)
+ * and `调整样式 ›` (`.adj`, 32 dp, 13 sp, gap 2) — and the 36 dp expand chevron.
+ *
+ * 预设 stays as a fourth action (HANDOFF §3.5 keeps the phone's preset entry; the
+ * showcase's phone screens have no preset surface, so it reuses the header's ghost
+ * action slot and touches nothing else).
  */
 @Composable
 fun PhoneSheetHead(
@@ -122,6 +126,7 @@ fun PhoneSheetHead(
     onToggleExpanded: () -> Unit,
     onReset: (() -> Unit)? = null,
     onOpenPresets: (() -> Unit)? = null,
+    onAdjustStyle: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val actionHeight = height.coerceAtMost(SheetHeadMaxHeight)
@@ -129,7 +134,7 @@ fun PhoneSheetHead(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .padding(start = FmSpacing.md, end = FmSpacing.xs),
+            .padding(start = 18.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -141,20 +146,12 @@ fun PhoneSheetHead(
         Spacer(Modifier.width(FmSpacing.sm))
         Text(
             text = subtitle,
-            style = FmType.labelSmall.copy(fontSize = 12.sp),
+            style = FmType.labelSmall.copy(fontSize = 12.5.sp),
             color = FmPalette.onSurfaceMuted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        if (onOpenPresets != null) {
-            HeadAction(
-                label = "预设",
-                description = "打开预设",
-                height = actionHeight,
-                onClick = onOpenPresets,
-            )
-        }
         if (onReset != null && modified > 0) {
             HeadAction(
                 label = "恢复默认 $modified",
@@ -162,6 +159,24 @@ fun PhoneSheetHead(
                 accent = true,
                 height = actionHeight,
                 onClick = onReset,
+            )
+        }
+        if (onAdjustStyle != null) {
+            HeadAction(
+                label = "调整样式",
+                description = "打开样式参数",
+                accent = true,
+                height = actionHeight,
+                trailingChevron = true,
+                onClick = onAdjustStyle,
+            )
+        }
+        if (onOpenPresets != null) {
+            HeadAction(
+                label = "预设",
+                description = "打开预设",
+                height = actionHeight,
+                onClick = onOpenPresets,
             )
         }
         Box(
@@ -187,8 +202,9 @@ private fun HeadAction(
     height: Dp,
     onClick: () -> Unit,
     accent: Boolean = false,
+    trailingChevron: Boolean = false,
 ) {
-    Box(
+    Row(
         modifier = Modifier
             .heightIn(min = height)
             .clip(RoundedCornerShape(FmRadii.pill))
@@ -197,16 +213,18 @@ private fun HeadAction(
                 role = Role.Button
             }
             .clickable(onClick = onClick)
-            .padding(horizontal = FmSpacing.sm),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = label,
-                style = FmType.labelSmall.copy(fontSize = 12.sp),
-                color = if (accent) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
-                maxLines = 1,
-            )
+        Text(
+            text = label,
+            style = FmType.labelSmall.copy(fontSize = 13.sp),
+            color = if (accent) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
+            maxLines = 1,
+        )
+        if (trailingChevron) {
+            Spacer(Modifier.width(2.dp))
+            PhoneChevronGlyph(tint = FmPalette.primaryStrong, up = false, right = true, dim = 14.dp)
         }
     }
 }

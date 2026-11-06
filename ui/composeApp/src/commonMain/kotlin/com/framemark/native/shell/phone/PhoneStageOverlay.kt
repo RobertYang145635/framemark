@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
@@ -74,18 +76,23 @@ fun Modifier.phoneFrameSwipe(enabled: Boolean, onStep: (Int) -> Unit): Modifier 
         )
     }
 
-/** A translucent pill on the dark stage (border name, 按住看原图, 专注). */
+/**
+ * The border-name pill on the dark stage (showcase `.pchip`: h 26, radius 13,
+ * padding `0 10`, 12 px, 55 % scrim) with the optional `· 左右滑动换边框` hint
+ * (`.pc-hint`, 11.5 px at 55 % white).
+ */
 @Composable
 fun PhoneStageChip(
     text: String,
     modifier: Modifier = Modifier,
     description: String? = null,
+    hint: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(FmRadii.pill)
-    Box(
+    Row(
         modifier = modifier
-            .heightIn(min = 32.dp)
+            .height(26.dp)
             .clip(shape)
             .background(FmPalette.scrim)
             .then(
@@ -100,15 +107,26 @@ fun PhoneStageChip(
                     Modifier
                 },
             )
-            .padding(horizontal = FmSpacing.sm, vertical = 6.dp),
-        contentAlignment = Alignment.Center,
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = text,
             style = FmType.labelSmall.copy(fontSize = 12.sp),
             color = FmPalette.stageInk,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
         )
+        if (!hint.isNullOrBlank()) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "· $hint",
+                style = FmType.labelSmall.copy(fontSize = 11.5.sp),
+                color = FmPalette.stageMuted,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -125,7 +143,7 @@ fun PhoneHoldCompareChip(
     val shape = RoundedCornerShape(FmRadii.pill)
     Box(
         modifier = modifier
-            .heightIn(min = 34.dp)
+            .height(34.dp)
             .clip(shape)
             .background(FmPalette.scrim)
             .semantics(mergeDescendants = true) {
@@ -141,15 +159,15 @@ fun PhoneHoldCompareChip(
                     },
                 )
             }
-            .padding(horizontal = FmSpacing.md, vertical = 6.dp),
+            .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PhoneEyeGlyph(tint = FmPalette.stageInk)
-            Spacer(Modifier.width(5.dp))
+            Spacer(Modifier.width(6.dp))
             Text(
                 text = "按住看原图",
-                style = FmType.labelSmall.copy(fontSize = 12.sp),
+                style = FmType.labelSmall.copy(fontSize = 12.5.sp),
                 color = if (comparing) FmPalette.primaryStrong else FmPalette.stageInk,
                 maxLines = 1,
             )
@@ -248,3 +266,4 @@ private fun SwipeArrow(right: Boolean, tint: androidx.compose.ui.graphics.Color)
         drawLine(tint, Offset(back, w * 0.8f), Offset(tip, w * 0.5f), stroke, StrokeCap.Round)
     }
 }
+

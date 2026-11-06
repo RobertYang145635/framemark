@@ -38,21 +38,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.FmSpacing
-import com.framemark.native.theme.FmType
 import com.framemark.native.theme.SystemBarsOnDarkSurface
 
-/** 48 dp round icon target (C-07) inside the 52 dp bar, as in the showcase `.ptop .ibtn`. */
-private val TopBarIconSize = 48.dp
+/** 44 dp round icon target inside the 52 dp bar, as in the showcase `.ptop .ibtn`. */
+private val TopBarIconSize = 44.dp
+
+/** Showcase `.ptop .exp`: a 34 dp accent pill, 14 sp / 600. */
+private val ExportPillHeight = 34.dp
 
 /**
- * V2 phone editor top bar (report §7.2, demo `.ptop`): 返回 · 照片切换 · 撤销 / 重做 · 导出.
+ * V2 phone editor top bar (report §7.2, demo `.ptop`: 返回 · 文件名 + `1 / 3 ⌄` ·
+ * 撤销 / 重做 · 蓝色「导出」胶囊).
  *
  * It is **dark in both appearances** (hand-off part 2 §3 decision 2: the phone
  * editor's top bar uses the stage colour `#2B2C2F`), so the status bar icons must
  * switch to light ink while it is composed — [SystemBarsOnDarkSurface] does that
  * and restores the theme default when the editor leaves (WP-T report §6 item 5;
  * do not call `enableEdgeToEdge` from here).
+ *
+ * The title is **one line** — file name, then `1 / 3`, then the dropdown chevron,
+ * exactly like `.ptop .ttl` (gap 4, `b` 15/500 then `small` 12.5 at 50 % white).
+ * The demo draws no hairline under the bar, and the stage is the same colour, so
+ * there is no divider either.
  *
  * 返回 walks the same layers the system back button walks (keyboard → full
  * parameter page → focus view → expanded sheet); the caller owns that chain.
@@ -82,7 +89,7 @@ fun PhoneEditorTopBar(
     // untouched and puts the same stage colour behind the status bar in both modes.
     val stageColor = FmPalette.stage
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
@@ -96,102 +103,103 @@ fun PhoneEditorTopBar(
                         size = Size(size.width, strip),
                     )
                 }
-            },
+            }
+            .padding(start = 6.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height - 1.dp)
-                .padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TopBarIcon(
-                description = "返回",
-                enabled = true,
-                onClick = onBack,
-            ) { tint -> PhoneBackGlyph(tint = tint) }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(TopBarIconSize)
-                    .clip(RoundedCornerShape(FmRadii.pill))
-                    .semantics {
-                        contentDescription = "切换照片，第 $photoIndex 张，共 $photoCount 张"
-                        role = Role.Button
-                        stateDescription = if (photosOpen) "照片条已展开" else "照片条已收起"
-                    }
-                    .clickable(onClick = onTogglePhotos)
-                    .padding(horizontal = FmSpacing.xs),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Column {
-                    Text(
-                        text = fileName,
-                        style = FmType.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium),
-                        color = FmPalette.stageInk,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "$photoIndex / $photoCount",
-                            style = FmType.labelSmall.copy(fontSize = 12.sp),
-                            color = FmPalette.stageMuted,
-                            maxLines = 1,
-                        )
-                        Spacer(Modifier.width(3.dp))
-                        PhoneChevronGlyph(tint = FmPalette.stageMuted, up = photosOpen)
-                    }
-                }
-            }
-            TopBarIcon(
-                description = "撤销",
-                enabled = canUndo,
-                stateText = if (canUndo) null else "没有可撤销的修改",
-                onClick = onUndo,
-            ) { tint -> PhoneHistoryGlyph(tint = tint, redo = false) }
-            TopBarIcon(
-                description = "重做",
-                enabled = canRedo,
-                stateText = if (canRedo) null else "没有可重做的修改",
-                onClick = onRedo,
-            ) { tint -> PhoneHistoryGlyph(tint = tint, redo = true) }
-            Spacer(Modifier.width(4.dp))
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 48.dp)
-                    .semantics {
-                        contentDescription = "导出当前照片"
-                        role = Role.Button
-                    }
-                    .clickable(onClick = onExport),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(FmRadii.pill))
-                        .background(FmPalette.primary)
-                        .padding(horizontal = 14.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "导出",
-                        style = FmType.labelMedium.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
-                        color = FmPalette.onPrimary,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+        TopBarIcon(
+            description = "返回",
+            enabled = true,
+            onClick = onBack,
+        ) { tint -> PhoneBackGlyph(tint = tint) }
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(FmPalette.stageLine),
-        )
+                .weight(1f)
+                .height(40.dp)
+                .clip(RoundedCornerShape(FmRadii.pill))
+                .semantics(mergeDescendants = true) {
+                    contentDescription = "切换照片，第 $photoIndex 张，共 $photoCount 张"
+                    role = Role.Button
+                    stateDescription = if (photosOpen) "照片条已展开" else "照片条已收起"
+                }
+                .clickable(onClick = onTogglePhotos)
+                .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = fileName,
+                    style = androidx.compose.material3.LocalTextStyle.current.copy(
+                        fontSize = 15.sp,
+                        lineHeight = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    color = FmPalette.stageInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "$photoIndex / $photoCount",
+                    style = androidx.compose.material3.LocalTextStyle.current.copy(
+                        fontSize = 12.5.sp,
+                        lineHeight = 16.sp,
+                    ),
+                    color = FmPalette.stageMuted,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.width(4.dp))
+                PhoneChevronGlyph(tint = FmPalette.stageMuted, up = photosOpen)
+            }
+        }
+        TopBarIcon(
+            description = "撤销",
+            enabled = canUndo,
+            stateText = if (canUndo) null else "没有可撤销的修改",
+            onClick = onUndo,
+        ) { tint -> PhoneHistoryGlyph(tint = tint, redo = false) }
+        TopBarIcon(
+            description = "重做",
+            enabled = canRedo,
+            stateText = if (canRedo) null else "没有可重做的修改",
+            onClick = onRedo,
+        ) { tint -> PhoneHistoryGlyph(tint = tint, redo = true) }
+        Spacer(Modifier.width(4.dp))
+        Box(
+            modifier = Modifier
+                .heightIn(min = 44.dp)
+                .semantics {
+                    contentDescription = "导出当前照片"
+                    role = Role.Button
+                }
+                .clickable(onClick = onExport),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .height(ExportPillHeight)
+                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .background(FmPalette.primary)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "导出",
+                    style = ColumnExportLabel,
+                    color = FmPalette.onPrimary,
+                    maxLines = 1,
+                )
+            }
+        }
     }
 }
+
+private val ColumnExportLabel = androidx.compose.ui.text.TextStyle(
+    fontSize = 14.sp,
+    lineHeight = 18.sp,
+    fontWeight = FontWeight.SemiBold,
+)
 
 /** One round 44 dp icon; disabled icons explain why through the state description. */
 @Composable

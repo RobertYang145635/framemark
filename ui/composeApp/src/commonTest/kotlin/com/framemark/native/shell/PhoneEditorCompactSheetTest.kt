@@ -64,14 +64,15 @@ class PhoneEditorCompactSheetTest {
 
     @Test
     fun the_card_and_its_name_fit_the_compact_sheet_on_the_carried_screens() {
-        // 390×844 with a 32 dp status bar and a 24 dp nav bar: the floor leaves 280 dp,
-        // tier 2 is 280 dp exactly (12 handle + 40 title + 40 类别 + 36 分组 + 152 strip).
-        // 360×800 24/16: 266 dp cap, tier 3 = 262 dp.
-        // 412×915 24/16: 323.5 dp cap, tier 0 (the unchanged WP-P1 design) = 319 dp.
+        // WP-PV2 stack (showcase `.grab` 22 / `.psh` 30 / `.ptabs` 38 / `.panchors` 42 /
+        // `.pstrip 12 10` around the 128 dp tile / `.nm` 16 + `.ds` 14):
+        // 390×844 32/24 leaves 280 dp of sheet cap, tier 3 = 274 dp;
+        // 360×800 24/16 leaves 266 dp, tier 4 = 264 dp;
+        // 412×915 24/16 leaves 323.5 dp, tier 0 = 315 dp.
         val cases = listOf(
-            Case(Screen(390f, 844f), Insets(32f, 24f), sheet = 280f, stage = 394f),
-            Case(Screen(360f, 800f), Insets(24f, 16f), sheet = 262f, stage = 384f),
-            Case(Screen(412f, 915f), Insets(24f, 16f), sheet = 319f, stage = 442f),
+            Case(Screen(390f, 844f), Insets(32f, 24f), sheet = 274f, stage = 400f),
+            Case(Screen(360f, 800f), Insets(24f, 16f), sheet = 264f, stage = 382f),
+            Case(Screen(412f, 915f), Insets(24f, 16f), sheet = 315f, stage = 446f),
         )
         cases.forEach { case ->
             val h = availableCase(case.screen, case.insets)
@@ -80,7 +81,7 @@ class PhoneEditorCompactSheetTest {
             assertEquals(case.stage, h.stage, 0.01f, "stage on ${case.screen} ${case.insets}")
 
             // The strip + chrome the sheet hands out to the composables must cover the
-            // 128 dp tile, the name line and both paddings.
+            // 128 dp tile, the 12 sp name, the 11 sp description and both paddings.
             val metrics = phoneCompactSheetMetrics(h.sheet)
             assertEquals(128f, PHONE_FRAME_CARD_SIZE_DP)
             assertTrue(
@@ -88,9 +89,10 @@ class PhoneEditorCompactSheetTest {
                 "content=${metrics.contentHeight} > sheet=${h.sheet} on ${case.screen}",
             )
             assertTrue(
-                metrics.stripHeight >= 128f + metrics.cardNameLine,
-                "strip=${metrics.stripHeight} loses the tile or the name on ${case.screen}",
+                metrics.stripHeight >= 128f + metrics.cardNameLine + metrics.cardDescLine,
+                "strip=${metrics.stripHeight} loses the tile, the name or the description on ${case.screen}",
             )
+            assertTrue(metrics.cardDescLine > 0f, "the description line must be budgeted")
         }
     }
 
@@ -136,9 +138,10 @@ class PhoneEditorCompactSheetTest {
     @Test
     fun the_three_button_nav_corner_on_360x800_is_short_and_scrolls_instead_of_clipping() {
         // 360×800 with a 48 dp status bar and a 48 dp nav bar leaves 704 dp; the 50 %
-        // floor leaves 238 dp and the tightest tier (128 dp card + 14 dp name + 112 dp
-        // of chrome) still needs 254 dp. Both constraints are permanent, so the sheet
-        // keeps the floor and the body scrolls: 16 dp short, name reachable, nothing cut.
+        // floor leaves 238 dp and the tightest tier (128 dp card + 16 dp name + 14 dp
+        // description + 106 dp of chrome = 260 dp) still needs 22 dp more. Both
+        // constraints are permanent, so the sheet keeps the floor and the body scrolls:
+        // name and description reachable, nothing cut.
         val screen = Screen(360f, 800f)
         val insets = Insets(48f, 48f)
         val available = available(screen, insets)
@@ -148,16 +151,16 @@ class PhoneEditorCompactSheetTest {
         assertTrue(h.stage >= available * 0.5f - 0.01f, "stage=${h.stage}")
 
         val metrics = phoneCompactSheetMetrics(h.sheet)
-        assertEquals(254f, metrics.contentHeight, 0.01f)
-        assertEquals(16f, metrics.overflowAt(h.sheet), 0.01f)
+        assertEquals(260f, metrics.contentHeight, 0.01f)
+        assertEquals(22f, metrics.overflowAt(h.sheet), 0.01f)
     }
 
     @Test
     fun the_mid_apk_device_now_shows_the_whole_name() {
         // MID-APK measurement (reviews/MID-APK-REVIEW.md): physical screen 3168 px at
-        // 1 dp = 3.5 px, App available height 2952 px = 843.4 dp. The compact sheet got
-        // 307.7 dp while the old fixed stack needed 319 dp, so 极简 01 / 玻璃 01 lost
-        // 11.3 dp of the name. Tier 1 is 300 dp, so it fits and the stage grows.
+        // 1 dp = 3.5 px, App available height 2952 px = 843.4 dp. The compact sheet gets
+        // 307.7 dp from the 50 % floor; tier 1 is 300 dp, so the card, its name and its
+        // description all fit and the stage keeps the rest.
         val available = 843.4f
         val h = computePhoneEditorHeights(available, 1f, false, EditorTool.Border, false, true)
         assertFalse(h.fullPage)
@@ -172,30 +175,38 @@ class PhoneEditorCompactSheetTest {
     // -----------------------------------------------------------------------
 
     @Test
-    fun the_roomiest_tier_is_the_unchanged_wp_p1_design() {
-        // Tier 0 is what WP-P1 shipped: 18 + 48 + 48 + 48 + (4 + 128 + 3 + 14 + 8) = 319.
+    fun the_roomiest_tier_is_the_showcase_stack() {
+        // Tier 0 is the demo's own stack: 22 + 30 + 38 + 42 + (12 + 128 + 3 + 16 + 0 + 14 + 10) = 315.
         val m = phoneCompactSheetMetrics(sheetHeightDp = 400f, fontScale = 1f)
-        assertEquals(18f, m.grabber)
-        assertEquals(48f, m.head)
-        assertEquals(48f, m.categoryRow)
-        assertEquals(48f, m.anchorRow)
-        assertEquals(4f, m.stripTop)
+        assertEquals(22f, m.grabber)
+        assertEquals(30f, m.head)
+        assertEquals(38f, m.categoryRow)
+        assertEquals(42f, m.anchorRow)
+        assertEquals(12f, m.stripTop)
         assertEquals(3f, m.cardNameGap)
-        assertEquals(14f, m.cardNameLineSp)
-        assertEquals(14f, m.cardNameLine)
-        assertEquals(8f, m.stripBottom)
-        assertEquals(157f, m.stripHeight, 0.01f)
-        assertEquals(319f, m.contentHeight, 0.01f)
+        assertEquals(16f, m.cardNameLineSp)
+        assertEquals(16f, m.cardNameLine)
+        assertEquals(0f, m.cardDescGap)
+        assertEquals(14f, m.cardDescLine)
+        assertEquals(10f, m.stripBottom)
+        assertEquals(183f, m.stripHeight, 0.01f)
+        assertEquals(315f, m.contentHeight, 0.01f)
     }
 
     @Test
-    fun the_card_and_the_name_line_are_never_compressed() {
+    fun the_card_the_name_line_and_the_description_are_never_compressed() {
         assertEquals(128f, PHONE_FRAME_CARD_SIZE_DP)
-        // Every tier: same card, same 14 sp name line; only the bands around them shrink.
+        // Every tier: same card, same 16 sp name line, same 14 sp description; only the
+        // bands around them shrink.
         val ladder = listOf(400f, 310f, 290f, 270f, 0f).map { phoneCompactSheetMetrics(it) }
         ladder.forEach { m ->
-            assertEquals(128f, m.stripHeight - m.stripTop - m.cardNameGap - m.cardNameLine - m.stripBottom, 0.01f)
-            assertEquals(14f, m.cardNameLineSp)
+            assertEquals(
+                128f,
+                m.stripHeight - m.stripTop - m.cardNameGap - m.cardNameLine - m.cardDescGap - m.cardDescLine - m.stripBottom,
+                0.01f,
+            )
+            assertEquals(16f, m.cardNameLineSp)
+            assertEquals(14f, m.cardDescLine)
         }
         // Monotonic: a shorter window never gets a taller stack.
         ladder.zipWithNext().forEach { (roomy, tighter) ->
@@ -204,30 +215,32 @@ class PhoneEditorCompactSheetTest {
                 "tier ladder grows: ${roomy.contentHeight} -> ${tighter.contentHeight}",
             )
         }
-        // The tightest tier still fits its own content: a 4 dp handle, a 16 sp title,
-        // a 14 sp category chip and the 30 dp group pill.
+        // The tightest tier still fits its own content: an 8 dp handle, a 22 dp title
+        // row, a 30 dp tab row and the 30 dp chip row.
         val tightest = ladder.last()
         assertTrue(tightest.grabber >= 8f, "grabber=${tightest.grabber}")
-        assertTrue(tightest.head >= 32f, "head=${tightest.head}")
-        assertTrue(tightest.categoryRow >= 32f, "categoryRow=${tightest.categoryRow}")
-        assertTrue(tightest.anchorRow >= 32f, "anchorRow=${tightest.anchorRow}")
+        assertTrue(tightest.head >= 28f, "head=${tightest.head}")
+        assertTrue(tightest.categoryRow >= 30f, "categoryRow=${tightest.categoryRow}")
+        assertTrue(tightest.anchorRow >= 30f, "anchorRow=${tightest.anchorRow}")
         assertTrue(tightest.stripBottom >= 2f, "stripBottom=${tightest.stripBottom}")
     }
 
     @Test
-    fun a_larger_font_scale_takes_a_tighter_tier_and_still_counts_the_name_line() {
+    fun a_larger_font_scale_takes_a_tighter_tier_and_still_counts_both_lines() {
         val base = phoneCompactSheetMetrics(sheetHeightDp = 300f, fontScale = 1f)
         assertEquals(300f, base.contentHeight, 0.01f)
 
-        // 14 sp of leading is 18.2 dp at fontScale 1.3, so the same 300 dp window needs
-        // the next tier down; the line is still part of the stack.
+        // 16 sp + 14 sp of leading is 39 dp at fontScale 1.3, so the same 300 dp window
+        // needs a tighter tier; both lines are still part of the stack.
         val scaled = phoneCompactSheetMetrics(sheetHeightDp = 300f, fontScale = 1.3f)
-        assertEquals(14f * 1.3f, scaled.cardNameLine, 0.01f)
+        assertEquals(16f * 1.3f, scaled.cardNameLine, 0.01f)
+        assertEquals(14f * 1.3f, scaled.cardDescLine, 0.01f)
         assertEquals(scaled.cardNameLineSp * 1.3f, scaled.cardNameLine, 0.01f)
         assertTrue(scaled.categoryRow < base.categoryRow, "tier did not tighten")
         assertTrue(scaled.contentHeight <= 300f + 0.01f, "content=${scaled.contentHeight}")
-        // The 14 sp line itself is never scaled down; the compactor is the bands.
-        assertEquals(14f, scaled.cardNameLineSp)
+        // The specified type sizes themselves are never scaled down; the bands are.
+        assertEquals(16f, scaled.cardNameLineSp)
+        assertEquals(14f, scaled.cardDescLine / 1.3f, 0.01f)
     }
 
     @Test
@@ -242,11 +255,14 @@ class PhoneEditorCompactSheetTest {
         assertEquals(64f, open.strip)
         assertTrue(open.stage >= available * 0.5f - 0.01f, "open stage=${open.stage}")
         assertTrue(open.sheet <= closed.sheet, "open=${open.sheet} closed=${closed.sheet}")
-        // 216 dp cannot hold even the tightest tier (254 dp): the sheet keeps the floor
-        // and the body scrolls the remaining 38 dp, so the name stays readable.
+        // 216 dp cannot hold even the tightest tier (260 dp): the sheet keeps the floor
+        // and the body scrolls the remaining 44 dp, so name and description stay readable.
         assertEquals(216f, open.sheet, 0.01f)
         val metrics = phoneCompactSheetMetrics(open.sheet)
-        assertEquals(254f, metrics.contentHeight, 0.01f)
-        assertEquals(38f, metrics.overflowAt(open.sheet), 0.01f)
+        assertEquals(260f, metrics.contentHeight, 0.01f)
+        assertEquals(44f, metrics.overflowAt(open.sheet), 0.01f)
     }
 }
+
+
+

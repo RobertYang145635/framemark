@@ -226,6 +226,10 @@ fun PhoneExportSheet(
                 sharing = sharing,
                 error = error,
                 note = note,
+                // The engine reports the real canvas only after a render/export; until
+                // then the sheet prints the chosen step instead of inventing pixels.
+                outputWidth = 0,
+                outputHeight = 0,
                 canApplyToAll = canApplyToAll,
                 onApplyToAll = onApplyToAll,
                 onFormat = { update(PhoneExportOptions.applyFormat(settings, it)) },
@@ -238,32 +242,73 @@ fun PhoneExportSheet(
     }
 }
 
-private val PreviewWidth = 96.dp
-private val PreviewHeight = 80.dp
+private val PreviewWidth = 112.dp
+private val PreviewHeight = 96.dp
 
-/** Preview + the three facts the demo prints next to it (size, format, border). */
+/** Showcase `.bs-h b`: the sheet title is 18 px / 700 with only a close cross beside it. */
+@Composable
+private fun ExportSheetHeader(onClose: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "导出",
+            style = androidx.compose.material3.LocalTextStyle.current.copy(
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
+            ),
+            color = FmPalette.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(FmRadii.pill))
+                .clickable(onClick = onClose),
+            contentAlignment = Alignment.Center,
+        ) {
+            PhoneCloseGlyph(tint = FmPalette.onSurfaceSecondary)
+        }
+    }
+}
+
+/** 返修 P2-2: the promise the chosen format really keeps, in the demo's `.pexp-prev` line. */
+private fun formatQualityLabel(format: SampleFormat, webpLossless: Boolean): String = when (format) {
+    SampleFormat.Jpeg -> "JPG · 质量 100"
+    SampleFormat.Png -> "PNG · 无损"
+    SampleFormat.WebP -> if (webpLossless) "WebP · 无损" else "WebP · 质量 100"
+}
+
+/**
+ * `.pexp-prev`: a 112 × 96 dark preview well in a `--muted-bg` card, then the real
+ * pixel size (15/500), the format + quality line and the border name (12.5).
+ */
 @Composable
 private fun ExportPreviewRow(
     card: LibraryCard?,
     design: DesignSnapshot?,
     overlay: () -> OverlaySpec?,
     photoPath: String?,
-    /** 返修 P2-2: the badge only claims 原分辨率 on the 原尺寸 step. */
-    resolutionLabel: String,
+    /** Real export pixels when the engine has reported them, else the step caption. */
+    sizeLabel: String,
+    formatLabel: String,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(FmRadii.card))
             .background(FmPalette.surfaceMuted)
-            .padding(FmSpacing.md),
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .size(width = PreviewWidth, height = PreviewHeight)
                 .clip(RoundedCornerShape(FmRadii.tile))
-                .background(FmPalette.stage),
+                .background(FmPalette.stage)
+                .padding(8.dp),
             contentAlignment = Alignment.Center,
         ) {
             if (card != null && design != null) {
@@ -276,25 +321,31 @@ private fun ExportPreviewRow(
                 )
             }
         }
-        Spacer(Modifier.width(FmSpacing.md))
+        Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = card?.name ?: "未选边框",
-                style = FmType.titleSmall.copy(fontSize = 14.sp, fontWeight = FontWeight.SemiBold),
+                text = sizeLabel,
+                style = androidx.compose.material3.LocalTextStyle.current.copy(
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
                 color = FmPalette.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = resolutionLabel,
-                style = FmType.labelSmall.copy(fontSize = 11.5.sp),
-                color = FmPalette.onSurfaceSecondary,
+                text = formatLabel,
+                style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
             )
             Text(
-                text = "质量 100 · 写入相册后可直接分享",
-                style = FmType.labelSmall.copy(fontSize = 11.5.sp),
+                text = card?.name ?: "原图",
+                style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
                 color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -402,7 +453,15 @@ private fun ColumnScope.ExportDoneContent(
         )
     }
 }
-
+/**
+ * The export form of `06-phone-export.png`: 导出 + ✕, the preview card (size, format
+ * + quality, border name), 格式 and 尺寸 as touch segmented controls, the fixed-quality
+ * note and the [分享] / [保存到相册] pair.
+ *
+ * The two notes keep 返修 P2-2's wording: the demo's single line only says the
+ * quality is fixed, and that is not the whole truth per format, so the resolution
+ * line states whether the file is re-encoded and whether 原尺寸 is really un-resized.
+ */
 @Composable
 private fun ColumnScope.ExportFormContent(
     card: LibraryCard?,
@@ -415,6 +474,8 @@ private fun ColumnScope.ExportFormContent(
     sharing: Boolean,
     error: String?,
     note: String?,
+    outputWidth: Int,
+    outputHeight: Int,
     canApplyToAll: Boolean,
     onApplyToAll: () -> Unit,
     onFormat: (SampleFormat) -> Unit,
@@ -425,77 +486,84 @@ private fun ColumnScope.ExportFormContent(
 ) {
     val size = PhoneExportOptions.sizeOf(settings)
     val format = PhoneExportOptions.formatOf(settings)
-    SheetTitle(
-        title = "导出",
-        subtitle = if (native) "预览就是导出的样子；保存后写入相册。" else "这张边框的渲染组件不可用，暂时无法导出。",
-        trailing = { SheetTag(if (native) "原生导出" else "渲染不可用") },
-    )
-    Spacer(Modifier.height(FmSpacing.lg))
+    ExportSheetHeader(onClose = { if (!busy) onClose() })
+    Spacer(Modifier.height(10.dp))
     Column(
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ExportPreviewRow(
             card = card,
             design = design,
             overlay = overlay,
             photoPath = photoPath,
-            resolutionLabel = if (size == PhoneExportSize.Original) {
-                PhoneExportOptions.ORIGINAL_RESOLUTION_BADGE
+            sizeLabel = if (outputWidth > 0 && outputHeight > 0) {
+                "$outputWidth × $outputHeight"
             } else {
-                "${PhoneExportOptions.sizeCaption(size)} · 质量 100"
+                PhoneExportOptions.sizeCaption(size)
             },
+            formatLabel = formatQualityLabel(format, settings.webpLossless),
         )
         Column {
-            SheetFieldLabel("格式")
-            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                PhoneExportOptions.FORMATS.forEach { candidate ->
-                    ChoiceChip(
-                        label = candidate.label,
-                        selected = format == candidate,
-                        onClick = { onFormat(candidate) },
-                    )
-                }
-            }
-        }
-        Column {
-            SheetFieldLabel("尺寸")
-            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                PhoneExportOptions.SIZES.forEach { candidate ->
-                    ChoiceChip(
-                        label = candidate.label,
-                        selected = size == candidate,
-                        onClick = { onSize(candidate) },
-                    )
-                }
-            }
-            Spacer(Modifier.height(FmSpacing.sm))
-            // 返修 P2-2: per-format and per-size wording; the encoder is named.
-            SheetNote(PhoneExportOptions.resolutionNote(size, format, settings.webpLossless))
-        }
-        SheetNote(PhoneExportOptions.formatNote(format, settings.webpLossless))
-        if (canApplyToAll) {
-            GhostButton(text = "把当前设计用到全部照片", enabled = !busy, onClick = onApplyToAll)
-        }
-        if (error != null) {
-            Text(text = error, style = FmType.bodyMedium, color = FmPalette.error)
-        }
-        if (note != null) {
-            Text(text = note, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
-        }
-        if (busy) {
-            Text(
-                text = if (sharing) "正在准备分享…" else "正在保存到相册…",
-                style = FmType.bodyMedium,
-                color = FmPalette.onSurfaceSecondary,
+            ExportFieldLabel(label = "格式")
+            PhoneSegmented(
+                options = PhoneExportOptions.FORMATS.map { it.name to phoneFormatLabel(it) },
+                selected = format.name,
+                onSelect = { name ->
+                    PhoneExportOptions.FORMATS.firstOrNull { it.name == name }?.let(onFormat)
+                },
+                label = "格式",
             )
         }
+        Column {
+            ExportFieldLabel(
+                label = "尺寸",
+                value = if (outputWidth > 0 && outputHeight > 0) "$outputWidth × $outputHeight" else null,
+            )
+            PhoneSegmented(
+                options = PhoneExportOptions.SIZES.map { it.name to it.label },
+                selected = size.name,
+                onSelect = { name ->
+                    PhoneExportOptions.SIZES.firstOrNull { it.name == name }?.let(onSize)
+                },
+                label = "尺寸",
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            ExportNote("Android 导出质量固定为 100")
+            ExportNote(PhoneExportOptions.resolutionNote(size, format, settings.webpLossless))
+            if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")
+            if (canApplyToAll) {
+                Text(
+                    text = "把当前设计用到全部照片",
+                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+                    color = FmPalette.primaryStrong,
+                    modifier = Modifier
+                        .heightIn(min = 32.dp)
+                        .clickable(enabled = !busy, onClick = onApplyToAll)
+                        .padding(vertical = 6.dp),
+                )
+            }
+            if (error != null) {
+                Text(text = error, style = FmType.bodyMedium, color = FmPalette.error)
+            }
+            if (note != null) {
+                Text(text = note, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
+            }
+            if (busy) {
+                Text(
+                    text = if (sharing) "正在准备分享…" else "正在保存到相册…",
+                    style = FmType.bodyMedium,
+                    color = FmPalette.onSurfaceSecondary,
+                )
+            }
+        }
     }
-    Spacer(Modifier.height(FmSpacing.md))
-    Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
+    Spacer(Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         GhostButton(
             text = if (sharing) "准备分享…" else "分享",
             enabled = !busy && card != null && native,
@@ -509,17 +577,58 @@ private fun ColumnScope.ExportFormContent(
             onClick = onSave,
         )
     }
-    Spacer(Modifier.height(FmSpacing.xs))
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+}
+
+/** `.pfield > label`: 13 px ink-3 on the left, the current value 12.5 px on the right. */
+@Composable
+private fun ExportFieldLabel(label: String, value: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "关闭",
-            style = FmType.labelMedium,
+            text = label,
+            style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 13.sp, lineHeight = 18.sp),
             color = FmPalette.onSurfaceMuted,
-            modifier = Modifier
-                .heightIn(min = 44.dp)
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .clickable(enabled = !busy, onClick = onClose)
-                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        if (value != null) {
+            Text(
+                text = value,
+                style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+                color = FmPalette.onSurfaceSecondary,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/** `.pnote`: the ⓘ + one-line explanation under the fields. */
+@Composable
+private fun ExportNote(text: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = "ⓘ",
+            style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 18.sp),
+            color = FmPalette.onSurfaceFaint,
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = text,
+            style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+            color = FmPalette.onSurfaceMuted,
         )
     }
 }
+
+/** `SampleFormat.label` is the enum's display name; the sheet prints it verbatim. */
+private fun phoneFormatLabel(format: SampleFormat): String = when (format) {
+    SampleFormat.Jpeg -> "JPG"
+    SampleFormat.Png -> "PNG"
+    SampleFormat.WebP -> "WebP"
+}
+
