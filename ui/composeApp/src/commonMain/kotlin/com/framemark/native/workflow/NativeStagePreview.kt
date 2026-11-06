@@ -2,6 +2,11 @@ package com.framemark.native.workflow
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -218,6 +223,13 @@ fun NativeStagePreview(
         DisposableEffect(requestSignal) {
             onDispose { requestSignal.close() }
         }
+        // A-07 "取消渲染": while an engine frame is in flight the user can drop it. The
+        // request coroutine is keyed on this flag, so flipping it cancels the running
+        // render (the desktop renderer runs the engine inside `runInterruptible`, so
+        // the worker thread is interrupted) and no stale result is ever published.
+        // The last finished frame stays on the stage; the next real edit clears the
+        // flag (see the SideEffect below) and renders again.
+        var cancelRequested by remember(card.id) { mutableStateOf(false) }
         // Compose owns the immediate UI value. This side effect publishes only a
         // successfully committed render input and wakes the one scheduler; changing
         // a key no longer cancels or restarts a native render.
@@ -226,6 +238,9 @@ fun NativeStagePreview(
             if (latestInput.value.key != key) {
                 latestInput.value = currentInput
                 latestInput.changedAt = TimeSource.Monotonic.markNow()
+                // A new input always revives rendering: the previous cancel only
+                // applied to the frame the user had given up on.
+                cancelRequested = false
                 requestSignal.trySend(Unit)
             }
         }
@@ -253,7 +268,17 @@ fun NativeStagePreview(
         // the ContentScale.Fit frame. Remembered per card like the render state.
         var boxPx by remember(card.id) { mutableStateOf(IntSize.Zero) }
 
-        LaunchedEffect(card.id, requestSignal) {
+        LaunchedEffect(card.id, requestSignal, cancelRequested) {
+            if (cancelRequested) {
+                // The user cancelled the frame that was running. Restarting the effect
+                // (the key change) already cancelled the render coroutine; nothing
+                // stale may be published, so the stage keeps its last frame.
+                busy = false
+                renderPhase = StageRenderPhase.Idle
+                println("FM_PREVIEW_CANCEL card=${card.id} reason=user")
+                requestSignal.trySend(Unit)
+                return@LaunchedEffect
+            }
             // One coroutine serializes submissions for this stage. The conflated
             // channel carries only a wake-up; all render parameters are read from
             // latestInput, so intermediate slider/drag samples are never queued.
@@ -827,12 +852,17 @@ fun NativeStagePreview(
                 // Busy badge instead of a blank stage: the previous frame stays visible
                 // while the engine runs, so an edit never looks like a freeze.
                 // A-07: nothing for the first 200 ms, "渲染中" from 200 ms, progress
-                // (elapsed seconds) after 1 s. The engine cannot be cancelled from
-                // the UI, so no cancel button is offered (see the WP-C report).
+                // (elapsed seconds) after 1 s, and from the first visible phase on a
+                // 取消 action that drops the frame (WP-X3 §6).
                 val phase = renderPhase
                 if (phase != StageRenderPhase.Idle || !busy) {
                     StageBusyBadge(
                         phase = phase,
+                        onCancel = if (phase != StageRenderPhase.Idle) {
+                            { cancelRequested = true }
+                        } else {
+                            null
+                        },
                         modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                     )
                 }
@@ -864,14 +894,14 @@ internal object StageRenderTiming {
 }
 
 @Composable
-private fun StageBusyBadge(phase: StageRenderPhase, modifier: Modifier = Modifier) {
+private fun StageBusyBadge(phase: StageRenderPhase, modifier: Modifier = Modifier, onCancel: (() -> Unit)? = null) {
     val tint = FmPalette.primary
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(999.dp))
             .background(FmPalette.stage.copy(alpha = 0.86f))
             .border(1.dp, FmPalette.stageLine, RoundedCornerShape(999.dp))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(start = 8.dp, end = if (onCancel != null) 2.dp else 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (phase == StageRenderPhase.Progress) {
@@ -894,6 +924,22 @@ private fun StageBusyBadge(phase: StageRenderPhase, modifier: Modifier = Modifie
             style = FmType.labelSmall,
             color = FmPalette.stageMuted,
         )
+        if (onCancel != null) {
+            Spacer(Modifier.size(6.dp))
+            // 取消渲染: a real target (32 dp tall) rather than a decorative cross, with a
+            // readable label so it is obvious what it drops.
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 32.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .clickable(role = Role.Button, onClick = onCancel)
+                    .semantics { contentDescription = "取消渲染" }
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("取消", style = FmType.labelSmall, color = FmPalette.stageInk)
+            }
+        }
     }
 }
 

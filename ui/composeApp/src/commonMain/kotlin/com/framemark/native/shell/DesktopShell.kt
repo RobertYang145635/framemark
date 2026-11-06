@@ -916,6 +916,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     .padding(horizontal = FmDesktop.edge, vertical = FmDesktop.edge),
             ) {
                 DesktopTopBarV2(
+                    // AU4-02：顶栏与三栏共用同一个内容宽（V2 三栏贴边，内容宽 = 窗宽），
+                    // 窄窗切紧凑态，保证「导出」「⚙」「● 已自动保存」完整可见。
+                    compact = desktopTopBarCompact(contentWidth.value),
                     // 演示稿 `.proj` 第一行是项目名；`Project` 没有名称字段，模型不许改，
                     // 所以这里如实显示「未命名项目」，等模型长出 name 再换真名。
                     projectName = "未命名项目",
@@ -1386,7 +1389,7 @@ private fun StatusPill(card: LibraryCard?, mode: StageMode, photoCount: Int, com
             Text(
                 text = "$photoCount 张照片",
                 style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
             )
         }
@@ -2478,7 +2481,7 @@ private fun ImportPlaceholder(onAddPhoto: () -> Unit) {
             Text(
                 "支持 JPEG / PNG / WebP / TIFF，可多选；失败的图片会单独列出。",
                 style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
             )
         }
     }
@@ -2708,7 +2711,7 @@ private fun HelpSection(title: String) {
     Text(
         text = title,
         style = FmType.labelSmall,
-        color = FmPalette.onSurfaceFaint,
+        color = FmPalette.onSurfaceMuted,
         modifier = Modifier.padding(top = FmSpacing.md, bottom = FmSpacing.xxs),
     )
 }

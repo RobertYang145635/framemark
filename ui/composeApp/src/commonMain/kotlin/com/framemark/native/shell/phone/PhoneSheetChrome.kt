@@ -179,6 +179,12 @@ fun PhoneSheetHead(
                 onClick = onOpenPresets,
             )
         }
+        // AU4-05 (WP-X3 follow-up): 展开参数 keeps the band's height. Growing its hit
+        // box past the 28–30 dp band was measured NOT to work — the band's own bounds
+        // gate the pointer, so the extra dp are dead (a tap 6 dp above the box reached
+        // the sheet grabber instead, and 6 dp above 预设 / 5 dp above 热门 did nothing).
+        // See reports\WP-X3-REPORT.md §4.4: the real fix needs either a taller band
+        // (sheet budget → product decision) or a touch delegate on a taller ancestor.
         Box(
             modifier = Modifier
                 .size(height.coerceAtMost(SheetHeadChevronSize))
@@ -204,6 +210,9 @@ private fun HeadAction(
     accent: Boolean = false,
     trailingChevron: Boolean = false,
 ) {
+    // AU4-05 (WP-X3 follow-up): same platform limit as the chevron above — the 28–30 dp
+    // head band gates the pointer, so the pill keeps its height and the band keeps its
+    // layout. Not widened on purpose: a 44 dp hit box would only lie to a11y.
     Row(
         modifier = Modifier
             .heightIn(min = height)

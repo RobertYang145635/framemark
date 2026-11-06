@@ -8,12 +8,24 @@ const val DESKTOP_WINDOW_DEFAULT_WIDTH: Float = 1280f
 const val DESKTOP_WINDOW_DEFAULT_HEIGHT: Float = 800f
 
 /**
- * Smallest window the desktop shell opens at. 720 dp of window leaves 720 − 2 ×
- * 12 = 696 dp of content, still above [desktopColumnMinWidth] (664 dp), so a
- * window opened at the floor can show all three columns; 520 dp keeps a usable
- * stage under the 72 dp bar plus the photo strip.
+ * Smallest window the desktop shell opens at.
+ *
+ * AU4-02: the old floor was 720 dp, which is *above* the three-column floor
+ * ([desktopColumnMinWidth], 640 dp of content, and V2 draws the columns flush to
+ * the window edge so content == window width). A window that may never be
+ * narrower than the three-column floor can never reach the folded single-pane
+ * branch in `computeDesktopColumns`, so the "narrow window folds the rails" rule
+ * was dead code — a 720 dp window kept all three columns and clipped the top bar.
+ *
+ * The floor therefore sits [DESKTOP_WINDOW_FOLD_MARGIN] dp *below* the
+ * three-column floor: a 600–639 dp window shows the single-pane layout chosen by
+ * the pane chips, and every wider window shows three columns. The floor is
+ * derived from the tokens, so moving a rail minimum moves this with it. Height
+ * stays at 520 dp: that keeps a usable stage under the 52 dp bar plus the photo
+ * strip.
  */
-const val DESKTOP_WINDOW_MIN_WIDTH: Float = 720f
+const val DESKTOP_WINDOW_FOLD_MARGIN: Float = 40f
+val DESKTOP_WINDOW_MIN_WIDTH: Float get() = desktopColumnMinWidth() - DESKTOP_WINDOW_FOLD_MARGIN
 const val DESKTOP_WINDOW_MIN_HEIGHT: Float = 520f
 
 /**

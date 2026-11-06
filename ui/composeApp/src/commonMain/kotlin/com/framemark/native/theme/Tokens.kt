@@ -652,6 +652,13 @@ object FmDesktop {
     /** 中间 segmented 宽 220（PARITY-SPEC §2A 第 4 条）。 */
     val topBarSegWidth = 220.dp
 
+    /**
+     * AU4-02 紧凑态：`编辑 / 批量导出` 两段各 78 dp（4 个字 + 2 dp 槽边距），
+     * 220 → 160 让出的 60 dp 留给「导出」的完整标签。演示稿只在宽窗出现，
+     * 宽窗仍用 [topBarSegWidth]。
+     */
+    val topBarSegWidthCompact = 160.dp
+
     /** 词标 mark 26×26、圆角 7；竖线 1×20（`.mark` / `.vsep`）。 */
     val topBarMarkSize = 26.dp
     val topBarMarkRadius = 7.dp

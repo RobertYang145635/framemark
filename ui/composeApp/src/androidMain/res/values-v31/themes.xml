@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      WP-X3 §3/§7: Android 12+ draws the launch splash from
+      `android:windowSplashScreenBackground` (falling back to `?android:colorBackground`,
+      i.e. plain white) with `android:windowSplashScreenAnimatedIcon` (falling back to
+      the app icon). Declaring the attribute explicitly makes the splash the app's own
+      light canvas instead of pure white; values-night-v31 does the same with the dark
+      canvas.
+
+      This attribute is resolved by the **system** before the app process exists, so it
+      follows the system night mode, never the in-app 外观 setting — that is why
+      `setTheme()` in MainActivity cannot fix the splash itself (WP-X3-REPORT §3).
+    -->
+    <style name="Theme.FrameMark" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#F0F2F5</item>
+        <item name="android:windowSplashScreenBackground">#F0F2F5</item>
+    </style>
+</resources>

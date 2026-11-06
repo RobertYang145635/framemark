@@ -19,6 +19,12 @@ if (framemarkQaReleaseSuffix != null) {
     }
 }
 
+// WP-X3 §7: QA surface switch. Default `true` keeps every dev/QA build exactly as it
+// was (that is what tools\run-desktop.ps1 and the three compile gates run). Passing
+// `-PfmQaSurface=false` strips the verify/ and qaenv/ packages from the desktop
+// compilation, which is how the packaged product is built — see desktopMain below.
+val fmQaSurface = providers.gradleProperty("fmQaSurface").orNull?.toBoolean() ?: true
+
 kotlin {
     jvm("desktop") {
         compilerOptions {
@@ -49,6 +55,22 @@ kotlin {
             }
         }
         val desktopMain by getting {
+            // WP-X3 §7 (release hygiene): the desktop QA surface lives in two packages
+            // that must not reach the packaged product —
+            //   com/framemark/native/verify/**  the 9 file scripted verification classes
+            //                                   (1969 lines, referenced by nothing)
+            //   com/framemark/native/qaenv/**   the FM_* environment hooks (FM_WINDOW,
+            //                                   FM_OPEN_*, FM_CONTROL_PROBE, …)
+            // They are included by default so the documented dev/QA run
+            // (tools\run-desktop.ps1 + RUNBOOK §5) keeps working unchanged, and a
+            // release package is built with `-PfmQaSurface=false`:
+            //   ./gradlew -p ui :composeApp:desktopJar -PfmQaSurface=false
+            // The compiled output then contains no verify/ and no qaenv/ class (and
+            // therefore none of the FM_* literals); QaSurface.hooks resolves to null,
+            // so the hooks become no-ops rather than being present-but-idle.
+            if (!fmQaSurface) {
+                kotlin.exclude("**/com/framemark/native/verify/**", "**/com/framemark/native/qaenv/**")
+            }
             dependencies {
                 implementation(compose.desktop.currentOs)
                 // WP-T: "follow the system appearance" (Advapi32Util registry read)

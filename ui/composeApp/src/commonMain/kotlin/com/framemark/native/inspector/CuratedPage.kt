@@ -23,6 +23,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.workflow.ControlProbe
+import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
 
@@ -256,7 +259,7 @@ internal fun CuratedTextPane(
 internal fun CuratedCount(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, color = FmPalette.onSurfaceFaint)
+        style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp, color = FmPalette.onSurfaceMuted)
             .withNumericDigits(),
         maxLines = 1,
     )
@@ -281,6 +284,23 @@ internal fun CuratedEmptyPane(title: String, body: String) {
 }
 
 /**
+ * WP-F1 §4 item 2 / WP-X3 §6: `FM_CONTROL_PROBE` used to print nothing on the
+ * desktop because [com.framemark.native.workflow.ControlProbe] was only attached
+ * to the old `ControlItem` path (phone / legacy panel). The desktop inspector is
+ * this curated panel, so the same probe is attached here.
+ *
+ * Key == `control:<control.key>`, the same shape `ControlItem` publishes, so a
+ * harness that was written against the old path keeps working. Reader rule is
+ * unchanged: take the last line for a key.
+ */
+@Composable
+internal fun curatedProbeState(control: InspectorControl, value: Any?) {
+    LaunchedEffect(value) {
+        ControlProbe.state("control:${control.key}", value, control.type.name)
+    }
+}
+
+/**
  * `.trow` — editable text with 「已改 / 恢复原文」 underneath the label. The
  * value box is borderless until hovered/focused (showcase `.tx input`).
  */
@@ -290,12 +310,18 @@ internal fun CuratedTextRow(control: InspectorControl, session: DesignSession) {
     val original = control.declaredDefault.orEmpty()
     val modified = session.isModified(control)
     var text by remember(control.key) { mutableStateOf(current) }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp)) {
+    curatedProbeState(control, current)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .probeBounds("control:${control.key}")
+            .padding(vertical = 7.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = control.label.ifBlank { "文字" },
                 style = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 modifier = Modifier.weight(1f),
             )
@@ -344,7 +370,7 @@ internal fun CuratedTextRow(control: InspectorControl, session: DesignSession) {
                         Text(
                             text = original.ifBlank { "（空）" },
                             style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
-                            color = FmPalette.onSurfaceFaint,
+                            color = FmPalette.onSurfaceMuted,
                             maxLines = 1,
                         )
                     }
@@ -359,10 +385,12 @@ internal fun CuratedTextRow(control: InspectorControl, session: DesignSession) {
 @Composable
 internal fun CuratedSwitchRow(control: InspectorControl, session: DesignSession) {
     val on = session.value(control) as? Boolean ?: (control.initial as? ControlValue.Flag)?.value ?: false
+    curatedProbeState(control, on)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 36.dp)
+            .probeBounds("control:${control.key}")
             .clickable(role = Role.Switch) { session.set(control, !on) }
             .semantics { contentDescription = control.label },
         verticalAlignment = Alignment.CenterVertically,
@@ -526,7 +554,7 @@ private fun CuratedSlotTextRow(
                 Text(
                     text = row.label,
                     style = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                    color = FmPalette.onSurfaceFaint,
+                    color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )

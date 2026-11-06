@@ -136,7 +136,7 @@ fun PhoneSettingsPage(
             Text(
                 text = PhoneSettingsText.FOOT_NOTE,
                 style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp),
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()

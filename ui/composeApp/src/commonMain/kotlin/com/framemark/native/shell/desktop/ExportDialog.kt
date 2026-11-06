@@ -553,12 +553,12 @@ private fun ExportPreviewColumn(
         Text(
             text = if (photo != null) "原图 ${photo.widthPx} × ${photo.heightPx} px" else "示例照片（引擎样张）",
             style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp).withNumericDigits(),
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
         )
         Text(
             text = "预览就是成片版式：同一模板、同一照片；成片像素以结果页为准。",
             style = FmType.labelSmall,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
         )
     }
 }
@@ -642,7 +642,7 @@ private fun ExportFormColumn(
                         Text(
                             text = "px",
                             style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp).withNumericDigits(),
-                            color = FmPalette.onSurfaceFaint,
+                            color = FmPalette.onSurfaceMuted,
                         )
                         ExportRules.LONG_EDGE_PRESETS.forEach { preset ->
                             ExportTokenChip("$preset") { onLongEdgeText(preset.toString()) }

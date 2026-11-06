@@ -196,7 +196,7 @@ internal fun DesktopLibraryCard(
             // V2 副行（`.card .ds`）：`类别 · 子类` / `品牌 · 系列` / `N 张照片在用`。
             text = subtitle,
             style = DesktopLibraryType.cardDesc,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Start,

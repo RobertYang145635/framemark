@@ -69,12 +69,20 @@ private const val BORDER_SHEET_DP = 326f
 /** Expanded sheet target, i.e. the demo's 478 px on an 886 px tall screen. */
 private const val EXPANDED_SHEET_FRACTION = 0.54f
 
-/** The two levels of the V2 parameter sheet. */
-data class PhoneSheetLevels(val compact: Float, val expanded: Float)
+/** The three levels of the V2 parameter sheet: 收起 / 半开 / 展开. */
+data class PhoneSheetLevels(val compact: Float, val half: Float, val expanded: Float)
 
 /**
- * Two-level sheet of the V2 phone editor: 收起 (compact, the default: category row
- * + group row + the card strip) and 展开 (the 3-column grid).
+ * Three-level sheet of the V2 phone editor: 收起 (compact, the default: category row
+ * + group row + the card strip), 半开 (half: the strip plus the first rows of the
+ * page) and 展开 (the 3-column grid).
+ *
+ * The demo deck does not snap at all — `.psheet` is `height: var(--sh, 300px)`
+ * dragged freely by its grabber (`design\FrameMark-UI-Redesign-V2-Appearance.html`
+ * line 637) — so the level count is a product choice, not a parity requirement.
+ * The task book asks for three steps (WP-F2 D3 fixed the old "Two levels only"
+ * comment), so the continuous demo height is sampled at three stable stops: the
+ * compact content height, the midpoint, and the demo's 54 % expanded height.
  *
  * `null` means the window cannot hold a usable compact sheet above the 50 % stage
  * reserve; the caller then keeps the full parameter page.
@@ -110,7 +118,10 @@ fun phoneSheetLevels(
     val expandedMax = (available - chrome - available * EXPANDED_STAGE_MIN_FRACTION)
         .coerceAtLeast(compact)
     val expanded = (available * EXPANDED_SHEET_FRACTION).coerceIn(compact, expandedMax)
-    return PhoneSheetLevels(compact = compact, expanded = expanded)
+    // 半开: the midpoint of the two decided stops. It is derived, so it can never
+    // fall outside [compact, expanded] and never needs its own budget.
+    val half = (compact + expanded) / 2f
+    return PhoneSheetLevels(compact = compact, half = half, expanded = expanded)
 }
 
 /** Height the compact sheet aims for on this tool, before the 50 % stage cap. */

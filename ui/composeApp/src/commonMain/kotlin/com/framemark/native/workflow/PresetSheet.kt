@@ -105,7 +105,7 @@ fun PresetSheet(
                 color = FmPalette.onSurfaceMuted,
             )
             Spacer(Modifier.weight(1f))
-            Text("新保存的排在最前", style = FmType.labelSmall, color = FmPalette.onSurfaceFaint)
+            Text("新保存的排在最前", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
         }
         Spacer(Modifier.height(FmSpacing.sm))
 

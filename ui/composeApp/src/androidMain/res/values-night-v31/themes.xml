@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark twin of values-v31\themes.xml: the 12+ splash paints the dark canvas. -->
+    <style name="Theme.FrameMark" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121316</item>
+        <item name="android:windowSplashScreenBackground">#121316</item>
+    </style>
+</resources>

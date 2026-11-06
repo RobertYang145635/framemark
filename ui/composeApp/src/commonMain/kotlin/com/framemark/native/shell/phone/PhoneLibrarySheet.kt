@@ -318,6 +318,10 @@ private fun AnchorRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             anchors.forEach { anchor ->
+                // AU4-05 (WP-X3 follow-up): the chip keeps the band's height. A taller
+                // hit box was measured NOT to receive touches outside the band (the band
+                // gates the pointer), so it would only misreport to a11y.
+                // See reports\WP-X3-REPORT.md §4.4.
                 Box(
                     modifier = Modifier
                         .height(height)
@@ -347,7 +351,7 @@ private fun AnchorRow(
                         Text(
                             text = anchor.count.toString(),
                             style = FmType.labelSmall.copy(fontSize = 11.sp),
-                            color = FmPalette.onSurfaceFaint,
+                            color = FmPalette.onSurfaceMuted,
                             maxLines = 1,
                         )
                     }

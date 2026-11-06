@@ -94,7 +94,7 @@ fun PhoneSubNote(text: String, modifier: Modifier = Modifier) {
             fontSize = 12.5.sp,
             lineHeight = 18.sp,
         ),
-        color = FmPalette.onSurfaceFaint,
+        color = FmPalette.onSurfaceMuted,
         modifier = modifier.fillMaxWidth().padding(top = 4.dp),
     )
 }
@@ -232,7 +232,7 @@ fun PhoneSliderRow(
                 Text(
                     text = hint,
                     style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
-                    color = FmPalette.onSurfaceFaint,
+                    color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -278,7 +278,7 @@ fun PhoneSliderRow(
                     Text(
                         text = unit,
                         style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
-                        color = FmPalette.onSurfaceFaint,
+                        color = FmPalette.onSurfaceMuted,
                         maxLines = 1,
                     )
                 }

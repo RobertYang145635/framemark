@@ -717,7 +717,7 @@ private fun BatchQueueRowView(row: BatchQueueRow) {
             Text(
                 text = detail,
                 style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp).withNumericDigits(),
-                color = if (row.reason != null) FmPalette.error else FmPalette.onSurfaceFaint,
+                color = if (row.reason != null) FmPalette.error else FmPalette.onSurfaceMuted,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )

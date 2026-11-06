@@ -58,6 +58,13 @@ import com.framemark.native.theme.ThemeMode
  */
 @Composable
 fun DesktopTopBarV2(
+    /**
+     * AU4-02: true below [com.framemark.native.shell.desktopTopBarCompact]. The
+     * full bar needs ~980 dp of content width; narrower windows keep every action
+     * but drop the decoder-only pieces (词标、Ctrl E 提示、「导入照片」的文字), so
+     * 「导出」「⚙」「● 已自动保存」 stay fully visible instead of being clipped.
+     */
+    compact: Boolean = false,
     /** 项目名；模型里 `Project` 没有名称字段，调用点给「未命名项目」。 */
     projectName: String,
     /** 自动保存徽标（决定圆点颜色与文案）。 */
@@ -90,13 +97,20 @@ fun DesktopTopBarV2(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Wordmark()
-            Spacer(Modifier.width(6.dp))
-            DeskVsep()
-            Spacer(Modifier.width(6.dp))
+            // 紧凑态去掉词标：它只是品牌装饰，不是操作，是最先该让位的东西。
+            if (!compact) {
+                Wordmark()
+                Spacer(Modifier.width(6.dp))
+                DeskVsep()
+                Spacer(Modifier.width(6.dp))
+            }
             ProjectChip(
                 projectName = projectName,
                 saveState = saveState,
+                // 紧凑态把项目名压成可收缩的一格（ellipsis），项目卡本身仍是可点的下拉；
+                // 「● 已自动保存」不参与收缩，必须完整可见。
+                modifier = if (compact) Modifier.weight(1f, fill = false) else Modifier,
+                nameMaxWidth = if (compact) 96.dp else 260.dp,
                 onSavePreset = onSavePreset,
                 onResetDesign = onResetDesign,
                 onOpenHelp = onOpenHelp,
@@ -104,14 +118,14 @@ fun DesktopTopBarV2(
                 onToggleRight = onToggleRight,
             )
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(if (compact) 8.dp else 12.dp))
         DeskSegmented(
             options = listOf("编辑", "批量导出"),
             selectedIndex = if (batchMode) 1 else 0,
-            modifier = Modifier.width(FmDesktop.topBarSegWidth),
+            modifier = Modifier.width(if (compact) FmDesktop.topBarSegWidthCompact else FmDesktop.topBarSegWidth),
             onSelect = { if (it == 0) onSelectEdit() else onSelectBatch() },
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(if (compact) 8.dp else 12.dp))
         // 右组：撤销 重做 │ 导入照片 导出 ⚙（右对齐）
         Row(
             modifier = Modifier.weight(1f),
@@ -131,16 +145,25 @@ fun DesktopTopBarV2(
             Spacer(Modifier.width(2.dp))
             DeskVsep()
             Spacer(Modifier.width(2.dp))
-            DeskButton(
-                label = "导入照片",
-                leading = { DeskTransferGlyph(export = false, tint = FmPalette.onSurfaceSecondary) },
-                onClick = onAddPhoto,
-            )
+            if (compact) {
+                // 紧凑态「导入照片」去掉文字只留图标：动作还在（可读标签照旧），
+                // 让出 ~70 dp 给「导出」的完整标签。
+                DeskIconButton(description = "导入照片", onClick = onAddPhoto) {
+                    DeskTransferGlyph(export = false, tint = FmPalette.onSurfaceSecondary)
+                }
+            } else {
+                DeskButton(
+                    label = "导入照片",
+                    leading = { DeskTransferGlyph(export = false, tint = FmPalette.onSurfaceSecondary) },
+                    onClick = onAddPhoto,
+                )
+            }
             DeskButton(
                 label = if (batchMode) "开始导出" else "导出",
                 style = DeskButtonStyle.Primary,
                 leading = { DeskTransferGlyph(export = true, tint = FmPalette.onPrimary) },
-                kbd = "Ctrl E",
+                // 快捷键提示是"学会之后才有用"的信息，窄窗先让位；Ctrl E 依旧生效。
+                kbd = if (compact) null else "Ctrl E",
                 onClick = onOpenExport,
             )
             AppearanceGear()
@@ -178,10 +201,12 @@ private fun ProjectChip(
     onOpenHelp: () -> Unit,
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
+    modifier: Modifier = Modifier,
+    nameMaxWidth: androidx.compose.ui.unit.Dp = 260.dp,
 ) {
     var open by remember { mutableStateOf(false) }
     val (source, hovered) = rememberDeskHover()
-    Box {
+    Box(modifier = modifier) {
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(FmRadii.chip))
@@ -202,7 +227,7 @@ private fun ProjectChip(
                 color = FmPalette.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 260.dp),
+                modifier = Modifier.widthIn(max = nameMaxWidth),
             )
             Spacer(Modifier.width(4.dp))
             ChevronDown(tint = FmPalette.onSurfaceSecondary)
@@ -253,7 +278,7 @@ private fun SavedBadge(state: DesktopSaveState) {
         Text(
             text = label,
             style = FmType.desktopCaption,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
         )
     }
@@ -295,7 +320,7 @@ private fun AppearanceGear() {
                         lineHeight = 16.sp,
                         letterSpacing = 0.08.sp,
                     ),
-                    color = FmPalette.onSurfaceFaint,
+                    color = FmPalette.onSurfaceMuted,
                     modifier = Modifier.padding(start = 8.dp, top = 6.dp, bottom = 4.dp),
                 )
                 AppearanceMenuOrder.forEach { mode ->

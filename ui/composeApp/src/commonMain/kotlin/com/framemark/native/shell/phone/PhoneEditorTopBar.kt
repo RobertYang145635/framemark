@@ -115,7 +115,10 @@ fun PhoneEditorTopBar(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(40.dp)
+                // AU4-05: 40 dp → 44 dp. The editor top bar is 52 dp tall, so the
+                // touch target grows inside the existing band; 切换照片 is the
+                // "which photo am I editing" control and sits in the right-thumb arc.
+                .heightIn(min = PhoneTouchTarget)
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .semantics(mergeDescendants = true) {
                     contentDescription = "切换照片，第 $photoIndex 张，共 $photoCount 张"

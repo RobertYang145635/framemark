@@ -198,7 +198,7 @@ private fun FilmstripFrame(
                 style = FmNumeric.frameNumber.copy(
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
                 ),
-                color = if (active) FmPalette.primaryStrong else FmPalette.onSurfaceFaint,
+                color = if (active) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 modifier = Modifier.weight(1f),
             )
@@ -249,7 +249,7 @@ private fun AddFrame(onAddPhoto: () -> Unit) {
         Text(
             text = "添加",
             style = FmNumeric.frameNumber,
-            color = FmPalette.onSurfaceFaint,
+            color = FmPalette.onSurfaceMuted,
             maxLines = 1,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

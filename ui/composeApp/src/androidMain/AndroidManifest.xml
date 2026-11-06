@@ -1,7 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+      WP-X3 §7: android:allowBackup was left at the platform default (true). The app's
+      private files dir holds the user's project document (project.json: photos,
+      per-photo designs, watermarks), the preset library and settings/appearance.json —
+      none of it encrypted, and 工程/预设 reference absolute photo paths that do not
+      exist on a restored device. Auto Backup would upload all of it to the user's
+      Drive and restore a half-broken project on a new phone, so backup is off.
+      Existing users are unaffected on this device: nothing is deleted, and the files
+      stay where they are; what stops is the copy on Google's servers (an already
+      uploaded backup is kept by the platform, not by the app, and is not restored to
+      a build without allowBackup). The manual escape hatches stay: 导出预设 writes a
+      .json the user owns, and phone exports land in the gallery.
+    -->
     <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="FrameMark"
         android:theme="@style/Theme.FrameMark"
         android:supportsRtl="true">

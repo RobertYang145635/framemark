@@ -120,7 +120,7 @@ fun WatermarkPane(
                         .border(1.dp, FmPalette.outline, RoundedCornerShape(6.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("PNG", style = CuratedSliderHint, color = FmPalette.onSurfaceFaint)
+                    Text("PNG", style = CuratedSliderHint, color = FmPalette.onSurfaceMuted)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {

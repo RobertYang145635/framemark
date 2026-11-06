@@ -126,7 +126,7 @@ import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.PhoneSwipeHud
 import com.framemark.native.shell.phone.PhoneToolBar
 import com.framemark.native.shell.phone.PhoneUndoNotice
-import com.framemark.native.shell.phone.phoneFrameSwipe
+import com.framemark.native.shell.phone.phoneStageGestures
 import com.framemark.native.shell.phone.phoneLibraryTraversal
 import com.framemark.native.shell.phone.phoneLoadRecentFrames
 import com.framemark.native.shell.phone.phoneRecordRecentFrame
@@ -247,8 +247,12 @@ fun PhoneEditorScreen(
     var stageSize by remember { mutableStateOf(IntSize.Zero) }
     var renderFailure by remember(card?.id) { mutableStateOf<String?>(null) }
     var previewGeo by remember(card?.id) { mutableStateOf<PreviewGeo?>(null) }
-    // V2 sheet: exactly two levels — 收起 (compact, the card strip) and 展开 (grid).
-    var sheetExpanded by rememberSaveable { mutableStateOf(false) }
+    // V2 sheet: three stops — 收起 (0, the card strip), 半开 (1) and 展开 (2, the grid).
+    // WP-X3 §5: the demo's `.psheet` is a freely dragged `height: var(--sh)`, so the
+    // stop count is ours to pick; the task book asks for three (WP-F2 D3 measured
+    // only two stable heights). Index instead of a Boolean so the drag snap and the
+    // chevron cannot disagree about "which of the three am I on".
+    var sheetLevel by rememberSaveable { mutableStateOf(0) }
     var sheetDragPx by remember { mutableStateOf<Float?>(null) }
     var photosOpen by rememberSaveable { mutableStateOf(false) }
     var focusMode by rememberSaveable { mutableStateOf(false) }
@@ -421,24 +425,26 @@ fun PhoneEditorScreen(
         }
         // Focus viewing hides every chrome layer; back leaves it before anything else.
         BackHandler(enabled = focusMode) { focusMode = false }
-        BackHandler(enabled = sheetExpanded && !fullParameterPage) { sheetExpanded = false }
+        BackHandler(enabled = sheetLevel > 0 && !fullParameterPage) { sheetLevel = 0 }
 
-        // Two levels only: compact (heights.sheet from the budget) and expanded.
-        val expandedLevel = levels?.expanded ?: heights.sheet
-        val snapHeights = listOf(heights.sheet.dp, maxOf(heights.sheet, expandedLevel).dp)
+        // Three levels: compact (heights.sheet from the budget), 半开, expanded.
+        val compactLevel = heights.sheet.dp
+        val expandedLevel = maxOf(heights.sheet, levels?.expanded ?: heights.sheet).dp
+        val halfLevel = maxOf(heights.sheet, levels?.half ?: heights.sheet).dp
+        val snapHeights = listOf(compactLevel, halfLevel, expandedLevel)
         val draggedH = if (fullParameterPage) null else sheetDragPx?.let { with(density) { it.toDp() } }
         val sheetHeight = if (fullParameterPage) maxHeight else {
-            draggedH ?: snapHeights[if (sheetExpanded) 1 else 0]
+            draggedH ?: snapHeights[sheetLevel.coerceIn(0, snapHeights.lastIndex)]
         }
         val stageEstimate = (maxHeight - topBarH - stripH - toolBarH - sheetHeight).coerceAtLeast(0.dp)
-        LaunchedEffect(small, maxHeight, sheetExpanded, draggedH == null, tool, photosOpen, fullParameterPage) {
+        LaunchedEffect(small, maxHeight, sheetLevel, draggedH == null, tool, photosOpen, fullParameterPage) {
             val total = maxHeight.value
             fun pct(v: Float) = "%.1f".format(if (total > 0f) v / total * 100f else 0f)
             println(
                 "FM_AREA full=$fullParameterPage small=$small content=${"%.1f".format(total)}dp " +
                     "top=${topBarH.value} stage=${"%.1f".format(stageEstimate.value)} " +
                     "strip=${stripH.value} panel=${"%.1f".format(sheetHeight.value)} bar=${toolBarH.value} " +
-                    "tool=${tool.label} expanded=$sheetExpanded photosOpen=$photosOpen | " +
+                    "tool=${tool.label} level=$sheetLevel photosOpen=$photosOpen | " +
                     "stage%=${pct(stageEstimate.value)} panel%=${pct(sheetHeight.value)}",
             )
         }
@@ -478,7 +484,7 @@ fun PhoneEditorScreen(
                                         imeVisible -> keyboardController?.hide()
                                         fullParameterPage -> closeFullParametersOrHideKeyboard()
                                         focusMode -> focusMode = false
-                                        sheetExpanded -> sheetExpanded = false
+                                        sheetLevel > 0 -> sheetLevel = 0
                                         else -> onRequestHome?.invoke()
                                     }
                                 },
@@ -594,22 +600,24 @@ fun PhoneEditorScreen(
                             PhoneSheetGrabber(
                                 height = sheetMetrics.grabber.dp,
                                 onToggle = {
+                                    // Grabber tap cycles through the three stops: 收起 →
+                                    // 半开 → 展开 → 收起.
                                     sheetDragPx = null
-                                    sheetExpanded = !sheetExpanded
+                                    sheetLevel = (sheetLevel + 1) % snapHeights.size
                                 },
                                 onDragStart = {
                                     sheetDragPx = with(density) { sheetHeight.toPx() }
                                 },
                                 onDrag = { dy ->
-                                    val lo = with(density) { snapHeights[0].toPx() }
-                                    val hi = with(density) { snapHeights[1].toPx() }
+                                    val lo = with(density) { snapHeights.first().toPx() }
+                                    val hi = with(density) { snapHeights.last().toPx() }
                                     sheetDragPx = ((sheetDragPx ?: lo) - dy).coerceIn(lo, hi)
                                 },
                                 onDragEnd = {
                                     val current = sheetDragPx
                                     if (current != null) {
                                         val px = snapHeights.map { with(density) { it.toPx() } }
-                                        sheetExpanded = (px.indices.minByOrNull { abs(px[it] - current) } ?: 0) == 1
+                                        sheetLevel = px.indices.minByOrNull { abs(px[it] - current) } ?: 0
                                         sheetDragPx = null
                                     }
                                 },
@@ -622,11 +630,11 @@ fun PhoneEditorScreen(
                                     card?.name.orEmpty()
                                 },
                                 modified = pageModified,
-                                expanded = sheetExpanded,
+                                expanded = sheetLevel == snapHeights.lastIndex,
                                 height = sheetMetrics.head.dp,
                                 onToggleExpanded = {
                                     sheetDragPx = null
-                                    sheetExpanded = !sheetExpanded
+                                    sheetLevel = (sheetLevel + 1) % snapHeights.size
                                 },
                                 onReset = if (toolPage == null) {
                                     null
@@ -672,7 +680,7 @@ fun PhoneEditorScreen(
                             PhoneLibrarySheet(
                                 index = libraryIndex,
                                 selectedCardId = card?.id,
-                                expanded = sheetExpanded || fullParameterPage,
+                                expanded = sheetLevel > 0 || fullParameterPage,
                                 metrics = sheetMetrics,
                                 categoryKey = borderCategory,
                                 onCategoryChange = { borderCategory = it },
@@ -997,15 +1005,15 @@ private fun StageArea(
                 modifier = Modifier
                     .fillMaxSize()
                     .onSizeChanged { onStageSize(it) }
-                    .phoneFrameSwipe(
-                        enabled = swipeEnabled && !compare && zoom <= 1f,
+                    // WP-X3 §4: one gesture node decides between 左右滑动换边框 and
+                    // 缩放/平移. Two stacked detectors could not coexist — the inner
+                    // `detectTransformGestures` consumed every drag first, so the
+                    // frame swipe always aborted (WP-F2 D4).
+                    .phoneStageGestures(
+                        swipeEnabled = swipeEnabled && !compare && zoom <= 1f,
                         onStep = onFrameStep,
+                        onTransform = onTransform,
                     )
-                    .pointerInput(Unit) {
-                        detectTransformGestures { centroid, panChange, zoomChange, _ ->
-                            onTransform(centroid, panChange, zoomChange)
-                        }
-                    }
                     .pointerInput(Unit) {
                         detectTapGestures(onDoubleTap = { onDoubleTap() })
                     }

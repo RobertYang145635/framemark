@@ -345,7 +345,7 @@ private fun PhoneHomeRecentRow(entry: PhoneRecentEdit, onClick: () -> Unit) {
             Text(
                 text = meta,
                 style = TextStyle12,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
             )
         }
     }

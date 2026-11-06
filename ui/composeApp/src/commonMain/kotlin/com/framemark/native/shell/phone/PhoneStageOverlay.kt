@@ -3,12 +3,17 @@ package com.framemark.native.shell.phone
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -21,8 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -47,34 +54,77 @@ data class PhoneSwipeFeedback(
 )
 
 /**
- * Horizontal swipe on the photo switches borders (report §7.5: "在照片上左右滑动
- * 可以逐个换边框，顶部提示第几个"). A left swipe is "next", a right swipe "previous";
- * the order itself comes from WP-L's `traversal`, so it matches the sheet.
+ * The whole stage gesture on one pointer-input node: 左右滑动换边框 + 缩放/平移.
  *
- * The gesture never takes over a drag that another layer already consumed (the
- * watermark drag, a chip's click) and is disabled while the photo is zoomed.
+ * WP-F2 D4 / WP-X3 §4: the stage used to hang two detectors on the same box —
+ * [phoneFrameSwipe] (outer) and `detectTransformGestures` (inner). The inner
+ * detector runs first in the Main pass, so it consumed every single-finger drag,
+ * `change.isConsumed` became true and the frame swipe aborted 100 % of the time:
+ * the pill advertised `· 左右滑动换边框` and nothing ever changed.
+ *
+ * Two detectors cannot be told apart by ordering (whichever runs first wins both
+ * gestures), so the decision is made here instead, from the pointer stream:
+ *
+ *  - two pointers or a pinch → zoom/pan, always (the transform is never lost);
+ *  - one pointer while [swipeEnabled] (border tool, photo not zoomed) →
+ *    accumulates horizontally. Past the touch slop a mostly-horizontal drag is
+ *    claimed as a frame swipe and consumed; a mostly-vertical drag is left to the
+ *    pan branch so the photo can still be moved;
+ *  - one pointer while [swipeEnabled] is false (zoomed in, comparing, other
+ *    tools) → pan, exactly like before.
+ *
+ * A tap never crosses the slop, so the double-tap detector on the same box still
+ * sees its events (this modifier consumes nothing until the slop is passed).
  */
-fun Modifier.phoneFrameSwipe(enabled: Boolean, onStep: (Int) -> Unit): Modifier =
-    this.pointerInput(enabled) {
-        if (!enabled) return@pointerInput
-        var total = 0f
-        var aborted = false
-        detectHorizontalDragGestures(
-            onDragStart = {
-                total = 0f
-                aborted = false
-            },
-            onDragCancel = { total = 0f },
-            onHorizontalDrag = { change, dragAmount: Float ->
-                if (change.isConsumed) aborted = true else total += dragAmount
-            },
-            onDragEnd = {
-                val threshold = SwipeThreshold.toPx()
-                if (!aborted && abs(total) > threshold) onStep(if (total < 0f) 1 else -1)
-                total = 0f
-            },
-        )
+fun Modifier.phoneStageGestures(
+    swipeEnabled: Boolean,
+    onStep: (Int) -> Unit,
+    onTransform: (centroid: Offset, pan: Offset, zoom: Float) -> Unit,
+): Modifier = this.pointerInput(swipeEnabled) {
+    val slop = (SwipeThreshold / 2f).toPx()
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        var totalX = 0f
+        var totalY = 0f
+        var claimed = false     // the swipe owns this gesture
+        var multiTouch = false
+        do {
+            val event = awaitPointerEvent()
+            val pressed = event.changes.count { it.pressed }
+            val zoomChange = event.calculateZoom()
+            val panChange = event.calculatePan()
+            if (pressed > 1 || zoomChange != 1f) multiTouch = true
+            if (multiTouch) {
+                if (!claimed && (panChange != Offset.Zero || zoomChange != 1f)) {
+                    val centroid = event.calculateCentroid(useCurrent = false)
+                    if (centroid.isSpecified) onTransform(centroid, panChange, zoomChange)
+                    event.changes.forEach { it.consume() }
+                }
+            } else {
+                val delta = event.changes.firstOrNull()?.positionChange() ?: Offset.Zero
+                if (claimed) {
+                    totalX += delta.x
+                    event.changes.forEach { it.consume() }
+                } else if (swipeEnabled) {
+                    totalX += delta.x
+                    totalY += delta.y
+                    if (abs(totalX) > slop && abs(totalX) >= abs(totalY)) {
+                        claimed = true
+                        event.changes.forEach { it.consume() }
+                    } else if (abs(totalY) > slop) {
+                        // A vertical drag is not a frame swipe: pass it to the pan.
+                        onTransform(Offset.Unspecified, delta, 1f)
+                    }
+                } else if (delta != Offset.Zero) {
+                    onTransform(Offset.Unspecified, delta, 1f)
+                }
+            }
+        } while (event.changes.any { it.pressed })
+        if (claimed && abs(totalX) > SwipeThreshold.toPx()) {
+            onStep(if (totalX < 0f) 1 else -1)
+        }
     }
+}
 
 /**
  * The border-name pill on the dark stage (showcase `.pchip`: h 26, radius 13,
@@ -141,11 +191,14 @@ fun PhoneHoldCompareChip(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(FmRadii.pill)
+    // AU4-05: the demo pill is 34 dp, which is below the 44 dp phone touch-target
+    // line. The *touch* box grows to 44 dp (transparent: the scrim pill is drawn at
+    // 34 inside it), so the visual size on the dark stage is unchanged while the
+    // thumb gets a target it can hit. The stage overlay is outside the sheet
+    // budget, so nothing else has to move.
     Box(
         modifier = modifier
-            .height(34.dp)
-            .clip(shape)
-            .background(FmPalette.scrim)
+            .heightIn(min = PhoneTouchTarget)
             .semantics(mergeDescendants = true) {
                 contentDescription = "按住查看原图"
                 role = Role.Button
@@ -158,19 +211,27 @@ fun PhoneHoldCompareChip(
                         onCompareChange(false)
                     },
                 )
-            }
-            .padding(horizontal = 12.dp),
+            },
         contentAlignment = Alignment.Center,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            PhoneEyeGlyph(tint = FmPalette.stageInk)
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "按住看原图",
-                style = FmType.labelSmall.copy(fontSize = 12.5.sp),
-                color = if (comparing) FmPalette.primaryStrong else FmPalette.stageInk,
-                maxLines = 1,
-            )
+        Box(
+            modifier = Modifier
+                .height(34.dp)
+                .clip(shape)
+                .background(FmPalette.scrim)
+                .padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PhoneEyeGlyph(tint = FmPalette.stageInk)
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "按住看原图",
+                    style = FmType.labelSmall.copy(fontSize = 12.5.sp),
+                    color = if (comparing) FmPalette.primaryStrong else FmPalette.stageInk,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

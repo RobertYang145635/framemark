@@ -57,6 +57,8 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.fmElevated
+import com.framemark.native.workflow.ControlProbe
+import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.DesignSession
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -248,7 +250,7 @@ internal fun FmDesktopSliderRow(
                 Text(
                     text = hint,
                     style = CuratedSliderHint,
-                    color = FmPalette.onSurfaceFaint,
+                    color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -299,7 +301,7 @@ internal fun FmDesktopSliderRow(
             Text(
                 text = disabledReason ?: "暂不可调",
                 style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -389,7 +391,7 @@ internal fun FmTouchSliderRow(
             Text(
                 text = disabledReason ?: "暂不可调",
                 style = FmType.labelSmall,
-                color = FmPalette.onSurfaceFaint,
+                color = FmPalette.onSurfaceMuted,
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -697,7 +699,15 @@ internal fun CuratedSliderRow(
     val default = control.declaredDefault?.toFloatOrNull()
     val scale = if (control.unitScale > 0f) control.unitScale else 1f
     val modified = FmSliderMath.isModified(value, default)
-    Column(modifier = modifier.fillMaxWidth().padding(top = 6.dp)) {
+    // WP-X3 §6: the curated slider is the desktop's control row, so it publishes the
+    // same `FM_CONTROL_BOUNDS` / `FM_CONTROL_STATE` lines the old ControlItem did.
+    curatedProbeState(control, value)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .probeBounds("control:${control.key}")
+            .padding(top = 6.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (modified) {
                 Box(Modifier.size(4.dp).clip(CircleShape).background(FmPalette.primary))
@@ -716,7 +726,7 @@ internal fun CuratedSliderRow(
                 Text(
                     text = hint,
                     style = CuratedSliderHint,
-                    color = FmPalette.onSurfaceFaint,
+                    color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -845,7 +855,7 @@ internal fun FmSliderValueBox(
                     Text(
                         text = unit,
                         style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp).withNumericDigits(),
-                        color = FmPalette.onSurfaceFaint,
+                        color = FmPalette.onSurfaceMuted,
                         modifier = Modifier.padding(start = 2.dp),
                     )
                 }

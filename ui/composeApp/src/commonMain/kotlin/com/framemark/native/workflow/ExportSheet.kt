@@ -402,7 +402,7 @@ fun ExportSheet(
                     Text(
                         text = result.path,
                         style = FmType.labelSmall,
-                        color = FmPalette.onSurfaceFaint,
+                        color = FmPalette.onSurfaceMuted,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )

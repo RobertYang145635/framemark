@@ -123,8 +123,11 @@ class WindowsSystemTheme(
         const val REGISTRY_PATH = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"
         const val VALUE_NAME = "AppsUseLightTheme"
 
+        // WP-X3 §7: the sandbox override is a QA hook, so it now comes through the
+        // QA-only surface; a packaged product (no qaenv source) always reads the
+        // registry because QaSurface.fakeSystemDarkFile() is null there.
         fun fakeSystemDarkFileFromEnv(): File? =
-            System.getenv("FM_FAKE_SYSTEM_DARK_FILE")?.takeIf { it.isNotBlank() }?.let { File(it) }
+            com.framemark.native.qa.QaSurface.fakeSystemDarkFile()?.let { File(it) }
     }
 }
 

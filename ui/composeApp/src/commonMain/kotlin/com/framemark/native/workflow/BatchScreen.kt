@@ -183,7 +183,7 @@ private fun BatchRow(item: BatchItem, runner: BatchRunner, onRemove: () -> Unit)
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("片", style = FmType.labelSmall, color = FmPalette.onSurfaceFaint)
+                Text("片", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
             }
             Spacer(Modifier.width(FmSpacing.md))
             Column(modifier = Modifier.weight(1f)) {

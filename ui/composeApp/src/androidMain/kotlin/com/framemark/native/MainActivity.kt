@@ -20,6 +20,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.lifecycle.lifecycleScope
 import android.util.Log
 import com.framemark.BuildConfig
+import com.framemark.R
 import com.framemark.native.engine.AndroidInspectorHints
 import com.framemark.native.engine.AndroidNativeRender
 import com.framemark.native.engine.ExifProbe
@@ -455,6 +456,29 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // WP-X3 §3 (WP-F2 D2): resolve the stored appearance **before** the window is
+        // created and pick the launch theme from it. The manifest theme follows the
+        // *system* night mode, so with 外观=深色 on a light system the launch window was
+        // light: cold starts showed a 700–800 ms white flash (mean 182–226) before the
+        // first dark Compose frame. `setTheme` must run before `super.onCreate` to take
+        // effect on this window, and the two explicit styles live in values/ so the
+        // system night mode cannot re-resolve them.
+        val initialSystemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val launchAppearance = AppearanceController(
+            store = AndroidAppearanceStore.forContext(applicationContext),
+            initialSystemDark = initialSystemDark,
+        )
+        setTheme(
+            if (launchAppearance.dark) R.style.Theme_FrameMark_Dark else R.style.Theme_FrameMark_Light,
+        )
+        // Evidence: printed before the first frame, so a burst capture can be paired
+        // with the theme the launch window actually used.
+        println(
+            "FM_LAUNCH_THEME dark=${launchAppearance.dark} " +
+                "mode=${launchAppearance.settings.mode.wire} systemDark=$initialSystemDark " +
+                "theme=${if (launchAppearance.dark) "Theme.FrameMark.Dark" else "Theme.FrameMark.Light"}",
+        )
         // WP-T: no more hard-coded light system bars. `enableEdgeToEdge()` with no
         // arguments follows the launch theme (values / values-night themes.xml)
         // so the first frame already has the right icon ink; the composition
@@ -472,12 +496,7 @@ class MainActivity : ComponentActivity() {
         // here, so "follow the system" is already correct on the first frame
         // instead of waiting for the `SideEffect` inside the composition (which
         // only runs after the first frame has been drawn).
-        val initialSystemDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-        val appearance = AppearanceController(
-            store = AndroidAppearanceStore.forContext(applicationContext),
-            initialSystemDark = initialSystemDark,
-        ).also {
+        val appearance = launchAppearance.also {
             AppearanceEnv.controller = it
         }
         println("FM_APPEARANCE_INIT ${appearance.describe()}")
