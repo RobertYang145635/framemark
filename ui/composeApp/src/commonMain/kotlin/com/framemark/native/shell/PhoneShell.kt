@@ -59,32 +59,38 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.product.toDesignSnapshot
+import com.framemark.native.shell.phone.PhoneExportSheet
+import com.framemark.native.shell.phone.PhoneHomeDestination
+import com.framemark.native.shell.phone.PhoneHomePolicy
+import com.framemark.native.shell.phone.PhonePage
+import com.framemark.native.shell.phone.PhonePagePolicy
+import com.framemark.native.shell.phone.PhoneRecentEdit
+import com.framemark.native.shell.phone.PhoneSettingsPage
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import com.framemark.native.workflow.BatchRunner
 import com.framemark.native.workflow.BatchCandidate
 import com.framemark.native.workflow.BatchPreflight
 import com.framemark.native.workflow.batchPreflight
+import com.framemark.native.workflow.BatchRunner
 import com.framemark.native.workflow.BatchScreen
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
-import com.framemark.native.workflow.ExportSheet
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.OverlaySpec
-import com.framemark.native.workflow.PhotoBatchScreen
 import com.framemark.native.workflow.PhonePhotoBatchQueue
+import com.framemark.native.workflow.PhotoBatchScreen
 import com.framemark.native.workflow.PhotoSelection
 import com.framemark.native.workflow.PhotoTray
-import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.PresetStore
+import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
-import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.TextSlotRegistry
-import com.framemark.native.workflow.withNativeTextSlots
+import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WatermarkSpec
+import com.framemark.native.workflow.withNativeTextSlots
 import com.framemark.native.workflow.WorkflowEnv
 
 /** The legacy batch sheet is retained only for the explicit QA/demo launch path. */
@@ -107,7 +113,6 @@ internal fun createPhoneBatchDemoRunner(
 fun PhoneShell() {
     val panelState = rememberLazyListState()
     val batchScroll = rememberLazyListState()
-    val settingsScroll = rememberLazyListState()
     // P4: product.Project is the authority for photos, one design per photo, the
     // embedded watermarks and the export settings, and SessionStore writes it
     // atomically — a force-stop restores all of it. The tray below is a projection.
@@ -168,7 +173,10 @@ fun PhoneShell() {
     var presetSheetOpen by remember { mutableStateOf(false) }
     var exportSheetOpen by remember { mutableStateOf(false) }
     var batchSheetOpen by remember { mutableStateOf(false) }
-    var settingsSheetOpen by remember { mutableStateOf(false) }
+    // The top-level page (首页 / 编辑页 / 设置页). This replaced the old
+    // `if (tray.isEmpty)` switch, which left a project with photos with no way back
+    // to the home, the settings or the batch export (MID-APK-REPORT §6 item 1).
+    var page by rememberSaveable { mutableStateOf(PhonePagePolicy.initial()) }
 
     val libraryCards = (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards.orEmpty()
 
@@ -176,6 +184,23 @@ fun PhoneShell() {
 
     /** The engine style id of a card; the design must carry it or the renderer picks the wrong style. */
     fun styleOf(id: String?): String? = cardOf(id)?.systemStyle
+
+    // 最近编辑: the project's newest photos with the border each one wears. The
+    // ordering cap and the row shape live in `PhoneHomePolicy` (tested there).
+    val recentEdits = remember(store.project, libraryState) {
+        val total = store.photos.size
+        val rows = store.photos.mapIndexed { index, photo ->
+            PhoneRecentEdit(
+                photoId = photo.id,
+                path = photo.path.takeIf { it.isNotBlank() },
+                displayName = photo.displayName,
+                borderName = store.designOf(photo.id)?.cardId?.let { id -> cardOf(id)?.name },
+                index = index + 1,
+                count = total,
+            )
+        }
+        PhoneHomePolicy.recentEdits(rows)
+    }
 
     val currentCards by rememberUpdatedState(libraryCards)
     // The photo batch is `product.BatchQueue`: every job carries its own photo path,
@@ -288,15 +313,42 @@ fun PhoneShell() {
         )
     }
 
+    /**
+     * 批量导出 · 按照片: pre-flight first (photos with no border are listed, never
+     * queued), then queue the designed ones and open the sheet. The home's 批量
+     * tile and the editor's former ⋯ menu share this one entry point.
+     */
+    fun openPhotoBatch() {
+        val preflight = store.project.batchPreflight(store.photos.map { it.id })
+        when {
+            preflight.allUndesigned -> {
+                pendingPhotoBatch = null
+                watermarkError = "还没有为任何照片应用边框，未创建导出任务。请先在编辑页选择边框。"
+            }
+            preflight.hasUndesigned -> pendingPhotoBatch = preflight
+            else -> {
+                pendingPhotoBatch = null
+                submitAndOpenPhotoBatch()
+            }
+        }
+        println(
+            "FM_PHOTO_BATCH_PREFLIGHT photos=${store.photos.size} designed=${preflight.designedCount} " +
+                "undesigned=${preflight.undesignedCount}",
+        )
+    }
+
     // The project drives the strip; every path list change re-projects it.
     LaunchedEffect(store.photos, store.activePhotoId, libraryState) { syncTray() }
 
     // A pick (single or multi) lands asynchronously from the system picker; the
-    // project registers every path of the batch, the strip follows.
+    // project registers every path of the batch, the strip follows. A pick always
+    // lands in the editor, so the home closes even when it started the pick.
     LaunchedEffect(PhotoSelection.version) {
         if (PhotoSelection.version == 0) return@LaunchedEffect
         val path = PhotoSelection.path ?: return@LaunchedEffect
         store.adoptPaths(PhotoSelection.batch, path, PhotoSelection.displayNamesByPath)
+        // A pick always lands in the editor, whichever page started it.
+        page = PhonePagePolicy.afterPhotosAdded()
         println("FM_TRAY photos=${tray.count} picked=${PhotoSelection.batch.size} selected=${tray.selected?.label}")
     }
 
@@ -371,12 +423,14 @@ fun PhoneShell() {
         if (inspectorState !is InspectorLoadState.Ready) return@LaunchedEffect
         when {
             LaunchOptions.openPresetSheet -> {
+                page = PhonePage.Editor
                 presetSheetOpen = true
                 LaunchOptions.sheetsApplied = true
                 println("FM_OPEN_SHEET presets card=${card.id}")
             }
             LaunchOptions.openExportSheet -> {
                 if (activeDesignSnapshot() != null) {
+                    page = PhonePage.Editor
                     exportSheetOpen = true
                     LaunchOptions.sheetsApplied = true
                     println("FM_OPEN_SHEET export card=${card.id}")
@@ -631,7 +685,7 @@ fun PhoneShell() {
         }
     }
 
-    val anySheet = presetSheetOpen || exportSheetOpen || batchSheetOpen || settingsSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
+    val anySheet = presetSheetOpen || exportSheetOpen || batchSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
     fun openExport() {
         if (activeDesignSnapshot() == null) {
             watermarkError = "请先选择并应用边框，再导出这张照片。"
@@ -640,8 +694,12 @@ fun PhoneShell() {
         }
     }
     // Back order: the editor's own focus/parameter-page handlers compose later and
-    // win first; here sheets close, then any edit tool falls back to 边框.
-    BackHandler(enabled = anySheet || tool != EditorTool.Border) {
+    // win first; here sheets close, then any edit tool falls back to 边框, then the
+    // page goes back one step (编辑页 / 设置页 → 首页). On 首页 nothing is enabled,
+    // so the platform exits the app as usual.
+    BackHandler(
+        enabled = anySheet || tool != EditorTool.Border || PhonePagePolicy.handlesBack(page),
+    ) {
         when {
             pendingPhotoBatch != null -> pendingPhotoBatch = null
             confirmApplyAll -> confirmApplyAll = false
@@ -649,8 +707,12 @@ fun PhoneShell() {
             presetSheetOpen -> presetSheetOpen = false
             exportSheetOpen -> exportSheetOpen = false
             batchSheetOpen -> batchSheetOpen = false
-            settingsSheetOpen -> settingsSheetOpen = false
-            else -> tool = EditorTool.Border
+            tool != EditorTool.Border -> tool = EditorTool.Border
+            else -> {
+                val next = PhonePagePolicy.back(page) ?: return@BackHandler
+                println("FM_PHONE_PAGE ${page.name}->${next.name} viaBack")
+                page = next
+            }
         }
     }
 
@@ -728,29 +790,65 @@ fun PhoneShell() {
                 }
             },
     ) {
-        if (tray.isEmpty) {
-            PhoneHomeScreen(
+        when (page) {
+            PhonePage.Home -> PhoneHomeScreen(
                 libraryState = libraryState,
+                recent = recentEdits,
+                photoCount = store.photos.size,
                 onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
                 onPickMany = WorkflowEnv.multiPhotoPicker,
                 onUseSample = {
                     store.adoptSample()
                     PhotoSelection.set(null)
+                    page = PhonePagePolicy.afterPhotosAdded()
                     println("FM_TRAY_SAMPLE")
                 },
-                onBrowseBorders = {
-                    // 先逛边框 now lands in the editor with the in-panel browser
-                    // open: the phone shell no longer pushes a full-screen library.
-                    if (tray.isEmpty) {
-                        store.adoptSample()
-                        PhotoSelection.set(null)
+                onOpenSettings = {
+                    page = PhonePage.Settings
+                    println("FM_PHONE_PAGE Home->Settings viaGear")
+                },
+                onBatch = {
+                    val destination = PhoneHomePolicy.batch(store.photos.size)
+                    when (destination) {
+                        PhoneHomeDestination.BatchExport -> openPhotoBatch()
+                        PhoneHomeDestination.PickPhotos ->
+                            WorkflowEnv.multiPhotoPicker?.invoke()
+                                ?: WorkflowEnv.photoPicker?.invoke()
+                        else -> Unit
                     }
-                    tool = EditorTool.Border
-                    println("FM_BROWSE_BORDERS open photos=${store.photos.size}")
+                    println("FM_HOME_BATCH $destination photos=${store.photos.size}")
+                },
+                onPresets = {
+                    when (PhoneHomePolicy.presets(store.photos.size)) {
+                        PhoneHomeDestination.Presets -> presetSheetOpen = true
+                        else -> watermarkError = PhoneHomePolicy.PICK_PHOTOS_FIRST_HINT
+                    }
+                },
+                onOpenRecent = { edit ->
+                    val exists = store.photos.any { it.id == edit.photoId }
+                    if (exists) {
+                        store.select(edit.photoId)
+                        syncTray()
+                    }
+                    page = PhonePagePolicy.afterOpenRecent(exists)
+                    println("FM_HOME_RECENT photo=${edit.photoId} exists=$exists -> ${page.name}")
                 },
             )
-        } else {
-            PhoneEditorScreen(
+
+            PhonePage.Settings -> PhoneSettingsPage(
+                photoCount = store.photos.size,
+                designCount = store.project.designs.size,
+                presetCount = store.presets.size,
+                saveCount = store.saveCount,
+                lastExportName = session.lastExport?.fileName,
+                errorText = store.saveError,
+                onClose = {
+                    page = PhonePagePolicy.back(PhonePage.Settings) ?: PhonePage.Home
+                    println("FM_PHONE_PAGE Settings->${page.name} viaClose")
+                },
+            )
+
+            PhonePage.Editor -> PhoneEditorScreen(
                 card = selectedCard,
                 model = panelModel,
                 activeDesign = store.activePhotoId
@@ -771,7 +869,7 @@ fun PhoneShell() {
                 onOpenPresets = { presetSheetOpen = true },
                 onOpenExport = ::openExport,
                 onOpenBatch = { batchSheetOpen = true },
-                onOpenSettings = { settingsSheetOpen = true },
+                onOpenSettings = { page = PhonePage.Settings },
                 onUndo = { session.undo() },
                 onRedo = { session.redo() },
                 onRetryInspector = { inspectorReload++ },
@@ -790,26 +888,7 @@ fun PhoneShell() {
                     .map { it.id }
                     .toSet(),
                 onApplyAll = { confirmApplyAll = true },
-                onOpenPhotoBatch = {
-                    val preflight = store.project.batchPreflight(store.photos.map { it.id })
-                    when {
-                        preflight.allUndesigned -> {
-                            pendingPhotoBatch = null
-                            watermarkError = "还没有为任何照片应用边框，未创建导出任务。请先在编辑页选择边框。"
-                        }
-                        preflight.hasUndesigned -> {
-                            pendingPhotoBatch = preflight
-                        }
-                        else -> {
-                            pendingPhotoBatch = null
-                            submitAndOpenPhotoBatch()
-                        }
-                    }
-                    println(
-                        "FM_PHOTO_BATCH_PREFLIGHT photos=${store.photos.size} designed=${preflight.designedCount} " +
-                            "undesigned=${preflight.undesignedCount}",
-                    )
-                },
+                onOpenPhotoBatch = { openPhotoBatch() },
                 textSlots = textSlots.slots,
                 textOutputWidth = textSlots.width,
                 textOutputHeight = textSlots.height,
@@ -819,6 +898,13 @@ fun PhoneShell() {
                 inUseCardIds = store.photoEntries()
                     .mapNotNull { entry -> entry.design?.cardId }
                     .distinct(),
+                // 返回 at the outermost layer leaves the editor for 首页; the inner
+                // layers (keyboard / parameter page / focus / sheet) still win first.
+                onRequestHome = {
+                    val next = PhonePagePolicy.back(PhonePage.Editor) ?: PhonePage.Home
+                    println("FM_PHONE_PAGE Editor->${next.name} viaTopBarBack")
+                    page = next
+                },
             )
         }
 
@@ -897,19 +983,6 @@ fun PhoneShell() {
             }
         }
 
-        if (settingsSheetOpen) {
-            PhoneOverlay(onDismiss = { settingsSheetOpen = false }) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    OverlayHeader(
-                        title = "设置",
-                        subtitle = "FrameMark 0.1.0",
-                        onClose = { settingsSheetOpen = false },
-                    )
-                    SettingsContent(state = settingsScroll, session = session, store = store)
-                }
-            }
-        }
-
         // Secondary workflow surfaces sit above everything else.
         if (presetSheetOpen) {
             PhonePresetSheet(
@@ -932,10 +1005,11 @@ fun PhoneShell() {
             )
         }
         if (exportSheetOpen) {
-            ExportSheet(
+            // WP-P2 §3.3: the phone's own sheet (preview / 格式 / 三档尺寸 / 质量 100 /
+            // 保存到相册 + 分享 / 完成页重试). The desktop keeps workflow/ExportSheet.kt.
+            PhoneExportSheet(
                 session = session,
                 card = selectedCard,
-                autoGenerate = LaunchOptions.runSampleExport,
                 design = activeDesignSnapshot(),
                 overlay = { activeOverlay() },
                 photoPath = when (val activePhoto = store.activePhoto) {
@@ -945,6 +1019,12 @@ fun PhoneShell() {
                 photoIndex = (store.photos.indexOfFirst { it.id == store.activePhotoId } + 1)
                     .coerceAtLeast(1),
                 photoDisplayName = store.activePhoto?.displayName,
+                // §3.4: 应用到全部照片 moved here from the removed stage menu; the
+                // project already owns `applyActiveDesignToAll`, so no new engine work.
+                canApplyToAll = store.photos.size > 1,
+                onApplyToAll = { confirmApplyAll = true },
+                // Same evidence hook the previous sheet carried (`fmRunExport`).
+                autoGenerate = LaunchOptions.runSampleExport,
                 onDismiss = { exportSheetOpen = false },
             )
         }
@@ -1066,88 +1146,3 @@ internal fun Tag(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Settings (overflow menu → full-screen sheet)
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun SettingsContent(state: LazyListState, session: DesignSession, store: PhoneProjectStore) {
-    val export = session.export
-    val project = store.project
-    LazyColumn(
-        state = state,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = FmSpacing.xxl,
-            end = FmSpacing.xxl,
-            top = FmSpacing.sm,
-            bottom = FmSpacing.xxl,
-        ),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-    ) {
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                SettingsSectionLabel("外观")
-                SettingsRow("主题", "浅色")
-                SettingsRow("字号", "跟随系统")
-                SettingsSectionLabel("导出")
-                SettingsRow("格式", export.format.label)
-                // The native encoder writes JPEG at q100 4:4:4 regardless of the
-                // quality control, so the settings page says what will be produced.
-                SettingsRow("画质", if (export.format.label == "JPG") "固定 q100 (4:4:4)" else "—")
-                SettingsRow(
-                    "尺寸",
-                    if (export.sizeMode == com.framemark.native.workflow.ExportSizeMode.Original) {
-                        "原尺寸"
-                    } else {
-                        "长边 ${export.longEdge} px"
-                    },
-                )
-                SettingsSectionLabel("存储")
-                SettingsRow("照片", "${project.photos.size} 张 · 设计 ${project.designs.size} 套")
-                SettingsRow("预设", "${store.presets.size} 套")
-                SettingsRow("工程落盘", if (store.saveCount > 0) "已写 ${store.saveCount} 次" else "未写入")
-                store.saveError?.let { SettingsRow("写入错误", it) }
-                SettingsRow("最近导出", session.lastExport?.fileName ?: "无")
-                SettingsSectionLabel("关于")
-                SettingsRow("版本", com.framemark.native.appVersionLabel())
-                SettingsRow("构建", "Compose MP · Desktop/Android")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsSectionLabel(text: String) {
-    Text(
-        text = text,
-        style = FmType.labelMedium,
-        color = FmPalette.onSurfaceMuted,
-        modifier = Modifier.padding(top = FmSpacing.md, bottom = FmSpacing.xxs),
-    )
-}
-
-@Composable
-private fun SettingsRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(FmRadii.card))
-            .background(FmPalette.surface)
-            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.card))
-            .padding(horizontal = FmSpacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, style = FmType.bodyLarge, color = FmPalette.onSurface)
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = value,
-            style = FmType.bodyMedium,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(200.dp),
-        )
-    }
-}
