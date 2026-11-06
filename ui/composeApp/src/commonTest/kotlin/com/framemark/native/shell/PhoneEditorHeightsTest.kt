@@ -22,11 +22,13 @@ class PhoneEditorHeightsTest {
             small = false,
         )
         assertFalse(h.fullPage)
-        assertEquals(48f, h.topBar)
-        assertEquals(52f, h.toolBar)
+        // WP-P1 §4.1/§4.2: the V2 chrome is a 52 dp dark top bar and a 62 dp bar.
+        assertEquals(52f, h.topBar)
+        assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
         assertTrue(h.sheet >= 300f, "border sheet=${h.sheet}")
-        assertTrue(h.stage >= 844f * 0.28f, "stage=${h.stage}")
+        // WP-P1 §4.1: the compact sheet leaves the stage at least half the window.
+        assertTrue(h.stage >= 844f * 0.5f - 0.01f, "stage=${h.stage}")
         assertTrue(sum(h) <= 844f + 0.01f, "sum=${sum(h)}")
     }
 
@@ -42,8 +44,10 @@ class PhoneEditorHeightsTest {
         )
         assertFalse(h.fullPage)
         assertEquals(64f, h.strip)
-        assertTrue(h.sheet >= 300f, "border sheet on the small layout=${h.sheet}")
-        assertTrue(h.stage >= 800f * 0.28f, "stage=${h.stage}")
+        // WP-P1 §4.1: with the 50 % stage floor the open strip comes out of the
+        // sheet (800 - 52 - 62 - 64 - 400 = 222), not out of the photo.
+        assertTrue(h.sheet >= 220f, "border sheet on the small layout=${h.sheet}")
+        assertTrue(h.stage >= 800f * 0.5f - 0.01f, "stage=${h.stage}")
         assertTrue(sum(h) <= 800f + 0.01f, "sum=${sum(h)}")
     }
 
@@ -127,8 +131,10 @@ class PhoneEditorHeightsTest {
         val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true, small = false)
         assertEquals(0f, closed.strip)
         assertEquals(64f, open.strip)
-        assertTrue(open.stage < closed.stage, "open strip must come out of the stage, not the panel")
-        assertEquals(closed.sheet, open.sheet)
+        // WP-P1 §4.1 changed who pays for the strip: the stage is already at its
+        // 50 % floor, so an open strip now shortens the sheet instead of the photo.
+        assertTrue(open.stage >= 800f * 0.5f - 0.01f, "open stage=${open.stage}")
+        assertTrue(open.sheet < closed.sheet, "open sheet=${open.sheet} closed=${closed.sheet}")
     }
 
     @Test
@@ -138,8 +144,8 @@ class PhoneEditorHeightsTest {
         // must keep the real top/tool bars and a reachable stage.
         val h = forcedPreviewHeights(905f)
         assertFalse(h.fullPage)
-        assertEquals(48f, h.topBar)
-        assertEquals(52f, h.toolBar)
+        assertEquals(52f, h.topBar)
+        assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
         assertTrue(h.stage >= 60f, "stage=${h.stage}")
         assertTrue(h.sheet >= 60f, "sheet=${h.sheet}")
