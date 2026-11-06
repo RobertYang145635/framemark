@@ -79,7 +79,7 @@ internal fun CuratedLogoPane(
             if (adjustments.isNotEmpty()) {
                 CuratedRule()
                 CuratedGroup("调整字标") {
-                    adjustments.forEach { CuratedLogoAdjustment(it, session) }
+                    adjustments.forEach { CuratedLogoAdjustment(it, session, adjustments) }
                 }
             }
         }
@@ -285,7 +285,7 @@ private fun BrandedCuratedLogo(
         if (adjustments.isNotEmpty()) {
             CuratedRule()
             CuratedGroup("显示") {
-                orderedLogoAdjustments(adjustments).forEach { CuratedLogoAdjustment(it, session) }
+                orderedLogoAdjustments(adjustments).forEach { CuratedLogoAdjustment(it, session, adjustments) }
             }
         }
     }
@@ -433,17 +433,36 @@ internal fun logoBrandTitle(brand: LogoBrand): String =
 
 /** One 显示 row: switches, segments and sliders of the Logo section. */
 @Composable
-internal fun CuratedLogoAdjustment(control: InspectorControl, session: DesignSession) {
+internal fun CuratedLogoAdjustment(
+    control: InspectorControl,
+    session: DesignSession,
+    /** 同一张卡的其余 Logo 控件：位置会决定「水平位置」是否生效、以及居左的后果。 */
+    siblings: List<InspectorControl> = emptyList(),
+) {
+    val headerPos = siblings.firstOrNull { it.param.endsWith("logoPos") }
+        ?: (control.takeIf { it.param.endsWith("logoPos") })
+    val logoPosition = headerPos?.let { session.value(it)?.toString() }
     when (control.type) {
         ControlType.Switch -> CuratedSwitchRow(control, session)
-        ControlType.Slider -> CuratedSliderRow(
-            control = control,
-            session = session,
-            label = logoAdjustLabel(control),
-            hint = logoAdjustHint(control, session),
-            unit = control.unit ?: "×",
-            decimalPlaces = 1,
-        )
+        ControlType.Slider -> {
+            // AU2 A-04：`logoCenterX` 只在「位置 = 居中」分支被引擎读；居左/居右
+            // 时拖动没有任何效果，所以置灰并说明，而不是让用户白拖。
+            val inactiveReason = if (control.param.endsWith("logoCenterX")) {
+                logoCenterXDisabledReason(logoPosition)
+            } else {
+                null
+            }
+            CuratedSliderRow(
+                control = control,
+                session = session,
+                label = logoAdjustLabel(control),
+                hint = logoAdjustHint(control, session),
+                unit = control.unit ?: "×",
+                decimalPlaces = 1,
+                enabled = inactiveReason == null,
+                disabledReason = inactiveReason,
+            )
+        }
         ControlType.Select -> {
             val value = session.value(control).toString()
             Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
@@ -458,9 +477,52 @@ internal fun CuratedLogoAdjustment(control: InspectorControl, session: DesignSes
                     selected = value,
                     onSelect = { session.set(control, it) },
                 )
+                if (control.param.endsWith("logoPos") && value == "left") {
+                    // AU2 A-02：引擎 `brand_footer.rs:776-778` 里居左会直接不画左侧
+                    // 品牌/机型两行（不是挪位）。引擎侧本轮不改，至少在选择处就说实话。
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = logoLeftHidesTextNote(siblings, session),
+                        style = CuratedNote,
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
             }
         }
         else -> GenericControlRow(control, session)
+    }
+}
+
+/**
+ * 「水平位置」在某个 logo 位置下是否不生效；返回一句原因，null = 生效（AU2 A-04）。
+ *
+ * 引擎只在 `logo_pos == "center"` 分支读 `logoCenterX`（`brand_footer.rs:860`），
+ * 居左/居右时拖动没有任何效果，所以置灰并说明。桌面与手机共用这一句。
+ */
+internal fun logoCenterXDisabledReason(logoPosition: String?): String? =
+    if (logoPosition != null && logoPosition != "center") {
+        "只有「位置 = 居中」时水平位置才生效。"
+    } else {
+        null
+    }
+
+/**
+ * 「位置 = 居左」的后果说明（AU2 A-02）。只有左侧文字还显示时才值得提；
+ * 两行都关掉以后居左不再有破坏性，就不用再吓用户。
+ */
+internal fun logoLeftHidesTextNote(siblings: List<InspectorControl>, session: DesignSession): String {
+    fun shown(name: String): Boolean {
+        val control = siblings.firstOrNull { it.param.endsWith(name) } ?: return true
+        return session.value(control) as? Boolean ?: true
+    }
+    val rows = buildList {
+        if (shown("showMake")) add("品牌")
+        if (shown("showModel")) add("机型")
+    }
+    return if (rows.isEmpty()) {
+        "居左时左侧不放 Logo。"
+    } else {
+        "居左时左侧${rows.joinToString("、")}两行将不显示（引擎按版式实现，不是挪位）。"
     }
 }
 

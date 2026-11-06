@@ -31,10 +31,15 @@ import com.framemark.native.inspector.LocalCuratedPhotoSize
 import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
-import com.framemark.native.inspector.curatedOutputSize
+import com.framemark.native.inspector.fontScaleControlOf
+import com.framemark.native.inspector.footerModeControlOf
+import com.framemark.native.inspector.footerPctControlOf
+import com.framemark.native.inspector.footerPctDisabledReason
+import com.framemark.native.inspector.footerPctFloor
+import com.framemark.native.inspector.themeControlOf
+import com.framemark.native.inspector.OutputSize
+import com.framemark.native.inspector.curatedOutputPixels
 import com.framemark.native.library.LibraryCard
-import com.framemark.native.shell.desktop.ExportEstimate
-import com.framemark.native.shell.desktop.ExportPixels
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
@@ -78,7 +83,7 @@ fun PhoneParameterPage(
     card: LibraryCard? = null,
     /**
      * 舞台当前照片的像素尺寸。样式页的「导出尺寸」由它 + 版式参数算出
-     * （与桌面 rail 同一个 [curatedOutputSize]），不再用导出设置里的长边顶替。
+     * （与桌面 rail 同一个 [curatedOutputPixels]），不再用导出设置里的长边顶替。
      */
     photoWidthPx: Int = 0,
     photoHeightPx: Int = 0,
@@ -182,9 +187,10 @@ private fun PhoneStylePane(
     tab: InspectorTabInfo,
 ) {
     val controls = phonePageControls(tab)
-    val theme = controls.firstOrNull { it.param == "theme" || it.kind == "themeSwatches" }
-    val mode = controls.firstOrNull { it.param == "params.footerMode" || it.kind == "modeSegment" }
-    val footerPct = controls.firstOrNull { it.param == "params.footerPct" }
+    val theme = themeControlOf(controls)
+    // AU2 A-17：与桌面同一个 tail-match 判定，不再比对字面量 `params.footerMode`。
+    val mode = footerModeControlOf(controls)
+    val footerPct = footerPctControlOf(controls)
     // A vendor-spec card declares no adjustable template parameters at all: the
     // showcase shows the fixed spec block instead of an empty form.
     if (model.isIr || (theme == null && mode == null && controls.none { it.type == ControlType.Slider })) {
@@ -193,12 +199,13 @@ private fun PhoneStylePane(
     }
     val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key)
     val rest = controls.filterNot { it.key in handled }
-    // 导出尺寸 = 真实成片：照片像素 + 版式留白（与桌面 rail 同一 `curatedOutputSize`），
-    // 再按导出设置的长边档缩放（[ExportEstimate]，与导出对话框同一口径）。
-    // 照片尺寸还没接进来时返回 null → 这一行留空，不显示猜的值。
-    val outPixels = ExportEstimate.output(
-        canvas = curatedOutputSize(controls, session)?.let { (w, h) -> ExportPixels(w, h) },
-        sizeMode = session.export.sizeMode,
+    // 导出尺寸 = 真实成片：照片像素 + 版式留白（与桌面 rail 同一个 `curatedOutputPixels`），
+    // 再按导出设置的长边档归一（[OutputSize.applyLongEdge]，与导出对话框/引擎同式；
+    // 长边档放大与缩小都算，D-1）。照片尺寸还没接进来时返回 null → 这一行留空，
+    // 不显示猜的值。
+    val outPixels = OutputSize.applyLongEdge(
+        pixels = curatedOutputPixels(controls, session),
+        mode = session.export.sizeMode,
         longEdge = session.export.longEdge,
     )
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -212,19 +219,31 @@ private fun PhoneStylePane(
             }
         }
         if (mode != null) {
+            val modeValue = session.value(mode)?.toString() ?: ""
             PhoneGroup(title = "版式") {
                 PhoneSegmented(
                     options = phoneModeOptions(mode.options.map { it.value to phoneModeLabel(it.display) }),
-                    selected = session.value(mode)?.toString() ?: "",
+                    selected = modeValue,
                     onSelect = { value -> session.set(mode, value) },
                     label = "版式",
                 )
-                PhoneSubNote(phoneModeNote(session.value(mode)?.toString() ?: ""))
+                PhoneSubNote(phoneModeNote(modeValue))
                 if (footerPct != null) {
+                    // AU2 A-03/A-07：叠加版式不读底部留白；经典/简约下低于短边 8.5%
+                    // 地板的那一段拖动没有变化，滑杆下限抬到地板。
+                    val disabledReason = footerPctDisabledReason(modeValue)
+                    val photo = LocalCuratedPhotoSize.current
                     PhoneControlSlider(
                         control = footerPct,
                         session = session,
-                        hint = if (session.value(mode)?.toString() == "overlay") "文字区高度" else "占照片宽度",
+                        hint = if (disabledReason != null) "叠加版式不生效" else "占照片宽度",
+                        enabled = disabledReason == null,
+                        disabledReason = disabledReason,
+                        effectiveMin = if (disabledReason != null) {
+                            null
+                        } else {
+                            photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
+                        },
                     )
                 }
                 if (outPixels != null) {
@@ -235,7 +254,7 @@ private fun PhoneStylePane(
                             .height(1.dp)
                             .background(FmPalette.outline),
                     )
-                    PhoneKeyValueRow(label = "导出尺寸", value = outPixels.toString())
+                    PhoneKeyValueRow(label = "导出尺寸", value = "$outPixels px")
                 }
             }
         } else if (footerPct != null) {
@@ -277,7 +296,10 @@ private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int) {
 /** The 文字 page's 文字大小 group (showcase `grp('文字大小', fmSlider(...))`). */
 @Composable
 private fun PhoneTextScaleGroup(controls: List<InspectorControl>, session: DesignSession) {
-    val scale = controls.firstOrNull { it.param == "text.fontScale" } ?: return
+    // AU2 A-05: 这里原来比对字面量 `"text.fontScale"`，而注册表归一后 consumer 是
+    // `fontScale` —— 62 张手写卡的「文字大小」在手机上从来没出现过。改用与桌面
+    // 同一个判定，避免第三处再分叉。
+    val scale = fontScaleControlOf(controls) ?: return
     PhoneGroup(title = "文字大小") {
         PhoneControlSlider(control = scale, session = session, hint = "四行同比缩放")
     }
@@ -325,24 +347,30 @@ private fun PhoneControlSlider(
     control: InspectorControl,
     session: DesignSession,
     hint: String? = null,
+    /** AU2 A-03/A-04：当前状态下不生效时置灰并在下面写一句原因。 */
+    enabled: Boolean = true,
+    disabledReason: String? = null,
+    /** 生效下限（例如底部留白的短边 8.5% 地板，AU2 A-07）。 */
+    effectiveMin: Float? = null,
 ) {
     val raw = (session.value(control) as? Number)?.toFloat()
         ?: (control.initial as? ControlValue.Num)?.value
         ?: 0f
-    val min = control.min ?: 0f
+    val declaredMin = control.min ?: 0f
     val max = control.max ?: 100f
+    val min = effectiveMin?.takeIf { it > declaredMin }?.coerceAtMost(max) ?: declaredMin
     val scale = control.unitScale.takeIf { it > 0f } ?: 1f
     val modified = session.isModified(control)
     PhoneSliderRow(
         label = phoneControlLabel(control),
-        value = raw,
+        value = raw.coerceIn(min, max),
         valueRange = min..max,
         defaultValue = phoneDeclaredDefault(control),
         step = control.step,
         unit = control.unit,
         modified = modified,
         onValueChange = { next -> session.set(control, next) },
-        onReset = if (modified) {
+        onReset = if (modified && enabled) {
             { session.resetControl(control) }
         } else {
             null
@@ -350,6 +378,8 @@ private fun PhoneControlSlider(
         hint = hint,
         scale = scale,
         decimals = phoneDecimalsOf(control.step?.let { it * scale }),
+        enabled = enabled,
+        disabledReason = disabledReason,
     )
 }
 

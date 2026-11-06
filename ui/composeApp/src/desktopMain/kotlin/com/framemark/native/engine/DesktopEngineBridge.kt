@@ -321,9 +321,24 @@ class DesktopEngineBridge(
         // Preview dimensions are finalized by the native engine. Applying maxEdge
         // again here would both add ImageIO work and scale the report twice.
         val requested = if (mode == "export") longEdge else null
-        val scale = if (requested != null && requested in 1 until rawEdge) requested.toDouble() / rawEdge else 1.0
+        // D-1: 「指定长边」是**归一**，不是「只缩不放」。以前这里要求
+        // `requested in 1 until rawEdge`，于是 1600×1245 的画布选 2048 导出仍然是
+        // 1600×1245，而顶栏/弹层按长边算出 2048 —— 三处互相矛盾。现在与
+        // `OutputSize.applyLongEdge`（右栏/顶栏/手机/弹层共用）逐字一致：
+        // 目标 ≠ 当前长边就按 `目标/当前` 缩放，放大也用同一个 bicubic 重采样。
+        val scale = if (requested != null && requested > 0 && requested != rawEdge) {
+            requested.toDouble() / rawEdge
+        } else {
+            1.0
+        }
         val outW = (rep.width * scale).roundToInt().coerceAtLeast(1)
         val outH = (rep.height * scale).roundToInt().coerceAtLeast(1)
+        if (mode == "export") {
+            println(
+                "FM_EXPORT_SCALE card=$cardId raw=${rep.width}x${rep.height} " +
+                    "requested=${requested ?: "-"} scale=${r3(scale)} out=${outW}x${outH}",
+            )
+        }
 
         val target = File(
             outputPath ?: File(work, "preview-$cardId-$id.${if (mode == "preview") "png" else format ?: "png"}").path,

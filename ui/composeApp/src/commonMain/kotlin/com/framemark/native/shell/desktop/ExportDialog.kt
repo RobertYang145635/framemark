@@ -254,6 +254,11 @@ fun DesktopExportDialog(
     overlay: () -> OverlaySpec?,
     onDismiss: () -> Unit,
     autoRun: Boolean = false,
+    /**
+     * 成片画布（未按长边缩放），由 Shell 用与右栏/顶栏同一个 [OutputSize] 算好传进来。
+     * 为 null 时退回「预览照片框占比」的测量估算（厂商规格卡没有画布参数）。
+     */
+    canonicalCanvas: com.framemark.native.inspector.OutputPixels? = null,
 ) {
     val scope = rememberCoroutineScope()
     val platform = WorkflowEnv.platform
@@ -276,13 +281,15 @@ fun DesktopExportDialog(
     val editable = card != null && NativeEngine.supportsExport(card.id)
     val canExport = editable && qualityError == null && longEdgeError == null && !exporting
     val qualityValue = ExportRules.parseQuality(qualityText) ?: ExportRules.QUALITY_DEFAULT
-    val canvas = ExportEstimate.canvas(
+    // 画布优先用 Shell 传来的同一份公式结果；只有拿不到时才退回测量估算。
+    val measuredCanvas = ExportEstimate.canvas(
         photoWidthPx = photo?.widthPx ?: 0,
         photoHeightPx = photo?.heightPx ?: 0,
         previewPhotoBox = frame?.box,
         previewWidthPx = frame?.width ?: 0,
         previewHeightPx = frame?.height ?: 0,
     )
+    val canvas = canonicalCanvas?.let { ExportPixels(it.width, it.height) } ?: measuredCanvas
     val outPixels = ExportEstimate.output(canvas, settings.sizeMode, effectiveLongEdge)
 
     fun runExport() {
@@ -294,9 +301,28 @@ fun DesktopExportDialog(
         scope.launch {
             try {
                 val snapshot = design ?: DesignSnapshot(target.id, target.systemStyle, emptyMap(), emptyMap())
-                val effective = settings.copy(
-                    quality = ExportRules.effectiveQuality(qualityText, settings.format, settings.webpLossless),
-                    longEdge = effectiveLongEdge,
+                // 读**当下**的设置，而不是首次组合时闭包里捕获的那份：导出弹层可以在
+                // 项目水合（`session.setExportSilently`）之前就打开（证据钩子
+                // `FM_OPEN_EXPORT` 就是这样），用旧值会把「指定长边」当成原尺寸，
+                // D-1 复现里就是这么发生的。
+                // 长边与质量都不再读闭包里的文本框状态：`onLongEdgeText` /
+                // `onQualityText` 每次合法输入都会先写回 `session.export`，那份才是
+                // 唯一的当下值（文本状态对象在重组后可能已经被替换）。
+                val current = session.export
+                val effective = current.copy(
+                    quality = ExportRules.effectiveQuality(
+                        current.quality.toString(),
+                        current.format,
+                        current.webpLossless,
+                    ),
+                )
+                // D-1/D-2 的证据行：一次导出把「界面显示」「实际下单」两套数都打出来，
+                // 出片后再用像素/字节/SHA 对账。
+                println(
+                    "FM_DESKTOP_EXPORT_RUN card=${target.id} format=${current.format.extension} " +
+                        "quality=${effective.quality} sizeMode=${current.sizeMode} " +
+                        "longEdge=${effective.effectiveLongEdge ?: "-"} " +
+                        "photo=${photo?.widthPx ?: 0}x${photo?.heightPx ?: 0}",
                 )
                 val produced = NativeEngine.export(
                     card = target,
@@ -402,6 +428,11 @@ fun DesktopExportDialog(
                             longEdgeError = longEdgeError,
                             directory = outputDirectory,
                             pixels = outPixels,
+                            crop = ExportEstimate.cropEstimate(
+                                photoWidthPx = photo?.widthPx ?: 0,
+                                photoHeightPx = photo?.heightPx ?: 0,
+                                previewPhotoBox = frame?.box,
+                            ),
                             cardName = card?.name ?: "边框",
                             photoStem = ExportNaming.photoStem(photo?.displayName ?: photo?.path),
                             photoIndex = photoIndex,
@@ -584,6 +615,8 @@ private fun ExportFormColumn(
     longEdgeError: String?,
     directory: String,
     pixels: ExportPixels?,
+    /** 原尺寸档会不会被模板裁掉照片（A-19）；null = 不会裁。 */
+    crop: CropEstimate?,
     cardName: String,
     photoStem: String?,
     photoIndex: Int,
@@ -650,12 +683,21 @@ private fun ExportFormColumn(
                     }
                     Spacer(Modifier.height(4.dp))
                     DlgNote(
-                        longEdgeError ?: "把长边缩到所选像素后再编码；1 – 20000。",
+                        longEdgeError ?: "长边归一到所选像素后再编码（小于该值时放大）；1 – 20000。",
                         error = longEdgeError != null,
                     )
+                    if (crop != null) {
+                        DlgNote(crop.text)
+                    }
                 } else {
                     Spacer(Modifier.height(4.dp))
-                    DlgNote("保留照片原始像素，画布随边框扩展。")
+                    // AU2 A-19：固定比例模板会按自己的版式裁照片，`--fit native` 被
+                    // 引擎拒绝后回退到裁切；这里在**导出前**就说实话，不再只写在结果页。
+                    if (crop != null) {
+                        DlgNote(crop.text)
+                    } else {
+                        DlgNote("保留照片原始像素，画布随边框扩展。")
+                    }
                 }
             }
         }

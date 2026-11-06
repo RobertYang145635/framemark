@@ -106,24 +106,36 @@ internal fun CuratedPage(
 }
 
 /**
- * 导出尺寸 for a live card: `core.js:203 outSize` — the photo width, and the photo
- * height plus the footer band (unless the layout overlays the text on the photo).
+ * 导出尺寸 for a live card — `core.js:203 outSize`, and the **only** place the UI
+ * turns a design into pixels.
+ *
+ * AU2 A-06/A-07: this used to re-derive the height inline (`toInt()` truncation,
+ * no 8.5 % short-side floor, no `borderPct`), so the rail said `2666` where the
+ * engine wrote `2667` and `2667` where a personal-sign card writes `2774`. It now
+ * delegates to [OutputSize], which mirrors the engine's own `layout()`; the top
+ * bar and the phone use the same function, so all three read the same number.
+ *
  * Null when the photo's pixel size has not been wired into the rail yet.
  */
 @Composable
 internal fun curatedOutputSize(
     controls: List<InspectorControl>,
     session: DesignSession,
-): Pair<Int, Int>? {
+): Pair<Int, Int>? = curatedOutputPixels(controls, session)?.let { it.width to it.height }
+
+/** [curatedOutputSize] without the tuple unpacking (phone/rail both want pixels). */
+@Composable
+internal fun curatedOutputPixels(
+    controls: List<InspectorControl>,
+    session: DesignSession,
+): OutputPixels? {
     val photo = LocalCuratedPhotoSize.current ?: return null
-    val mode = footerModeControlOf(controls)?.let { session.value(it).toString() }
-    val pct = footerPctControlOf(controls)
-        ?.let { (session.value(it) as? Number)?.toFloat() }
-        ?: 0f
-    val height = if (mode == "overlay") photo.heightPx else {
-        (photo.heightPx + photo.widthPx * pct / 100f).toInt()
-    }
-    return photo.widthPx to height
+    return OutputSize.canvas(
+        photoWidthPx = photo.widthPx,
+        photoHeightPx = photo.heightPx,
+        controls = controls,
+        value = { control -> session.value(control) },
+    )
 }
 
 /** 边框规格（厂商规格卡）— read-only: 画布 / 照片区 / 文字 / 来源 + 说明。 */
@@ -181,10 +193,9 @@ internal fun CuratedTextPane(
     textSlots: CuratedTextSlots? = null,
 ) {
     val slotRows = classicTextRows(textSlots)
-    val fontScale = controls.firstOrNull { control ->
-        control.type == ControlType.Slider &&
-            (control.param == "fontScale" || control.param.endsWith(".fontScale"))
-    }
+    // AU2 A-05: 注册表把 `text.fontScale` 归一成 consumer `fontScale`，桌面与手机
+    // 必须用同一个判定（[fontScaleControlOf]），否则手机那页永远少一条滑杆。
+    val fontScale = fontScaleControlOf(controls)
     if (slotRows.isNotEmpty()) {
         CuratedSlotTextPane(
             rows = slotRows,

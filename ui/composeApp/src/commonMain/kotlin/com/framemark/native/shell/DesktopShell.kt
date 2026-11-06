@@ -107,6 +107,8 @@ import com.framemark.native.inspector.InspectorModelFactory
 import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
+import com.framemark.native.inspector.OutputPixels
+import com.framemark.native.inspector.OutputSize
 import com.framemark.native.inspector.SectionCard
 import com.framemark.native.inspector.SectionCardShell
 import com.framemark.native.inspector.WatermarkSection
@@ -158,6 +160,7 @@ import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.workflow.DesktopWatermarkPanel
 import com.framemark.native.workflow.DesignSession
+import com.framemark.native.workflow.ExportSettings
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.InMemoryProjectHolder
 import com.framemark.native.workflow.NativeEngine
@@ -1138,6 +1141,15 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     photo = activePhoto,
                     photoIndex = projects.photoIndex(projects.activePhotoId),
                     overlay = { projects.overlaySpec() },
+                    // AU2 A-06/A-19：弹层的「约 W × H」也用同一份画布公式
+                    // （右栏 / 顶栏 / 手机 / 弹层 / 桥接），不再用预览帧的照片框占比
+                    // 反推——固定比例模板那里会多算一截（1664 × 1283 vs 真值 1131）。
+                    canonicalCanvas = stageCanvasPixels(
+                        model = (panelModel ?: model)?.takeIf { it.cardId == exportCard?.id },
+                        session = session,
+                        photo = activePhoto,
+                        rendered = IntSize.Zero,
+                    ),
                     autoRun = LaunchOptions.runSampleExport,
                     onDismiss = { exportSheetOpen = false },
                 )
@@ -1662,6 +1674,8 @@ private fun DesktopColumnLayout(
                             onWidth = { projects.updateWatermark(width = it) },
                             onOpacity = { projects.updateWatermark(opacity = it) },
                             onPosition = { dx, dy -> projects.updateWatermark(dx = dx, dy = dy) },
+                            // AU2 A-11：rotation 全链路都在，以前只是缺入口。
+                            onRotation = { degrees -> projects.updateWatermark(rotation = degrees) },
                             assetName = projects.watermark()?.asset?.name,
                             onUpload = {
                                 val path = projects.pickWatermark()
@@ -1914,10 +1928,19 @@ private fun EditStage(
     var zoom by remember { mutableFloatStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
     var stagePx by remember { mutableStateOf(IntSize.Zero) }
-    // 渲染帧的像素尺寸。演示稿 meta 要「→ 导出 W × H」，而导出画布与渲染帧是同一个
-    // 设计、宽高比一致，所以这个尺寸就是那三个数字的来源（见 exportSizeLabel）。
+    // 渲染帧的像素尺寸：只在参数族未知的卡片上给「→ 导出 W × H」兜底（见
+    // stageExportPixels）。已知参数族的尺寸不再依赖它，所以窗口宽度不会改数字。
     var renderedPx by remember { mutableStateOf(IntSize.Zero) }
     var comparing by remember { mutableStateOf(false) }
+
+    // AU2 A-06：顶栏的导出尺寸与右栏「导出尺寸」、手机样式页共用 [OutputSize]。
+    val exportPixels = stageExportPixels(
+        model = model?.takeIf { it.cardId == card?.id },
+        session = session,
+        photo = projects.activePhoto,
+        rendered = renderedPx,
+        settings = projects.exportSettingsForUi(),
+    )
 
     LaunchedEffect(projects.activePhotoId) {
         // A hold-compare cannot survive the photo it was comparing.
@@ -2106,11 +2129,7 @@ private fun EditStage(
                 originalSize = metaPhoto
                     ?.takeIf { it.widthPx > 0 && it.heightPx > 0 }
                     ?.let { "${it.widthPx} × ${it.heightPx}" },
-                exportSize = exportSizeLabel(
-                    photo = metaPhoto,
-                    rendered = if (previewed != null) IntSize.Zero else renderedPx,
-                    longEdge = projects.exportSettingsForUi().effectiveLongEdge,
-                ),
+                exportSize = exportSizeLabel(exportPixels),
                 modifier = Modifier.align(Alignment.TopStart),
             )
             DesktopStageStatusTag(
@@ -2243,29 +2262,49 @@ private fun DesktopNativeStage(
 }
 
 /**
- * 「→ 导出 W × H」。
+ * 舞台顶栏的导出像素。
  *
- * 导出画布与舞台上的渲染帧是同一个设计（同一套边距与文字带），宽高比一致；所以
- * 导出高度 = 照片原宽 × 帧比例，与演示稿 `outSize()` 同源。指定长边时按长边归一。
- * 取不到渲染帧（首帧之前）或照片没有尺寸时返回 null —— 宁可不写，也不写一个猜的
- * 数字。
+ * AU2 A-06：这里过去按**渲染帧的宽高比**反推（`photo.width × frameAspect`），
+ * 与右栏 `curatedOutputSize` 的公式各算一遍，于是同一屏上出现 2666 / 2667 两种说法。
+ * 现在已知参数族（`brand_footer` / `personal_border`）的卡片一律走 [OutputSize]，
+ * 与右栏、手机、导出长边换算同式；只有参数族未知的卡片（厂商规格 / 比例模板）
+ * 才退回渲染帧的**测量**宽高比 —— 那是实测值，不是第二套公式。
+ *
+ * 取不到照片尺寸或渲染帧时返回 null —— 宁可不写，也不写一个猜的数字。
  */
-private fun exportSizeLabel(photo: PhotoRef?, rendered: IntSize, longEdge: Int?): String? {
+internal fun stageExportPixels(
+    model: InspectorCardModel?,
+    session: DesignSession,
+    photo: PhotoRef?,
+    rendered: IntSize,
+    settings: ExportSettings,
+): OutputPixels? = OutputSize.applyLongEdge(
+    stageCanvasPixels(model, session, photo, rendered),
+    settings.sizeMode,
+    settings.effectiveLongEdge,
+)
+
+/**
+ * 同一张卡的**未缩放**画布像素：右栏「导出尺寸」、顶栏、手机样式页与导出弹层
+ * 共用它。已知参数族走 [OutputSize]，未知族才用渲染帧的测量宽高比兜底。
+ */
+internal fun stageCanvasPixels(
+    model: InspectorCardModel?,
+    session: DesignSession,
+    photo: PhotoRef?,
+    rendered: IntSize,
+): OutputPixels? {
     if (photo == null || photo.widthPx <= 0) return null
-    if (rendered.width <= 0 || rendered.height <= 0) return null
-    val frameAspect = rendered.height.toFloat() / rendered.width // 高 / 宽
-    var width = photo.widthPx
-    var height = Math.round(width * frameAspect)
-    if (longEdge != null && longEdge > 0) {
-        val longest = maxOf(width, height)
-        if (longest > 0 && longest != longEdge) {
-            val scale = longEdge.toFloat() / longest
-            width = Math.round(width * scale)
-            height = Math.round(height * scale)
-        }
+    val controls = model?.controls.orEmpty()
+    return if (OutputSize.familyOf(controls) != OutputSize.Family.PhotoOnly) {
+        OutputSize.canvas(photo.widthPx, photo.heightPx, controls) { session.value(it) }
+    } else {
+        OutputSize.measuredCanvas(photo.widthPx, rendered.width, rendered.height)
     }
-    return "$width × $height"
 }
+
+/** 「→ 导出 W × H」。null 时不写这一行。 */
+private fun exportSizeLabel(pixels: OutputPixels?): String? = pixels?.toString()
 
 /** The visible ~30 dp stage pill; callers wrap it in a ≥40 dp hit box. */
 @Composable

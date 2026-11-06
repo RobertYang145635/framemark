@@ -35,8 +35,16 @@ class DesktopWorkflowPlatform(
     override val canChooseExportDirectory: Boolean get() = true
     override val jpegQualityAdjustable: Boolean get() = true
 
-    override fun preferredJpegQuality(): Int = preferences.getProperty("jpegQuality")?.toIntOrNull()
-        ?.takeIf { it in 60..100 } ?: 100
+    /**
+     * D-2：`local-export.properties` 里的 `jpegQuality`。
+     *
+     * [configuredJpegQuality] 区分「没写过」（null，工程值说了算）与「写了 100」，
+     * 好让 `exportSettingsForUi()` 只在真有本机偏好时覆盖工程文档里的质量。
+     */
+    override fun configuredJpegQuality(): Int? =
+        preferences.getProperty("jpegQuality")?.toIntOrNull()?.takeIf { it in 60..100 }
+
+    override fun preferredJpegQuality(): Int = configuredJpegQuality() ?: 100
 
     private fun savePreference(key: String, value: String) {
         val next = java.util.Properties().apply { putAll(preferences); setProperty(key, value) }

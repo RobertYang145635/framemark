@@ -43,6 +43,9 @@ import com.framemark.native.theme.fmElevated
 import com.framemark.native.workflow.WatermarkSpec
 import kotlin.math.abs
 
+/** 水印旋转滑杆的编辑区间（模型允许 ±180，编辑只开放常用段）。 */
+private const val WATERMARK_ROTATION_RANGE = 45f
+
 /**
  * WP-C §4.4: the 水印 page — nine-cell grid, then only the margins that cell
  * allows, then width and opacity.
@@ -65,6 +68,11 @@ fun WatermarkPane(
     onWidth: (Float) -> Unit,
     onOpacity: (Float) -> Unit,
     onPosition: (dx: Float, dy: Float) -> Unit,
+    /**
+     * 旋转（度）。null = 调用方这一轮不开放旋转，滑杆不出现（AU2 A-11）。
+     * 桌面与手机都接了这个入口。
+     */
+    onRotation: ((Float) -> Unit)? = null,
     modifier: Modifier = Modifier,
     assetName: String? = null,
     onUpload: (() -> Unit)? = null,
@@ -265,6 +273,42 @@ fun WatermarkPane(
                 unit = "%",
                 onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
             )
+        }
+
+        // AU2 A-11：`rotation` 全链路都在（模型 / 落库 / 引擎 `--overlay-angle`），
+        // 但以前没有任何入口，两处构造都硬写 0。这里接出 −45..45° 的滑杆
+        // （模型本身允许 ±180，编辑区间收窄到常用范围，避免误拖成倒置）。
+        if (onRotation != null) {
+            val angle = spec.rotation.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE)
+            val label = "旋转"
+            val onChange: (Float) -> Unit = { raw ->
+                onRotation(raw.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE))
+            }
+            if (dense) {
+                FmTouchSliderRow(
+                    label = label,
+                    value = angle,
+                    min = -WATERMARK_ROTATION_RANGE,
+                    max = WATERMARK_ROTATION_RANGE,
+                    step = 1f,
+                    default = 0f,
+                    unit = "°",
+                    onValueChange = onChange,
+                    decimalPlaces = 0,
+                )
+            } else {
+                FmDesktopSliderRow(
+                    label = label,
+                    value = angle,
+                    min = -WATERMARK_ROTATION_RANGE,
+                    max = WATERMARK_ROTATION_RANGE,
+                    step = 1f,
+                    default = 0f,
+                    unit = "°",
+                    onValueChange = onChange,
+                    decimalPlaces = 0,
+                )
+            }
         }
 
         CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")

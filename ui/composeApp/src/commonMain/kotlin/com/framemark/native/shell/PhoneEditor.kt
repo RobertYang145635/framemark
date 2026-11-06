@@ -721,6 +721,10 @@ fun PhoneEditorScreen(
                                             onPosition = { dx, dy ->
                                                 watermark?.let { onWatermarkChange(it.copy(dx = dx, dy = dy)) }
                                             },
+                                            // AU2 A-11：手机与桌面共用同一个入口。
+                                            onRotation = { degrees ->
+                                                watermark?.let { onWatermarkChange(it.copy(rotation = degrees)) }
+                                            },
                                             onUpload = onPickWatermark,
                                             onClear = { onWatermarkChange(null) },
                                             dense = true,

@@ -207,6 +207,9 @@ fun PhoneSliderRow(
     sliderValue: Float = value,
     sliderRange: ClosedFloatingPointRange<Float> = valueRange,
     onSliderValueChange: (Float) -> Unit = onValueChange,
+    /** AU2 A-03/A-04：当前状态下不生效时置灰，并在下面写一句原因。 */
+    enabled: Boolean = true,
+    disabledReason: String? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -293,9 +296,18 @@ fun PhoneSliderRow(
             step = step,
             onReset = onReset,
             touch = true,
+            enabled = enabled,
             valueText = { phoneFormatValue(it * scale, decimals) + (unit ?: "") },
             modifier = Modifier.fillMaxWidth(),
         )
+        if (!enabled) {
+            Text(
+                text = disabledReason ?: "暂不可调",
+                style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                color = FmPalette.onSurfaceMuted,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
     }
 }
 
