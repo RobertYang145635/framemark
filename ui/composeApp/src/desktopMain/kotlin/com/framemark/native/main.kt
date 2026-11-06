@@ -130,6 +130,7 @@ fun main() = application {
         LaunchOptions.editorItem = System.getenv("FM_EDITOR_ITEM")?.toIntOrNull()
         LaunchOptions.openPresetSheet = System.getenv("FM_OPEN_PRESETS") == "1"
         LaunchOptions.openExportSheet = System.getenv("FM_OPEN_EXPORT") == "1"
+        LaunchOptions.logoPage = System.getenv("FM_LOGO_PAGE")?.takeIf { it.isNotBlank() }
         LaunchOptions.runSampleExport = System.getenv("FM_RUN_EXPORT") == "1"
         LaunchOptions.openBatch = System.getenv("FM_OPEN_BATCH") == "1"
         LaunchOptions.batchCount = System.getenv("FM_BATCH_COUNT")?.toIntOrNull() ?: LaunchOptions.batchCount
