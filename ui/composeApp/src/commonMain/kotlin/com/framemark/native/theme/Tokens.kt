@@ -453,6 +453,69 @@ object FmType {
         fontWeight = FontWeight.Medium,
         letterSpacing = 0.sp,
     )
+
+    // ---- 演示稿桌面字号（PARITY-SPEC §1 / `10-spec.png` "字体"卡）----------------
+    //
+    // 上面 22/17/15/13/12 是 V06 的手机端尺度，**保持原样**（手机端在用）。
+    // 桌面区按演示稿补一套 16/15/14/12.5/12/11/10.5；数值文本另用 [FmNumeric]。
+    // 13 sp 正文没有新增成员：现有 [bodyMedium] 就是 13 / Normal，行高 19 与演示稿
+    // `13px/1.55`≈20 同档，重复造一个只会让两处慢慢分叉。
+
+    /** 16 / 700：右栏检查器标题（`.ihead h3`，16px/700）。 */
+    val desktopHeading = TextStyle(
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.sp,
+    )
+
+    /** 15 / 700：顶栏词标「框印」（`.wordmark`，15px/700）。 */
+    val desktopWordmark = TextStyle(
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.sp,
+    )
+
+    /** 14 / 500：左栏页签（`.utabs button` 14px；选中态由调用点加 600）。 */
+    val desktopTab = TextStyle(
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.sp,
+    )
+
+    /** 12.5 / 500：chip、段控按钮、次要按钮（`.chip` / `.seg button`）。 */
+    val desktopChip = TextStyle(
+        fontSize = 12.5.sp,
+        lineHeight = 17.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.sp,
+    )
+
+    /** 12 / 400：说明与标签（`.proj .saved`、`.strip .sinfo`、舞台上 meta 的中文）。 */
+    val desktopCaption = TextStyle(
+        fontSize = 12.sp,
+        lineHeight = 17.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = 0.sp,
+    )
+
+    /** 11 / 400：次级说明（页签计数后的说明、分组 note）。 */
+    val desktopFootnote = TextStyle(
+        fontSize = 11.sp,
+        lineHeight = 15.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = 0.sp,
+    )
+
+    /** 10.5 / 500：胶片条编号行（`.frame .fl`；数字本身用 [FmNumeric.frameNumber]）。 */
+    val desktopFrameNumber = TextStyle(
+        fontSize = 10.5.sp,
+        lineHeight = 13.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.sp,
+    )
 }
 
 object FmSpacing {
@@ -573,8 +636,114 @@ object FmDesktop {
     /** V2: the left rail folds down to a 52 px strip (UI report §6). */
     val collapsedWidth = 52.dp
 
-    val filmstripHeight = 120.dp
+    /** 胶片条高 96（`styles.css` 418 行 `.strip`，PARITY-SPEC §2D）。 */
+    val filmstripHeight = 96.dp
+
+    /** 胶片条帧缩略图高 56、圆角 6；「+ 添加」是 56×56（`.frame .fimg` / `.frame.add`）。 */
+    val filmstripFrameHeight = 56.dp
+    val filmstripAddSize = 56.dp
+
+    // ---- 顶栏（`styles.css` 98-108 `.appbar`；PARITY-SPEC §2A）------------------
+
+    /** `padding: 0 14px 0 16px`。 */
+    val topBarPadStart = 16.dp
+    val topBarPadEnd = 14.dp
+
+    /** 中间 segmented 宽 220（PARITY-SPEC §2A 第 4 条）。 */
+    val topBarSegWidth = 220.dp
+
+    /** 词标 mark 26×26、圆角 7；竖线 1×20（`.mark` / `.vsep`）。 */
+    val topBarMarkSize = 26.dp
+    val topBarMarkRadius = 7.dp
+    val topBarSeparatorHeight = 20.dp
+
+    // ---- 舞台（`styles.css` 350-380；PARITY-SPEC §2C）--------------------------
+
+    /** 照片区留白 `--pad: 56px 64px 84px`（`.stage-area`）。 */
+    val stagePadTop = 56.dp
+    val stagePadSide = 64.dp
+    val stagePadBottom = 84.dp
+
+    /** meta `left:16 top:14`；status 胶囊 `right:14 top:12`、高 26。 */
+    val stageMetaStart = 16.dp
+    val stageMetaTop = 14.dp
+    val stageStatusEnd = 14.dp
+    val stageStatusTop = 12.dp
+    val stageStatusHeight = 26.dp
+
+    /** 底部悬浮工具条：`bottom:18`、圆角 12、内边距 4、按钮 h30 / min-w30。 */
+    val stageToolbarBottom = 18.dp
+    val stageToolbarRadius = 12.dp
+    val stageToolbarInset = 4.dp
+    val stageToolbarHeight = 30.dp
+    val stageToolbarMinWidth = 30.dp
+
+    /** 缩放值读数宽 46（`.stage-tb .zl { min-width: 46px }`）。 */
+    val stageZoomLabelWidth = 46.dp
+
+    /** 工具条里的分隔线 1×18、灰阶圆点 16（`.stage-tb .sep` / `.tones button`）。 */
+    val stageToolbarSeparatorHeight = 18.dp
+    val stageToneDotSize = 16.dp
 }
+
+/**
+ * 舞台悬浮层配色（`styles.css` 358-377；PARITY-SPEC §2C）。
+ *
+ * 演示稿把这三个叠层写成 `rgba(20,21,24,.55)`（status 胶囊）、
+ * `rgba(24,25,28,.72)`（底部工具条）和几档 `rgba(255,255,255,.07/.10/.14/.16)`
+ * （描边、hover、按下、分隔线）。它们都叠在 `--stage-dark #2B2C2F` 上，而舞台底色
+ * 在浅色与深色外观下都是同一个值 —— 所以这里用 [FmColors.stageDark] /
+ * [FmColors.stageInk] 作底、按比例压暗后给 alpha，既不引入新的品牌色，也不会
+ * 因为切换外观而漂移（深色模式下工具条不该比浅色模式更暗）。
+ */
+object FmStageChrome {
+    /** status 胶囊底：`#141518` 的 55 %。 */
+    val pill: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.dimmedStage(0.47f).copy(alpha = 0.55f)
+
+    /** 底部工具条底：`#18191C` 的 72 %（`.stage-tb`）。 */
+    val bar: Color
+        @Composable @ReadOnlyComposable get() = LocalFmColors.current.dimmedStage(0.56f).copy(alpha = 0.72f)
+
+    /** 工具条 `box-shadow: 0 0 0 1px rgba(255,255,255,.07)`。 */
+    val barOutline: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stageInk.copy(alpha = 0.07f)
+
+    /** `.tb:hover` → `rgba(255,255,255,.10)`。 */
+    val barHover: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stageInk.copy(alpha = 0.10f)
+
+    /** `.tb.on, .tb:active` → `rgba(255,255,255,.16)`。 */
+    val barPressed: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stageInk.copy(alpha = 0.16f)
+
+    /** `.stage-tb .sep` → `rgba(255,255,255,.14)`。 */
+    val barSeparator: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stageInk.copy(alpha = 0.14f)
+
+    /** 灰阶圆点的内描边 `inset 0 0 0 1px rgba(255,255,255,.25)`。 */
+    val toneOutline: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stageInk.copy(alpha = 0.25f)
+
+    /** 选中圆点的白环 `0 0 0 3.5px #fff`。 */
+    val toneSelected: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.onPrimary
+
+    /**
+     * 「原图 · 松开恢复」提示：`background: rgba(255,255,255,.92); color: var(--ink)`
+     * —— 白底深字。文字色取 [FmColors.stageDark] 而不是 `onSurface`：这块白片不管
+     * 外观如何都画在舞台的深色底上，深色模式下 `onSurface` 是浅色，会在白片上消失。
+     */
+    val flagSurface: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.onPrimary.copy(alpha = 0.92f)
+
+    val flagInk: Color
+        @Composable @ReadOnlyComposable get() = FmPalette.stage
+}
+
+/** 舞台底色按比例压暗：`stageDark × factor`，alpha 交给调用点（叠在舞台上）。 */
+private fun FmColors.dimmedStage(factor: Float): Color =
+    Color(stageDark.red * factor, stageDark.green * factor, stageDark.blue * factor)
 
 /**
  * Bottom-nav geometry from U1a (dp values transfer density-independently).

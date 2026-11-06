@@ -1,9 +1,8 @@
 package com.framemark.native.shell.desktop
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,31 +36,40 @@ import com.framemark.native.theme.AppearancePicker
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
 /**
- * V2 顶栏：52 dp 单行，左端项目，中间 编辑 / 批量导出，右端撤销重做 / 导入 / 导出 / 齿轮。
+ * 顶栏（`styles.css` 98-108 `.appbar`；PARITY-SPEC §2A）。
  *
- * 齿轮弹层里放 WP-T 的 [AppearancePicker]（WP-C 合并后会替换它内部实现，签名不变）。
- * 预设入口移到左栏“预设”页签（报告 §5 决定 5），所以这里不再有第三段导航。
+ * 结构照演示稿从左到右：
+ * `mark + 框印` │ `项目名 ▾ ● 已自动保存` ⟷ `编辑 / 批量导出` ⟷ `撤销 重做 │ 导入照片 导出[Ctrl E] ⚙`。
+ *
+ * 三列是 `minmax(0,1fr) auto minmax(0,1fr)`：两侧各吃一半剩余空间，中间的段控
+ * 因此永远在窗口正中，与两侧按钮数量无关（演示稿正是靠这个 grid 把 220 px 的
+ * 模式段控钉在中间的）。
+ *
+ * 齿轮弹层里放 WP-T 的 [AppearancePicker]（WP-C 合并后会替换它内部实现，签名不变）；
+ * 项目卡的下拉是演示稿 `.proj` 上那个 chevron 的真实去处 —— 保存预设、恢复当前设计、
+ * 帮助与两侧栏开关都收在里面，所以顶栏本身不再有演示稿没有的 `⋯` 按钮。
  */
 @Composable
 fun DesktopTopBarV2(
-    cardName: String?,
-    photoCount: Int,
+    /** 项目名；模型里 `Project` 没有名称字段，调用点给「未命名项目」。 */
+    projectName: String,
+    /** 自动保存徽标（决定圆点颜色与文案）。 */
+    saveState: DesktopSaveState,
     batchMode: Boolean,
     canUndo: Boolean,
     canRedo: Boolean,
-    inspectorVisible: Boolean,
     onSelectEdit: () -> Unit,
     onSelectBatch: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onAddPhoto: () -> Unit,
     onOpenExport: () -> Unit,
+    onSavePreset: () -> Unit,
+    onResetDesign: () -> Unit,
     onOpenHelp: () -> Unit,
-    onShowParams: () -> Unit,
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
 ) {
@@ -70,154 +77,143 @@ fun DesktopTopBarV2(
         modifier = Modifier
             .fillMaxWidth()
             .height(FmDesktop.topBarHeight)
-            .padding(horizontal = FmSpacing.md),
+            .background(FmPalette.surface)
+            .padding(start = FmDesktop.topBarPadStart, end = FmDesktop.topBarPadEnd),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("FrameMark", style = FmType.titleSmall, color = FmPalette.onSurface, maxLines = 1)
-        Spacer(Modifier.width(FmSpacing.sm))
-        Box(Modifier.width(1.dp).height(18.dp).background(FmPalette.outline))
-        Spacer(Modifier.width(FmSpacing.sm))
-        Text(
-            text = if (photoCount > 0) "$photoCount 张照片 · ${cardName ?: "未选边框"}" else "未导入照片",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 300.dp),
-        )
-        Spacer(Modifier.width(FmSpacing.lg))
-        SegmentedNav(batchMode = batchMode, onSelectEdit = onSelectEdit, onSelectBatch = onSelectBatch)
-        Spacer(Modifier.weight(1f))
+        // 左组：词标 │ 项目卡（1fr，长名字省略成 …）
         Row(
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TopHistoryButton(label = "↶", description = "撤销", enabled = canUndo, onClick = onUndo)
-            TopHistoryButton(label = "↷", description = "重做", enabled = canRedo, onClick = onRedo)
-            TopAction(label = "导入", onClick = onAddPhoto)
-            if (!inspectorVisible) TopAction(label = "参数", onClick = onShowParams)
-            TopAction(label = "导出", primary = true, onClick = onOpenExport)
-            TopOverflowMenu(
+            Wordmark()
+            Spacer(Modifier.width(6.dp))
+            DeskVsep()
+            Spacer(Modifier.width(6.dp))
+            ProjectChip(
+                projectName = projectName,
+                saveState = saveState,
+                onSavePreset = onSavePreset,
+                onResetDesign = onResetDesign,
                 onOpenHelp = onOpenHelp,
                 onToggleLeft = onToggleLeft,
                 onToggleRight = onToggleRight,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        DeskSegmented(
+            options = listOf("编辑", "批量导出"),
+            selectedIndex = if (batchMode) 1 else 0,
+            modifier = Modifier.width(FmDesktop.topBarSegWidth),
+            onSelect = { if (it == 0) onSelectEdit() else onSelectBatch() },
+        )
+        Spacer(Modifier.width(12.dp))
+        // 右组：撤销 重做 │ 导入照片 导出 ⚙（右对齐）
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            DeskIconButton(
+                description = "撤销",
+                enabled = canUndo,
+                onClick = onUndo,
+            ) { DeskHistoryGlyph(redo = false, tint = if (canUndo) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint) }
+            DeskIconButton(
+                description = "重做",
+                enabled = canRedo,
+                onClick = onRedo,
+            ) { DeskHistoryGlyph(redo = true, tint = if (canRedo) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint) }
+            Spacer(Modifier.width(2.dp))
+            DeskVsep()
+            Spacer(Modifier.width(2.dp))
+            DeskButton(
+                label = "导入照片",
+                leading = { DeskTransferGlyph(export = false, tint = FmPalette.onSurfaceSecondary) },
+                onClick = onAddPhoto,
+            )
+            DeskButton(
+                label = if (batchMode) "开始导出" else "导出",
+                style = DeskButtonStyle.Primary,
+                leading = { DeskTransferGlyph(export = true, tint = FmPalette.onPrimary) },
+                kbd = "Ctrl E",
+                onClick = onOpenExport,
             )
             AppearanceGear()
         }
     }
 }
 
-@Composable
-private fun SegmentedNav(
-    batchMode: Boolean,
-    onSelectEdit: () -> Unit,
-    onSelectBatch: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .height(32.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.surfaceMuted)
-            .padding(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        NavSegment("编辑", selected = !batchMode, onClick = onSelectEdit)
-        NavSegment("批量导出", selected = batchMode, onClick = onSelectBatch)
-    }
-}
+/** 顶栏的自动保存状态：绿点=已保存，警告点=没存上/只读。 */
+enum class DesktopSaveState { Saved, Pending, Failed }
 
 @Composable
-private fun NavSegment(label: String, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .height(28.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(if (selected) FmPalette.surface else androidx.compose.ui.graphics.Color.Transparent)
-            .clickable(onClick = onClick)
-            .padding(horizontal = FmSpacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
+private fun Wordmark() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        DeskBrandMark()
+        Spacer(Modifier.width(9.dp))
         Text(
-            text = label,
-            style = FmType.labelMedium,
-            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
-            maxLines = 1,
-        )
-    }
-}
-@Composable
-private fun TopAction(label: String, primary: Boolean = false, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(FmRadii.pill)
-    Box(
-        modifier = Modifier
-            .height(32.dp)
-            .clip(shape)
-            .background(if (primary) FmPalette.primary else FmPalette.surface)
-            .border(1.dp, if (primary) androidx.compose.ui.graphics.Color.Transparent else FmPalette.outline, shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = FmSpacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = FmType.labelMedium,
-            color = if (primary) FmPalette.onPrimary else FmPalette.onSurfaceSecondary,
+            text = "框印",
+            style = FmType.desktopWordmark,
+            color = FmPalette.onSurface,
             maxLines = 1,
         )
     }
 }
 
+/**
+ * `.proj`：项目名 600 + chevron + `● 已自动保存`，padding 5×8、圆角 8、hover 上浮。
+ * 下拉里是设计/项目级动作，对应演示稿 `.proj` 上那个 chevron。
+ */
 @Composable
-private fun TopHistoryButton(
-    label: String,
-    description: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(FmRadii.input))
-            .background(if (enabled) FmPalette.surfaceMuted else androidx.compose.ui.graphics.Color.Transparent)
-            .clickable(enabled = enabled, onClick = onClick)
-            .semantics {
-                contentDescription = description
-                role = Role.Button
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = FmType.titleSmall,
-            color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
-        )
-    }
-}
-
-/** ⋯：帮助与两侧栏的显示/折叠；主操作不藏进来。 */
-@Composable
-private fun TopOverflowMenu(
+private fun ProjectChip(
+    projectName: String,
+    saveState: DesktopSaveState,
+    onSavePreset: () -> Unit,
+    onResetDesign: () -> Unit,
     onOpenHelp: () -> Unit,
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
+    val (source, hovered) = rememberDeskHover()
     Box {
-        Box(
+        Row(
             modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(FmRadii.input))
-                .clickable { open = true }
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(if (hovered || open) FmPalette.hover else androidx.compose.ui.graphics.Color.Transparent)
+                .hoverable(source)
+                .clickable(interactionSource = source, indication = null, onClick = { open = true })
                 .semantics {
-                    contentDescription = "更多"
+                    contentDescription = "项目：$projectName"
                     role = Role.Button
-                },
-            contentAlignment = Alignment.Center,
+                }
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("⋯", style = FmType.titleMedium, color = FmPalette.onSurfaceMuted)
+            Text(
+                text = projectName,
+                // `.proj b`：跟随 `.appbar` 的 14 px，权重 600。
+                style = FmType.desktopTab.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                color = FmPalette.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 260.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            ChevronDown(tint = FmPalette.onSurfaceSecondary)
+            Spacer(Modifier.width(4.dp))
+            SavedBadge(state = saveState)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text("保存预设…", style = FmType.bodyMedium) },
+                onClick = { open = false; onSavePreset() },
+            )
+            DropdownMenuItem(
+                text = { Text("恢复当前设计…", style = FmType.bodyMedium) },
+                onClick = { open = false; onResetDesign() },
+            )
             DropdownMenuItem(
                 text = { Text("帮助与快捷键（F1）", style = FmType.bodyMedium) },
                 onClick = { open = false; onOpenHelp() },
@@ -234,38 +230,65 @@ private fun TopOverflowMenu(
     }
 }
 
+/** `● 已自动保存`：6 px 圆点 + 12 px `ink-4` 文案（`.proj .saved::before`）。 */
+@Composable
+private fun SavedBadge(state: DesktopSaveState) {
+    val dot = when (state) {
+        DesktopSaveState.Saved -> FmPalette.success
+        DesktopSaveState.Pending -> FmPalette.warning
+        DesktopSaveState.Failed -> FmPalette.error
+    }
+    val label = when (state) {
+        DesktopSaveState.Saved -> "已自动保存"
+        DesktopSaveState.Pending -> "保存中…"
+        DesktopSaveState.Failed -> "保存失败"
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(6.dp).clip(RoundedCornerShape(FmRadii.pill)).background(dot))
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = FmType.desktopCaption,
+            color = FmPalette.onSurfaceFaint,
+            maxLines = 1,
+        )
+    }
+}
+
+/** `.proj` 后面的下拉 chevron（14 px）。 */
+@Composable
+private fun ChevronDown(tint: androidx.compose.ui.graphics.Color) {
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(14.dp)) {
+        val stroke = 1.5.dp.toPx()
+        val w = size.width
+        val h = size.height
+        drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.24f, h * 0.42f), androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.64f), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.64f), androidx.compose.ui.geometry.Offset(w * 0.76f, h * 0.42f), stroke, androidx.compose.ui.graphics.StrokeCap.Round)
+    }
+}
+
 /** 顶栏右端的齿轮：弹层里是外观三选一（演示稿 `08-desktop-gear.png`）。 */
 @Composable
 private fun AppearanceGear() {
     var open by remember { mutableStateOf(false) }
     Box {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(FmRadii.input))
-                .background(FmPalette.surfaceMuted)
-                .clickable { open = true }
-                .semantics {
-                    contentDescription = "外观设置"
-                    role = Role.Button
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("⚙", style = FmType.titleMedium, color = FmPalette.onSurfaceSecondary)
-        }
+        DeskIconButton(
+            description = "外观设置",
+            active = open,
+            onClick = { open = true },
+        ) { DeskGearGlyph(tint = FmPalette.onSurfaceSecondary) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            Column(Modifier.width(260.dp).padding(horizontal = FmSpacing.md, vertical = FmSpacing.sm)) {
-                Text("外观", style = FmType.titleSmall, color = FmPalette.onSurface)
-                Spacer(Modifier.height(2.dp))
+            Column(Modifier.width(260.dp).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                Text("外观", style = FmType.desktopHeading, color = FmPalette.onSurface)
+                Spacer(Modifier.height(4.dp))
                 Text(
                     "跟随系统，或固定浅色 / 深色。照片区始终保持深色。",
-                    style = FmType.labelSmall,
+                    style = FmType.desktopCaption,
                     color = FmPalette.onSurfaceMuted,
                 )
-                Spacer(Modifier.height(FmSpacing.sm))
+                Spacer(Modifier.height(8.dp))
                 AppearancePicker(modifier = Modifier.fillMaxWidth())
             }
         }
     }
 }
-
