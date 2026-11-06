@@ -55,15 +55,22 @@ class PhoneEditorSheetHeightsTest {
     }
 
     @Test
-    fun the_half_screen_floor_is_what_caps_the_border_sheet() {
-        // 844 - 52 - 62 - 422 = 308: the compact border sheet is capped by the floor,
-        // not by the 326 dp design target, so the stage is exactly half the window.
+    fun the_border_sheet_is_exactly_as_tall_as_its_card_stack() {
+        // WP-P1-2 changed the compact border sheet from "the 326 dp design target capped
+        // by the floor" to "the card stack's own height": 844 - 52 - 62 - 300 = 430 dp of
+        // stage. The stage still keeps more than half the window and the sheet no longer
+        // carries a dead band (was 308 dp, i.e. 11 dp short of the 319 dp stack, which is
+        // what cut the card names in half on the device).
         val h = computePhoneEditorHeights(844f, 1f, false, EditorTool.Border, false, false)
-        assertEquals(308f, h.sheet, 0.01f)
-        assertEquals(422f, h.stage, 0.01f)
+        assertEquals(300f, h.sheet, 0.01f)
+        assertEquals(430f, h.stage, 0.01f)
+        assertTrue(
+            phoneCompactSheetMetrics(h.sheet).contentHeight <= h.sheet + 0.01f,
+            "the sheet must hold the 128 dp card and its name",
+        )
 
         val levels = assertNotNull(phoneSheetLevels(844f, EditorTool.Border, false, false))
-        assertEquals(308f, levels.compact, 0.01f)
+        assertEquals(300f, levels.compact, 0.01f)
         assertTrue(levels.expanded > levels.compact, "expanded=${levels.expanded} compact=${levels.compact}")
         val expandedStage = 844f - 52f - 62f - levels.expanded
         assertTrue(expandedStage >= 844f * 0.26f - 0.01f, "expanded stage=$expandedStage")

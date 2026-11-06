@@ -374,7 +374,7 @@ fun PhoneEditorScreen(
         )
         // The expanded level of the two-level sheet (null when the window is too
         // short for a usable sheet, in which case the budget keeps the full page).
-        val levels = phoneSheetLevels(maxHeight.value, tool, photosOpen, small)
+        val levels = phoneSheetLevels(maxHeight.value, tool, photosOpen, small, density.fontScale)
         val autoFullParameterPage = budget.fullPage
         LaunchedEffect(autoFullParameterPage) {
             if (!autoFullParameterPage) fullParametersDismissed = false
@@ -395,6 +395,13 @@ fun PhoneEditorScreen(
         val topBarH = heights.topBar.dp
         val stripH = heights.strip.dp
         val toolBarH = heights.toolBar.dp
+        // WP-P1-2: the 收起 sheet carries its own vertical stack (handle, title row,
+        // category row, chip row, strip padding, name line). The budget that decided
+        // the sheet height and the composables that draw it read the same numbers, so
+        // "128 dp 卡片 + 一行名称 fits" and "舞台 ≥ 50 %" are one calculation. It is
+        // keyed on the compact level, so dragging or expanding cannot resize the chrome
+        // under the finger.
+        val sheetMetrics = phoneCompactSheetMetrics(heights.sheet, density.fontScale)
         val fullHeaderH = (52f * density.fontScale.coerceIn(1f, 1.5f)).dp
         val keyboardController = LocalSoftwareKeyboardController.current
         fun closeFullParametersOrHideKeyboard() {
@@ -582,6 +589,7 @@ fun PhoneEditorScreen(
                         val pageModified = phoneToolModified(tool, tabModel)
                         if (!fullParameterPage) {
                             PhoneSheetGrabber(
+                                height = sheetMetrics.grabber.dp,
                                 onToggle = {
                                     sheetDragPx = null
                                     sheetExpanded = !sheetExpanded
@@ -612,6 +620,7 @@ fun PhoneEditorScreen(
                                 },
                                 modified = pageModified,
                                 expanded = sheetExpanded,
+                                height = sheetMetrics.head.dp,
                                 onToggleExpanded = {
                                     sheetDragPx = null
                                     sheetExpanded = !sheetExpanded
@@ -654,6 +663,7 @@ fun PhoneEditorScreen(
                                 index = libraryIndex,
                                 selectedCardId = card?.id,
                                 expanded = sheetExpanded || fullParameterPage,
+                                metrics = sheetMetrics,
                                 categoryKey = borderCategory,
                                 onCategoryChange = { borderCategory = it },
                                 query = borderQuery,
