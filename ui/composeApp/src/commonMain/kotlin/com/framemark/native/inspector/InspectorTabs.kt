@@ -77,7 +77,8 @@ data class InspectorTabModel(
  * Page membership rules, copied from the showcase `tabOf`:
  *  - brand pickers, `logo*` keys, a `vendor` key and the words 标志 / 字标 go to
  *    Logo;
- *  - text controls and `text.*` keys go to 文字;
+ *  - text controls, `text.*` keys and renderer-backed text rows (`native_text_slot`
+ *    / `params.slotText|slotOff|slotScale`) go to 文字;
  *  - everything else goes to 样式.
  */
 internal fun inspectorPageOf(control: InspectorControl): InspectorPage {
@@ -89,7 +90,11 @@ internal fun inspectorPageOf(control: InspectorControl): InspectorPage {
             param.endsWith("vendor") ||
             label.contains("标志") ||
             label.contains("字标") -> InspectorPage.Logo
-        control.kind == "text" || param.startsWith("text.") -> InspectorPage.Text
+        control.kind == "text" || param.startsWith("text.") ||
+            control.kind == "native_text_slot" ||
+            param.startsWith("params.slotText:") ||
+            param.startsWith("params.slotOff:") ||
+            param.startsWith("params.slotScale:") -> InspectorPage.Text
         else -> InspectorPage.Style
     }
 }
@@ -238,6 +243,18 @@ fun InspectorDesktopTabBar(
 }
 
 /**
+ * D1-3: the stable renderer slot key a text control reports focus for. Only the
+ * free-text row owns focus (`params.slotText:<key>`); switches and sliders of the
+ * same row must not steal the stage frame. Extracted so the routing is testable.
+ */
+internal fun textSlotFocusKey(control: InspectorControl): String? =
+    if (control.type == ControlType.Text && control.param.startsWith("params.slotText:")) {
+        control.param.removePrefix("params.slotText:")
+    } else {
+        null
+    }
+
+/**
  * Page body shared by the desktop rail and the phone sheet. Sections keep the
  * engine grouping title only when a page carries more than one section.
  *
@@ -251,6 +268,13 @@ fun InspectorPageContent(
     modifier: Modifier = Modifier,
     dense: Boolean = false,
     watermarkPane: (@Composable () -> Unit)? = null,
+    /**
+     * WP-D1 D1-3: optional text-row focus reporter. `ControlType.Text` rows whose
+     * param is `params.slotText:<key>` report the stable renderer slot key (null
+     * on blur), so the stage can frame the row being edited. Default null keeps
+     * every existing caller unchanged.
+     */
+    onTextSlotFocus: ((String?) -> Unit)? = null,
 ) {
     if (tab.page == InspectorPage.Watermark) {
         watermarkPane?.invoke()
@@ -290,7 +314,16 @@ fun InspectorPageContent(
                             .background(FmPalette.outline),
                     )
                 }
-                ControlItem(control = control, session = session, dense = dense)
+                val slotFocusKey = textSlotFocusKey(control)
+                val focusReporter: ((Boolean) -> Unit)? = slotFocusKey?.let { key ->
+                    { focused: Boolean -> onTextSlotFocus?.invoke(if (focused) key else null) }
+                }
+                ControlItem(
+                    control = control,
+                    session = session,
+                    dense = dense,
+                    onTextFocusChanged = focusReporter,
+                )
             }
         }
     }

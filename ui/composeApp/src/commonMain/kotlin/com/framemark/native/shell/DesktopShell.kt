@@ -125,6 +125,7 @@ import com.framemark.native.library.RecentFramesEnv
 import com.framemark.native.shell.desktop.DesktopLibraryFilters
 import com.framemark.native.shell.desktop.DesktopLibraryPanel
 import com.framemark.native.shell.desktop.DesktopStageStatusTag
+import com.framemark.native.shell.desktop.DesktopStageCapsuleReservedHeight
 import com.framemark.native.shell.desktop.DesktopStageToneTool
 import com.framemark.native.shell.desktop.DesktopTopBarV2
 import com.framemark.native.shell.desktop.DesktopTrial
@@ -934,7 +935,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     tabModel = tabModel,
                     paramsPage = paramsPage,
                     onSelectPage = { paramsPage = it },
-                    onTextSlotFocus = { focusedTextSlotKey = it },
+                    onTextSlotFocus = { key ->
+                        focusedTextSlotKey = key
+                        println("FM_TEXT_FOCUS key=${key ?: "-"} page=${paramsPage.name}")
+                    },
                     highlightedTextSlotKey = focusedTextSlotKey,
                     stageMode = stageMode,
                     projects = projects,
@@ -1567,6 +1571,7 @@ private fun DesktopColumnLayout(
                             tab = pageTab,
                             session = session,
                             modifier = Modifier.fillMaxWidth(),
+                            onTextSlotFocus = onTextSlotFocus,
                         )
                     }
                 }
@@ -1967,7 +1972,9 @@ private fun EditStage(
             if (previewed != null) {
                 // 悬停 0.4 秒后的预览：直接显示这张卡的打包预览图，不切换选中项。
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(FmSpacing.lg),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = DesktopStageCapsuleReservedHeight),
                     contentAlignment = Alignment.Center,
                 ) {
                     LibraryPreview(
@@ -1981,6 +1988,8 @@ private fun EditStage(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        // 适合窗口时先扣掉底部悬浮胶囊，成品（含底部边框带）完整露出。
+                        .padding(bottom = DesktopStageCapsuleReservedHeight)
                         .graphicsLayer {
                             scaleX = zoom
                             scaleY = zoom
