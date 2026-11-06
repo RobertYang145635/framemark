@@ -25,30 +25,83 @@ data class PhoneEditorHeights(
     val fullPage: Boolean,
 )
 
-/** Single-layer top bar: file name, photo counter, 预设, 导出, 更多. */
-private const val TOP_BAR_DP = 48f
+/**
+ * Single dark top bar (V2 report §7.2): 返回, 照片切换, 撤销 / 重做, 导出.
+ * The demo `.ptop` is 52 px on a 412 dp wide screen, i.e. 52 dp.
+ */
+private const val TOP_BAR_DP = 52f
 
-/** Five-tool bottom bar (4 when the card has no Logo capability). */
-private const val TOOL_BAR_DP = 52f
+/** Five-tool bottom bar (4 when the card has no Logo capability), V2 report §7.3. */
+private const val TOOL_BAR_DP = 62f
 
 /** Expanded photo strip; collapsed costs nothing. */
 private const val STRIP_DP = 64f
 
-/** The stage never gives up more than this share of the window. */
-private const val STAGE_MIN_FRACTION = 0.28f
+/**
+ * Compact (收起) sheet floor: the stage keeps at least half of the window
+ * (hand-off part 2 §4 WP-P1, report §13 P1 acceptance "舞台高度 ≥ 屏幕 50%").
+ * V06 used 0.28 and a 3-step sheet; V2 is a two-step sheet.
+ */
+private const val STAGE_MIN_FRACTION = 0.50f
+
+/** Expanded (展开) sheet: the stage keeps at least this share of the window. */
+private const val EXPANDED_STAGE_MIN_FRACTION = 0.26f
 
 /** Below this the sheet is not usable: fall back to the full parameter page. */
 private const val MIN_SHEET_DP = 120f
 
-/** Border browser: four rows (分类/厂商/系列/款式) plus the status line. */
-private const val BORDER_SHEET_DP = 320f
+/** Border browser compact level: 一行类别 + 一行分组 + the 128 dp card strip. */
+private const val BORDER_SHEET_DP = 326f
+
+/** Expanded sheet target, i.e. the demo's 478 px on an 886 px tall screen. */
+private const val EXPANDED_SHEET_FRACTION = 0.54f
+
+/** The two levels of the V2 parameter sheet. */
+data class PhoneSheetLevels(val compact: Float, val expanded: Float)
 
 /**
- * Area budget of the V06 phone editor. `fullPage` keeps the existing
- * [useFullPhoneParameterPage] rule (<480 dp, fontScale >= 1.5, visible IME); a
- * window too short for a usable sheet falls back to it as well. No value is ever
- * negative, and top/stage/strip/sheet/bar always fit inside [availableHeightDp],
- * so the caller can lay them out without another coerceIn.
+ * Two-level sheet of the V2 phone editor: 收起 (compact, the default: category row
+ * + group row + the card strip) and 展开 (the 3-column grid).
+ *
+ * `null` means the window cannot hold a usable compact sheet above the 50 % stage
+ * reserve; the caller then keeps the full parameter page. The compact level is
+ * capped so the stage keeps [STAGE_MIN_FRACTION] of the window, which is what the
+ * 390×844 / 360×800 / 412×915 acceptance checks.
+ */
+fun phoneSheetLevels(
+    availableHeightDp: Float,
+    tool: EditorTool,
+    photosOpen: Boolean,
+    small: Boolean,
+): PhoneSheetLevels? {
+    val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
+    val strip = if (photosOpen) STRIP_DP else 0f
+    val chrome = TOP_BAR_DP + TOOL_BAR_DP + strip
+    val compactMax = available - chrome - available * STAGE_MIN_FRACTION
+    if (compactMax < MIN_SHEET_DP) return null
+    val compact = compactSheetTarget(available, tool, small).coerceIn(MIN_SHEET_DP, compactMax)
+    val expandedMax = (available - chrome - available * EXPANDED_STAGE_MIN_FRACTION)
+        .coerceAtLeast(compact)
+    val expanded = (available * EXPANDED_SHEET_FRACTION).coerceIn(compact, expandedMax)
+    return PhoneSheetLevels(compact = compact, expanded = expanded)
+}
+
+/** Height the compact sheet aims for on this tool, before the 50 % stage cap. */
+private fun compactSheetTarget(available: Float, tool: EditorTool, small: Boolean): Float = when (tool) {
+    EditorTool.Border -> BORDER_SHEET_DP
+    EditorTool.Params -> available * (if (small) 0.34f else 0.36f)
+    EditorTool.Text -> available * (if (small) 0.40f else 0.42f)
+    EditorTool.Logo -> available * (if (small) 0.34f else 0.38f)
+    EditorTool.Watermark -> available * (if (small) 0.38f else 0.40f)
+}
+
+/**
+ * Area budget of the V2 phone editor at the sheet's **compact** level.
+ * `fullPage` keeps the existing [useFullPhoneParameterPage] rule (<480 dp,
+ * fontScale >= 1.5); a window too short for a usable sheet falls back to it as
+ * well. No value is ever negative, and top/stage/strip/sheet/bar always fit
+ * inside [availableHeightDp], so the caller can lay them out without another
+ * coerceIn.
  */
 fun computePhoneEditorHeights(
     availableHeightDp: Float,
@@ -62,22 +115,10 @@ fun computePhoneEditorHeights(
     if (useFullPhoneParameterPage(available, fontScale, imeVisible)) {
         return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     }
+    val levels = phoneSheetLevels(available, tool, photosOpen, small)
+        ?: return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     val strip = if (photosOpen) STRIP_DP else 0f
-    val stageMin = available * STAGE_MIN_FRACTION
-    val maxSheet = (available - TOP_BAR_DP - TOOL_BAR_DP - strip - stageMin).coerceAtLeast(0f)
-    if (maxSheet < MIN_SHEET_DP) {
-        return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
-    }
-    val target = when (tool) {
-        // 320 dp holds 分类 + 厂商 + 系列 + status + the 96 dp style row on 360/390.
-        EditorTool.Border -> BORDER_SHEET_DP
-        EditorTool.Params -> available * (if (small) 0.34f else 0.36f)
-        EditorTool.Text -> available * (if (small) 0.40f else 0.42f)
-        EditorTool.Logo -> available * (if (small) 0.34f else 0.38f)
-        EditorTool.Watermark -> available * (if (small) 0.38f else 0.40f)
-    }
-    val sheet = target.coerceIn(MIN_SHEET_DP, maxSheet)
-    val stage = available - TOP_BAR_DP - TOOL_BAR_DP - strip - sheet
+    val stage = available - TOP_BAR_DP - TOOL_BAR_DP - strip - levels.compact
     if (stage <= 0f) {
         return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     }
@@ -85,14 +126,14 @@ fun computePhoneEditorHeights(
         topBar = TOP_BAR_DP,
         stage = stage,
         strip = strip,
-        sheet = sheet,
+        sheet = levels.compact,
         toolBar = TOOL_BAR_DP,
         fullPage = false,
     )
 }
 
 /**
- * Smallest window that can still show the 48 dp top bar, 52 dp tool bar, a
+ * Smallest window that can still show the 52 dp top bar, 62 dp tool bar, a
  * usable stage and a scrollable parameter sheet after the user leaves the
  * constrained full-parameter page. Below this the full page is the only valid
  * layout and must stay.
