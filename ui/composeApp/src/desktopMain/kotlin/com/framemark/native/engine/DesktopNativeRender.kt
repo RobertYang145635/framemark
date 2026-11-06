@@ -3,6 +3,7 @@ package com.framemark.native.engine
 import com.framemark.native.inspector.LogoBrandCatalog
 import com.framemark.native.product.Base64Codec
 import com.framemark.native.workflow.DesignSnapshot
+import com.framemark.native.workflow.ImageRect
 import com.framemark.native.workflow.NativeImage
 import com.framemark.native.workflow.NativeRenderApi
 import com.framemark.native.workflow.OverlaySpec
@@ -121,6 +122,9 @@ class DesktopNativeRender(
                 result.width,
                 result.height,
                 result.ms,
+                photoRect = result.photoRect.takeIf { it.size >= 4 }?.let {
+                    ImageRect(it[0].toFloat(), it[1].toFloat(), it[2].toFloat(), it[3].toFloat())
+                },
                 note = result.warnings.firstOrNull { it.contains("不支持完整原尺寸") },
             )
         }

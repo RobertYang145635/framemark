@@ -37,6 +37,9 @@ import com.framemark.native.theme.LocalAppearance
 import com.framemark.native.theme.LocalFmColors
 import com.framemark.native.theme.StageTone
 
+/** V2：舞台底部悬浮胶囊（原图 / 适合 / 100% / 底色）占用的高度。 */
+val DesktopStageCapsuleReservedHeight = 56.dp
+
 /** 舞台底色：读 WP-T 的外观设置，三档（深灰 / 中灰 / 浅灰）。 */
 @Composable
 fun desktopStageBackdrop(): androidx.compose.ui.graphics.Color =

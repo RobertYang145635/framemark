@@ -210,6 +210,8 @@ internal fun FmDesktopSliderRow(
     enabled: Boolean = true,
     disabledReason: String? = null,
     onReset: (() -> Unit)? = null,
+    /** D1-3: fixed decimals for the value box (watermark margins use 1). */
+    decimalPlaces: Int = 3,
 ) {
     val modified = FmSliderMath.isModified(value, default)
     Column(modifier = modifier.fillMaxWidth()) {
@@ -239,6 +241,7 @@ internal fun FmDesktopSliderRow(
                 unit = unit,
                 label = label,
                 enabled = enabled,
+                decimalPlaces = decimalPlaces,
                 modifier = Modifier.width(76.dp),
                 onCommit = onValueChange,
             )
@@ -300,6 +303,8 @@ internal fun FmTouchSliderRow(
     enabled: Boolean = true,
     disabledReason: String? = null,
     onReset: (() -> Unit)? = null,
+    /** D1-3: fixed decimals in the drag bubble (watermark margins use 1). */
+    decimalPlaces: Int = 3,
 ) {
     val modified = FmSliderMath.isModified(value, default)
     Column(modifier = modifier.fillMaxWidth()) {
@@ -348,7 +353,7 @@ internal fun FmTouchSliderRow(
                     step = step,
                     onReset = onReset,
                     touch = true,
-                    valueText = { FmUnits.displayText(it, unit, scale) },
+                    valueText = { FmUnits.formatNumber(it * scale, decimalPlaces) + (unit ?: "") },
                 )
             }
             FmNudgeButton(
@@ -407,14 +412,16 @@ internal fun FmNumberBox(
     enabled: Boolean,
     onCommit: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    /** D1-3: fixed decimals (1/2); 3 keeps the historical rule. */
+    decimalPlaces: Int = 3,
 ) {
-    val display = FmUnits.formatNumber(value * scale)
+    val display = FmUnits.formatNumber(value * scale, decimalPlaces)
     var text by remember(value) { mutableStateOf(display) }
     var focused by remember { mutableStateOf(false) }
     fun commit() {
         val next = FmSliderMath.parseTyped(text, value, min, max, scale)
         onCommit(next)
-        text = FmUnits.formatNumber(next * scale)
+        text = FmUnits.formatNumber(next * scale, decimalPlaces)
     }
     BasicTextField(
         value = text,
@@ -441,7 +448,7 @@ internal fun FmNumberBox(
                 Box(modifier = Modifier.weight(1f)) {
                     if (text.isEmpty()) {
                         Text(
-                            text = FmUnits.formatNumber(value * scale),
+                            text = FmUnits.formatNumber(value * scale, decimalPlaces),
                             style = FmType.labelMedium,
                             color = FmPalette.onSurfaceFaint,
                         )
