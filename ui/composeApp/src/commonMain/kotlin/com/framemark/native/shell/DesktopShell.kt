@@ -90,6 +90,7 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.FeelProbe
 import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.BorderSection
+import com.framemark.native.inspector.EditorTabList
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorDataSource
 import com.framemark.native.inspector.InspectorLoadState
@@ -106,9 +107,27 @@ import com.framemark.native.inspector.applyDemoEdits
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
 import com.framemark.native.library.LibraryFilterState
+import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryScreen
+import com.framemark.native.library.LibraryTraversal
+import com.framemark.native.library.RecentFrames
+import com.framemark.native.shell.desktop.DesktopLibraryFilters
+import com.framemark.native.shell.desktop.DesktopLibraryPanel
+import com.framemark.native.shell.desktop.DesktopStageStatusTag
+import com.framemark.native.shell.desktop.DesktopStageToneTool
+import com.framemark.native.shell.desktop.DesktopTopBarV2
+import com.framemark.native.shell.desktop.DesktopTrial
+import com.framemark.native.shell.desktop.OtherPhotoDesign
+import com.framemark.native.shell.desktop.PlatformRecentFramesStore
+import com.framemark.native.shell.desktop.desktopStageBackdrop
+import com.framemark.native.shell.desktop.DesktopCollapsedRail
+import com.framemark.native.shell.desktop.DesktopFilmstrip
+import com.framemark.native.shell.desktop.DesktopInspectorRail
+import com.framemark.native.shell.desktop.DesktopPane
+import com.framemark.native.shell.desktop.DesktopStageEmptyState
+import com.framemark.native.shell.desktop.HairlineEdge
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
@@ -221,6 +240,41 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     val focusRequester = remember { FocusRequester() }
     var selectedCard by remember { mutableStateOf<LibraryCard?>(null) }
 
+    // V2 左栏：筛选状态、最近使用、悬停预览与逐个试的撤销合并。
+    val desktopFilters = remember { DesktopLibraryFilters() }
+    val recentStore = remember { WorkflowEnv.platform?.let { PlatformRecentFramesStore(it) } }
+    var recentIds by remember { mutableStateOf<List<String>>(emptyList()) }
+    var hoverCard by remember { mutableStateOf<LibraryCard?>(null) }
+    var trialState by remember { mutableStateOf(DesktopTrial.UndoStep.Empty) }
+    var trialNotice by remember { mutableStateOf<String?>(null) }
+    var holdOriginal by remember { mutableStateOf(false) }
+    var librarySearchFocused by remember { mutableStateOf(false) }
+    var sampleImportAttempted by remember { mutableStateOf(false) }
+
+    // §4.6：FM_SAMPLE_PHOTO=1 且项目里还没有照片时，导入平台自带的示例照片。
+    // 项目文件会持久化，所以下一次启动 photos 非空，不会重复导入。
+    LaunchedEffect(projects.loaded) {
+        if (!projects.loaded) return@LaunchedEffect
+        val platform = WorkflowEnv.platform ?: return@LaunchedEffect
+        val path = platform.samplePhotoPath()
+        if (DesktopTrial.shouldImportSamplePhoto(
+                flagEnabled = LaunchOptions.samplePhoto,
+                hasPhotos = projects.photos.isNotEmpty(),
+                alreadyAttempted = sampleImportAttempted,
+                samplePath = path,
+            )
+        ) {
+            sampleImportAttempted = true
+            val report = projects.importPhotos(listOf(path!!))
+            println("FM_SAMPLE_PHOTO imported=${report.added} failed=${report.failures.size} path=$path")
+        }
+    }
+    LaunchedEffect(trialNotice) {
+        if (trialNotice == null) return@LaunchedEffect
+        kotlinx.coroutines.delay(4000)
+        trialNotice = null
+    }
+
     // Renderer-backed text rows belong to one card/photo pair. Replacing the
     // registry with the selection keeps an old report out of the next frame
     // synchronously; an in-flight render can only finish into its old instance.
@@ -237,6 +291,21 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     var presetSheetOpen by remember { mutableStateOf(false) }
     var exportSheetOpen by remember { mutableStateOf(false) }
     var helpOpen by remember { mutableStateOf(false) }
+
+    val libraryIndex = remember(libraryState) {
+        (libraryState as? LibraryLoadState.Ready)?.snapshot?.let { LibraryIndex.of(it) }
+    }
+    val inUseCardIds = projects.project.designs.values.mapNotNull { it.cardId }.distinct()
+    val trialView = desktopFilters.view(inUseCardIds, recentIds)
+    val trialTraversal = remember(libraryIndex, trialView) {
+        libraryIndex?.traversal(trialView) ?: LibraryTraversal(emptyList())
+    }
+
+    LaunchedEffect(libraryIndex) {
+        val index = libraryIndex ?: return@LaunchedEffect
+        val store = recentStore ?: return@LaunchedEffect
+        recentIds = RecentFrames.load(store, index)
+    }
 
     // §3.1/§3.3: stable key of the text row whose input has focus. The 文字 tab
     // reports it, the stage draws its frame. Every path that swaps what is on
@@ -592,13 +661,89 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             if (tab != DesktopTab.Text || !rightVisible) focusedTextSlotKey = null
         }
 
-        val openCard: (LibraryCard) -> Unit = { card ->
-            FeelProbe.begin("card", card.id)
+        fun applyCardSelection(card: LibraryCard, recordTrial: Boolean) {
+            if (recordTrial) {
+                val previous = selectedCard?.id
+                val now = WorkflowEnv.platform?.nowMillis() ?: 0L
+                trialState = DesktopTrial.recordSwitch(trialState, previous, now)
+                val position = trialTraversal.positionOf(card.id)
+                trialNotice = if (position > 0) {
+                    "${card.name} · 第 $position / ${trialTraversal.size}"
+                } else {
+                    card.name
+                }
+            }
             selectedCard = card
             projects.applyCard(card.id, card.systemStyle)
             stageMode = StageMode.Edit
             tab = DesktopTab.Border
             focusedTextSlotKey = null
+            val index = libraryIndex
+            val store = recentStore
+            if (recordTrial && index != null && store != null) {
+                recentIds = RecentFrames.record(store, card.id, index)
+            }
+        }
+
+        val openCard: (LibraryCard) -> Unit = { card ->
+            FeelProbe.begin("card", card.id)
+            applyCardSelection(card, recordTrial = true)
+        }
+
+        /** ← → 逐个试：按 LibraryIndex 的显示顺序前后各一张。 */
+        fun stepCard(forward: Boolean) {
+            val index = libraryIndex ?: return
+            val nextId = if (forward) {
+                trialTraversal.next(selectedCard?.id)
+            } else {
+                trialTraversal.prev(selectedCard?.id)
+            } ?: return
+            val card = index.card(nextId) ?: return
+            applyCardSelection(card, recordTrial = true)
+            println("FM_TRIAL step=${if (forward) "next" else "prev"} card=${card.id}")
+        }
+
+        /**
+         * 左栏内容：边框数据就绪后走 V2 面板（LibraryIndex + 两页签 + 固定三行筛选），
+         * 加载 / 失败时沿用现有 LibraryScreen 的加载与重试界面。
+         */
+        val libraryContent: @Composable () -> Unit = {
+            val index = libraryIndex
+            if (index == null) {
+                LibraryScreen(
+                    loadState = libraryState,
+                    filters = filters,
+                    gridState = libraryGrid,
+                    onRetry = { libraryReload++ },
+                    onOpenCard = { card -> openCard(card); layout.narrowPane = STAGE_PANE },
+                    rail = true,
+                    selectedCardId = selectedCard?.id,
+                )
+            } else {
+                DesktopLibraryPanel(
+                    index = index,
+                    filters = desktopFilters,
+                    inUseIds = inUseCardIds,
+                    recentIds = recentIds,
+                    selectedCardId = selectedCard?.id,
+                    presets = projects.presets,
+                    onOpenCard = { card -> openCard(card); layout.narrowPane = STAGE_PANE },
+                    onHoverCard = { hoverCard = it },
+                    onApplyPreset = { id ->
+                        if (projects.applyPreset(id)) {
+                            val design = projects.activeDesign
+                            val card = design?.cardId?.let { index.card(it) }
+                            if (card != null) selectedCard = card
+                            importNotice = "已应用预设"
+                        } else {
+                            importNotice = projects.presetError ?: "应用预设失败"
+                        }
+                    },
+                    onOpenPresetSheet = { presetSheetOpen = true },
+                    onCollapse = ::collapseLeft,
+                    onSearchFocusChanged = { librarySearchFocused = it },
+                )
+            }
         }
 
         val addPhoto: () -> Unit = {
@@ -624,6 +769,11 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 .focusable()
                 .onPreviewKeyEvent { event ->
                     if (projects.projectWritesBlocked) return@onPreviewKeyEvent true
+                    if (event.key == Key.Backslash) {
+                        // 按住 `\` 看原图（报告 §6）：按下显示原图，松开恢复。
+                        holdOriginal = event.type == KeyEventType.KeyDown
+                        return@onPreviewKeyEvent true
+                    }
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen
                     if (event.key == Key.Escape) {
@@ -636,6 +786,32 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         return@onPreviewKeyEvent true
                     }
                     if (sheetOpen) return@onPreviewKeyEvent false
+
+                    // ← → 逐个试（报告 §6）：顺序来自 LibraryIndex.traversal。
+                    // 搜索框有焦点时把方向键让给文字编辑。
+                    if (!librarySearchFocused && !event.isCtrlPressed && !event.isShiftPressed &&
+                        stageMode == StageMode.Edit
+                    ) {
+                        when (event.key) {
+                            Key.DirectionLeft -> {
+                                stepCard(forward = false)
+                                return@onPreviewKeyEvent true
+                            }
+                            Key.DirectionRight -> {
+                                stepCard(forward = true)
+                                return@onPreviewKeyEvent true
+                            }
+                            Key.DirectionUp -> {
+                                stepCard(forward = false)
+                                return@onPreviewKeyEvent true
+                            }
+                            Key.DirectionDown -> {
+                                stepCard(forward = true)
+                                return@onPreviewKeyEvent true
+                            }
+                            else -> Unit
+                        }
+                    }
 
                     if (event.key == Key.F1) {
                         helpOpen = true
@@ -650,9 +826,23 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                             handled
                         }
                         event.key == Key.Z -> {
-                            val handled = session.undo()
-                            if (handled) println("FM_SHORTCUT undo")
-                            handled
+                            // 连续切卡停下 0.7 秒算一步撤销；有挂起的切换时先回到那段
+                            // 切换开始前的那张卡（A-08），否则退回参数撤销。
+                            val anchorId = DesktopTrial.undoAnchor(trialState)
+                            val anchor = anchorId?.let { libraryIndex?.card(it) }
+                            if (anchor != null) {
+                                val left = selectedCard
+                                applyCardSelection(anchor, recordTrial = false)
+                                trialState = DesktopTrial.afterUndo(trialState)
+                                trialNotice = "已撤销：切换到 ${anchor.name}" +
+                                    if (left != null && left.id != anchor.id) "（原：${left.name}）" else ""
+                                println("FM_TRIAL undo card=${anchor.id}")
+                                true
+                            } else {
+                                val handled = session.undo()
+                                if (handled) println("FM_SHORTCUT undo")
+                                handled
+                            }
                         }
                         event.key == Key.Y -> {
                             val handled = session.redo()
@@ -689,30 +879,26 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     .fillMaxSize()
                     .padding(horizontal = FmDesktop.edge, vertical = FmDesktop.edge),
             ) {
-                DesktopTopBar(
-                    card = selectedCard,
-                    mode = stageMode,
+                DesktopTopBarV2(
+                    cardName = selectedCard?.name,
                     photoCount = projects.photos.size,
-                    narrow = columns.compact,
-                    inspectorVisible = rightVisible,
+                    batchMode = stageMode == StageMode.Batch,
                     canUndo = session.history.canUndo,
                     canRedo = session.history.canRedo,
+                    inspectorVisible = rightVisible,
+                    onSelectEdit = { stageMode = StageMode.Edit },
+                    onSelectBatch = { stageMode = StageMode.Batch },
                     onUndo = { session.undo() },
                     onRedo = { session.redo() },
                     onAddPhoto = addPhoto,
-                    onSelectEdit = { stageMode = StageMode.Edit },
-                    onSelectBatch = { stageMode = StageMode.Batch },
-                    presetSheetOpen = presetSheetOpen,
-                    onOpenPresets = {
-                        FeelProbe.begin("preset", "topbar")
-                        presetSheetOpen = true
-                    },
                     onOpenExport = { requestExport() },
                     onOpenHelp = { helpOpen = true },
                     onShowParams = ::openParams,
                     onToggleLeft = ::toggleLeft,
                     onToggleRight = ::toggleRight,
                 )
+                // V2: the 52 dp bar is separated from the workspace by one hairline.
+                Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
                 ProjectStatusBanner(
                     projects = projects,
                     notice = importNotice,
@@ -732,11 +918,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     columns = columns,
                     availableWidthDp = contentWidth.value,
                     layout = layout,
-                    filters = filters,
-                    libraryState = libraryState,
-                    libraryGrid = libraryGrid,
-                    onRetryLibrary = { libraryReload++ },
-                    onOpenCard = openCard,
+                    libraryContent = libraryContent,
                     onCollapseLeft = ::collapseLeft,
                     onExpandLeft = ::expandLeft,
                     onCollapseRight = ::collapseRight,
@@ -758,6 +940,13 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     projects = projects,
                     onAddPhoto = addPhoto,
                     onRemovePhoto = { id -> removeTarget = projects.photos.firstOrNull { it.id == id } },
+                    hoveredCard = hoverCard,
+                    holdOriginal = holdOriginal,
+                    onReuseDesign = { cardId, styleId ->
+                        projects.applyCard(cardId, styleId)
+                        libraryIndex?.card(cardId)?.let { selectedCard = it }
+                    },
+                    onPickBorder = { layout.leftCollapsed = false },
                     onSavePreset = { name ->
                         val saved = projects.savePreset(name)
                         importNotice = if (saved != null) {
@@ -774,6 +963,23 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                             println("FM_DESIGN_RESET ${current.id}")
                         }
                     },
+                )
+            }
+
+            trialNotice?.let { notice ->
+                // A-08：撤销合并的那一刻说明撤销了什么；4 秒后自动消失。
+                Text(
+                    text = notice,
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 96.dp)
+                        .clip(RoundedCornerShape(FmRadii.pill))
+                        .background(FmPalette.surface)
+                        .border(1.dp, FmPalette.outlineStrong, RoundedCornerShape(FmRadii.pill))
+                        .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.sm),
                 )
             }
 
@@ -1174,11 +1380,7 @@ private fun DesktopColumnLayout(
     columns: DesktopColumns,
     availableWidthDp: Float,
     layout: DesktopLayoutState,
-    filters: LibraryFilterState,
-    libraryState: LibraryLoadState,
-    libraryGrid: LazyGridState,
-    onRetryLibrary: () -> Unit,
-    onOpenCard: (LibraryCard) -> Unit,
+    libraryContent: @Composable () -> Unit,
     onCollapseLeft: () -> Unit,
     onExpandLeft: () -> Unit,
     onCollapseRight: () -> Unit,
@@ -1203,8 +1405,60 @@ private fun DesktopColumnLayout(
     onRemovePhoto: (String) -> Unit,
     onSavePreset: (String) -> Unit,
     onResetDesign: () -> Unit,
+    hoveredCard: LibraryCard?,
+    holdOriginal: Boolean,
+    onReuseDesign: (String, String?) -> Unit,
+    onPickBorder: () -> Unit,
 ) {
     val gap = FmDesktop.gap
+
+    /**
+     * 右栏外框（第一阶段）里嵌现有 EditorTabList；水印页沿用 DesktopWatermarkPanel。
+     * 第二阶段换成 WP-C 的页签模型与内容，外框和底栏保留。
+     */
+    fun inspectorRail(collapse: () -> Unit): @Composable () -> Unit = {
+        DesktopInspectorRail(
+            cardName = selectedCard?.name ?: "未选择边框",
+            categoryLine = selectedCard?.categoryName.orEmpty(),
+            renderMode = when {
+                selectedCard == null -> "等待选择"
+                NativeEngine.supports(selectedCard.id) -> "实时渲染"
+                else -> "引擎样张"
+            },
+            tags = listOfNotNull(selectedCard?.badge),
+            tabs = DesktopTab.entries.map { it.label },
+            selectedTab = DesktopTab.entries.indexOf(tab),
+            onSelectTab = { index -> onSelectTab(DesktopTab.entries[index]) },
+            adjustedCount = selectedCard?.id?.let { session.adjustedCount(it) } ?: 0,
+            onResetPage = onResetDesign,
+            onSavePreset = { onSavePreset("${selectedCard?.name ?: "边框"} 预设") },
+            onApplyToOtherPhotos = {
+                println("FM_APPLY_TO_OTHERS unsupported card=${selectedCard?.id ?: "-"}")
+            },
+            onResetAll = onResetDesign,
+            onCollapse = collapse,
+            content = {
+                val section = tab.section
+                if (section == null) {
+                    DesktopWatermarkPanel(projects, modifier = Modifier.fillMaxSize())
+                } else {
+                    EditorTabList(
+                        state = androidx.compose.foundation.lazy.rememberLazyListState(),
+                        tab = section,
+                        model = panelModel,
+                        loadState = inspectorState,
+                        session = session,
+                        onRetry = onRetryInspector,
+                        modifier = Modifier.fillMaxSize(),
+                        textSlots = textSlots.slots,
+                        outputWidth = textSlots.width,
+                        outputHeight = textSlots.height,
+                        onTextSlotFocus = onTextSlotFocus,
+                    )
+                }
+            },
+        )
+    }
 
     if (columns.compact) {
         // Not enough content width for three columns: one pane at a time, chosen
@@ -1227,20 +1481,8 @@ private fun DesktopColumnLayout(
             Spacer(Modifier.height(FmSpacing.sm))
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (pane) {
-                    LIBRARY_PANE -> LibraryScreen(
-                        loadState = libraryState, filters = filters, gridState = libraryGrid,
-                        onRetry = onRetryLibrary,
-                        onOpenCard = { onOpenCard(it); layout.narrowPane = STAGE_PANE },
-                        rail = true, selectedCardId = selectedCard?.id,
-                    )
-                    PARAMS_PANE -> DesktopInspector(
-                        card = selectedCard, model = model, panelModel = panelModel,
-                        textSlots = textSlots, session = session, projects = projects,
-                        inspectorState = inspectorState, onRetry = onRetryInspector, tab = tab,
-                        onSelectTab = onSelectTab, onTextSlotFocus = onTextSlotFocus,
-                        onUndo = onUndo, onRedo = onRedo,
-                        onCollapse = { layout.narrowPane = STAGE_PANE },
-                    )
+                    LIBRARY_PANE -> libraryContent()
+                    PARAMS_PANE -> inspectorRail { layout.narrowPane = STAGE_PANE }()
                     else -> if (stageMode == StageMode.Batch) {
                         ProjectBatchPanel(projects)
                     } else {
@@ -1251,6 +1493,8 @@ private fun DesktopColumnLayout(
                             stageWidthDp = availableWidthDp,
                             onAddPhoto = onAddPhoto, onRemovePhoto = onRemovePhoto,
                             onSavePreset = onSavePreset, onResetDesign = onResetDesign,
+                            hoveredCard = hoveredCard, holdOriginal = holdOriginal,
+                            onReuseDesign = onReuseDesign, onPickBorder = onPickBorder,
                         )
                     }
                 }
@@ -1272,23 +1516,8 @@ private fun DesktopColumnLayout(
             horizontalArrangement = Arrangement.spacedBy(gap),
         ) {
             if (columns.showLeft) {
-                DesktopPanel(width = leftWidth) {
-                    LibraryScreen(
-                        loadState = libraryState,
-                        filters = filters,
-                        gridState = libraryGrid,
-                        onRetry = onRetryLibrary,
-                        onOpenCard = onOpenCard,
-                        rail = true,
-                        headerTrailing = {
-                            ChevronButton(
-                                glyph = "‹",
-                                description = "折叠边框库",
-                                onClick = onCollapseLeft,
-                            )
-                        },
-                        selectedCardId = selectedCard?.id,
-                    )
+                DesktopPanel(width = leftWidth, edge = HairlineEdge.Right) {
+                    libraryContent()
                 }
             } else {
                 CollapsedRail(side = "left", onExpand = onExpandLeft)
@@ -1310,28 +1539,17 @@ private fun DesktopColumnLayout(
                         onRemovePhoto = onRemovePhoto,
                         onSavePreset = onSavePreset,
                         onResetDesign = onResetDesign,
+                        hoveredCard = hoveredCard,
+                        holdOriginal = holdOriginal,
+                        onReuseDesign = onReuseDesign,
+                        onPickBorder = onPickBorder,
                     )
                 }
             }
 
             if (columns.showRight) {
-                DesktopPanel(width = rightWidth) {
-                    DesktopInspector(
-                        card = selectedCard,
-                        model = model,
-                        panelModel = panelModel,
-                        textSlots = textSlots,
-                        session = session,
-                        projects = projects,
-                        inspectorState = inspectorState,
-                        onRetry = onRetryInspector,
-                        tab = tab,
-                        onSelectTab = onSelectTab,
-                        onTextSlotFocus = onTextSlotFocus,
-                        onUndo = onUndo,
-                        onRedo = onRedo,
-                        onCollapse = onCollapseRight,
-                    )
+                DesktopPanel(width = rightWidth, edge = HairlineEdge.Left) {
+                    inspectorRail(onCollapseRight)()
                 }
             } else {
                 CollapsedRail(side = "right", onExpand = onExpandRight)
@@ -1367,21 +1585,14 @@ private fun DesktopColumnLayout(
 private fun DesktopPanel(
     modifier: Modifier = Modifier,
     width: Dp? = null,
+    edge: HairlineEdge = HairlineEdge.None,
     content: @Composable () -> Unit,
 ) {
-    val shape = RoundedCornerShape(FmDesktop.panelRadius)
-    Box(
-        modifier = modifier
-            .then(if (width != null) Modifier.width(width) else Modifier)
-            .fillMaxHeight()
-            .shadow(
-                elevation = FmElevation.card,
-                shape = shape,
-                ambientColor = FmElevation.cardAmbient,
-                spotColor = FmElevation.cardSpot,
-            )
-            .clip(shape)
-            .background(FmPalette.surface),
+    DesktopPane(
+        modifier = modifier,
+        width = width,
+        background = FmPalette.surface,
+        edge = edge,
     ) {
         content()
     }
@@ -1389,31 +1600,7 @@ private fun DesktopPanel(
 
 @Composable
 private fun CollapsedRail(side: String, onExpand: () -> Unit) {
-    val shape = RoundedCornerShape(FmDesktop.panelRadius)
-    Box(
-        modifier = Modifier
-            .width(FmDesktop.collapsedWidth)
-            .fillMaxHeight()
-            .shadow(
-                elevation = FmElevation.card,
-                shape = shape,
-                ambientColor = FmElevation.cardAmbient,
-                spotColor = FmElevation.cardSpot,
-            )
-            .clip(shape)
-            .background(FmPalette.surface)
-            .clickable(onClick = onExpand)
-            .semantics {
-                contentDescription = if (side == "left") "展开边框库" else "展开参数面板"
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = if (side == "left") "›" else "‹",
-            style = FmType.titleMedium,
-            color = FmPalette.primaryStrong,
-        )
-    }
+    DesktopCollapsedRail(side = side, onExpand = onExpand)
 }
 
 @Composable
@@ -1482,6 +1669,10 @@ private fun EditStage(
     onRemovePhoto: (String) -> Unit,
     onSavePreset: (String) -> Unit,
     onResetDesign: () -> Unit,
+    hoveredCard: LibraryCard? = null,
+    holdOriginal: Boolean = false,
+    onReuseDesign: (String, String?) -> Unit = { _, _ -> },
+    onPickBorder: () -> Unit = {},
 ) {
     val native = card != null && NativeEngine.supports(card.id)
     val activeDesign = projects.activeDesign
@@ -1640,6 +1831,7 @@ private fun EditStage(
                         }
                     },
                 )
+                DesktopStageToneTool()
             }
             Spacer(Modifier.width(FmSpacing.xs))
             DesignMenuButton(
@@ -1661,10 +1853,7 @@ private fun EditStage(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(start = FmSpacing.lg, end = FmSpacing.lg, bottom = FmSpacing.md)
-                .clip(RoundedCornerShape(FmRadii.card))
-                // V06: neutral dark photo canvas, no dot matrix / grid decoration.
-                .background(FmPalette.stage)
+                .background(desktopStageBackdrop())
                 .onSizeChanged { stagePx = it }
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
@@ -1697,7 +1886,19 @@ private fun EditStage(
                     )
                 },
         ) {
-            if (projects.photos.isEmpty()) {
+            val previewed = hoveredCard
+            if (previewed != null) {
+                // 悬停 0.4 秒后的预览：直接显示这张卡的打包预览图，不切换选中项。
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(FmSpacing.lg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LibraryPreview(
+                        card = previewed,
+                        modifier = Modifier.fillMaxSize().padding(FmSpacing.md),
+                    )
+                }
+            } else if (projects.photos.isEmpty()) {
                 ImportPlaceholder(onAddPhoto = onAddPhoto)
             } else {
                 Box(
@@ -1719,7 +1920,7 @@ private fun EditStage(
                     when {
                         // Hold-to-compare shows the imported photo itself, never a
                         // rendered frame and never a highlight.
-                        comparing && activePhoto != null -> PhotoThumbnail(
+                        (comparing || holdOriginal) && activePhoto != null -> PhotoThumbnail(
                             path = activePhoto.path,
                             modifier = Modifier.fillMaxSize(),
                             maxEdge = 1600,
@@ -1739,17 +1940,54 @@ private fun EditStage(
                     }
                 }
             }
-            if (comparing) {
+            if (previewed != null) {
+                Tag(
+                    text = "悬停预览 · ${previewed.name}",
+                    modifier = Modifier.align(Alignment.BottomStart).padding(FmSpacing.md),
+                    onSurface = true,
+                )
+            }
+            if (previewed == null) {
+                val activePhoto = projects.activePhoto
+                if (activePhoto != null && projects.activeDesign == null) {
+                    val candidates = projects.photos
+                        .filter { it.id != activePhoto.id }
+                        .mapNotNull { p ->
+                            projects.project.designs[p.id]?.let { design ->
+                                OtherPhotoDesign(p.id, p.displayName, design.cardId, design.styleId)
+                            }
+                        }
+                    DesktopStageEmptyState(
+                        candidates = candidates,
+                        onReuse = onReuseDesign,
+                        onPickBorder = onPickBorder,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            if (comparing || holdOriginal) {
                 Tag(
                     text = "原图 · 对比中",
                     modifier = Modifier.align(Alignment.BottomStart).padding(FmSpacing.md),
                     onSurface = true,
                 )
             }
+            DesktopStageStatusTag(
+                text = when {
+                    comparing || holdOriginal -> "原图对比"
+                    previewed != null -> "悬停预览"
+                    projects.activePhoto != null && activeDesign == null -> "未应用边框"
+                    native -> "实时预览"
+                    card != null -> "引擎样张"
+                    else -> "占位"
+                },
+                live = native,
+                modifier = Modifier.align(Alignment.TopEnd).padding(FmSpacing.md),
+            )
         }
 
         if (projects.photos.isNotEmpty()) {
-            ProjectPhotoStrip(
+            DesktopFilmstrip(
                 projects = projects,
                 onAddPhoto = onAddPhoto,
                 onRemovePhoto = onRemovePhoto,
@@ -2155,7 +2393,7 @@ private fun Filmstrip(
                     )
                 }
             }
-            if (photoCount < StagePhotoColors.size) {
+            if (photoCount < 8) {
                 Box(
                     modifier = Modifier
                         .width(52.dp)
@@ -2528,14 +2766,20 @@ private fun HelpOverlay(onDismiss: () -> Unit) {
             )
             Spacer(Modifier.height(FmSpacing.lg))
             HelpSection("编辑")
-            HelpRow("Ctrl + Z", "撤销上一步")
+            HelpRow("Ctrl + Z", "撤销（连续切边框只算一步）")
             HelpRow("Ctrl + Shift + Z / Ctrl + Y", "重做")
-            HelpSection("工作流")
-            HelpRow("Ctrl + E", "打开导出（示例占位图）")
-            HelpRow("Ctrl + Shift + P", "打开预设")
-            HelpSection("布局")
-            HelpRow("Ctrl + B", "折叠或展开左侧边框库")
+            HelpSection("边框库")
+            HelpRow("← / →", "按库里的顺序逐个试上一个 / 下一个")
+            HelpRow("鼠标悬停 0.4 秒", "在舞台预览这张边框")
+            HelpRow("Ctrl + B", "折叠或展开左侧边框库（52 px 窄条）")
             HelpRow("Ctrl + Shift + B", "折叠或展开右侧参数面板")
+            HelpSection("舞台")
+            HelpRow("按住 \\", "查看原图，松开恢复")
+            HelpRow("Ctrl + 滚轮", "缩放（25%–400%）")
+            HelpRow("双击", "适合窗口")
+            HelpSection("工作流")
+            HelpRow("Ctrl + E", "打开导出")
+            HelpRow("Ctrl + Shift + P", "打开预设")
             HelpSection("帮助")
             HelpRow("F1", "打开这份快捷键说明")
             HelpRow("Esc", "关闭弹层")
@@ -2586,18 +2830,12 @@ private fun HelpRow(keys: String, description: String) {
 // Built-in sample photo placeholders (no reference assets)
 // ---------------------------------------------------------------------------
 
-private val StagePhotoColors = listOf(
-    Color(0xFFC9D8E4) to Color(0xFFEDE5D7),
-    Color(0xFFD8CFC2) to Color(0xFFE7EBEF),
-    Color(0xFFCBDCD2) to Color(0xFFEAE3D3),
-    Color(0xFFDECBD4) to Color(0xFFEDE3DA),
-    Color(0xFFC8D2DE) to Color(0xFFE0E8F0),
-    Color(0xFFDACFBA) to Color(0xFFEFE8D9),
-)
-
+/** WP-D1 §4.9: placeholder washes are tokens, not six hard-coded pastel pairs. */
+@Composable
 private fun photoBrush(index: Int): Brush {
-    val pair = StagePhotoColors[index.coerceIn(0, StagePhotoColors.lastIndex)]
-    return Brush.linearGradient(listOf(pair.first, pair.second))
+    val muted = FmPalette.surfaceMuted
+    val track = FmPalette.track
+    return Brush.linearGradient(listOf(muted, track))
 }
 
 /** G5 cold-start instrumentation: first Compose frame of the desktop shell. */

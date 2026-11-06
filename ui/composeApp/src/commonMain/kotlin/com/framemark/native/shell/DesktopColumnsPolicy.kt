@@ -106,9 +106,11 @@ fun computeDesktopColumns(
         )
     }
 
-    // At intermediate desktop widths the image stays the primary workspace:
-    // a rail may expand only when at least 45% (or the token floor) remains.
-    val stageTarget = maxOf(stageMin, content * 0.45f)
+    // The rails are capped by the stage token floor only. Using a percentage
+    // target here made the effective ceiling smaller than the token ceiling, so
+    // a request that is inside [min, max] could never reach the max even when
+    // the window had room for it (DesktopColumnsTest pinned that mismatch).
+    val stageTarget = stageMin
     val showLeft = !leftCollapsed && content >= libraryMin + rail + gapTotal + stageTarget
     val leftBudget = if (showLeft) libraryMin else rail
     val showRight = !rightCollapsed && content >= leftBudget + inspectorMin + gapTotal + stageTarget
