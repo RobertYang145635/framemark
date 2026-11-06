@@ -899,6 +899,40 @@ fn deep_merge(base: serde_json::Value, over: serde_json::Value) -> serde_json::V
 #[cfg(test)]
 mod tests {
     use super::{apply_app_design, final_user_text, text_needing_fallback};
+    use crate::guard_render;
+
+    /// WP-X1 / F2-D1 root cause: `TextBlobBuilder::make()` returns `None` for text
+    /// that shapes to nothing, and `expect`-ing on it aborted the process. Empty
+    /// text must shape to no blob and measure 0 — that is Canvas2D's `measureText("")`.
+    #[test]
+    fn empty_text_shapes_to_nothing_instead_of_panicking() {
+        let te = super::text_engine();
+        // Empty text returns before the typeface is used, so any face will do.
+        let tf = skia_safe::FontMgr::new()
+            .legacy_make_typeface(None, skia_safe::FontStyle::default())
+            .expect("a default typeface");
+        let (blob, width) = te.shape("", &tf, 48.0, 0.0);
+        assert!(blob.is_none(), "empty text must not produce a text blob");
+        assert_eq!(width, 0.0, "measureText(\"\") is 0");
+
+        // Whitespace still goes through the shaper, but an empty blob result is
+        // reported instead of unwrapped.
+        let (_, spaced) = te.shape(" ", &tf, 48.0, 0.0);
+        assert!(spaced >= 0.0);
+    }
+
+    /// The C ABI guard is what keeps an unknown panic from aborting the process
+    /// (`extern "C"` cannot unwind).
+    #[test]
+    fn c_abi_guard_turns_a_panic_into_an_error() {
+        let caught = guard_render::<i32>("test_render", || panic!("boom"));
+        let error = caught.expect_err("a panic must surface as Err");
+        assert!(error.contains("panicked"), "unexpected error: {error}");
+        assert!(error.contains("boom"), "panic detail is lost: {error}");
+
+        let ok = guard_render("test_render", || Ok::<i32, String>(7)).expect("no panic passes through");
+        assert_eq!(ok, 7);
+    }
 
     #[test]
     fn merged_text_controls_cjk_fallback_selection() {

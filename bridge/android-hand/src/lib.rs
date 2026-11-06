@@ -93,6 +93,31 @@ unsafe fn cstr<'a>(ptr: *const c_char, name: &str) -> Result<&'a str, String> {
         .map_err(|e| format!("{name} is not UTF-8: {e}"))
 }
 
+/// Run `f` behind the C ABI without letting a panic cross it (WP-X1 / F2-D1).
+///
+/// `extern "C"` functions cannot unwind: any panic in the renderer used to
+/// reach this boundary and abort the whole Android process (`panic_cannot_unwind`
+/// → `abort()` → SIGABRT), which also made the app unstartable because the bad
+/// photo was already persisted. Kotlin's `runCatching` cannot see an abort, so
+/// this is the only place that can turn "renderer panicked" into a returned
+/// error string.
+fn guard_render<T>(what: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    // The panic hook still prints the message/backtrace to logcat, so a caught
+    // panic stays diagnosable instead of silently degrading.
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(result) => result,
+        Err(payload) => {
+            let detail = payload
+                .downcast_ref::<&str>()
+                .map(|s| (*s).to_string())
+                .or_else(|| payload.downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "non-string panic payload".to_string());
+            println!("fm_hand.panic what={what} detail={detail}");
+            Err(format!("{what} panicked: {detail}"))
+        }
+    }
+}
+
 /// Renders one hand card to `out_png` (+ `<out>.geom.json`).
 ///
 /// `photo_path` overrides the card's manifest photo like e4-hand's `--photo`
@@ -120,61 +145,63 @@ pub extern "C" fn fm_render_hand(
     out_png: *const c_char,
     max_edge: i32,
 ) -> *mut c_char {
-    let result = (|| -> Result<HandRender, String> {
-        let cards = unsafe { cstr(cards_path, "cards_path") }?;
-        let card = unsafe { cstr(card_id, "card_id") }?;
-        let hand_dir = unsafe { cstr(hand_dir, "hand_dir") }?;
-        let fonts = unsafe { cstr(fonts_dir, "fonts_dir") }?;
-        let extra = unsafe { cstr(extra_fonts_dir, "extra_fonts_dir") }?;
-        let fallback = unsafe { cstr(fallback_cjk, "fallback_cjk") }?;
-        let photo = unsafe { cstr(photo_path, "photo_path") }?;
-        let photo_override = unsafe { cstr(photo_override, "photo_override") }?;
-        // Per-call photo (batch pairing): non-empty wins, otherwise the global.
-        let photo_final = if photo_override.is_empty() {
-            photo
-        } else {
-            photo_override
-        };
-        let overlay_arg = unsafe { cstr(overlay_path, "overlay_path") }?;
-        let overlay = if overlay_arg.is_empty() {
-            None
-        } else {
-            Some(overlay_spec(
-                overlay_arg,
-                [overlay_x, overlay_y, overlay_w, overlay_h],
-                overlay_opacity,
-                overlay_angle,
-            )?)
-        };
-        let design_arg = unsafe { cstr(design_json, "design_json") }?;
-        let app_design: Option<serde_json::Value> = if design_arg.trim().is_empty() {
-            None
-        } else {
-            Some(serde_json::from_str(design_arg).map_err(|e| format!("design_json: {e}"))?)
-        };
-        let out = unsafe { cstr(out_png, "out_png") }?;
-        render_card(
-            cards,
-            card,
-            hand_dir,
-            fonts,
-            extra,
-            if fallback.is_empty() {
+    let result = guard_render("fm_render_hand", || {
+        (|| -> Result<HandRender, String> {
+            let cards = unsafe { cstr(cards_path, "cards_path") }?;
+            let card = unsafe { cstr(card_id, "card_id") }?;
+            let hand_dir = unsafe { cstr(hand_dir, "hand_dir") }?;
+            let fonts = unsafe { cstr(fonts_dir, "fonts_dir") }?;
+            let extra = unsafe { cstr(extra_fonts_dir, "extra_fonts_dir") }?;
+            let fallback = unsafe { cstr(fallback_cjk, "fallback_cjk") }?;
+            let photo = unsafe { cstr(photo_path, "photo_path") }?;
+            let photo_override = unsafe { cstr(photo_override, "photo_override") }?;
+            // Per-call photo (batch pairing): non-empty wins, otherwise the global.
+            let photo_final = if photo_override.is_empty() {
+                photo
+            } else {
+                photo_override
+            };
+            let overlay_arg = unsafe { cstr(overlay_path, "overlay_path") }?;
+            let overlay = if overlay_arg.is_empty() {
                 None
             } else {
-                Some(fallback)
-            },
-            if photo_final.is_empty() {
+                Some(overlay_spec(
+                    overlay_arg,
+                    [overlay_x, overlay_y, overlay_w, overlay_h],
+                    overlay_opacity,
+                    overlay_angle,
+                )?)
+            };
+            let design_arg = unsafe { cstr(design_json, "design_json") }?;
+            let app_design: Option<serde_json::Value> = if design_arg.trim().is_empty() {
                 None
             } else {
-                Some(std::path::Path::new(photo_final))
-            },
-            overlay,
-            app_design.as_ref(),
-            out,
-            max_edge,
-        )
-    })();
+                Some(serde_json::from_str(design_arg).map_err(|e| format!("design_json: {e}"))?)
+            };
+            let out = unsafe { cstr(out_png, "out_png") }?;
+            render_card(
+                cards,
+                card,
+                hand_dir,
+                fonts,
+                extra,
+                if fallback.is_empty() {
+                    None
+                } else {
+                    Some(fallback)
+                },
+                if photo_final.is_empty() {
+                    None
+                } else {
+                    Some(std::path::Path::new(photo_final))
+                },
+                overlay,
+                app_design.as_ref(),
+                out,
+                max_edge,
+            )
+        })()
+    });
     match result {
         Ok(r) => {
             println!(
@@ -241,8 +268,9 @@ pub extern "C" fn fm_render_hand_rgba(
             *out_error = std::ptr::null_mut();
         }
     }
-    let result = (|| -> Result<FmHandRgbaHandle, String> {
-        let cards = unsafe { cstr(cards_path, "cards_path") }?;
+    let result = guard_render("fm_render_hand_rgba", || {
+        (|| -> Result<FmHandRgbaHandle, String> {
+            let cards = unsafe { cstr(cards_path, "cards_path") }?;
         let card = unsafe { cstr(card_id, "card_id") }?;
         let hand_dir = unsafe { cstr(hand_dir, "hand_dir") }?;
         let fonts = unsafe { cstr(fonts_dir, "fonts_dir") }?;
@@ -299,7 +327,8 @@ pub extern "C" fn fm_render_hand_rgba(
             width: rendered.width,
             height: rendered.height,
         })
-    })();
+        })()
+    });
     match result {
         Ok(handle) => Box::into_raw(Box::new(handle)),
         Err(error) => {

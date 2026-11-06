@@ -145,6 +145,15 @@ class PhoneProjectStore(
     var saveCount by mutableStateOf(0)
         private set
 
+    /**
+     * A photo that was dropped while loading because its file is gone or
+     * unreadable, phrased for the user (WP-X1 / F2-D1). Null when nothing was
+     * skipped. The next package surfaces it; the store only guarantees the app
+     * opens on a usable photo instead of retrying a broken one forever.
+     */
+    var photoNotice by mutableStateOf<String?>(null)
+        private set
+
     /** An existing but unreadable project is never replaced by the startup model. */
     var projectWritesBlocked by mutableStateOf(true)
         private set
@@ -214,6 +223,9 @@ class PhoneProjectStore(
                     "FM_PROJECT_LOADED photos=${project.photos.size} designs=${project.designs.size} " +
                         "active=${project.activePhotoId ?: "-"} wm=${project.designs.values.count { it.overlay != null }}",
                 )
+                // WP-X1 / F2-D1: never open on a photo that cannot even be read —
+                // the best photo the app can actually show becomes the active one.
+                avoidUnreadableActivePhoto()
                 true
             }
             StoreResult.Missing -> {
@@ -229,6 +241,40 @@ class PhoneProjectStore(
                 println("FM_PROJECT_LOAD_FAIL code=${result.error.code} msg=${result.error.message}")
                 false
             }
+        }
+    }
+
+    /**
+     * Makes sure the project does not open on a photo that cannot even be read
+     * (WP-X1 / F2-D1).
+     *
+     * This is deliberately **non-destructive**: the entry stays in the project, so
+     * a photo on an unplugged SD card or a temporarily unavailable volume comes
+     * back by itself, and no user data is dropped behind their back. What changes
+     * is only which photo is active — startup must not render an unreadable file
+     * while a usable one is available. A photo the renderer rejects (decodable but
+     * failing) is handled by the preview failure path, which keeps the app up and
+     * offers a retry.
+     */
+    private fun avoidUnreadableActivePhoto() {
+        val active = project.activePhoto ?: return
+        val readable = runCatching { fileSystem.exists(active.path) }.getOrDefault(false)
+        if (readable) {
+            photoNotice = null
+            return
+        }
+        val fallback = project.photos.firstOrNull { photo ->
+            photo.id != active.id && runCatching { fileSystem.exists(photo.path) }.getOrDefault(false)
+        }
+        photoNotice = "无法打开「${active.displayName}」（文件已被移动或删除）；" +
+            if (fallback != null) "已改看在可用的「${fallback.displayName}」上。" else "请重新添加这张照片。"
+        println(
+            "FM_PHOTO_UNAVAILABLE active=${active.id} name=${active.displayName} " +
+                "fallback=${fallback?.id ?: "-"} photos=${project.photos.size}",
+        )
+        if (fallback != null) {
+            project = project.selectPhoto(fallback.id)
+            saveNow()
         }
     }
 

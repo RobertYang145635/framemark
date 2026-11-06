@@ -99,89 +99,100 @@ class E5Worker(
             argv += listOf("--format", "webp", "--webp-lossless", if (lossless == true) "1" else "0")
         }
 
-        val process = ProcessRunner.run(argv) { output ->
-            output.buffered(1 shl 20).use { stdin ->
-                val row = ByteArray(w * 3)
-                val argb = IntArray(w)
-                for (y in 0 until h) {
-                    image.getRGB(0, y, w, 1, argb, 0, w)
-                    var i = 0
-                    for (x in 0 until w) {
-                        val c = argb[x]
-                        var r = (c shr 16) and 0xFF
-                        var g = (c shr 8) and 0xFF
-                        var b = c and 0xFF
-                        val a = (c ushr 24) and 0xFF
-                        if (a != 0xFF) {
-                            // JPEG has no alpha: flatten onto white, same rule as the old path.
-                            r = (r * a + 255 * (255 - a)) / 255
-                            g = (g * a + 255 * (255 - a)) / 255
-                            b = (b * a + 255 * (255 - a)) / 255
+        try {
+            val process = ProcessRunner.run(argv) { output ->
+                output.buffered(1 shl 20).use { stdin ->
+                    val row = ByteArray(w * 3)
+                    val argb = IntArray(w)
+                    for (y in 0 until h) {
+                        image.getRGB(0, y, w, 1, argb, 0, w)
+                        var i = 0
+                        for (x in 0 until w) {
+                            val c = argb[x]
+                            var r = (c shr 16) and 0xFF
+                            var g = (c shr 8) and 0xFF
+                            var b = c and 0xFF
+                            val a = (c ushr 24) and 0xFF
+                            if (a != 0xFF) {
+                                // JPEG has no alpha: flatten onto white, same rule as the old path.
+                                r = (r * a + 255 * (255 - a)) / 255
+                                g = (g * a + 255 * (255 - a)) / 255
+                                b = (b * a + 255 * (255 - a)) / 255
+                            }
+                            row[i++] = r.toByte()
+                            row[i++] = g.toByte()
+                            row[i++] = b.toByte()
                         }
-                        row[i++] = r.toByte()
-                        row[i++] = g.toByte()
-                        row[i++] = b.toByte()
+                        stdin.write(row)
                     }
-                    stdin.write(row)
+                }
+            }
+            if (process.code != 0 || !workerOut.isFile || workerOut.length() == 0L) {
+                throw IllegalStateException("E5 worker failed (exit ${process.code}): ${process.output.takeLast(600)}")
+            }
+            java.nio.file.Files.move(
+                workerOut.toPath(),
+                out.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+            )
+
+            val rep = Json.parse(report.readText()).jsonMap()
+            val canvas = rep["canvas"].jsonMap()
+            val result = rep["output"].jsonMap()
+            val rowsFed = (rep["rowsFed"] as? Number)?.toInt() ?: -1
+            val subsampling = result.jsonString("subsampling")
+            val iccBytes = (rep["iccBytes"] as? Number)?.toInt() ?: 0
+            val exifBytes = ((rep["exifTiffBytes"] ?: rep["exifBytes"]) as? Number)?.toInt() ?: 0
+            val encodeMs = (rep["ms"].jsonMap()["encode"] as? Number)?.toDouble() ?: 0.0
+            val reportedQuality = (rep["quality"] as? Number)?.toInt()
+            require(reportedQuality == quality) { "E5 worker quality $reportedQuality, expected $quality" }
+            val reportFormat = rep.jsonString("format")
+            val reportLossless = rep["webpLossless"] as? Boolean
+            val chunks = result["chunks"].jsonList().mapNotNull { it as? String }
+            require(rowsFed == h) { "E5 worker fed $rowsFed rows, expected $h" }
+            require((canvas["w"] as? Number)?.toInt() == w && (canvas["h"] as? Number)?.toInt() == h) {
+                "E5 worker canvas mismatch"
+            }
+            if (format == "webp") {
+                require(reportFormat == if (lossless == true) "webp-lossless" else "webp-lossy") {
+                    "E5 worker WebP format $reportFormat, expected lossless=$lossless"
+                }
+                require(reportLossless == lossless) { "E5 worker lossless flag $reportLossless, expected $lossless" }
+                require("ICCP" in chunks) { "E5 worker WebP is missing ICCP" }
+            } else {
+                require(subsampling == "4:4:4") { "E5 worker subsampling $subsampling, expected 4:4:4" }
+            }
+            println(
+                "FM_E5_${if (format == "webp") "WEBP" else "ENCODE"} path=${out.path} ${w}x$h bytes=${out.length()} " +
+                    "rows=$rowsFed ms=$encodeMs icc=$iccBytes exif=$exifBytes " +
+                    (if (format == "webp") "lossless=$lossless chunks=${chunks.joinToString(",")}" else "subsampling=$subsampling") +
+                    " quality=$quality",
+            )
+            return WorkerEncodeResult(
+                path = out.path,
+                bytes = out.length(),
+                width = w,
+                height = h,
+                encodeMs = encodeMs,
+                rowsFed = rowsFed,
+                quality = reportedQuality,
+                subsampling = subsampling,
+                iccBytes = iccBytes,
+                exifTiffBytes = exifBytes,
+                format = reportFormat,
+                webpLossless = reportLossless,
+                chunks = chunks,
+            )
+        } finally {
+            // AU1-02: the worker's scratch (encoded bytes, report, EXIF block,
+            // ICC copy) is deleted on success and failure. `$out` already holds
+            // the committed result, so nothing here is still needed.
+            listOfNotNull(workerOut, report, exifFile, iccFile).forEach {
+                if (it.exists() && !it.delete()) {
+                    println("FM_E5_TEMP_DELETE_FAILED path=${it.path}")
                 }
             }
         }
-        if (process.code != 0 || !workerOut.isFile || workerOut.length() == 0L) {
-            throw IllegalStateException("E5 worker failed (exit ${process.code}): ${process.output.takeLast(600)}")
-        }
-        java.nio.file.Files.move(
-            workerOut.toPath(),
-            out.toPath(),
-            java.nio.file.StandardCopyOption.REPLACE_EXISTING,
-        )
-
-        val rep = Json.parse(report.readText()).jsonMap()
-        val canvas = rep["canvas"].jsonMap()
-        val result = rep["output"].jsonMap()
-        val rowsFed = (rep["rowsFed"] as? Number)?.toInt() ?: -1
-        val subsampling = result.jsonString("subsampling")
-        val iccBytes = (rep["iccBytes"] as? Number)?.toInt() ?: 0
-        val exifBytes = ((rep["exifTiffBytes"] ?: rep["exifBytes"]) as? Number)?.toInt() ?: 0
-        val encodeMs = (rep["ms"].jsonMap()["encode"] as? Number)?.toDouble() ?: 0.0
-        val reportedQuality = (rep["quality"] as? Number)?.toInt()
-        require(reportedQuality == quality) { "E5 worker quality $reportedQuality, expected $quality" }
-        val reportFormat = rep.jsonString("format")
-        val reportLossless = rep["webpLossless"] as? Boolean
-        val chunks = result["chunks"].jsonList().mapNotNull { it as? String }
-        require(rowsFed == h) { "E5 worker fed $rowsFed rows, expected $h" }
-        require((canvas["w"] as? Number)?.toInt() == w && (canvas["h"] as? Number)?.toInt() == h) {
-            "E5 worker canvas mismatch"
-        }
-        if (format == "webp") {
-            require(reportFormat == if (lossless == true) "webp-lossless" else "webp-lossy") {
-                "E5 worker WebP format $reportFormat, expected lossless=$lossless"
-            }
-            require(reportLossless == lossless) { "E5 worker lossless flag $reportLossless, expected $lossless" }
-            require("ICCP" in chunks) { "E5 worker WebP is missing ICCP" }
-        } else {
-            require(subsampling == "4:4:4") { "E5 worker subsampling $subsampling, expected 4:4:4" }
-        }
-        println(
-            "FM_E5_${if (format == "webp") "WEBP" else "ENCODE"} path=${out.path} ${w}x$h bytes=${out.length()} " +
-                "rows=$rowsFed ms=$encodeMs icc=$iccBytes exif=$exifBytes " +
-                (if (format == "webp") "lossless=$lossless chunks=${chunks.joinToString(",")}" else "subsampling=$subsampling") +
-                " quality=$quality",
-        )
-        return WorkerEncodeResult(
-            path = out.path,
-            bytes = out.length(),
-            width = w,
-            height = h,
-            encodeMs = encodeMs,
-            rowsFed = rowsFed,
-            quality = reportedQuality,
-            subsampling = subsampling,
-            iccBytes = iccBytes,
-            exifTiffBytes = exifBytes,
-            format = reportFormat,
-            webpLossless = reportLossless,
-            chunks = chunks,
-        )
     }
 
     private companion object {
