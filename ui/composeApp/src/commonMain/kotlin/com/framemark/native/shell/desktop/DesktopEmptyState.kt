@@ -1,12 +1,8 @@
 package com.framemark.native.shell.desktop
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,12 +14,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.fmElevated
 
@@ -34,11 +30,15 @@ data class OtherPhotoDesign(
 )
 
 /**
- * 舞台空状态（报告 §6）：照片还没有边框时，提供“沿用其他照片的设计”。
+ * 舞台空状态（`styles.css` 413-415 `.empty-print`；演示稿 `desktop.js:102 emptyOverlay`）。
  *
- * 点击一条会调 `ProjectHolder.applyDesignFromPhoto(source, targets)`：把那张照片的
- * `cardId/styleId/params/text` 复制到当前照片。数据模型与项目格式不变，实现见
- * `DesktopProjectController`；不支持的平台返回 -1，界面如实说明。
+ * 演示稿把这张卡片盖在照片的成品区上：`rgba(12,13,15,.35)` 压暗 + 白色 95 % 圆角卡，
+ * 卡内 14/16 内边距、10 间距、居中、`sh-3` 投影；标题 14/700，说明 13，两个按钮
+ * 主线「沿用 X 的设计」+「浏览边框库」。
+ *
+ * 点击「沿用」会调 `ProjectHolder.applyDesignFromPhoto`：把那张照片的
+ * `cardId/styleId/params/text` 复制到当前照片。数据模型与项目格式不变；不支持的
+ * 平台返回 -1，界面如实说明。
  */
 @Composable
 fun DesktopStageEmptyState(
@@ -47,70 +47,54 @@ fun DesktopStageEmptyState(
     onPickBorder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+    val cardShape = RoundedCornerShape(FmRadii.tile)
+    Box(
+        modifier = modifier
+            // `.empty-print { background: rgba(12,13,15,.35) }` —— 遮罩令牌本身就是
+            // 32 % 的深色压暗，正是演示稿那一层。
+            .background(FmPalette.scrim),
+        contentAlignment = Alignment.Center,
+    ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 360.dp)
-                .clip(RoundedCornerShape(FmRadii.panel))
-                .fmElevated(FmElevation.card, RoundedCornerShape(FmRadii.panel))
+                .widthIn(max = 380.dp)
+                .clip(cardShape)
+                .fmElevated(FmElevation.card, cardShape)
                 .background(FmPalette.surface)
-                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.panel))
-                .padding(FmSpacing.lg),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("这张照片还没有边框", style = FmType.titleSmall, color = FmPalette.onSurface)
-            Spacer(Modifier.height(4.dp))
             Text(
-                "从左侧选一款，或沿用其他照片已经调好的设计。",
-                style = FmType.labelSmall,
+                text = "这张照片还没有选边框",
+                // `.empty-print b { font-size: 14px }` —— 14 / 700。
+                style = FmType.desktopTab.copy(fontWeight = FontWeight.Bold),
+                color = FmPalette.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "每张照片单独保存边框和参数。从左侧边框库选一个，或沿用其他照片的设计。",
+                // `.empty-print > div { font-size: 13px }`。
+                style = FmType.bodyMedium,
                 color = FmPalette.onSurfaceMuted,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(FmSpacing.md))
-            Text(
-                "选择边框",
-                style = FmType.labelMedium,
-                color = FmPalette.onPrimary,
-                maxLines = 1,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(FmRadii.pill))
-                    .background(FmPalette.primary)
-                    .clickable(onClick = onPickBorder)
-                    .padding(vertical = FmSpacing.sm),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            if (candidates.isNotEmpty()) {
-                Spacer(Modifier.height(FmSpacing.md))
-                Text(
-                    "沿用其他照片的设计",
-                    style = FmType.labelSmall,
-                    color = FmPalette.onSurfaceFaint,
+            Spacer(Modifier.height(10.dp))
+            val reusable = candidates.firstOrNull()
+            if (reusable != null) {
+                DeskButton(
+                    label = "沿用 ${reusable.photoLabel} 的设计",
+                    style = DeskButtonStyle.Primary,
                     modifier = Modifier.fillMaxWidth(),
+                    onClick = { onReuse(reusable.photoId) },
                 )
-                candidates.take(3).forEach { candidate ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp)
-                            .clip(RoundedCornerShape(FmRadii.chip))
-                            .background(FmPalette.surfaceMuted)
-                            .clickable { onReuse(candidate.photoId) }
-                            .padding(horizontal = FmSpacing.sm, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs),
-                    ) {
-                        Text(
-                            text = candidate.photoLabel,
-                            style = FmType.labelSmall,
-                            color = FmPalette.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text("沿用", style = FmType.labelSmall, color = FmPalette.primaryStrong)
-                    }
-                }
+                Spacer(Modifier.height(8.dp))
             }
+            DeskButton(
+                label = "浏览边框库",
+                style = DeskButtonStyle.Line,
+                onClick = onPickBorder,
+            )
         }
     }
 }
