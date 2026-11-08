@@ -57,6 +57,7 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.columnRule
 import com.framemark.native.theme.fmElevated
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.EngineFailure
@@ -898,7 +899,8 @@ private fun ExportDialogFooter(
 ) {
     // `.dlg-f`：`--muted-bg` 底 + 1 px `--line` 上边线，padding 14 22。
     Column(Modifier.fillMaxWidth()) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：对话框内的条带（标题 / 内容 / 页脚）之间是通栏发线。
+        Box(Modifier.columnRule())
         Row(
             modifier = Modifier
                 .fillMaxWidth()

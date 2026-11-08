@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -58,9 +59,12 @@ import com.framemark.native.product.PhotoRef
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.columnRule
 import com.framemark.native.theme.fmElevated
+import com.framemark.native.theme.insetRule
 import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
@@ -213,7 +217,12 @@ private fun BatchPhotoList(
 ) {
     Column(modifier) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 14.dp,
+                bottom = FmRhythm.rowLoose,
+            ),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -230,25 +239,26 @@ private fun BatchPhotoList(
                     maxLines = 1,
                 )
             }
-            Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Spacer(Modifier.height(FmRhythm.inlineWide))
+            Row(horizontalArrangement = Arrangement.spacedBy(FmRhythm.rowLoose)) {
                 Text(
                     text = "全选",
                     style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
                     color = FmPalette.onSurfaceMuted,
                     modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClick = onSelectAll)
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = FmRhythm.inlineWide, vertical = FmRhythm.inline),
                 )
                 Text(
                     text = "清空",
                     style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
                     color = FmPalette.onSurfaceMuted,
                     modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClick = onSelectNone)
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = FmRhythm.inlineWide, vertical = FmRhythm.inline),
                 )
             }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：面板条带之间的通栏发线。
+        Box(Modifier.columnRule())
         if (rows.isEmpty()) {
             Text(
                 text = "还没有导入照片。先到「编辑」用顶栏的「导入」添加照片。",
@@ -269,12 +279,12 @@ private fun BatchPhotoList(
                 }
             }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        Box(Modifier.columnRule())
         Text(
             text = "没选边框的照片不会导出。每张照片按它自己的设计与水印导出。",
             style = FmType.labelSmall,
             color = FmPalette.onSurfaceMuted,
-            modifier = Modifier.padding(FmSpacing.md),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = FmRhythm.group),
         )
     }
 }
@@ -308,13 +318,15 @@ private fun BatchPhotoListRow(
         ) {
             if (checked) Text("✓", style = FmType.labelSmall, color = FmPalette.onPrimary)
         }
-        Spacer(Modifier.width(10.dp))
+        // 演示稿 `.bitem` 的第一列是 18 px（勾选框 16 居中），所以缩略图从 8+18+10 = 36
+        // 起；改前是 8+16+10 = 34，整列缩略图左移 2 dp。
+        Spacer(Modifier.width(12.dp))
         BatchThumbnail(
             photoPath = row.photoPath,
             projects = projects,
             modifier = Modifier.width(52.dp).height(40.dp),
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(FmRhythm.rowLoose))
         Column(Modifier.weight(1f)) {
             Text(
                 text = row.displayName,
@@ -416,20 +428,31 @@ private fun BatchContactSheet(
     modifier: Modifier,
 ) {
     Column(modifier.background(FmPalette.surfaceMuted)) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        Box(Modifier.columnRule())
         if (photos.isEmpty()) {
             Text(
                 text = "没有照片可以拼进联系表。",
                 style = FmType.bodyMedium,
                 color = FmPalette.onSurfaceMuted,
-                modifier = Modifier.padding(FmSpacing.lg),
+                modifier = Modifier.padding(FmRhythm.section),
+            )
+        } else if (photos.size < FmRhythm.CONTACT_SHEET_COMPACT_BELOW) {
+            // AU4 §A2：1 张时联系表只有一格，右半边一大片空（1440 宽窗口下约 537 px）。
+            // 排不满一行网格就不摆网格：改紧凑行列表，内容上限 640 居中，两侧留白对称。
+            CompactContactList(
+                photos = photos,
+                rows = rows,
+                jobs = jobs,
+                projects = projects,
+                onOpenPhoto = onOpenPhoto,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
             )
         } else {
             LazyVerticalGrid(
                 // `.sheetgrid`：minmax(240px, 1fr)、gap 22、padding 24、底 `--seg`。
                 columns = GridCells.Adaptive(240.dp),
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(24.dp),
+                contentPadding = PaddingValues(FmRhythm.section),
                 horizontalArrangement = Arrangement.spacedBy(22.dp),
                 verticalArrangement = Arrangement.spacedBy(22.dp),
             ) {
@@ -447,6 +470,135 @@ private fun BatchContactSheet(
     }
 }
 
+/**
+ * 少张数（< [FmRhythm.CONTACT_SHEET_COMPACT_BELOW]）的联系表：一行一张。
+ *
+ * 行内是 [缩略图 72×54 | 文件名 + 边框名 | 状态胶囊]，与网格单元格同样的信息，
+ * 但宽度只有内容本身需要的那点，**居中**而不是靠左撑满 —— 这样右栏在视觉上被
+ * 拉回来，左右空白对称（改前 1 张时右侧空 537 px，改后两侧各 83 px）。
+ */
+@Composable
+private fun CompactContactList(
+    photos: List<PhotoRef>,
+    rows: List<BatchPhotoRow>,
+    jobs: List<BatchJob>,
+    projects: ProjectHolder,
+    onOpenPhoto: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier, contentAlignment = Alignment.TopCenter) {
+        LazyColumn(
+            modifier = Modifier.widthIn(max = FmRhythm.compactListMaxWidth).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = FmRhythm.rowLoose, vertical = FmRhythm.rowLoose),
+        ) {
+            items(photos, key = { it.id }) { photo ->
+                val row = rows.firstOrNull { it.photoId == photo.id }
+                val job = jobs.lastOrNull { it.photoPath == photo.path }
+                CompactContactRow(
+                    photo = photo,
+                    row = row,
+                    job = job,
+                    projects = projects,
+                    onOpenPhoto = { onOpenPhoto(photo.id) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 紧凑列表的一行。状态胶囊与 [ContactSheetCell] 同一套文案/颜色，只是从不压在图上、
+ * 放在行尾（缩略图只有 72×54，压上去会盖住大半张图）。
+ */
+@Composable
+private fun CompactContactRow(
+    photo: PhotoRef,
+    row: BatchPhotoRow?,
+    job: BatchJob?,
+    projects: ProjectHolder,
+    onOpenPhoto: () -> Unit,
+) {
+    val status = contactStatus(job, row)
+    val statusColor = contactStatusColor(job)
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(photo.id) { detectTapGestures(onDoubleTap = { onOpenPhoto() }) }
+                .padding(vertical = FmRhythm.row),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BatchThumbnail(
+                photoPath = job?.outputPath ?: photo.path,
+                projects = projects,
+                placeholder = "…",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(FmRhythm.compactRowThumbWidth)
+                    .height(FmRhythm.compactRowThumbHeight),
+            )
+            Spacer(Modifier.width(FmRhythm.group))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = photo.displayName,
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+                        .withNumericDigits(),
+                    color = FmPalette.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(FmRhythm.inline))
+                Text(
+                    text = row?.cardName ?: "未选边框",
+                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(FmRhythm.group))
+            Box(
+                modifier = Modifier
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(FmPalette.surface)
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = status,
+                    style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold),
+                    color = statusColor,
+                    maxLines = 1,
+                )
+            }
+        }
+        // 规则 3：组内分隔线，内缩 12，不贴边（改前是贴边通栏线，与右栏语义不一致）。
+        Box(Modifier.insetRule())
+    }
+}
+
+/**
+ * 联系方式的状态文案（网格单元格与紧凑行共用一份，避免两处漂移）。
+ */
+private fun contactStatus(job: BatchJob?, row: BatchPhotoRow?): String = when (job?.status) {
+    BatchJobStatus.Done -> "完成"
+    BatchJobStatus.Failed -> "失败"
+    BatchJobStatus.Running -> "导出中"
+    BatchJobStatus.Queued -> "待导出"
+    BatchJobStatus.Cancelled -> "已取消"
+    null -> if (row?.designed == true) "未导出" else "缺少边框"
+}
+
+// 颜色来自 FmPalette（@Composable getter），所以这里必须标 @Composable。
+@Composable
+private fun contactStatusColor(job: BatchJob?): androidx.compose.ui.graphics.Color = when (job?.status) {
+    BatchJobStatus.Done -> FmPalette.success
+    BatchJobStatus.Failed -> FmPalette.error
+    BatchJobStatus.Running, BatchJobStatus.Queued -> FmPalette.primaryStrong
+    else -> FmPalette.onSurfaceMuted
+}
+
 @Composable
 private fun ContactSheetCell(
     photo: PhotoRef,
@@ -455,20 +607,8 @@ private fun ContactSheetCell(
     projects: ProjectHolder,
     onOpenPhoto: () -> Unit,
 ) {
-    val status = when (job?.status) {
-        BatchJobStatus.Done -> "完成"
-        BatchJobStatus.Failed -> "失败"
-        BatchJobStatus.Running -> "导出中"
-        BatchJobStatus.Queued -> "待导出"
-        BatchJobStatus.Cancelled -> "已取消"
-        null -> if (row?.designed == true) "未导出" else "缺少边框"
-    }
-    val statusColor = when (job?.status) {
-        BatchJobStatus.Done -> FmPalette.success
-        BatchJobStatus.Failed -> FmPalette.error
-        BatchJobStatus.Running, BatchJobStatus.Queued -> FmPalette.primaryStrong
-        else -> FmPalette.onSurfaceMuted
-    }
+    val status = contactStatus(job, row)
+    val statusColor = contactStatusColor(job)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -552,8 +692,16 @@ private fun BatchQueuePanel(
     modifier: Modifier,
 ) {
     Column(modifier) {
-        // `.bq .sum`：标题 + 修改 link + 4 行 kv（64 px 标签列）。
-        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
+        // `.bq .sum`：标题 + 修改 link + 4 行 kv（64 px 标签列）。`padding: 16px 18px`
+        // （styles.css `.bq .sum`）—— 改前右内边距是 16，比演示稿窄 2 dp。
+        Column(
+            Modifier.fillMaxWidth().padding(
+                start = 18.dp,
+                end = 18.dp,
+                top = FmRhythm.groupGap,
+                bottom = FmRhythm.groupGap,
+            ),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "导出设置",
@@ -570,12 +718,17 @@ private fun BatchQueuePanel(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .clickable(role = Role.Button, onClick = onOpenExportSettings)
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                        .padding(horizontal = FmRhythm.inlineWide, vertical = FmRhythm.inline),
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(FmRhythm.row))
+            // `.kv { grid-template-columns: 64px 1fr; gap: 4px 10px }`：改前列间距是 0，
+            // 「格式」与它的值贴在一起，值列看起来比演示稿左移 10 dp。
             batchSettingsSummary(settings, directory).forEach { (key, value) ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = FmRhythm.inline),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         key,
                         style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp),
@@ -583,6 +736,7 @@ private fun BatchQueuePanel(
                         maxLines = 1,
                         modifier = Modifier.width(64.dp),
                     )
+                    Spacer(Modifier.width(FmRhythm.rowLoose))
                     Text(
                         text = value,
                         style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp).withNumericDigits(),
@@ -593,10 +747,11 @@ private fun BatchQueuePanel(
                     )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(FmRhythm.row))
             DlgNote("批量与单张共用这份设置；单张在「导出」对话框里改。")
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：面板内的条带（摘要区 / 列表 / 操作条）之间是通栏发线，与 `.bq` 一致。
+        Box(Modifier.columnRule())
         // `.qlist`：导出队列（每行 = 文件名 + 状态 + 失败原因/成片名）。
         if (queueRows.isEmpty()) {
             Column(Modifier.weight(1f).fillMaxWidth().padding(16.dp)) {
@@ -615,11 +770,13 @@ private fun BatchQueuePanel(
             }
         }
         notice?.let {
-            Box(Modifier.padding(horizontal = 16.dp)) { DlgNote(it) }
+            Box(Modifier.padding(horizontal = 18.dp)) { DlgNote(it) }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
-        // `.qfoot`：全队列进度 + 一个主操作。
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Box(Modifier.columnRule())
+        // `.qfoot { padding: 12px 14px; gap: 8px }`：改前是 16 横向 + 6/10 两个纵向间隙。
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = FmRhythm.group),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "完成 ${summary.done} · 失败 ${summary.failed} · 共 ${summary.total}",
@@ -635,9 +792,9 @@ private fun BatchQueuePanel(
                     maxLines = 1,
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(FmRhythm.row))
             BatchProgressBar(summary.percent)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(FmRhythm.row))
             val action = BatchQueueView.primaryAction(running, jobs)
             val retryCount = queueRows.count {
                 it.state == BatchRowState.Failed || it.state == BatchRowState.Cancelled
@@ -689,41 +846,45 @@ private fun BatchQueueRowView(row: BatchQueueRow) {
         BatchRowState.Queued -> FmPalette.onSurfaceSecondary
         BatchRowState.Cancelled -> FmPalette.onSurfaceMuted
     }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(vertical = 9.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = row.displayName,
-                style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
-                    .withNumericDigits(),
-                color = FmPalette.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(10.dp))
-            if (row.state == BatchRowState.Running) {
-                Text("导出中…", style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp), color = color, maxLines = 1)
-            } else {
+    // 内容保留原来的 8 dp 行内缩，但**分隔线搬到行内缩之外**：这样线的绝对内缩
+    // = 列表 contentPadding 10 + 规则 3 的 2 = 12 dp，与 FmRhythm.columnEdge 一致。
+    // 改前线画在 8 dp 行内缩里，绝对内缩 18 dp，比规则多 6 dp。
+    Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(vertical = 9.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    BatchQueueView.statusLabel(row.state),
-                    style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
-                    color = color,
+                    text = row.displayName,
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
+                        .withNumericDigits(),
+                    color = FmPalette.onSurface,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(FmRhythm.rowLoose))
+                if (row.state == BatchRowState.Running) {
+                    Text("导出中…", style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp), color = color, maxLines = 1)
+                } else {
+                    Text(
+                        BatchQueueView.statusLabel(row.state),
+                        style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                        color = color,
+                        maxLines = 1,
+                    )
+                }
+            }
+            val detail = row.reason ?: row.outputPath?.substringAfterLast('/')?.substringAfterLast('\\')
+            if (detail != null) {
+                Text(
+                    text = detail,
+                    style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp).withNumericDigits(),
+                    color = if (row.reason != null) FmPalette.error else FmPalette.onSurfaceMuted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
-        val detail = row.reason ?: row.outputPath?.substringAfterLast('/')?.substringAfterLast('\\')
-        if (detail != null) {
-            Text(
-                text = detail,
-                style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp).withNumericDigits(),
-                color = if (row.reason != null) FmPalette.error else FmPalette.onSurfaceMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        Box(Modifier.insetRule(FmRhythm.inline))
     }
 }
 

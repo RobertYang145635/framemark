@@ -7,6 +7,7 @@ import com.framemark.native.shell.desktop.cardRows
 import com.framemark.native.shell.desktop.desktopActiveAnchorId
 import com.framemark.native.shell.desktop.desktopCardBadge
 import com.framemark.native.shell.desktop.desktopCardSubtitle
+import com.framemark.native.shell.desktop.desktopCardSubtitleFor
 import com.framemark.native.shell.desktop.desktopInUseCaption
 import com.framemark.native.shell.desktop.desktopLibraryAnchors
 import com.framemark.native.shell.desktop.desktopLibraryColumns
@@ -155,6 +156,28 @@ class DesktopLibraryParityTest {
         assertEquals("2 张照片在用", desktopInUseCaption(2))
         assertEquals("1 张照片在用", desktopInUseCaption(1))
         assertEquals("已套用", desktopInUseCaption(0))
+    }
+
+    /**
+     * AU4-20（WP-TY1）：卡片副行只写「类别 + 边框」，风格/子类不进副行。
+     *
+     * 改前是「类别 · 子类」（「文字 · 参数」「白边 · 留白」…），类别与风格混在一行、
+     * 而且丢了「边框」后缀 —— 用户在左栏看不出这张卡属于哪一类。数据侧的
+     * [desktopCardSubtitle] 保持原样（它是演示稿对齐的断言对象），这里是**显示层**归一。
+     */
+    @Test
+    fun cardSubtitleForAppendsBorderSuffixAndDropsStyle() {
+        assertEquals("文字边框", desktopCardSubtitleFor(card("t1", category = "text", categoryName = "文字边框", templateCategory = "参数")))
+        assertEquals("白边边框", desktopCardSubtitleFor(card("w1", category = "white", categoryName = "白边边框", templateCategory = "留白")))
+        assertEquals("卡片边框", desktopCardSubtitleFor(card("c1", category = "card", categoryName = "卡片边框", templateCategory = "色卡")))
+        assertEquals("印象边框", desktopCardSubtitleFor(card("i1", category = "impression", categoryName = "印象边框", templateCategory = "液态玻璃")))
+        // 厂商卡保持「品牌 · 系列」，不加「边框」后缀。
+        assertEquals(
+            "OPPO · 理光 GR",
+            desktopCardSubtitleFor(
+                card("v1", category = "vendor", categoryName = "厂商边框", brand = "OPPO", styleFamilyLabel = "OPPO / 理光 GR"),
+            ),
+        )
     }
 
     @Test

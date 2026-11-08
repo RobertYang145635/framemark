@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -59,8 +61,10 @@ import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.theme.FmNumeric
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.columnRule
 import com.framemark.native.workflow.TextSlot
 
 /**
@@ -75,6 +79,7 @@ import com.framemark.native.workflow.TextSlot
  * 页内容由调用方作为 [content] 传入（外壳仍是 `DesktopShell` 装配的
  * `CuratedPage` / `WatermarkPane`），本文件只负责外框。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DesktopInspectorRail(
     cardName: String,
@@ -123,8 +128,10 @@ fun DesktopInspectorRail(
         // ---------------------------------------------------------------- ihead
         Row(
             modifier = Modifier
+                // `.ihead { padding: 14px 14px 10px 18px }`：改前右内边距是 10，比演示稿
+                // 窄 4 dp，「⋯」按钮顶得离栏边太近（AU4-02 的窄窗页头观感来源之一）。
                 .fillMaxWidth()
-                .padding(start = 18.dp, end = 10.dp, top = 14.dp, bottom = 10.dp),
+                .padding(start = 18.dp, end = 14.dp, top = 14.dp, bottom = 10.dp),
             verticalAlignment = Alignment.Top,
         ) {
             Column(Modifier.weight(1f)) {
@@ -135,10 +142,17 @@ fun DesktopInspectorRail(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // `.ihead p { margin: 3px 0 0 }` —— 3 dp 是演示稿原值，不是间距档位，
+                // 它只是标题与次要行的行距，所以不并入 FmRhythm。
                 Spacer(Modifier.height(3.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                // AU4-02（720 dp 偏挤）：改前这里是单行 `Row`，4 个 pill（分类 2 枚 +
+                // 徽标 1 枚）+ 实时渲染在 336 宽时刚好塞满，右栏被挤到 240 宽时
+                // 需要 ~220 dp 而只有 ~176 dp，于是每个 pill 都被压到省略号。
+                // 改成 FlowRow：宽度够时仍然是一行（与演示稿一致），不够时整枚换行，
+                // 页签条高度 40 dp 不动、字号不动。间距 6/4 取自 FmRhythm。
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(FmRhythm.inlineLoose),
+                    verticalArrangement = Arrangement.spacedBy(FmRhythm.inlineWide),
                 ) {
                     // 演示稿把分类拆成 pill（「文字边框」「水印边框」各一枚），不是一行文字。
                     categoryLine.split(" · ").filter { it.isNotBlank() }.forEach { part ->
@@ -176,17 +190,23 @@ fun DesktopInspectorRail(
                         )
                     }
                     if (renderMode.isNotBlank()) {
-                        Box(Modifier.size(6.dp).clip(CircleShape).background(FmPalette.success))
-                        Text(
-                            text = renderMode,
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                lineHeight = 16.sp,
-                                fontWeight = FontWeight.Normal,
-                            ),
-                            color = FmPalette.success,
-                            maxLines = 1,
-                        )
+                        // 绿点与文案必须整体换行，不能一个留在上一行、一个掉到下一行。
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(FmRhythm.inlineLoose),
+                        ) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(FmPalette.success))
+                            Text(
+                                text = renderMode,
+                                style = TextStyle(
+                                    fontSize = 11.sp,
+                                    lineHeight = 16.sp,
+                                    fontWeight = FontWeight.Normal,
+                                ),
+                                color = FmPalette.success,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -227,14 +247,16 @@ fun DesktopInspectorRail(
                 selected = selectedPage,
                 onSelect = onSelectPage,
             )
-            Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+            // 规则 1：`.itabs { border-bottom: 1px solid var(--line) }` —— 栏级发线。
+            Box(Modifier.columnRule())
         }
 
         // ---------------------------------------------------------------- ibody
         Box(Modifier.weight(1f).fillMaxWidth()) { content() }
 
         // ---------------------------------------------------------------- ifoot
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：`.ifoot { border-top: 1px solid var(--line) }`。
+        Box(Modifier.columnRule())
         Row(
             modifier = Modifier
                 .fillMaxWidth()
