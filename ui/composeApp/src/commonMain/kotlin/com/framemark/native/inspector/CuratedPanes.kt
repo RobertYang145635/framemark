@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
+import com.framemark.native.theme.InsetRule
 import com.framemark.native.workflow.DesignSession
 
 /**
@@ -71,9 +73,8 @@ internal val CuratedNumeric = TextStyle(
 ).withNumericDigits()
 
 /**
- * One `.group`: 14 top / 12 bottom padding, a 12.5/600 title row (with an
- * optional right-hand counter), then the content. The caller draws the hairline
- * between groups.
+ * One `.group`: 16 top / 12 bottom padding（`FmRhythm` 分组档，规则 2：分组之间只留白
+ * 不画线）, a 12.5/600 title row (with an optional right-hand counter), then the content.
  */
 @Composable
 internal fun CuratedGroup(
@@ -81,11 +82,15 @@ internal fun CuratedGroup(
     right: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 12.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = FmRhythm.groupGap, bottom = FmRhythm.groupTail),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().heightIn(min = 22.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(FmRhythm.row),
         ) {
             Text(
                 text = title,
@@ -97,15 +102,18 @@ internal fun CuratedGroup(
             )
             right?.invoke()
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(FmRhythm.row))
         content()
     }
 }
 
-/** Hairline between two groups (`border-bottom: 1px var(--line)`). */
+/**
+ * 旧的通栏发线（栏级）。分组之间按规则 2 只留白，不再用它分隔分组；组内两段用
+ * [com.framemark.native.theme.InsetRule]。
+ */
 @Composable
 internal fun CuratedRule() {
-    Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+    Box(Modifier.fillMaxWidth().height(FmRhythm.hairline).background(FmPalette.outline))
 }
 
 /** Pixel size of the photo the stage is showing (`导出尺寸` needs it). */
@@ -149,7 +157,7 @@ internal fun CuratedSubNote(text: String) {
         text = text,
         style = CuratedNote,
         color = FmPalette.onSurfaceMuted,
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = FmRhythm.inline),
     )
 }
 
@@ -157,7 +165,7 @@ internal fun CuratedSubNote(text: String) {
 @Composable
 internal fun CuratedOutSize(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = FmRhythm.rowLoose),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -395,7 +403,6 @@ internal fun CuratedStylePane(
     val pct = footerPctControlOf(controls)
     val handled = listOfNotNull(theme, mode, pct).toSet()
     val rest = controls.filterNot { it in handled }
-    var first = true
     Column(modifier = modifier.fillMaxWidth()) {
         if (theme != null) {
             CuratedGroup("底色") {
@@ -405,10 +412,8 @@ internal fun CuratedStylePane(
                     onSelect = { session.set(theme, it) },
                 )
             }
-            first = false
         }
         if (mode != null || pct != null) {
-            if (!first) CuratedRule()
             val modeValue = mode?.let { session.value(it).toString() }.orEmpty()
             CuratedGroup("版式") {
                 if (mode != null && mode.options.isNotEmpty()) {
@@ -449,13 +454,13 @@ internal fun CuratedStylePane(
                     }
                 }
                 if (outputSize != null) {
+                    // 组内两段（滑杆 ↔ 导出尺寸）用规则 3 的内缩发线，不贴边。
+                    InsetRule()
                     CuratedOutSize("导出尺寸", "${outputSize.first} × ${outputSize.second} px")
                 }
             }
-            first = false
         }
         if (rest.isNotEmpty()) {
-            if (!first) CuratedRule()
             CuratedGroup("更多参数") {
                 rest.forEach { control -> GenericControlRow(control, session) }
                 // AU2 A-07：`footerAuto` 只在简约版式的 `layout()` 里被读，

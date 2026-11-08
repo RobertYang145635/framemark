@@ -105,6 +105,7 @@ import com.framemark.native.inspector.InspectorPage
 import com.framemark.native.inspector.WatermarkPane
 import com.framemark.native.inspector.WatermarkZones
 import com.framemark.native.inspector.applyDemoEdits
+import com.framemark.native.inspector.hasTextPage
 import com.framemark.native.inspector.inspectorTabsFor
 import com.framemark.native.inspector.resetInspectorPage
 import com.framemark.native.library.LibraryCard
@@ -336,7 +337,7 @@ fun PhoneEditorScreen(
     val tabModel = inspectorTabsFor(
         model = model,
         session = session,
-        hasTextSlots = textSlots.isNotEmpty(),
+        hasTextSlots = hasTextPage(textSlots.size, textOutputWidth),
         watermarkModified = WatermarkZones.modifiedCount(watermark),
     )
     val tools = phoneToolsFor(tabModel)

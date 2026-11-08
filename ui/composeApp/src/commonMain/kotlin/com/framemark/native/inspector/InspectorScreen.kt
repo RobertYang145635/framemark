@@ -62,7 +62,6 @@ import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.groupTextSlots
 import com.framemark.native.workflow.isNativeTextSlotControl
 import com.framemark.native.workflow.isUsableStaticTextControl
-import com.framemark.native.workflow.textSlotControls
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -234,7 +233,13 @@ fun EditorTabList(
     }
 }
 
-/** Renderer-backed rows grouped by observed canvas position and draw order. */
+/**
+ * 文字页的渲染器 slot 区（桌面右栏与手机底板共用 [TextSlotSelector]）。
+ *
+ * WP-TX1：不再是「一组位置卡片 × 每行三个控件」的滚动列表，而是「有几个文本框
+ * 就出几个导航项，点一个只显示这一个的编辑卡」。手机用 `dense = true`：导航横向
+ * 可滚、卡片紧凑；桌面由 `CuratedTextPane` 调用同一套渲染。
+ */
 @Composable
 internal fun NativeTextSlotControls(
     model: InspectorCardModel,
@@ -245,9 +250,9 @@ internal fun NativeTextSlotControls(
     /** §3.1: stable `TextSlot.key` of the row whose 替换文字 input has focus. */
     onTextSlotFocus: ((String?) -> Unit)? = null,
     dense: Boolean = false,
+    /** 宿主保存的选择（切页签保持）；null 时页内自适应。 */
+    selection: TextSlotSelectionState? = null,
 ) {
-    val grouped = groupTextSlots(slots, outputWidth, outputHeight)
-    val controlsByKey = model.controls.associateBy { it.key }
     // WP-C §4.6 / A-03: say "未读到拍摄参数" once per card, not on every row.
     val showExifHint = remember(model.cardId) { ExifGapNotice.shouldShowHint(slots) }
     if (showExifHint) {
@@ -258,72 +263,17 @@ internal fun NativeTextSlotControls(
             modifier = Modifier.padding(bottom = FmSpacing.xs),
         )
     }
-    grouped.forEach { group ->
-        SectionCardShell(title = group.label, dense = dense) {
-            group.rows.forEachIndexed { rowIndex, row ->
-                if (rowIndex > 0) Divider()
-                // A-04: deterministic display rule — shrink to 80 % at most, then one
-                // ellipsis; the row can never grow over its neighbours.
-                val sourceText = FmTextFit.ellipsize(
-                    ExifGapNotice.rowSummary(row.slot.text, row.slot.raw),
-                    maxChars = 90,
-                )
-                Text(
-                    text = sourceText,
-                    style = FmType.labelSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = FmPalette.onSurfaceMuted,
-                    modifier = Modifier.padding(
-                        top = if (rowIndex > 0 && dense) FmSpacing.xs else 0.dp,
-                        bottom = if (dense) FmSpacing.xxs else FmSpacing.xs,
-                    ),
-                )
-                textSlotControls(model.cardId, row.slot).forEachIndexed { controlIndex, generated ->
-                    val source = controlsByKey[generated.key] ?: generated
-                    val actionLabel = when {
-                        source.param.startsWith("params.slotText:") -> "替换文字"
-                        source.param.startsWith("params.slotOff:") -> "显示文字"
-                        else -> "文字大小"
-                    }
-                    // Only the free-text row reports focus, and it reports the
-                    // stable slot key — never the display index "第N行".
-                    val reportsFocus = source.param.startsWith("params.slotText:")
-                    val visibleControlledElsewhere =
-                        source.param.startsWith("params.slotOff:") &&
-                            row.slot.hidden && (session.value(source) as? Boolean != false)
-                    val control = source.copy(
-                        label = actionLabel,
-                        disabledReason = source.disabledReason,
-                    )
-                    // A hidden row's visibility switch cannot be operated here; showing
-                    // a disabled switch looks like a dead control. Replace it with a
-                    // short explanation and keep only the controls that can write.
-                    if (visibleControlledElsewhere) {
-                        Text(
-                            text = "当前行由整体文字显示开关控制",
-                            style = FmType.labelSmall,
-                            color = FmPalette.onSurfaceMuted,
-                            modifier = Modifier.padding(vertical = FmSpacing.xs),
-                        )
-                        return@forEachIndexed
-                    }
-                    if (controlIndex > 0) Divider()
-                    ControlItem(
-                        control = control,
-                        session = session,
-                        showResetControl = true,
-                        dense = dense,
-                        onTextFocusChanged = if (reportsFocus) {
-                            { focused -> onTextSlotFocus?.invoke(if (focused) row.slot.key else null) }
-                        } else {
-                            null
-                        },
-                    )
-                }
-            }
-        }
-    }
+    TextSlotSelector(
+        cardId = model.cardId,
+        slots = slots,
+        outputWidth = outputWidth,
+        outputHeight = outputHeight,
+        controls = model.controls,
+        session = session,
+        dense = dense,
+        selection = selection,
+        onTextSlotFocus = onTextSlotFocus,
+    )
 }
 
 /**

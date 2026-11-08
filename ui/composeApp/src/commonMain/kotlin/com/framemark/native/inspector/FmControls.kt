@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.fmElevated
@@ -725,28 +726,35 @@ internal fun CuratedSliderRow(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             if (modified) {
                 Box(Modifier.size(4.dp).clip(CircleShape).background(FmPalette.primary))
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(FmRhythm.inlineLoose))
             }
-            Text(
-                text = label,
-                style = CuratedSliderLabel,
-                color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            // AU4-16：单位/说明**贴着标签**（`底部留白 · 占照片宽度`），不要挂到值框
+            // 左边；标签自己可省略号收缩，值框永远靠右。
+            Row(
                 modifier = Modifier.weight(1f),
-            )
-            if (!hint.isNullOrBlank()) {
-                Spacer(Modifier.width(6.dp))
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = hint,
-                    style = CuratedSliderHint,
-                    color = FmPalette.onSurfaceMuted,
+                    text = label,
+                    style = CuratedSliderLabel,
+                    color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
+                if (!hint.isNullOrBlank()) {
+                    Spacer(Modifier.width(FmRhythm.inline))
+                    Text(
+                        text = "· $hint",
+                        style = CuratedSliderHint,
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-            Spacer(Modifier.width(6.dp))
             if (modified && enabled) {
+                Spacer(Modifier.width(FmRhythm.inlineLoose))
                 Box(
                     modifier = Modifier
                         .size(22.dp)
@@ -762,7 +770,7 @@ internal fun CuratedSliderRow(
                     )
                 }
             }
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
             FmSliderValueBox(
                 value = value,
                 min = min,

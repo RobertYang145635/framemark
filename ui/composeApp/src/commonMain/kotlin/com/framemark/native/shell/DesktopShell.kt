@@ -97,6 +97,7 @@ import com.framemark.native.inspector.InspectorPageContent
 import com.framemark.native.inspector.InspectorTabModel
 import com.framemark.native.inspector.WatermarkPane
 import com.framemark.native.inspector.WatermarkZones
+import com.framemark.native.inspector.hasTextPage
 import com.framemark.native.inspector.inspectorTabsFor
 import com.framemark.native.inspector.resetInspectorPage
 import com.framemark.native.inspector.InspectorDataSource
@@ -424,7 +425,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     val tabModel = inspectorTabsFor(
         model = panelModel,
         session = session,
-        hasTextSlots = textSlots.slots.isNotEmpty(),
+        hasTextSlots = hasTextPage(textSlots.slots.size, textSlots.width),
         watermarkModified = WatermarkZones.modifiedCount(watermarkSpec),
     )
 
@@ -1705,6 +1706,8 @@ private fun DesktopColumnLayout(
                             session = session,
                             modifier = Modifier.fillMaxWidth(),
                             onTextSlotFocus = onTextSlotFocus,
+                            // 文字页的选择状态以卡片 id 为键（切换边框时回到第一个）。
+                            cardId = panelModel?.cardId,
                         )
                     }
                 }

@@ -105,9 +105,14 @@ data class TextSlotSnapshot(
     val slots: List<TextSlot>,
 )
 
-/** Classifies a slot by the center of its reported rectangle in output pixels. */
-fun textSlotPosition(slot: TextSlot, outputWidth: Int, outputHeight: Int): TextSlotPosition? {
-    if (!slot.isEditableTextSlot() || !slot.located || outputWidth <= 0 || outputHeight <= 0) return null
+/**
+ * Classifies **any** located rectangle by the center of its reported rectangle in
+ * output pixels. Editability is deliberately not part of the geometry: the text
+ * page lists a read-only row (no writable identity) under its real position too,
+ * instead of dumping it into 待定位.
+ */
+internal fun classifyTextSlotPosition(slot: TextSlot, outputWidth: Int, outputHeight: Int): TextSlotPosition? {
+    if (!slot.located || outputWidth <= 0 || outputHeight <= 0) return null
     if (!slot.x.isFinite() || !slot.y.isFinite() || !slot.w.isFinite() || !slot.h.isFinite()) return null
     if (slot.w <= 0.0 || slot.h <= 0.0) return null
     val centerX = ((slot.x + slot.w / 2.0) / outputWidth).coerceIn(0.0, 1.0)
@@ -125,18 +130,36 @@ fun textSlotPosition(slot: TextSlot, outputWidth: Int, outputHeight: Int): TextS
     return TextSlotPosition.entries.first { it.row == row && it.column == column }
 }
 
+/** Classifies an editable slot by the center of its reported rectangle in output pixels. */
+fun textSlotPosition(slot: TextSlot, outputWidth: Int, outputHeight: Int): TextSlotPosition? =
+    if (!slot.isEditableTextSlot()) null else classifyTextSlotPosition(slot, outputWidth, outputHeight)
+
 /**
  * Stable groups for the text inspector. Positioned rows are sorted by y/x;
  * geometry-free rows remain available at the end under `待定位`.
+ *
+ * [includeReadonly] adds rows the renderer drew (or explicitly hid) without a
+ * writable identity: the selection-style text page lists them as 只读 boxes
+ * instead of hiding a box the user can see on the stage. The default keeps the
+ * historical "editable rows only" grouping for every other caller.
  */
-fun groupTextSlots(slots: List<TextSlot>, outputWidth: Int, outputHeight: Int): List<TextSlotGroup> {
-    val eligible = slots.filter(TextSlot::isCurrentTextSlot)
+fun groupTextSlots(
+    slots: List<TextSlot>,
+    outputWidth: Int,
+    outputHeight: Int,
+    includeReadonly: Boolean = false,
+): List<TextSlotGroup> {
+    val eligible = if (includeReadonly) {
+        slots.filter { it.isCurrentTextSlot() || it.present || it.hidden }
+    } else {
+        slots.filter(TextSlot::isCurrentTextSlot)
+    }
     val positioned = TextSlotPosition.entries.mapNotNull { position ->
-        val members = eligible.filter { textSlotPosition(it, outputWidth, outputHeight) == position }
+        val members = eligible.filter { classifyTextSlotPosition(it, outputWidth, outputHeight) == position }
             .sortedWith(compareBy<TextSlot>({ it.y }, { it.x }, { it.key.orEmpty() }))
         if (members.isEmpty()) null else TextSlotGroup(position, members.mapIndexed { index, slot -> TextSlotRow(slot, index + 1) })
     }
-    val unlocated = eligible.filter { textSlotPosition(it, outputWidth, outputHeight) == null }
+    val unlocated = eligible.filter { classifyTextSlotPosition(it, outputWidth, outputHeight) == null }
         .sortedWith(compareBy<TextSlot>({ if (it.located) it.y else Double.POSITIVE_INFINITY }, { if (it.located) it.x else Double.POSITIVE_INFINITY }, { it.key.orEmpty() }))
     return positioned + if (unlocated.isEmpty()) emptyList() else {
         listOf(TextSlotGroup(null, unlocated.mapIndexed { index, slot -> TextSlotRow(slot, index + 1) }))

@@ -696,8 +696,11 @@ fun NativeStagePreview(
             if (ready != null && readyIsCurrent && highlightKey != null &&
                 boxPx.width > 0 && boxPx.height > 0
             ) {
-                val highlightRect = ready.textSlots
-                    .firstOrNull { it.key == highlightKey }
+                // 可写行按稳定 key 命中；只读行没有可写身份，文字页选它时传的是报告
+                // id，这里补一次兜底，舞台照样框出用户正在看的那个文本框。
+                val highlightSlot = ready.textSlots.firstOrNull { it.key == highlightKey }
+                    ?: ready.textSlots.firstOrNull { it.key == null && it.id == highlightKey }
+                val highlightRect = highlightSlot
                     ?.let { slot ->
                         slotHighlightRect(
                             slot = slot,
@@ -707,7 +710,7 @@ fun NativeStagePreview(
                             boxH = boxPx.height.toFloat(),
                         )
                     }
-                println("FM_TEXT_HIGHLIGHT key=$highlightKey located=${ready.textSlots.firstOrNull { it.key == highlightKey }?.located} rect=$highlightRect")
+                println("FM_TEXT_HIGHLIGHT key=$highlightKey located=${highlightSlot?.located} rect=$highlightRect")
                 if (highlightRect != null) {
                     // WP-T: read the ink during composition; the Canvas draw scope is not composable.
                     val highlightWash = FmPalette.primary.copy(alpha = 0.10f)

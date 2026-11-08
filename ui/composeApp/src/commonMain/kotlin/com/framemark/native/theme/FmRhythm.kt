@@ -1,6 +1,7 @@
 package com.framemark.native.theme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -82,6 +83,9 @@ object FmRhythm {
     /** 紧凑列表行高清高（缩略图 72 × 54 + 行内 12 × 2）。 */
     val compactRowThumbWidth = 72.dp
     val compactRowThumbHeight = 54.dp
+
+    /** WP-TX1：分组收尾留白（规则 2 的「下 12」）。 */
+    val groupTail = 12.dp
 }
 
 /**
@@ -107,3 +111,23 @@ fun Modifier.insetRule(inset: Dp = FmRhythm.columnEdge): Modifier =
         .padding(horizontal = inset)
         .height(FmRhythm.hairline)
         .background(FmPalette.outline)
+/**
+ * 规则 1 的组件壳：栏级发线，通栏贴边（与 [Modifier.columnRule] 等价）。
+ * TX1 的右栏/文字页按组件调用，TY1 的页面按 Modifier 调用，两者共用同一套值。
+ */
+@Composable
+fun ColumnRule(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(FmRhythm.hairline).background(FmPalette.outline))
+}
+
+/** 规则 3 的组件壳：组内发线，左右各内缩 [FmRhythm.columnEdge]。 */
+@Composable
+fun InsetRule(modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = FmRhythm.columnEdge)
+            .height(FmRhythm.hairline)
+            .background(FmPalette.outline),
+    )
+}
