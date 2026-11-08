@@ -2,6 +2,7 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -15,10 +16,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.shell.PhoneCompactSheetMetrics
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.FmSpacing
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmType
 import kotlin.math.abs
 
@@ -112,9 +118,17 @@ fun PhoneSheetGrabber(
  * parameter page), then the accent actions — `恢复默认 N` (`.rst`, 32 dp, 13 sp)
  * and `调整样式 ›` (`.adj`, 32 dp, 13 sp, gap 2) — and the 36 dp expand chevron.
  *
- * 预设 stays as a fourth action (HANDOFF §3.5 keeps the phone's preset entry; the
- * showcase's phone screens have no preset surface, so it reuses the header's ghost
- * action slot and touches nothing else).
+ * **AU4 §A2 / WP-TY1：页头固定 4 个元素，与演示稿一致。**
+ *
+ * 改前小米底板页头一行塞 5 个：`边框  当前：经典双行  调整样式 ›  预设  ⌄`，
+ * 演示稿只有 4 个（`边框  当前：经典双行  调整样式 ›  ⌄`）。多出来的「预设」把
+ * `当前：…` 挤成省略号，13 sp 的两个动作贴在一起 —— 这是"很密"那一类问题的根因。
+ * 现在「预设」收进**折叠箭头菜单**：点箭头照旧一步展开/收起（grabber 也能点），
+ * 长按/再点箭头打开菜单拿「预设」。于是无改动时页头恒为 4 个元素，
+ * 有改动时是 5 个（`恢复默认 N` 与演示稿 `.psh .rst` 一样内联出现）。
+ *
+ * 预设入口仍在（HANDOFF §3.5 要求手机保留），只是从页头降级到箭头菜单，
+ * 这也是任务书给的两种做法之一（"收进 ⋯ 或折叠箭头菜单"）。
  */
 @Composable
 fun PhoneSheetHead(
@@ -130,6 +144,7 @@ fun PhoneSheetHead(
     modifier: Modifier = Modifier,
 ) {
     val actionHeight = height.coerceAtMost(SheetHeadMaxHeight)
+    var menuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -143,7 +158,9 @@ fun PhoneSheetHead(
             color = FmPalette.onSurface,
             maxLines = 1,
         )
-        Spacer(Modifier.width(FmSpacing.sm))
+        // `.psh { gap: 8px }` —— 标题与副题之间是演示稿的 8 dp（= FmRhythm.row），
+        // 不要为了"看起来更紧"改成 6：那会离基线 2 dp，而这里正是最挤的一行。
+        Spacer(Modifier.width(FmRhythm.row))
         Text(
             text = subtitle,
             style = FmType.labelSmall.copy(fontSize = 12.5.sp),
@@ -171,32 +188,57 @@ fun PhoneSheetHead(
                 onClick = onAdjustStyle,
             )
         }
-        if (onOpenPresets != null) {
-            HeadAction(
-                label = "预设",
-                description = "打开预设",
-                height = actionHeight,
-                onClick = onOpenPresets,
-            )
-        }
         // AU4-05 (WP-X3 follow-up): 展开参数 keeps the band's height. Growing its hit
         // box past the 28–30 dp band was measured NOT to work — the band's own bounds
         // gate the pointer, so the extra dp are dead (a tap 6 dp above the box reached
         // the sheet grabber instead, and 6 dp above 预设 / 5 dp above 热门 did nothing).
         // See reports\WP-X3-REPORT.md §4.4: the real fix needs either a taller band
         // (sheet budget → product decision) or a touch delegate on a taller ancestor.
-        Box(
-            modifier = Modifier
-                .size(height.coerceAtMost(SheetHeadChevronSize))
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .semantics {
-                    contentDescription = if (expanded) "收起参数" else "展开参数"
-                    role = Role.Button
+        //
+        // WP-TY1：箭头**单击仍是展开/收起**（一步，不退化），但长按会打开一个小菜单，
+        // 「预设」就收在那里；没有预设可给时（参数页）长按不起作用，行为与改前一致。
+        Box {
+            Box(
+                modifier = Modifier
+                    .size(height.coerceAtMost(SheetHeadChevronSize))
+                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .semantics {
+                        contentDescription = if (expanded) "收起参数" else "展开参数"
+                        role = Role.Button
+                    }
+                    .combinedClickable(
+                        onClick = onToggleExpanded,
+                        onLongClick = if (onOpenPresets != null) {
+                            {
+                                menuOpen = true
+                                println("FM_PHONE_SHEET_HEAD_MENU presets=1")
+                            }
+                        } else {
+                            null
+                        },
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                PhoneChevronGlyph(tint = FmPalette.onSurfaceSecondary, up = expanded)
+            }
+            if (onOpenPresets != null) {
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (expanded) "收起参数" else "展开参数", style = FmType.bodyMedium) },
+                        onClick = {
+                            menuOpen = false
+                            onToggleExpanded()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("预设", style = FmType.bodyMedium) },
+                        onClick = {
+                            menuOpen = false
+                            onOpenPresets()
+                        },
+                    )
                 }
-                .clickable(onClick = onToggleExpanded),
-            contentAlignment = Alignment.Center,
-        ) {
-            PhoneChevronGlyph(tint = FmPalette.onSurfaceSecondary, up = expanded)
+            }
         }
     }
 }

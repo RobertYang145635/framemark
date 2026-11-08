@@ -44,6 +44,7 @@ import com.framemark.native.theme.FmNumeric
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.columnRule
 import com.framemark.native.workflow.PhotoThumbnail
 import com.framemark.native.workflow.ProjectHolder
 
@@ -60,8 +61,8 @@ fun DesktopFilmstrip(
     val designs = projects.project.designs
     val selected = photos.count { designs[it.id]?.cardId != null }
     Column(modifier = Modifier.fillMaxWidth().height(FmDesktop.filmstripHeight)) {
-        // `.strip { border-top: 1px solid var(--line) }`
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // `.strip { border-top: 1px solid var(--line) }` —— 规则 1：栏级发线，贴边通栏。
+        Box(Modifier.columnRule())
         Row(
             modifier = Modifier
                 .fillMaxSize()

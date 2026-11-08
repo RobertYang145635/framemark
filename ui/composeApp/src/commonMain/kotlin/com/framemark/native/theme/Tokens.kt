@@ -518,8 +518,23 @@ object FmType {
     )
 }
 
+/**
+ * Spacing ladder. AU4-18 (WP-TY1): the old `xxs = 2.dp` sat **off** the 4 grid the
+ * showcase and `10-spec.png` use, so every call site was 2 dp tighter than the
+ * ladder said. It is now 4 dp; the two places that genuinely needed 2 dp were
+ * "a line, not a space" and moved to [FmRhythm.hairline] (1 dp) or an inline
+ * [FmRhythm.inline] gap. Dashes and hairlines never use a spacing step.
+ *
+ * 档位语义见 [FmRhythm]：行内 2/4/6、行 8/10、分组 12/16、大节 24/32。
+ */
 object FmSpacing {
-    val xxs = 2.dp
+    /**
+     * 最紧的一档。AU4-18 之前是 2 dp（越出 4 网格），现在是 4 dp —— 与 [xs] 同值，
+     * 保留这个名字是因为 `inspector/BrandLogoLibrary.kt`、`inspector/FmControls.kt`、
+     * `inspector/InspectorScreen.kt` 里还有 6 个调用点在用"最紧一档"这个语义
+     * （那三个文件不在 WP-TY1 可改范围内），删掉名字会把语义丢掉。
+     */
+    val xxs = 4.dp
     val xs = 4.dp
     val sm = 8.dp
     val md = 12.dp
