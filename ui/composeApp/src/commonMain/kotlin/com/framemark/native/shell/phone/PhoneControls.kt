@@ -38,6 +38,7 @@ import com.framemark.native.inspector.FmSlider
 import com.framemark.native.inspector.swatchColor
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -231,9 +232,10 @@ fun PhoneSliderRow(
                 modifier = Modifier.weight(1f, fill = false),
             )
             if (!hint.isNullOrBlank()) {
-                Spacer(Modifier.width(6.dp))
+                // AU4-16：单位/说明贴着标签（`底部留白 · 占照片宽度`），值框靠右。
+                Spacer(Modifier.width(FmRhythm.inlineLoose))
                 Text(
-                    text = hint,
+                    text = "· $hint",
                     style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
                     color = FmPalette.onSurfaceMuted,
                     maxLines = 1,

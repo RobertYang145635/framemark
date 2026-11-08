@@ -107,13 +107,24 @@ internal fun modifiedCountOf(controls: List<InspectorControl>, session: DesignSe
     controls.count { session.isModified(it) }
 
 /**
+ * 文字页是否属于这套边框。
+ *
+ * 渲染器**给了画布**（`canvasWidthPx > 0`）就算有这一页：一个文本框都没有时它显示
+ * 空态「这个边框没有可编辑文字」，而不是整页消失 —— 桌面与手机用同一个判据，
+ * 用户点开「文字」看到的是「这套边框没有文字」，不是「这里没有入口」。
+ */
+fun hasTextPage(slotCount: Int, canvasWidthPx: Int): Boolean =
+    slotCount > 0 || canvasWidthPx > 0
+
+/**
  * Builds the tab model for one card.
  *
  * [watermarkModified] is the watermark layer's own changed-item count (offset,
  * width, opacity, anchor — see `WatermarkZones.modifiedCount`); it cannot be
  * derived from the card model because the watermark is a per-photo user layer.
  * [hasTextSlots] keeps the 文字 page visible when the card's text lives in
- * renderer rows rather than declared controls.
+ * renderer rows rather than declared controls (including the zero-box empty state —
+ * callers pass [hasTextPage]).
  */
 internal fun inspectorTabsFor(
     model: InspectorCardModel?,
@@ -278,6 +289,8 @@ fun InspectorPageContent(
      * every existing caller unchanged.
      */
     onTextSlotFocus: ((String?) -> Unit)? = null,
+    /** 这一页属于哪张卡：文字页的选择状态按它重置（桌面文字页走选择式控件）。 */
+    cardId: String? = null,
 ) {
     if (tab.page == InspectorPage.Watermark) {
         watermarkPane?.invoke()
@@ -286,7 +299,13 @@ fun InspectorPageContent(
     // 桌面右栏走按演示稿重做的分页（WP-V3）；手机底板（dense）保持原控件列表，
     // 免得同一份模型在两种宽度下换一套布局。
     if (!dense) {
-        CuratedPage(tab = tab, session = session, modifier = modifier)
+        CuratedPage(
+            tab = tab,
+            session = session,
+            modifier = modifier,
+            cardId = cardId,
+            onTextSlotFocus = onTextSlotFocus,
+        )
         return
     }
     val sections = tab.controls.groupBy { it.section }.toList()

@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,11 +32,17 @@ import com.framemark.native.inspector.LocalCuratedPhotoSize
 import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
+import com.framemark.native.inspector.TextPageMode
+import com.framemark.native.inspector.TextSlotEmptyPane
 import com.framemark.native.inspector.fontScaleControlOf
 import com.framemark.native.inspector.footerModeControlOf
 import com.framemark.native.inspector.footerPctControlOf
 import com.framemark.native.inspector.footerPctDisabledReason
 import com.framemark.native.inspector.footerPctFloor
+import com.framemark.native.inspector.rememberTextSlotSelectionState
+import com.framemark.native.inspector.textPageMode
+import com.framemark.native.inspector.textScaleHint
+import com.framemark.native.inspector.textSlotNavEntries
 import com.framemark.native.inspector.themeControlOf
 import com.framemark.native.inspector.OutputSize
 import com.framemark.native.inspector.curatedOutputPixels
@@ -111,7 +118,28 @@ fun PhoneParameterPage(
         }
         return
     }
-    val hasRows = page == InspectorPage.Text && textSlots.isNotEmpty() && textOutputWidth > 0
+    // 文字页三态（WP-TX1）：有渲染器报告的文本框 → 导航 + 单卡；报告到了但一个
+    // 都没有 → 空态；压根没有报告（不是实时渲染的卡）→ 保留声明出来的文字行。
+    val textEntries = if (page == InspectorPage.Text) {
+        remember(textSlots, textOutputWidth, textOutputHeight) {
+            textSlotNavEntries(textSlots, textOutputWidth, textOutputHeight)
+        }
+    } else {
+        emptyList()
+    }
+    // 选择状态按卡片 id：切边框回到第一个，切页签回来还是同一个（brief §2）。
+    val textSelection = rememberTextSlotSelectionState(model?.cardId)
+    val textMode = if (page == InspectorPage.Text && model != null) {
+        textPageMode(
+            hasReport = textOutputWidth > 0,
+            entries = textEntries,
+            staticTextControls = phonePageControls(tab).filter {
+                it.type == ControlType.Text || it.type == ControlType.Switch
+            },
+        )
+    } else {
+        null
+    }
     CompositionLocalProvider(
         LocalCuratedPhotoSize provides if (photoWidthPx > 0 && photoHeightPx > 0) {
             CuratedPhotoSize(photoWidthPx, photoHeightPx)
@@ -145,7 +173,7 @@ fun PhoneParameterPage(
                 card = card,
                 tab = tab,
             )
-            hasRows && model != null -> Column {
+            textMode == TextPageMode.Selector && model != null -> Column {
                 Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
                     NativeTextSlotControls(
                         model = model,
@@ -155,9 +183,17 @@ fun PhoneParameterPage(
                         session = session,
                         onTextSlotFocus = onTextSlotFocus,
                         dense = true,
+                        selection = textSelection,
                     )
                 }
-                PhoneTextScaleGroup(controls = tab.controls, session = session)
+                PhoneTextScaleGroup(
+                    controls = tab.controls,
+                    session = session,
+                    boxCount = textEntries.count { !it.readonly },
+                )
+            }
+            textMode == TextPageMode.Empty -> Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
+                TextSlotEmptyPane(dense = true)
             }
             else -> Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
                 InspectorPageContent(
@@ -295,13 +331,22 @@ private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int) {
 
 /** The 文字 page's 文字大小 group (showcase `grp('文字大小', fmSlider(...))`). */
 @Composable
-private fun PhoneTextScaleGroup(controls: List<InspectorControl>, session: DesignSession) {
+private fun PhoneTextScaleGroup(
+    controls: List<InspectorControl>,
+    session: DesignSession,
+    /** 这一页有几个文本框：四行沿用演示稿口径，其他数量说人话。 */
+    boxCount: Int = 0,
+) {
     // AU2 A-05: 这里原来比对字面量 `"text.fontScale"`，而注册表归一后 consumer 是
     // `fontScale` —— 62 张手写卡的「文字大小」在手机上从来没出现过。改用与桌面
     // 同一个判定，避免第三处再分叉。
     val scale = fontScaleControlOf(controls) ?: return
     PhoneGroup(title = "文字大小") {
-        PhoneControlSlider(control = scale, session = session, hint = "四行同比缩放")
+        PhoneControlSlider(
+            control = scale,
+            session = session,
+            hint = textScaleHint(boxCount),
+        )
     }
 }
 

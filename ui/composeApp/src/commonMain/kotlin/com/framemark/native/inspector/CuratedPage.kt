@@ -1,10 +1,7 @@
 package com.framemark.native.inspector
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,9 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -31,29 +26,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.InsetRule
 import com.framemark.native.workflow.ControlProbe
 import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
+import com.framemark.native.workflow.isCurrentTextSlot
 
 /**
  * WP-V3 curated page dispatcher — the desktop rail's body.
@@ -70,8 +60,14 @@ internal fun CuratedPage(
     tab: InspectorTabInfo,
     session: DesignSession,
     modifier: Modifier = Modifier,
+    /** 这一页属于哪张卡：文字页的选择状态按它重置（`rememberSaveable` 的输入）。 */
+    cardId: String? = null,
+    /** 文字页选中框 → 舞台高亮（`highlightedTextSlotKey` 链路）。 */
+    onTextSlotFocus: ((String?) -> Unit)? = null,
 ) {
     val controls = tab.controls
+    // 选择状态挂在分页之上：切到样式/Logo 再回来，仍是同一个文本框（brief §2）。
+    val textSelection = rememberTextSlotSelectionState(cardId)
     // 参数存在性判据（不写死卡片 id）：同时有 底色 / 版式 / 底部留白 才是可调边框，
     // 否则是厂商规格卡（`core.js:854` 的 ir 分支）。
     val tunable = themeControlOf(controls) != null &&
@@ -100,6 +96,9 @@ internal fun CuratedPage(
                 session = session,
                 isIr = !tunable,
                 textSlots = LocalCuratedTextSlots.current,
+                cardId = cardId,
+                selection = textSelection,
+                onTextSlotFocus = onTextSlotFocus,
             )
             // Logo 页由 Shell 直接调用 `LogoBrandPanel`（已转发到 LogoPanes.kt）。
             InspectorPage.Logo -> Unit
@@ -180,11 +179,16 @@ private fun SpecRow(label: String, value: String) {
 }
 
 /**
- * 文字页 (`core.js:738 paneClassicText` / `837 paneIrText`): one row per editable
- * text, the show/hide switches, then 文字大小.
+ * 文字页 (`core.js:738 paneClassicText` / `837 paneIrText`)，2026-11-07 用户口径：
  *
- * An IR card with no text row gets the showcase's empty state instead of a blank
- * page (`paneIrText` 的「这个边框没有可编辑文字」).
+ *  - 渲染器报告了几个文本框，就出几个导航项，顺序按版面阅读顺序；点一个只显示
+ *    这一个文本框的编辑卡（[TextSlotSelector]）；
+ *  - 只有一个文本框时不显示导航条，直接给那张卡；一个都没有给空态
+ *    （「这个边框没有可编辑文字」）；
+ *  - 「文字大小」（`fontScale`）保持全局一项，放在导航 + 编辑卡下方。
+ *
+ * 没有报告可用的卡（非实时渲染的厂商规格卡）仍然走声明出来的文字行，否则那些
+ * 边框的文字就彻底没法改了。
  */
 @Composable
 internal fun CuratedTextPane(
@@ -194,46 +198,80 @@ internal fun CuratedTextPane(
     modifier: Modifier = Modifier,
     /** 舞台最近一次渲染报告的四行 slot；非空时走「品牌 / 机型 / 拍摄参数 / 日期」版式。 */
     textSlots: CuratedTextSlots? = null,
+    /** 卡片 id：文字页的选择状态以它为准。 */
+    cardId: String? = null,
+    /** 宿主保存的选择（切页签保持）。 */
+    selection: TextSlotSelectionState? = null,
+    /** 选中框 → 舞台高亮。 */
+    onTextSlotFocus: ((String?) -> Unit)? = null,
 ) {
-    val slotRows = classicTextRows(textSlots)
+    val slots = textSlots?.slots.orEmpty()
+    val slotWidth = textSlots?.widthPx ?: 0
+    val slotHeight = textSlots?.heightPx ?: 0
+    val entries = remember(slots, slotWidth, slotHeight) {
+        textSlotNavEntries(slots, slotWidth, slotHeight)
+    }
     // AU2 A-05: 注册表把 `text.fontScale` 归一成 consumer `fontScale`，桌面与手机
     // 必须用同一个判定（[fontScaleControlOf]），否则手机那页永远少一条滑杆。
     val fontScale = fontScaleControlOf(controls)
-    if (slotRows.isNotEmpty()) {
-        CuratedSlotTextPane(
-            rows = slotRows,
-            canvas = textSlots!!,
-            controls = controls,
-            session = session,
-            fontScale = fontScale,
-            modifier = modifier,
-        )
-        return
-    }
     val textRows = controls.filter { it.type == ControlType.Text }
     val switches = controls.filter { it.type == ControlType.Switch }
     val sliders = controls.filter { it.type == ControlType.Slider }
     val others = controls.filter { it.type == ControlType.Select || it.type == ControlType.Color }
-    Column(modifier = modifier.fillMaxWidth()) {
-        if (textRows.isEmpty() && switches.isEmpty()) {
-            CuratedEmptyPane(
-                title = if (isIr) "这个边框没有可编辑文字" else "这个边框没有可编辑文字",
-                body = "文字和位置由厂商规格固定。",
-            )
-        } else {
+    when (
+        textPageMode(
+            hasReport = slotWidth > 0,
+            entries = entries,
+            staticTextControls = textRows + switches,
+        )
+    ) {
+        TextPageMode.Selector -> Column(modifier = modifier.fillMaxWidth()) {
+            CuratedGroup(
+                title = "文字内容",
+                right = if (showsTextSlotNavigation(entries)) {
+                    { CuratedCount("按版面位置排序") }
+                } else {
+                    null
+                },
+            ) {
+                TextSlotSelector(
+                    cardId = cardId.orEmpty(),
+                    slots = slots,
+                    outputWidth = slotWidth,
+                    outputHeight = slotHeight,
+                    controls = controls,
+                    session = session,
+                    dense = false,
+                    selection = selection,
+                    onTextSlotFocus = onTextSlotFocus,
+                )
+            }
+            if (fontScale != null) {
+                CuratedGroup("文字大小") {
+                    CuratedSliderRow(
+                        control = fontScale,
+                        session = session,
+                        label = "整体文字大小",
+                        hint = textScaleHint(entries.count { !it.readonly }),
+                        unit = fontScale.unit ?: "×",
+                        decimalPlaces = 2,
+                    )
+                }
+            }
+        }
+        TextPageMode.StaticRows -> Column(modifier = modifier.fillMaxWidth()) {
             if (textRows.isNotEmpty()) {
                 CuratedGroup(
                     title = "文字内容",
                     right = { CuratedCount(if (isIr) "${textRows.size} 行 · 按版面位置" else "按版面位置排序") },
                 ) {
                     textRows.forEachIndexed { index, control ->
-                        if (index > 0) CuratedRule()
+                        if (index > 0) InsetRule()
                         CuratedTextRow(control, session)
                     }
                 }
             }
             if (switches.isNotEmpty()) {
-                if (textRows.isNotEmpty()) CuratedRule()
                 CuratedGroup("显示") {
                     switches.forEach { control ->
                         CuratedSwitchRow(control, session)
@@ -241,7 +279,6 @@ internal fun CuratedTextPane(
                 }
             }
             if (sliders.isNotEmpty()) {
-                CuratedRule()
                 CuratedGroup("文字大小") {
                     sliders.forEach { control ->
                         CuratedSliderRow(
@@ -256,11 +293,16 @@ internal fun CuratedTextPane(
                 }
             }
             if (others.isNotEmpty()) {
-                CuratedRule()
                 CuratedGroup("其他") {
                     others.forEach { GenericControlRow(it, session) }
                 }
             }
+        }
+        TextPageMode.Empty -> Column(modifier = modifier.fillMaxWidth()) {
+            CuratedEmptyPane(
+                title = "这个边框没有可编辑文字",
+                body = "文字和位置由厂商规格固定。",
+            )
         }
     }
 }
@@ -453,17 +495,30 @@ private val ClassicTextSpecs = listOf(
     Triple("date", "日期", "showDate"),
 )
 
-/** 稳定身份的最后一段：`hand:wm-classic:brand` / `wm-classic#brand` 都取 `brand`。 */
+/**
+ * 稳定身份的最后一段：`hand:wm-classic:brand` / `wm-classic#brand` 都取 `brand`；
+ * 冻结数据里的 `wm-classic#make#0` 这种带行号的老写法也认（行号不是身份）。
+ */
 private fun slotLogicalName(slot: TextSlot): String =
-    (slot.key ?: slot.id).substringAfterLast(':').substringAfterLast('#').lowercase()
+    (slot.key ?: slot.id)
+        .replace(Regex("#\\d+$"), "")
+        .substringAfterLast(':')
+        .substringAfterLast('#')
+        .lowercase()
 
 /**
  * 把渲染器报告的四行按演示稿顺序挑出来。IR 卡的 path key（`b0/g0`）不会命中，
  * 于是那一页仍走原来的控件列表 —— 只有经典双行这类 hand 模板才有这四行。
+ *
+ * 目录里的声明 id（`wm-classic#make#0`）和渲染器报告的 `hand:wm-classic:brand`
+ * 拼法不同，桥接会为前者留一条「声明但没画」的占位行；同一个逻辑名两行都在时，
+ * **画出来的那一行优先**，否则「机型 / 拍摄参数 / 日期」会绑到空占位行上。
  */
 internal fun classicTextRows(info: CuratedTextSlots?): List<ClassicTextRow> {
     if (info == null) return emptyList()
-    val categorized = info.slots.map { it to slotLogicalName(it) }
+    val categorized = info.slots
+        .sortedByDescending { it.isCurrentTextSlot() }
+        .map { it to slotLogicalName(it) }
     val picked = mutableSetOf<String>()
     val rows = ArrayList<ClassicTextRow>(4)
     for ((logical, label, showParam) in ClassicTextSpecs) {
@@ -473,250 +528,4 @@ internal fun classicTextRows(info: CuratedTextSlots?): List<ClassicTextRow> {
         rows += ClassicTextRow(slot, label, showParam)
     }
     return rows
-}
-
-/** 四行文字页：文字内容（每行 slot）+ 文字大小（整体 fontScale）。 */
-@Composable
-private fun CuratedSlotTextPane(
-    rows: List<ClassicTextRow>,
-    canvas: CuratedTextSlots,
-    controls: List<InspectorControl>,
-    session: DesignSession,
-    fontScale: InspectorControl?,
-    modifier: Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        CuratedGroup(
-            title = "文字内容",
-            right = { CuratedCount("按版面位置排序") },
-        ) {
-            rows.forEachIndexed { index, row ->
-                if (index > 0) CuratedRule()
-                CuratedSlotTextRow(
-                    row = row,
-                    boxes = rows.map { it.slot },
-                    canvas = canvas,
-                    controls = controls,
-                    session = session,
-                )
-            }
-        }
-        if (fontScale != null) {
-            CuratedRule()
-            CuratedGroup("文字大小") {
-                CuratedSliderRow(
-                    control = fontScale,
-                    session = session,
-                    label = "整体文字大小",
-                    hint = "四行同比缩放",
-                    unit = fontScale.unit ?: "×",
-                    decimalPlaces = 2,
-                )
-            }
-        }
-    }
-}
-
-/**
- * 一行 slot：位置示意图 · 标签 + 输入框 · 眼睛开关。输入框占位就是渲染器报告的
- * 原文，所以「清空输入框 / 点恢复原文」都会回到原文（`encodeTextSlotOverrides`
- * 里空文本等于删除覆盖）。
- */
-@Composable
-private fun CuratedSlotTextRow(
-    row: ClassicTextRow,
-    boxes: List<TextSlot>,
-    canvas: CuratedTextSlots,
-    controls: List<InspectorControl>,
-    session: DesignSession,
-) {
-    val key = row.slot.key
-    val textControl = if (key != null) {
-        controls.firstOrNull { it.type == ControlType.Text && it.param == "params.slotText:$key" }
-    } else {
-        null
-    }
-    val showControl = controls.firstOrNull { control ->
-        control.type == ControlType.Switch &&
-            (control.param == row.showParam || control.param.endsWith(".${row.showParam}"))
-    }
-    val offControl = if (key != null) {
-        controls.firstOrNull { it.type == ControlType.Switch && it.param == "params.slotOff:$key" }
-    } else {
-        null
-    }
-    val raw = row.slot.raw.ifBlank { row.slot.text }
-    val override = textControl?.let { (session.value(it) as? String).orEmpty() }.orEmpty()
-    val modified = textControl != null && session.isModified(textControl)
-    val hidden = when {
-        showControl != null -> (session.value(showControl) as? Boolean)?.not() ?: false
-        offControl != null -> (session.value(offControl) as? Boolean)?.not() ?: row.slot.hidden
-        else -> row.slot.hidden
-    }
-    var text by remember(textControl?.key, key) { mutableStateOf(override) }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextSlotDiagram(boxes = boxes, current = row.slot, canvas = canvas)
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = row.label,
-                    style = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                    color = FmPalette.onSurfaceMuted,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f),
-                )
-                if (modified && textControl != null) {
-                    Text(
-                        text = "已改",
-                        style = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                        color = FmPalette.primaryStrong,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "恢复原文",
-                        style = TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                        color = FmPalette.primaryStrong,
-                        modifier = Modifier
-                            .heightIn(min = 22.dp)
-                            .clip(RoundedCornerShape(FmRadii.chip))
-                            .clickable(role = Role.Button) {
-                                session.resetControl(textControl)
-                                text = ""
-                            }
-                            .padding(horizontal = 4.dp),
-                    )
-                }
-            }
-            if (textControl == null) {
-                Text(
-                    text = raw.ifBlank { "（空）" },
-                    style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
-                    color = FmPalette.onSurfaceMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else {
-                BasicTextField(
-                    value = text,
-                    onValueChange = { next ->
-                        text = next
-                        // 输入回到原文就删掉覆盖键，与演示稿 `v == orig ? null : v` 一致。
-                        if (next == raw) session.resetControl(textControl) else session.set(textControl, next)
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                        color = if (hidden) FmPalette.onSurfaceFaint else FmPalette.onSurface,
-                        textDecoration = if (hidden) TextDecoration.LineThrough else null,
-                    ),
-                    cursorBrush = SolidColor(FmPalette.primary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 26.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(FmPalette.surface)
-                        .semantics { contentDescription = row.label }
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    decorationBox = { inner ->
-                        Box {
-                            if (text.isEmpty()) {
-                                Text(
-                                    text = raw.ifBlank { "（空）" },
-                                    style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
-                                    color = FmPalette.onSurfaceFaint,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            inner()
-                        }
-                    },
-                )
-            }
-        }
-        if (showControl != null || offControl != null) {
-            Spacer(Modifier.width(8.dp))
-            TextSlotEye(
-                visible = !hidden,
-                label = row.label,
-                onToggle = {
-                    when {
-                        showControl != null -> session.set(showControl, !(session.value(showControl) as? Boolean ?: true))
-                        offControl != null -> session.set(offControl, !(session.value(offControl) as? Boolean ?: true))
-                    }
-                },
-            )
-        }
-    }
-}
-
-/** `.trow .pos` — 26 × 20 的版式示意图：当前行高亮，其余行淡显。 */
-@Composable
-private fun TextSlotDiagram(
-    boxes: List<TextSlot>,
-    current: TextSlot,
-    canvas: CuratedTextSlots,
-) {
-    val line = FmPalette.onSurfaceFaint
-    val accent = FmPalette.primary
-    Canvas(Modifier.width(26.dp).height(20.dp)) {
-        val stroke = 1.dp.toPx()
-        drawRoundRect(
-            color = line.copy(alpha = 0.5f),
-            cornerRadius = CornerRadius(2.2.dp.toPx()),
-            style = Stroke(width = stroke),
-        )
-        if (canvas.widthPx <= 0 || canvas.heightPx <= 0) return@Canvas
-        boxes.forEach { box ->
-            if (!box.located || box.w <= 0.0 || box.h <= 0.0) return@forEach
-            val x = (box.x / canvas.widthPx).toFloat().coerceIn(0f, 1f) * size.width
-            val y = (box.y / canvas.heightPx).toFloat().coerceIn(0f, 1f) * size.height
-            val w = (box.w / canvas.widthPx).toFloat().coerceIn(0f, 1f) * size.width
-            val h = (box.h / canvas.heightPx).toFloat().coerceIn(0f, 1f) * size.height
-            val highlight = box.id == current.id
-            drawRoundRect(
-                color = if (highlight) accent else line.copy(alpha = 0.32f),
-                topLeft = Offset(x, y),
-                size = Size(w.coerceAtLeast(1.4.dp.toPx()), h.coerceAtLeast(1.1.dp.toPx())),
-                cornerRadius = CornerRadius(0.45.dp.toPx()),
-            )
-        }
-    }
-}
-
-/** `.trow .eye` — 15 px 眼睛；隐藏态加一道斜线，语义上是开关。 */
-@Composable
-private fun TextSlotEye(visible: Boolean, label: String, onToggle: () -> Unit) {
-    val ink = if (visible) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint
-    Box(
-        modifier = Modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .clickable(role = Role.Switch, onClick = onToggle)
-            .semantics {
-                contentDescription = if (visible) "隐藏$label" else "显示$label"
-                stateDescription = if (visible) "显示中" else "已隐藏"
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(Modifier.size(15.dp)) {
-            val stroke = 1.1.dp.toPx()
-            drawOval(
-                color = ink,
-                topLeft = Offset(stroke, size.height * 0.22f),
-                size = Size(size.width - stroke * 2, size.height * 0.56f),
-                style = Stroke(width = stroke),
-            )
-            drawCircle(color = ink, radius = size.height * 0.11f, center = center)
-            if (!visible) {
-                drawLine(ink, Offset(stroke, size.height - stroke), Offset(size.width - stroke, stroke), stroke)
-            }
-        }
-    }
 }

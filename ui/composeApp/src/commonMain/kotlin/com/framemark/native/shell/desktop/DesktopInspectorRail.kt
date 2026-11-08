@@ -110,7 +110,9 @@ fun DesktopInspectorRail(
     } else {
         null
     }
-    val textSlotInfo = if (textSlots.isNotEmpty()) {
+    // 报告到了就提供画布尺寸，即使一个文本框都没有：文字页要能区分「这个边框没有
+    // 可编辑文字」（空态）和「还没渲染完」（保留声明出来的文字行）。
+    val textSlotInfo = if (textSlotWidthPx > 0) {
         CuratedTextSlots(textSlots, textSlotWidthPx, textSlotHeightPx)
     } else {
         null
