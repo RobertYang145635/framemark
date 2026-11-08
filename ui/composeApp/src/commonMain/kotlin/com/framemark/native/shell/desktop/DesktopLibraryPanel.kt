@@ -65,8 +65,10 @@ import com.framemark.native.product.Preset
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.columnRule
 import com.framemark.native.theme.fmElevated
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.delay
@@ -368,8 +370,8 @@ private fun LibraryFilterZone(
     onOpenSeries: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(10.dp))
-        Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+        Spacer(Modifier.height(FmRhythm.rowLoose))
+        Box(Modifier.fillMaxWidth().padding(horizontal = FmRhythm.group)) {
             DesktopSearchField(
                 value = filters.query,
                 onValueChange = { filters.query = it },
@@ -377,7 +379,9 @@ private fun LibraryFilterZone(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Spacer(Modifier.height(8.dp))
+        // `.rail-filters { padding: 10px 12px 10px; display: grid; gap: 10px }`：
+        // 搜索框 → 类别行的间距改前是 8（合成 6 dp 的一档），演示稿是 10。
+        Spacer(Modifier.height(FmRhythm.rowLoose))
         LibraryCategoryTabs(
             categories = categories,
             selectedKey = filters.categoryKey,
@@ -451,7 +455,9 @@ private fun LibraryCategoryTabs(
                 }
             }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 类别行与锚点行是筛选区里的两个**子分组**：按规则 2 用留白分开，不画线。
+        // （改前这里有一条通栏发线，加上锚点行下面那条，筛选区里共有两条线；演示稿
+        // 只有 `.rail-filters` 的一条 border-bottom。留白由锚点行自己的上内边距承担。）
     }
 }
 
@@ -472,8 +478,16 @@ private fun LibraryAnchorRow(
                 modifier = Modifier
                     .weight(1f)
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    // 上 12 / 下 10：上 12 = `.rail-filters` 的 gap 10 + `.subchips` 的
+                    // padding-top 2（类别行与锚点行之间那条发线已经去掉，改用留白）；
+                    // 下 10 = `.rail-filters` 的 padding-bottom（改前是 6，整块偏紧 4 dp）。
+                    .padding(
+                        start = FmRhythm.group,
+                        end = FmRhythm.group,
+                        top = FmRhythm.group,
+                        bottom = FmRhythm.rowLoose,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(FmRhythm.inline),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 anchors.forEach { anchor ->
@@ -527,7 +541,9 @@ private fun LibraryAnchorRow(
                 DesktopSeriesButton(onClick = onOpenSeries)
             }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：筛选区（搜索 / 类别 / 锚点）与卡片网格之间的通栏发线
+        // —— 对应演示稿 `.rail-filters { border-bottom: 1px solid var(--line) }`。
+        Box(Modifier.columnRule())
     }
 }
 
@@ -766,9 +782,9 @@ private fun LibraryGroupList(
                                     selected = card.id == selectedCardId,
                                     photoPath = photoPath,
                                     subtitle = if (group.key == LibraryIndex.GROUP_USE) {
-                                        inUseCaptions[card.id] ?: desktopCardSubtitle(card)
+                                        inUseCaptions[card.id] ?: desktopCardSubtitleFor(card)
                                     } else {
-                                        desktopCardSubtitle(card)
+                                        desktopCardSubtitleFor(card)
                                     },
                                     onClick = { onOpenCard(card) },
                                     onHoverChange = { entered ->
@@ -786,6 +802,39 @@ private fun LibraryGroupList(
         }
         item(key = "list:bottom") { Spacer(Modifier.height(8.dp)) }
     }
+}
+
+/**
+ * 卡片副行术语（AU4-20）。
+ *
+ * 改前 `desktopCardSubtitle` 直接拼 `类别 · 子类/风格`（「文字 · 参数」「印象 · 液态玻璃」
+ * 「白边 · 留白」「卡片 · 色卡」）：**类别**和**风格**混在同一行，而且丢了「边框」后缀，
+ * 用户在左栏看不出这张卡属于哪一类。演示稿的副行是「类别 + 边框」（右栏分类 pill
+ * 也是「文字边框」「水印边框」这种写法），风格名不进副行 —— 风格是卡片内容的一部分，
+ * 已经由缩略图表达。
+ *
+ * 映射表（类别键 → 副行）：
+ *
+ * | 类别 | 改前 | 改后 |
+ * |---|---|---|
+ * | `text` 文字 | 文字 · 参数 / 文字 · 厂商水印 | 文字边框 |
+ * | `white` 白边 | 白边 · 留白 | 白边边框 |
+ * | `card` 卡片 | 卡片 · 色卡 | 卡片边框 |
+ * | `impression` 印象 | 印象 · 液态玻璃 | 印象边框 |
+ * | `color` 色彩 | 色彩 · 渐变 | 色彩边框 |
+ * | `minimal` 简约 | 简约 · 单行 | 简约边框 |
+ * | `vendor` 厂商 | OPPO · 哈苏定制 | OPPO · 哈苏定制（不变，厂商卡按品牌 · 系列） |
+ *
+ * 「本项目在用」一组仍然优先用张数文案（`desktopInUseCaption`），这条规则只作用于
+ * 类别副行。数据侧（[desktopCardSubtitle]）不动：它是 `DesktopLibraryParityTest` 的
+ * 断言对象，改它会让演示稿对齐测试失效；这里只做**显示层**的术语归一。
+ */
+internal fun desktopCardSubtitleFor(card: LibraryCard): String {
+    val raw = desktopCardSubtitle(card)
+    if (card.category == LibraryIndex.CATEGORY_VENDOR) return raw
+    val category = card.categoryName.removeSuffix("边框").trim()
+    if (category.isBlank()) return raw
+    return "${category}边框"
 }
 
 /** `.gsec-h`：sticky、12.5/600 + 11px 计数（紧跟标题）、右侧 11px note。 */
@@ -897,7 +946,8 @@ private fun PresetList(
             )
         }
         Spacer(Modifier.height(10.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(FmPalette.outline))
+        // 规则 1：预设表的标题/说明与列表之间是通栏发线。
+        Box(Modifier.columnRule())
         if (presets.isEmpty()) {
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
