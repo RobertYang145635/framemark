@@ -503,9 +503,7 @@ fun PhoneEditorScreen(
                         StageArea(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
-                                // Focus viewing fills the window: no side inset, no chrome.
-                                .then(if (focusMode) Modifier else Modifier.padding(horizontal = 4.dp)),
+                                .weight(1f),
                             card = card,
                             model = model,
                             activeDesign = activeDesign,
