@@ -1,0 +1,3 @@
+scripts/native/logo-tools/package.json -text
+scripts/native/logo-tools/package-lock.json -text
+
