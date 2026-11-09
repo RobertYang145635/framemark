@@ -1,0 +1,41 @@
+{
+  "schema": "framemark-desktop-class-manifest/v1",
+  "comment": "ARCH1: key desktop classes whose entry point / QA surface / engine bridge must not silently disappear or be renamed. Checked by verifyDesktopClassManifest() in build.cjs. Not an architecture-rule scanner: Konsist owns the import graph and declarations (src/desktopTest/kotlin/com/framemark/native/arch).",
+  "classes": [
+    {
+      "name": "com.framemark.native.MainKt",
+      "file": "ui/composeApp/src/desktopMain/kotlin/com/framemark/native/main.kt",
+      "declaration": "fun\\s+main\\s*\\("
+    },
+    {
+      "name": "com.framemark.native.qa.QaSurface",
+      "file": "ui/composeApp/src/desktopMain/kotlin/com/framemark/native/qa/QaSurface.kt",
+      "declaration": "object\\s+QaSurface"
+    },
+    {
+      "name": "com.framemark.native.qaenv.EnvQaSurface",
+      "file": "ui/composeApp/src/desktopMain/kotlin/com/framemark/native/qaenv/EnvQaSurface.kt",
+      "declaration": "(class|object)\\s+EnvQaSurface"
+    },
+    {
+      "name": "com.framemark.native.engine.DesktopEngineBridge",
+      "file": "ui/composeApp/src/desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt",
+      "declaration": "DesktopEngineBridge"
+    },
+    {
+      "name": "com.framemark.native.product.ControlRegistry",
+      "file": "ui/composeApp/src/commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt",
+      "declaration": "class\\s+ControlRegistry"
+    },
+    {
+      "name": "com.framemark.native.inspector.OutputSize",
+      "file": "ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/OutputSize.kt",
+      "declaration": "object\\s+OutputSize"
+    },
+    {
+      "name": "com.framemark.native.theme.FmPalette",
+      "file": "ui/composeApp/src/commonMain/kotlin/com/framemark/native/theme/Tokens.kt",
+      "declaration": "object\\s+FmPalette"
+    }
+  ]
+}
