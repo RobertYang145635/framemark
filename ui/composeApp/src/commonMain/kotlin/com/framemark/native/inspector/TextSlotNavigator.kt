@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,8 +60,6 @@ import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.ControlProbe
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
-import com.framemark.native.workflow.TextSlotPosition
-import com.framemark.native.workflow.groupTextSlots
 import com.framemark.native.workflow.isCurrentTextSlot
 import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.textSlotControls
@@ -71,11 +70,18 @@ import com.framemark.native.workflow.textSlotControls
  * 「文字页现在上下滑动很麻烦，想做成选择性控件：这个边框有左上、左下、右侧三个
  * 文本框，就做三个导航，点击一个修改一个；只有一个文本框时就只需要一个导航。」
  *
- * 数据一律来自渲染器报告的 [TextSlot]：位置分类与排序复用
- * [groupTextSlots]（`TextSlotPosition.row/column` + 组内 `y/x`），这里只做
- * **导航项**的展示规则 —— 位置名 + 语义副标签（品牌 / 机型 / 拍摄参数 / 日期，其
- * 次是同一位置内的序号）、只读标记、以及「选中哪一个」。桌面与手机共用同一套
- * 渲染（`dense` 只改尺寸与导航的换行方式），不各写一份。
+ * 位置名按**边框内部的行列**来定（用户 2026-11-09 口径：「右侧有两个文本框，上面
+ * 那个叫右上，下面那个叫右下，而不是根据图片来定位」）：
+ *  - **列** = 文本框中心 x 相对边框画布宽度分 左 / 中 / 右（<1/3、1/3–2/3、>2/3）；
+ *  - **行** = 同一列内按 y 排：两个 → 上 / 下；三个及以上 → 上 / 中 / 下；只有一个
+ *    时按它自己的高度带（上/中/下三分之一）取 上 / 中 / 下；
+ *  - 标签 = 列 + 行（`左上` `左下` `右上` `右下` `中上`）；同列只有一行且落在中部
+ *    时不写「中中」，用现有词表里的「居中」；
+ *  - 角色（品牌 / 机型 / 拍摄参数 / 日期）是导航 chip 的**第二行小字**，不进主标签；
+ *  - 顺序 = 列（左→右）→ 行（上→下）。
+ *
+ * 舞台高亮用不到名字，所以 `TextSlotPosition` 的九宫格只在别处（旧的声明行列表、
+ * 分组数据）保留，不再产出文字页的标签。
  */
 internal data class TextSlotSemantic(
     /** 演示稿的四行口径：品牌 / 机型 / 拍摄参数 / 日期。 */
@@ -84,26 +90,121 @@ internal data class TextSlotSemantic(
     val showParam: String,
 )
 
+/**
+ * 一个文本框在**边框内部**的行列坐标（0 = 上/左，2 = 下/右）。
+ *
+ * [column] / [row] 为 null 表示报告没给可信矩形（位置名退回「待定位」）。
+ */
+internal data class TextSlotAxis(
+    val column: Int?,
+    val row: Int?,
+) {
+    val located: Boolean get() = column != null && row != null
+}
+
+private val AxisColumnLabels = listOf("左", "中", "右")
+private val AxisRowLabels = listOf("上", "中", "下")
+
+private fun TextSlot.hasUsableRect(): Boolean =
+    located && w > 0.0 && h > 0.0 &&
+        x.isFinite() && y.isFinite() && w.isFinite() && h.isFinite()
+
+/** 列的判定：文本框**中心 x** 相对边框画布宽度的三分。 */
+internal fun textSlotColumn(slot: TextSlot, outputWidth: Int): Int? {
+    if (outputWidth <= 0 || !slot.hasUsableRect()) return null
+    val centerX = (slot.x + slot.w / 2.0) / outputWidth
+    return when {
+        centerX < 1.0 / 3.0 -> 0
+        centerX < 2.0 / 3.0 -> 1
+        else -> 2
+    }
+}
+
+/** 单行时的高度带：框中心 y 相对画布高度的上/中/下三分之一。 */
+private fun textSlotHeightBand(slot: TextSlot, outputHeight: Int): Int? {
+    if (outputHeight <= 0 || !slot.hasUsableRect()) return null
+    val centerY = (slot.y + slot.h / 2.0) / outputHeight
+    return when {
+        centerY < 1.0 / 3.0 -> 0
+        centerY < 2.0 / 3.0 -> 1
+        else -> 2
+    }
+}
+
+/**
+ * 每个文本框在边框内部的 [TextSlotAxis]。关键在**行**：同一列内先按 y 排序，
+ * 两行 → 上/下、三行及以上 → 上/中/下、只有一行 → 它自己的高度带。
+ */
+internal fun textSlotAxes(
+    slots: List<TextSlot>,
+    outputWidth: Int,
+    outputHeight: Int,
+): Map<String, TextSlotAxis> {
+    val byKey = LinkedHashMap<String, TextSlot>(slots.size)
+    slots.forEach { byKey[it.key ?: it.id] = it }
+    val preliminary = LinkedHashMap<String, TextSlotAxis>(byKey.size)
+    byKey.forEach { (navKey, slot) ->
+        val column = textSlotColumn(slot, outputWidth)
+        preliminary[navKey] = TextSlotAxis(column = column, row = null)
+    }
+    // 每一列单独排行：行号只和同列的邻居比，跟整张画布无关。
+    for (column in 0..2) {
+        val members = byKey
+            .filter { (navKey, _) -> preliminary[navKey]?.column == column }
+            .toList()
+            .sortedWith(compareBy<Pair<String, TextSlot>>({ it.second.y }, { it.second.x }, { it.first }))
+        if (members.isEmpty()) continue
+        val rows = when (members.size) {
+            1 -> listOf(textSlotHeightBand(members[0].second, outputHeight) ?: 0)
+            2 -> listOf(0, 2)
+            else -> members.indices.map { index ->
+                when (index) {
+                    0 -> 0
+                    members.lastIndex -> 2
+                    else -> 1
+                }
+            }
+        }
+        members.forEachIndexed { index, pair ->
+            preliminary[pair.first] = TextSlotAxis(column = column, row = rows[index])
+        }
+    }
+    return preliminary
+}
+
+/** 列 + 行的位置名；未定位的行叫「待定位」。 */
+internal fun textSlotAxisLabel(axis: TextSlotAxis): String {
+    if (!axis.located) return "待定位"
+    val column = AxisColumnLabels[axis.column!!]
+    val row = AxisRowLabels[axis.row!!]
+    // 「中中」不是人话：同列单行又落在中部时用现有词表的「居中」。
+    return if (column == "中" && row == "中") "居中" else column + row
+}
+
 /** 一个可点选的文本框（导航项）。 */
 internal data class TextSlotNavEntry(
     val slot: TextSlot,
-    val position: TextSlotPosition?,
-    /** `TextSlotPosition.label`，未定位时是「待定位」。 */
+    /** 边框内部的列 / 行（null = 报告没有可信矩形）。 */
+    val axis: TextSlotAxis,
+    /** 列 + 行的位置名（`左上` / `右下` / `待定位` …）。 */
     val positionLabel: String,
-    /** 同一位置多行时的语义副标签或序号。 */
-    val subLabel: String?,
+    /** 角色：经典双行是 品牌 / 机型 / 拍摄参数 / 日期，其他卡为 null。 */
+    val role: String?,
     /** 经典双行的显示开关参数；null 时用 `params.slotOff:<key>`。 */
     val showParam: String?,
     /** 引擎没有给出可写身份：能看、不能改。 */
     val readonly: Boolean,
-    /** 从 1 开始的版面顺序。 */
+    /** 从 1 开始的版面顺序（列→行）。 */
     val order: Int,
 ) {
     /** 高亮 / 记忆用的稳定身份：优先渲染器 key，没有 key 的行退回报告 id。 */
     val navKey: String get() = slot.key ?: slot.id
 
-    /** 导航 chip 与卡片标题同一口径：位置 + 角色（`左下 品牌`）。 */
-    val label: String get() = if (subLabel.isNullOrBlank()) positionLabel else "$positionLabel $subLabel"
+    /** 主标签就是位置名；角色是第二行小字，不拼进来。 */
+    val label: String get() = positionLabel
+
+    /** 无障碍 / 探针用的一句话：`左上 品牌`。 */
+    val fullLabel: String get() = if (role.isNullOrBlank()) positionLabel else "$positionLabel $role"
 }
 
 /** 经典双行四行的语义文案，按 slot key 索引（其他卡为空表）。 */
@@ -116,7 +217,7 @@ internal fun classicTextSemantics(
         .mapNotNull { row -> row.slot.key?.let { key -> key to TextSlotSemantic(row.label, row.showParam) } }
         .toMap()
 
-/** 单选式文字页的导航项，按版面阅读顺序（上→下、左→右）。 */
+/** 单选式文字页的导航项，按「列（左→右）→ 行（上→下）」排。 */
 internal fun textSlotNavEntries(
     slots: List<TextSlot>,
     outputWidth: Int,
@@ -134,46 +235,50 @@ internal fun textSlotNavEntries(
     outputHeight: Int,
     semantics: Map<String, TextSlotSemantic>,
 ): List<TextSlotNavEntry> {
-    val groups = groupTextSlots(slots, outputWidth, outputHeight, includeReadonly = true)
-    val seen = HashSet<String>(groups.sumOf { it.rows.size })
-    val entries = ArrayList<TextSlotNavEntry>(groups.sumOf { it.rows.size })
-    var order = 0
-    groups.forEach { group ->
-        group.rows.forEach { row ->
-            val slot = row.slot
-            val navKey = slot.key ?: slot.id
-            // 同一身份在报告里出现两次时只留第一行：两个导航项写同一个 key 会
-            // 显示同一份值，用户点哪个都一样，反而是缺陷。
-            if (!seen.add(navKey)) return@forEach
-            val semantic = slot.key?.let(semantics::get)
-            order += 1
-            entries += TextSlotNavEntry(
-                slot = slot,
-                position = group.position,
-                positionLabel = group.label,
-                subLabel = semantic?.label ?: if (group.rows.size > 1) "第${row.order}行" else null,
-                showParam = semantic?.showParam,
-                readonly = !slot.isCurrentTextSlot(),
-                order = order,
-            )
-        }
+    // 与旧的声明行列表同一套「这一帧算不算一个文本框」判据：可写身份 or 画出来/显式隐藏。
+    val eligible = slots
+        .filter { it.isCurrentTextSlot() || it.present || it.hidden }
+        .distinctBy { it.key ?: it.id }
+    if (eligible.isEmpty()) return emptyList()
+    val axes = textSlotAxes(eligible, outputWidth, outputHeight)
+    // 列（左→右）→ 行（上→下）→ 同格再按 y/x 兜底；未定位的排最后。
+    val ordered = eligible.sortedWith(
+        compareBy<TextSlot>(
+            { axes[it.key ?: it.id]?.column ?: Int.MAX_VALUE },
+            { axes[it.key ?: it.id]?.row ?: Int.MAX_VALUE },
+            { it.y },
+            { it.x },
+            { it.key.orEmpty() },
+        ),
+    )
+    return ordered.mapIndexed { index, slot ->
+        val navKey = slot.key ?: slot.id
+        val axis = axes[navKey] ?: TextSlotAxis(null, null)
+        val semantic = slot.key?.let(semantics::get)
+        TextSlotNavEntry(
+            slot = slot,
+            axis = axis,
+            positionLabel = textSlotAxisLabel(axis),
+            role = semantic?.label,
+            showParam = semantic?.showParam,
+            readonly = !slot.isCurrentTextSlot(),
+            order = index + 1,
+        )
     }
-    return entries
 }
 
 /** 只有多个文本框时才需要导航条；一个的时候直接给那张编辑卡。 */
 internal fun showsTextSlotNavigation(entries: List<TextSlotNavEntry>): Boolean = entries.size > 1
 
 /**
- * 导航条的行：**同一个位置的文本框排在一起**。wm-classic 这种「左下 2 + 右下 2」
- * 于是读成两行（= 两个位置导航），每行里逐个是那一行的文本框；每个位置只有一个
- * 文本框时每行一个，桌面上合成一排 chip。
+ * 导航项按**列**分组（左→右）：给导航带排序，也是舞台高亮「按列」分组的口径。
+ * 导航带本身是一条平铺的 chip 横带，不再拿它当视觉层级。
  */
 internal fun textSlotNavRows(entries: List<TextSlotNavEntry>): List<List<TextSlotNavEntry>> {
     val rows = ArrayList<MutableList<TextSlotNavEntry>>()
     entries.forEach { entry ->
         val last = rows.lastOrNull()
-        if (last != null && last.first().position == entry.position) {
+        if (last != null && last.first().axis.column == entry.axis.column) {
             last += entry
         } else {
             rows += mutableListOf(entry)
@@ -295,7 +400,7 @@ internal fun TextSlotSelector(
             "FM_TEXT_NAV card=$cardId boxes=${entries.size} canvas=${outputWidth}x${outputHeight} " +
                 entries.joinToString(" ") { entry ->
                     val slot = entry.slot
-                    "${entry.order}:${entry.navKey}[${entry.label}]" +
+                    "${entry.order}:${entry.navKey}[${entry.fullLabel}]" +
                         "${if (entry.readonly) "ro" else "rw"}" +
                         "@${slot.x.toInt()},${slot.y.toInt()},${slot.w.toInt()}x${slot.h.toInt()}"
                 },
@@ -405,17 +510,16 @@ private fun TextSlotNavBar(
     val ordered = remember(entries) { textSlotNavRows(entries).flatten() }
     Row(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        // 桌面 4 个 chip 一条带子刚好放得下；手机保持触控间距。
+        // 桌面 4 个 chip 一条带子刚好放得下；chip↔chip 走 FmRhythm.inlineWide（TY1 定义
+        // 就是「两个可点元素之间的最小间隙」），手机再用一档触控间距。
         horizontalArrangement = Arrangement.spacedBy(
-            if (dense) FmRhythm.inlineLoose else FmRhythm.inline,
+            if (dense) FmRhythm.inlineLoose else FmRhythm.inlineWide,
         ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ordered.forEach { entry ->
             TextSlotNavChip(
                 entry = entry,
-                // 位置 + 角色（`左下 品牌` / `右下 拍摄参数`）：两种密度同一个标签。
-                label = entry.label,
                 selected = entry.navKey == selected.navKey,
                 modified = modifiedOf(entry),
                 dense = dense,
@@ -425,11 +529,13 @@ private fun TextSlotNavBar(
     }
 }
 
-/** 一个导航项：位置名 + 副标签；键盘 Tab 走得到，回车/空格切换。 */
+/**
+ * 一个导航项：**第一行位置名**（`左上` / `右下`），**第二行角色小字**（品牌 / 机型 /
+ * 拍摄参数 / 日期；只读行再标一个「只读」）。键盘 Tab 走得到，回车/空格切换。
+ */
 @Composable
 private fun TextSlotNavChip(
     entry: TextSlotNavEntry,
-    label: String,
     selected: Boolean,
     modified: Boolean,
     dense: Boolean,
@@ -440,13 +546,20 @@ private fun TextSlotNavChip(
         append("文本框 ")
         append(entry.order)
         append("：")
-        append(entry.label)
+        append(entry.fullLabel)
         if (entry.readonly) append("，只读")
+    }
+    val mainColor = when {
+        entry.readonly && !selected -> FmPalette.onSurfaceFaint
+        selected -> FmPalette.primaryStrong
+        else -> FmPalette.onSurfaceSecondary
     }
     Row(
         modifier = Modifier
-            // 触控档：手机 ≥36 dp、桌面 28 dp（次要控件，不撑高底板预算）。
-            .heightIn(min = if (dense) 36.dp else 28.dp)
+            // 两行小字：桌面 36 dp、手机 44 dp（触控档，不撑高底板预算）；
+            // 最小宽度让「右上/拍摄参数」这类四字角色不被挤扁。
+            .heightIn(min = if (dense) 44.dp else 36.dp)
+            .widthIn(min = if (dense) 72.dp else 64.dp)
             .clip(shape)
             .probeBounds("text-slot-nav:${entry.navKey}")
             .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted)
@@ -464,25 +577,32 @@ private fun TextSlotNavChip(
             Box(Modifier.size(FmRhythm.inline).clip(CircleShape).background(FmPalette.primary))
             Spacer(Modifier.width(FmRhythm.inlineLoose))
         }
-        Text(
-            text = label,
-            style = if (dense) FmType.labelMedium else TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
-            color = when {
-                entry.readonly && !selected -> FmPalette.onSurfaceFaint
-                selected -> FmPalette.primaryStrong
-                else -> FmPalette.onSurfaceSecondary
-            },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (entry.readonly) {
-            Spacer(Modifier.width(FmRhythm.inline))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "只读",
-                style = TextStyle(fontSize = 10.sp, lineHeight = 13.sp),
-                color = FmPalette.onSurfaceFaint,
+                text = entry.label,
+                style = if (dense) FmType.labelMedium else TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                color = mainColor,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            val sub = when {
+                entry.readonly && entry.role.isNullOrBlank() -> "只读"
+                entry.readonly -> "${entry.role} · 只读"
+                else -> entry.role
+            }
+            if (!sub.isNullOrBlank()) {
+                Text(
+                    text = sub,
+                    style = if (dense) {
+                        FmType.labelSmall.copy(fontSize = 10.5.sp, lineHeight = 13.sp)
+                    } else {
+                        TextStyle(fontSize = 10.sp, lineHeight = 13.sp)
+                    },
+                    color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -523,14 +643,31 @@ private fun TextSlotEditCard(
             .padding(vertical = if (dense) FmRhythm.row else FmRhythm.inlineLoose),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = entry.label,
-                style = if (dense) FmType.labelMedium else TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Row(
                 modifier = Modifier.weight(1f),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = entry.label,
+                    style = if (dense) FmType.labelMedium else TextStyle(fontSize = 11.5.sp, lineHeight = 15.sp),
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                )
+                if (!entry.role.isNullOrBlank()) {
+                    Spacer(Modifier.width(FmRhythm.inline))
+                    Text(
+                        text = entry.role,
+                        style = if (dense) {
+                            FmType.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp)
+                        } else {
+                            TextStyle(fontSize = 11.sp, lineHeight = 15.sp)
+                        },
+                        color = FmPalette.onSurfaceFaint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             if (entry.readonly) {
                 Text(
                     text = "只读",
@@ -578,7 +715,7 @@ private fun TextSlotEditCard(
                         .heightIn(min = if (dense) 34.dp else 28.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(FmPalette.surfaceMuted)
-                        .semantics { contentDescription = "${entry.label}，只读" }
+                        .semantics { contentDescription = "${entry.fullLabel}，只读" }
                         .padding(
                             horizontal = FmRhythm.inlineLoose,
                             vertical = if (dense) FmRhythm.inlineLoose else FmRhythm.inline,
@@ -606,7 +743,7 @@ private fun TextSlotEditCard(
                         .heightIn(min = if (dense) 34.dp else 26.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(FmPalette.surface)
-                        .semantics { contentDescription = entry.label }
+                        .semantics { contentDescription = entry.fullLabel }
                         .padding(
                             horizontal = FmRhythm.inlineLoose,
                             vertical = if (dense) FmRhythm.inlineLoose else FmRhythm.inline,
