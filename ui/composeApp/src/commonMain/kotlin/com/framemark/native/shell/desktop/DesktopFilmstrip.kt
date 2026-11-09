@@ -37,8 +37,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.framemark.native.product.PhotoRef
+import com.framemark.native.shell.displayPixels
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmNumeric
 import com.framemark.native.theme.FmPalette
@@ -306,12 +308,12 @@ private fun StripInfo(selected: Int, total: Int, onOpenBatch: () -> Unit) {
 }
 
 /** 缩略图宽度：按照片宽高比撑开，未知尺寸时用正方形（`.fimg img { height: 100%; width: auto }`）。 */
-private fun frameWidth(photo: PhotoRef) = when {
-    photo.widthPx > 0 && photo.heightPx > 0 -> {
-        val raw = FmDesktop.filmstripFrameHeight.value * photo.widthPx.toFloat() / photo.heightPx
-        raw.coerceIn(28f, 112f).dp
-    }
-    else -> FmDesktop.filmstripFrameHeight
+private fun frameWidth(photo: PhotoRef): Dp {
+    // FIX1: 比例按**显示**尺寸算（EXIF 方向已应用），缩略图本身也是解码后的方向。
+    val display = photo.displayPixels()
+    if (display.width <= 0 || display.height <= 0) return FmDesktop.filmstripFrameHeight
+    val raw = FmDesktop.filmstripFrameHeight.value * display.width.toFloat() / display.height
+    return raw.coerceIn(28f, 112f).dp
 }
 
 /** 编号：演示稿用文件名去掉扩展名（`P1070512`）。 */

@@ -52,6 +52,7 @@ import com.framemark.native.inspector.FmSlider
 import com.framemark.native.inspector.withNumericDigits
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.PhotoRef
+import com.framemark.native.shell.displayPixels
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -283,9 +284,11 @@ fun DesktopExportDialog(
     val canExport = editable && qualityError == null && longEdgeError == null && !exporting
     val qualityValue = ExportRules.parseQuality(qualityText) ?: ExportRules.QUALITY_DEFAULT
     // 画布优先用 Shell 传来的同一份公式结果；只有拿不到时才退回测量估算。
+    // FIX1: 估算也用**显示**尺寸（EXIF 方向已应用），预览帧画的是解码后的画面。
+    val photoDisplay = photo?.displayPixels()
     val measuredCanvas = ExportEstimate.canvas(
-        photoWidthPx = photo?.widthPx ?: 0,
-        photoHeightPx = photo?.heightPx ?: 0,
+        photoWidthPx = photoDisplay?.width ?: 0,
+        photoHeightPx = photoDisplay?.height ?: 0,
         previewPhotoBox = frame?.box,
         previewWidthPx = frame?.width ?: 0,
         previewHeightPx = frame?.height ?: 0,
@@ -430,8 +433,8 @@ fun DesktopExportDialog(
                             directory = outputDirectory,
                             pixels = outPixels,
                             crop = ExportEstimate.cropEstimate(
-                                photoWidthPx = photo?.widthPx ?: 0,
-                                photoHeightPx = photo?.heightPx ?: 0,
+                                photoWidthPx = photo?.displayPixels()?.width ?: 0,
+                                photoHeightPx = photo?.displayPixels()?.height ?: 0,
                                 previewPhotoBox = frame?.box,
                             ),
                             cardName = card?.name ?: "边框",
@@ -583,7 +586,13 @@ private fun ExportPreviewColumn(
             color = FmPalette.onSurfaceMuted,
         )
         Text(
-            text = if (photo != null) "原图 ${photo.widthPx} × ${photo.heightPx} px" else "示例照片（引擎样张）",
+            text = if (photo != null) {
+                // FIX1: 「原图」写解码后的显示尺寸，与预览 / 成片同口径。
+                val display = photo.displayPixels()
+                "原图 ${display.width} × ${display.height} px"
+            } else {
+                "示例照片（引擎样张）"
+            },
             style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp).withNumericDigits(),
             color = FmPalette.onSurfaceMuted,
         )

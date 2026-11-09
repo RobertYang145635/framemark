@@ -113,8 +113,8 @@ android {
         applicationId = "com.framemark.native"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.9.0-rc3"
+        versionCode = 4
+        versionName = "0.9.0-rc5"
         // The Android renderer is currently complete for arm64-v8a only.
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -163,7 +163,12 @@ android {
         // a unique suffix, for example -PframemarkQaSuffix=.qa20261102.
         getByName("debug") {
             applicationIdSuffix = framemarkQaSuffix
-            versionNameSuffix = "-dev"
+            // WP-FIX1: no `versionNameSuffix`. The debug APK used to report
+            // `0.9.0-rc3-dev`, while the version the package must carry is
+            // `0.9.0-rc5` — `aapt2 dump badging` has to read exactly that, and the
+            // 设置页 reads the same string through PackageManager. Isolation between
+            // the QA build and a production install still comes from
+            // `applicationIdSuffix` above, not from the version label.
         }
     }
 }
@@ -172,7 +177,7 @@ android {
 // accept a numeric 3-part version, so the `-rc1` tag lives in the file names, in the
 // build stamp written into the package, and in -Dframemark.build.label.
 val framemarkPackageVersion = "0.9.0"
-val framemarkVersionLabel = "0.9.0-rc3"
+val framemarkVersionLabel = "0.9.0-rc5"
 
 compose.desktop {
     application {

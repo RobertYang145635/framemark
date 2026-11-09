@@ -28,6 +28,26 @@ const ANDROID_SOURCE_INPUTS = [
   'scripts/native/toolchain.json', 'scripts/native/build.cjs',
   'ui/composeApp/src/androidMain/cpp/CMakeLists.txt'
 ]
+// WP-FIX1: desktop classes that a package absolutely must ship. `string.split`
+// keeps the list readable; paths are relative to the desktop main class root and
+// were taken from a verified build's class directory (the brief's
+// `shell\desktop\DesktopShellKt.class` is `shell\DesktopShellKt.class`: the file
+//  is `commonMain/.../shell/DesktopShell.kt`, package `com.framemark.native.shell`;
+//  `shell/desktop/` is a different package whose classes are also listed below).
+const DESKTOP_REQUIRED_CLASSES = [
+  'com/framemark/native/theme/FmRhythm.class',
+  'com/framemark/native/inspector/TextSlotNavigatorKt.class',
+  'com/framemark/native/inspector/TextSlotAxis.class',
+  'com/framemark/native/shell/DesktopShellKt.class',
+  'com/framemark/native/shell/desktop/ExportDialogKt.class'
+]
+// WP-FIX1: `ui/gradle.properties` enables the build cache, and a cached
+// `compileKotlinDesktop` reuses stale classes (the WP-Q4 run shipped an APK whose
+// desktop classes came `FROM-CACHE`). `GRADLE_OPTS=-Dorg.gradle.caching=false` is
+// not honoured (measured in WP-Q4); `--no-build-cache` is. Both the flag and this
+// log assertion are needed: the flag prevents the reuse, the assertion proves it.
+const DESKTOP_CACHE_TASK = 'compileKotlinDesktop'
+
 // The JNI shim and its packaging declarations are compiled into the app, not
 // into the Rust static libraries. Fingerprint this boundary independently.
 const ANDROID_PACKAGE_SOURCE_INPUTS = [
@@ -36,7 +56,7 @@ const ANDROID_PACKAGE_SOURCE_INPUTS = [
   'ui/composeApp/build.gradle.kts'
 ]
 function parseArgs (args) {
-  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, jobName: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
+  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, jobName: '', desktopClassCheck: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
     if (arg === '--dry-run') out.dryRun = true
@@ -48,6 +68,10 @@ function parseArgs (args) {
     else if (arg === '--release-qa') out.releaseQa = true
     else if (arg === '--skip-gates') out.skipGates = true
     else if (arg === '--job-name') out.jobName = args[++i] || ''
+    else if (arg === '--check-desktop-classes') {
+      out.desktopClassCheck = args[++i] || ''
+      if (!out.desktopClassCheck) throw new Error('--check-desktop-classes needs a class root directory')
+    }
     else if (arg === '--help' || arg === '-h') out.help = true
     else throw new Error(`Unknown option: ${arg}`)
   }
@@ -75,6 +99,10 @@ Usage: build-native.cmd [options]
   FM_QA_RELEASE_SUFFIX      isolated release QA suffix (default: .qa20261102release)
   --skip-gates              mark required gates skipped; the command exits nonzero
   --job-name <name>         label logs under ${CONFIG.artifactDirectory}
+  --check-desktop-classes <dir>
+                            run only the WP-FIX1 desktop class manifest gate against
+                            <dir> and exit (0 = every required class present, 1 = one
+                            or more missing, printed as JSON)
 
 Tool locations are configurable through the FM_* variables in toolchain.json.
 Rust 1.99.1 is version-checked before source builds; both target triples must be installed.
@@ -291,6 +319,65 @@ function verifySharedLogoData () {
   const sourceSha256 = sha256File(source)
   const bundledSha256 = sha256File(bundled)
   return { status: sourceSha256 === bundledSha256 ? 'PASS' : 'FAIL', source: path.relative(ROOT, source).replaceAll(path.sep, '/'), bundled: path.relative(ROOT, bundled).replaceAll(path.sep, '/'), sourceSha256, bundledSha256 }
+}
+
+// WP-FIX1: the desktop main class root. `writeGradleIsolationScript` maps every
+// project's buildDir under FM_GRADLE_OUTPUT_ROOT, so the desktop classes land in
+// `<gradle-output>/composeApp/classes/kotlin/desktop/main` (the same directory
+// the `dumpDesktopClasspath` task puts on the runtime classpath).
+function desktopClassRoot (gradleOutputRoot) {
+  return path.join(gradleOutputRoot, 'composeApp', 'classes', 'kotlin', 'desktop', 'main')
+}
+
+/**
+ * WP-FIX1 gate: the package must carry the critical desktop classes.
+ *
+ * A `compileKotlinDesktop FROM-CACHE` hit (or a partially written class tree)
+ * still produces an APK/desktop runtime that starts, so nothing used to fail —
+ * that is how a wrong build could ship. This asserts the exact classes by path
+ * and prints the missing list; an empty class root also fails (no "0 missing out
+ * of 0 checked" pass).
+ */
+function verifyDesktopClassManifest (classRoot, required = DESKTOP_REQUIRED_CLASSES) {
+  const root = String(classRoot)
+  const rows = required.map((relative) => {
+    const filename = path.join(root, ...relative.split('/'))
+    const exists = fs.existsSync(filename) && fs.statSync(filename).isFile()
+    return { path: relative, status: exists ? 'PASS' : 'FAIL', bytes: exists ? fs.statSync(filename).size : null }
+  })
+  const missing = rows.filter((row) => row.status !== 'PASS').map((row) => row.path)
+  const classCount = fs.existsSync(root) ? listFiles(root).filter((file) => file.endsWith('.class')).length : 0
+  return {
+    status: missing.length === 0 && classCount > 0 ? 'PASS' : 'FAIL',
+    classRoot: root.replaceAll(path.sep, '/'),
+    classCount,
+    required: required.length,
+    missing,
+    rows
+  }
+}
+
+/**
+ * WP-FIX1 gate: `compileKotlinDesktop` must not be served from the Gradle build
+ * cache. The build passes `--no-build-cache`; this reads the run's own gradle log
+ * so a future edit that drops the flag (or a `gradle.properties` that re-enables
+ * it through an init script) fails the build instead of shipping stale classes.
+ */
+function verifyDesktopCompileNotFromCache (gradleLog, task = DESKTOP_CACHE_TASK) {
+  const file = String(gradleLog)
+  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+  const lines = text.split(/\r?\n/)
+  const taskPrefix = `Task :composeApp:${task}`
+  const fromCache = lines.filter((line) => line.includes(taskPrefix) && /FROM-CACHE/i.test(line))
+  const scheduled = lines.filter((line) => line.includes(taskPrefix))
+  return {
+    status: fromCache.length === 0 ? 'PASS' : 'FAIL',
+    task,
+    log: file.replaceAll(path.sep, '/'),
+    logPresent: fs.existsSync(file),
+    scheduled: scheduled.map((line) => line.replace(/^>\s*Task\s+/, '').trim()),
+    fromCache: fromCache.map((line) => line.replace(/^>\s*Task\s+/, '').trim())
+  }
 }
 
 function verifyLogoImageToolchain () {
@@ -525,6 +612,14 @@ function requiredCheck (id, status, detail) {
 
 async function main (options) {
   if (options.help) { process.stdout.write(usage()); return 0 }
+  // WP-FIX1 standalone gate: `--check-desktop-classes <dir>` runs the class
+  // manifest check on an existing class root (used by the negative proof and by
+  // anyone verifying a package without a full rebuild).
+  if (options.desktopClassCheck) {
+    const manifest = verifyDesktopClassManifest(path.resolve(options.desktopClassCheck))
+    process.stdout.write(JSON.stringify({ schema: 'framemark-desktop-class-manifest/v1', ...manifest }, null, 2) + '\n')
+    return manifest.status === 'PASS' ? 0 : 1
+  }
   if (process.platform !== 'win32') throw new Error('This build entry point requires Windows; use the Gradle/Cargo commands directly on other hosts.')
 
   const tools = resolveTools()
@@ -958,7 +1053,15 @@ async function main (options) {
       const gradleLibs = path.join(tools.gradleHome, 'lib', '*')
       const gradleIsolationScript = path.join(tmpRoot, 'gradle-isolated-output.init.gradle')
       writeGradleIsolationScript(gradleIsolationScript)
-      const gradleArgs = ['-Dorg.gradle.appname=gradle', '-classpath', gradleLibs, 'org.gradle.launcher.GradleMain', '--no-daemon', '--project-cache-dir', path.join(tmpRoot, 'gradle-project-cache'), '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
+      const gradleArgs = ['-Dorg.gradle.appname=gradle', '-classpath', gradleLibs, 'org.gradle.launcher.GradleMain', '--no-daemon',
+        // WP-FIX1: `ui/gradle.properties` sets `org.gradle.caching=true`, and a
+        // FROM-CACHE `compileKotlinDesktop` is how a package shipped classes that
+        // were never compiled from this tree (WP-Q4). `GRADLE_OPTS=
+        // -Dorg.gradle.caching=false` does not override it; the CLI flag does —
+        // this single flag covers desktop compile, desktopTest and desktopJar
+        // because it disables the cache for the whole invocation.
+        '--no-build-cache',
+        '--project-cache-dir', path.join(tmpRoot, 'gradle-project-cache'), '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
       // Kotlin's incremental path converter cannot relativize generated sources
       // across Windows drive roots. This is an isolated full build anyway; avoid
       // a reproducible daemon failure/fallback when sources and outputs differ.
@@ -978,6 +1081,32 @@ async function main (options) {
     }
   } else {
     steps.push({ id: 'gradle', title: 'Build desktop and Android variants', required: true, status: 'SKIP', exitCode: 0, detail: '--skip-gradle' })
+  }
+
+  // WP-FIX1: two new gates that must FAIL the run rather than let a package ship
+  // without these classes / with cached desktop classes. They read this run's own
+  // class root and gradle log, which live under the run directory, so a stale
+  // output from an earlier run can never satisfy them.
+  if (options.skipGradle) {
+    gates.push({ ...requiredCheck('desktop-class-manifest', 'SKIP', '--skip-gradle; the desktop class tree was not rebuilt'), required: false })
+    gates.push({ ...requiredCheck('desktop-build-cache-disabled', 'SKIP', '--skip-gradle; there is no Gradle invocation to inspect'), required: false })
+  } else {
+    const classManifest = verifyDesktopClassManifest(desktopClassRoot(gradleOutputRoot))
+    gates.push(requiredCheck(
+      'desktop-class-manifest',
+      classManifest.status,
+      classManifest.missing.length
+        ? `missing ${classManifest.missing.length}/${classManifest.required}: ${classManifest.missing.join(', ')}`
+        : `${classManifest.required} required desktop classes present; ${classManifest.classCount} .class files under ${classManifest.classRoot}`
+    ))
+    const cacheGate = verifyDesktopCompileNotFromCache(path.join(logRoot, 'gradle.log'))
+    gates.push(requiredCheck(
+      'desktop-build-cache-disabled',
+      cacheGate.status,
+      cacheGate.fromCache.length
+        ? `${cacheGate.task} was served FROM-CACHE: ${cacheGate.fromCache.join(' | ')}`
+        : `${cacheGate.task} was not FROM-CACHE (scheduled: ${cacheGate.scheduled.join(', ') || 'none'})`
+    ))
   }
 
   const gradleStep = steps.find((row) => row.id === 'gradle')
@@ -1116,4 +1245,10 @@ function runCli () {
 // requires the module to expose checkReleaseSurface without starting a build.
 if (require.main === module) runCli()
 
-module.exports = { checkReleaseSurface }
+module.exports = {
+  checkReleaseSurface,
+  verifyDesktopClassManifest,
+  verifyDesktopCompileNotFromCache,
+  desktopClassRoot,
+  DESKTOP_REQUIRED_CLASSES
+}
