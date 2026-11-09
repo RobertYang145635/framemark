@@ -610,6 +610,80 @@ function requiredCheck (id, status, detail) {
   return { id, required: true, status, detail }
 }
 
+/**
+ * ARCH1: key desktop classes must still be declared where this manifest says they are.
+ * This is a packaging guard ("the entry point and the QA surface did not vanish"), not an
+ * architecture-rule scanner — the import graph and singleton concepts belong to Konsist
+ * (`src/desktopTest/kotlin/com/framemark/native/arch/*KonsistTest.kt`).
+ */
+function verifyDesktopClassSources () {
+  const manifestPath = path.join(__dirname, 'desktop-class-manifest.json')
+  if (!fs.existsSync(manifestPath)) return { status: 'FAIL', classes: 0, detail: `missing ${path.relative(ROOT, manifestPath)}`, rows: [] }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+  const rows = (manifest.classes || []).map((entry) => {
+    const abs = path.join(ROOT, entry.file)
+    if (!fs.existsSync(abs)) return { name: entry.name, status: 'FAIL', detail: `source file missing: ${entry.file}` }
+    const text = fs.readFileSync(abs, 'utf8')
+    const ok = new RegExp(entry.declaration).test(text)
+    return { name: entry.name, status: ok ? 'PASS' : 'FAIL', detail: ok ? entry.file : `/${entry.declaration}/ not found in ${entry.file}` }
+  })
+  const failed = rows.filter((row) => row.status !== 'PASS')
+  return {
+    status: rows.length && !failed.length ? 'PASS' : 'FAIL',
+    classes: rows.length,
+    failed: failed.map((row) => row.name),
+    detail: failed.length ? `missing key classes: ${failed.map((row) => row.name).join(', ')}` : `${rows.length} key desktop classes verified`,
+    rows,
+  }
+}
+
+/**
+ * ARCH1: the packaged desktop product must not ship the QA surface
+ * (`com/framemark/native/verify/**`, `com/framemark/native/qaenv/**`).
+ *
+ * Two things are checked without building an artifact:
+ *  1. `ui/composeApp/build.gradle.kts` keeps the `fmQaSurface` switch and excludes both
+ *     packages when it is false (this is the mechanism WP-X3 §7 added);
+ *  2. no in-repo script that builds a desktop jar may omit `-PfmQaSurface=false`.
+ *
+ * What this does NOT prove: that a released binary was built from a QA-free classpath.
+ * `scripts/native/package-desktop.cjs` consumes prebuilt jars, so the flag has to be
+ * passed by whoever invokes `:composeApp:desktopJar` (the runbook's `run-desktop`
+ * entry point). That gap is recorded in `reports/ARCH1-REPORT.md`.
+ */
+function verifyPackagingSurface () {
+  const checks = []
+  const buildScript = path.join(ROOT, 'ui/composeApp/build.gradle.kts')
+  const text = fs.existsSync(buildScript) ? fs.readFileSync(buildScript, 'utf8') : ''
+  checks.push({ id: 'fmQaSurface-switch', ok: /fmQaSurface/.test(text), detail: 'ui/composeApp/build.gradle.kts defines the fmQaSurface switch' })
+  checks.push({ id: 'verify-excluded', ok: /com\/framemark\/native\/verify\/\*\*/.test(text), detail: 'verify/** excluded when fmQaSurface=false' })
+  checks.push({ id: 'qaenv-excluded', ok: /com\/framemark\/native\/qaenv\/\*\*/.test(text), detail: 'qaenv/** excluded when fmQaSurface=false' })
+  const scripts = []
+  const walkScripts = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name)
+      if (entry.isDirectory()) walkScripts(abs)
+      else if (/\.(cjs|mjs|js|ps1)$/.test(entry.name)) scripts.push(abs)
+    }
+  }
+  walkScripts(path.join(ROOT, 'scripts'))
+  const desktopBuilders = scripts.filter((file) => {
+    const source = fs.readFileSync(file, 'utf8')
+    return /desktopJar/.test(source) && /GradleMain|gradle\.bat|gradlew/.test(source)
+  })
+  const offenders = desktopBuilders.filter((file) => !/-PfmQaSurface=false/.test(fs.readFileSync(file, 'utf8')))
+  checks.push({
+    id: 'desktop-jar-builds-without-qa-surface',
+    ok: offenders.length === 0,
+    detail: desktopBuilders.length
+      ? `${desktopBuilders.length} desktop jar entry point(s) checked; offenders: ${offenders.map((file) => path.relative(ROOT, file)).join(', ') || 'none'}`
+      : 'no in-repo script builds :composeApp:desktopJar (packaged jars come from the runbook entry point); mechanism check only',
+  })
+  const failed = checks.filter((check) => !check.ok)
+  return { status: failed.length ? 'FAIL' : 'PASS', checks, failed: failed.map((check) => check.id) }
+}
+
+
 async function main (options) {
   if (options.help) { process.stdout.write(usage()); return 0 }
   // WP-FIX1 standalone gate: `--check-desktop-classes <dir>` runs the class
@@ -1109,6 +1183,58 @@ async function main (options) {
     ))
   }
 
+  // ARCH1 (ARCH-MODULES.md §2): the architecture rules are Konsist tests that live in
+  // :composeApp:desktopTest. This step runs only the `*KonsistTest*` classes, so the
+  // architecture gate and the acceptance suite share one mechanism and one source of
+  // truth — there is deliberately no parallel hand-written import scanner here.
+  // `violations-allowlist.txt` is a shrink-only ratchet: a new violation fails this
+  // step, and a stale allowlist entry fails ArchAllowlistHygieneKonsistTest.
+  if (options.skipGradle) {
+    steps.push({ id: 'arch-konsist', title: 'Architecture rules (Konsist tests)', required: true, status: 'SKIP', exitCode: 0, detail: '--skip-gradle' })
+  } else if (!tools.java || !tools.gradleLauncher || !fs.existsSync(tools.java) || !fs.existsSync(tools.gradleLauncher)) {
+    steps.push({ id: 'arch-konsist', title: 'Architecture rules (Konsist tests)', required: true, status: 'FAIL', exitCode: 1, detail: 'JDK or Gradle is unresolved', log: null })
+  } else {
+    const archIsolationScript = path.join(tmpRoot, 'gradle-arch-isolation.init.gradle')
+    writeGradleIsolationScript(archIsolationScript)
+    const archArgs = [
+      '-Dorg.gradle.appname=gradle', '-classpath', path.join(tools.gradleHome, 'lib', '*'),
+      'org.gradle.launcher.GradleMain', '--no-daemon',
+      '--project-cache-dir', path.join(tmpRoot, 'gradle-arch-project-cache'),
+      '--init-script', archIsolationScript,
+      `-PframemarkQaSuffix=${options.qaSuffix}`,
+      ':composeApp:desktopTest', '--tests', '*KonsistTest*',
+    ]
+    if (process.platform === 'win32' && path.parse(UI).root.toLowerCase() !== path.parse(gradleOutputRoot).root.toLowerCase()) archArgs.push('-Pkotlin.incremental=false')
+    await step('arch-konsist', 'Architecture rules (Konsist tests)', (logFile) => runProcess(tools.java, archArgs, { cwd: UI, env: envBase, logFile, timeoutMs: 45 * 60 * 1000 }))
+  }
+  const archStep = steps.find((row) => row.id === 'arch-konsist')
+  gates.push({
+    ...requiredCheck(
+      'arch-konsist',
+      archStep ? archStep.status : 'FAIL',
+      archStep
+        ? `Konsist rules: layer-direction, platform-leak, single-source, qa-package-isolation, launch-state-isolation, evidence-hook-literal, control-coverage; allowlist=src/desktopTest/resources/arch/violations-allowlist.txt (shrink-only); log=${archStep.log || 'n/a'}`
+        : 'architecture test step did not run'
+    ),
+    required: !options.skipGradle
+  })
+
+  // ARCH1: the only two node-level architecture guards that Konsist cannot express.
+  // Both are file/metadata checks, so they cost milliseconds and never duplicate the
+  // Konsist import-graph analysis.
+  const desktopClassManifest = verifyDesktopClassSources()
+  gates.push(requiredCheck(
+    'desktop-class-sources',
+    desktopClassManifest.status,
+    JSON.stringify({ classes: desktopClassManifest.classes, failed: desktopClassManifest.failed, detail: desktopClassManifest.detail })
+  ))
+  const packagingSurface = verifyPackagingSurface()
+  gates.push(requiredCheck(
+    'desktop-package-surface',
+    packagingSurface.status,
+    JSON.stringify({ failed: packagingSurface.failed, checks: packagingSurface.checks })
+  ))
+
   const gradleStep = steps.find((row) => row.id === 'gradle')
   let androidPackageSourceIntegrity
   if (options.skipGradle) {
@@ -1246,9 +1372,11 @@ function runCli () {
 if (require.main === module) runCli()
 
 module.exports = {
+  DESKTOP_REQUIRED_CLASSES,
   checkReleaseSurface,
-  verifyDesktopClassManifest,
-  verifyDesktopCompileNotFromCache,
   desktopClassRoot,
-  DESKTOP_REQUIRED_CLASSES
+  verifyDesktopClassManifest,
+  verifyDesktopClassSources,
+  verifyDesktopCompileNotFromCache,
+  verifyPackagingSurface
 }

@@ -96,6 +96,12 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
+                // ARCH1 (ARCH-MODULES.md §2): architecture rules are asserted with
+                // Konsist instead of a hand-written import scanner, so there is exactly
+                // one mechanism. The tests live in
+                // src/desktopTest/kotlin/com/framemark/native/arch/*KonsistTest.kt and are
+                // part of the normal desktopTest run (no separate parallel gate).
+                implementation("com.lemonappdev:konsist:0.18.1")
             }
         }
     }
