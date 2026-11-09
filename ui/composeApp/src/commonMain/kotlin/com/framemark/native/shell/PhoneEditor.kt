@@ -33,7 +33,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -200,7 +199,6 @@ fun PhoneEditorScreen(
     onRedo: () -> Unit,
     onRetryInspector: () -> Unit,
     onQuickSavePreset: (String) -> Unit,
-    panelState: LazyListState,
     watermark: WatermarkSpec? = null,
     onWatermarkChange: (WatermarkSpec?) -> Unit = {},
     onPickWatermark: () -> Unit = {},

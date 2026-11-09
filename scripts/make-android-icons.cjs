@@ -1,3 +1,4 @@
+// 目标对象已于 WP-FIX2 删除（android/app/src/main/res 随旧 Capacitor 工程 android/ 一起删除），本脚本当前不可用。
 const sharp = require('sharp')
 const path = require('node:path')
 const fs = require('node:fs')

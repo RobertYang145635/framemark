@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// WP-FIX2：本仓的旧 Capacitor 工程（android/）已删除；本脚本实际检查的是另一份 checkout
+// D:/border&watermark/framemark 的旧 Capacitor/Electron 交付，不检查本仓、不得用于本仓验收
+// （本仓已无它要校验的 android/ 对象，对本仓而言目标对象已于 WP-FIX2 删除，本脚本当前不可用）。
 /**
  * FrameMark 收尾终检（一次性核完所有硬判据，输出 machine-readable 结果）
  *
