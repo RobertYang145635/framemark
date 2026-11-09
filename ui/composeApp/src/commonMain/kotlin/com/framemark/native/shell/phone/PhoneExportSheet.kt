@@ -71,9 +71,10 @@ import kotlinx.coroutines.withContext
  * 返修 P2-2); the result page repeats the real pixel size and offers
  * 分享 / 完成 and 「重试写入相册」.
  *
- * The desktop keeps `workflow/ExportSheet.kt`; this sheet is the phone one, so the
- * phone can drop the quality field and the long-edge text field without changing
- * the desktop dialog D1/D2 own.
+ * This sheet is the phone export entry (PhoneShell); the desktop uses
+ * `shell/desktop/ExportDialog.kt`. `workflow/ExportSheet.kt` was deleted in
+ * WP-FIX2 (zero call sites), so the phone can drop the quality field and the
+ * long-edge text field without changing the desktop dialog D1/D2 own.
  */
 @Composable
 fun PhoneExportSheet(

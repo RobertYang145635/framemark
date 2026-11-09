@@ -1,6 +1,5 @@
 package com.framemark.native.shell
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,10 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -61,11 +57,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.layout.onSizeChanged
@@ -82,7 +73,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -117,7 +107,6 @@ import com.framemark.native.inspector.applyDemoEdits
 import com.framemark.native.library.InMemoryRecentFramesStore
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
-import com.framemark.native.library.LibraryFilterState
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.library.LibraryPreview
@@ -159,7 +148,6 @@ import com.framemark.native.ui.resizeCursor
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.toDesignSnapshot
-import com.framemark.native.workflow.DesktopWatermarkPanel
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.ExportSettings
 import com.framemark.native.workflow.DesignSnapshot
@@ -168,7 +156,6 @@ import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.ProjectPhotoStage
-import com.framemark.native.workflow.ProjectPhotoStrip
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.ProjectStatusBanner
 import com.framemark.native.workflow.ProjectPresetSheet
@@ -235,8 +222,6 @@ fun DesktopShell(layout: DesktopLayoutState) {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
-    val filters = remember { LibraryFilterState() }
-    val libraryGrid = remember { LazyGridState() }
     val scope = rememberCoroutineScope()
     val session = remember {
         DesignSession().apply {
@@ -350,7 +335,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         projects.load()
         projects.loadPresets()
         projects.loadBatch()
-        LaunchOptions.libraryQuery?.let { filters.query = it }
+        // RUNBOOK §5.5：FM_LIB_QUERY 预填边框库搜索。V2 左栏的搜索框绑的是
+        // desktopFilters.query（shell\desktop\DesktopLibraryPanel.kt:375），旧
+        // LibraryScreen 的筛选状态已随不可达的 Ready 分支删除（WP-FIX2）。
+        LaunchOptions.libraryQuery?.let { desktopFilters.query = it }
         // The window may not own focus yet on the first frame; retry briefly so
         // the Ctrl/Cmd shortcuts work without clicking first.
         repeat(6) {
@@ -724,12 +712,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             if (index == null) {
                 LibraryScreen(
                     loadState = libraryState,
-                    filters = filters,
-                    gridState = libraryGrid,
                     onRetry = { libraryReload++ },
-                    onOpenCard = { card -> openCard(card); layout.narrowPane = STAGE_PANE },
-                    rail = true,
-                    selectedCardId = selectedCard?.id,
                 )
             } else {
                 DesktopLibraryPanel(
@@ -1133,7 +1116,8 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     selectedCard
                 }
                 // WP-D2: Windows 用 V2 导出对话框（预览 / 格式 / 尺寸 / 质量 / 文件名
-                // 变量 / 保存位置 / 结果页）。workflow.ExportSheet 保留给手机，见报告 §5。
+                // 变量 / 保存位置 / 结果页）。手机导出用 shell/phone/PhoneExportSheet；
+                // workflow/ExportSheet.kt 已在 WP-FIX2 删除（全仓零调用点）。
                 DesktopExportDialog(
                     session = session,
                     card = exportCard,
@@ -1209,322 +1193,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
             }
         }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Top bar
-// ---------------------------------------------------------------------------
-
-/**
- * V06 top bar: brand, the 工作台 / 预设 / 任务 first-level navigation, and the
- * actions that must stay reachable (undo, redo, import, export). Secondary
- * actions (help, rail visibility) live in the ⋯ overflow so the bar never turns
- * into a wall of buttons; below the derived three-column minimum it wraps into
- * two rows and the action row scrolls instead of dropping anything.
- */
-@Composable
-private fun DesktopTopBar(
-    card: LibraryCard?,
-    mode: StageMode,
-    photoCount: Int,
-    narrow: Boolean,
-    inspectorVisible: Boolean,
-    canUndo: Boolean,
-    canRedo: Boolean,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    onAddPhoto: () -> Unit,
-    onSelectEdit: () -> Unit,
-    onSelectBatch: () -> Unit,
-    presetSheetOpen: Boolean,
-    onOpenPresets: () -> Unit,
-    onOpenExport: () -> Unit,
-    onOpenHelp: () -> Unit,
-    onShowParams: () -> Unit,
-    onToggleLeft: () -> Unit,
-    onToggleRight: () -> Unit,
-) {
-    if (narrow) {
-        Column(Modifier.fillMaxWidth().height(108.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                BrandBlock(compact = true)
-                Spacer(Modifier.width(FmSpacing.sm))
-                StatusPill(card = card, mode = mode, photoCount = photoCount, compact = true)
-                Spacer(Modifier.weight(1f))
-                TopBarOverflow(
-                    inspectorVisible = inspectorVisible,
-                    onOpenHelp = onOpenHelp,
-                    onShowParams = onShowParams,
-                    onToggleLeft = onToggleLeft,
-                    onToggleRight = onToggleRight,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                NavTabs(
-                    mode = mode,
-                    presetSheetOpen = presetSheetOpen,
-                    onSelectEdit = onSelectEdit,
-                    onSelectBatch = onSelectBatch,
-                    onOpenPresets = onOpenPresets,
-                )
-                Spacer(Modifier.width(FmSpacing.xs))
-                BarAction("导出", onOpenExport, primary = true)
-                if (!inspectorVisible) BarAction("参数", onShowParams)
-                BarAction("导入照片", onAddPhoto)
-                HistoryButton(label = "撤销", redo = false, enabled = canUndo, onClick = onUndo)
-                HistoryButton(label = "重做", redo = true, enabled = canRedo, onClick = onRedo)
-            }
-        }
-        return
-    }
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val roomy = maxWidth >= 860.dp
-        Row(
-            modifier = Modifier.fillMaxWidth().height(FmDesktop.topBarHeight),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BrandBlock(compact = !roomy)
-            Spacer(Modifier.width(FmSpacing.md))
-            NavTabs(
-                mode = mode,
-                presetSheetOpen = presetSheetOpen,
-                onSelectEdit = onSelectEdit,
-                onSelectBatch = onSelectBatch,
-                onOpenPresets = onOpenPresets,
-            )
-            if (roomy) {
-                Spacer(Modifier.weight(1f))
-                StatusPill(card = card, mode = mode, photoCount = photoCount, compact = false)
-                Spacer(Modifier.weight(1f))
-            } else {
-                Spacer(Modifier.weight(1f))
-            }
-            Row(
-                modifier = Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                BarAction("导出", onOpenExport, primary = true)
-                if (!inspectorVisible) BarAction("参数", onShowParams)
-                BarAction("导入照片", onAddPhoto)
-                HistoryButton(label = "撤销", redo = false, enabled = canUndo, onClick = onUndo)
-                HistoryButton(label = "重做", redo = true, enabled = canRedo, onClick = onRedo)
-                TopBarOverflow(
-                    inspectorVisible = inspectorVisible,
-                    onOpenHelp = onOpenHelp,
-                    onShowParams = onShowParams,
-                    onToggleLeft = onToggleLeft,
-                    onToggleRight = onToggleRight,
-                )
-            }
-        }
-    }
-}
-
-/** 工作台 / 预设 / 任务. 预设 is the existing sheet, not a fourth mode. */
-@Composable
-private fun NavTabs(
-    mode: StageMode,
-    presetSheetOpen: Boolean,
-    onSelectEdit: () -> Unit,
-    onSelectBatch: () -> Unit,
-    onOpenPresets: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .selectableGroup()
-            .height(36.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.surfaceMuted)
-            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
-            .padding(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        NavTab(label = "工作台", selected = mode == StageMode.Edit, onClick = onSelectEdit)
-        NavTab(label = "预设", selected = presetSheetOpen, onClick = onOpenPresets)
-        NavTab(label = "任务", selected = mode == StageMode.Batch, onClick = onSelectBatch)
-    }
-}
-
-@Composable
-private fun NavTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(if (selected) FmPalette.surface else Color.Transparent)
-            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
-            .padding(horizontal = FmSpacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = FmType.labelMedium,
-            color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceSecondary,
-            maxLines = 1,
-        )
-    }
-}
-
-/** Photo count / current border capsule; the photo count survives the narrow bar. */
-@Composable
-private fun StatusPill(card: LibraryCard?, mode: StageMode, photoCount: Int, compact: Boolean) {
-    Row(
-        modifier = Modifier
-            .height(if (compact) 28.dp else 38.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.surface)
-            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
-            .padding(horizontal = if (compact) FmSpacing.sm else FmSpacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = when {
-                compact && photoCount > 0 -> "$photoCount 张"
-                compact -> "未选边框"
-                mode == StageMode.Batch -> "批量队列 · 原生导出"
-                card != null -> "当前边框 · ${card.name}"
-                else -> "尚未选择边框"
-            },
-            style = FmType.labelMedium,
-            color = if (card != null || photoCount > 0) FmPalette.onSurface else FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (!compact && photoCount > 0) {
-            Spacer(Modifier.width(FmSpacing.sm))
-            Text(
-                text = "$photoCount 张照片",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-/**
- * ⋯ overflow: everything secondary. The rail toggles live here because a folded
- * rail's own affordance can be small, and the 「参数」 entry repeats inside the
- * menu whenever the inspector is not on screen.
- */
-@Composable
-private fun TopBarOverflow(
-    inspectorVisible: Boolean,
-    onOpenHelp: () -> Unit,
-    onShowParams: () -> Unit,
-    onToggleLeft: () -> Unit,
-    onToggleRight: () -> Unit,
-) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(FmRadii.input))
-                .background(FmPalette.surface)
-                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
-                .clickable(onClick = { open = true })
-                .semantics {
-                    contentDescription = "更多"
-                    role = Role.Button
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("⋯", style = FmType.titleMedium, color = FmPalette.onSurfaceSecondary)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(
-                text = { Text("帮助与快捷键（F1）", style = FmType.bodyMedium) },
-                onClick = { open = false; onOpenHelp() },
-            )
-            if (!inspectorVisible) {
-                DropdownMenuItem(
-                    text = { Text("打开参数面板", style = FmType.bodyMedium) },
-                    onClick = { open = false; onShowParams() },
-                )
-            }
-            DropdownMenuItem(
-                text = { Text("显示/折叠边框库（Ctrl+B）", style = FmType.bodyMedium) },
-                onClick = { open = false; onToggleLeft() },
-            )
-            DropdownMenuItem(
-                text = { Text("显示/折叠参数面板（Ctrl+Shift+B）", style = FmType.bodyMedium) },
-                onClick = { open = false; onToggleRight() },
-            )
-        }
-    }
-}
-
-@Composable
-private fun BrandBlock(compact: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(FmPalette.surface)
-                .border(1.dp, FmPalette.outline, RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            // WP-T: read the ink during composition; the Canvas draw scope is not composable.
-            val markOuter = FmPalette.primary
-            val markInner = FmPalette.primaryStrong
-            Canvas(modifier = Modifier.size(22.dp)) {
-                val stroke = Stroke(width = 1.8.dp.toPx(), join = StrokeJoin.Round)
-                drawRoundRect(
-                    color = markOuter,
-                    topLeft = Offset(size.width * 0.08f, size.height * 0.08f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.84f, size.height * 0.84f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.20f),
-                    style = stroke,
-                )
-                drawRoundRect(
-                    color = markInner,
-                    topLeft = Offset(size.width * 0.32f, size.height * 0.32f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.36f, size.height * 0.36f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.07f),
-                    style = stroke,
-                )
-            }
-        }
-        Spacer(Modifier.width(FmSpacing.sm))
-        Text("FrameMark", style = FmType.titleSmall, color = FmPalette.onSurface)
-    }
-}
-
-@Composable
-private fun BarAction(
-    label: String,
-    onClick: () -> Unit,
-    primary: Boolean = false,
-) {
-    Box(
-        modifier = Modifier
-            .height(36.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(if (primary) FmPalette.primary else FmPalette.surface)
-            .border(
-                width = 1.dp,
-                color = if (primary) Color.Transparent else FmPalette.outline,
-                shape = RoundedCornerShape(FmRadii.pill),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = FmSpacing.md),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = FmType.labelMedium,
-            color = if (primary) FmPalette.onPrimary else FmPalette.onSurfaceSecondary,
-            maxLines = 1,
-        )
     }
 }
 
@@ -1848,21 +1516,6 @@ private fun DesktopPanel(
 private fun CollapsedRail(side: String, onExpand: () -> Unit) {
     DesktopCollapsedRail(side = side, onExpand = onExpand)
 }
-
-@Composable
-private fun ChevronButton(glyph: String, description: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = description },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(glyph, style = FmType.titleMedium, color = FmPalette.onSurfaceMuted)
-    }
-}
-
 /**
  * Drag strip between a rail and the stage. Width is `FmDesktop.handleWidth` and
  * the caller centres it in the 12 dp gap, so the strip never covers a panel
@@ -2618,56 +2271,6 @@ private fun Filmstrip(
             }
         }
         Spacer(Modifier.height(FmSpacing.xs))
-    }
-}
-
-
-@Composable
-private fun HistoryButton(
-    label: String,
-    redo: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val tint = if (enabled) FmPalette.primaryStrong else FmPalette.onSurfaceFaint.copy(alpha = 0.7f)
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(FmRadii.input))
-            .background(if (enabled) FmPalette.surfaceMuted else Color.Transparent)
-            .clickable(enabled = enabled, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.size(16.dp)) {
-            val w = size.width
-            val h = size.height
-            fun x(v: Float): Float = if (redo) w - v * w else v * w
-            val stroke = Stroke(
-                width = 1.7.dp.toPx(),
-                cap = StrokeCap.Round,
-                join = StrokeJoin.Round,
-            )
-            val path = Path().apply {
-                moveTo(x(0.18f), h * 0.62f)
-                cubicTo(x(0.30f), h * 0.20f, x(0.80f), h * 0.20f, x(0.84f), h * 0.56f)
-            }
-            drawPath(path, color = tint, style = stroke)
-            drawLine(
-                color = tint,
-                start = Offset(x(0.18f), h * 0.62f),
-                end = Offset(x(0.18f), h * 0.34f),
-                strokeWidth = 1.7.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = tint,
-                start = Offset(x(0.18f), h * 0.62f),
-                end = Offset(x(0.44f), h * 0.62f),
-                strokeWidth = 1.7.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
-        }
     }
 }
 

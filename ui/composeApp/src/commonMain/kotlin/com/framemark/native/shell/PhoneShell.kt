@@ -111,7 +111,6 @@ internal fun createPhoneBatchDemoRunner(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PhoneShell() {
-    val panelState = rememberLazyListState()
     val batchScroll = rememberLazyListState()
     // P4: product.Project is the authority for photos, one design per photo, the
     // embedded watermarks and the export settings, and SessionStore writes it
@@ -878,7 +877,6 @@ fun PhoneShell() {
                 onRedo = { session.redo() },
                 onRetryInspector = { inspectorReload++ },
                 onQuickSavePreset = quickSavePreset,
-                panelState = panelState,
                 watermark = activeUiWatermark(),
                 onWatermarkChange = { spec ->
                     val id = store.activePhotoId ?: return@PhoneEditorScreen
@@ -1012,7 +1010,8 @@ fun PhoneShell() {
         }
         if (exportSheetOpen) {
             // WP-P2 §3.3: the phone's own sheet (preview / 格式 / 三档尺寸 / 质量 100 /
-            // 保存到相册 + 分享 / 完成页重试). The desktop keeps workflow/ExportSheet.kt.
+            // 保存到相册 + 分享 / 完成页重试). The desktop uses shell/desktop/ExportDialog.kt;
+            // workflow/ExportSheet.kt was deleted in WP-FIX2 (zero call sites).
             PhoneExportSheet(
                 session = session,
                 card = selectedCard,

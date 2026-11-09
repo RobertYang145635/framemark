@@ -2,6 +2,7 @@ package com.framemark.native.product
 
 import com.framemark.native.library.Json
 import com.framemark.native.library.jsonMap
+import com.framemark.native.workflow.DesignSnapshot
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -64,17 +65,6 @@ internal object RealData {
             }
         }
         return out
-    }
-
-    /** Independent render-request photo fixture; real binary assets are not required here. */
-    fun x1Photo(): PhotoRef {
-        return PhotoRef(
-            id = "registry-test-photo",
-            path = DesktopTestImageFixtures.path("ratio-study/4x3.jpg"),
-            displayName = "photo-pil.png",
-            widthPx = 400,
-            heightPx = 300,
-        )
     }
 
     fun outputDir(): Path {
@@ -252,35 +242,34 @@ class ControlRegistryRealDataTest {
     }
 
     @Test
-    fun every_visible_control_writes_somewhere_in_the_render_request() {
+    fun every_visible_control_writes_somewhere_in_the_design_snapshot() {
         val registry = RealData.registry()
-        val photo = RealData.x1Photo()
         var applied = 0
         registry.cards.filter { it.visibleCount > 0 }.forEach { card ->
             card.visibleControls.forEach { control ->
-                val styleId = card.styleId ?: card.cardId
                 val value = control.currentValue
                     ?: control.defaultValue?.takeIf { it.toString().isNotBlank() }
                     ?: control.options.firstOrNull()?.value
                     ?: return@forEach
-                var design = PhotoDesign.base(card.cardId, styleId)
+                var design = PhotoDesign.base(card.cardId, card.styleId ?: card.cardId)
                 design = design.applyConsumer(control.consumer, value)
-                val request = RenderRequestFactory.build(
-                    design = design,
-                    photo = photo,
-                    mode = RenderMode.Preview,
-                    maxEdge = 512,
-                )
-                val json = request.toJson()
-                val marker = when {
-                    control.consumer == "theme" -> "\"theme\""
-                    control.consumer == "ratio" -> "\"ratio\""
-                    control.consumer == "fontScale" -> "\"fontScale\""
-                    control.consumer == "logo" -> "\"logo\""
-                    control.consumer.startsWith("params.") -> "\"params\""
-                    else -> "\"text\""
+                // WP-FIX2 removed RenderRequest/RenderRequestFactory (no production
+                // caller). `toDesignSnapshot` is the payload the desktop bridge reads,
+                // so the "somewhere" a consumer writes must show up there.
+                val snap = design.toDesignSnapshot()
+                val key = control.consumer.substringAfter('.')
+                val written = when {
+                    control.consumer == "theme" -> snap.params.containsKey("theme")
+                    control.consumer == "ratio" -> snap.params.containsKey("ratio")
+                    control.consumer == "fontScale" -> snap.text.containsKey("fontScale")
+                    control.consumer == "logo" -> {
+                        val logo = value.toString()
+                        if (logo.isBlank() || logo == "auto") snap.logoBrand == null else snap.logoBrand == logo
+                    }
+                    control.consumer.startsWith("params.") -> snap.params.containsKey(key)
+                    else -> snap.text.containsKey(key)
                 }
-                assertTrue(json.contains(marker), "${card.cardId}::${control.controlId} 的 ${control.consumer} 没写进请求")
+                assertTrue(written, "${card.cardId}::${control.controlId} 的 ${control.consumer} 没写进设计快照")
                 applied++
             }
         }
@@ -288,34 +277,28 @@ class ControlRegistryRealDataTest {
     }
 
     @Test
-    fun dump_registry_stats_and_noop_requests_for_evidence() {
+    fun dump_registry_stats_and_noop_design_snapshots_for_evidence() {
         val registry = RealData.registry()
         val out = RealData.outputDir()
         Files.writeString(out.resolve("registry-stats.json"), statsJson(registry))
 
-        val requests = out.resolve("requests")
-        Files.createDirectories(requests)
-        val photo = RealData.x1Photo()
+        // Evidence dump only (no assertions). The render-request JSON model was
+        // deleted in WP-FIX2, so this dumps the design snapshot the bridge consumes.
+        val snapshots = out.resolve("snapshots")
+        Files.createDirectories(snapshots)
         listOf("stock-oppo-lumo_style_1", "simple-1", "card-1").forEach { cardId ->
             val card = registry.card(cardId) ?: error("card $cardId missing")
             val styleId = card.styleId ?: card.cardId
-            val empty = RenderRequestFactory.build(
-                design = PhotoDesign.base(card.cardId, styleId),
-                photo = photo,
-                mode = RenderMode.Preview,
-                maxEdge = 512,
+            Files.writeString(
+                snapshots.resolve("$cardId.txt"),
+                snapshotDump("base", PhotoDesign.base(card.cardId, styleId).toDesignSnapshot()),
             )
-            Files.writeString(requests.resolve("$cardId.json"), empty.toJson() + "\n")
-
             val positive = positiveDesign(registry, card, styleId)
             if (positive != null) {
-                val moved = RenderRequestFactory.build(
-                    design = positive,
-                    photo = photo,
-                    mode = RenderMode.Preview,
-                    maxEdge = 512,
+                Files.writeString(
+                    snapshots.resolve("$cardId.positive.txt"),
+                    snapshotDump("positive", positive.toDesignSnapshot()),
                 )
-                Files.writeString(requests.resolve("$cardId.positive.json"), moved.toJson() + "\n")
             }
         }
     }
@@ -339,6 +322,16 @@ class ControlRegistryRealDataTest {
             if (other != null) return PhotoDesign.base(card.cardId, styleId).withTheme(other)
         }
         return null
+    }
+
+    /** Human/agent-readable evidence dump; the JSON request model is gone (WP-FIX2). */
+    private fun snapshotDump(kind: String, snapshot: DesignSnapshot): String = buildString {
+        appendLine("kind=$kind")
+        appendLine("cardId=${snapshot.cardId}")
+        appendLine("styleId=${snapshot.styleId}")
+        appendLine("params=${snapshot.params.toSortedMap()}")
+        appendLine("text=${snapshot.text.toSortedMap()}")
+        appendLine("logo=${snapshot.logoBrand ?: "-"}")
     }
 
     private fun statsJson(registry: ControlRegistry): String {
