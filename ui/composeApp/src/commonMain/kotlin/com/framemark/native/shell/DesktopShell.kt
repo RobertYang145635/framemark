@@ -1580,8 +1580,12 @@ private fun DesktopColumnLayout(
         val wmScope = rememberCoroutineScope()
         val wm = desktopWorkflowWatermark(projects.watermark())
         val activePhoto = projects.activePhoto
-        val photoAspect = if (activePhoto != null && activePhoto.widthPx > 0 && activePhoto.heightPx > 0) {
-            activePhoto.widthPx.toFloat() / activePhoto.heightPx
+        // FIX1: 照片的**显示**尺寸（EXIF 方向已应用），不再拿容器尺寸算比例 ——
+        // 竖拍照片存的是 2000 × 2667、引擎按 2667 × 2000 出片，比例反了会让舞台
+        // 画框和成片各说各话。
+        val activePhotoDisplay = activePhoto?.displayPixels()
+        val photoAspect = if (activePhotoDisplay != null && activePhotoDisplay.width > 0 && activePhotoDisplay.height > 0) {
+            activePhotoDisplay.width.toFloat() / activePhotoDisplay.height
         } else {
             wm?.photoAspect ?: 1.5f
         }
@@ -1620,8 +1624,8 @@ private fun DesktopColumnLayout(
             onApplyToOtherPhotos = onApplyToOtherPhotos,
             onResetAll = onResetDesign,
             onCollapse = collapse,
-            photoWidthPx = activePhoto?.widthPx ?: 0,
-            photoHeightPx = activePhoto?.heightPx ?: 0,
+            photoWidthPx = activePhotoDisplay?.width ?: 0,
+            photoHeightPx = activePhotoDisplay?.height ?: 0,
             textSlots = textSlots.slots,
             textSlotWidthPx = textSlots.width,
             textSlotHeightPx = textSlots.height,
@@ -2130,11 +2134,13 @@ private fun EditStage(
                 }
             }
             val metaPhoto = projects.activePhoto
+            // FIX1: 标题行的「原图」也走显示尺寸，和右栏 / 成片同一个口径。
+            val metaPhotoDisplay = metaPhoto?.displayPixels()
             DesktopStageMeta(
                 fileName = metaPhoto?.displayName ?: card?.name ?: "尚未添加照片",
-                originalSize = metaPhoto
-                    ?.takeIf { it.widthPx > 0 && it.heightPx > 0 }
-                    ?.let { "${it.widthPx} × ${it.heightPx}" },
+                originalSize = metaPhotoDisplay
+                    ?.takeIf { it.width > 0 && it.height > 0 }
+                    ?.let { "${it.width} × ${it.height}" },
                 exportSize = exportSizeLabel(exportPixels),
                 modifier = Modifier.align(Alignment.TopStart),
             )
@@ -2293,6 +2299,11 @@ internal fun stageExportPixels(
 /**
  * 同一张卡的**未缩放**画布像素：右栏「导出尺寸」、顶栏、手机样式页与导出弹层
  * 共用它。已知参数族走 [OutputSize]，未知族才用渲染帧的测量宽高比兜底。
+ *
+ * FIX1: 入口的 `photo.widthPx/heightPx` 是**容器**尺寸（桌面导入器只读文件头，
+ * 方向单列在 `PhotoRef.orientation`），而引擎按解码后（EXIF 已应用）的画面排版。
+ * 所以这里先用 [PhotoRef.displayPixels] 归一，再交给 [OutputSize] —— 竖拍照片
+ * 才不会出现「界面 2000 × 2889、成片 2667 × 2296」。
  */
 internal fun stageCanvasPixels(
     model: InspectorCardModel?,
@@ -2300,14 +2311,29 @@ internal fun stageCanvasPixels(
     photo: PhotoRef?,
     rendered: IntSize,
 ): OutputPixels? {
-    if (photo == null || photo.widthPx <= 0) return null
+    if (photo == null) return null
+    val display = photo.displayPixels()
+    if (display.width <= 0) return null
     val controls = model?.controls.orEmpty()
     return if (OutputSize.familyOf(controls) != OutputSize.Family.PhotoOnly) {
-        OutputSize.canvas(photo.widthPx, photo.heightPx, controls) { session.value(it) }
+        OutputSize.canvas(display.width, display.height, controls) { session.value(it) }
     } else {
-        OutputSize.measuredCanvas(photo.widthPx, rendered.width, rendered.height)
+        OutputSize.measuredCanvas(display.width, rendered.width, rendered.height)
     }
 }
+
+/**
+ * `PhotoRef` 的**显示**像素尺寸（EXIF 方向已应用）。
+ *
+ * 桌面导入器（`DesktopProjectController.importPhotos` → `PhotoMetadata.read`）存的是
+ * 容器尺寸，方向单独存；引擎解码时 Skia 把方向烘进光栅，排版用的是显示尺寸。
+ * 显示侧必须用同一个口径，否则竖拍照片会差出一整个旋转。
+ *
+ * 只给桌面显示侧用：手机导入器（`AndroidPhoneAssetIo.photoMeta`）已经把方向换进
+ * `widthPx/heightPx` 了，那边不要再调本函数。
+ */
+internal fun PhotoRef.displayPixels(): OutputPixels =
+    OutputSize.displayPixels(widthPx, heightPx, orientation)
 
 /** 「→ 导出 W × H」。null 时不写这一行。 */
 private fun exportSizeLabel(pixels: OutputPixels?): String? = pixels?.toString()

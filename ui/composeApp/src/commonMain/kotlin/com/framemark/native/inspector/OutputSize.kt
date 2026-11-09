@@ -100,6 +100,28 @@ object OutputSize {
     fun familyOf(controls: List<InspectorControl>): Family = familyOf(controls.map { it.param })
 
     /**
+     * EXIF orientation 应用到**容器**像素尺寸后的显示尺寸（FIX1）。
+     *
+     * 引擎解码走 Skia `SkImages::DeferredFromEncodedData`，EXIF 方向在那一步就被
+     * 烘进光栅，随后 `templates::layout()` 读的是**解码后**的 `pw/ph`。所以一个
+     * 文件里存 `2000 × 2667`、Orientation=6 的照片，引擎按 `2667 × 2000` 排版：
+     * `2667 × 2296`（`e4hand.card=wm-classic template=brandFooter canvas=2667x2296`）。
+     *
+     * 显示侧过去直接拿 `PhotoRef.widthPx/heightPx`（容器尺寸）喂 [canvas]，于是同一
+     * 张照片印出 `2000 × 2889`，与成片 `2667 × 2296` 对不上（WP-Q2 D1 / AU3-1）。
+     * 方向 5..8 是把画面转 90°，两个轴互换；1..4 与 0（读不到）不换。
+     *
+     * **只用在容器尺寸这一侧**：桌面导入器存的是容器尺寸（`PhotoMetadata.read`
+     * 只读头，方向单列在 `PhotoRef.orientation`），手机导入器
+     * （`AndroidPhoneAssetIo.photoMeta`）已经存了显示尺寸，那边不要再过一次本函数，
+     * 否则会换两次。
+     */
+    fun displayPixels(widthPx: Int, heightPx: Int, orientation: Int): OutputPixels {
+        if (widthPx <= 0 || heightPx <= 0) return OutputPixels(widthPx, heightPx)
+        return if (orientation in 5..8) OutputPixels(heightPx, widthPx) else OutputPixels(widthPx, heightPx)
+    }
+
+    /**
      * 画布像素；照片尺寸未知时返回 null（宁可不写，也不写一个猜的数字）。
      *
      * [footerMode] 等参数用 `null` 表示「这张卡没有声明该参数」，此时取引擎缺省值。

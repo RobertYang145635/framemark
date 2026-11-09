@@ -257,4 +257,48 @@ class OutputSizeTest {
         assertEquals(8.5f, footerPctFloor(1600, 2400)!!, 0.001f)
         assertNull(footerPctFloor(0, 1067))
     }
+
+    // ---- FIX1：EXIF 方向 → 显示尺寸 ---------------------------------------
+
+    @Test
+    fun display_pixels_swaps_the_axes_only_for_quarter_turns() {
+        // 1..4 不转轴（2/3/4 是镜像 / 180°，尺寸不变）。
+        for (orientation in listOf(0, 1, 2, 3, 4)) {
+            assertEquals(
+                OutputPixels(2000, 2667),
+                OutputSize.displayPixels(2000, 2667, orientation),
+                "orientation=$orientation 不应换轴",
+            )
+        }
+        // 5..8 是 ±90°，两个轴互换。
+        for (orientation in listOf(5, 6, 7, 8)) {
+            assertEquals(
+                OutputPixels(2667, 2000),
+                OutputSize.displayPixels(2000, 2667, orientation),
+                "orientation=$orientation 必须换轴",
+            )
+        }
+    }
+
+    @Test
+    fun display_pixels_never_invents_a_size_for_unknown_dimensions() {
+        assertEquals(OutputPixels(0, 2667), OutputSize.displayPixels(0, 2667, 6))
+        assertEquals(OutputPixels(2000, 0), OutputSize.displayPixels(2000, 0, 6))
+        assertEquals(OutputPixels(0, 0), OutputSize.displayPixels(0, 0, 8))
+    }
+
+    @Test
+    fun the_engine_canvas_of_a_rotated_photo_matches_the_reported_numbers() {
+        // 引擎实测（`e4hand render --card wm-classic --fit native` 的 `canvas=`）：
+        // 容器 2000 × 2667、页脚 11.1 %
+        //   orientation 1 → 2000 × 2889；orientation 6/8 → 2667 × 2296。
+        val controls = classicControls(pct = 11.1f)
+        val upright = OutputSize.displayPixels(2000, 2667, 1)
+        val rotated = OutputSize.displayPixels(2000, 2667, 6)
+        assertEquals(OutputPixels(2000, 2667), upright)
+        assertEquals(OutputPixels(2667, 2000), rotated)
+        assertEquals(OutputPixels(2000, 2889), size(controls, upright.width, upright.height))
+        assertEquals(OutputPixels(2667, 2296), size(controls, rotated.width, rotated.height))
+        assertEquals(OutputPixels(2667, 2296), size(controls, rotated.width, rotated.height))
+    }
 }
