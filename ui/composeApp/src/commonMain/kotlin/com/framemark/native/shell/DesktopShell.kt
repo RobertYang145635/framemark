@@ -335,7 +335,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         projects.load()
         projects.loadPresets()
         projects.loadBatch()
-        // RUNBOOK §5.5：FM_LIB_QUERY 预填边框库搜索。V2 左栏的搜索框绑的是
+        // RUNBOOK §5.5：QA 启动参数预填边框库搜索。env 的读取点在
+        // desktopMain/qaenv/EnvQaSurface.kt（qaenv 层，产品源码不出现 hook 名，
+        // 见 ARCH1 的 evidence-hook-literal 规则）。V2 左栏的搜索框绑的是
         // desktopFilters.query（shell\desktop\DesktopLibraryPanel.kt:375），旧
         // LibraryScreen 的筛选状态已随不可达的 Ready 分支删除（WP-FIX2）。
         LaunchOptions.libraryQuery?.let { desktopFilters.query = it }

@@ -8,9 +8,9 @@
 # A stale entry (no matching violation) FAILS ArchAllowlistHygieneKonsistTest: delete it.
 #
 # Entries per rule:
-#   evidence-hook-literal: 356
+#   evidence-hook-literal: 355
 #   launch-state-isolation: 4
-#   layer-direction: 113
+#   layer-direction: 109
 #   single-source: 1
 
 # ---- evidence-hook-literal
@@ -228,7 +228,6 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchRunner.kt
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchRunner.kt:evidence-hook-literal:575:FM_BATCH_PERSIST_FAIL
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ControlProbe.kt:evidence-hook-literal:34:FM_CONTROL_BOUNDS
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ControlProbe.kt:evidence-hook-literal:42:FM_CONTROL_STATE
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ExportSheet.kt:evidence-hook-literal:119:FM_EXPORT_FAIL
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/FakeEngine.kt:evidence-hook-literal:73:FM_FAKE_EXPORT
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:evidence-hook-literal:316:FM_NATIVE_EXPORT
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:evidence-hook-literal:356:FM_CRASH_WINDOW
@@ -436,7 +435,6 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt:layer-direction:29:com.framemark.native.shell.TitleBlock
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/DesignSession.kt:layer-direction:7:com.framemark.native.inspector.ControlValue
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/DesignSession.kt:layer-direction:8:com.framemark.native.inspector.InspectorControl
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ExportSheet.kt:layer-direction:31:com.framemark.native.library.LibraryCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/FakeEngine.kt:layer-direction:3:com.framemark.native.library.LibraryCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/FakeEngine.kt:layer-direction:4:com.framemark.native.library.LibraryPreviewLoader
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:layer-direction:4:com.framemark.native.inspector.InspectorCardModel
@@ -448,10 +446,7 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeStagePre
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/OwnedControlOverrides.kt:layer-direction:3:com.framemark.native.inspector.InspectorCardModel
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/PhotoBatch.kt:layer-direction:29:com.framemark.native.library.LibraryCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/PhotoTray.kt:layer-direction:21:com.framemark.native.library.LibraryPreviewLoader
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/PresetSheet.kt:layer-direction:30:com.framemark.native.library.LibraryCard
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/PresetSheet.kt:layer-direction:31:com.framemark.native.library.LibraryPreview
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ProjectHolder.kt:layer-direction:6:com.framemark.native.inspector.InspectorCardModel
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ProjectPanels.kt:layer-direction:23:com.framemark.native.inspector.FmSlider
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ProjectPanels.kt:layer-direction:44:com.framemark.native.library.LibraryCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ProjectPanels.kt:layer-direction:45:com.framemark.native.library.LibraryPreview
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/ProjectPanels.kt:layer-direction:46:com.framemark.native.library.LibraryPreviewLoader
