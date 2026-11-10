@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -332,7 +331,7 @@ fun WatermarkPane(
 private fun WatermarkIconAction(
     glyph: String,
     description: String,
-    tint: androidx.compose.ui.graphics.Color,
+    tint: Color,
     onClick: () -> Unit,
 ) {
     Box(
@@ -439,6 +438,11 @@ private fun MarginSlider(
  * The nine-cell picker. The selected cell is filled `primary`; every cell of the
  * selected cell's **zone** gets the soft wash, so the user sees the area the
  * watermark may move in (report §9.1 "范围看得见").
+ *
+ * The plate/cell chrome itself lives in [AnchorCellsGrid] because a vendor card's
+ * 水印位置 control (`StockAnchorControl`) draws the same grid with word labels
+ * instead of arrows — one look, two callers. This wrapper only supplies the
+ * arrows and the zone wash, so the 水印 page renders exactly as before.
  */
 @Composable
 private fun WatermarkZoneGrid(
@@ -447,64 +451,27 @@ private fun WatermarkZoneGrid(
     dense: Boolean,
 ) {
     val zone = WatermarkZones.zoneFor(anchor)
-    val glyphs = listOf("↖", "↑", "↗", "←", "•", "→", "↙", "↓", "↘")
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .background(FmPalette.surfaceMuted)
-            .padding(3.dp),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        for (row in 0 until 3) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                for (col in 0 until 3) {
-                    val index = row * 3 + col
-                    val isSelected = index == anchor
-                    // A cell is washed when it overlaps the selected cell's zone
-                    // (the zone is half a photo wide, so it covers two columns).
-                    val cellX = col / 3f to (col + 1) / 3f
-                    val cellY = row / 3f to (row + 1) / 3f
-                    val inZone = cellX.first < zone.xMax && cellX.second > zone.xMin &&
-                        cellY.first < zone.yMax && cellY.second > zone.yMin
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(if (dense) 40.dp else 44.dp)
-                            .clip(RoundedCornerShape(FmRadii.chip))
-                            .background(
-                                when {
-                                    isSelected -> FmPalette.primary
-                                    inZone -> FmPalette.primarySoft
-                                    else -> Color.Transparent
-                                },
-                            )
-                            .border(
-                                width = if (isSelected) 0.dp else 1.dp,
-                                color = if (isSelected) FmPalette.primary else FmPalette.outline,
-                                shape = RoundedCornerShape(FmRadii.chip),
-                            )
-                            .clickable(role = Role.Button) { onAnchor(index) }
-                            .semantics {
-                                contentDescription = "水印位置：${glyphs[index]}"
-                                selected = index == anchor
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = glyphs[index],
-                            style = FmType.labelMedium,
-                            color = if (isSelected) FmPalette.onPrimary else FmPalette.onSurfaceSecondary,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    AnchorCellsGrid(
+        selectedIndex = anchor,
+        dense = dense,
+        onPick = onAnchor,
+        glyphOf = { WatermarkZoneGlyphs[it] },
+        descriptionOf = { "水印位置：${WatermarkZoneGlyphs[it]}" },
+        inZone = { index ->
+            // A cell is washed when it overlaps the selected cell's zone (the zone
+            // is half a photo wide, so it covers two columns).
+            val col = index % 3
+            val row = index / 3
+            val cellX = col / 3f to (col + 1) / 3f
+            val cellY = row / 3f to (row + 1) / 3f
+            cellX.first < zone.xMax && cellX.second > zone.xMin &&
+                cellY.first < zone.yMax && cellY.second > zone.yMin
+        },
+    )
 }
+
+/** Arrow per cell, row-major (top-left → bottom-right). */
+private val WatermarkZoneGlyphs = listOf("↖", "↑", "↗", "←", "•", "→", "↙", "↓", "↘")
 
 /**
  * Non-null when a legacy preset carries an offset on a centred direction; the

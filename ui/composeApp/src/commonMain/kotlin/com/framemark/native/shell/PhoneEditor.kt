@@ -107,6 +107,7 @@ import com.framemark.native.inspector.applyDemoEdits
 import com.framemark.native.inspector.hasTextPage
 import com.framemark.native.inspector.inspectorTabsFor
 import com.framemark.native.inspector.resetInspectorPage
+import com.framemark.native.inspector.textSlotNavEntries
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.InMemoryRecentFramesStore
 import com.framemark.native.library.RecentFramesEnv
@@ -283,6 +284,18 @@ fun PhoneEditorScreen(
     LaunchedEffect(card?.id, tray.selectedId) { focusedTextSlotKey = null }
     LaunchedEffect(tool, focusMode) {
         if (tool != EditorTool.Text || focusMode) focusedTextSlotKey = null
+    }
+    // §3.3: the stage's chip names the highlighted box (`左上 · 品牌`). The 文字 page
+    // already derives exactly that name from `textSlotNavEntries`; the shell forwards
+    // the finished string instead of teaching `workflow/` a second naming scheme. A
+    // readonly row (no writable key) is found by its report id, same as the stage.
+    val focusedTextSlotLabel = remember(focusedTextSlotKey, textSlots, textOutputWidth, textOutputHeight) {
+        textSlotNavEntries(textSlots, textOutputWidth, textOutputHeight)
+            .firstOrNull { it.navKey == focusedTextSlotKey }
+            ?.let { entry ->
+                entry.role?.takeIf { it.isNotBlank() }?.let { "${entry.positionLabel} · $it" }
+                    ?: entry.positionLabel
+            }
     }
     // The swipe HUD says which card the user landed on, then gets out of the way.
     LaunchedEffect(swipeFeedback) {
@@ -516,6 +529,7 @@ fun PhoneEditorScreen(
                             stageSize = stageSize,
                             watermark = watermark,
                             focusedTextSlotKey = focusedTextSlotKey,
+                            focusedTextSlotLabel = focusedTextSlotLabel,
                             renderFailure = renderFailure,
                             borderName = card?.name,
                             swipeFeedback = swipeFeedback,
@@ -964,6 +978,8 @@ private fun StageArea(
     stageSize: IntSize,
     watermark: WatermarkSpec?,
     focusedTextSlotKey: String?,
+    /** §3.3: the same row's display name (`左上 · 品牌`), computed by the 文字 page. */
+    focusedTextSlotLabel: String?,
     renderFailure: String?,
     borderName: String?,
     swipeFeedback: PhoneSwipeFeedback?,
@@ -1060,6 +1076,7 @@ private fun StageArea(
                         onFailed = onFailed,
                         onTextSlots = onTextSlots,
                         highlightedTextSlotKey = focusedTextSlotKey,
+                        highlightedTextSlotLabel = focusedTextSlotLabel,
                     )
                     else -> Box(modifier = Modifier.fillMaxSize()) {
                         LibraryPreview(card = card, modifier = Modifier.fillMaxSize())

@@ -90,6 +90,7 @@ import com.framemark.native.inspector.WatermarkZones
 import com.framemark.native.inspector.hasTextPage
 import com.framemark.native.inspector.inspectorTabsFor
 import com.framemark.native.inspector.resetInspectorPage
+import com.framemark.native.inspector.textSlotNavEntries
 import com.framemark.native.inspector.InspectorDataSource
 import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.RegistryPorts
@@ -1589,6 +1590,22 @@ private fun EditStage(
         activeDesign != null && activeDesign.cardId == card?.id -> activeDesign.toDesignSnapshot()
         else -> card?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
     }
+    // §3.3: the stage's chip names the highlighted row (`左上 · 品牌`). The 文字 tab
+    // already derives that name from `textSlotNavEntries`; the stage only receives the
+    // finished string, so `workflow/` never re-implements the nav naming.
+    val highlightedTextSlotLabel = remember(
+        highlightedTextSlotKey,
+        textSlots.slots,
+        textSlots.width,
+        textSlots.height,
+    ) {
+        textSlotNavEntries(textSlots.slots, textSlots.width, textSlots.height)
+            .firstOrNull { it.navKey == highlightedTextSlotKey }
+            ?.let { entry ->
+                entry.role?.takeIf { it.isNotBlank() }?.let { "${entry.positionLabel} · $it" }
+                    ?: entry.positionLabel
+            }
+    }
 
     var zoom by remember { mutableFloatStateOf(1f) }
     var pan by remember { mutableStateOf(Offset.Zero) }
@@ -1755,6 +1772,7 @@ private fun EditStage(
                             projects = projects,
                             textSlots = textSlots,
                             highlightedTextSlotKey = highlightedTextSlotKey,
+                            highlightedTextSlotLabel = highlightedTextSlotLabel,
                             // 渲染帧与导出画布是同一个设计，宽高比一致；有了它 `.print`
                             // 的投影才能贴着成品，而不是围着舞台上一块空白。
                             printAspect = if (renderedPx.width > 0 && renderedPx.height > 0) {
@@ -1857,7 +1875,9 @@ private fun EditStage(
  * `NativeStagePreview(onTextSlots = …)`, which is how the 文字 tab learns the
  * geometry of the rows the engine actually drew, and
  * `NativeStagePreview(highlightedTextSlotKey = …)`, which frames the row being
- * edited. Keep the two in sync if the wrapper's native branch ever changes.
+ * edited, and `NativeStagePreview(highlightedTextSlotLabel = …)`, which names that
+ * row with the string the 文字 tab computed. Keep the two in sync if the wrapper's
+ * native branch ever changes.
  */
 @Composable
 private fun DesktopNativeStage(
@@ -1866,6 +1886,8 @@ private fun DesktopNativeStage(
     projects: ProjectHolder,
     textSlots: TextSlotRegistry,
     highlightedTextSlotKey: String?,
+    /** §3.3: the same row's display name (`左上 · 品牌`), computed by the 文字 tab. */
+    highlightedTextSlotLabel: String?,
     /** 渲染帧宽高比：`.print` 的投影要贴着成品，不能围着整块舞台。 */
     printAspect: Float?,
     onRenderedPx: (Int, Int) -> Unit,
@@ -1915,6 +1937,7 @@ private fun DesktopNativeStage(
                 },
                 onTextSlots = textSlots::update,
                 highlightedTextSlotKey = highlightedTextSlotKey,
+                highlightedTextSlotLabel = highlightedTextSlotLabel,
                 // WP-C §4.5: the watermark can be dragged directly on the photo; the
                 // dashed frame shows the cell it may move in, and the write-back is the
                 // same absolute dx/dy the 水印 page sliders use.

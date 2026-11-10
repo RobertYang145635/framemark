@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import com.framemark.native.FeelProbe
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
+import com.framemark.native.product.StockWatermarkControls
 import com.framemark.native.shell.Tag
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
@@ -629,18 +630,32 @@ internal fun ControlItem(
             .probeBounds("control:${control.key}")
             .padding(vertical = if (dense) DenseControlGap else FmSpacing.md),
     ) {
-        when (control.type) {
-            ControlType.Switch -> SwitchControl(control, session, dense)
-            ControlType.Slider -> SliderControl(control, session, dense)
-            ControlType.Select -> SelectControl(control, session, dense)
-            ControlType.Text -> TextControl(control, session, dense, onTextFocusChanged)
-            ControlType.Color -> ColorControl(control, session, dense)
-            ControlType.Brand -> BrandControl(control, session, dense)
+        // 「这种是需要放开的」: a vendor card's 水印位置 is a 3×3 grid, not the
+        // ten-item DropdownMenu `ControlType.Select` would draw. One predicate
+        // (`product/StockWatermarkControls`) decides on both platforms.
+        val stockAnchor = StockWatermarkControls.isAnchorParam(control.param)
+        if (stockAnchor) {
+            StockAnchorControl(
+                control = control,
+                session = session,
+                dense = dense,
+                // This row already draws its own 恢复默认 for dense hosts; never twice.
+                showReset = !(showResetControl || dense),
+            )
+        } else {
+            when (control.type) {
+                ControlType.Switch -> SwitchControl(control, session, dense)
+                ControlType.Slider -> SliderControl(control, session, dense)
+                ControlType.Select -> SelectControl(control, session, dense)
+                ControlType.Text -> TextControl(control, session, dense, onTextFocusChanged)
+                ControlType.Color -> ColorControl(control, session, dense)
+                ControlType.Brand -> BrandControl(control, session, dense)
+            }
         }
         // 单项复位: a compact right-aligned row under the control (40 dp minimum),
         // not the old full-width 48 dp TextButton row. Non-dense keeps the old
         // opt-in behavior (only callers that pass showResetControl get it).
-        if ((showResetControl || dense) && session.isModified(control)) {
+        if (!stockAnchor && (showResetControl || dense) && session.isModified(control)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 Box(
                     modifier = Modifier

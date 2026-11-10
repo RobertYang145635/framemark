@@ -70,9 +70,10 @@ internal fun CuratedPage(
     val textSelection = rememberTextSlotSelectionState(cardId)
     // 参数存在性判据（不写死卡片 id）：同时有 底色 / 版式 / 底部留白 才是可调边框，
     // 否则是厂商规格卡（`core.js:854` 的 ir 分支）。
-    val tunable = themeControlOf(controls) != null &&
-        footerModeControlOf(controls) != null &&
-        footerPctControlOf(controls) != null
+    val tunable = desktopStylePageIsCurated(controls)
+    // 「这种是需要放开的」：声明了 stockAnchor / 两个微调的厂商规格卡不再只能看规格，
+    // 它声明出来的控件就画在 边框规格 下面（水印位置是九宫格，不是下拉框）。
+    val movable = movableStockWatermark(controls)
     Column(modifier = modifier.fillMaxWidth()) {
         when (tab.page) {
             InspectorPage.Style ->
@@ -83,11 +84,14 @@ internal fun CuratedPage(
                         outputSize = curatedOutputSize(controls, session),
                     )
                 } else {
-                    CuratedSpecPane(textRows = controls.count { it.type == ControlType.Text })
+                    CuratedSpecPane(
+                        textRows = controls.count { it.type == ControlType.Text },
+                        textPositionFixed = !movable,
+                    )
                     if (controls.isNotEmpty()) {
                         CuratedRule()
                         CuratedGroup("可调参数") {
-                            controls.forEach { GenericControlRow(it, session) }
+                            withoutDuplicateStockAnchors(controls).forEach { GenericControlRow(it, session) }
                         }
                     }
                 }
@@ -140,18 +144,26 @@ internal fun curatedOutputPixels(
     )
 }
 
-/** 边框规格（厂商规格卡）— read-only: 画布 / 照片区 / 文字 / 来源 + 说明。 */
+/**
+ * 边框规格（厂商规格卡）— read-only **only when the card declares nothing movable**.
+ *
+ * [textPositionFixed] is the user decision in copy form: a card that declares
+ * `stockAnchor`/`stockOffsetXPct|YPct` gets the adjustable sentence (「尺寸、留白
+ * 按厂商规格固定」) because its 水印位置 *is* editable below this block; a card that
+ * declares none keeps the old sentence with the 「文字位置按规格固定」 clause.
+ */
 @Composable
 internal fun CuratedSpecPane(
     textRows: Int,
     modifier: Modifier = Modifier,
+    textPositionFixed: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         CuratedGroup("边框规格") {
             if (textRows > 0) {
                 SpecRow("文字", "$textRows 行")
             }
-            CuratedSubNote("厂商规格边框的尺寸、留白和文字位置都按规格固定，可以改文字内容和加图片水印。")
+            CuratedSubNote(vendorSpecNote(watermarkMovable = !textPositionFixed))
         }
     }
 }

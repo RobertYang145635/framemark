@@ -28,6 +28,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.graphics.Color
@@ -46,6 +47,10 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import com.framemark.native.LaunchOptions
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
@@ -140,6 +145,14 @@ fun NativeStagePreview(
      * draws its frame only on the current valid render; null draws nothing.
      */
     highlightedTextSlotKey: String? = null,
+    /**
+     * §3.3: the display name of that row (`左上 · 品牌`), already computed by the
+     * page that owns the 文字 nav band (`textSlotNavEntries`). The label travels as
+     * a parameter on purpose: the workflow package must not grow a second naming
+     * scheme next to the inspector's. Null (or blank) keeps the old stage — the
+     * chip then names the position alone.
+     */
+    highlightedTextSlotLabel: String? = null,
     /**
      * WP-C §4.5: the watermark layer to drag directly on the photo. Null keeps
      * the historical behaviour (no handle, no zone frame).
@@ -710,32 +723,23 @@ fun NativeStagePreview(
                             boxH = boxPx.height.toFloat(),
                         )
                     }
-                println("FM_TEXT_HIGHLIGHT key=$highlightKey located=${highlightSlot?.located} rect=$highlightRect")
+                println(
+                    "FM_TEXT_HIGHLIGHT key=$highlightKey located=${highlightSlot?.located} " +
+                        "rect=$highlightRect label=${highlightedTextSlotLabel?.takeIf { it.isNotBlank() } ?: "-"}",
+                )
                 if (highlightRect != null) {
-                    // WP-T: read the ink during composition; the Canvas draw scope is not composable.
-                    val highlightWash = FmPalette.primary.copy(alpha = 0.10f)
-                    val highlightEdge = FmPalette.primary
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val stroke = 1.5.dp.toPx()
-                        val radius = 6.dp.toPx()
-                        drawRoundRect(
-                            color = highlightWash,
-                            topLeft = Offset(highlightRect.x, highlightRect.y),
-                            size = Size(highlightRect.w, highlightRect.h),
-                            cornerRadius = CornerRadius(radius, radius),
-                        )
-                        val inset = stroke / 2f
-                        drawRoundRect(
-                            color = highlightEdge,
-                            topLeft = Offset(highlightRect.x + inset, highlightRect.y + inset),
-                            size = Size(
-                                (highlightRect.w - stroke).coerceAtLeast(0.5f),
-                                (highlightRect.h - stroke).coerceAtLeast(0.5f),
-                            ),
-                            cornerRadius = CornerRadius(radius, radius),
-                            style = Stroke(width = stroke),
-                        )
-                    }
+                    // The chip names the box the user is editing. The position + role
+                    // text comes from the page that owns the nav band; when a caller
+                    // passes none, the existing nine-grid word (左上 / 底部居中 …) is
+                    // enough for the stage to still say which box is framed.
+                    TextSlotHighlightOverlay(
+                        rect = highlightRect,
+                        label = highlightedTextSlotLabel?.trim()?.takeIf(String::isNotEmpty)
+                            ?: highlightSlot?.let { slot ->
+                                classifyTextSlotPosition(slot, ready.bitmap.width, ready.bitmap.height)?.label
+                            },
+                        blankText = highlightSlot?.text.isNullOrBlank(),
+                    )
                 } else {
                     // The focused row has no trustworthy rectangle in this frame
                     // (missing, unlocated or zero-size): tell the truth at the top of
@@ -871,6 +875,160 @@ fun NativeStagePreview(
                 }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// §3.3: text-row highlight (frame outside the glyphs + a chip that names the row)
+// ---------------------------------------------------------------------------
+
+/** The frame is drawn this far outside the reported row, so it never crosses glyphs. */
+private val TextHighlightInflate = 2.5.dp
+/** Blue frame stroke (drawn fully inside the inflated rectangle). */
+private val TextHighlightStroke = 2.dp
+/** Dark neutral ring just outside it: keeps the frame visible on white cards *and* photos. */
+private val TextHighlightRing = 1.dp
+private val TextHighlightRadius = 6.dp
+/** Chip: a pill that names the box (`左上 · 品牌`, `左下 · 机型（空）`). */
+private val TextHighlightChipPadX = 6.dp
+private val TextHighlightChipPadY = 2.dp
+private val TextHighlightChipGap = 3.dp
+/**
+ * The stage's bottom pill row (经典双行 / 按住看原图, `StagePillInset` + ~2 line heights).
+ * The chip may not be drawn into this band: it would sit under the pills.
+ */
+private val StagePillBand = 56.dp
+private const val TEXT_HIGHLIGHT_WASH_ALPHA = 0.06f
+private const val TEXT_HIGHLIGHT_CHIP_ALPHA = 0.92f
+
+/**
+ * §3.3 text-row highlight. Draw-only on purpose: no clickable / pointerInput, so
+ * every touch keeps reaching the stage gestures, and nothing here is written into
+ * `PreviewRequestKey`, the render cache, the project, a preset or an export.
+ *
+ * Geometry, from the row outwards:
+ *  - 6 % primary wash on the row itself (was 10 %, which dimmed the very glyphs the
+ *    user is editing);
+ *  - the row inflated by 2.5 dp and clamped to the canvas, stroked 2 dp in the
+ *    primary colour **inside** the inflated rectangle: the line stays outside the
+ *    glyphs and an edge row still gets its full width instead of a clipped half;
+ *  - a 1 dp dark-neutral ring just outside that stroke, which is what makes the
+ *    frame readable on a white card background and on the photo alike;
+ *  - a chip at the frame's top-left ([placeSlotChip]) carrying the row's name in
+ *    `FmType.labelSmall`; `（空）` is appended when the renderer reported no text,
+ *    which is exactly the "empty slot looks like a bare line" case.
+ */
+@Composable
+internal fun TextSlotHighlightOverlay(
+    /** The row's rectangle in preview-box pixels (already mapped through ContentScale.Fit). */
+    rect: FitRectPx,
+    /** Position + role text from the 文字 nav band; null/blank draws no chip. */
+    label: String?,
+    /** The renderer reported no text for this row → the chip says `（空）`. */
+    blankText: Boolean,
+) {
+    // WP-T: read the ink during composition; the Canvas draw scope is not composable.
+    val wash = FmPalette.primary.copy(alpha = TEXT_HIGHLIGHT_WASH_ALPHA)
+    val edge = FmPalette.primary
+    val ring = FmPalette.stage
+    val chipFill = FmPalette.stage.copy(alpha = TEXT_HIGHLIGHT_CHIP_ALPHA)
+    val chipLine = FmPalette.stageLine
+    val chipInk = FmPalette.stageInk
+    val chipStyle = FmType.labelSmall
+    val chipText = remember(label, blankText) {
+        val name = label?.trim().orEmpty()
+        when {
+            name.isEmpty() -> ""
+            blankText -> "$name（空）"
+            else -> name
+        }
+    }
+    val measurer = rememberTextMeasurer()
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val canvasW = size.width
+        val canvasH = size.height
+        if (canvasW <= 0f || canvasH <= 0f) return@Canvas
+        val frame = inflateHighlightRect(rect, TextHighlightInflate.toPx(), canvasW, canvasH)
+        if (frame.w <= 0f || frame.h <= 0f) return@Canvas
+        val stroke = TextHighlightStroke.toPx()
+        val ringStroke = TextHighlightRing.toPx()
+        val radius = TextHighlightRadius.toPx()
+        val washRect = inflateHighlightRect(rect, 0f, canvasW, canvasH)
+        if (washRect.w > 0f && washRect.h > 0f) {
+            drawRoundRect(
+                color = wash,
+                topLeft = Offset(washRect.x, washRect.y),
+                size = Size(washRect.w, washRect.h),
+                cornerRadius = CornerRadius(radius, radius),
+            )
+        }
+        // 2 dp stroke inside the inflated frame: at the photo edge the clamp above keeps
+        // the whole line on the canvas instead of cutting it in half.
+        drawRoundRect(
+            color = edge,
+            topLeft = Offset(frame.x + stroke / 2f, frame.y + stroke / 2f),
+            size = Size(
+                (frame.w - stroke).coerceAtLeast(stroke),
+                (frame.h - stroke).coerceAtLeast(stroke),
+            ),
+            cornerRadius = CornerRadius(
+                (radius - stroke / 2f).coerceAtLeast(0f),
+                (radius - stroke / 2f).coerceAtLeast(0f),
+            ),
+            style = Stroke(width = stroke),
+        )
+        // 1 dp dark neutral just outside it. `FmPalette.stage` is the one neutral that is
+        // dark in both appearances, so a white card preview cannot swallow the frame.
+        // At a canvas edge only this ring is clipped off; the 2 dp stroke stays whole.
+        drawRoundRect(
+            color = ring,
+            topLeft = Offset(frame.x - ringStroke / 2f, frame.y - ringStroke / 2f),
+            size = Size(frame.w + ringStroke, frame.h + ringStroke),
+            cornerRadius = CornerRadius(radius + ringStroke / 2f, radius + ringStroke / 2f),
+            style = Stroke(width = ringStroke),
+        )
+        if (chipText.isEmpty()) return@Canvas
+        val padX = TextHighlightChipPadX.toPx()
+        val padY = TextHighlightChipPadY.toPx()
+        // Ellipsis, never a clip: the chip is measured against the canvas and the
+        // placement below keeps it inside, so no glyph can be cut by the stage edge.
+        val layout = measurer.measure(
+            text = AnnotatedString(chipText),
+            style = chipStyle,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            constraints = Constraints(maxWidth = (canvasW - padX * 2f).toInt().coerceAtLeast(1)),
+        )
+        val chipW = (layout.size.width + padX * 2f).coerceAtMost(canvasW)
+        val chipH = (layout.size.height + padY * 2f).coerceAtMost(canvasH)
+        val place = placeSlotChip(
+            rect = frame,
+            canvasW = canvasW,
+            canvasH = canvasH,
+            chipW = chipW,
+            chipH = chipH,
+            reservedBottom = StagePillBand.toPx(),
+            gap = TextHighlightChipGap.toPx(),
+        )
+        val pill = CornerRadius(chipH / 2f, chipH / 2f)
+        drawRoundRect(
+            color = chipFill,
+            topLeft = Offset(place.x, place.y),
+            size = Size(chipW, chipH),
+            cornerRadius = pill,
+        )
+        drawRoundRect(
+            color = chipLine,
+            topLeft = Offset(place.x + ringStroke / 2f, place.y + ringStroke / 2f),
+            size = Size((chipW - ringStroke).coerceAtLeast(1f), (chipH - ringStroke).coerceAtLeast(1f)),
+            cornerRadius = pill,
+            style = Stroke(width = ringStroke),
+        )
+        drawText(
+            textLayoutResult = layout,
+            color = chipInk,
+            topLeft = Offset(place.x + padX, place.y + padY),
+        )
     }
 }
 

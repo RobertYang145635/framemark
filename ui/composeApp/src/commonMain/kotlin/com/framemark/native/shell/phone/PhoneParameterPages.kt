@@ -32,6 +32,8 @@ import com.framemark.native.inspector.LocalCuratedPhotoSize
 import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
+import com.framemark.native.inspector.StockAnchorControl
+import com.framemark.native.inspector.StylePageBody
 import com.framemark.native.inspector.TextPageMode
 import com.framemark.native.inspector.TextSlotEmptyPane
 import com.framemark.native.inspector.fontScaleControlOf
@@ -39,14 +41,19 @@ import com.framemark.native.inspector.footerModeControlOf
 import com.framemark.native.inspector.footerPctControlOf
 import com.framemark.native.inspector.footerPctDisabledReason
 import com.framemark.native.inspector.footerPctFloor
+import com.framemark.native.inspector.movableStockWatermark
+import com.framemark.native.inspector.phoneStylePageBody
 import com.framemark.native.inspector.rememberTextSlotSelectionState
 import com.framemark.native.inspector.textPageMode
 import com.framemark.native.inspector.textScaleHint
 import com.framemark.native.inspector.textSlotNavEntries
 import com.framemark.native.inspector.themeControlOf
+import com.framemark.native.inspector.vendorSpecNote
+import com.framemark.native.inspector.withoutDuplicateStockAnchors
 import com.framemark.native.inspector.OutputSize
 import com.framemark.native.inspector.curatedOutputPixels
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.product.StockWatermarkControls
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
@@ -211,9 +218,15 @@ fun PhoneParameterPage(
 /**
  * 样式 page of the showcase (`paneClassicStyle`): the theme swatches, the footer
  * layout segmented control with its one-line explanation, the footer-height touch
- * slider and the 导出尺寸 line. `paneIrStyle` (vendor-spec cards) is the read-only
- * 边框规格 block, and any other card falls back to its declared controls, rendered
- * with the same `.touchui` chrome rather than a form of drop-downs.
+ * slider and the 导出尺寸 line.
+ *
+ * `paneIrStyle` (vendor-spec cards) used to be **unconditionally** the read-only
+ * 边框规格 block. The user decision 「这种是需要放开的，有的边框需要定死，有的不需要」
+ * splits it: a vendor card that declares `stockAnchor` / the two offsets gets those
+ * declared controls (水印位置 as a 3×3 grid, then the 水平/垂直微调 sliders) under the
+ * same 边框规格 note; a card that declares nothing adjustable keeps exactly the old
+ * read-only block. Any other card falls back to its declared controls, rendered with
+ * the same `.touchui` chrome rather than a form of drop-downs.
  */
 @Composable
 private fun PhoneStylePane(
@@ -227,14 +240,23 @@ private fun PhoneStylePane(
     // AU2 A-17：与桌面同一个 tail-match 判定，不再比对字面量 `params.footerMode`。
     val mode = footerModeControlOf(controls)
     val footerPct = footerPctControlOf(controls)
-    // A vendor-spec card declares no adjustable template parameters at all: the
-    // showcase shows the fixed spec block instead of an empty form.
-    if (model.isIr || (theme == null && mode == null && controls.none { it.type == ControlType.Slider })) {
-        PhoneSpecPane(card = card, slotCount = model.controls.count { isNativeTextSlotControl(it) })
+    // 只有「什么都没声明」的厂商规格卡才是只读的；同一个判据在桌面样式页也读
+    // （`phoneStylePageBody` / `stockWatermarkPlan`，定义在 inspector 包）。
+    val body = phoneStylePageBody(isIr = model.isIr, controls = controls)
+    val movable = movableStockWatermark(controls)
+    if (body == StylePageBody.SpecOnly) {
+        // 只读块里的「文字 N 行」沿用 WP-C 的口径：渲染器报出来的文本框数。
+        PhoneSpecPane(
+            card = card,
+            slotCount = model.controls.count { isNativeTextSlotControl(it) },
+            textPositionFixed = true,
+        )
         return
     }
     val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key)
-    val rest = controls.filterNot { it.key in handled }
+    // 声明可以重复同一条 anchorGrid 行，但 `params.stockAnchor` 只有一个字段：
+    // 九宫格只画一次。
+    val rest = withoutDuplicateStockAnchors(controls.filterNot { it.key in handled })
     // 导出尺寸 = 真实成片：照片像素 + 版式留白（与桌面 rail 同一个 `curatedOutputPixels`），
     // 再按导出设置的长边档归一（[OutputSize.applyLongEdge]，与导出对话框/引擎同式；
     // 长边档放大与缩小都算，D-1）。照片尺寸还没接进来时返回 null → 这一行留空，
@@ -245,6 +267,16 @@ private fun PhoneStylePane(
         longEdge = session.export.longEdge,
     )
     Column(modifier = Modifier.fillMaxWidth()) {
+        // 声明了可移动水印的厂商规格卡：规格说明仍然在上，但文案不再说位置是固定的；
+        // 下面就是九宫格 + 微调，和手写卡一样走声明出来的控件。这一段的「文字 N 行」
+        // 数的是声明出来的文字行（IR 卡没有渲染器 slot）。
+        if (model.isIr) {
+            PhoneSpecPane(
+                card = card,
+                slotCount = model.controls.count { !it.hidden && it.type == ControlType.Text },
+                textPositionFixed = !movable,
+            )
+        }
         if (theme != null) {
             PhoneGroup(title = "底色") {
                 PhoneSwatchRow(
@@ -311,9 +343,15 @@ private fun PhoneStylePane(
     }
 }
 
-/** Showcase `paneIrStyle`: the fixed geometry of a vendor-spec border. */
+/**
+ * Showcase `paneIrStyle`: the fixed geometry of a vendor-spec border.
+ *
+ * [textPositionFixed] is the user decision in copy form: a card whose watermark can
+ * move must not claim 文字位置 is fixed (same sentence as the desktop rail, see
+ * [vendorSpecNote]).
+ */
 @Composable
-private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int) {
+private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int, textPositionFixed: Boolean) {
     PhoneGroup(title = "边框规格") {
         PhoneSpecRows(
             rows = buildList {
@@ -325,7 +363,7 @@ private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int) {
                 if (source.isNotBlank()) add("来源" to source)
             },
         )
-        PhoneSubNote("厂商规格边框的尺寸、留白和文字位置都按规格固定，可以改文字内容和加图片水印。")
+        PhoneSubNote(vendorSpecNote(watermarkMovable = !textPositionFixed))
     }
 }
 
@@ -365,15 +403,17 @@ private fun PhoneControlRow(control: InspectorControl, session: DesignSession) {
             selected = session.value(control)?.toString() ?: "",
             onSelect = { value -> session.set(control, value) },
         )
-        ControlType.Select -> if (control.options.size <= 4) {
-            PhoneSegmented(
+        ControlType.Select -> when {
+            // 「这种是需要放开的」: 厂商水印位置用九宫格，不用十项下拉/色片。
+            StockWatermarkControls.isAnchorParam(control.param) ->
+                StockAnchorControl(control = control, session = session, dense = true)
+            control.options.size <= 4 -> PhoneSegmented(
                 options = control.options.map { it.value to phoneModeLabel(it.display) },
                 selected = session.value(control)?.toString() ?: "",
                 onSelect = { value -> session.set(control, value) },
                 label = phoneControlLabel(control),
             )
-        } else {
-            PhoneSwatchRow(
+            else -> PhoneSwatchRow(
                 options = control.options.map { it.value to it.display },
                 selected = session.value(control)?.toString() ?: "",
                 onSelect = { value -> session.set(control, value) },
