@@ -103,7 +103,14 @@ fun PhoneSeriesDirectory(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = FmSpacing.lg,
                     end = FmSpacing.lg,
-                    bottom = FmSpacing.sm,
+                    // `heightIn(max = 420.dp)` ends the viewport inside a row (on the device
+                    // the 9th row is clipped at y=2469 while the panel's own bottom edge is
+                    // at y=2497), so the row under the cut ends up sitting on the panel's
+                    // rounded bottom (radius `FmRadii.sheet` = 24 dp) with only the panel's
+                    // 8 dp padding under it. Repeat that padding *inside* the scroll range:
+                    // 8 dp panel + 16 dp list = 24 dp, so at the end of the list the last row
+                    // always clears the corner arc instead of being half-cut by the edge.
+                    bottom = FmSpacing.lg,
                 ),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {

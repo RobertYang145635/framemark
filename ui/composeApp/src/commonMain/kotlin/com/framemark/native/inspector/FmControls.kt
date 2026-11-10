@@ -876,7 +876,13 @@ internal fun FmSliderValueBox(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End,
             ) {
-                Box {
+                // `.weight(1f, fill = false)`: a single-line `BasicTextField` fills the
+                // width it is offered, so on its own it takes the box's whole 60 dp
+                // content area and the unit that follows starts *past* the box's right
+                // edge — where `.clip(RoundedCornerShape(6.dp))` cut it in half
+                // (`5.0×`, `59.4%` on the device). Measuring the value against the space
+                // the unit leaves keeps the whole unit inside the same 76 dp box.
+                Box(Modifier.weight(1f, fill = false)) {
                     if (text.isEmpty()) {
                         Text(display, style = CuratedSliderHint, color = FmPalette.onSurfaceFaint)
                     }

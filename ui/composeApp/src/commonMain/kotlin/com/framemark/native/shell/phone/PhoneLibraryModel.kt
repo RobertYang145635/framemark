@@ -184,19 +184,25 @@ fun phoneBorderPosition(traversal: LibraryTraversal, cardId: String?): Int = tra
  * Flat item index of [groupKey]'s header / tile in the sheet body. [perGroup] is
  * the item count a group occupies (`phoneStripItems` / `phoneGridItems`), which is
  * why the jump chips and the body can never disagree about where a group starts.
+ *
+ * `0` is a real destination — it is the first group's header/tile — so "this key is
+ * not in the body" answers `-1`. Returning `0` for a missing key made the first
+ * group's jump chip indistinguishable from "nothing to do", and the chip was then
+ * dropped on the floor (bug: 厂商 → `OPPO 48` / 常用 → `在用` did nothing).
  */
 fun phoneLibraryItemIndex(
     groups: List<LibraryCardGroup>,
     groupKey: String?,
     perGroup: (LibraryCardGroup) -> Int,
 ): Int {
-    if (groupKey == null) return 0
+    // No key = no target: there is nothing to scroll to.
+    if (groupKey == null) return -1
     var index = 0
     for (group in groups) {
         if (group.key == groupKey) return index
         index += perGroup(group)
     }
-    return 0
+    return -1
 }
 
 /** The group a body offset points at, used by the sticky-title styling and QA. */

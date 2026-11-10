@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,6 +85,10 @@ fun PhoneLibrarySheet(
     }
     var searchOpen by remember { mutableStateOf(false) }
     var seriesOpen by remember { mutableStateOf(false) }
+    // The card the user just picked **in this sheet**. Handing it to the reveal keeps the
+    // strip/grid from sliding out from under the finger that picked it (bug: every tap in
+    // the 收起 strip re-aligned the strip and left the previous card as a sliver).
+    var lastPickedId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val view = remember(index, categoryKey, query, inUse, recent) {
         phoneLibraryView(index, categoryKey, vendorKey = null, query = query, inUse = inUse, recent = recent)
@@ -96,7 +101,21 @@ fun PhoneLibrarySheet(
         selectedCardId = selectedCardId,
         state = bodyState,
         expanded = expanded,
+        skipForId = lastPickedId,
     )
+    // One pick skips exactly one reveal. The reveal above is keyed on what the user is
+    // looking at, not on the pick, so clearing the marker afterwards cannot restart it —
+    // and the next external change (展开/收起, category, search, stage swipe) reveals again.
+    LaunchedEffect(view.groups, selectedCardId, expanded) {
+        lastPickedId = null
+    }
+
+    // Both levels route their pick through here so the marker is set before the
+    // selection actually changes.
+    val pickInSheet: (LibraryCard) -> Unit = { card ->
+        lastPickedId = card.id
+        onPick(card)
+    }
 
     fun jumpTo(groupKey: String) {
         val target = if (expanded) {
@@ -104,7 +123,8 @@ fun PhoneLibrarySheet(
         } else {
             phoneStripJumpIndex(view.groups, groupKey)
         }
-        if (target <= 0) return
+        // `-1` is "no such group"; `0` is the first group and a real scroll target.
+        if (target < 0) return
         scope.launch { bodyState.animateScrollToItem(target) }
     }
 
@@ -148,7 +168,7 @@ fun PhoneLibrarySheet(
                     groups = view.groups,
                     selectedCardId = selectedCardId,
                     state = gridState,
-                    onPick = onPick,
+                    onPick = pickInSheet,
                     onOpenSeries = if (categoryKey == LibraryIndex.CATEGORY_VENDOR) {
                         { seriesOpen = true }
                     } else {
@@ -168,11 +188,12 @@ fun PhoneLibrarySheet(
                         selectedCardId = selectedCardId,
                         state = stripState,
                         metrics = metrics,
-                        onPick = onPick,
-                        onJumpGroup = { key ->
-                            val indexOfGroup = view.anchors.firstOrNull { it.groupKey == key }
-                            if (indexOfGroup != null) jumpTo(key)
-                        },
+                        onPick = pickInSheet,
+                        // A group tile always jumps to its own group. It used to be gated on
+                        // the key being one of `view.anchors`, and 厂商 aggregates those by
+                        // brand (one chip per brand's *first* series), so every later series
+                        // tile silently did nothing. `jumpTo` already answers 0 / -1.
+                        onJumpGroup = { key -> jumpTo(key) },
                     )
                 }
             }

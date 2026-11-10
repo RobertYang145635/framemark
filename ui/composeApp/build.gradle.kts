@@ -119,8 +119,8 @@ android {
         applicationId = "com.framemark.native"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.9.0-rc7"
+        versionCode = 7
+        versionName = "0.9.0-rc8"
         // The Android renderer is currently complete for arm64-v8a only.
         ndk {
             abiFilters += listOf("arm64-v8a")

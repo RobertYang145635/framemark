@@ -208,8 +208,9 @@ class PhoneLibrarySwipeTest {
         // Grid: header + one row per 3 cards.
         assertEquals(0, phoneGridJumpIndex(sheet.groups, firstKey))
         assertEquals(1 + 2, phoneGridJumpIndex(sheet.groups, secondKey))
-        // An unknown key falls back to the first group instead of scrolling nowhere.
-        assertEquals(0, phoneGridJumpIndex(sheet.groups, "missing"))
+        // An unknown key is "no target" (-1) — it must not be confused with the first
+        // group, whose index really is 0. See PhoneLibraryJumpIndexTest.
+        assertEquals(-1, phoneGridJumpIndex(sheet.groups, "missing"))
     }
 
     @Test

@@ -254,25 +254,45 @@ private fun GroupHeader(group: LibraryCardGroup, onOpenSeries: (() -> Unit)?) {
     }
 }
 
-/** Scroll the body to the card that is currently applied (open, swipe, preset). */
+/**
+ * Scroll the body to the card that is currently applied (open, swipe, preset).
+ *
+ * [skipForId] is the card the user just picked **inside this sheet**: that pick is
+ * already under the finger, so scrolling to it would slide the list out from under
+ * the tap (bug: every tap in the 收起 strip re-aligned the strip). External selection
+ * changes (sheet opened, category/search change, stage swipe, preset applied) pass a
+ * different id and still reveal. It is deliberately **not** an effect key: the id is
+ * read at restart time, so re-setting it never restarts this effect by itself.
+ */
 @Composable
 fun PhoneLibraryReveal(
     groups: List<LibraryCardGroup>,
     selectedCardId: String?,
     state: LazyListState,
     expanded: Boolean,
+    skipForId: String? = null,
 ) {
     LaunchedEffect(groups, selectedCardId, expanded) {
         if (selectedCardId == null || groups.isEmpty()) return@LaunchedEffect
+        // Picked in this sheet: the card is already visible, leave the list alone.
+        if (selectedCardId == skipForId) return@LaunchedEffect
         val group = groups.firstOrNull { group -> group.cards.any { it.id == selectedCardId } }
             ?: return@LaunchedEffect
         val offset = group.cards.indexOfFirst { it.id == selectedCardId }.coerceAtLeast(0)
-        val index = if (expanded) {
-            phoneGridJumpIndex(groups, group.key) + offset / PHONE_LIBRARY_COLUMNS
+        // Guard the group lookup, not the sum: `-1` (group absent) plus any offset/column
+        // arithmetic must never turn into a valid item index.
+        val groupIndex = if (expanded) {
+            phoneGridJumpIndex(groups, group.key)
         } else {
-            phoneStripJumpIndex(groups, group.key) + 1 + offset
+            phoneStripJumpIndex(groups, group.key)
         }
-        if (index >= 0) state.animateScrollToItem(index)
+        if (groupIndex < 0) return@LaunchedEffect
+        val index = if (expanded) {
+            groupIndex + offset / PHONE_LIBRARY_COLUMNS
+        } else {
+            groupIndex + 1 + offset
+        }
+        state.animateScrollToItem(index)
     }
 }
 

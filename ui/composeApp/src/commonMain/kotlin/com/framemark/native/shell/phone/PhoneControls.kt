@@ -213,7 +213,7 @@ fun PhoneSliderRow(
     disabledReason: String? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (modified) {
                 Box(
                     modifier = Modifier
@@ -223,27 +223,33 @@ fun PhoneSliderRow(
                         .background(FmPalette.primary),
                 )
             }
-            Text(
-                text = label,
-                style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 20.sp),
-                color = FmPalette.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (!hint.isNullOrBlank()) {
-                // AU4-16：单位/说明贴着标签（`底部留白 · 占照片宽度`），值框靠右。
-                Spacer(Modifier.width(FmRhythm.inlineLoose))
+            // Label (+hint) is **one** weighted group and the value plate is unweighted, the
+            // way `CuratedSliderRow` does it. The old shape — label `weight(1f, fill=false)`
+            // plus a separate `Spacer(weight(1f))` — left the label's unused half allocation
+            // *after* the plate, so the plate stopped ~74 dp short of the row end instead of
+            // being right-aligned. With one weighted group the plate is flush with the row
+            // end, and the group shrinks (label ellipsizes) before the plate can ever clip
+            // its unit.
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "· $hint",
-                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
-                    color = FmPalette.onSurfaceMuted,
+                    text = label,
+                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 20.sp),
+                    color = FmPalette.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-            } else {
-                Spacer(Modifier.weight(1f))
+                if (!hint.isNullOrBlank()) {
+                    // AU4-16：单位/说明贴着标签（`底部留白 · 占照片宽度`），值框靠右。
+                    Spacer(Modifier.width(FmRhythm.inlineLoose))
+                    Text(
+                        text = "· $hint",
+                        style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (onReset != null && modified) {
                 Box(
