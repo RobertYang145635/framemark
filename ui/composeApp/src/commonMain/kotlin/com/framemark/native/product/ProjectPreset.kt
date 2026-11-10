@@ -7,7 +7,7 @@ const val PRESET_SCHEMA_VERSION = 1
  * its PNG bytes**, export settings and the schema version. Applying it to another
  * photo reproduces the design without depending on any external asset file.
  */
-data class Preset(
+data class ProjectPreset(
     val schemaVersion: Int = PRESET_SCHEMA_VERSION,
     val id: String,
     val name: String,
@@ -16,7 +16,7 @@ data class Preset(
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
 ) {
-    val overlay: WatermarkSpec? get() = design.overlay
+    val overlay: ProjectWatermarkSpec? get() = design.overlay
 
     val embeddedWatermarkBytes: Int get() = design.overlay?.asset?.byteSize ?: 0
 
@@ -29,9 +29,9 @@ data class Preset(
             id: String,
             name: String,
             now: Long = 0,
-        ): Preset? {
+        ): ProjectPreset? {
             val design = project.activeDesign ?: return null
-            return Preset(
+            return ProjectPreset(
                 id = id,
                 name = cleanName(name),
                 design = design,

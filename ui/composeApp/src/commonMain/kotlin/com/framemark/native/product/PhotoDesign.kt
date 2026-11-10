@@ -18,7 +18,7 @@ data class PhotoDesign(
     val logo: String? = null,
     val params: Map<String, Any?> = emptyMap(),
     val text: Map<String, Any?> = emptyMap(),
-    val overlay: WatermarkSpec? = null,
+    val overlay: ProjectWatermarkSpec? = null,
     /**
      * True while this design still renders the card's shipped defaults. The flag
      * is derived on load (`params`/`text`/`theme`/`fontScale`/`logo` empty) so a
@@ -48,7 +48,7 @@ data class PhotoDesign(
     fun withLogo(value: String?): PhotoDesign =
         copy(logo = value?.takeIf { it.isNotBlank() }, baseDesign = false)
 
-    fun withOverlay(spec: WatermarkSpec?): PhotoDesign = copy(overlay = spec)
+    fun withOverlay(spec: ProjectWatermarkSpec?): PhotoDesign = copy(overlay = spec)
 
     /**
      * Drops the watermark (and keeps the "default" flag honest). Used when a design

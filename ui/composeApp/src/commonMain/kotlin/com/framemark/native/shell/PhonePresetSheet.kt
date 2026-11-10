@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -48,7 +48,7 @@ import com.framemark.native.product.FmLog
 private const val PHONE_JPEG_QUALITY = 100
 
 /**
- * The phone's preset list, reading and writing `product.Preset` documents.
+ * The phone's preset list, reading and writing `product.ProjectPreset` documents.
  *
  * A preset here is the active photo's whole design — border, every control value,
  * the export choices and the watermark **with its PNG bytes inside** — so applying
@@ -60,7 +60,7 @@ fun PhonePresetSheet(
     store: PhoneProjectStore,
     card: LibraryCard?,
     knownCardIds: Set<String>,
-    onApply: (Preset) -> Unit,
+    onApply: (ProjectPreset) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val presets = store.presets
@@ -69,13 +69,13 @@ fun PhonePresetSheet(
     }
     var renamingId by remember { mutableStateOf<String?>(null) }
     var renameDraft by remember { mutableStateOf("") }
-    var pendingImport by remember { mutableStateOf<Preset?>(null) }
-    var pendingApply by remember { mutableStateOf<Preset?>(null) }
+    var pendingImport by remember { mutableStateOf<ProjectPreset?>(null) }
+    var pendingApply by remember { mutableStateOf<ProjectPreset?>(null) }
     var transferMessage by remember { mutableStateOf<String?>(null) }
     var transferBusy by remember { mutableStateOf(false) }
     val transferScope = rememberCoroutineScope()
 
-    fun importPreset(preset: Preset, replaceExisting: Boolean) {
+    fun importPreset(preset: ProjectPreset, replaceExisting: Boolean) {
         if (transferBusy) return
         transferBusy = true
         val imported = try {
@@ -100,7 +100,7 @@ fun PhonePresetSheet(
         }
     }
 
-    fun requestApply(preset: Preset) {
+    fun requestApply(preset: ProjectPreset) {
         if (transferBusy) return
         if (preset.exportSettings.quality != PHONE_JPEG_QUALITY) pendingApply = preset
         else onApply(preset)
@@ -146,7 +146,7 @@ fun PhonePresetSheet(
         }
     }
 
-    fun beginExport(preset: Preset) {
+    fun beginExport(preset: ProjectPreset) {
         if (transferBusy) return
         val writer = WorkflowEnv.presetDocumentWriter
         if (writer == null) {

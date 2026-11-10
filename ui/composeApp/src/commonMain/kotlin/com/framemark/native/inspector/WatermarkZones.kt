@@ -58,7 +58,7 @@ internal object WatermarkZones {
     /** Report §9.1: the middle column may use 60 %. */
     const val MIDDLE_WIDTH_CAP = 0.60f
 
-    /** Model default (product/workflow `WatermarkSpec.MARGIN`), in width units. */
+    /** Model default (product `ProjectWatermarkSpec` / workflow `WatermarkSpec` `MARGIN`), in width units. */
     const val DEFAULT_MARGIN = 0.05f
     const val DEFAULT_WIDTH = 0.25f
     const val DEFAULT_OPACITY = 0.8f

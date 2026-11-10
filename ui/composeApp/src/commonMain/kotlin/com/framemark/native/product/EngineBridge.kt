@@ -44,7 +44,7 @@ fun requireReadablePhotoOverride(
     return photoPath
 }
 
-fun WatermarkSpec.toOverlaySpec(materializedPath: String, photoAspect: Float): OverlaySpec {
+fun ProjectWatermarkSpec.toOverlaySpec(materializedPath: String, photoAspect: Float): OverlaySpec {
     val r = rect(photoAspect)
     return OverlaySpec(
         path = materializedPath,
@@ -53,6 +53,6 @@ fun WatermarkSpec.toOverlaySpec(materializedPath: String, photoAspect: Float): O
         w = r.w,
         h = r.h,
         opacity = opacity,
-        angle = rotation.coerceIn(-WatermarkSpec.MAX_ROTATION, WatermarkSpec.MAX_ROTATION),
+        angle = rotation.coerceIn(-ProjectWatermarkSpec.MAX_ROTATION, ProjectWatermarkSpec.MAX_ROTATION),
     )
 }

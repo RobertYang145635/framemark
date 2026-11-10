@@ -21,7 +21,7 @@ data class BatchJob(
     val photoFingerprint: String?,
     val displayName: String,
     val design: PhotoDesign,
-    val overlay: WatermarkSpec?,
+    val overlay: ProjectWatermarkSpec?,
     val exportSettings: ExportSettings = ExportSettings(),
     val status: BatchJobStatus = BatchJobStatus.Queued,
     val attempts: Int = 0,
@@ -117,7 +117,7 @@ internal object BatchKeys {
      * (there is deliberately no file path); the declared pixel size is kept
      * because it drives the drawn aspect ratio.
      */
-    fun overlayKey(spec: WatermarkSpec): String = digest(
+    fun overlayKey(spec: ProjectWatermarkSpec): String = digest(
         "batch-overlay/3",
         listOf(
             "asset.sha256" to spec.asset.sha256.lowercase(),
@@ -150,7 +150,7 @@ internal object BatchKeys {
     fun idempotencyKey(
         photo: String?,
         design: PhotoDesign,
-        overlay: WatermarkSpec?,
+        overlay: ProjectWatermarkSpec?,
         export: ExportSettings,
     ): String = digest(
         SCHEME,

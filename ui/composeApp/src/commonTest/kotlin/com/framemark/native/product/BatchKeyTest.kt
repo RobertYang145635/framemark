@@ -17,7 +17,7 @@ class BatchKeyTest {
     private fun job(
         id: String,
         design: PhotoDesign = baseDesign(),
-        overlay: WatermarkSpec? = watermarkSpec(1),
+        overlay: ProjectWatermarkSpec? = watermarkSpec(1),
         photoPath: String? = "/photos/a.jpg",
         photoFingerprint: String? = "fp-a",
         exportSettings: ExportSettings = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 6000),
@@ -34,10 +34,10 @@ class BatchKeyTest {
     )
 
     /** Same declared name/dimensions, caller-chosen payload: the file name is not the identity. */
-    private fun namedWatermark(name: String, seed: Int, size: Int = 64): WatermarkSpec {
+    private fun namedWatermark(name: String, seed: Int, size: Int = 64): ProjectWatermarkSpec {
         val bytes = ByteArray(size) { ((it + seed) and 0xff).toByte() }
         val asset = WatermarkAsset.create(name, "image/png", 800, 200, bytes)
-        return WatermarkSpec(asset = asset, anchor = 8, width = 0.3f, opacity = 0.7f)
+        return ProjectWatermarkSpec(asset = asset, anchor = 8, width = 0.3f, opacity = 0.7f)
     }
 
     private fun added(queue: BatchQueue, job: BatchJob): BatchQueue {

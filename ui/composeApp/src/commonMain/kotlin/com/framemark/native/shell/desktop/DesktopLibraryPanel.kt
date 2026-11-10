@@ -61,7 +61,7 @@ import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.PreviewDiagnostics
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -93,7 +93,7 @@ fun DesktopLibraryPanel(
     inUseIds: List<String>,
     recentIds: List<String>,
     selectedCardId: String?,
-    presets: List<Preset>,
+    presets: List<ProjectPreset>,
     onOpenCard: (LibraryCard) -> Unit,
     onHoverCard: (LibraryCard?) -> Unit,
     onApplyPreset: (String) -> Unit,
@@ -923,7 +923,7 @@ private fun SeriesDirectoryMenu(
 /** 预设页签：现有 preset 列表，点“应用”走 ProjectHolder.applyPreset。 */
 @Composable
 private fun PresetList(
-    presets: List<Preset>,
+    presets: List<ProjectPreset>,
     cardName: (String) -> String?,
     onApplyPreset: (String) -> Unit,
     onOpenPresetSheet: () -> Unit,

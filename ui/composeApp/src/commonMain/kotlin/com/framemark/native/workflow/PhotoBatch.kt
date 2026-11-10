@@ -39,7 +39,7 @@ import com.framemark.native.product.Project
 import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.SubmitOutcome
-import com.framemark.native.product.WatermarkSpec as ProjectWatermark
+import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.product.toOverlaySpec
 import com.framemark.native.theme.FmPalette
@@ -163,13 +163,13 @@ fun Project.batchPreflight(photoIds: List<String>): BatchPreflight {
 
 /** Writes an embedded watermark out for the engine, once per digest. */
 object PhoneOverlayFiles {
-    fun pathFor(spec: ProjectWatermark): String? {
+    fun pathFor(spec: ProjectWatermarkSpec): String? {
         val platform = WorkflowEnv.platform ?: return null
         val dir = platform.dataDir.trimEnd('/', '\\') + "/overlays"
         return "$dir/${spec.asset.sha256.lowercase()}.png"
     }
 
-    fun materialize(spec: ProjectWatermark): String? {
+    fun materialize(spec: ProjectWatermarkSpec): String? {
         val platform = WorkflowEnv.platform ?: return null
         val path = pathFor(spec) ?: return null
         if (platform.exists(path) && platform.fileSize(path) == spec.asset.byteSize.toLong()) return path

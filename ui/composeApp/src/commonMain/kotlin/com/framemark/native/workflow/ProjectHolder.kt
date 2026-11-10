@@ -8,9 +8,9 @@ import com.framemark.native.product.BatchJob
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.product.Project
-import com.framemark.native.product.WatermarkSpec
+import com.framemark.native.product.ProjectWatermarkSpec
 
 data class ImportFailure(val path: String, val reason: String)
 
@@ -82,7 +82,7 @@ interface ProjectHolder {
     )
     fun applyWatermarkToAll()
     fun clearWatermark()
-    fun watermark(): WatermarkSpec?
+    fun watermark(): ProjectWatermarkSpec?
     fun watermarkBytes(): ByteArray?
 
     fun overlaySpec(): OverlaySpec?
@@ -99,7 +99,7 @@ interface ProjectHolder {
 
     // ---- presets (P2b) ----------------------------------------------------
 
-    val presets: List<Preset>
+    val presets: List<ProjectPreset>
     val presetError: String?
 
     /** Reads `presets.json`; a corrupt or future-version document sets [presetError]. */
@@ -107,7 +107,7 @@ interface ProjectHolder {
     fun clearPresetError()
 
     /** Captures the active photo's design, watermark bytes included. */
-    fun savePreset(name: String): Preset?
+    fun savePreset(name: String): ProjectPreset?
     fun deletePreset(id: String): Boolean
     fun renamePreset(id: String, name: String): Boolean
 
@@ -117,10 +117,10 @@ interface ProjectHolder {
     /** Single-file export/import so a preset travels without its own PNG. */
     fun exportPresetFile(id: String, path: String): Boolean
     /** Reads and validates a portable preset without changing the library. */
-    fun readPresetFile(path: String): Preset?
+    fun readPresetFile(path: String): ProjectPreset?
     /** Persists a preset after an explicit replace decision; ID conflicts refuse by default. */
-    fun importPreset(preset: Preset, replaceExisting: Boolean = false): Boolean
-    fun importPresetFile(path: String): Preset?
+    fun importPreset(preset: ProjectPreset, replaceExisting: Boolean = false): Boolean
+    fun importPresetFile(path: String): ProjectPreset?
     fun pickPresetExportPath(suggestedName: String): String?
     fun pickPresetImportPath(): String?
 
@@ -129,7 +129,7 @@ interface ProjectHolder {
      * product library. Returns how many landed; the write is verified by reading the
      * document back and comparing, and a mismatch reports through [presetError].
      */
-    fun importLegacyPresets(converted: List<Preset>): Int
+    fun importLegacyPresets(converted: List<ProjectPreset>): Int
 
     /** True when a legacy batch document is waiting to be folded into the queue. */
     val legacyBatchPending: Boolean
@@ -225,28 +225,28 @@ class InMemoryProjectHolder : ProjectHolder {
     override fun updateWatermark(anchor: Int?, width: Float?, opacity: Float?, dx: Float?, dy: Float?, rotation: Float?) = Unit
     override fun applyWatermarkToAll() = Unit
     override fun clearWatermark() = Unit
-    override fun watermark(): WatermarkSpec? = null
+    override fun watermark(): ProjectWatermarkSpec? = null
     override fun watermarkBytes(): ByteArray? = null
     override fun overlaySpec(): OverlaySpec? = null
     override suspend fun exportActive(cardName: String, settings: ExportSettings): ExportResult =
         throw EngineFailure("FM-E-ENGINE-001", "当前平台没有桌面引擎")
 
     override val hydrationVersion: Int = 0
-    override val presets: List<Preset> = emptyList()
+    override val presets: List<ProjectPreset> = emptyList()
     override val presetError: String? = null
     override fun loadPresets() = Unit
     override fun clearPresetError() = Unit
-    override fun savePreset(name: String): Preset? = null
+    override fun savePreset(name: String): ProjectPreset? = null
     override fun deletePreset(id: String): Boolean = false
     override fun renamePreset(id: String, name: String): Boolean = false
     override fun applyPreset(id: String): Boolean = false
     override fun exportPresetFile(id: String, path: String): Boolean = false
-    override fun readPresetFile(path: String): Preset? = null
-    override fun importPreset(preset: Preset, replaceExisting: Boolean): Boolean = false
-    override fun importPresetFile(path: String): Preset? = null
+    override fun readPresetFile(path: String): ProjectPreset? = null
+    override fun importPreset(preset: ProjectPreset, replaceExisting: Boolean): Boolean = false
+    override fun importPresetFile(path: String): ProjectPreset? = null
     override fun pickPresetExportPath(suggestedName: String): String? = null
     override fun pickPresetImportPath(): String? = null
-    override fun importLegacyPresets(converted: List<Preset>): Int = 0
+    override fun importLegacyPresets(converted: List<ProjectPreset>): Int = 0
     override val legacyBatchPending: Boolean = false
     override fun migrateLegacyBatch(): Int = 0
 

@@ -41,7 +41,7 @@ class MigrationRealFileSystemTest {
         "values":{"glass-white-1::inset":0.2}}]}
     """.trimIndent() + "\n"
 
-    private fun converted(): List<Preset> = listOf(
+    private fun converted(): List<ProjectPreset> = listOf(
         samplePreset().copy(id = "legacy-1", name = "中文旧预设一", createdAt = 10, updatedAt = 10),
         samplePreset(assetBytes = ByteArray(96) { (it * 3 + 7).toByte() })
             .copy(id = "legacy-2", name = "中文旧预设二", createdAt = 11, updatedAt = 11),

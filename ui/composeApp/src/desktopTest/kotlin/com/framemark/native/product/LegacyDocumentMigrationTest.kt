@@ -98,7 +98,7 @@ class LegacyDocumentMigrationTest {
         ]}
     """.trimIndent() + "\n"
 
-    private fun convertedLegacyPreset(id: String = "p1"): Preset = Preset(
+    private fun convertedLegacyPreset(id: String = "p1"): ProjectPreset = ProjectPreset(
         id = id,
         name = "旧版白边",
         design = PhotoDesign(cardId = "simple-1", params = mapOf("footerPct" to 44.0)),
@@ -269,14 +269,14 @@ class LegacyDocumentMigrationTest {
             writer.load()
             writer.loadPresets()
             val source = SessionStore(JvmProductFileSystem(phone.toString()))
-            val preset = Preset(
+            val preset = ProjectPreset(
                 id = "p-shared",
                 name = "两端共用预设",
                 design = PhotoDesign(
                     cardId = "simple-1",
                     styleId = "simple-1",
                     params = mapOf("footerPct" to 44.0),
-                    overlay = WatermarkSpec(
+                    overlay = ProjectWatermarkSpec(
                         asset = WatermarkAsset.create("sig.png", "image/png", 8, 4, byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)),
                         anchor = 8,
                         width = 0.3f,

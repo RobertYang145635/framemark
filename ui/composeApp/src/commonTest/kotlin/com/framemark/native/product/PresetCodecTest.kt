@@ -33,14 +33,14 @@ class PresetCodecTest {
     @Test
     fun preset_round_trip_embeds_a_one_megabyte_png() {
         val asset = WatermarkAsset.create("signature.png", "image/png", 1600, 400, megabytePng())
-        val preset = Preset(
+        val preset = ProjectPreset(
             id = "preset-1",
             name = "我的签名",
             design = PhotoDesign.base("simple-4")
                 .withParam("inset", 0.1)
                 .withText("model", "X-T5")
                 .withOverlay(
-                    WatermarkSpec(
+                    ProjectWatermarkSpec(
                         asset,
                         anchor = 8,
                         width = 0.3f,

@@ -68,7 +68,7 @@ private fun rememberBytesBitmap(bytes: ByteArray?): ImageBitmap? {
 /**
  * Stage photo: native render with the per-call photo + overlay when the card is
  * wired; otherwise the raw photo with a Compose watermark layer that uses the
- * same `product.WatermarkSpec` rect maths as the engine.
+ * same `product.ProjectWatermarkSpec` rect maths as the engine.
  */
 @Composable
 fun ProjectPhotoStage(

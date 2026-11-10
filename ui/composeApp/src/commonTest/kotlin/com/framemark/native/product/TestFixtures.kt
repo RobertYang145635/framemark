@@ -72,10 +72,10 @@ internal fun photoRef(id: String, name: String = "$id.jpg", orientation: Int = 1
     fingerprint = "fp-$id",
 )
 
-internal fun watermarkSpec(seed: Int = 1, size: Int = 64): WatermarkSpec {
+internal fun watermarkSpec(seed: Int = 1, size: Int = 64): ProjectWatermarkSpec {
     val bytes = ByteArray(size) { ((it + seed) and 0xff).toByte() }
     val asset = WatermarkAsset.create("sig-$seed.png", "image/png", 800, 200, bytes)
-    return WatermarkSpec(asset = asset, anchor = 8, width = 0.3f, opacity = 0.7f)
+    return ProjectWatermarkSpec(asset = asset, anchor = 8, width = 0.3f, opacity = 0.7f)
 }
 
 internal fun sampleProject(): Project {
@@ -96,15 +96,15 @@ internal fun sampleProject(): Project {
     )
 }
 
-internal fun samplePreset(assetBytes: ByteArray = ByteArray(96) { it.toByte() }): Preset {
+internal fun samplePreset(assetBytes: ByteArray = ByteArray(96) { it.toByte() }): ProjectPreset {
     val asset = WatermarkAsset.create("signature.png", "image/png", 1600, 400, assetBytes)
-    return Preset(
+    return ProjectPreset(
         id = "preset-1",
         name = "我的签名",
         design = PhotoDesign.base("simple-4")
             .withParam("inset", 0.1)
             .withText("model", "X-T5")
-            .withOverlay(WatermarkSpec(asset, anchor = 8, width = 0.3f, opacity = 0.65f)),
+            .withOverlay(ProjectWatermarkSpec(asset, anchor = 8, width = 0.3f, opacity = 0.65f)),
         exportSettings = ExportSettings(
             format = ExportFormat.Jpeg,
             quality = 100,

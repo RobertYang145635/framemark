@@ -41,14 +41,14 @@ class PhonePresetMigrationOrderTest {
         "values":{}}]}
     """.trimIndent() + "\n"
 
-    private fun converted(): List<Preset> = listOf(
+    private fun converted(): List<ProjectPreset> = listOf(
         samplePreset().copy(id = "legacy-1", name = "旧预设一"),
         samplePreset(assetBytes = ByteArray(96) { (it * 3 + 7).toByte() })
             .copy(id = "legacy-2", name = "旧预设二", createdAt = 11, updatedAt = 11),
     )
 
     /** A real product library document, produced through the public store API. */
-    private fun productLibrary(presets: List<Preset>): String {
+    private fun productLibrary(presets: List<ProjectPreset>): String {
         val scratch = FakeFs()
         assertTrue(SessionStore(scratch).savePresets(presets) is StoreResult.Ok)
         return scratch.files.getValue(scratch.presetsPath).decodeToString()

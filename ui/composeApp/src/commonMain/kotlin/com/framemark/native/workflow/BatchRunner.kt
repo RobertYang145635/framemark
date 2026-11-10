@@ -22,7 +22,7 @@ import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.SubmitOutcome
 import com.framemark.native.product.toDesignSnapshot
-import com.framemark.native.product.WatermarkSpec as ProjectWatermark
+import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.product.toOverlaySpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -76,7 +76,7 @@ private data class BatchCardSpec(val cardId: String, val cardName: String, val s
  */
 interface BatchInputs {
     fun designFor(cardId: String, styleId: String?): PhotoDesign
-    fun overlay(): ProjectWatermark?
+    fun overlay(): ProjectWatermarkSpec?
     fun exportSettings(): ExportSettings
     fun photoPath(): String?
     fun fingerprint(path: String?): String?

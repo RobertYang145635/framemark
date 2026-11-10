@@ -11,7 +11,7 @@ import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.DocumentKind
 import com.framemark.native.product.FileTooLargeException
 import com.framemark.native.product.LegacyDocuments
-import com.framemark.native.product.Preset as ProjectPreset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.product.ProductFileSystem
 import com.framemark.native.product.PRESET_SCHEMA_VERSION
 import com.framemark.native.product.Project
@@ -22,7 +22,7 @@ import com.framemark.native.product.StoreError
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
 import com.framemark.native.product.readFileBytesBounded
-import com.framemark.native.product.WatermarkSpec as ProjectWatermark
+import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.ExportSizeMode
@@ -32,8 +32,8 @@ import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.PhoneOverlayFiles
 import com.framemark.native.workflow.PresetJson
 import com.framemark.native.workflow.applyInspectorOverrides
-import com.framemark.native.workflow.Preset as UiPreset
-import com.framemark.native.workflow.WatermarkSpec as UiWatermarkSpec
+import com.framemark.native.workflow.Preset
+import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowPlatform
 
 import kotlinx.coroutines.CoroutineScope
@@ -665,7 +665,7 @@ class PhoneProjectStore(
         }.getOrElse { return StoreError("FM-E-PRESET-001", "水印素材无法内嵌：${it.message}", path, cause = it) }
         if (!asset.isIntact()) return StoreError("FM-E-PRESET-001", "水印素材校验失败（字节与摘要不符）", path)
         val previous = design.overlay
-        val spec = ProjectWatermark(
+        val spec = ProjectWatermarkSpec(
             asset = asset,
             anchor = previous?.anchor ?: 8,
             width = previous?.width ?: 0.25f,
@@ -695,13 +695,13 @@ class PhoneProjectStore(
         return io?.readBytes(path) ?: platform?.readBytes(path)
     }
 
-    fun setOverlay(photoId: String, spec: ProjectWatermark?) {
+    fun setOverlay(photoId: String, spec: ProjectWatermarkSpec?) {
         val design = project.designs[photoId] ?: return
         if (design.overlay == spec) return
         commit(project.setDesign(photoId, design.withOverlay(spec)))
     }
 
-    fun overlayOf(photoId: String): ProjectWatermark? = project.designs[photoId]?.overlay
+    fun overlayOf(photoId: String): ProjectWatermarkSpec? = project.designs[photoId]?.overlay
 
     /** Copies the active photo's signature onto every photo — the only way it spreads. */
     fun applyWatermarkToAll() {
@@ -722,13 +722,13 @@ class PhoneProjectStore(
     }
 
     /** Writes the embedded bytes out for the engine once per digest. */
-    fun materializeOverlayFile(spec: ProjectWatermark): String? = PhoneOverlayFiles.materialize(spec)
+    fun materializeOverlayFile(spec: ProjectWatermarkSpec): String? = PhoneOverlayFiles.materialize(spec)
 
     /** The editor's path-based watermark state, derived from the project's own spec. */
-    fun uiWatermark(photoId: String, photoAspect: Float): UiWatermarkSpec? {
+    fun uiWatermark(photoId: String, photoAspect: Float): WatermarkSpec? {
         val spec = overlayOf(photoId) ?: return null
         val file = materializeOverlayFile(spec) ?: return null
-        return UiWatermarkSpec(
+        return WatermarkSpec(
             path = file,
             aspect = spec.asset.aspect,
             anchor = spec.anchor,
@@ -746,10 +746,10 @@ class PhoneProjectStore(
     }
 
     /** Maps the editor's anchor/drag edits back onto the embedded spec. */
-    fun projectWatermark(current: ProjectWatermark?, ui: UiWatermarkSpec?): ProjectWatermark? {
+    fun projectWatermark(current: ProjectWatermarkSpec?, ui: WatermarkSpec?): ProjectWatermarkSpec? {
         if (ui == null) return null
         val asset = current?.asset ?: return null
-        return ProjectWatermark(
+        return ProjectWatermarkSpec(
             asset = asset,
             anchor = ui.anchor,
             width = ui.width,
@@ -1044,7 +1044,7 @@ class PhoneProjectStore(
         override fun designFor(cardId: String, styleId: String?): PhotoDesign =
             activeDesign?.takeIf { it.cardId == cardId } ?: PhotoDesign.base(cardId, styleId)
 
-        override fun overlay(): ProjectWatermark? = activeDesign?.overlay
+        override fun overlay(): ProjectWatermarkSpec? = activeDesign?.overlay
 
         override fun exportSettings(): ExportSettings = project.exportSettings
 
@@ -1219,7 +1219,7 @@ internal fun ExportSettings.withLaunchExportOverrides(): ExportSettings {
  * those fold into a real design, so old presets migrate without inventing
  * parameters; they never carried a watermark, so none is added here.
  */
-fun legacyToPreset(legacy: UiPreset, cardId: String, styleId: String?, model: InspectorCardModel?): ProjectPreset {
+fun legacyToPreset(legacy: Preset, cardId: String, styleId: String?, model: InspectorCardModel?): ProjectPreset {
     val base = PhotoDesign.base(cardId, styleId)
     val design = if (model != null) foldOverrides(base, model, legacy.values) else base
     return ProjectPreset(

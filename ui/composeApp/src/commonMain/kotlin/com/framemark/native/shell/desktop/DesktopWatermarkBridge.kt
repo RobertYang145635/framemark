@@ -1,10 +1,10 @@
 package com.framemark.native.shell.desktop
 
-import com.framemark.native.product.WatermarkSpec as ProductWatermarkSpec
-import com.framemark.native.workflow.WatermarkSpec as WorkflowWatermarkSpec
+import com.framemark.native.product.ProjectWatermarkSpec
+import com.framemark.native.workflow.WatermarkSpec
 
 /**
- * Bridges the persisted watermark (`product.WatermarkSpec`, embedded PNG bytes)
+ * Bridges the persisted watermark (`product.ProjectWatermarkSpec`, embedded PNG bytes)
  * to the geometry type the stage and the 水印 page consume
  * (`workflow.WatermarkSpec`).
  *
@@ -14,9 +14,9 @@ import com.framemark.native.workflow.WatermarkSpec as WorkflowWatermarkSpec
  * overlay comes from `ProjectHolder.overlaySpec()`), so no file is materialised
  * just to paint the controls.
  */
-fun desktopWorkflowWatermark(spec: ProductWatermarkSpec?): WorkflowWatermarkSpec? =
+fun desktopWorkflowWatermark(spec: ProjectWatermarkSpec?): WatermarkSpec? =
     spec?.let {
-        WorkflowWatermarkSpec(
+        WatermarkSpec(
             path = "",
             aspect = it.asset.aspect,
             anchor = it.anchor,

@@ -2,7 +2,7 @@ package com.framemark.native.workflow
 
 import com.framemark.native.product.Documents
 import com.framemark.native.product.PRESET_SCHEMA_VERSION
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.product.PresetCodec
 import com.framemark.native.product.ProductJson
 import kotlin.random.Random
@@ -13,7 +13,7 @@ internal object PresetTransfer {
     const val MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
     private val invalidFilenameChars = setOf('\\', '/', ':', '*', '?', '"', '<', '>', '|')
 
-    fun decodeDocument(json: String, knownCardIds: Set<String>): Preset {
+    fun decodeDocument(json: String, knownCardIds: Set<String>): ProjectPreset {
         requireWithinLimit(json)
         val root = ProductJson.parseRoot(json)
         require(root["document"] == Documents.PRESET) { "文件不是单项 FrameMark 预设" }
@@ -31,9 +31,9 @@ internal object PresetTransfer {
         return preset
     }
 
-    fun encodeDocument(preset: Preset): String = PresetCodec.encodeDocument(preset).also { requireWithinLimit(it) }
+    fun encodeDocument(preset: ProjectPreset): String = PresetCodec.encodeDocument(preset).also { requireWithinLimit(it) }
 
-    fun copyWithNewId(preset: Preset, occupiedIds: Set<String>): Preset {
+    fun copyWithNewId(preset: ProjectPreset, occupiedIds: Set<String>): ProjectPreset {
         repeat(16) {
             val id = "import-${randomHexId()}"
             if (id !in occupiedIds) return preset.copy(id = id)
@@ -41,7 +41,7 @@ internal object PresetTransfer {
         error("无法为导入副本分配唯一 ID，请重试")
     }
 
-    fun suggestedFileName(preset: Preset): String {
+    fun suggestedFileName(preset: ProjectPreset): String {
         val base = preset.name
             .filter { it >= ' ' && it !in invalidFilenameChars }
             .trim()

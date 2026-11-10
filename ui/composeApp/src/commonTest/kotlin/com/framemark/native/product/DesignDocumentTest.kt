@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
  * the phone goes through `toPhoneSnapshot`). The five cases that used to assert that
  * model now assert the same invariants on the live seam they were standing in for:
  * `PhotoDesign.toDesignSnapshot()` (theme/ratio/fontScale/params/text/logo folding)
- * and `WatermarkSpec.toOverlaySpec()` (rect/opacity/angle). Cases that the live seam
+ * and `ProjectWatermarkSpec.toOverlaySpec()` (rect/opacity/angle). Cases that the live seam
  * keeps outside this file are covered by `EngineBridgeTest` / `ProjectDesignTest`.
  */
 class DesignDocumentTest {
@@ -64,7 +64,7 @@ class DesignDocumentTest {
     @Test
     fun watermark_overlay_carries_the_rect_opacity_and_angle() {
         val asset = WatermarkAsset.create("sig.png", "image/png", 800, 200, ByteArray(32) { it.toByte() })
-        val spec = WatermarkSpec(asset, anchor = 8, width = 0.3f, opacity = 0.65f, rotation = 37f)
+        val spec = ProjectWatermarkSpec(asset, anchor = 8, width = 0.3f, opacity = 0.65f, rotation = 37f)
         val overlay = spec.toOverlaySpec("/tmp/sig.png", photoAspect = 1.5f)
         val rect = spec.rect(photoAspect = 1.5f)
         assertEquals("/tmp/sig.png", overlay.path)
@@ -79,12 +79,12 @@ class DesignDocumentTest {
     @Test
     fun watermark_rotation_outside_the_engine_limit_is_clamped() {
         val asset = WatermarkAsset.create("sig.png", "image/png", 800, 200, ByteArray(32) { it.toByte() })
-        val clockwise = WatermarkSpec(asset, rotation = 270f)
+        val clockwise = ProjectWatermarkSpec(asset, rotation = 270f)
             .toOverlaySpec("/tmp/sig.png", photoAspect = 1.5f)
-        assertEquals(WatermarkSpec.MAX_ROTATION, clockwise.angle)
-        val counterClockwise = WatermarkSpec(asset, rotation = -270f)
+        assertEquals(ProjectWatermarkSpec.MAX_ROTATION, clockwise.angle)
+        val counterClockwise = ProjectWatermarkSpec(asset, rotation = -270f)
             .toOverlaySpec("/tmp/sig.png", photoAspect = 1.5f)
-        assertEquals(-WatermarkSpec.MAX_ROTATION, counterClockwise.angle)
+        assertEquals(-ProjectWatermarkSpec.MAX_ROTATION, counterClockwise.angle)
     }
 
     @Test

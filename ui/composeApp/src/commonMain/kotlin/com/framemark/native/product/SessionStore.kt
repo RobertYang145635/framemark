@@ -158,10 +158,10 @@ class SessionStore(
     fun loadProject(): StoreResult<Project> =
         loadAt(documentPath(DocumentKind.Project), DocumentKind.Project, ProjectCodec::decode)
 
-    fun savePresets(presets: List<Preset>): StoreResult<Unit> =
+    fun savePresets(presets: List<ProjectPreset>): StoreResult<Unit> =
         saveAt(documentPath(DocumentKind.PresetLibrary), { PresetCodec.encodeLibrary(presets) })
 
-    fun loadPresets(): StoreResult<List<Preset>> =
+    fun loadPresets(): StoreResult<List<ProjectPreset>> =
         loadAt(documentPath(DocumentKind.PresetLibrary), DocumentKind.PresetLibrary, PresetCodec::decodeLibrary)
 
     /**
@@ -170,14 +170,14 @@ class SessionStore(
      * replaces the legacy file after the staged product document reads back as
      * the complete converted list.
      */
-    fun migrateLegacyPresetLibrary(converted: List<Preset>): StoreResult<List<Preset>> {
+    fun migrateLegacyPresetLibrary(converted: List<ProjectPreset>): StoreResult<List<ProjectPreset>> {
         val path = documentPath(DocumentKind.PresetLibrary)
         return synchronized(DocumentWriteLocks.forPath(path)) {
             migrateLegacyPresetLibraryLocked(path, converted)
         }
     }
 
-    private fun migrateLegacyPresetLibraryLocked(path: String, converted: List<Preset>): StoreResult<List<Preset>> {
+    private fun migrateLegacyPresetLibraryLocked(path: String, converted: List<ProjectPreset>): StoreResult<List<ProjectPreset>> {
         val temp = "$path.tmp"
         var tempMayExist = false
         fun stagedFailure(message: String, cause: Throwable? = null): StoreResult.Failed {
@@ -314,10 +314,10 @@ class SessionStore(
         loadAt(documentPath(DocumentKind.Batch), DocumentKind.Batch, BatchCodec::decode)
 
     /** Writes one portable preset file (watermark bytes inside) to an arbitrary path. */
-    fun exportPreset(preset: Preset, path: String): StoreResult<Unit> =
+    fun exportPreset(preset: ProjectPreset, path: String): StoreResult<Unit> =
         saveAt(path, { PresetCodec.encodeDocument(preset) })
 
-    fun importPreset(path: String): StoreResult<Preset> =
+    fun importPreset(path: String): StoreResult<ProjectPreset> =
         loadAt(path, DocumentKind.PresetFile, PresetCodec::decodeDocument)
 
     // ---- write ------------------------------------------------------------

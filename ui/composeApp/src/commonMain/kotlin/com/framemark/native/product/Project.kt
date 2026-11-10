@@ -90,7 +90,7 @@ data class Project(
      * Photos without a design get one when a card is known, otherwise they stay
      * untouched (there is no card to render them with).
      */
-    fun applyWatermarkToAll(spec: WatermarkSpec? = activeDesign?.overlay): Project {
+    fun applyWatermarkToAll(spec: ProjectWatermarkSpec? = activeDesign?.overlay): Project {
         if (photos.isEmpty()) return this
         val fallbackCard = sharedDesign?.cardId ?: selectedCardId ?: activeDesign?.cardId
         val next = LinkedHashMap(designs)

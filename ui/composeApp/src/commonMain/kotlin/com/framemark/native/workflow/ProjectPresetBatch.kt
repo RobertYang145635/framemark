@@ -32,7 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.workflow.PresetTransfer
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * Preset sheet backed by `product.Preset` + [com.framemark.native.product.SessionStore].
+ * Preset sheet backed by `product.ProjectPreset` + [com.framemark.native.product.SessionStore].
  *
  * A preset captures the active photo's whole design **including the watermark's
  * embedded PNG bytes**, so applying it on another photo or after a restart brings
@@ -59,7 +59,7 @@ fun ProjectPresetSheet(
     var renamingId by remember { mutableStateOf<String?>(null) }
     var renameDraft by remember { mutableStateOf("") }
     var dialog by remember { mutableStateOf<String?>(null) }
-    var pendingImport by remember { mutableStateOf<Preset?>(null) }
+    var pendingImport by remember { mutableStateOf<ProjectPreset?>(null) }
 
     projects.loadPresets()
     projects.presetError?.let { failure ->
@@ -270,7 +270,7 @@ fun ProjectPresetSheet(
 
 @Composable
 private fun ProjectPresetRow(
-    preset: Preset,
+    preset: ProjectPreset,
     card: LibraryCard?,
     renaming: Boolean,
     renameDraft: String,
@@ -362,7 +362,7 @@ private fun ProjectPresetRow(
     }
 }
 
-private fun presetMeta(preset: Preset): String {
+private fun presetMeta(preset: ProjectPreset): String {
     val parts = mutableListOf(preset.design.cardId)
     val design = preset.design
     val edits = design.params.size + design.text.size +

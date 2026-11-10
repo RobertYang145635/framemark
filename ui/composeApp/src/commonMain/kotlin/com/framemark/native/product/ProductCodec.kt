@@ -97,7 +97,7 @@ internal fun decodeAsset(raw: Any?, where: String): WatermarkAsset {
     return WatermarkAsset(name, mimeType, widthPx, heightPx, sha256.lowercase(), bytes)
 }
 
-private fun encodeOverlay(spec: WatermarkSpec): String = buildString {
+private fun encodeOverlay(spec: ProjectWatermarkSpec): String = buildString {
     append('{')
     append("\"anchor\":").append(spec.anchor)
     append(",\"width\":").append(ProductJson.number(spec.width))
@@ -110,7 +110,7 @@ private fun encodeOverlay(spec: WatermarkSpec): String = buildString {
     append('}')
 }
 
-internal fun decodeOverlay(raw: Any?, where: String): WatermarkSpec {
+internal fun decodeOverlay(raw: Any?, where: String): ProjectWatermarkSpec {
     val map = requireObject(raw, where)
     val anchor = map.requireInt("anchor", where)
     if (anchor !in 0..8) throw ProductDecodeException("$where.anchor 超出 0..8：$anchor")
@@ -122,14 +122,14 @@ internal fun decodeOverlay(raw: Any?, where: String): WatermarkSpec {
     val dy = map.requireFloat("dy", where)
     if (abs(dx) > 4f || abs(dy) > 4f) throw ProductDecodeException("$where 位移超出 ±4 归一化范围")
     val rotation = map.optionalDouble("rotation", where)?.toFloat() ?: 0f
-    if (!rotation.isFinite() || abs(rotation) > WatermarkSpec.MAX_ROTATION) {
-        throw ProductDecodeException("$where.rotation 超出 ±${WatermarkSpec.MAX_ROTATION}：$rotation")
+    if (!rotation.isFinite() || abs(rotation) > ProjectWatermarkSpec.MAX_ROTATION) {
+        throw ProductDecodeException("$where.rotation 超出 ±${ProjectWatermarkSpec.MAX_ROTATION}：$rotation")
     }
     val photoAspect = map.optionalDouble("photoAspect", where)?.toFloat() ?: 1.5f
     if (!photoAspect.isFinite() || photoAspect <= 0.01f || photoAspect > 20f) {
         throw ProductDecodeException("$where.photoAspect 超出 (0.01,20]：$photoAspect")
     }
-    return WatermarkSpec(
+    return ProjectWatermarkSpec(
         decodeAsset(map["asset"], "$where.asset"),
         anchor,
         width,
@@ -312,10 +312,10 @@ internal object ProjectCodec {
 }
 
 internal object PresetCodec {
-    fun encodeLibrary(presets: List<Preset>): String =
+    fun encodeLibrary(presets: List<ProjectPreset>): String =
         document(Documents.PRESETS, PRESET_SCHEMA_VERSION, "\"presets\":[" + presets.joinToString(",") { encodePreset(it) } + "]")
 
-    fun decodeLibrary(root: Map<String, Any?>): List<Preset> {
+    fun decodeLibrary(root: Map<String, Any?>): List<ProjectPreset> {
         val raw = requireList(root["presets"] ?: throw ProductDecodeException("presets.presets 缺失"), "presets.presets")
         val ids = HashSet<String>()
         return raw.mapIndexed { index, entry ->
@@ -325,13 +325,13 @@ internal object PresetCodec {
         }
     }
 
-    fun encodeDocument(preset: Preset): String =
+    fun encodeDocument(preset: ProjectPreset): String =
         document(Documents.PRESET, PRESET_SCHEMA_VERSION, "\"preset\":" + encodePreset(preset))
 
-    fun decodeDocument(root: Map<String, Any?>): Preset =
+    fun decodeDocument(root: Map<String, Any?>): ProjectPreset =
         decodePreset(root["preset"] ?: throw ProductDecodeException("preset 缺失"), "preset")
 
-    private fun encodePreset(preset: Preset): String = buildString {
+    private fun encodePreset(preset: ProjectPreset): String = buildString {
         append('{')
         append("\"id\":").append(ProductJson.quote(preset.id))
         append(",\"name\":").append(ProductJson.quote(preset.name))
@@ -353,13 +353,13 @@ internal object PresetCodec {
         append('}')
     }
 
-    private fun decodePreset(raw: Any?, where: String): Preset {
+    private fun decodePreset(raw: Any?, where: String): ProjectPreset {
         val map = requireObject(raw, where)
         val id = map.requireString("id", where)
         if (id.isBlank()) throw ProductDecodeException("$where.id 为空")
         val name = map.requireString("name", where)
         if (name.isBlank()) throw ProductDecodeException("$where.name 为空")
-        return Preset(
+        return ProjectPreset(
             id = id,
             name = name,
             design = decodeDesign(map["design"], "$where.design"),

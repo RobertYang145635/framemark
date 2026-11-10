@@ -1,6 +1,6 @@
 package com.framemark.native.product
 
-import com.framemark.native.workflow.WatermarkSpec as UiWatermarkSpec
+import com.framemark.native.workflow.WatermarkSpec
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -11,9 +11,9 @@ import kotlin.test.assertTrue
  * is exactly the "preview rotated, export upright" class of bug.
  */
 class WatermarkGeometryParityTest {
-    private fun product(angle: Float, photoAspect: Float): WatermarkSpec {
+    private fun product(angle: Float, photoAspect: Float): ProjectWatermarkSpec {
         val asset = WatermarkAsset.create("sig.png", "image/png", 800, 200, ByteArray(16) { it.toByte() })
-        return WatermarkSpec(
+        return ProjectWatermarkSpec(
             asset = asset,
             anchor = 8,
             width = 0.3f,
@@ -23,7 +23,7 @@ class WatermarkGeometryParityTest {
         )
     }
 
-    private fun ui(angle: Float, photoAspect: Float): UiWatermarkSpec = UiWatermarkSpec(
+    private fun ui(angle: Float, photoAspect: Float): WatermarkSpec = WatermarkSpec(
         path = "/tmp/sig.png",
         aspect = 4f,
         anchor = 8,

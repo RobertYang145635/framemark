@@ -234,12 +234,12 @@ class WatermarkSpecTest {
     fun anchors_place_the_mark_in_the_expected_corner() {
         val spec = watermarkSpec(1)
         val topLeft = spec.copy(anchor = 0).rect(photoAspect = 1.5f)
-        assertEquals(WatermarkSpec.MARGIN, topLeft.x, 1e-5f)
-        assertEquals(WatermarkSpec.MARGIN, topLeft.y, 1e-5f)
+        assertEquals(ProjectWatermarkSpec.MARGIN, topLeft.x, 1e-5f)
+        assertEquals(ProjectWatermarkSpec.MARGIN, topLeft.y, 1e-5f)
 
         val bottomRight = spec.copy(anchor = 8).rect(photoAspect = 1.5f)
-        assertEquals(1f - bottomRight.w - WatermarkSpec.MARGIN, bottomRight.x, 1e-5f)
-        assertEquals(1f - bottomRight.h - WatermarkSpec.MARGIN, bottomRight.y, 1e-5f)
+        assertEquals(1f - bottomRight.w - ProjectWatermarkSpec.MARGIN, bottomRight.x, 1e-5f)
+        assertEquals(1f - bottomRight.h - ProjectWatermarkSpec.MARGIN, bottomRight.y, 1e-5f)
 
         val center = spec.copy(anchor = 4).rect(photoAspect = 1.5f)
         assertEquals((1f - center.w) / 2f, center.x, 1e-5f)

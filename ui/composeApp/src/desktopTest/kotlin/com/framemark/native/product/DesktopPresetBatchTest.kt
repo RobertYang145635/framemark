@@ -36,7 +36,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * P2b: desktop presets (`product.Preset` + `SessionStore`, watermark bytes inside)
+ * P2b: desktop presets (`product.ProjectPreset` + `SessionStore`, watermark bytes inside)
  * and the desktop batch queue (`product.BatchQueue`, per-photo pairing, resume).
  */
 class DesktopPresetBatchTest {

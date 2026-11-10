@@ -79,7 +79,7 @@ data class OverlayRect(val x: Float, val y: Float, val w: Float, val h: Float)
  * 3×3 anchor + nudge model the current editor uses, so preview and export keep
  * matching once this state feeds both.
  */
-data class WatermarkSpec(
+data class ProjectWatermarkSpec(
     val asset: WatermarkAsset,
     val anchor: Int = 8,
     val width: Float = 0.25f,
@@ -171,7 +171,7 @@ data class WatermarkSpec(
         return OverlayRect(x, y, w, h)
     }
 
-    fun nudged(dxNorm: Float, dyNorm: Float, photoAspect: Float): WatermarkSpec {
+    fun nudged(dxNorm: Float, dyNorm: Float, photoAspect: Float): ProjectWatermarkSpec {
         val box = aabb(photoAspect)
         val baseX = box.x - dx
         val baseY = box.y - dy

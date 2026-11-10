@@ -13,7 +13,7 @@ import com.framemark.native.product.DocumentKind
 import com.framemark.native.product.LegacyDocuments
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
-import com.framemark.native.product.Preset
+import com.framemark.native.product.ProjectPreset
 import com.framemark.native.product.Project
 import com.framemark.native.product.SubmitOutcome
 import com.framemark.native.product.ExportSettings
@@ -21,7 +21,7 @@ import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
-import com.framemark.native.product.WatermarkSpec
+import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.product.toOverlaySpec
 import com.framemark.native.engine.PhotoSizes
@@ -83,7 +83,7 @@ class DesktopProjectController(
     override var hydrationVersion by mutableStateOf(0)
         private set
 
-    override var presets by mutableStateOf<List<Preset>>(emptyList())
+    override var presets by mutableStateOf<List<ProjectPreset>>(emptyList())
         private set
 
     override var presetError by mutableStateOf<String?>(null)
@@ -391,7 +391,7 @@ class DesktopProjectController(
             val meta = PhotoMetadata.read(file) ?: error("无法读取水印图片")
             val asset = WatermarkAsset.create(file.name, "image/png", meta.width, meta.height, bytes)
             val applied = updateActiveOverlay { spec ->
-                WatermarkSpec(
+                ProjectWatermarkSpec(
                     asset = asset,
                     anchor = spec?.anchor ?: 8,
                     width = spec?.width ?: 0.25f,
@@ -418,13 +418,13 @@ class DesktopProjectController(
             } else {
                 spec.copy(
                     anchor = anchor?.coerceIn(0, 8) ?: spec.anchor,
-                    width = width?.coerceIn(WatermarkSpec.MIN_WIDTH, WatermarkSpec.MAX_WIDTH) ?: spec.width,
+                    width = width?.coerceIn(ProjectWatermarkSpec.MIN_WIDTH, ProjectWatermarkSpec.MAX_WIDTH) ?: spec.width,
                     opacity = opacity?.coerceIn(0f, 1f) ?: spec.opacity,
                     dx = dx ?: spec.dx,
                     dy = dy ?: spec.dy,
                     rotation = rotation?.coerceIn(
-                        -WatermarkSpec.MAX_ROTATION,
-                        WatermarkSpec.MAX_ROTATION,
+                        -ProjectWatermarkSpec.MAX_ROTATION,
+                        ProjectWatermarkSpec.MAX_ROTATION,
                     ) ?: spec.rotation,
                 )
             }
@@ -439,7 +439,7 @@ class DesktopProjectController(
         updateActiveOverlay { null }
     }
 
-    override fun watermark(): WatermarkSpec? = activeDesign?.overlay
+    override fun watermark(): ProjectWatermarkSpec? = activeDesign?.overlay
 
     override fun watermarkBytes(): ByteArray? = activeDesign?.overlay?.asset?.bytes
 
@@ -538,9 +538,9 @@ class DesktopProjectController(
         presetError = null
     }
 
-    override fun savePreset(name: String): Preset? {
+    override fun savePreset(name: String): ProjectPreset? {
         loadPresets()
-        val preset = Preset.fromProject(project, id = "p${clock()}", name = name, now = clock())
+        val preset = ProjectPreset.fromProject(project, id = "p${clock()}", name = name, now = clock())
         if (preset == null) {
             presetError = "FM-E-PRESET-001 当前照片还没有可保存的设计"
             return null
@@ -624,12 +624,12 @@ class DesktopProjectController(
         }
     }
 
-    override fun importPresetFile(path: String): Preset? {
+    override fun importPresetFile(path: String): ProjectPreset? {
         val imported = readPresetFile(path) ?: return null
         return imported.takeIf { importPreset(it) }
     }
 
-    override fun readPresetFile(path: String): Preset? {
+    override fun readPresetFile(path: String): ProjectPreset? {
         loadPresets()
         return when (val result = store.importPreset(path)) {
             is StoreResult.Ok -> result.value
@@ -644,7 +644,7 @@ class DesktopProjectController(
         }
     }
 
-    override fun importPreset(preset: Preset, replaceExisting: Boolean): Boolean {
+    override fun importPreset(preset: ProjectPreset, replaceExisting: Boolean): Boolean {
         loadPresets()
         // A failed library load must never be followed by a save of an empty or
         // partial list over the user's existing preset file.
@@ -682,7 +682,7 @@ class DesktopProjectController(
         return dialog.files?.firstOrNull()?.absolutePath
     }
 
-    private fun persistPresets(next: List<Preset>): Boolean {
+    private fun persistPresets(next: List<ProjectPreset>): Boolean {
         if (blockPresetWriteAfterLoadFailure()) return false
         return when (val result = store.savePresets(next)) {
             is StoreResult.Ok -> {
@@ -706,7 +706,7 @@ class DesktopProjectController(
         return true
     }
 
-    override fun importLegacyPresets(converted: List<Preset>): Int {
+    override fun importLegacyPresets(converted: List<ProjectPreset>): Int {
         if (converted.isEmpty()) return 0
         loadPresets()
         if (!presetLoadFailed) {
@@ -1159,7 +1159,7 @@ class DesktopProjectController(
         return "FM-E-IO-002 已阻止写入以保护原工程；请重试读取。$reason"
     }
 
-    private fun updateActiveOverlay(transform: (WatermarkSpec?) -> WatermarkSpec?): Boolean {
+    private fun updateActiveOverlay(transform: (ProjectWatermarkSpec?) -> ProjectWatermarkSpec?): Boolean {
         val photoId = project.activePhotoId ?: return false
         val current = project.designs[photoId] ?: return false
         val next = transform(current.overlay)
