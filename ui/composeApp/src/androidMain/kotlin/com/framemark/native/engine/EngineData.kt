@@ -8,6 +8,7 @@ import com.framemark.native.library.jsonInt
 import com.framemark.native.library.jsonString
 import java.io.File
 import java.util.zip.ZipInputStream
+import com.framemark.native.product.FmLog
 
 /**
  * Runtime bundle for the Android IR renderer: `assets/x1ir.zip` holds all 106 IR
@@ -93,7 +94,7 @@ object EngineData {
             handExtraFonts = hand.jsonString("extraFonts")?.let { abs(root, it) },
             handCardIds = handCardIds,
         )
-        println("FM_ANDROID_ENGINE_DATA root=${root.absolutePath} styles=${styles.size}")
+        FmLog.info("FM_ANDROID_ENGINE_DATA") { "root=${root.absolutePath} styles=${styles.size}" }
         return snap
     }
 

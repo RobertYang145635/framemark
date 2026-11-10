@@ -3,9 +3,12 @@ package com.framemark.native.workflow
 import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 /** Structured export failure shown to the user; the code follows ARCH §7.2. */
 class EngineFailure(
@@ -140,7 +143,7 @@ object NativeEngine {
         if (!api.supportsExport(card.id)) {
             throw EngineFailure("FM-E-ENGINE-002", "这张边框未接入桌面引擎，无法导出")
         }
-        if (settings.format == SampleFormat.WebP && !api.supportsWebpExport()) {
+        if (settings.format == ExportFormat.WebP && !api.supportsWebpExport()) {
             throw EngineFailure("FM-E-EXPORT-001", "当前引擎不支持 WebP 导出，请改用 JPEG 或 PNG")
         }
         return exportCard(
@@ -207,7 +210,7 @@ object NativeEngine {
                 design = design,
                 mode = "export",
                 maxEdge = null,
-                format = settings.format,
+                format = settings.format.toSampleFormat(),
                 quality = settings.quality,
                 longEdge = settings.effectiveLongEdge,
                 outputPath = temporaryPath,
@@ -313,7 +316,7 @@ object NativeEngine {
             }
             val note = listOfNotNull(image.note, publishNote).filter { it.isNotBlank() }.joinToString("；").ifBlank { null }
             val outputBytes = withContext(Dispatchers.IO) { platform.fileSize(path) }
-            println("FM_NATIVE_EXPORT card=$cardId path=$path ${image.width}x${image.height} ms=${image.ms}")
+            FmLog.info("FM_NATIVE_EXPORT") { "card=$cardId path=$path ${image.width}x${image.height} ms=${image.ms}" }
             return ExportResult(
                 path = path,
                 fileName = path.substringAfterLast('/').substringAfterLast('\\'),
@@ -353,7 +356,7 @@ object NativeEngine {
         withContext(Dispatchers.IO) {
             val markerPath = "$markerDir/marker-$stage"
             platform.writeTextFile(markerPath, "$stage ${System.currentTimeMillis()}")
-            println("FM_CRASH_WINDOW $stage marker=$markerPath")
+            FmLog.info("FM_CRASH_WINDOW") { "$stage marker=$markerPath" }
             if (LaunchOptions.crashResumeOnMarkerRemoval) {
                 while (platform.exists(markerPath)) Thread.sleep(100)
             } else {

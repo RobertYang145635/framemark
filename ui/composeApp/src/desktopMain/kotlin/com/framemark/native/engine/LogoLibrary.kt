@@ -1,6 +1,8 @@
 package com.framemark.native.engine
 
 import com.framemark.native.product.Base64Codec
+import com.framemark.native.product.WatermarkAsset
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.library.Json
 import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
@@ -77,7 +79,9 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
             val stem = asset.engineKey
             val file = File(dir, "$stem.png")
             if (!file.isFile) return null
-            val bytes = file.readBytes()
+            // Bound before loading: a staged logo larger than the product asset limit
+            // is corrupt by definition and must not be read into memory.
+            val bytes = readFileBytesBounded(file.path, WatermarkAsset.MAX_BYTES) ?: return null
             if (!sha256(bytes).equals(asset.pngSha256, ignoreCase = true)) return null
             val size = PhotoMetadata.read(file) ?: return null
             EngineLogo(
@@ -134,7 +138,7 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
         if (files.isEmpty()) return null
         fun bySuffix(suffix: String) = files.firstOrNull { it.nameWithoutExtension.lowercase() == "$key$suffix" }
         val pick = bySuffix("_black") ?: bySuffix("_white") ?: bySuffix("_color") ?: files.first()
-        val bytes = pick.readBytes()
+        val bytes = readFileBytesBounded(pick.path, WatermarkAsset.MAX_BYTES) ?: return null
         val size = PhotoMetadata.read(pick) ?: return null
         return EngineLogo(
             name = pick.nameWithoutExtension,

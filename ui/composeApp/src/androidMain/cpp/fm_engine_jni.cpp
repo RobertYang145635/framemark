@@ -13,15 +13,29 @@
 
 #include <chrono>
 #include <cstddef>
+#include <initializer_list>
 #include <string>
 
 namespace {
 
 constexpr const char *kVersion = "framemark-engine 0.1.0-x1 (jni stub)";
 
+// RAII for GetStringUTFChars/ReleaseStringUTFChars. A conversion can fail (the VM
+// throws OutOfMemoryError and the call returns nullptr); get() then yields "" so no
+// engine call ever receives a null pointer, and ok() lets a caller refuse the call
+// instead of silently running it with empty paths.
 class JStringUtf {
  public:
-  JStringUtf(JNIEnv *env, jstring value) : env_(env), value_(value), chars_(env->GetStringUTFChars(value, nullptr)) {}
+  JStringUtf(JNIEnv *env, jstring value) : env_(env), value_(value) {
+    // GetStringUTFChars(nullptr) is undefined behaviour; a null jstring legitimately
+    // means "no value", which reads as the empty string like before.
+    if (value_ == nullptr) {
+      ok_ = true;
+      return;
+    }
+    chars_ = env_->GetStringUTFChars(value_, nullptr);
+    ok_ = chars_ != nullptr;
+  }
   ~JStringUtf() {
     if (chars_ != nullptr) env_->ReleaseStringUTFChars(value_, chars_);
   }
@@ -29,11 +43,23 @@ class JStringUtf {
   JStringUtf &operator=(const JStringUtf &) = delete;
   const char *get() const { return chars_ == nullptr ? "" : chars_; }
 
+  /** False when the UTF conversion failed (OOM / pending exception). */
+  bool ok() const { return ok_; }
+
  private:
   JNIEnv *env_;
   jstring value_;
-  const char *chars_;
+  const char *chars_ = nullptr;
+  bool ok_ = false;
 };
+
+/** True only when every conversion succeeded. */
+bool StringsOk(std::initializer_list<bool> conversions) {
+  for (bool ok : conversions) {
+    if (!ok) return false;
+  }
+  return true;
+}
 
 jstring ErrorEnvelope(JNIEnv *env, const char *error) {
   std::string escaped;
@@ -49,6 +75,16 @@ jstring ErrorEnvelope(JNIEnv *env, const char *error) {
   }
   const std::string json = "{\"ok\":false,\"error\":\"" + escaped + "\"}";
   return env->NewStringUTF(json.c_str());
+}
+
+/**
+ * Reports a failed string conversion through the same JSON envelope the engine uses
+ * and leaves a clean VM: the pending OutOfMemoryError cannot be turned into a Java
+ * string, so it is cleared before the error envelope is allocated.
+ */
+jstring StringConversionFailure(JNIEnv *env) {
+  if (env->ExceptionCheck()) env->ExceptionClear();
+  return ErrorEnvelope(env, "engine call failed: JNI string conversion failed");
 }
 
 unsigned long long ElapsedMs(std::chrono::steady_clock::time_point started) {
@@ -199,34 +235,21 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderDesign(
   (void)overlay_opacity; (void)overlay_angle; (void)out_png; (void)max_edge;
   return env->NewStringUTF("IR engine not linked for this ABI");
 #else
-  const char *style = env->GetStringUTFChars(style_path, nullptr);
-  const char *photo = env->GetStringUTFChars(photo_path, nullptr);
-  const char *photo_ovr = env->GetStringUTFChars(photo_override, nullptr);
-  const char *exif = env->GetStringUTFChars(exif_path, nullptr);
-  const char *assets = env->GetStringUTFChars(assets_json, nullptr);
-  const char *fonts = env->GetStringUTFChars(fonts_dir, nullptr);
-  const char *brands = env->GetStringUTFChars(brands_dir, nullptr);
-  const char *fallback = env->GetStringUTFChars(fallback_dir, nullptr);
-  const char *theme_c = env->GetStringUTFChars(theme, nullptr);
-  const char *ratio_c = env->GetStringUTFChars(ratio, nullptr);
-  JStringUtf design(env, design_json);
-  const char *overlay_c = env->GetStringUTFChars(overlay_path, nullptr);
-  const char *out = env->GetStringUTFChars(out_png, nullptr);
-  char *err = fm_render_design(style, photo, photo_ovr, exif, assets, fonts, brands, fallback,
-                               theme_c, ratio_c, design.get(), overlay_c, overlay_x, overlay_y,
-                               overlay_w, overlay_h, overlay_opacity, overlay_angle, out, max_edge);
-  env->ReleaseStringUTFChars(style_path, style);
-  env->ReleaseStringUTFChars(photo_path, photo);
-  env->ReleaseStringUTFChars(photo_override, photo_ovr);
-  env->ReleaseStringUTFChars(exif_path, exif);
-  env->ReleaseStringUTFChars(assets_json, assets);
-  env->ReleaseStringUTFChars(fonts_dir, fonts);
-  env->ReleaseStringUTFChars(brands_dir, brands);
-  env->ReleaseStringUTFChars(fallback_dir, fallback);
-  env->ReleaseStringUTFChars(theme, theme_c);
-  env->ReleaseStringUTFChars(ratio, ratio_c);
-  env->ReleaseStringUTFChars(overlay_path, overlay_c);
-  env->ReleaseStringUTFChars(out_png, out);
+  JStringUtf style(env, style_path), photo(env, photo_path), photo_ovr(env, photo_override);
+  JStringUtf exif(env, exif_path), assets(env, assets_json), fonts(env, fonts_dir);
+  JStringUtf brands(env, brands_dir), fallback(env, fallback_dir), theme_s(env, theme);
+  JStringUtf ratio_s(env, ratio), design(env, design_json), overlay(env, overlay_path);
+  JStringUtf out(env, out_png);
+  if (!StringsOk({style.ok(), photo.ok(), photo_ovr.ok(), exif.ok(), assets.ok(), fonts.ok(),
+                  brands.ok(), fallback.ok(), theme_s.ok(), ratio_s.ok(), design.ok(),
+                  overlay.ok(), out.ok()})) {
+    return StringConversionFailure(env);
+  }
+  char *err = fm_render_design(style.get(), photo.get(), photo_ovr.get(), exif.get(),
+                               assets.get(), fonts.get(), brands.get(), fallback.get(),
+                               theme_s.get(), ratio_s.get(), design.get(), overlay.get(),
+                               overlay_x, overlay_y, overlay_w, overlay_h, overlay_opacity,
+                               overlay_angle, out.get(), max_edge);
   if (err == nullptr) return nullptr;
   jstring msg = env->NewStringUTF(err);
   fm_free_string(err);
@@ -249,30 +272,18 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderHand(
   (void)overlay_angle; (void)design_json; (void)out_png; (void)max_edge;
   return env->NewStringUTF("hand engine not linked for this ABI");
 #else
-  const char *cards = env->GetStringUTFChars(cards_path, nullptr);
-  const char *card = env->GetStringUTFChars(card_id, nullptr);
-  const char *hand = env->GetStringUTFChars(hand_dir, nullptr);
-  const char *fonts = env->GetStringUTFChars(fonts_dir, nullptr);
-  const char *extra = env->GetStringUTFChars(extra_fonts_dir, nullptr);
-  const char *fallback = env->GetStringUTFChars(fallback_cjk, nullptr);
-  const char *photo = env->GetStringUTFChars(photo_path, nullptr);
-  const char *photo_ovr = env->GetStringUTFChars(photo_override, nullptr);
-  const char *overlay_c = env->GetStringUTFChars(overlay_path, nullptr);
-  JStringUtf design(env, design_json);
-  const char *out = env->GetStringUTFChars(out_png, nullptr);
-  char *err = fm_render_hand(cards, card, hand, fonts, extra, fallback, photo, photo_ovr,
-                             overlay_c, overlay_x, overlay_y, overlay_w, overlay_h,
-                             overlay_opacity, overlay_angle, design.get(), out, max_edge);
-  env->ReleaseStringUTFChars(cards_path, cards);
-  env->ReleaseStringUTFChars(card_id, card);
-  env->ReleaseStringUTFChars(hand_dir, hand);
-  env->ReleaseStringUTFChars(fonts_dir, fonts);
-  env->ReleaseStringUTFChars(extra_fonts_dir, extra);
-  env->ReleaseStringUTFChars(fallback_cjk, fallback);
-  env->ReleaseStringUTFChars(photo_path, photo);
-  env->ReleaseStringUTFChars(photo_override, photo_ovr);
-  env->ReleaseStringUTFChars(overlay_path, overlay_c);
-  env->ReleaseStringUTFChars(out_png, out);
+  JStringUtf cards(env, cards_path), card(env, card_id), hand(env, hand_dir);
+  JStringUtf fonts(env, fonts_dir), extra(env, extra_fonts_dir), fallback(env, fallback_cjk);
+  JStringUtf photo(env, photo_path), photo_ovr(env, photo_override), overlay(env, overlay_path);
+  JStringUtf design(env, design_json), out(env, out_png);
+  if (!StringsOk({cards.ok(), card.ok(), hand.ok(), fonts.ok(), extra.ok(), fallback.ok(),
+                  photo.ok(), photo_ovr.ok(), overlay.ok(), design.ok(), out.ok()})) {
+    return StringConversionFailure(env);
+  }
+  char *err = fm_render_hand(cards.get(), card.get(), hand.get(), fonts.get(), extra.get(),
+                             fallback.get(), photo.get(), photo_ovr.get(), overlay.get(),
+                             overlay_x, overlay_y, overlay_w, overlay_h, overlay_opacity,
+                             overlay_angle, design.get(), out.get(), max_edge);
   if (err == nullptr) return nullptr;
   jstring msg = env->NewStringUTF(err);
   fm_hand_free_string(err);
@@ -287,11 +298,9 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeTiffToPng(
   (void)tiff_path; (void)out_png;
   return env->NewStringUTF("IR engine not linked for this ABI");
 #else
-  const char *tiff = env->GetStringUTFChars(tiff_path, nullptr);
-  const char *out = env->GetStringUTFChars(out_png, nullptr);
-  char *err = fm_tiff_to_png(tiff, out);
-  env->ReleaseStringUTFChars(tiff_path, tiff);
-  env->ReleaseStringUTFChars(out_png, out);
+  JStringUtf tiff(env, tiff_path), out(env, out_png);
+  if (!StringsOk({tiff.ok(), out.ok()})) return StringConversionFailure(env);
+  char *err = fm_tiff_to_png(tiff.get(), out.get());
   if (err == nullptr) return nullptr;
   jstring msg = env->NewStringUTF(err);
   fm_free_string(err);
@@ -309,17 +318,13 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeExportWebp(
   (void)keep_thumb; (void)lossless; (void)quality; (void)out_webp; (void)report_json;
   return env->NewStringUTF("{\"ok\":false,\"error\":\"export encoder not linked for this ABI\"}");
 #else
-  const char *png = env->GetStringUTFChars(png_path, nullptr);
-  const char *icc = env->GetStringUTFChars(icc_path, nullptr);
-  const char *exif = env->GetStringUTFChars(exif_src, nullptr);
-  const char *out = env->GetStringUTFChars(out_webp, nullptr);
-  const char *report = env->GetStringUTFChars(report_json, nullptr);
-  char *json = fm_export_webp(png, icc, exif, remove_gps, keep_thumb, lossless, quality, out, report);
-  env->ReleaseStringUTFChars(png_path, png);
-  env->ReleaseStringUTFChars(icc_path, icc);
-  env->ReleaseStringUTFChars(exif_src, exif);
-  env->ReleaseStringUTFChars(out_webp, out);
-  env->ReleaseStringUTFChars(report_json, report);
+  JStringUtf png(env, png_path), icc(env, icc_path), exif(env, exif_src);
+  JStringUtf out(env, out_webp), report(env, report_json);
+  if (!StringsOk({png.ok(), icc.ok(), exif.ok(), out.ok(), report.ok()})) {
+    return StringConversionFailure(env);
+  }
+  char *json = fm_export_webp(png.get(), icc.get(), exif.get(), remove_gps, keep_thumb,
+                              lossless, quality, out.get(), report.get());
   if (json == nullptr) {
     return env->NewStringUTF("{\"ok\":false,\"error\":\"webp export returned no envelope\"}");
   }
@@ -338,17 +343,13 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeExportPng(
   (void)keep_thumb; (void)out_jpeg; (void)report_json;
   return env->NewStringUTF("{\"ok\":false,\"error\":\"export encoder not linked for this ABI\"}");
 #else
-  const char *png = env->GetStringUTFChars(png_path, nullptr);
-  const char *icc = env->GetStringUTFChars(icc_path, nullptr);
-  const char *exif = env->GetStringUTFChars(exif_src, nullptr);
-  const char *out = env->GetStringUTFChars(out_jpeg, nullptr);
-  const char *report = env->GetStringUTFChars(report_json, nullptr);
-  char *json = fm_export_png(png, icc, exif, remove_gps, keep_thumb, out, report);
-  env->ReleaseStringUTFChars(png_path, png);
-  env->ReleaseStringUTFChars(icc_path, icc);
-  env->ReleaseStringUTFChars(exif_src, exif);
-  env->ReleaseStringUTFChars(out_jpeg, out);
-  env->ReleaseStringUTFChars(report_json, report);
+  JStringUtf png(env, png_path), icc(env, icc_path), exif(env, exif_src);
+  JStringUtf out(env, out_jpeg), report(env, report_json);
+  if (!StringsOk({png.ok(), icc.ok(), exif.ok(), out.ok(), report.ok()})) {
+    return StringConversionFailure(env);
+  }
+  char *json = fm_export_png(png.get(), icc.get(), exif.get(), remove_gps, keep_thumb,
+                             out.get(), report.get());
   if (json == nullptr) {
     return env->NewStringUTF("{\"ok\":false,\"error\":\"export returned no envelope\"}");
   }
@@ -387,6 +388,11 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderExportDesign(
   JStringUtf design(env, design_json);
   JStringUtf geom(env, geom_path), icc(env, icc_path), exif_src_s(env, exif_src);
   JStringUtf out(env, out_path), report(env, report_path);
+  if (!StringsOk({style.ok(), photo.ok(), photo_ovr.ok(), exif.ok(), assets.ok(), fonts.ok(),
+                  brands.ok(), fallback.ok(), theme_s.ok(), ratio_s.ok(), overlay.ok(),
+                  design.ok(), geom.ok(), icc.ok(), exif_src_s.ok(), out.ok(), report.ok()})) {
+    return StringConversionFailure(env);
+  }
   char *render_error = nullptr;
   const auto render_started = std::chrono::steady_clock::now();
   FmIrRgbaHandle *handle = fm_render_design_rgba(
@@ -443,6 +449,11 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderExportHand(
   JStringUtf design(env, design_json);
   JStringUtf geom(env, geom_path), icc(env, icc_path);
   JStringUtf exif_src_s(env, exif_src), out(env, out_path), report(env, report_path);
+  if (!StringsOk({cards.ok(), card.ok(), hand.ok(), fonts.ok(), extra.ok(), fallback.ok(),
+                  photo.ok(), photo_ovr.ok(), overlay.ok(), design.ok(), geom.ok(),
+                  icc.ok(), exif_src_s.ok(), out.ok(), report.ok()})) {
+    return StringConversionFailure(env);
+  }
   char *render_error = nullptr;
   const auto render_started = std::chrono::steady_clock::now();
   FmHandRgbaHandle *handle = fm_render_hand_rgba(

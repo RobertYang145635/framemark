@@ -1,5 +1,7 @@
 package com.framemark.native.workflow
 
+import com.framemark.native.product.ExportFormat
+
 /**
  * Platform hooks for the U4 workflow UI.
  *
@@ -116,6 +118,25 @@ enum class SampleFormat(val label: String, val extension: String) {
     Jpeg("JPG", "jpg"),
     Png("PNG", "png"),
     WebP("WebP", "webp"),
+}
+
+/**
+ * The export document declares its format with [com.framemark.native.product.ExportFormat];
+ * the platform encoders and the render API still speak [SampleFormat]. The two enums
+ * name the same three encoders, so this is the one place the boundary is crossed —
+ * never a second export-settings type.
+ */
+fun ExportFormat.toSampleFormat(): SampleFormat = when (this) {
+    ExportFormat.Jpeg -> SampleFormat.Jpeg
+    ExportFormat.Png -> SampleFormat.Png
+    ExportFormat.WebP -> SampleFormat.WebP
+}
+
+/** The other direction, for legacy queues that still store a [SampleFormat]. */
+fun SampleFormat.toExportFormat(): ExportFormat = when (this) {
+    SampleFormat.Jpeg -> ExportFormat.Jpeg
+    SampleFormat.Png -> ExportFormat.Png
+    SampleFormat.WebP -> ExportFormat.WebP
 }
 
 object WorkflowEnv {

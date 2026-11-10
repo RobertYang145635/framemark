@@ -150,7 +150,8 @@ import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.workflow.DesignSession
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.InMemoryProjectHolder
 import com.framemark.native.workflow.NativeEngine
@@ -172,6 +173,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import com.framemark.native.product.FmLog
 
 /**
  * Desktop layout state, hoisted above the breakpoint by [FrameMarkApp] so a
@@ -227,7 +229,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     val session = remember {
         DesignSession().apply {
             LaunchOptions.exportFormat?.let { raw ->
-                val fmt = SampleFormat.entries.firstOrNull {
+                val fmt = ExportFormat.entries.firstOrNull {
                     it.extension.equals(raw, ignoreCase = true) || it.label.equals(raw, ignoreCase = true)
                 }
                 if (fmt != null) export = export.copy(format = fmt)
@@ -265,7 +267,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         ) {
             sampleImportAttempted = true
             val report = projects.importPhotos(listOf(path!!))
-            println("FM_SAMPLE_PHOTO imported=${report.added} failed=${report.failures.size} path=$path")
+            FmLog.info("FM_SAMPLE_PHOTO") { "imported=${report.added} failed=${report.failures.size} path=$path" }
         }
     }
     LaunchedEffect(trialNotice) {
@@ -365,18 +367,18 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             val start = p.processStartMillis()
             if (start == null) -1L else p.nowMillis() - start
         } ?: -1L
-        println("FM_LIB_START elapsedMs=${elapsed()}")
+        FmLog.info("FM_LIB_START") { "elapsedMs=${elapsed()}" }
         val loadMark = kotlin.time.TimeSource.Monotonic.markNow()
         libraryState = LibraryLoadState.Loading
         val result = LibraryDataSource.load()
         libraryState = if (result.error == null) {
             val snapshot = result.snapshot
-            println(
-                "FM_LIB_READY cards=${snapshot.cards.size} categories=${snapshot.categories.size} " +
+            FmLog.info("FM_LIB_READY") {
+                "cards=${snapshot.cards.size} categories=${snapshot.categories.size} " +
                     "previews=${snapshot.mappedPreviews} unmapped=${snapshot.unmappedPreviewIds.size} " +
                     "generatedAt=${snapshot.generatedAt} elapsedMs=${elapsed()} " +
-                    "loadMs=${loadMark.elapsedNow().inWholeMilliseconds}",
-            )
+                    "loadMs=${loadMark.elapsedNow().inWholeMilliseconds}"
+            }
             LibraryLoadState.Ready(snapshot)
         } else {
             LibraryLoadState.Failed(result.error)
@@ -453,7 +455,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         if (libraryState !is LibraryLoadState.Ready) return@LaunchedEffect
         kotlinx.coroutines.delay(1200)
         paramsPage = requested
-        println("FM_OPEN_TAB page=${requested.name} raw=${LaunchOptions.openTab}")
+        FmLog.info("FM_OPEN_TAB") { "page=${requested.name} raw=${LaunchOptions.openTab}" }
     }
     LaunchedEffect(importNotice) {
         if (importNotice == null) return@LaunchedEffect
@@ -495,7 +497,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 ?.let { legacyToPreset(item, card.id, card.systemStyle, it) }
         }
         val migrated = projects.importLegacyPresets(converted)
-        if (migrated > 0) println("FM_DESKTOP_PRESET_MIGRATED count=$migrated legacy_kept=${legacy.size}")
+        if (migrated > 0) FmLog.info("FM_DESKTOP_PRESET_MIGRATED") { "count=$migrated legacy_kept=${legacy.size}" }
     }
 
     val quickSavePreset: (String) -> Unit = { name ->
@@ -517,9 +519,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         if (!LaunchOptions.demoApplied && LaunchOptions.demoEdits > 0) {
             LaunchOptions.demoApplied = true
             val applied = applyDemoEdits(session, built.controls, LaunchOptions.demoEdits)
-            println("FM_DEMO_EDITS applied=$applied card=${selectedCard?.id}")
+            FmLog.info("FM_DEMO_EDITS") { "applied=$applied card=${selectedCard?.id}" }
             repeat(LaunchOptions.undoSteps) { session.undo() }
-            if (LaunchOptions.undoSteps > 0) println("FM_DEMO_UNDO steps=${LaunchOptions.undoSteps}")
+            if (LaunchOptions.undoSteps > 0) FmLog.info("FM_DEMO_UNDO") { "steps=${LaunchOptions.undoSteps}" }
         }
         val presetName = LaunchOptions.autoSavePreset
         if (presetName != null && !LaunchOptions.autoSaveApplied) {
@@ -539,9 +541,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             projects.applyCard(card.id, card.systemStyle)
             if (!LaunchOptions.openBatch) stageMode = StageMode.Edit
             autoOpened = true
-            println("FM_OPEN_CARD ${card.id} name=${card.name}")
+            FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name}" }
         } else {
-            println("FM_OPEN_CARD_MISSING $id")
+            FmLog.info("FM_OPEN_CARD_MISSING") { "$id" }
             autoOpened = true
         }
     }
@@ -562,10 +564,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         } else {
             0
         }
-        println(
-            "FM_PRODUCT_BATCH_SEED enqueued=$enqueued total=${projects.batchJobs.size} " +
-                "pending=${projects.batchJobs.count { it.status == BatchJobStatus.Queued }}",
-        )
+        FmLog.info("FM_PRODUCT_BATCH_SEED") {
+            "enqueued=$enqueued total=${projects.batchJobs.size} " +
+                "pending=${projects.batchJobs.count { it.status == BatchJobStatus.Queued }}"
+        }
         if (WorkflowEnv.platform?.batchAutoStart() == true) projects.startBatch()
     }
 
@@ -578,12 +580,12 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             LaunchOptions.openPresetSheet -> {
                 presetSheetOpen = true
                 LaunchOptions.sheetsApplied = true
-                println("FM_OPEN_SHEET presets card=${card.id}")
+                FmLog.info("FM_OPEN_SHEET") { "presets card=${card.id}" }
             }
             LaunchOptions.openExportSheet -> {
                 if (requestExport()) {
                     LaunchOptions.sheetsApplied = true
-                    println("FM_OPEN_SHEET export card=${card.id}")
+                    FmLog.info("FM_OPEN_SHEET") { "export card=${card.id}" }
                 }
             }
         }
@@ -643,9 +645,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
 
         LaunchedEffect(columns.left, columns.right, columns.stage, columns.compact, columns.showRight, contentWidth) {
-            val line = "FM_DESKTOP_COLUMNS content=%.0f left=%.0f right=%.0f stage=%.0f " +
+            val line = "content=%.0f left=%.0f right=%.0f stage=%.0f " +
                 "compact=%s showL=%s showR=%s"
-            println(
+            FmLog.info("FM_DESKTOP_COLUMNS") {
                 line.format(
                     contentWidth.value,
                     columns.left,
@@ -654,8 +656,8 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     columns.compact,
                     columns.showLeft,
                     columns.showRight,
-                ),
-            )
+                )
+            }
         }
 
         // Focus belongs to the 文字 tab: switching tab, folding the inspector or
@@ -703,7 +705,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             } ?: return
             val card = index.card(nextId) ?: return
             applyCardSelection(card, recordTrial = true)
-            println("FM_TRIAL step=${if (forward) "next" else "prev"} card=${card.id}")
+            FmLog.info("FM_TRIAL") { "step=${if (forward) "next" else "prev"} card=${card.id}" }
         }
 
         /**
@@ -749,7 +751,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             if (paths.isNotEmpty()) {
                 scope.launch {
                     val report = projects.importPhotos(paths)
-                    println("FM_IMPORT added=${report.added} failed=${report.failures.size}")
+                    FmLog.info("FM_IMPORT") { "added=${report.added} failed=${report.failures.size}" }
                     importNotice = "已导入 ${report.added} 张" + if (report.failures.isEmpty()) "" else "，失败 ${report.failures.size} 张"
                     if (report.added > 0) stageMode = StageMode.Edit
                 }
@@ -813,14 +815,14 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
 
                     if (event.key == Key.F1) {
                         helpOpen = true
-                        println("FM_SHORTCUT help")
+                        FmLog.info("FM_SHORTCUT") { "help" }
                         return@onPreviewKeyEvent true
                     }
                     if (!event.isCtrlPressed) return@onPreviewKeyEvent false
                     when {
                         event.key == Key.Z && event.isShiftPressed -> {
                             val handled = session.redo()
-                            if (handled) println("FM_SHORTCUT redo")
+                            if (handled) FmLog.info("FM_SHORTCUT") { "redo" }
                             handled
                         }
                         event.key == Key.Z -> {
@@ -834,38 +836,38 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                                 trialState = DesktopTrial.afterUndo(trialState)
                                 trialNotice = "已撤销：切换到 ${anchor.name}" +
                                     if (left != null && left.id != anchor.id) "（原：${left.name}）" else ""
-                                println("FM_TRIAL undo card=${anchor.id}")
+                                FmLog.info("FM_TRIAL") { "undo card=${anchor.id}" }
                                 true
                             } else {
                                 val handled = session.undo()
-                                if (handled) println("FM_SHORTCUT undo")
+                                if (handled) FmLog.info("FM_SHORTCUT") { "undo" }
                                 handled
                             }
                         }
                         event.key == Key.Y -> {
                             val handled = session.redo()
-                            if (handled) println("FM_SHORTCUT redo")
+                            if (handled) FmLog.info("FM_SHORTCUT") { "redo" }
                             handled
                         }
                         event.key == Key.E -> {
                             if (!requestExport()) return@onPreviewKeyEvent true
-                            println("FM_SHORTCUT export")
+                            FmLog.info("FM_SHORTCUT") { "export" }
                             true
                         }
                         event.key == Key.P && event.isShiftPressed -> {
                             FeelProbe.begin("preset", "shortcut")
                             presetSheetOpen = true
-                            println("FM_SHORTCUT presets")
+                            FmLog.info("FM_SHORTCUT") { "presets" }
                             true
                         }
                         event.key == Key.B && event.isShiftPressed -> {
                             toggleRight()
-                            println("FM_SHORTCUT rail-right collapsed=${layout.rightCollapsed}")
+                            FmLog.info("FM_SHORTCUT") { "rail-right collapsed=${layout.rightCollapsed}" }
                             true
                         }
                         event.key == Key.B -> {
                             toggleLeft()
-                            println("FM_SHORTCUT rail-left collapsed=${layout.leftCollapsed}")
+                            FmLog.info("FM_SHORTCUT") { "rail-left collapsed=${layout.leftCollapsed}" }
                             true
                         }
                         else -> false
@@ -890,13 +892,13 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 } else {
                     projects.presetError ?: "保存预设失败"
                 }
-                println("FM_DESIGN_PRESET_SAVE name=$name ok=${saved != null}")
+                FmLog.info("FM_DESIGN_PRESET_SAVE") { "name=$name ok=${saved != null}" }
             }
             val resetCurrentDesign: () -> Unit = {
                 val current = selectedCard
                 if (current != null) {
                     session.resetCard(current.id)
-                    println("FM_DESIGN_RESET ${current.id}")
+                    FmLog.info("FM_DESIGN_RESET") { "${current.id}" }
                 }
             }
 
@@ -995,7 +997,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     onSelectPage = { paramsPage = it },
                     onTextSlotFocus = { key ->
                         focusedTextSlotKey = key
-                        println("FM_TEXT_FOCUS key=${key ?: "-"} page=${paramsPage.name}")
+                        FmLog.info("FM_TEXT_FOCUS") { "key=${key ?: "-"} page=${paramsPage.name}" }
                     },
                     highlightedTextSlotKey = focusedTextSlotKey,
                     projects = projects,
@@ -1189,9 +1191,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     loading = !projects.loaded,
                     error = projects.loadError ?: projects.saveError,
                     onRetry = {
-                        println("FM_PROJECT_RETRY_REQUESTED surface=desktop")
+                        FmLog.info("FM_PROJECT_RETRY_REQUESTED") { "surface=desktop" }
                         val recovered = projects.retryProjectLoad()
-                        println("FM_PROJECT_RETRY_RESULT recovered=$recovered error=${projects.loadError ?: "-"}")
+                        FmLog.info("FM_PROJECT_RETRY_RESULT") { "recovered=$recovered error=${projects.loadError ?: "-"}" }
                     },
                 )
             }
@@ -1288,7 +1290,7 @@ private fun DesktopColumnLayout(
                     )
                 } else {
                     val changed = resetInspectorPage(tabModel, paramsPage, session)
-                    println("FM_INSPECTOR_RESET page=${paramsPage.name} changed=$changed")
+                    FmLog.info("FM_INSPECTOR_RESET") { "page=${paramsPage.name} changed=$changed" }
                 }
             },
             onSavePreset = { onSavePreset("${selectedCard?.name ?: "边框"} 预设") },
@@ -1632,7 +1634,7 @@ private fun EditStage(
     fun fitToWindow() {
         zoom = 1f
         pan = Offset.Zero
-        println("FM_WHEEL fit zoom=1.000")
+        FmLog.info("FM_WHEEL") { "fit zoom=1.000" }
     }
 
     fun clampPan(next: Offset, z: Float = zoom): Offset {
@@ -1655,7 +1657,7 @@ private fun EditStage(
             zoom = next
             pan = clampPan(pan, next)
         }
-        println("FM_WHEEL step=${if (direction > 0) "+" else "-"} zoom=${"%.3f".format(zoom)}")
+        FmLog.info("FM_WHEEL") { "step=${if (direction > 0) "+" else "-"} zoom=${"%.3f".format(zoom)}" }
     }
 
     /** 25%..400% with a 100% detent; zoom steps are multiplicative. */
@@ -1673,10 +1675,10 @@ private fun EditStage(
             zoom = next
             pan = clampPan(proposed, next)
         }
-        println(
-            "FM_WHEEL dy=${"%.0f".format(dy)} anchor=${"%.0f".format(anchor.x)},${"%.0f".format(anchor.y)} " +
-                "zoom=${"%.3f".format(zoom)} pan=${"%.1f".format(pan.x)},${"%.1f".format(pan.y)}",
-        )
+        FmLog.info("FM_WHEEL") {
+            "dy=${"%.0f".format(dy)} anchor=${"%.0f".format(anchor.x)},${"%.0f".format(anchor.y)} " +
+                "zoom=${"%.3f".format(zoom)} pan=${"%.1f".format(pan.x)},${"%.1f".format(pan.y)}"
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1712,7 +1714,7 @@ private fun EditStage(
                         onDoubleTap = {
                             zoom = 1f
                             pan = Offset.Zero
-                            println("FM_WHEEL reset zoom=1.000")
+                            FmLog.info("FM_WHEEL") { "reset zoom=1.000" }
                         },
                     )
                 },
@@ -2456,7 +2458,7 @@ private fun StartupFrameProbe() {
         val start = platform?.processStartMillis()
         val now = platform?.nowMillis()
         if (start != null && now != null) {
-            println("FM_FIRST_FRAME elapsedMs=${now - start}")
+            FmLog.info("FM_FIRST_FRAME") { "elapsedMs=${now - start}" }
         }
     }
 }

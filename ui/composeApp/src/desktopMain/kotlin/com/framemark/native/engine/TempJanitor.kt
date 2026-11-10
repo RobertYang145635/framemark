@@ -1,6 +1,7 @@
 package com.framemark.native.engine
 
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Engine scratch-directory janitor (WP-X1 / AU1-02).
@@ -59,7 +60,7 @@ internal object TempJanitor {
     fun discard(file: File): Boolean {
         if (!file.exists()) return true
         if (file.delete()) return true
-        println("FM_TEMP_DELETE_FAILED path=${file.absolutePath}")
+        FmLog.warn("FM_TEMP_DELETE_FAILED") { "path=${file.absolutePath}" }
         return false
     }
 }

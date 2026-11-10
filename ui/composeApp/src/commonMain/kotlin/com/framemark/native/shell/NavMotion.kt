@@ -2,6 +2,7 @@ package com.framemark.native.shell
 
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import com.framemark.native.product.FmLog
 
 /**
  * Dev-only frame sampler left over from the U1a bottom-nav measurement. The
@@ -18,19 +19,19 @@ object MotionProbe {
     var enabled: Boolean = false
 
     fun begin(id: Int, from: Int, to: Int) {
-        if (enabled) println("FM_MOTION begin id=$id from=$from to=$to")
+        if (enabled) FmLog.info("FM_MOTION") { "begin id=$id from=$from to=$to" }
     }
 
     fun sample(id: Int, tMs: Double, x: Float, stretch: Float, ink: Float, content: Float) {
         if (!enabled) return
-        println(
-            "FM_MOTION s id=$id t=${f1(tMs)} x=${f4(x)} stretch=${f4(stretch)} " +
-                "ink=${f4(ink)} content=${f4(content)}",
-        )
+        FmLog.info("FM_MOTION") {
+            "s id=$id t=${f1(tMs)} x=${f4(x)} stretch=${f4(stretch)} " +
+                "ink=${f4(ink)} content=${f4(content)}"
+        }
     }
 
     fun end(id: Int, tMs: Double) {
-        if (enabled) println("FM_MOTION end id=$id t=${f1(tMs)}")
+        if (enabled) FmLog.info("FM_MOTION") { "end id=$id t=${f1(tMs)}" }
     }
 
     private fun f4(v: Float): String {

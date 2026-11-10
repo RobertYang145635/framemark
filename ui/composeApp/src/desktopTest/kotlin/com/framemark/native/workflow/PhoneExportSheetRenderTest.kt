@@ -9,6 +9,8 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.shell.phone.ExportFormContent
 import com.framemark.native.shell.phone.PhoneExportOptions
 import com.framemark.native.shell.phone.PhoneExportSize
@@ -73,7 +75,7 @@ class PhoneExportSheetRenderTest {
         previewFile = "",
     )
 
-    private fun settingsFor(format: SampleFormat, size: PhoneExportSize): ExportSettings =
+    private fun settingsFor(format: ExportFormat, size: PhoneExportSize): ExportSettings =
         PhoneExportOptions.normalized(
             PhoneExportOptions.applySize(
                 PhoneExportOptions.applyFormat(ExportSettings(), format),
@@ -223,7 +225,7 @@ class PhoneExportSheetRenderTest {
             name = "phone-411x905",
             windowWidthDp = 411,
             windowHeightDp = 905,
-            settings = settingsFor(SampleFormat.Jpeg, PhoneExportSize.Original),
+            settings = settingsFor(ExportFormat.Jpeg, PhoneExportSize.Original),
         )
         val sheetTop = sheetTopRow(frame)
         val heightDp = sheetHeightDp(frame)
@@ -275,7 +277,7 @@ class PhoneExportSheetRenderTest {
             name = "short-411x430",
             windowWidthDp = 411,
             windowHeightDp = windowHeightDp,
-            settings = settingsFor(SampleFormat.Jpeg, PhoneExportSize.Original),
+            settings = settingsFor(ExportFormat.Jpeg, PhoneExportSize.Original),
         )
         val heightDp = sheetHeightDp(frame)
         val sheetTop = sheetTopRow(frame)
@@ -306,7 +308,7 @@ class PhoneExportSheetRenderTest {
             name = "phone-360x640",
             windowWidthDp = 360,
             windowHeightDp = 640,
-            settings = settingsFor(SampleFormat.Jpeg, PhoneExportSize.Original),
+            settings = settingsFor(ExportFormat.Jpeg, PhoneExportSize.Original),
         )
         val heightDp = sheetHeightDp(frame)
         val buttonTop = saveButtonTop(frame)
@@ -334,7 +336,7 @@ class PhoneExportSheetRenderTest {
                     windowHeightDp = 905,
                     settings = settingsFor(format, size),
                     // One representative option state is kept for review.
-                    save = format == SampleFormat.Png && size == PhoneExportSize.Long2048,
+                    save = format == ExportFormat.Png && size == PhoneExportSize.Long2048,
                 )
                 tops["${format.name}/${size.name}"] = sheetTopRow(frame)
             }

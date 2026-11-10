@@ -31,9 +31,8 @@ import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobError
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.BatchQueue
-import com.framemark.native.product.ExportFormat as ProductExportFormat
-import com.framemark.native.product.ExportSettings as ProductExportSettings
-import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.ProductFileSystem
 import com.framemark.native.product.Project
@@ -51,6 +50,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.framemark.native.product.FmLog
 
 /**
  * One row of the photo batch, read off the persisted queue: the photo, its own
@@ -82,7 +82,7 @@ data class BatchCandidate(
     val displayName: String,
     val design: PhotoDesign,
     val card: LibraryCard?,
-    val settings: ProductExportSettings,
+    val settings: ExportSettings,
     val nameIndex: Int = 1,
     val outputDirectory: String? = null,
 )
@@ -226,15 +226,15 @@ class PhonePhotoBatchQueue(
                     error = "$rebuildCount 条旧队列任务缺少稳定序号或输出目录；请移除后重新加入，不会猜测原设置。"
                 }
                 if (recovered != result.value) persist()
-                println(
-                    "FM_PHOTO_QUEUE_LOADED jobs=${recovered.jobs.size} done=${recovered.doneCount} " +
-                        "failed=${recovered.failedCount} resumedRunning=$resumed",
-                )
+                FmLog.info("FM_PHOTO_QUEUE_LOADED") {
+                    "jobs=${recovered.jobs.size} done=${recovered.doneCount} " +
+                        "failed=${recovered.failedCount} resumedRunning=$resumed"
+                }
             }
-            StoreResult.Missing -> println("FM_PHOTO_QUEUE_NONE")
+            StoreResult.Missing -> FmLog.info("FM_PHOTO_QUEUE_NONE")
             is StoreResult.Failed -> {
                 error = "${result.error.code} ${result.error.message}"
-                println("FM_PHOTO_QUEUE_LOAD_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PHOTO_QUEUE_LOAD_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
             }
         }
         return queue.jobs
@@ -298,10 +298,10 @@ class PhonePhotoBatchQueue(
             addedIds = added.toList(),
         )
         lastSubmit = report
-        println(
-            "FM_PHOTO_QUEUE_SUBMIT selected=$selected added=${report.added} duplicate=${report.duplicates} " +
-                "undesigned=$undesigned rejected=${report.rejected.size} total=${next.jobs.size}",
-        )
+        FmLog.info("FM_PHOTO_QUEUE_SUBMIT") {
+            "selected=$selected added=${report.added} duplicate=${report.duplicates} " +
+                "undesigned=$undesigned rejected=${report.rejected.size} total=${next.jobs.size}"
+        }
         report
     }
 
@@ -321,7 +321,7 @@ class PhonePhotoBatchQueue(
             styleId = job.design.styleId ?: card?.systemStyle,
             design = job.design.toDesignSnapshot(),
             overlay = job.overlayMaterialized(),
-            settings = job.exportSettings.toUiExport(),
+            settings = job.exportSettings,
             status = if (job.requiresRebuild) "需重建" else job.status.label(),
             error = if (job.requiresRebuild) {
                 "旧任务缺少稳定序号或输出目录；请移除后重新加入。"
@@ -383,7 +383,7 @@ class PhonePhotoBatchQueue(
         val before = queue
         updateQueue { it.retry(jobId) }
         if (queue == before) return
-        println("FM_PHOTO_QUEUE_RETRY id=$jobId")
+        FmLog.info("FM_PHOTO_QUEUE_RETRY") { "id=$jobId" }
         start()
     }
 
@@ -401,11 +401,11 @@ class PhonePhotoBatchQueue(
             return
         }
         if (queue.job(job.id)?.status != BatchJobStatus.Running) return
-        println(
-            "FM_PHOTO_JOB_START id=${job.id} photo=${job.photoPath ?: "<missing>"} card=${job.design.cardId} " +
+        FmLog.info("FM_PHOTO_JOB_START") {
+            "id=${job.id} photo=${job.photoPath ?: "<missing>"} card=${job.design.cardId} " +
                 "wm=${job.overlay?.asset?.sha256?.take(8) ?: "none"} attempt=${job.attempts + 1} " +
-                "settings=${job.exportSettings.format.id}/${job.exportSettings.longEdge ?: "original"}",
-        )
+                "settings=${job.exportSettings.format.id}/${job.exportSettings.longEdge ?: "original"}"
+        }
         val path = job.photoPath
         if (path.isNullOrBlank()) {
             finishFailed(job.id, "FM-E-INPUT-001", "队列里的这条任务没有照片路径，已跳过而不是改用示例照片")
@@ -427,7 +427,7 @@ class PhonePhotoBatchQueue(
                 cardId = job.design.cardId,
                 cardName = card?.name ?: job.design.cardId,
                 styleId = job.design.styleId ?: card?.systemStyle,
-                settings = job.exportSettings.toUiExport(),
+                settings = job.exportSettings,
                 design = job.design.toDesignSnapshot(),
                 overlay = job.overlayMaterialized(),
                 photoPath = path,
@@ -441,7 +441,7 @@ class PhonePhotoBatchQueue(
             // Crash window W3-12: commitExport succeeded (file on disk), Done not yet saved.
             NativeEngine.crashCheckpointBefore(platform, "beforeDone")
             updateQueue { it.complete(job.id, result.path, clock()) }
-            println("FM_PHOTO_JOB_DONE id=${job.id} out=${result.path} bytes=${result.bytes}")
+            FmLog.info("FM_PHOTO_JOB_DONE") { "id=${job.id} out=${result.path} bytes=${result.bytes}" }
         } catch (c: kotlinx.coroutines.CancellationException) {
             synchronized(queueLock) {
                 queue = recoverBatchQueue(queue, WorkflowEnv.platform, clock())
@@ -457,7 +457,7 @@ class PhonePhotoBatchQueue(
 
     private fun finishFailed(jobId: String, code: String, message: String) {
         updateQueue { it.fail(jobId, BatchJobError(code, message), clock()) }
-        println("FM_PHOTO_JOB_FAIL id=$jobId code=$code msg=$message")
+        FmLog.warn("FM_PHOTO_JOB_FAIL") { "id=$jobId code=$code msg=$message" }
     }
 
     private fun updateQueue(transform: (BatchQueue) -> BatchQueue): Boolean = synchronized(queueLock) {
@@ -499,7 +499,7 @@ class PhonePhotoBatchQueue(
             is StoreResult.Failed -> {
                 pauseRequested = true
                 error = "${result.error.code} ${result.error.message}"
-                println("FM_PHOTO_QUEUE_SAVE_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PHOTO_QUEUE_SAVE_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 false
             }
             StoreResult.Missing -> false
@@ -545,29 +545,13 @@ data class SubmitReport(
     val reconciled: Boolean get() = selected == added + undesigned + duplicates + rejected.size
 }
 
-private fun ProductExportSettings.toUiExport(): ExportSettings = ExportSettings(
-    format = when (format) {
-        ProductExportFormat.Jpeg -> SampleFormat.Jpeg
-        ProductExportFormat.Png -> SampleFormat.Png
-        ProductExportFormat.WebP -> SampleFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        ProductExportSizeMode.LongEdge -> ExportSizeMode.LongEdge
-        else -> ExportSizeMode.Original
-    },
-    longEdge = longEdge ?: 1600,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)
-
 // ---------------------------------------------------------------------------
 // Surface
 // ---------------------------------------------------------------------------
 
 /** 原尺寸 or a long edge, in the words the export sheet uses. */
 private fun sizeLabel(settings: ExportSettings): String =
-    if (settings.sizeMode == ExportSizeMode.Original) "原尺寸" else "长边 ${settings.longEdge}px"
+    if (settings.sizeMode == ExportSizeMode.Original) "原尺寸" else "长边 ${settings.longEdge ?: "-"}px"
 
 /**
  * Batch export by photo: every row is one queued job with its own photo, border

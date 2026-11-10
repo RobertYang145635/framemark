@@ -8,8 +8,8 @@ import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.inspector.OutputPixels
 import com.framemark.native.inspector.OutputSize
 import com.framemark.native.workflow.DesignSession
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.product.PhotoRef
 import androidx.compose.ui.unit.IntSize
 import kotlin.test.Test

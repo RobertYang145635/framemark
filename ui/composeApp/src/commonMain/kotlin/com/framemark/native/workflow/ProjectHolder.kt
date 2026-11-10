@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.product.BatchJob
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.Preset

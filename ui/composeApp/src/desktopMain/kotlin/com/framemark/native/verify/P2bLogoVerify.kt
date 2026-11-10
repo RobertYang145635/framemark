@@ -9,14 +9,15 @@ import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopWorkflowPlatform
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
-import com.framemark.native.workflow.SampleFormat
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.security.MessageDigest
 import kotlin.system.exitProcess
+import com.framemark.native.product.FmLog
 
 /**
  * #78 (Kotlin half): the desktop hand path must carry the brand picker's choice
@@ -83,7 +84,7 @@ fun main(args: Array<String>) {
     val exports = File(out, "exports-logo").apply { deleteRecursively(); mkdirs() }
     WorkflowEnv.platform = DesktopWorkflowPlatform(dataDir = data.path, exportDir = exports.path)
     val engineExe = System.getenv("FM_E4HAND_EXE")
-    println("FM_LOGO_VERIFY engine=${engineExe ?: "runtime-app default"} card=$cardId")
+    FmLog.info("FM_LOGO_VERIFY") { "engine=${engineExe ?: "runtime-app default"} card=$cardId" }
 
     val render = DesktopNativeRender()
     WorkflowEnv.nativeRender = render
@@ -93,7 +94,7 @@ fun main(args: Array<String>) {
     val brandA = listOf("canon", "nikon", "sony", "leica").firstOrNull { brands.contains(it) }
         ?: brands[0]
     val brandB = brands.first { it != brandA && logos.resolve(it) != null }
-    println("FM_LOGO_VERIFY brands a=$brandA b=$brandB available=${brands.size}")
+    FmLog.info("FM_LOGO_VERIFY") { "brands a=$brandA b=$brandB available=${brands.size}" }
 
     val photo = File(root, "_research/test-assets/ratio-study/4x3.jpg")
     require(photo.isFile) { "photo fixture missing" }
@@ -104,7 +105,7 @@ fun main(args: Array<String>) {
     controller.applyCard(cardId, cardId)
     controller.setExportSettings(
         ExportSettings(
-            format = SampleFormat.Png,
+            format = ExportFormat.Png,
             sizeMode = ExportSizeMode.LongEdge,
             longEdge = 700,
             filenamePattern = "logo-{index}",
@@ -115,10 +116,10 @@ fun main(args: Array<String>) {
         val overrides = if (brand == null) emptyMap() else mapOf("$cardId::brand" to brand)
         controller.applyControlOverrides(brandModel(cardId), overrides)
         val resolved = logos.resolve(controller.activeDesign?.logo)
-        println(
-            "FM_LOGO_STATE brand=${brand ?: "-"} stored=${controller.activeDesign?.logo ?: "-"} " +
-                "asset=${resolved?.name ?: "-"} ${resolved?.width ?: 0}x${resolved?.height ?: 0}",
-        )
+        FmLog.info("FM_LOGO_STATE") {
+            "brand=${brand ?: "-"} stored=${controller.activeDesign?.logo ?: "-"} " +
+                "asset=${resolved?.name ?: "-"} ${resolved?.width ?: 0}x${resolved?.height ?: 0}"
+        }
         val result = runBlocking { controller.exportActive(cardId, controller.exportSettingsForUi()) }
         return logoSha(File(result.path))
     }
@@ -132,10 +133,10 @@ fun main(args: Array<String>) {
     val autoUntouched = auto == backToAuto
     val differsFromDefault = a != auto && b != auto
     val ok = changed && autoUntouched && differsFromDefault
-    println("FM_LOGO_SHA auto=$auto")
-    println("FM_LOGO_SHA a=$a")
-    println("FM_LOGO_SHA b=$b")
-    println("FM_LOGO_RESULT changed=$changed autoStable=$autoUntouched differsFromDefault=$differsFromDefault")
+    FmLog.info("FM_LOGO_SHA") { "auto=$auto" }
+    FmLog.info("FM_LOGO_SHA") { "a=$a" }
+    FmLog.info("FM_LOGO_SHA") { "b=$b" }
+    FmLog.info("FM_LOGO_RESULT") { "changed=$changed autoStable=$autoUntouched differsFromDefault=$differsFromDefault" }
     File(out, "logo-$cardId.json").writeText(
         "{\n  \"engine\": ${jsonStr(engineExe ?: "runtime-app default")},\n" +
             "  \"card\": ${jsonStr(cardId)},\n" +

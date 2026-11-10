@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import com.framemark.native.workflow.UserLogo
 import com.framemark.native.workflow.UserLogoAsset
 import com.framemark.native.workflow.UserLogoImportStatus
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.workflow.UserLogoLibrary
 import com.framemark.native.workflow.UserLogoRepository
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +38,11 @@ class AndroidUserLogoRepository(context: Context) : UserLogoRepository {
             val entry = readIndex().firstOrNull { it.id == id } ?: return@withLock null
             val file = File(dir, "${entry.id}.${entry.extension}")
             if (!file.isFile) return@withLock null
-            val bytes = runCatching { file.readBytes() }.getOrNull() ?: return@withLock null
+            // Bounded: the stored logo can never exceed the import limit, so a larger
+            // file is corrupt and must be refused without being loaded.
+            val bytes = runCatching {
+                readFileBytesBounded(file.path, UserLogoLibrary.MAX_BYTES)
+            }.getOrNull() ?: return@withLock null
             if (bytes.size != entry.sizeBytes) return@withLock null
             UserLogoAsset(entry, bytes)
         }

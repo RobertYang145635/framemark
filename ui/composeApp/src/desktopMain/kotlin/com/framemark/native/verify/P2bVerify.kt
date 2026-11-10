@@ -12,10 +12,10 @@ import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopWorkflowPlatform
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.JvmProductFileSystem
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WorkflowEnv
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -194,7 +194,7 @@ fun main(args: Array<String>) {
 
     controller.setExportSettings(
         ExportSettings(
-            format = SampleFormat.Jpeg,
+            format = ExportFormat.Jpeg,
             sizeMode = ExportSizeMode.Original,
             filenamePattern = "{photo}-{index}",
         ),

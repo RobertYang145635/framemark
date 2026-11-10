@@ -97,6 +97,7 @@ internal object Arch {
     private val utilImportPrefixes = listOf(
         "com.framemark.native.library.Json",
         "com.framemark.native.library.json",
+        "com.framemark.native.product.FmLog",
         "com.framemark.native.FeelProbe",
         "com.framemark.native.AppVersion",
         "com.framemark.native.appVersion",
@@ -138,8 +139,11 @@ internal object Arch {
     }
 
     private fun maybeOverride (fileName: String): String? = when (fileName) {
-        // No business logic: JSON reader / version / frame probe.
+        // No business logic: JSON reader / version / frame probe / evidence logger.
         "Json.kt", "FeelProbe.kt", "AppVersion.kt", "AppVersion.desktop.kt", "AppVersion.android.kt" -> "util"
+        // The one evidence entry point is a leaf like Json.kt: every module may log,
+        // and the logger depends on nothing but its own platform write hook.
+        "FmLog.kt", "FmLog.desktop.kt", "FmLog.android.kt" -> "util"
         // QA launch state written by the entry point, read by composition.
         "LaunchOptions.kt" -> "launch-state"
         else -> null

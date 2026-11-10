@@ -3,6 +3,7 @@ package com.framemark.native.engine
 import android.content.Context
 import android.os.SystemClock
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Evidence-only batch renderer for the Android IR set (all styles in the runtime
@@ -40,7 +41,7 @@ object IrBatchRunner {
                 outDir.deleteRecursively()
                 outDir.mkdirs()
                 val list = data.handCardIds
-                println("FM_HAND_BATCH_START cards=${list.size} edge=$maxEdge dir=${outDir.absolutePath}")
+                FmLog.info("FM_HAND_BATCH_START") { "cards=${list.size} edge=$maxEdge dir=${outDir.absolutePath}" }
                 val indexRows = mutableListOf<String>()
                 list.forEachIndexed { index, id ->
                     val out = File(outDir, "$id.png")
@@ -60,11 +61,11 @@ object IrBatchRunner {
                     val ms = SystemClock.elapsedRealtime() - t0
                     if (error == null) {
                         ok++
-                        println("FM_HAND_BATCH i=${index + 1}/${list.size} id=$id ms=$ms png=${out.absolutePath}")
+                        FmLog.info("FM_HAND_BATCH") { "i=${index + 1}/${list.size} id=$id ms=$ms png=${out.absolutePath}" }
                         indexRows += """{"id":"$id","ms":$ms,"png":"${out.name}"}"""
                     } else {
                         fail++
-                        println("FM_HAND_BATCH i=${index + 1}/${list.size} id=$id ms=$ms ERR=$error")
+                        FmLog.info("FM_HAND_BATCH") { "i=${index + 1}/${list.size} id=$id ms=$ms ERR=$error" }
                         indexRows += """{"id":"$id","ms":$ms,"error":"${escape(error)}"}"""
                     }
                 }
@@ -72,9 +73,9 @@ object IrBatchRunner {
                 File(outDir, "index.json").writeText(
                     """{"edge":$maxEdge,"ok":$ok,"fail":$fail,"totalMs":$total,"cards":[${indexRows.joinToString(",")}]}""",
                 )
-                println("FM_HAND_BATCH_DONE ok=$ok fail=$fail totalMs=$total dir=${outDir.absolutePath}")
+                FmLog.info("FM_HAND_BATCH_DONE") { "ok=$ok fail=$fail totalMs=$total dir=${outDir.absolutePath}" }
             } catch (t: Throwable) {
-                println("FM_HAND_BATCH_ABORT ${t.message}")
+                FmLog.info("FM_HAND_BATCH_ABORT") { "${t.message}" }
             } finally {
                 running = false
             }
@@ -96,7 +97,7 @@ object IrBatchRunner {
                 outDir.mkdirs()
                 val needles = filter?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
                 val list = data.styles.values.filter { s -> needles.isEmpty() || needles.any { s.id.contains(it) } }
-                println("FM_IR_BATCH_START styles=${list.size} edge=$maxEdge dir=${outDir.absolutePath}")
+                FmLog.info("FM_IR_BATCH_START") { "styles=${list.size} edge=$maxEdge dir=${outDir.absolutePath}" }
                 val indexRows = mutableListOf<String>()
                 list.forEachIndexed { index, style ->
                     val safe = style.id.replace(':', '_').replace('/', '_')
@@ -118,14 +119,14 @@ object IrBatchRunner {
                     val ms = SystemClock.elapsedRealtime() - t0
                     if (error == null) {
                         ok++
-                        println(
-                            "FM_IR_BATCH i=${index + 1}/${list.size} id=${style.id} ms=$ms " +
-                                "png=${out.absolutePath} geom=${out.absolutePath}.geom.json",
-                        )
+                        FmLog.info("FM_IR_BATCH") {
+                            "i=${index + 1}/${list.size} id=${style.id} ms=$ms " +
+                                "png=${out.absolutePath} geom=${out.absolutePath}.geom.json"
+                        }
                         indexRows += """{"id":"${escape(style.id)}","ms":$ms,"png":"${escape(out.name)}"}"""
                     } else {
                         fail++
-                        println("FM_IR_BATCH i=${index + 1}/${list.size} id=${style.id} ms=$ms ERR=$error")
+                        FmLog.info("FM_IR_BATCH") { "i=${index + 1}/${list.size} id=${style.id} ms=$ms ERR=$error" }
                         indexRows += """{"id":"${escape(style.id)}","ms":$ms,"error":"${escape(error)}"}"""
                     }
                 }
@@ -134,9 +135,9 @@ object IrBatchRunner {
                 File(outDir, "index.json").writeText(
                     """{"edge":$maxEdge,"ok":$ok,"fail":$fail,"totalMs":$total,"styles":[${indexRows.joinToString(",")}]}""",
                 )
-                println("FM_IR_BATCH_DONE ok=$ok fail=$fail totalMs=$total dir=${outDir.absolutePath}")
+                FmLog.info("FM_IR_BATCH_DONE") { "ok=$ok fail=$fail totalMs=$total dir=${outDir.absolutePath}" }
             } catch (t: Throwable) {
-                println("FM_IR_BATCH_ABORT ${t.message}")
+                FmLog.info("FM_IR_BATCH_ABORT") { "${t.message}" }
             } finally {
                 running = false
             }

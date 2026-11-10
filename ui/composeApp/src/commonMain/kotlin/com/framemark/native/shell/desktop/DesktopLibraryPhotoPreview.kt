@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 /**
  * 卡片缩略图 = **当前舞台照片**套上该卡片的边框（演示稿 `D.thumbs[c.id]` 的等价物）。
@@ -87,14 +88,14 @@ internal object DesktopLibraryPhotoThumbs {
                 throw c
             } catch (t: Throwable) {
                 recordFailure(card.id)
-                println("FM_LIB_THUMB_FAIL card=${card.id} reason=${t.message}")
+                FmLog.warn("FM_LIB_THUMB_FAIL") { "card=${card.id} reason=${t.message}" }
                 null
             } ?: return@withPermit null
             val bytes = try {
                 WorkflowEnv.platform?.readBytes(rendered.path)
             } catch (t: Throwable) {
                 recordFailure(card.id)
-                println("FM_LIB_THUMB_FAIL card=${card.id} reason=read:${t.message}")
+                FmLog.warn("FM_LIB_THUMB_FAIL") { "card=${card.id} reason=read:${t.message}" }
                 null
             }
             if (bytes == null) recordFailure(card.id)
@@ -105,7 +106,7 @@ internal object DesktopLibraryPhotoThumbs {
                 throw c
             } catch (t: Throwable) {
                 recordFailure(card.id)
-                println("FM_LIB_THUMB_FAIL card=${card.id} reason=decode:${t.message}")
+                FmLog.warn("FM_LIB_THUMB_FAIL") { "card=${card.id} reason=decode:${t.message}" }
                 null
             }
             if (bitmap != null) {

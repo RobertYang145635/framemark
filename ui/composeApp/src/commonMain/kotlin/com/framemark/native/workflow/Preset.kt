@@ -1,6 +1,8 @@
 package com.framemark.native.workflow
 
 import com.framemark.native.library.Json
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.library.jsonInt
 import com.framemark.native.library.jsonList
 import com.framemark.native.library.jsonMap
@@ -64,12 +66,14 @@ internal object PresetJson {
                 values = values,
                 export = ExportSettings(
                     format = when (exportRaw.jsonString("format")) {
-                        "PNG" -> SampleFormat.Png
-                        "WebP" -> SampleFormat.WebP
-                        else -> SampleFormat.Jpeg
+                        "PNG" -> ExportFormat.Png
+                        "WebP" -> ExportFormat.WebP
+                        else -> ExportFormat.Jpeg
                     },
                     quality = exportRaw.jsonInt("quality")?.coerceIn(60, 100) ?: 100,
-                    longEdge = exportRaw.jsonInt("longEdge")?.coerceIn(400, 4096) ?: 1600,
+                    // The legacy document has no size mode; a stored numeric long edge
+                    // is kept as data, a missing one stays "not chosen" (null).
+                    longEdge = exportRaw.jsonInt("longEdge")?.coerceIn(400, 4096),
                     filenamePattern = exportRaw.jsonString("filename") ?: "{name}-{date}",
                     webpLossless = exportRaw["webpLossless"] as? Boolean ?: true,
                 ),

@@ -1,6 +1,6 @@
 package com.framemark.native.inspector
 
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportSizeMode
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min

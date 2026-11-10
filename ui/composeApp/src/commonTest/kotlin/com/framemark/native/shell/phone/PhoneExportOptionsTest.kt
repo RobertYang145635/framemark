@@ -1,8 +1,8 @@
 package com.framemark.native.shell.phone
 
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
-import com.framemark.native.workflow.SampleFormat
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -57,26 +57,26 @@ class PhoneExportOptionsTest {
     @Test
     fun formatsAreTheThreeTheEncoderWrites() {
         assertEquals(
-            listOf(SampleFormat.Jpeg, SampleFormat.Png, SampleFormat.WebP),
+            listOf(ExportFormat.Jpeg, ExportFormat.Png, ExportFormat.WebP),
             PhoneExportOptions.FORMATS,
         )
-        val jpeg = ExportSettings(format = SampleFormat.Jpeg)
-        val png = PhoneExportOptions.applyFormat(jpeg, SampleFormat.Png)
-        assertEquals(SampleFormat.Png, png.format)
-        assertEquals(SampleFormat.Png, PhoneExportOptions.formatOf(png))
-        val webp = PhoneExportOptions.applyFormat(png, SampleFormat.WebP)
-        assertEquals(SampleFormat.WebP, webp.format)
-        assertEquals(SampleFormat.WebP, PhoneExportOptions.formatOf(webp))
+        val jpeg = ExportSettings(format = ExportFormat.Jpeg)
+        val png = PhoneExportOptions.applyFormat(jpeg, ExportFormat.Png)
+        assertEquals(ExportFormat.Png, png.format)
+        assertEquals(ExportFormat.Png, PhoneExportOptions.formatOf(png))
+        val webp = PhoneExportOptions.applyFormat(png, ExportFormat.WebP)
+        assertEquals(ExportFormat.WebP, webp.format)
+        assertEquals(ExportFormat.WebP, PhoneExportOptions.formatOf(webp))
     }
 
     @Test
     fun webpKeepsLosslessDefaultButRemembersAnExplicitChoice() {
-        val lossy = ExportSettings(format = SampleFormat.WebP, webpLossless = false)
-        val toPng = PhoneExportOptions.applyFormat(lossy, SampleFormat.Png)
+        val lossy = ExportSettings(format = ExportFormat.WebP, webpLossless = false)
+        val toPng = PhoneExportOptions.applyFormat(lossy, ExportFormat.Png)
         assertFalse(toPng.webpLossless, "a non-WebP format keeps the stored flag untouched")
-        val backToWebp = PhoneExportOptions.applyFormat(toPng, SampleFormat.WebP)
+        val backToWebp = PhoneExportOptions.applyFormat(toPng, ExportFormat.WebP)
         assertTrue(backToWebp.webpLossless, "returning to WebP starts from the lossless default")
-        val kept = PhoneExportOptions.applyFormat(lossy, SampleFormat.WebP)
+        val kept = PhoneExportOptions.applyFormat(lossy, ExportFormat.WebP)
         assertFalse(kept.webpLossless, "re-selecting WebP must not silently switch to lossless")
     }
 
@@ -93,18 +93,18 @@ class PhoneExportOptionsTest {
         // engine always encodes the finished canvas once.
         assertEquals("原分辨率 · 质量 100", PhoneExportOptions.ORIGINAL_RESOLUTION_BADGE)
 
-        val jpeg = PhoneExportOptions.resolutionNote(PhoneExportSize.Original, SampleFormat.Jpeg)
+        val jpeg = PhoneExportOptions.resolutionNote(PhoneExportSize.Original, ExportFormat.Jpeg)
         assertTrue(jpeg.contains("原分辨率，不缩放"), jpeg)
         assertTrue(jpeg.contains("4:4:4"), jpeg)
         assertTrue(jpeg.contains("会重新编码一次"), jpeg)
 
-        val png = PhoneExportOptions.resolutionNote(PhoneExportSize.Original, SampleFormat.Png)
+        val png = PhoneExportOptions.resolutionNote(PhoneExportSize.Original, ExportFormat.Png)
         assertTrue(png.contains("原分辨率，不缩放"), png)
         assertTrue(png.contains("无损编码"), png)
 
         val webpLossless = PhoneExportOptions.resolutionNote(
             PhoneExportSize.Original,
-            SampleFormat.WebP,
+            ExportFormat.WebP,
             webpLossless = true,
         )
         assertTrue(webpLossless.contains("原分辨率，不缩放"), webpLossless)
@@ -112,7 +112,7 @@ class PhoneExportOptionsTest {
 
         val webpLossy = PhoneExportOptions.resolutionNote(
             PhoneExportSize.Original,
-            SampleFormat.WebP,
+            ExportFormat.WebP,
             webpLossless = false,
         )
         assertTrue(webpLossy.contains("有损"), webpLossy)
@@ -122,7 +122,7 @@ class PhoneExportOptionsTest {
     @Test
     fun aLongEdgeStepNeverMentionsTheOriginalResolution() {
         listOf(PhoneExportSize.Long2048, PhoneExportSize.Long4096).forEach { step ->
-            SampleFormat.entries.forEach { format ->
+            ExportFormat.entries.forEach { format ->
                 val note = PhoneExportOptions.resolutionNote(step, format)
                 assertTrue(note.contains("长边缩到 ${step.longEdge} px 后再编码"), note)
                 assertFalse(note.contains("原分辨率"), note)
@@ -152,11 +152,11 @@ class PhoneExportOptionsTest {
 
     @Test
     fun theFormatNoteSaysWhatTheFileReallyIs() {
-        val jpeg = PhoneExportOptions.formatNote(SampleFormat.Jpeg)
+        val jpeg = PhoneExportOptions.formatNote(ExportFormat.Jpeg)
         assertTrue(jpeg.contains("100"), jpeg)
         assertTrue(jpeg.contains("4:4:4"), jpeg)
-        assertTrue(PhoneExportOptions.formatNote(SampleFormat.Png).contains("无损"))
-        assertTrue(PhoneExportOptions.formatNote(SampleFormat.WebP, webpLossless = true).contains("无损"))
-        assertTrue(PhoneExportOptions.formatNote(SampleFormat.WebP, webpLossless = false).contains("有损"))
+        assertTrue(PhoneExportOptions.formatNote(ExportFormat.Png).contains("无损"))
+        assertTrue(PhoneExportOptions.formatNote(ExportFormat.WebP, webpLossless = true).contains("无损"))
+        assertTrue(PhoneExportOptions.formatNote(ExportFormat.WebP, webpLossless = false).contains("有损"))
     }
 }

@@ -1,8 +1,8 @@
 package com.framemark.native.shell.phone
 
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
-import com.framemark.native.workflow.SampleFormat
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 
 /**
  * The phone export options of report §7.6: 格式, 尺寸 with exactly three choices
@@ -26,7 +26,7 @@ object PhoneExportOptions {
     val SIZES: List<PhoneExportSize> = PhoneExportSize.entries
 
     /** 格式: the three the native encoder can write on Android. */
-    val FORMATS: List<SampleFormat> = listOf(SampleFormat.Jpeg, SampleFormat.Png, SampleFormat.WebP)
+    val FORMATS: List<ExportFormat> = listOf(ExportFormat.Jpeg, ExportFormat.Png, ExportFormat.WebP)
 
     /** Which of the three steps [settings] currently asks for. */
     fun sizeOf(settings: ExportSettings): PhoneExportSize {
@@ -36,8 +36,8 @@ object PhoneExportOptions {
         return SIZES.firstOrNull { it.longEdge == settings.longEdge } ?: PhoneExportSize.Original
     }
 
-    fun formatOf(settings: ExportSettings): SampleFormat =
-        if (settings.format in FORMATS) settings.format else SampleFormat.Jpeg
+    fun formatOf(settings: ExportSettings): ExportFormat =
+        if (settings.format in FORMATS) settings.format else ExportFormat.Jpeg
 
     /** Applies one size step and pins the quality to [QUALITY]. */
     fun applySize(settings: ExportSettings, size: PhoneExportSize): ExportSettings =
@@ -48,14 +48,14 @@ object PhoneExportOptions {
         )
 
     /** Applies one format and pins the quality to [QUALITY]. */
-    fun applyFormat(settings: ExportSettings, format: SampleFormat): ExportSettings {
+    fun applyFormat(settings: ExportSettings, format: ExportFormat): ExportSettings {
         val normalized = formatOf(settings)
         return settings.copy(
             format = format,
             quality = QUALITY,
             // WebP on the phone is lossless by default; keep the flag coherent.
-            webpLossless = if (format == SampleFormat.WebP) {
-                if (normalized == SampleFormat.WebP) settings.webpLossless else true
+            webpLossless = if (format == ExportFormat.WebP) {
+                if (normalized == ExportFormat.WebP) settings.webpLossless else true
             } else {
                 settings.webpLossless
             },
@@ -76,12 +76,12 @@ object PhoneExportOptions {
      */
     fun resolutionNote(
         size: PhoneExportSize,
-        format: SampleFormat,
+        format: ExportFormat,
         webpLossless: Boolean = true,
     ): String = when {
         size != PhoneExportSize.Original -> "长边缩到 ${size.longEdge} px 后再编码。"
-        format == SampleFormat.Jpeg -> "原分辨率，不缩放；JPEG 质量 100、4:4:4（会重新编码一次）"
-        format == SampleFormat.Png -> "原分辨率，不缩放；无损编码"
+        format == ExportFormat.Jpeg -> "原分辨率，不缩放；JPEG 质量 100、4:4:4（会重新编码一次）"
+        format == ExportFormat.Png -> "原分辨率，不缩放；无损编码"
         webpLossless -> "原分辨率，不缩放；无损编码"
         else -> "原分辨率，不缩放；WebP 质量 100（有损，会重新编码一次）"
     }
@@ -90,10 +90,10 @@ object PhoneExportOptions {
     const val ORIGINAL_RESOLUTION_BADGE: String = "原分辨率 · 质量 100"
 
     /** The encoder note under 格式: what the file really is. */
-    fun formatNote(format: SampleFormat, webpLossless: Boolean = true): String = when (format) {
-        SampleFormat.Jpeg -> "JPEG 质量固定 100、4:4:4"
-        SampleFormat.Png -> "PNG 无损，质量选项不起作用。"
-        SampleFormat.WebP -> if (webpLossless) {
+    fun formatNote(format: ExportFormat, webpLossless: Boolean = true): String = when (format) {
+        ExportFormat.Jpeg -> "JPEG 质量固定 100、4:4:4"
+        ExportFormat.Png -> "PNG 无损，质量选项不起作用。"
+        ExportFormat.WebP -> if (webpLossless) {
             "WebP 无损（VP8L），质量固定 100。"
         } else {
             "WebP 质量 100（有损），会重新编码一次。"

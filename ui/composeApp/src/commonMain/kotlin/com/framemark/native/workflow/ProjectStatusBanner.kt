@@ -30,6 +30,7 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.product.FmLog
 
 /** Non-blocking status strip: load/save failures and per-file import errors. */
 @Composable
@@ -79,9 +80,9 @@ fun ProjectStatusBanner(
                 color = FmPalette.primaryStrong,
                 modifier = Modifier
                     .clickable {
-                        println("FM_PROJECT_RETRY_REQUESTED surface=status-banner")
+                        FmLog.info("FM_PROJECT_RETRY_REQUESTED") { "surface=status-banner" }
                         val recovered = projects.retryProjectLoad()
-                        println("FM_PROJECT_RETRY_RESULT recovered=$recovered error=${projects.loadError ?: "-"}")
+                        FmLog.info("FM_PROJECT_RETRY_RESULT") { "recovered=$recovered error=${projects.loadError ?: "-"}" }
                     }
                     .padding(4.dp),
             )

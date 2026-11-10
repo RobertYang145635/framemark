@@ -39,6 +39,7 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.UserLogoLibrary
+import com.framemark.native.product.FmLog
 
 /**
  * Logo 页（演示稿 `logo.js` 的 `lgPaneLive`）：来源三选一 → 当前 Logo 卡 →
@@ -147,14 +148,14 @@ private fun BrandedCuratedLogo(
     val photoMake = LogoPhotoBrand.makeText(textSlots)
     // 现场诊断（与仓库里其它 FM_ 钩子同风格）：自动匹配/品牌键的分支很难从截图区分，
     // 打一行就够定位「未收录」到底是没读到品牌、还是值不在库里。
-    println(
-        "FM_LOGO_PANE raw=${raw.take(48)} isAuto=$isAuto isUser=$isUser brands=${brands.size} " +
+    FmLog.info("FM_LOGO_PANE") {
+        "raw=${raw.take(48)} isAuto=$isAuto isUser=$isUser brands=${brands.size} " +
             "cutKey=${logoBrandForAssetKey(brands, raw)?.key} brandKey=${logoBrandForKeyValue(brands, raw)?.key} " +
             "make=$photoMake photoBrand=${photoBrand?.brand?.key} " +
             "slots=${textSlots.size} " +
             "brandRows=${textSlots.filter { (it.key ?: it.id).contains("make") || (it.key ?: it.id).contains("brand") }
-                .joinToString("|") { (it.key ?: it.id) + "=" + it.text.take(16) }}",
-    )
+                .joinToString("|") { (it.key ?: it.id) + "=" + it.text.take(16) }}"
+    }
     // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
     // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
     // 值既不是 auto 也不在库里（老工程 / 手改文档）时，引擎同样落到自动解析，

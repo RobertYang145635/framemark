@@ -6,6 +6,7 @@ import com.framemark.native.inspector.InspectorModelFactory
 import com.framemark.native.library.LibraryDataSource
 import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
+import com.framemark.native.product.FmLog
 
 /**
  * U3 contract entry point: builds the inspector model for the ten sample cards
@@ -36,60 +37,60 @@ private val SAMPLE_CARDS = listOf(
 fun main(): Unit = runBlocking {
     val library = LibraryDataSource.load()
     if (library.error != null) {
-        println("FM_U3_FAIL library=${library.error}")
+        FmLog.warn("FM_U3_FAIL") { "library=${library.error}" }
         exitProcess(1)
     }
     val inspector = InspectorDataSource.load()
     if (inspector.error != null) {
-        println("FM_U3_FAIL inspector=${inspector.error}")
+        FmLog.warn("FM_U3_FAIL") { "inspector=${inspector.error}" }
         exitProcess(1)
     }
     val snapshot = inspector.snapshot
-    println(
-        "FM_U3_META capabilities=${snapshot.capabilityCards} audited=${snapshot.auditedCards} " +
+    FmLog.info("FM_U3_META") {
+        "capabilities=${snapshot.capabilityCards} audited=${snapshot.auditedCards} " +
             "platformRows=${snapshot.platformRowCount} metaRecords=${snapshot.metaRecords} " +
-            "metaControls=${snapshot.metaControls}",
-    )
+            "metaControls=${snapshot.metaControls}"
+    }
     val cards = library.snapshot.cards.associateBy { it.id }
     var missing = 0
     SAMPLE_CARDS.forEach { cardId ->
         val card = cards[cardId]
         if (card == null) {
-            println("FM_U3_CARD cardId=$cardId missing=1")
+            FmLog.info("FM_U3_CARD") { "cardId=$cardId missing=1" }
             missing++
             return@forEach
         }
         val model = InspectorModelFactory.build(card, snapshot)
         printCard(model)
     }
-    println("FM_U3_SAMPLE requested=${SAMPLE_CARDS.size} missing=$missing")
+    FmLog.info("FM_U3_SAMPLE") { "requested=${SAMPLE_CARDS.size} missing=$missing" }
     exitProcess(if (missing == 0) 0 else 1)
 }
 
 private fun printCard(model: InspectorCardModel) {
-    println(
-        "FM_U3_CARD cardId=${model.cardId} audited=${model.audited} " +
+    FmLog.info("FM_U3_CARD") {
+        "cardId=${model.cardId} audited=${model.audited} " +
             "effectiveCount=${model.effectiveCount ?: -1} gatedCount=${model.gatedCount ?: -1} " +
             "declaredCount=${model.declaredCount ?: -1} visibleCount=${model.visibleCount} " +
-            "hidden=${model.hiddenIds.size} empty=${if (model.empty) 1 else 0}",
-    )
-    println("FM_U3_IDS cardId=${model.cardId} kind=effective ids=${model.effectiveIds.joinToString(",")}")
-    println("FM_U3_IDS cardId=${model.cardId} kind=gated ids=${model.gatedIds.joinToString(",")}")
-    println("FM_U3_IDS cardId=${model.cardId} kind=visible ids=${model.visibleIds.joinToString(",")}")
-    println("FM_U3_IDS cardId=${model.cardId} kind=hidden ids=${model.hiddenIds.joinToString(",")}")
+            "hidden=${model.hiddenIds.size} empty=${if (model.empty) 1 else 0}"
+    }
+    FmLog.info("FM_U3_IDS") { "cardId=${model.cardId} kind=effective ids=${model.effectiveIds.joinToString(",")}" }
+    FmLog.info("FM_U3_IDS") { "cardId=${model.cardId} kind=gated ids=${model.gatedIds.joinToString(",")}" }
+    FmLog.info("FM_U3_IDS") { "cardId=${model.cardId} kind=visible ids=${model.visibleIds.joinToString(",")}" }
+    FmLog.info("FM_U3_IDS") { "cardId=${model.cardId} kind=hidden ids=${model.hiddenIds.joinToString(",")}" }
     model.sections.forEach { section ->
-        println(
-            "FM_U3_SECTION cardId=${model.cardId} section=${section.section.name} " +
-                "ids=${section.controls.joinToString(",") { it.controlId }}",
-        )
+        FmLog.info("FM_U3_SECTION") {
+            "cardId=${model.cardId} section=${section.section.name} " +
+                "ids=${section.controls.joinToString(",") { it.controlId }}"
+        }
     }
     model.sections.flatMap { section ->
         section.controls.map { control -> section.section.name to control }
     }.forEach { (section, control) ->
-        println(
-            "FM_U3_LABEL cardId=${model.cardId} section=$section " +
-                "label=${jsonString(control.label)}",
-        )
+        FmLog.info("FM_U3_LABEL") {
+            "cardId=${model.cardId} section=$section " +
+                "label=${jsonString(control.label)}"
+        }
     }
 }
 

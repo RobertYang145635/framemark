@@ -29,6 +29,7 @@ import com.framemark.native.workflow.DesktopProjectRuntime
 import com.framemark.native.workflow.DesktopWorkflowPlatform
 import com.framemark.native.workflow.WorkflowEnv
 import java.awt.GraphicsEnvironment
+import com.framemark.native.product.FmLog
 
 /**
  * Desktop entry point.
@@ -77,11 +78,11 @@ fun main() = application {
             screenWidth = workArea?.first ?: 0f,
             screenHeight = workArea?.second ?: 0f,
         )
-        println(
-            "FM_WINDOW_FIT desired=${dpLabel(desiredWidth)}x${dpLabel(desiredHeight)} " +
+        FmLog.info("FM_WINDOW_FIT") {
+            "desired=${dpLabel(desiredWidth)}x${dpLabel(desiredHeight)} " +
                 "screen=${workArea?.let { "${dpLabel(it.first)}x${dpLabel(it.second)}" } ?: "-"} " +
-                "applied=${dpLabel(fit.width)}x${dpLabel(fit.height)}",
-        )
+                "applied=${dpLabel(fit.width)}x${dpLabel(fit.height)}"
+        }
         DpSize(fit.width.dp, fit.height.dp)
     }
 
@@ -90,7 +91,7 @@ fun main() = application {
     // a reload invalidates this very scope and the app spins: thousands of project
     // reloads and engine re-creations per minute. One-time wiring belongs in remember.
     remember {
-        println("FM_START_MAIN elapsedMs=${startupElapsedMs()}")
+        FmLog.info("FM_START_MAIN") { "elapsedMs=${startupElapsedMs()}" }
         MotionProbe.enabled = QaSurface.motionLog()
         FeelProbe.enabled = QaSurface.g5Probe()
 
@@ -102,7 +103,7 @@ fun main() = application {
             com.framemark.native.shell.desktop.DesktopRecentFramesStore()
         com.framemark.native.workflow.UserLogoEnv.repository =
             runCatching { com.framemark.native.userlogo.DesktopUserLogoRepository() }
-                .onFailure { println("FM_USER_LOGO_UNAVAILABLE ${it.message}") }
+                .onFailure { FmLog.info("FM_USER_LOGO_UNAVAILABLE") { "${it.message}"} }
                 .getOrNull()
         com.framemark.native.workflow.UserLogoEnv.picker =
             if (com.framemark.native.workflow.UserLogoEnv.repository != null) {
@@ -113,19 +114,19 @@ fun main() = application {
         com.framemark.native.inspector.RegistryPorts.provider = com.framemark.native.engine.DesktopRegistryProvider(
             com.framemark.native.engine.RegistrySource(com.framemark.native.engine.RegistrySource.devWorkspaceRoot()),
         )
-        println("FM_START_PLATFORM elapsedMs=${startupElapsedMs()}")
+        FmLog.info("FM_START_PLATFORM") { "elapsedMs=${startupElapsedMs()}" }
         val projects = DesktopProjectController(WorkflowEnv.platform!!.dataDir).also { it.load() }
         WorkflowEnv.projectHolder = projects
-        println("FM_START_PROJECT photos=${projects.photos.size} active=${projects.activePhotoId ?: "-"} error=${projects.loadError ?: "-"}")
+        FmLog.info("FM_START_PROJECT") { "photos=${projects.photos.size} active=${projects.activePhotoId ?: "-"} error=${projects.loadError ?: "-"}" }
         // X1: the real renderer. A missing manifest/binary leaves the placeholder
         // workflow in place and says so once on stdout.
         val desktopRender = runCatching { DesktopNativeRender() }
-            .onFailure { println("FM_ENGINE_UNAVAILABLE ${it.message}") }
+            .onFailure { FmLog.info("FM_ENGINE_UNAVAILABLE") { "${it.message}"} }
             .getOrNull()
         WorkflowEnv.nativeRender = desktopRender
         com.framemark.native.workflow.UserLogoSupport.probe =
             desktopRender?.let { render -> { id: String -> render.supportsUserLogo(id) } }
-        println("FM_START_ENGINE elapsedMs=${startupElapsedMs()}")
+        FmLog.info("FM_START_ENGINE") { "elapsedMs=${startupElapsedMs()}" }
 
         // WP-X3 §7: every `FM_*` launch hook moved to the QA-only surface
         // (`com.framemark.native.qaenv`, excluded from release builds). In a packaged
@@ -153,7 +154,7 @@ fun main() = application {
             else -> null
         }
         val store = runCatching { DesktopAppearanceStore() }
-            .onFailure { println("FM_APPEARANCE_STORE_UNAVAILABLE ${it.message}") }
+            .onFailure { FmLog.info("FM_APPEARANCE_STORE_UNAVAILABLE") { "${it.message}"} }
             .getOrElse { NoPersistenceAppearanceStore }
         val initialSystemDark = systemTheme.isDark()
         AppearanceController(
@@ -162,13 +163,13 @@ fun main() = application {
             initialSystemDark = initialSystemDark,
         ).also {
             AppearanceEnv.controller = it
-            println("FM_APPEARANCE_FORCED ${forcedMode?.wire ?: "-"} file=${it.settingsPath}")
+            FmLog.info("FM_APPEARANCE_FORCED") { "${forcedMode?.wire ?: "-"} file=${it.settingsPath}" }
             // Evidence for T-1: this line is printed by the `application {}` body,
             // i.e. before the window content is composed and before the first frame.
-            println(
-                "FM_APPEARANCE_PRECOMPOSE systemDark=$initialSystemDark dark=${it.dark} " +
-                    "mode=${it.settings.mode.wire} source=${systemTheme.lastSource}",
-            )
+            FmLog.info("FM_APPEARANCE_PRECOMPOSE") {
+                "systemDark=$initialSystemDark dark=${it.dark} " +
+                    "mode=${it.settings.mode.wire} source=${systemTheme.lastSource}"
+            }
         }
     }
 
@@ -209,8 +210,8 @@ private fun applyWindowBackground(window: ComposeWindow, dark: Boolean) {
         window.background = awt
         window.contentPane?.background = awt
         window.repaint()
-        println("FM_APPEARANCE_WINDOW_BG dark=$dark argb=#%06X".format(canvas.toArgb() and 0xFFFFFF))
-    }.onFailure { println("FM_APPEARANCE_WINDOW_BG_FAIL ${it.message}") }
+        FmLog.info("FM_APPEARANCE_WINDOW_BG") { "dark=$dark argb=#%06X".format(canvas.toArgb() and 0xFFFFFF)}
+    }.onFailure { FmLog.warn("FM_APPEARANCE_WINDOW_BG_FAIL") { "${it.message}"} }
 }
 
 /**

@@ -12,6 +12,7 @@ import com.framemark.native.workflow.UserLogoEnv
 import com.framemark.native.workflow.UserLogoLibrary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
+import com.framemark.native.product.FmLog
 
 /**
  * Desktop [NativeRenderApi]: runs the render-v1 bridge on the IO dispatcher.
@@ -26,7 +27,7 @@ class DesktopNativeRender(
     private val supported = bridge.cardIds().toSet()
 
     init {
-        println("FM_ENGINE_READY cards=${supported.size} bridge=${bridge.catalog.manifestPath}")
+        FmLog.info("FM_ENGINE_READY") { "cards=${supported.size} bridge=${bridge.catalog.manifestPath}" }
     }
 
     private suspend fun userLogo(designValue: String): EngineLogo {
@@ -93,9 +94,9 @@ class DesktopNativeRender(
                 design.params
             }
             if (backend == "hand" && design.logoBrand != null && logo == null) {
-                println("FM_LOGO_UNRESOLVED brand=${design.logoBrand} dir=${logos.dir.absolutePath}")
+                FmLog.info("FM_LOGO_UNRESOLVED") { "brand=${design.logoBrand} dir=${logos.dir.absolutePath}" }
             } else if (logo != null) {
-                println("FM_LOGO brand=${design.logoBrand} asset=${logo.name} ${logo.width}x${logo.height}")
+                FmLog.info("FM_LOGO") { "brand=${design.logoBrand} asset=${logo.name} ${logo.width}x${logo.height}" }
             }
             val result = bridge.render(
                 cardId = cardId,
@@ -113,10 +114,10 @@ class DesktopNativeRender(
                 logo = logo,
                 brandPick = irLogoKey,
             )
-            println(
-                "FM_ENGINE_RENDER card=$cardId mode=$mode ${result.width}x${result.height} " +
-                    "raw=${result.rawWidth}x${result.rawHeight} ms=${result.ms} path=${result.path}",
-            )
+            FmLog.info("FM_ENGINE_RENDER") {
+                "card=$cardId mode=$mode ${result.width}x${result.height} " +
+                    "raw=${result.rawWidth}x${result.rawHeight} ms=${result.ms} path=${result.path}"
+            }
             NativeImage(
                 result.path,
                 result.width,

@@ -15,7 +15,7 @@ import com.framemark.native.library.jsonString
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.BatchQueue
-import com.framemark.native.product.ExportSettings as ProductExportSettings
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.ProductFileSystem
 import com.framemark.native.product.SessionStore
@@ -31,6 +31,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.framemark.native.product.FmLog
 
 enum class BatchItemStatus { Queued, Running, Done, Failed, Cancelled }
 
@@ -76,7 +77,7 @@ private data class BatchCardSpec(val cardId: String, val cardName: String, val s
 interface BatchInputs {
     fun designFor(cardId: String, styleId: String?): PhotoDesign
     fun overlay(): ProjectWatermark?
-    fun exportSettings(): ProductExportSettings
+    fun exportSettings(): ExportSettings
     fun photoPath(): String?
     fun fingerprint(path: String?): String?
 }
@@ -151,17 +152,17 @@ class BatchRunner(
                 .map { BatchCardSpec(it.id, it.name, it.systemStyle) },
         )
         if (items.isNotEmpty()) {
-            println("FM_BATCH_KEEP items=${items.size} queue=${queueFile ?: "-"}")
+            FmLog.info("FM_BATCH_KEEP") { "items=${items.size} queue=${queueFile ?: "-"}" }
             return
         }
         if (demoCards.isEmpty()) {
-            println("FM_BATCH_NO_ENGINE_CARDS")
+            FmLog.info("FM_BATCH_NO_ENGINE_CARDS")
             return
         }
         val (photo, fp) = photoMeta()
         demoCards.forEach { addReal(it, photo, fp) }
         persist()
-        println("FM_BATCH_SEEDED items=${items.size} photo=${photo ?: "-"} fingerprint=${fp?.take(16) ?: "-"}")
+        FmLog.info("FM_BATCH_SEEDED") { "items=${items.size} photo=${photo ?: "-"} fingerprint=${fp?.take(16) ?: "-"}" }
     }
 
     private fun addReal(spec: BatchCardSpec, photo: String?, fp: String?): BatchItem {
@@ -260,7 +261,7 @@ class BatchRunner(
         runState = BatchRunState.Running
         started = true
         persist()
-        println("FM_BATCH_START items=${items.size} pending=${items.count { it.status != BatchItemStatus.Done }} queue=${queueFile ?: "-"}")
+        FmLog.info("FM_BATCH_START") { "items=${items.size} pending=${items.count { it.status != BatchItemStatus.Done }} queue=${queueFile ?: "-"}" }
         job = scope.launch {
             try {
                 for (item in items.toList()) {
@@ -273,16 +274,16 @@ class BatchRunner(
                     item.error = null
                     item.attempts += 1
                     persist()
-                    println("FM_BATCH_ITEM_START id=${item.id} card=${item.cardId} attempt=${item.attempts} fingerprint=${item.photoFingerprint?.take(16) ?: "-"} designKey=${item.designKey}")
+                    FmLog.info("FM_BATCH_ITEM_START") { "id=${item.id} card=${item.cardId} attempt=${item.attempts} fingerprint=${item.photoFingerprint?.take(16) ?: "-"} designKey=${item.designKey}" }
                     try {
                         val snapshot = item.job
                         if (snapshot != null) {
                             exportFromSnapshot(item, snapshot)
                         } else {
                             val settings = ExportSettings(
-                                format = item.format,
+                                format = item.format.toExportFormat(),
                                 quality = item.quality,
-                                sizeMode = ExportSizeMode.LongEdge,
+                                sizeMode = com.framemark.native.product.ExportSizeMode.LongEdge,
                                 longEdge = item.longEdge,
                                 filenamePattern = item.filenamePattern,
                                 webpLossless = item.webpLossless,
@@ -293,12 +294,12 @@ class BatchRunner(
                         }
                         item.progress = 1f
                         item.status = BatchItemStatus.Done
-                        println("FM_BATCH_ITEM_DONE id=${item.id} card=${item.cardId} path=${item.outputPath}")
+                        FmLog.info("FM_BATCH_ITEM_DONE") { "id=${item.id} card=${item.cardId} path=${item.outputPath}" }
                     } catch (t: Throwable) {
                         item.progress = 0f
                         item.status = BatchItemStatus.Failed
                         item.error = (t.message ?: t::class.simpleName ?: "export failed").take(300)
-                        println("FM_BATCH_ITEM_FAIL id=${item.id} card=${item.cardId} error=${item.error}")
+                        FmLog.warn("FM_BATCH_ITEM_FAIL") { "id=${item.id} card=${item.cardId} error=${item.error}" }
                     }
                     persist()
                     delay(20)
@@ -307,7 +308,7 @@ class BatchRunner(
                 if (runState != BatchRunState.Paused) {
                     runState = if (runState == BatchRunState.Cancelled) BatchRunState.Cancelled else BatchRunState.Finished
                     persist()
-                    println("FM_BATCH_FINISH state=${runState.name} done=$completedCount failed=$failedCount")
+                    FmLog.info("FM_BATCH_FINISH") { "state=${runState.name} done=$completedCount failed=$failedCount" }
                 }
             }
         }
@@ -339,18 +340,9 @@ class BatchRunner(
             cardId = design.cardId,
             cardName = item.cardName.ifBlank { design.cardId },
             styleId = design.styleId ?: item.styleId,
-            settings = ExportSettings(
-                format = when (settings.format.id) {
-                    "png" -> SampleFormat.Png
-                    "webp" -> SampleFormat.WebP
-                    else -> SampleFormat.Jpeg
-                },
-                quality = settings.quality,
-                sizeMode = if (settings.sizeMode.id == "longEdge") ExportSizeMode.LongEdge else ExportSizeMode.Original,
-                longEdge = settings.longEdge ?: item.longEdge,
-                filenamePattern = settings.filenamePattern,
-                webpLossless = settings.webpLossless,
-            ),
+            // The snapshot already carries the product's own export settings: no
+            // enum/string round-trip, so a resumed job exports exactly what it queued.
+            settings = settings.copy(longEdge = settings.longEdge ?: item.longEdge),
             design = design.toDesignSnapshot().copy(styleId = design.styleId ?: item.styleId),
             overlay = overlay,
             photoPath = path,
@@ -362,14 +354,14 @@ class BatchRunner(
         if (runState != BatchRunState.Running) return
         runState = BatchRunState.Paused
         persist()
-        println("FM_BATCH_PAUSE done=$completedCount")
+        FmLog.info("FM_BATCH_PAUSE") { "done=$completedCount" }
     }
 
     fun resume() {
         if (runState != BatchRunState.Paused) return
         runState = BatchRunState.Running
         if (items.any { it.isReal } && job?.isActive != true) startReal() else persist()
-        println("FM_BATCH_RESUME done=$completedCount pending=${items.count { it.status == BatchItemStatus.Queued }}")
+        FmLog.info("FM_BATCH_RESUME") { "done=$completedCount pending=${items.count { it.status == BatchItemStatus.Queued }}" }
     }
 
     fun cancel() {
@@ -384,7 +376,7 @@ class BatchRunner(
         job?.cancel()
         job = null
         persist()
-        println("FM_BATCH_CANCEL done=$completedCount failed=$failedCount")
+        FmLog.info("FM_BATCH_CANCEL") { "done=$completedCount failed=$failedCount" }
     }
 
     fun retry(item: BatchItem) {
@@ -396,7 +388,7 @@ class BatchRunner(
             runState = BatchRunState.Idle
         }
         persist()
-        println("FM_BATCH_RETRY id=${item.id} card=${item.cardId}")
+        FmLog.info("FM_BATCH_RETRY") { "id=${item.id} card=${item.cardId}" }
     }
 
     /** Legacy verifier path; real-item queues are advanced by the export coroutine. */
@@ -484,11 +476,7 @@ class BatchRunner(
                             photoPath = snapshot.photoPath,
                             photoFingerprint = snapshot.photoFingerprint,
                             designKey = snapshot.designKey,
-                            format = when (snapshot.exportSettings.format.id) {
-                                "png" -> SampleFormat.Png
-                                "webp" -> SampleFormat.WebP
-                                else -> SampleFormat.Jpeg
-                            },
+                            format = snapshot.exportSettings.format.toSampleFormat(),
                             quality = snapshot.exportSettings.quality,
                             longEdge = snapshot.exportSettings.longEdge ?: 1600,
                             filenamePattern = snapshot.exportSettings.filenamePattern,
@@ -510,15 +498,15 @@ class BatchRunner(
                         items.add(item)
                     }
                     runState = BatchRunState.Idle
-                    println(
-                        "FM_BATCH_LOADED items=${items.size} done=$completedCount failed=$failedCount " +
+                    FmLog.info("FM_BATCH_LOADED") {
+                        "items=${items.size} done=$completedCount failed=$failedCount " +
                             "resumed=${result.value.jobs.count { it.status == BatchJobStatus.Running }} " +
-                            "snapshots=${items.count { it.job != null }} queue=${queueFile ?: "-"}",
-                    )
+                            "snapshots=${items.count { it.job != null }} queue=${queueFile ?: "-"}"
+                    }
                     return
                 }
                 StoreResult.Missing -> Unit
-                is StoreResult.Failed -> println("FM_BATCH_DOC_LEGACY code=${result.error.code}")
+                is StoreResult.Failed -> FmLog.info("FM_BATCH_DOC_LEGACY") { "code=${result.error.code}" }
             }
         }
         val path = queuePath() ?: return
@@ -560,9 +548,9 @@ class BatchRunner(
                 if (id >= nextId) nextId = id + 1
             }
             runState = BatchRunState.Idle
-            println("FM_BATCH_LOADED items=${items.size} queue=$path")
+            FmLog.info("FM_BATCH_LOADED") { "items=${items.size} queue=$path" }
         } catch (t: Throwable) {
-            println("FM_BATCH_LOAD_FAIL ${t.message} queue=$path")
+            FmLog.warn("FM_BATCH_LOAD_FAIL") { "${t.message} queue=$path" }
         }
     }
 
@@ -571,8 +559,8 @@ class BatchRunner(
         if (useProductDocument()) {
             val store = productStore ?: return
             when (val result = store.saveBatch(toProductQueue())) {
-                is StoreResult.Ok -> println("FM_BATCH_PERSISTED product_jobs=${items.count { it.job != null }}")
-                is StoreResult.Failed -> println("FM_BATCH_PERSIST_FAIL code=${result.error.code} msg=${result.error.message}")
+                is StoreResult.Ok -> FmLog.info("FM_BATCH_PERSISTED") { "product_jobs=${items.count { it.job != null }}" }
+                is StoreResult.Failed -> FmLog.warn("FM_BATCH_PERSIST_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 StoreResult.Missing -> Unit
             }
             return

@@ -28,6 +28,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
+import com.framemark.native.product.FmLog
 
 /**
  * Android [NativeRenderApi]: every card the bundled runtime can render — all
@@ -210,8 +211,8 @@ val fitNative = mode == "export" && longEdge == null
         )
 
         if (mode == "preview") {
-            println("FM_PHOTO_RECT card=$cardId rect=${photoRect ?: "<none>"} ${bounds.outWidth}x${bounds.outHeight}")
-            println("FM_TEXT_SLOTS card=$cardId rows=${textSlots.size}")
+            FmLog.info("FM_PHOTO_RECT") { "card=$cardId rect=${photoRect ?: "<none>"} ${bounds.outWidth}x${bounds.outHeight}" }
+            FmLog.info("FM_TEXT_SLOTS") { "card=$cardId rows=${textSlots.size}" }
             return@withContext NativeImage(
                 png.absolutePath,
                 bounds.outWidth,
@@ -492,7 +493,7 @@ val fitNative = mode == "export" && longEdge == null
                 lossless = webpLossless,
                 quality = quality,
             )
-            println("FM_ANDROID_EXPORT_DIRECT engine=ir card=$cardId out=${target.absolutePath}")
+            FmLog.info("FM_ANDROID_EXPORT_DIRECT") { "engine=ir card=$cardId out=${target.absolutePath}" }
             return DirectExportResult(envelope, null)
         }
 
@@ -544,13 +545,13 @@ val fitNative = mode == "export" && longEdge == null
         val first = JSONObject(envelope)
         val firstError = first.optString("error", "")
         if (!first.optBoolean("ok") && useNative && firstError.startsWith("E4H-FIT-NATIVE-")) {
-            println("FM_NATIVE_FIT_FALLBACK card=$cardId reason=${firstError.take(160)}")
+            FmLog.info("FM_NATIVE_FIT_FALLBACK") { "card=$cardId reason=${firstError.take(160)}" }
             note = "该模板按版式比例裁切（不支持完整原尺寸）"
             useNative = false
             maxEdge = if (edge == 0) nativeLongEdge(overridePhoto, "export") else edge
             envelope = call(useNative, maxEdge)
         }
-        println("FM_ANDROID_EXPORT_DIRECT engine=hand card=$cardId out=${target.absolutePath}")
+        FmLog.info("FM_ANDROID_EXPORT_DIRECT") { "engine=hand card=$cardId out=${target.absolutePath}" }
         return DirectExportResult(envelope, note)
     }
 
@@ -613,13 +614,13 @@ val fitNative = mode == "export" && longEdge == null
         )
         if (error != null) throw IllegalStateException(error)
         val ms = SystemClock.elapsedRealtime() - started
-        println(
-            "FM_ANDROID_RENDER card=$cardId ${edge}px ms=$ms theme='$theme' ratio='$ratio' " +
+        FmLog.info("FM_ANDROID_RENDER") {
+            "card=$cardId ${edge}px ms=$ms theme='$theme' ratio='$ratio' " +
                 "fit=${if (fitNative) "native" else "design"} " +
                 "design=${designJson.take(160)} " +
                 "overlay=${overlay?.path ?: "<none>"} photo=${overridePhoto ?: photo} " +
-                "globalPhoto=$photo out=${out.absolutePath}",
-        )
+                "globalPhoto=$photo out=${out.absolutePath}"
+        }
         return ms
     }
 
@@ -652,8 +653,8 @@ val fitNative = mode == "export" && longEdge == null
                 val ov = org.json.JSONObject(raw).optJSONObject("design") ?: org.json.JSONObject(raw)
                 ov.optJSONObject("params")?.let { p -> p.keys().forEach { k -> params[k] = p.get(k) } }
                 ov.optJSONObject("text")?.let { t -> t.keys().forEach { k -> text[k] = t.get(k) } }
-                println("FM_DESIGN_OVERRIDE params=${params.size} text=${text.size}")
-            }.onFailure { println("FM_DESIGN_OVERRIDE_FAIL ${it.message}") }
+                FmLog.info("FM_DESIGN_OVERRIDE") { "params=${params.size} text=${text.size}" }
+            }.onFailure { FmLog.warn("FM_DESIGN_OVERRIDE_FAIL") { "${it.message}"} }
         }
         if (params.isEmpty() && text.isEmpty() && !fitNative && handLogo == null) return ""
         fun jsonOf(map: Map<String, Any?>): org.json.JSONObject {
@@ -732,7 +733,7 @@ val fitNative = mode == "export" && longEdge == null
         if (error != null && useNative && error.startsWith("E4H-FIT-NATIVE-")) {
             // The template's photo box cannot hold the whole photo: keep the
             // template ratio instead of failing, and say so in the result.
-            println("FM_NATIVE_FIT_FALLBACK card=$cardId reason=${error.take(160)}")
+            FmLog.info("FM_NATIVE_FIT_FALLBACK") { "card=$cardId reason=${error?.take(160)}" }
             note = "该模板按版式比例裁切（不支持完整原尺寸）"
             useNative = false
             maxEdge = if (edge == 0) nativeLongEdge(overridePhoto, "export") else edge
@@ -740,12 +741,12 @@ val fitNative = mode == "export" && longEdge == null
         }
         if (error != null) throw IllegalStateException(error)
         val ms = SystemClock.elapsedRealtime() - started
-        println(
-            "FM_ANDROID_RENDER hand card=$cardId ${maxEdge}px ms=$ms fit=${if (useNative) "native" else "design"} " +
+        FmLog.info("FM_ANDROID_RENDER") {
+            "hand card=$cardId ${maxEdge}px ms=$ms fit=${if (useNative) "native" else "design"} " +
                 "note=${note ?: "<none>"} design=${designJsonOf(design, useNative, selectedLogo).take(160)} " +
                 "overlay=${overlay?.path ?: "<none>"} photo=${overridePhoto ?: userPhoto.ifEmpty { "<sample>" }} " +
-                "globalPhoto=${userPhoto.ifEmpty { "<sample>" }} out=${out.absolutePath}",
-        )
+                "globalPhoto=${userPhoto.ifEmpty { "<sample>" }} out=${out.absolutePath}"
+        }
         return HandResult(ms, note)
     }
 
@@ -911,10 +912,10 @@ val fitNative = mode == "export" && longEdge == null
                 }
             }
         }
-        println(
-            "FM_ANDROID_LOGO assetKey=$key alias=$alias sourceSha256=${sha256(sourceBytes)} " +
-                "pngSha256=$pngHash size=${width}x${height} exact=true",
-        )
+        FmLog.info("FM_ANDROID_LOGO") {
+            "assetKey=$key alias=$alias sourceSha256=${sha256(sourceBytes)} " +
+                "pngSha256=$pngHash size=${width}x${height} exact=true"
+        }
         return alias
     }
 
@@ -935,7 +936,7 @@ val fitNative = mode == "export" && longEdge == null
         BitmapFactory.decodeFile(source, bounds)
         val long = maxOf(bounds.outWidth, bounds.outHeight)
         val edge = if (long > 0) long else 2048
-        println("FM_NATIVE_EDGE mode=$mode src=${source.substringAfterLast('/')} sourceLong=$long canvas=$edge")
+        FmLog.info("FM_NATIVE_EDGE") { "mode=$mode src=${source.substringAfterLast('/')} sourceLong=$long canvas=$edge" }
         return edge.coerceIn(64, 20_000)
     }
 
@@ -974,7 +975,7 @@ val fitNative = mode == "export" && longEdge == null
         if (File(photoPath).absolutePath == File(data.photo).absolutePath) return data.exif
         val file = File(photoPath)
         val own = ExifProbe.isJpeg(file) && ExifProbe.hasApp1(file)
-        println("FM_EXIF_SOURCE photo=${file.name} ownApp1=$own src=${if (own) file.name else "<absent>"}")
+        FmLog.info("FM_EXIF_SOURCE") { "photo=${file.name} ownApp1=$own src=${if (own) file.name else "<absent>"}" }
         return if (own) photoPath else ""
     }
 
@@ -1015,7 +1016,7 @@ val fitNative = mode == "export" && longEdge == null
             runCatching { app.contentResolver.delete(uri, null, null) }
             throw failure
         }
-        println("FM_GALLERY_PUBLISH mime=$mime name=${file.name} uri=$uri")
+        FmLog.info("FM_GALLERY_PUBLISH") { "mime=$mime name=${file.name} uri=$uri" }
         uri.toString()
     }.getOrNull()
 
@@ -1041,7 +1042,7 @@ val fitNative = mode == "export" && longEdge == null
             dir.mkdirs()
             File(dir, "evidence.jsonl").appendText(row.toString() + "\n")
         }
-        println("FM_ANDROID_EXPORT $row")
+        FmLog.info("FM_ANDROID_EXPORT") { "$row" }
     }
 
     companion object {

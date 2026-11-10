@@ -1,5 +1,6 @@
 package com.framemark.native.userlogo
 
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.workflow.PhotoMetadata
 import com.framemark.native.workflow.UserLogo
 import com.framemark.native.workflow.UserLogoAsset
@@ -39,7 +40,10 @@ class DesktopUserLogoRepository(
             val entry = readIndex().firstOrNull { it.id == id } ?: return@withLock null
             val file = File(dir, "${entry.id}.${entry.extension}")
             if (!file.isFile) return@withLock null
-            val bytes = runCatching { file.readBytes() }.getOrNull() ?: return@withLock null
+            // Bounded: an entry larger than the import limit cannot be a library logo.
+            val bytes = runCatching {
+                readFileBytesBounded(file.path, UserLogoLibrary.MAX_BYTES)
+            }.getOrNull() ?: return@withLock null
             if (bytes.size != entry.sizeBytes) return@withLock null
             UserLogoAsset(entry, bytes)
         }

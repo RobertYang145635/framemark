@@ -12,9 +12,9 @@ import com.framemark.native.shell.desktop.ExportEstimate
 import com.framemark.native.shell.desktop.ExportPixels
 import com.framemark.native.shell.desktop.ExportRules
 import com.framemark.native.workflow.DesignSession
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.ImageRect
-import com.framemark.native.workflow.SampleFormat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -166,9 +166,9 @@ class InactiveControlCopyTest {
     @Test
     fun quality_rules_still_treat_png_as_lossless() {
         // D-2 的另一半：质量轴只对 JPEG / 有损 WebP 有意义，PNG 下按 100 提交。
-        assertTrue(ExportRules.qualityApplies(SampleFormat.Jpeg, webpLossless = true))
-        assertTrue(!ExportRules.qualityApplies(SampleFormat.Png, webpLossless = true))
-        assertEquals(60, ExportRules.effectiveQuality("60", SampleFormat.Jpeg, webpLossless = true))
-        assertEquals(100, ExportRules.effectiveQuality("60", SampleFormat.Png, webpLossless = true))
+        assertTrue(ExportRules.qualityApplies(ExportFormat.Jpeg, webpLossless = true))
+        assertTrue(!ExportRules.qualityApplies(ExportFormat.Png, webpLossless = true))
+        assertEquals(60, ExportRules.effectiveQuality("60", ExportFormat.Jpeg, webpLossless = true))
+        assertEquals(100, ExportRules.effectiveQuality("60", ExportFormat.Png, webpLossless = true))
     }
 }

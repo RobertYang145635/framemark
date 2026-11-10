@@ -25,6 +25,7 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.product.FmLog
 
 /** Runtime preview failures, surfaced in the UI instead of a silent blank tile. */
 object PreviewDiagnostics {
@@ -32,7 +33,7 @@ object PreviewDiagnostics {
 
     fun record(cardId: String, reason: String) {
         if (failures.put(cardId, reason) == null) {
-            println("FM_PREVIEW_FAIL id=$cardId reason=$reason")
+            FmLog.warn("FM_PREVIEW_FAIL") { "id=$cardId reason=$reason" }
         }
     }
 }

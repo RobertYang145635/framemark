@@ -9,6 +9,7 @@ import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.DocumentKind
+import com.framemark.native.product.FileTooLargeException
 import com.framemark.native.product.LegacyDocuments
 import com.framemark.native.product.Preset as ProjectPreset
 import com.framemark.native.product.ProductFileSystem
@@ -16,32 +17,33 @@ import com.framemark.native.product.PRESET_SCHEMA_VERSION
 import com.framemark.native.product.Project
 import com.framemark.native.product.Sha256
 import com.framemark.native.product.SessionStore
+import com.framemark.native.product.StoreCodes
 import com.framemark.native.product.StoreError
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.WatermarkSpec as ProjectWatermark
-import com.framemark.native.product.ExportFormat as ProductExportFormat
-import com.framemark.native.product.ExportSettings as ProductExportSettings
-import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.workflow.BatchInputs
 import com.framemark.native.workflow.DesignSnapshot
-import com.framemark.native.workflow.ExportSizeMode
 import com.framemark.native.workflow.PhoneOverlayFiles
 import com.framemark.native.workflow.PresetJson
 import com.framemark.native.workflow.applyInspectorOverrides
-import com.framemark.native.workflow.ExportSettings as UiExportSettings
 import com.framemark.native.workflow.Preset as UiPreset
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WatermarkSpec as UiWatermarkSpec
 import com.framemark.native.workflow.WorkflowPlatform
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.framemark.native.product.FmLog
 
 /** e2b slot override families: the value belongs on one key per bound node. */
 /** The bundled sample photo has no file; a fixed id keeps its design persistent. */
@@ -91,8 +93,18 @@ object PhoneProjectRuntime {
 
     val current: PhoneProjectStore? get() = holder
 
-    /** Called by the platform entry point before the first composition. */
-    fun install(store: PhoneProjectStore): PhoneProjectStore = store.also { holder = it }
+    /**
+     * Installs [store] as the process-wide project. The store owns a coroutine scope,
+     * a save channel and a long-lived worker, so the previous holder is disposed
+     * instead of being dropped: otherwise every re-install (activity recreation)
+     * leaves a worker behind that keeps flushing a store nobody reads.
+     */
+    fun install(store: PhoneProjectStore): PhoneProjectStore {
+        val previous = holder
+        holder = store
+        if (previous != null && previous !== store) previous.dispose()
+        return store
+    }
 
     /** Shared fallback for platforms that installed nothing (a narrow desktop window). */
     fun ensure(fallback: () -> PhoneProjectStore): PhoneProjectStore =
@@ -105,9 +117,16 @@ object PhoneProjectRuntime {
 
 /**
  * The phone's project state: `product.Project` is the single source of truth and
- * `product.SessionStore` writes it atomically, so a force-stop loses nothing. The
- * photo list, one design per photo (border + control values + embedded watermark),
- * the shared design and the export settings all live here — nowhere else.
+ * `product.SessionStore` persists it. A write is staged into a temp file, the staged
+ * bytes are read back and verified before the replace, and when the filesystem
+ * refuses an atomic rename the fallback replace re-reads the target and compares it
+ * with the bytes it published, so a short write is reported as a failure instead of
+ * a saved document. Durability against power loss is still bounded by what the OS
+ * flushed: the bytes are correct when the call returns, but a force-stop or a
+ * power cut cannot be stronger than the platform's own fsync (the parent directory
+ * is flushed where the platform allows it). The photo list, one design per photo
+ * (border + control values + embedded watermark), the shared design and the export
+ * settings all live here — nowhere else.
  *
  * Every write is addressed by photo id. That is what keeps a signature on the photo
  * it belongs to: there is no "current design" snapshot a photo switch can re-key
@@ -127,9 +146,13 @@ class PhoneProjectStore(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val saveLock = Any()
     private val writeLock = Any()
+    private val disposeLock = Any()
     private val saveWakeup = Channel<Unit>(Channel.CONFLATED)
     private var dirty = false
     private var changeVersion = 0L
+
+    /** Set by [dispose]; from then on nothing is scheduled and no save is written. */
+    private var disposed = false
 
     private val nowMillis: Long get() = platform?.nowMillis() ?: 0L
 
@@ -186,6 +209,28 @@ class PhoneProjectStore(
 
     // ---- lifecycle ---------------------------------------------------------
 
+    /**
+     * Stops the autosave worker and releases the scope and the save channel.
+     *
+     * A pending debounced write is flushed **synchronously** first, so a dispose
+     * cannot lose the last edit. Idempotent, and a disposed store refuses to write
+     * instead of throwing: [saveNow] answers `false`, nothing is scheduled, the
+     * channel is closed and the scope is cancelled.
+     */
+    fun dispose() {
+        synchronized(disposeLock) {
+            if (disposed) return
+        }
+        // Flush before the flag is set: saveNow is the ordinary, verified write path.
+        runCatching { saveNow() }
+        synchronized(disposeLock) {
+            if (disposed) return
+            disposed = true
+        }
+        runCatching { saveWakeup.close() }
+        scope.cancel()
+    }
+
     fun load() {
         synchronized(saveLock) {
             if (loaded) return
@@ -219,10 +264,10 @@ class PhoneProjectStore(
                 project = normalizeLoadedSamplePath(result.value)
                 projectWritesBlocked = false
                 saveError = null
-                println(
-                    "FM_PROJECT_LOADED photos=${project.photos.size} designs=${project.designs.size} " +
-                        "active=${project.activePhotoId ?: "-"} wm=${project.designs.values.count { it.overlay != null }}",
-                )
+                FmLog.info("FM_PROJECT_LOADED") {
+                    "photos=${project.photos.size} designs=${project.designs.size} " +
+                        "active=${project.activePhotoId ?: "-"} wm=${project.designs.values.count { it.overlay != null }}"
+                }
                 // WP-X1 / F2-D1: never open on a photo that cannot even be read —
                 // the best photo the app can actually show becomes the active one.
                 avoidUnreadableActivePhoto()
@@ -232,13 +277,13 @@ class PhoneProjectStore(
                 if (!keepModelWhenMissing) project = Project(id = "phone", createdAt = 0, updatedAt = 0)
                 projectWritesBlocked = false
                 saveError = null
-                println("FM_PROJECT_NONE")
+                FmLog.info("FM_PROJECT_NONE")
                 true
             }
             is StoreResult.Failed -> {
                 loadError = "${result.error.code} ${result.error.message}"
                 saveError = projectReadProtectionMessage()
-                println("FM_PROJECT_LOAD_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PROJECT_LOAD_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 false
             }
         }
@@ -268,10 +313,10 @@ class PhoneProjectStore(
         }
         photoNotice = "无法打开「${active.displayName}」（文件已被移动或删除）；" +
             if (fallback != null) "已改看在可用的「${fallback.displayName}」上。" else "请重新添加这张照片。"
-        println(
-            "FM_PHOTO_UNAVAILABLE active=${active.id} name=${active.displayName} " +
-                "fallback=${fallback?.id ?: "-"} photos=${project.photos.size}",
-        )
+        FmLog.info("FM_PHOTO_UNAVAILABLE") {
+            "active=${active.id} name=${active.displayName} " +
+                "fallback=${fallback?.id ?: "-"} photos=${project.photos.size}"
+        }
         if (fallback != null) {
             project = project.selectPhoto(fallback.id)
             saveNow()
@@ -284,7 +329,7 @@ class PhoneProjectStore(
                 presets = result.value
                 presetDocumentState = PresetDocumentState.Loaded
                 presetError = null
-                println("FM_PRESET_DOC_LOADED count=${presets.size} wm=${presets.count { it.overlay != null }}")
+                FmLog.info("FM_PRESET_DOC_LOADED") { "count=${presets.size} wm=${presets.count { it.overlay != null }}" }
             }
             StoreResult.Missing -> {
                 presets = emptyList()
@@ -294,7 +339,7 @@ class PhoneProjectStore(
             is StoreResult.Failed -> {
                 presetDocumentState = PresetDocumentState.Unreadable
                 presetError = "${result.error.code} ${result.error.message}"
-                println("FM_PRESET_DOC_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PRESET_DOC_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 val legacyText = store.documentText(DocumentKind.PresetLibrary)
                 if (legacyText != null && LegacyDocuments.isEmptyLegacyPresetLibrary(legacyText)) {
                     when (val migration = store.migrateLegacyPresetLibrary(emptyList())) {
@@ -302,7 +347,7 @@ class PhoneProjectStore(
                             presets = migration.value
                             presetDocumentState = PresetDocumentState.Loaded
                             presetError = null
-                            println("FM_PRESET_EMPTY_LEGACY_MIGRATED")
+                            FmLog.info("FM_PRESET_EMPTY_LEGACY_MIGRATED")
                         }
                         is StoreResult.Failed -> {
                             presetDocumentState = PresetDocumentState.Unreadable
@@ -317,11 +362,17 @@ class PhoneProjectStore(
 
     /**
      * Writes the project synchronously. The store stages the bytes in a temp file,
-     * verifies the length and only then atomically replaces the document, so a
-     * failure keeps the previous document and raises [saveError] rather than
-     * pretending the change was saved.
+     * verifies the length and the staged bytes, and only then replaces the document,
+     * so a failure keeps the previous document and raises [saveError] rather than
+     * pretending the change was saved. A disposed store answers `false` instead of
+     * throwing.
      */
-    fun saveNow(): Boolean = synchronized(writeLock) {
+    fun saveNow(): Boolean {
+        if (disposed) return false
+        return saveNowLocked()
+    }
+
+    private fun saveNowLocked(): Boolean = synchronized(writeLock) {
         val captured = synchronized(saveLock) {
             // A save can arrive before anyone called load(): a store driven only through
             // the preset API, or a flush raised while startup is still reading. The
@@ -332,7 +383,7 @@ class PhoneProjectStore(
             if (projectWritesBlocked) {
                 dirty = false
                 saveError = projectReadProtectionMessage()
-                println("FM_PROJECT_SAVE_BLOCKED reason=project-read-failed")
+                FmLog.warn("FM_PROJECT_SAVE_BLOCKED") { "reason=project-read-failed" }
                 return@synchronized null
             }
             project to changeVersion
@@ -349,10 +400,10 @@ class PhoneProjectStore(
                     if (saveError != null) saveError = null
                     saveCount++
                 }
-                println(
-                    "FM_PROJECT_SAVED photos=${snapshot.photos.size} designs=${snapshot.designs.size} " +
-                        "wm=${snapshot.designs.values.count { it.overlay != null }} saves=$saveCount",
-                )
+                FmLog.info("FM_PROJECT_SAVED") {
+                    "photos=${snapshot.photos.size} designs=${snapshot.designs.size} " +
+                        "wm=${snapshot.designs.values.count { it.overlay != null }} saves=$saveCount"
+                }
                 true
             }
             StoreResult.Missing -> false
@@ -360,7 +411,7 @@ class PhoneProjectStore(
                 synchronized(saveLock) {
                     saveError = "${result.error.code} ${result.error.message}"
                 }
-                println("FM_PROJECT_SAVE_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PROJECT_SAVE_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 false
             }
         }
@@ -375,11 +426,12 @@ class PhoneProjectStore(
         if (!pending) return true
         var saved = saveNow()
         while (saved && synchronized(saveLock) { dirty }) saved = saveNow()
-        println("FM_PROJECT_FLUSH pending=true saved=$saved")
+        FmLog.info("FM_PROJECT_FLUSH") { "pending=true saved=$saved" }
         return saved
     }
 
     private fun scheduleSave() {
+        if (disposed) return
         val scheduled = synchronized(saveLock) {
             if (projectWritesBlocked) false else {
                 dirty = true
@@ -442,14 +494,14 @@ class PhoneProjectStore(
         // only re-points the selection and persists it (a restart returns here).
         commit(project.selectPhoto(id))
         saveNow()
-        println("FM_PROJECT_SELECT id=$id card=${project.designOf(id)?.cardId ?: "-"}")
+        FmLog.info("FM_PROJECT_SELECT") { "id=$id card=${project.designOf(id)?.cardId ?: "-"}" }
     }
 
     fun remove(id: String) {
         if (project.photos.none { it.id == id }) return
         commit(project.removePhoto(id))
         saveNow()
-        println("FM_PROJECT_REMOVE id=$id photos=${project.photos.size} designs=${project.designs.size}")
+        FmLog.info("FM_PROJECT_REMOVE") { "id=$id photos=${project.photos.size} designs=${project.designs.size}" }
     }
 
     fun clearPhotos() {
@@ -515,12 +567,12 @@ class PhoneProjectStore(
         val next = foldOverrides(current, model, scoped)
         // Evidence for the "control -> design field" segment: which controls were in the
         // change set, what consumer they carry, and how many fields the fold produced.
-        println(
-            "FM_DESIGN_WRITE card=${model.cardId} changes=${changes.size} scoped=${scoped.size} " +
+        FmLog.info("FM_DESIGN_WRITE") {
+            "card=${model.cardId} changes=${changes.size} scoped=${scoped.size} " +
                 "sample=${scoped.entries.take(2).joinToString { it.key.removePrefix(prefix) + "=" + it.value }} " +
                 "consumers=${model.controls.filter { scoped.containsKey(it.key) }.take(3).joinToString { it.controlId + "->" + it.param }} " +
-                "afterParams=${next.params.size} afterText=${next.text.size} same=${next == current}",
-        )
+                "afterParams=${next.params.size} afterText=${next.text.size} same=${next == current}"
+        }
         if (next == current) return
         commit(project.setDesign(photoId, next))
     }
@@ -557,7 +609,7 @@ class PhoneProjectStore(
             baseDesign = shared == null,
         )
         commit(project.setDesign(photoId, next).copy(selectedCardId = cardId))
-        println("FM_PROJECT_CARD card=$cardId style=${styleId ?: "-"} photo=$photoId wm=${overlay?.asset?.sha256?.take(8) ?: "none"}")
+        FmLog.info("FM_PROJECT_CARD") { "card=$cardId style=${styleId ?: "-"} photo=$photoId wm=${overlay?.asset?.sha256?.take(8) ?: "none"}" }
     }
 
     private fun ensureDesign(photoId: String, cardId: String?, styleId: String?): PhotoDesign? {
@@ -591,8 +643,11 @@ class PhoneProjectStore(
         // all can be refused, and it is refused loudly rather than silently dropped.
         val design = ensureDesign(photoId, cardId ?: project.selectedCardId, styleId)
             ?: return StoreError("FM-E-INPUT-001", "还没有选边框，无法加水印", path)
-        val bytes = io?.readBytes(path) ?: platform?.readBytes(path)
-            ?: return StoreError("FM-E-IO-002", "无法读取水印文件", path)
+        val bytes = try {
+            readWatermarkBytes(path)
+        } catch (tooLarge: FileTooLargeException) {
+            return StoreError(StoreCodes.IO_READ, tooLarge.message ?: "水印文件过大", path)
+        } ?: return StoreError("FM-E-IO-002", "无法读取水印文件", path)
         if (bytes.isEmpty()) return StoreError("FM-E-IO-002", "水印文件为空", path)
         val bounds = io?.imageBounds(path)
         val declaredWidth = widthPx ?: bounds?.getOrNull(0)
@@ -624,8 +679,20 @@ class PhoneProjectStore(
         if (!saveNow()) {
             return StoreError("FM-E-IO-003", saveError ?: "工程修改未保存", path)
         }
-        println("FM_WM_EMBED photo=$photoId sha=${asset.sha256.take(12)} bytes=${asset.byteSize} ${asset.widthPx}x${asset.heightPx}")
+        FmLog.info("FM_WM_EMBED") { "photo=$photoId sha=${asset.sha256.take(12)} bytes=${asset.byteSize} ${asset.widthPx}x${asset.heightPx}" }
         return null
+    }
+
+    /**
+     * Reads the picked watermark with the product asset limit applied **before** the
+     * bytes are materialised. The bounded local read is tried first (a picked file is
+     * a real path, and the platform hook may not bound its own read); the injected
+     * hooks remain the fallback for non-file sources and tests.
+     */
+    private fun readWatermarkBytes(path: String): ByteArray? {
+        val local = readFileBytesBounded(path, WatermarkAsset.MAX_BYTES)
+        if (local != null) return local
+        return io?.readBytes(path) ?: platform?.readBytes(path)
     }
 
     fun setOverlay(photoId: String, spec: ProjectWatermark?) {
@@ -640,12 +707,12 @@ class PhoneProjectStore(
     fun applyWatermarkToAll() {
         val spec = project.activeDesign?.overlay
         if (spec == null) {
-            println("FM_WM_APPLY_ALL skipped: active photo has no watermark")
+            FmLog.info("FM_WM_APPLY_ALL") { "skipped: active photo has no watermark" }
             return
         }
         commit(project.applyWatermarkToAll(spec))
         saveNow()
-        println("FM_WM_APPLY_ALL photos=${project.photos.size} sha=${spec.asset.sha256.take(12)}")
+        FmLog.info("FM_WM_APPLY_ALL") { "photos=${project.photos.size} sha=${spec.asset.sha256.take(12)}" }
     }
 
     fun clearActiveWatermark() {
@@ -696,12 +763,15 @@ class PhoneProjectStore(
 
     // ---- export settings ---------------------------------------------------
 
-    fun exportSettingsForUi(): UiExportSettings = project.exportSettings.toUi()
+    /**
+     * The export choices are the product document's own type — there is no second
+     * settings type to convert, so what the sheet edits is what the project saves.
+     */
+    fun exportSettingsForUi(): ExportSettings = project.exportSettings
 
-    fun setExportSettings(settings: UiExportSettings) {
-        val mapped = settings.toProduct()
-        if (mapped == project.exportSettings) return
-        commit(project.withExportSettings(mapped))
+    fun setExportSettings(settings: ExportSettings) {
+        if (settings == project.exportSettings) return
+        commit(project.withExportSettings(settings))
     }
 
     // ---- presets -----------------------------------------------------------
@@ -780,13 +850,13 @@ class PhoneProjectStore(
         }
         if (!saveNow()) {
             presetError = saveError ?: "FM-E-IO-003 预设已应用，但工程未写入磁盘"
-            println("FM_PRESET_APPLY_FAIL id=${preset.id} save=$saveError")
+            FmLog.warn("FM_PRESET_APPLY_FAIL") { "id=${preset.id} save=$saveError" }
             return false
         }
-        println(
-            "FM_PRESET_APPLY id=${preset.id} card=$cardId photo=$photoId " +
-                "wm=${preset.overlay?.asset?.sha256?.take(12) ?: "none"} params=${design.params.size} text=${design.text.size}",
-        )
+        FmLog.info("FM_PRESET_APPLY") {
+            "id=${preset.id} card=$cardId photo=$photoId " +
+                "wm=${preset.overlay?.asset?.sha256?.take(12) ?: "none"} params=${design.params.size} text=${design.text.size}"
+        }
         return true
     }
 
@@ -914,7 +984,7 @@ class PhoneProjectStore(
                 presets = normalized
                 presetDocumentState = PresetDocumentState.Loaded
                 presetError = null
-                println("FM_PRESET_MIGRATED count=${normalized.size} sha256=$sha backup=$backupPath")
+                FmLog.info("FM_PRESET_MIGRATED") { "count=${normalized.size} sha256=$sha backup=$backupPath" }
                 return normalized.size
             }
             is StoreResult.Failed -> {
@@ -937,16 +1007,16 @@ class PhoneProjectStore(
                 presets = next
                 presetDocumentState = PresetDocumentState.Loaded
                 presetError = null
-                println(
-                    "FM_PRESET_DOC_SAVED count=${next.size} wm=${next.count { it.overlay != null }} " +
-                        "bytes=${next.sumOf { it.embeddedWatermarkBytes }}",
-                )
+                FmLog.info("FM_PRESET_DOC_SAVED") {
+                    "count=${next.size} wm=${next.count { it.overlay != null }} " +
+                        "bytes=${next.sumOf { it.embeddedWatermarkBytes }}"
+                }
                 true
             }
             StoreResult.Missing -> false
             is StoreResult.Failed -> {
                 presetError = "${result.error.code} ${result.error.message}"
-                println("FM_PRESET_DOC_FAIL code=${result.error.code} msg=${result.error.message}")
+                FmLog.warn("FM_PRESET_DOC_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
                 false
             }
         }
@@ -976,7 +1046,7 @@ class PhoneProjectStore(
 
         override fun overlay(): ProjectWatermark? = activeDesign?.overlay
 
-        override fun exportSettings(): ProductExportSettings = project.exportSettings
+        override fun exportSettings(): ExportSettings = project.exportSettings
 
         override fun photoPath(): String? = activePhoto?.path?.takeIf { it.isNotBlank() }
 
@@ -1126,45 +1196,13 @@ private fun valueFor(design: PhotoDesign, param: String): Any? = when (param) {
     }
 }
 
-internal fun UiExportSettings.toProduct(): ProductExportSettings = ProductExportSettings(
-    format = when (format) {
-        SampleFormat.Jpeg -> ProductExportFormat.Jpeg
-        SampleFormat.Png -> ProductExportFormat.Png
-        SampleFormat.WebP -> ProductExportFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        com.framemark.native.workflow.ExportSizeMode.LongEdge -> ProductExportSizeMode.LongEdge
-        else -> ProductExportSizeMode.Original
-    },
-    longEdge = longEdge,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)
-
-internal fun ProductExportSettings.toUi(): UiExportSettings = UiExportSettings(
-    format = when (format) {
-        ProductExportFormat.Jpeg -> SampleFormat.Jpeg
-        ProductExportFormat.Png -> SampleFormat.Png
-        ProductExportFormat.WebP -> SampleFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        ProductExportSizeMode.LongEdge -> com.framemark.native.workflow.ExportSizeMode.LongEdge
-        else -> com.framemark.native.workflow.ExportSizeMode.Original
-    },
-    longEdge = longEdge ?: 1600,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)
-
 /**
  * Evidence-only: an adb launch may choose the format / size the export sheet offers,
  * so a PNG or original-size export can be driven without tapping through the sheet.
  */
-internal fun UiExportSettings.withLaunchExportOverrides(): UiExportSettings {
+internal fun ExportSettings.withLaunchExportOverrides(): ExportSettings {
     val raw = com.framemark.native.LaunchOptions.exportFormat ?: return this
-    val format = SampleFormat.entries.firstOrNull {
+    val format = ExportFormat.entries.firstOrNull {
         it.extension.equals(raw, ignoreCase = true) || it.label.equals(raw, ignoreCase = true)
     } ?: return this
     val edge = com.framemark.native.LaunchOptions.exportLongEdge
@@ -1188,7 +1226,7 @@ fun legacyToPreset(legacy: UiPreset, cardId: String, styleId: String?, model: In
         id = legacy.id,
         name = ProjectPreset.cleanName(legacy.name),
         design = design,
-        exportSettings = legacy.export.toProduct(),
+        exportSettings = legacy.export,
         createdAt = legacy.updatedAt,
         updatedAt = legacy.updatedAt,
     )

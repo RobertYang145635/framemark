@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Evidence-only harness for the per-call `photoPath`: in one app session renders
@@ -32,7 +33,7 @@ object PerCallPhotoRunner {
         photoB: String,
     ) {
         if (running) {
-            println("FM_PERPHOTO_SKIP already-running")
+            FmLog.info("FM_PERPHOTO_SKIP") { "already-running" }
             return
         }
         running = true
@@ -91,7 +92,7 @@ object PerCallPhotoRunner {
                                     .put("error", (t.message ?: t::class.simpleName ?: "error").take(400))
                             }
                             out.appendText(row.toString() + "\n")
-                            println("FM_PERPHOTO_ROW $row")
+                            FmLog.info("FM_PERPHOTO_ROW") { "$row" }
                         }
                     }
                 }
@@ -100,7 +101,7 @@ object PerCallPhotoRunner {
                     JSONObject().put("kind", "global_after").put("path", after)
                         .put("unchanged", after == before).toString() + "\n",
                 )
-                println("FM_PERPHOTO_GLOBAL before=$before after=$after unchanged=${after == before}")
+                FmLog.info("FM_PERPHOTO_GLOBAL") { "before=$before after=$after unchanged=${after == before}" }
 
                 // Regression: no global photo, no override → bundled sample exports.
                 PhotoSelection.set(null)
@@ -125,11 +126,11 @@ object PerCallPhotoRunner {
                         row.put("ok", false).put("error", (t.message ?: "error").take(400))
                     }
                     out.appendText(row.toString() + "\n")
-                    println("FM_PERPHOTO_ROW $row")
+                    FmLog.info("FM_PERPHOTO_ROW") { "$row" }
                 }
             } finally {
                 AndroidNativeRender.skipGalleryPublish = false
-                println("FM_PERPHOTO_DONE wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath}")
+                FmLog.info("FM_PERPHOTO_DONE") { "wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath}" }
                 running = false
             }
         }

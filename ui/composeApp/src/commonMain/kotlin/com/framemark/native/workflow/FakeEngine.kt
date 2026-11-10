@@ -1,9 +1,12 @@
 package com.framemark.native.workflow
 
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.library.LibraryPreviewLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 /** Inputs associated with a completed file so actions stay on the right photo. */
 data class ExportSource(
@@ -36,20 +39,25 @@ data class ExportResult(
  * parameters, and the sheet labels it 示例.
  */
 object FakeEngine {
+    /** Historical placeholder size when the document has no long edge yet. */
+    private const val DEFAULT_SAMPLE_LONG_EDGE = 1600
+
     suspend fun export(card: LibraryCard, settings: ExportSettings): ExportResult =
         withContext(Dispatchers.Default) {
             val platform = WorkflowEnv.platform
                 ?: throw IllegalStateException("no local storage")
-            val longEdge = settings.longEdge.coerceIn(400, 4096)
+            // The product document may not carry a long edge yet; the placeholder sample
+            // keeps the historical 1600 px default.
+            val longEdge = (settings.longEdge ?: DEFAULT_SAMPLE_LONG_EDGE).coerceIn(400, 4096)
             val width = longEdge
             val height = (longEdge * 3) / 4
 
-            var bytes = if (settings.format == SampleFormat.WebP) {
+            var bytes = if (settings.format == ExportFormat.WebP) {
                 // No placeholder WebP encoder: fall through to the honest
                 // preview-copy path instead of writing JPEG bytes as .webp.
                 null
             } else {
-                platform.encodeSampleImage(width, height, settings.format, settings.quality)
+                platform.encodeSampleImage(width, height, settings.format.toSampleFormat(), settings.quality)
             }
             var formatLabel = settings.format.label
             var extension = settings.format.extension
@@ -70,7 +78,7 @@ object FakeEngine {
 
             val path = ExportNaming.exportPath(platform, settings.filenamePattern, card.name, null, extension)
             check(platform.writeBytes(path, bytes)) { "cannot write sample file" }
-            println("FM_FAKE_EXPORT path=$path bytes=${bytes.size} format=$formatLabel")
+            FmLog.info("FM_FAKE_EXPORT") { "path=$path bytes=${bytes.size} format=$formatLabel" }
             ExportResult(
                 path = path,
                 fileName = path.substringAfterLast('/').substringAfterLast('\\'),

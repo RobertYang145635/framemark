@@ -43,6 +43,7 @@ import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 private const val PHONE_JPEG_QUALITY = 100
 
@@ -288,9 +289,9 @@ fun PhonePresetSheet(
                     val saved = store.savePreset(draftName)
                     if (saved != null) {
                         draftName = "我的预设 ${store.presets.size + 1}"
-                        println("FM_PRESET_SAVED id=${saved.id} wm=${saved.overlay?.asset?.sha256?.take(12) ?: "none"} bytes=${saved.embeddedWatermarkBytes}")
+                        FmLog.info("FM_PRESET_SAVED") { "id=${saved.id} wm=${saved.overlay?.asset?.sha256?.take(12) ?: "none"} bytes=${saved.embeddedWatermarkBytes}" }
                     } else {
-                        println("FM_PRESET_SAVE_FAIL msg=${store.presetError ?: "no active design"}")
+                        FmLog.warn("FM_PRESET_SAVE_FAIL") { "msg=${store.presetError ?: "no active design"}" }
                     }
                 },
             )

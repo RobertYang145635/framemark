@@ -3,7 +3,7 @@ package com.framemark.native.shell
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobError
 import com.framemark.native.product.BatchJobStatus
-import com.framemark.native.product.ExportSettings as ProductExportSettings
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.shell.desktop.BatchPhotoRow
@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
  */
 class DesktopBatchWorkspaceTest {
 
-    private val settings = ProductExportSettings()
+    private val settings = ExportSettings()
 
     private fun photo(id: String, name: String) = PhotoRef(
         id = id,

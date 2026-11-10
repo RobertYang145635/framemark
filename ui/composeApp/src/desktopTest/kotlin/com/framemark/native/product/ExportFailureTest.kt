@@ -3,7 +3,8 @@ package com.framemark.native.product
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.EngineFailure
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeImage
 import com.framemark.native.workflow.NativeRenderApi
@@ -114,7 +115,7 @@ class ExportFailureTest {
                 runBlocking {
                     NativeEngine.export(
                         card(),
-                        ExportSettings(format = SampleFormat.WebP),
+                        ExportSettings(format = ExportFormat.WebP),
                         design,
                     )
                 }

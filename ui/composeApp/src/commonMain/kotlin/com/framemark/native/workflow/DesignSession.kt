@@ -6,28 +6,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.framemark.native.inspector.ControlValue
 import com.framemark.native.inspector.InspectorControl
+import com.framemark.native.product.ExportSettings
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-/** Export choices shown in the export sheet and carried by presets. */
-data class ExportSettings(
-    val format: SampleFormat = SampleFormat.Jpeg,
-    /** Effective encoding quality; desktop chooses a local preference, Android uses 100. */
-    val quality: Int = 100,
-    /** Original size (no downscale) is the default; a custom long edge is opt-in. */
-    val sizeMode: ExportSizeMode = ExportSizeMode.Original,
-    /** Long edge of the generated image, in pixels. Only used when [sizeMode] is LongEdge. */
-    val longEdge: Int = 1600,
-    val filenamePattern: String = "{photo}-{index}",
-    /** WebP VP8L (lossless) vs VP8 q100 (lossy); ignored by JPEG/PNG. */
-    val webpLossless: Boolean = true,
-) {
-    /** Long edge handed to the engine; null means "render at the engine's native canvas". */
-    val effectiveLongEdge: Int? get() = if (sizeMode == ExportSizeMode.LongEdge) longEdge else null
-}
-
-/** Whether the export keeps the engine's native canvas or resamples to a long edge. */
-enum class ExportSizeMode { Original, LongEdge }
+// The export choices are the product document's own type (product/ExportSettings.kt).
+// This file used to declare a second `ExportSettings` with a different default long
+// edge; the session and the export sheet now carry the product type, and the only
+// UI-level difference is how a missing (`null`) long edge is displayed.
 
 
 /**

@@ -4,6 +4,7 @@ import com.framemark.native.inspector.IrSlotBinding
 import com.framemark.native.product.ControlRegistry
 import com.framemark.native.product.ControlRegistryLoader
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Where the registry documents live.
@@ -108,8 +109,8 @@ class RegistrySource(explicitRoot: File? = null) {
     fun registry(): ControlRegistry? {
         val docs = documents()
         if (!docs.complete) {
-            println("FM_REGISTRY_INCOMPLETE missing=${docs.missing.joinToString(",")}")
-            println("FM_REGISTRY_ROOTS searched=${roots.joinToString(",")} (FM_RUNTIME_ROOT is the only dev fallback)")
+            FmLog.info("FM_REGISTRY_INCOMPLETE") { "missing=${docs.missing.joinToString(",")}" }
+            FmLog.info("FM_REGISTRY_ROOTS") { "searched=${roots.joinToString(",")} (FM_RUNTIME_ROOT is the only dev fallback)" }
             return null
         }
         val started = System.nanoTime()
@@ -124,28 +125,28 @@ class RegistrySource(explicitRoot: File? = null) {
                     logosJson = docs.logos!!.readText(),
                 ),
             )
-        }.onFailure { println("FM_REGISTRY_FAIL ${it.message}") }.getOrNull() ?: return null
+        }.onFailure { FmLog.warn("FM_REGISTRY_FAIL") { "${it.message}"} }.getOrNull() ?: return null
         val ms = (System.nanoTime() - started) / 1_000_000L
         val stats = registry.stats
-        println(
-            "FM_REGISTRY_READY cards=${stats.cards} visible=${stats.visibleControls} " +
+        FmLog.info("FM_REGISTRY_READY") {
+            "cards=${stats.cards} visible=${stats.visibleControls} " +
                 "routable=${stats.routableControls} consumed=${stats.consumedControls} " +
-                "gated=${stats.gatedControls} ms=$ms root=${docs.taxonomy!!.parent}",
-        )
+                "gated=${stats.gatedControls} ms=$ms root=${docs.taxonomy!!.parent}"
+        }
         return registry
     }
 
     fun binding(): IrSlotBinding {
         val file = documents().irSlotBinding
         if (file == null) {
-            println("FM_IR_BINDING_MISSING falls back to the registry consumer")
+            FmLog.info("FM_IR_BINDING_MISSING") { "falls back to the registry consumer" }
             return IrSlotBinding.EMPTY
         }
         val binding = runCatching { IrSlotBinding.load(file.readText()) }
-            .onFailure { println("FM_IR_BINDING_FAIL ${it.message}") }
+            .onFailure { FmLog.warn("FM_IR_BINDING_FAIL") { "${it.message}"} }
             .getOrNull() ?: return IrSlotBinding.EMPTY
         val s = binding.stats
-        println("FM_IR_BINDING_READY styles=${s.styles} entries=${s.entries} expressible=${s.expressible} unsupported=${s.unsupported} needsRegen=${s.needsRegen} file=${file.path}")
+        FmLog.info("FM_IR_BINDING_READY") { "styles=${s.styles} entries=${s.entries} expressible=${s.expressible} unsupported=${s.unsupported} needsRegen=${s.needsRegen} file=${file.path}" }
         return binding
     }
 

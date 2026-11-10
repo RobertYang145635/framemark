@@ -9,7 +9,7 @@ import com.framemark.native.shell.PhoneProjectStore
 import com.framemark.native.shell.legacyToPreset
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopWorkflowPlatform
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.JvmProductFileSystem
 import com.framemark.native.workflow.PresetStore
 import com.framemark.native.workflow.SampleFormat

@@ -10,8 +10,8 @@
 # Entries per rule:
 #   evidence-hook-literal: 355
 #   launch-state-isolation: 4
-#   layer-direction: 109
-#   single-source: 1
+#   layer-direction: 108
+#   single-source: 0
 
 # ---- evidence-hook-literal
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/MainActivity.kt:evidence-hook-literal:106:FM_PRESET_ORPHAN_TARGET_CLEANUP_FAIL
@@ -400,7 +400,6 @@ ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt:layer-direction:6:com.framemark.native.workflow.OverlaySpec
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt:layer-direction:7:com.framemark.native.workflow.SampleFormat
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt:layer-direction:6:com.framemark.native.workflow.DesignSnapshot
-ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt:layer-direction:7:com.framemark.native.workflow.ExportSettings
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt:layer-direction:8:com.framemark.native.workflow.NativeEngine
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt:layer-direction:9:com.framemark.native.workflow.OverlaySpec
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt:layer-direction:10:com.framemark.native.workflow.PhotoSelection
@@ -488,5 +487,4 @@ ui/composeApp/src/desktopMain/kotlin/com/framemark/native/workflow/DesktopProjec
 ui/composeApp/src/desktopMain/kotlin/com/framemark/native/workflow/DesktopProjectController.kt:layer-direction:7:com.framemark.native.inspector.ControlType
 
 # ---- single-source
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/DesignSession.kt:single-source:0:ExportSettings
 

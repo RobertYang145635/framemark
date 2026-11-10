@@ -7,6 +7,7 @@ import com.framemark.native.library.jsonString
 import java.awt.image.BufferedImage
 import java.io.File
 import java.io.IOException
+import com.framemark.native.product.FmLog
 
 data class WorkerEncodeResult(
     val path: String,
@@ -162,12 +163,14 @@ class E5Worker(
             } else {
                 require(subsampling == "4:4:4") { "E5 worker subsampling $subsampling, expected 4:4:4" }
             }
-            println(
-                "FM_E5_${if (format == "webp") "WEBP" else "ENCODE"} path=${out.path} ${w}x$h bytes=${out.length()} " +
+            FmLog.info(
+                "FM_E5_${if (format == "webp") "WEBP" else "ENCODE"}",
+            ) {
+                "path=${out.path} ${w}x$h bytes=${out.length()} " +
                     "rows=$rowsFed ms=$encodeMs icc=$iccBytes exif=$exifBytes " +
                     (if (format == "webp") "lossless=$lossless chunks=${chunks.joinToString(",")}" else "subsampling=$subsampling") +
-                    " quality=$quality",
-            )
+                    " quality=$quality"
+            }
             return WorkerEncodeResult(
                 path = out.path,
                 bytes = out.length(),
@@ -189,7 +192,7 @@ class E5Worker(
             // the committed result, so nothing here is still needed.
             listOfNotNull(workerOut, report, exifFile, iccFile).forEach {
                 if (it.exists() && !it.delete()) {
-                    println("FM_E5_TEMP_DELETE_FAILED path=${it.path}")
+                    FmLog.warn("FM_E5_TEMP_DELETE_FAILED") { "path=${it.path}" }
                 }
             }
         }

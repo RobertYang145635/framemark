@@ -1,6 +1,6 @@
 package com.framemark.native.inspector
 
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportSizeMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

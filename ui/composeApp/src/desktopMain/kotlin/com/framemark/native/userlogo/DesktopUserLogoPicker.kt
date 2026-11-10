@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /** Desktop import entry: an AWT file dialog, then the same validation as Android. */
 object DesktopUserLogoPicker {
@@ -45,9 +46,9 @@ object DesktopUserLogoPicker {
                             }
                             repo.import(file.name, UserLogoLibrary.normalizeMime(null, file.name).orEmpty(), bytes)
                         }.onSuccess {
-                            println("FM_USER_LOGO_IMPORTED id=${it.id} ${it.width}x${it.height} ${it.sizeBytes}B")
+                            FmLog.info("FM_USER_LOGO_IMPORTED") { "id=${it.id} ${it.width}x${it.height} ${it.sizeBytes}B" }
                         }.onFailure {
-                            println("FM_USER_LOGO_IMPORT_FAIL ${it.message}")
+                            FmLog.warn("FM_USER_LOGO_IMPORT_FAIL") { "${it.message}" }
                             UserLogoImportStatus.fail(it.message ?: "导入失败")
                         }
                     }

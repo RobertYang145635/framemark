@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.FmLog
 
 /**
  * Local preset list persisted as one JSON file (no backend, no database).
@@ -35,11 +37,11 @@ object PresetStore {
                 itemsState.clear()
                 itemsState.addAll(PresetJson.decode(text))
             } catch (t: Throwable) {
-                println("FM_PRESET_LOAD_FAIL ${t.message}")
+                FmLog.warn("FM_PRESET_LOAD_FAIL") { "${t.message}" }
             }
         }
         loaded = true
-        println("FM_PRESET_LOADED count=${itemsState.size}")
+        FmLog.info("FM_PRESET_LOADED") { "count=${itemsState.size}" }
     }
 
     fun save(
@@ -65,7 +67,7 @@ object PresetStore {
         )
         itemsState.add(0, preset)
         persist()
-        println("FM_PRESET_SAVED id=${preset.id} name=${preset.name} values=${values.size}")
+        FmLog.info("FM_PRESET_SAVED") { "id=${preset.id} name=${preset.name} values=${values.size}" }
         return preset
     }
 
@@ -105,7 +107,7 @@ object PresetStore {
     private fun persist() {
         val platform = WorkflowEnv.platform ?: return
         runCatching { platform.writeTextFile(path(platform), PresetJson.encode(itemsState)) }
-            .onFailure { println("FM_PRESET_WRITE_FAIL ${it.message}") }
+            .onFailure { FmLog.warn("FM_PRESET_WRITE_FAIL") { "${it.message}"} }
     }
 
     private fun nowMillis(): Long = WorkflowEnv.platform?.nowMillis() ?: 0L

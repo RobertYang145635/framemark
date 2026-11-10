@@ -5,6 +5,7 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+import com.framemark.native.product.FmLog
 
 /**
  * A user watermark attached to one tray photo. [anchor] is a 3x3 slot
@@ -161,12 +162,12 @@ object WatermarkSelection {
         width = widthFraction
         opacity = alpha
         versionState.intValue++
-        println("FM_WATERMARK_PICK path=$pngPath aspect=$assetAspect")
+        FmLog.info("FM_WATERMARK_PICK") { "path=$pngPath aspect=$assetAspect" }
     }
 
     fun clear() {
         versionState.intValue++
-        println("FM_WATERMARK_PICK cleared")
+        FmLog.info("FM_WATERMARK_PICK") { "cleared" }
     }
 }
 

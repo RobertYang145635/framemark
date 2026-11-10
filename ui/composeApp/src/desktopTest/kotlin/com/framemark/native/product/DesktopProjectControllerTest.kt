@@ -6,9 +6,9 @@ import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.workflow.DesktopProjectController
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.JvmProductFileSystem
-import com.framemark.native.workflow.SampleFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -167,7 +167,7 @@ class DesktopProjectControllerTest {
             assertEquals(shared, controller.project.designs[photoA]!!.overlay)
             assertEquals(shared, controller.project.designs[photoB]!!.overlay)
 
-            controller.setExportSettings(ExportSettings(format = SampleFormat.Png, longEdge = 2048))
+            controller.setExportSettings(ExportSettings(format = ExportFormat.Png, longEdge = 2048))
             controller.selectPhoto(photoA)
             assertTrue(controller.saveNow())
             val savedActive = controller.activePhotoId
@@ -188,7 +188,7 @@ class DesktopProjectControllerTest {
             assertTrue(restoredA.overlay!!.asset.isIntact())
             assertEquals("card-1", restarted.project.designs[photoB]!!.cardId)
             assertNull(restarted.project.designs[photoB]!!.params["theme"])
-            assertEquals(SampleFormat.Png, restarted.exportSettingsForUi().format)
+            assertEquals(ExportFormat.Png, restarted.exportSettingsForUi().format)
             assertEquals(2048, restarted.exportSettingsForUi().longEdge)
             restarted.dispose()
         } finally {
@@ -235,7 +235,7 @@ class DesktopProjectControllerTest {
 
             val report = controller.importPhotos(listOf(photo("ratio-study/4x3.jpg")))
             assertEquals(0, report.added)
-            controller.setExportSettings(ExportSettings(format = SampleFormat.WebP))
+            controller.setExportSettings(ExportSettings(format = ExportFormat.WebP))
             Thread.sleep(650) // Cross the debounced autosave window while the source is invalid.
             assertContentEquals(original, Files.readAllBytes(projectFile))
             assertFalse(controller.saveNow())
@@ -285,12 +285,12 @@ class DesktopProjectControllerTest {
         val fs = FakeFs("/fm-p2a")
         val controller = newController(Path.of("unused"), fs)
         controller.load()
-        controller.setExportSettings(ExportSettings(format = SampleFormat.Png))
+        controller.setExportSettings(ExportSettings(format = ExportFormat.Png))
         assertTrue(controller.saveNow())
         val old = fs.files["/fm-p2a/project.json"]!!.copyOf()
 
         fs.failWritePath = "/fm-p2a/project.json.tmp"
-        controller.setExportSettings(ExportSettings(format = SampleFormat.WebP))
+        controller.setExportSettings(ExportSettings(format = ExportFormat.WebP))
         assertFalse(controller.saveNow())
         val error = controller.saveError
         assertNotNull(error)

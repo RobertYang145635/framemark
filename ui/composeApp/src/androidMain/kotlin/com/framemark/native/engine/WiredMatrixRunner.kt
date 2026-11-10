@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Evidence-only harness: drives [AndroidNativeRender.render] over every wired
@@ -30,7 +31,7 @@ object WiredMatrixRunner {
         kinds: String,
     ) {
         if (running) {
-            println("FM_MATRIX_SKIP already-running")
+            FmLog.info("FM_MATRIX_SKIP") { "already-running" }
             return
         }
         running = true
@@ -62,7 +63,7 @@ object WiredMatrixRunner {
                 .put("ir", ir.size)
                 .put("hand", hand.size)
             out.appendText(meta.toString() + "\n")
-            println("FM_MATRIX_META $meta")
+            FmLog.info("FM_MATRIX_META") { "$meta" }
 
             AndroidNativeRender.skipGalleryPublish = true
             val wall = SystemClock.elapsedRealtime()
@@ -113,17 +114,17 @@ object WiredMatrixRunner {
                                 .put("error", (t.message ?: t::class.simpleName ?: "error").take(400))
                         }
                         out.appendText(row.toString() + "\n")
-                        println("FM_MATRIX_ROW $row")
+                        FmLog.info("FM_MATRIX_ROW") { "$row" }
                         rows++
-                        if (rows % 20 == 0) println("FM_MATRIX_PROGRESS $rows/${cards.size * 2}")
+                        if (rows % 20 == 0) FmLog.info("FM_MATRIX_PROGRESS") { "$rows/${cards.size * 2}" }
                     }
                 }
             } finally {
                 AndroidNativeRender.skipGalleryPublish = false
-                println(
-                    "FM_MATRIX_DONE rows=$rows wallMs=${SystemClock.elapsedRealtime() - wall} " +
-                        "dir=${dir.absolutePath}",
-                )
+                FmLog.info("FM_MATRIX_DONE") {
+                    "rows=$rows wallMs=${SystemClock.elapsedRealtime() - wall} " +
+                        "dir=${dir.absolutePath}"
+                }
                 running = false
             }
         }

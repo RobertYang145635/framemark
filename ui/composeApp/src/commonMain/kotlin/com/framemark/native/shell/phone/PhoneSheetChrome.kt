@@ -44,6 +44,7 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmType
 import kotlin.math.abs
+import com.framemark.native.product.FmLog
 
 /** Title-row and chevron ceilings: the 收起 sheet may sit below both (WP-P1-2). */
 private val SheetHeadMaxHeight = 48.dp
@@ -211,7 +212,7 @@ fun PhoneSheetHead(
                         onLongClick = if (onOpenPresets != null) {
                             {
                                 menuOpen = true
-                                println("FM_PHONE_SHEET_HEAD_MENU presets=1")
+                                FmLog.info("FM_PHONE_SHEET_HEAD_MENU") { "presets=1" }
                             }
                         } else {
                             null

@@ -7,8 +7,9 @@ import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesignSnapshot
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.JvmProductFileSystem
 import com.framemark.native.workflow.NativeImage
 import com.framemark.native.workflow.NativeRenderApi
@@ -534,7 +535,7 @@ class DesktopPresetBatchTest {
         try {
             withEngine(render, dir) {
                 val controller = seeded(dir, count = 2)
-                controller.setExportSettings(ExportSettings(format = SampleFormat.Jpeg))
+                controller.setExportSettings(ExportSettings(format = ExportFormat.Jpeg))
                 val firstResult = controller.exportActive("极简 01", controller.exportSettingsForUi())
                 controller.selectPhoto(controller.photos[1].id)
                 val secondResult = controller.exportActive("极简 01", controller.exportSettingsForUi())

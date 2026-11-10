@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Evidence-only harness for the render-v1 overlay bridge: renders one card with
@@ -31,7 +32,7 @@ object OverlayAbRunner {
         opacity: Float,
     ) {
         if (running) {
-            println("FM_OVERLAY_SKIP already-running")
+            FmLog.info("FM_OVERLAY_SKIP") { "already-running" }
             return
         }
         running = true
@@ -80,7 +81,7 @@ object OverlayAbRunner {
                                 .put("error", (t.message ?: t::class.simpleName ?: "error").take(400))
                         }
                         out.appendText(row.toString() + "\n")
-                        println("FM_OVERLAY_ROW $row")
+                        FmLog.info("FM_OVERLAY_ROW") { "$row" }
                     }
                 }
 
@@ -103,7 +104,7 @@ object OverlayAbRunner {
                         row.put("ok", false).put("error", (t.message ?: "error").take(400))
                     }
                     out.appendText(row.toString() + "\n")
-                    println("FM_OVERLAY_ROW $row")
+                    FmLog.info("FM_OVERLAY_ROW") { "$row" }
                 }
 
                 // No-overlay regression exports for the three known cards.
@@ -127,11 +128,11 @@ object OverlayAbRunner {
                         row.put("ok", false).put("error", (t.message ?: "error").take(400))
                     }
                     out.appendText(row.toString() + "\n")
-                    println("FM_OVERLAY_ROW $row")
+                    FmLog.info("FM_OVERLAY_ROW") { "$row" }
                 }
             } finally {
                 AndroidNativeRender.skipGalleryPublish = false
-                println("FM_OVERLAY_DONE wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath}")
+                FmLog.info("FM_OVERLAY_DONE") { "wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath}" }
                 running = false
             }
         }

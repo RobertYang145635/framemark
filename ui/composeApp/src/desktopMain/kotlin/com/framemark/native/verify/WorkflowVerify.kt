@@ -11,15 +11,16 @@ import com.framemark.native.workflow.BatchRunState
 import com.framemark.native.workflow.DesignHistory
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesktopWorkflowPlatform
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.FakeEngine
 import com.framemark.native.workflow.PresetStore
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.system.exitProcess
+import com.framemark.native.product.FmLog
 
 /**
  * U4 workflow contract entry point (desktop, no UI):
@@ -65,7 +66,7 @@ fun main(): Unit = runBlocking {
         session.seed(model.controls)
         applied += changeControls(session, model.controls.filterNot { it.hidden }, max = 25 - applied)
     }
-    println("FM_U4_EDITS applied=$applied")
+    FmLog.info("FM_U4_EDITS") { "applied=$applied" }
     check("history_steps_$applied", applied >= 20 && session.history.undoCount == applied)
 
     val edited = session.snapshotValues()
@@ -92,7 +93,7 @@ fun main(): Unit = runBlocking {
         cardName = card.name,
         adjustedCount = session.adjustedCount(card.id),
         values = session.snapshotValues(),
-        export = ExportSettings(format = SampleFormat.Png, quality = 88, longEdge = 1200, filenamePattern = "{name}-{date}"),
+        export = ExportSettings(format = ExportFormat.Png, quality = 88, longEdge = 1200, filenamePattern = "{name}-{date}"),
     )
     check("preset_saved", PresetStore.items.size == 1 && saved.adjustedCount > 0)
 
@@ -102,7 +103,7 @@ fun main(): Unit = runBlocking {
     check("preset_reload_count", PresetStore.items.size == 1)
     check("preset_reload_fields", reloaded != null && reloaded.name == "合同预设" && reloaded.cardId == card.id)
     check("preset_reload_values", reloaded != null && reloaded.values.size == session.values.size)
-    check("preset_reload_export", reloaded != null && reloaded.export.format == SampleFormat.Png && reloaded.export.longEdge == 1200)
+    check("preset_reload_export", reloaded != null && reloaded.export.format == ExportFormat.Png && reloaded.export.longEdge == 1200)
     val restored = DesignSession().apply { reloaded?.let { applyPreset(it) } }
     check("preset_apply_values", restored.values.toMap() == session.values.toMap().mapValues { normalize(it.value) })
     check("preset_rename", PresetStore.rename(saved.id, "改名预设") && PresetStore.items.first().name == "改名预设")
@@ -110,17 +111,17 @@ fun main(): Unit = runBlocking {
     check("preset_json_exists", File(dataDir, "presets.json").isFile)
 
     // --- sample export -----------------------------------------------------
-    val jpeg = FakeEngine.export(card, ExportSettings(format = SampleFormat.Jpeg, quality = 82, longEdge = 1200))
+    val jpeg = FakeEngine.export(card, ExportSettings(format = ExportFormat.Jpeg, quality = 82, longEdge = 1200))
     check("export_jpg_file", File(jpeg.path).isFile && jpeg.bytes > 0)
     check("export_jpg_name", jpeg.fileName.startsWith(card.name) && jpeg.fileName.endsWith(".jpg"))
     check("export_jpg_dims", jpeg.width == 1200 && jpeg.height == 900)
     val jpgImage = ImageIO.read(File(jpeg.path))
     check("export_jpg_decode", jpgImage != null && jpgImage.width == 1200 && jpgImage.height == 900)
-    val png = FakeEngine.export(card, ExportSettings(format = SampleFormat.Png, quality = 100, longEdge = 800))
+    val png = FakeEngine.export(card, ExportSettings(format = ExportFormat.Png, quality = 100, longEdge = 800))
     val pngImage = ImageIO.read(File(png.path))
     check("export_png_decode", pngImage != null && pngImage.width == 800 && pngImage.height == 600)
     check("export_unique", png.path != jpeg.path)
-    println("FM_U4_EXPORT jpg=${jpeg.path} bytes=${jpeg.bytes} png=${png.path} bytes=${png.bytes}")
+    FmLog.info("FM_U4_EXPORT") { "jpg=${jpeg.path} bytes=${jpeg.bytes} png=${png.path} bytes=${png.bytes}" }
 
     // --- batch queue -------------------------------------------------------
     val runner = BatchRunner()
@@ -153,8 +154,8 @@ fun main(): Unit = runBlocking {
     runner.resetForVerify()
     check("batch_reset", runner.items.isEmpty() && runner.runState == BatchRunState.Idle)
 
-    println("FM_U4_VERIFY checks=$checks failures=$failures ok=${failures == 0}")
-    println("FM_U4_VERIFY_DIR root=${root.absolutePath}")
+    FmLog.info("FM_U4_VERIFY") { "checks=$checks failures=$failures ok=${failures == 0}" }
+    FmLog.info("FM_U4_VERIFY_DIR") { "root=${root.absolutePath}" }
     exitProcess(if (failures == 0) 0 else 1)
 }
 
@@ -199,10 +200,10 @@ private fun normalize(value: Any): Any = when (value) {
 private fun check(name: String, condition: Boolean) {
     checks++
     if (!condition) failures++
-    println("FM_U4_CHECK ${if (condition) "PASS" else "FAIL"} $name")
+    FmLog.info("FM_U4_CHECK") { "${if (condition) "PASS" else "FAIL"} $name" }
 }
 
 private fun finish(): Nothing {
-    println("FM_U4_VERIFY checks=$checks failures=$failures ok=false")
+    FmLog.info("FM_U4_VERIFY") { "checks=$checks failures=$failures ok=false" }
     exitProcess(1)
 }

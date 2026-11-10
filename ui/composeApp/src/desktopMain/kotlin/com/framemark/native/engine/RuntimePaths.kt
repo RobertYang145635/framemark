@@ -1,6 +1,7 @@
 package com.framemark.native.engine
 
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /** Structured engine/runtime failure: code + human message + enough detail for a log. */
 class EngineConfigException(
@@ -155,7 +156,7 @@ object RuntimePaths {
             handFontsDir = dir(dataRoot, "fonts"),
             handExtraFontsDir = dir(dataRoot, "e4-extra-fonts"),
         )
-        println("FM_RUNTIME ${describe(layout)}")
+        FmLog.info("FM_RUNTIME") { "${describe(layout)}" }
         return layout
     }
 
@@ -172,7 +173,7 @@ object RuntimePaths {
      */
     private fun failDiscovery(roots: List<File>, reason: String): Nothing {
         val searched = roots.take(12).joinToString("\n") { "  ${it.path}" }
-        println("FM_ENGINE_RUNTIME_MISSING reason=$reason searched=${roots.take(6).joinToString { it.path }}")
+        FmLog.info("FM_ENGINE_RUNTIME_MISSING") { "reason=$reason searched=${roots.take(6).joinToString { it.path }}" }
         System.err.println("engine runtime not found: $reason\nsearched roots:\n$searched")
         if (noticedFailure == null) {
             noticedFailure = reason

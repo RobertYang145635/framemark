@@ -54,7 +54,7 @@ import com.framemark.native.inspector.withNumericDigits
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
-import com.framemark.native.product.ExportSettings as ProductExportSettings
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
@@ -69,6 +69,7 @@ import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 /**
  * V2 批量导出工作区（报告 §6 / `desktop.js` 的 batch 模式）：左照片勾选、中成品
@@ -137,7 +138,7 @@ fun BatchWorkspace(
         }
         val added = projects.enqueueBatch(toEnqueue)
         projects.startBatch()
-        println("FM_DESKTOP_BATCH_START selected=${selected.size} designed=$designed added=$added")
+        FmLog.info("FM_DESKTOP_BATCH_START") { "selected=${selected.size} designed=$designed added=$added" }
     }
 
     fun cancelRemaining() {
@@ -679,7 +680,7 @@ private fun BatchQueuePanel(
     summary: BatchQueueSummary,
     queueRows: List<BatchQueueRow>,
     jobs: List<BatchJob>,
-    settings: ProductExportSettings,
+    settings: ExportSettings,
     directory: String,
     selectedCount: Int,
     notice: String?,

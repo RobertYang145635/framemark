@@ -7,7 +7,8 @@ import com.framemark.native.shell.desktop.ExportPixels
 import com.framemark.native.shell.desktop.ExportRules
 import com.framemark.native.shell.desktop.ExportEstimate
 import com.framemark.native.workflow.ExportNaming
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WorkflowPlatform
 import kotlin.test.Test
@@ -102,29 +103,29 @@ class DesktopExportDialogTest {
     fun quality_only_blocks_the_formats_that_use_it() {
         // JPEG 用质量：非法值拦住提交。
         assertFalse(
-            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", SampleFormat.Jpeg, true),
+            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", ExportFormat.Jpeg, true),
         )
         // PNG / 无损 WebP 不用质量：同一串非法值也不拦。
         assertTrue(
-            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", SampleFormat.Png, true),
+            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", ExportFormat.Png, true),
         )
         assertTrue(
-            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", SampleFormat.WebP, true),
+            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", ExportFormat.WebP, true),
         )
         // 有损 WebP 用质量，又拦回来。
         assertFalse(
-            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", SampleFormat.WebP, false),
+            ExportRules.canSubmit(ExportSizeMode.Original, "1600", "59", ExportFormat.WebP, false),
         )
         // 长边档才校验长边。
-        assertFalse(ExportRules.canSubmit(ExportSizeMode.LongEdge, "0", "100", SampleFormat.Jpeg, true))
-        assertTrue(ExportRules.canSubmit(ExportSizeMode.Original, "0", "100", SampleFormat.Jpeg, true))
+        assertFalse(ExportRules.canSubmit(ExportSizeMode.LongEdge, "0", "100", ExportFormat.Jpeg, true))
+        assertTrue(ExportRules.canSubmit(ExportSizeMode.Original, "0", "100", ExportFormat.Jpeg, true))
     }
 
     // ---- 文案（P2-2 的写法） ------------------------------------------------
 
     @Test
     fun jpeg_says_quality_and_that_it_re_encodes_once() {
-        val line = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, SampleFormat.Jpeg, 100, true)
+        val line = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, ExportFormat.Jpeg, 100, true)
         assertTrue(line.contains("原分辨率，不缩放"), line)
         assertTrue(line.contains("JPEG 质量 100"), line)
         assertTrue(line.contains("会重新编码一次"), line)
@@ -132,18 +133,18 @@ class DesktopExportDialogTest {
 
     @Test
     fun png_and_lossless_webp_say_lossless_and_never_mention_quality() {
-        val png = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, SampleFormat.Png, 100, true)
+        val png = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, ExportFormat.Png, 100, true)
         assertTrue(png.contains("无损编码"), png)
         assertFalse(png.contains("质量"), png)
         assertFalse(png.contains("重新编码"), png)
-        val webp = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, SampleFormat.WebP, 100, true)
+        val webp = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, ExportFormat.WebP, 100, true)
         assertTrue(webp.contains("无损编码"), webp)
         assertFalse(webp.contains("有损"), webp)
     }
 
     @Test
     fun lossy_webp_is_not_called_lossless() {
-        val line = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, SampleFormat.WebP, 100, false)
+        val line = ExportCopy.summaryLine(ExportSizeMode.Original, 1600, ExportFormat.WebP, 100, false)
         assertTrue(line.contains("有损"), line)
         assertTrue(line.contains("会重新编码一次"), line)
         assertFalse(line.contains("无损编码"), line)
@@ -151,7 +152,7 @@ class DesktopExportDialogTest {
 
     @Test
     fun a_downscaled_export_never_claims_original_resolution() {
-        val line = ExportCopy.summaryLine(ExportSizeMode.LongEdge, 2048, SampleFormat.Jpeg, 100, true)
+        val line = ExportCopy.summaryLine(ExportSizeMode.LongEdge, 2048, ExportFormat.Jpeg, 100, true)
         assertFalse(line.contains("原分辨率"), "缩小尺寸时不写「原分辨率」：$line")
         // D-1 设计变化（WP-X2）：长边档是「归一」，目标比画布大时也会放大，所以
         // 文案从「长边缩到」改成「长边归一到」——否则小图导出时界面承诺与成片不符。
@@ -160,11 +161,11 @@ class DesktopExportDialogTest {
 
     @Test
     fun metadata_copy_matches_the_pipeline_that_exists_today() {
-        assertEquals(listOf(ExportCopy.GPS_NOTE), ExportCopy.metadataLines(SampleFormat.Jpeg))
-        assertEquals(listOf(ExportCopy.GPS_NOTE), ExportCopy.metadataLines(SampleFormat.WebP))
+        assertEquals(listOf(ExportCopy.GPS_NOTE), ExportCopy.metadataLines(ExportFormat.Jpeg))
+        assertEquals(listOf(ExportCopy.GPS_NOTE), ExportCopy.metadataLines(ExportFormat.WebP))
         assertEquals(
             listOf(ExportCopy.GPS_NOTE, ExportCopy.PNG_EXIF_NOTE),
-            ExportCopy.metadataLines(SampleFormat.Png),
+            ExportCopy.metadataLines(ExportFormat.Png),
             "桌面 PNG 走 ImageIO，不写 EXIF",
         )
         assertTrue(ExportCopy.GPS_NOTE.contains("去掉 GPS"))
@@ -172,13 +173,13 @@ class DesktopExportDialogTest {
 
     @Test
     fun no_copy_line_promises_that_the_file_is_not_recompressed() {
-        val everyFormat = SampleFormat.entries.flatMap { format ->
+        val everyFormat = ExportFormat.entries.flatMap { format ->
             listOf(true, false).flatMap { lossless ->
                 ExportSizeMode.entries.map { mode ->
                     ExportCopy.summaryLine(mode, 4096, format, 100, lossless)
                 }
             }
-        } + SampleFormat.entries.flatMap { ExportCopy.metadataLines(it) }
+        } + ExportFormat.entries.flatMap { ExportCopy.metadataLines(it) }
         everyFormat.forEach { line ->
             assertFalse(line.contains("不重新压缩"), line)
             assertFalse(line.contains("不二次压缩"), line)
@@ -230,10 +231,10 @@ class DesktopExportDialogTest {
     @Test
     fun the_byte_estimate_follows_the_format() {
         val pixels = ExportPixels(4000, 3000)
-        val jpeg100 = ExportEstimate.estimatedBytes(pixels, SampleFormat.Jpeg, 100, true)!!
-        val jpeg60 = ExportEstimate.estimatedBytes(pixels, SampleFormat.Jpeg, 60, true)!!
-        val png = ExportEstimate.estimatedBytes(pixels, SampleFormat.Png, 100, true)!!
-        val webp = ExportEstimate.estimatedBytes(pixels, SampleFormat.WebP, 100, false)!!
+        val jpeg100 = ExportEstimate.estimatedBytes(pixels, ExportFormat.Jpeg, 100, true)!!
+        val jpeg60 = ExportEstimate.estimatedBytes(pixels, ExportFormat.Jpeg, 60, true)!!
+        val png = ExportEstimate.estimatedBytes(pixels, ExportFormat.Png, 100, true)!!
+        val webp = ExportEstimate.estimatedBytes(pixels, ExportFormat.WebP, 100, false)!!
         assertTrue(jpeg60 < jpeg100, "低质量体积更小")
         assertTrue(png > jpeg100, "无损 PNG 比 q100 JPEG 大")
         assertTrue(webp < jpeg100, "有损 WebP 最小")
@@ -244,12 +245,12 @@ class DesktopExportDialogTest {
 
     @Test
     fun the_preview_line_admits_it_is_an_estimate() {
-        val line = ExportEstimate.previewLine(ExportPixels(4000, 3200), SampleFormat.Jpeg, 100, true)
+        val line = ExportEstimate.previewLine(ExportPixels(4000, 3200), ExportFormat.Jpeg, 100, true)
         assertTrue(line.startsWith("约 4000 × 3200 px"), line)
         assertTrue(line.contains("约"), line)
         assertEquals(
             "尺寸在导出后显示",
-            ExportEstimate.previewLine(null, SampleFormat.Jpeg, 100, true),
+            ExportEstimate.previewLine(null, ExportFormat.Jpeg, 100, true),
         )
     }
 

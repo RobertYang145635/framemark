@@ -5,6 +5,7 @@ import java.io.File
 import javax.imageio.ImageIO
 import javax.imageio.ImageReadParam
 import java.awt.image.BufferedImage
+import com.framemark.native.product.FmLog
 
 /**
  * The **single** source of photo dimensions for the desktop renderer (WP-X1 /
@@ -87,15 +88,15 @@ object PhotoSizes {
                 val param: ImageReadParam = reader.defaultReadParam
                 if (step > 1) param.setSourceSubsampling(step, step, 0, 0)
                 val image = reader.read(0, param)
-                println(
-                    "FM_PHOTO_READ path=${file.name} source=${width}x${height} " +
+                FmLog.info("FM_PHOTO_READ") {
+                    "path=${file.name} source=${width}x${height} " +
                         "read=${image.width}x${image.height} step=$step " +
-                        "ms=${(System.nanoTime() - start) / 1_000_000}",
-                )
+                        "ms=${(System.nanoTime() - start) / 1_000_000}"
+                }
                 return image
             }
         } catch (e: Throwable) {
-            println("FM_PHOTO_READ_FALLBACK path=${file.name} error=${e.message ?: e::class.simpleName}")
+            FmLog.info("FM_PHOTO_READ_FALLBACK") { "path=${file.name} error=${e.message ?: e::class.simpleName}" }
         } finally {
             runCatching { reader?.dispose() }
         }

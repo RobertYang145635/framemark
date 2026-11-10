@@ -6,6 +6,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import com.framemark.native.LaunchOptions
+import com.framemark.native.product.FmLog
 
 /**
  * P3f evidence probe: publish where a named UI target actually is, in window
@@ -30,16 +31,16 @@ object ControlProbe {
         val shape = "${rect.left.toInt()}|${rect.top.toInt()}|${rect.width.toInt()}|${rect.height.toInt()}"
         if (geometry[key] == shape) return
         geometry[key] = shape
-        println(
-            "FM_CONTROL_BOUNDS key=$key x=${rect.left.toInt()} y=${rect.top.toInt()} " +
-                "w=${rect.width.toInt()} h=${rect.height.toInt()} sig=${geometry.size}",
-        )
+        FmLog.info("FM_CONTROL_BOUNDS") {
+            "key=$key x=${rect.left.toInt()} y=${rect.top.toInt()} " +
+                "w=${rect.width.toInt()} h=${rect.height.toInt()} sig=${geometry.size}"
+        }
     }
 
     /** The value a control currently holds, so a click can be proven to have hit it. */
     fun state(key: String, value: Any?, type: String = "") {
         if (!LaunchOptions.controlProbe) return
-        println("FM_CONTROL_STATE key=$key value=$value type=$type")
+        FmLog.info("FM_CONTROL_STATE") { "key=$key value=$value type=$type" }
     }
 }
 

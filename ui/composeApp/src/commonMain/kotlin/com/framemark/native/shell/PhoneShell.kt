@@ -92,6 +92,7 @@ import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.withNativeTextSlots
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.product.FmLog
 
 /** The legacy batch sheet is retained only for the explicit QA/demo launch path. */
 internal fun createPhoneBatchDemoRunner(
@@ -126,9 +127,9 @@ fun PhoneShell() {
             loading = !store.loaded,
             error = store.loadError ?: store.saveError,
             onRetry = {
-                println("FM_PROJECT_RETRY_REQUESTED surface=phone")
+                FmLog.info("FM_PROJECT_RETRY_REQUESTED") { "surface=phone" }
                 val recovered = store.retryProjectLoad()
-                println("FM_PROJECT_RETRY_RESULT recovered=$recovered error=${store.loadError ?: "-"}")
+                FmLog.info("FM_PROJECT_RETRY_RESULT") { "recovered=$recovered error=${store.loadError ?: "-"}" }
             },
         )
         return
@@ -219,7 +220,7 @@ fun PhoneShell() {
         // an existing Queued job drives the commit pipeline without UI interaction.
         // LaunchOptions.queueAutoStart is set only inside `if (BuildConfig.DEBUG)`.
         if (LaunchOptions.queueAutoStart && batchQueue.pendingCount > 0) {
-            println("FM_QUEUE_AUTOSTART pending=${batchQueue.pendingCount}")
+            FmLog.info("FM_QUEUE_AUTOSTART") { "pending=${batchQueue.pendingCount}" }
             batchQueue.start()
         }
     }
@@ -273,7 +274,7 @@ fun PhoneShell() {
     fun applyDesignToAll() {
         store.applyActiveDesignToAll()
         hydrateToken++
-        println("FM_APPLY_ALL photos=${store.photos.size} card=${store.activeDesign?.cardId} wm=${store.activeDesign?.overlay?.asset?.sha256?.take(8) ?: "<none>"}")
+        FmLog.info("FM_APPLY_ALL") { "photos=${store.photos.size} card=${store.activeDesign?.cardId} wm=${store.activeDesign?.overlay?.asset?.sha256?.take(8) ?: "<none>"}" }
     }
 
     fun buildPhotoBatch(): List<BatchCandidate> = store.photoEntries().mapNotNull { entry ->
@@ -309,12 +310,12 @@ fun PhoneShell() {
         )
         photoBatchOpen = true
         report.rejected.firstOrNull()?.let { (name, why) -> watermarkError = "$name：$why" }
-        println(
-            "FM_PHOTO_BATCH open photos=${store.photos.size} selected=${report.selected} " +
+        FmLog.info("FM_PHOTO_BATCH") {
+            "open photos=${store.photos.size} selected=${report.selected} " +
                 "added=${report.added} duplicate=${report.duplicates} " +
                 "undesigned=${report.undesigned} rejected=${report.rejected.size} " +
-                "reconciled=${report.reconciled} rows=${batchQueue.rows().size}",
-        )
+                "reconciled=${report.reconciled} rows=${batchQueue.rows().size}"
+        }
     }
 
     /**
@@ -335,10 +336,10 @@ fun PhoneShell() {
                 submitAndOpenPhotoBatch()
             }
         }
-        println(
-            "FM_PHOTO_BATCH_PREFLIGHT photos=${store.photos.size} designed=${preflight.designedCount} " +
-                "undesigned=${preflight.undesignedCount}",
-        )
+        FmLog.info("FM_PHOTO_BATCH_PREFLIGHT") {
+            "photos=${store.photos.size} designed=${preflight.designedCount} " +
+                "undesigned=${preflight.undesignedCount}"
+        }
     }
 
     // The project drives the strip; every path list change re-projects it.
@@ -353,7 +354,7 @@ fun PhoneShell() {
         store.adoptPaths(PhotoSelection.batch, path, PhotoSelection.displayNamesByPath)
         // A pick always lands in the editor, whichever page started it.
         page = PhonePagePolicy.afterPhotosAdded()
-        println("FM_TRAY photos=${tray.count} picked=${PhotoSelection.batch.size} selected=${tray.selected?.label}")
+        FmLog.info("FM_TRAY") { "photos=${tray.count} picked=${PhotoSelection.batch.size} selected=${tray.selected?.label}" }
     }
 
     // The engine always renders the active photo, so a restore points it there.
@@ -361,7 +362,7 @@ fun PhoneShell() {
         val path = store.activePhoto?.path?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
         if (PhotoSelection.path != path) {
             PhotoSelection.set(path)
-            println("FM_PROJECT_PHOTO $path")
+            FmLog.info("FM_PROJECT_PHOTO") { "$path" }
         }
     }
 
@@ -390,10 +391,10 @@ fun PhoneShell() {
             pendingWatermark = null
             watermarkError = "${error.code} ${error.message}"
         }
-        println(
-            "FM_WATERMARK_APPLY photo=$photoId path=$path pending=${pendingWatermark != null} " +
-                "wm=${store.overlayOf(photoId)?.asset?.sha256?.take(12) ?: "<none>"} err=${error?.code ?: "none"}",
-        )
+        FmLog.info("FM_WATERMARK_APPLY") {
+            "photo=$photoId path=$path pending=${pendingWatermark != null} " +
+                "wm=${store.overlayOf(photoId)?.asset?.sha256?.take(12) ?: "<none>"} err=${error?.code ?: "none"}"
+        }
     }
 
     // Evidence: FM_PHOTO keeps the engine pointed at the same seeded file.
@@ -416,7 +417,7 @@ fun PhoneShell() {
         if (LaunchOptions.batchReset) demoBatch.resetForVerify()
         demoBatch.seedDemo(ready.snapshot.cards, LaunchOptions.batchCount)
         if (WorkflowEnv.platform?.batchAutoStart() == true && demoBatch.hasPending) demoBatch.start()
-        println("FM_BATCH_DEMO items=${demoBatch.items.size} pending=${demoBatch.hasPending} reset=${LaunchOptions.batchReset}")
+        FmLog.info("FM_BATCH_DEMO") { "items=${demoBatch.items.size} pending=${demoBatch.hasPending} reset=${LaunchOptions.batchReset}" }
     }
 
     // Evidence-only: open a workflow sheet once the editor model is ready (so the
@@ -430,14 +431,14 @@ fun PhoneShell() {
                 page = PhonePage.Editor
                 presetSheetOpen = true
                 LaunchOptions.sheetsApplied = true
-                println("FM_OPEN_SHEET presets card=${card.id}")
+                FmLog.info("FM_OPEN_SHEET") { "presets card=${card.id}" }
             }
             LaunchOptions.openExportSheet -> {
                 if (activeDesignSnapshot() != null) {
                     page = PhonePage.Editor
                     exportSheetOpen = true
                     LaunchOptions.sheetsApplied = true
-                    println("FM_OPEN_SHEET export card=${card.id}")
+                    FmLog.info("FM_OPEN_SHEET") { "export card=${card.id}" }
                 }
             }
         }
@@ -450,11 +451,11 @@ fun PhoneShell() {
         val result = LibraryDataSource.load()
         libraryState = if (result.error == null) {
             val snapshot = result.snapshot
-            println(
-                "FM_LIB_READY cards=${snapshot.cards.size} categories=${snapshot.categories.size} " +
+            FmLog.info("FM_LIB_READY") {
+                "cards=${snapshot.cards.size} categories=${snapshot.categories.size} " +
                     "previews=${snapshot.mappedPreviews} unmapped=${snapshot.unmappedPreviewIds.size} " +
-                    "generatedAt=${snapshot.generatedAt}",
-            )
+                    "generatedAt=${snapshot.generatedAt}"
+            }
             LibraryLoadState.Ready(snapshot)
         } else {
             LibraryLoadState.Failed(result.error)
@@ -470,11 +471,11 @@ fun PhoneShell() {
         inspectorState = InspectorLoadState.Loading
         val result = InspectorDataSource.load()
         inspectorState = if (result.error == null) {
-            println(
-                "FM_INSPECTOR_READY cards=${result.snapshot.capabilityCards} " +
+            FmLog.info("FM_INSPECTOR_READY") {
+                "cards=${result.snapshot.capabilityCards} " +
                     "audited=${result.snapshot.auditedCards} platformRows=${result.snapshot.platformRowCount} " +
-                    "metaRecords=${result.snapshot.metaRecords} metaControls=${result.snapshot.metaControls}",
-            )
+                    "metaRecords=${result.snapshot.metaRecords} metaControls=${result.snapshot.metaControls}"
+            }
             InspectorLoadState.Ready(result.snapshot)
         } else {
             InspectorLoadState.Failed(result.error)
@@ -495,19 +496,19 @@ fun PhoneShell() {
         // (measured: `exact=1 libCount=0`), which used to fall through to the default.
         if (activeDesign == null) {
             selectedCard = null
-            println("FM_CARD_RESTORE no_design photo=${store.activePhotoId ?: "-"}; waiting for explicit card selection")
+            FmLog.info("FM_CARD_RESTORE") { "no_design photo=${store.activePhotoId ?: "-"}; waiting for explicit card selection" }
             return@LaunchedEffect
         }
         val wanted = cards.firstOrNull { it.id == designCard }
-        println(
-            "FM_CARD_RESTORE design=${if (store.activeDesign == null) "none" else "own"} " +
+        FmLog.info("FM_CARD_RESTORE") {
+            "design=${if (store.activeDesign == null) "none" else "own"} " +
                 "designCard=${designCard ?: "-"} projectCard=${store.project.selectedCardId ?: "-"} " +
-                "resolved=${wanted?.id ?: "-"} cards=${cards.size} active=${store.activePhotoId?.takeLast(22) ?: "-"}",
-        )
+                "resolved=${wanted?.id ?: "-"} cards=${cards.size} active=${store.activePhotoId?.takeLast(22) ?: "-"}"
+        }
         if (wanted != null) {
             if (wanted.id != selectedCard?.id) {
                 selectedCard = wanted
-                println("FM_PROJECT_CARD_RESTORE card=${wanted.id} photo=${store.activePhotoId}")
+                FmLog.info("FM_PROJECT_CARD_RESTORE") { "card=${wanted.id} photo=${store.activePhotoId}" }
             }
             return@LaunchedEffect
         }
@@ -516,15 +517,15 @@ fun PhoneShell() {
         // design a moment later, so stand down: 宁可不改不存.
         if (store.activeDesign != null) {
             val near = cards.filter { designCard != null && it.id.take(20) == designCard.take(20) }.map { it.id }.take(3)
-            println(
-                "FM_CARD_RESTORE_UNRESOLVED keep=$designCard keepLen=${designCard?.length ?: 0} " +
+            FmLog.info("FM_CARD_RESTORE_UNRESOLVED") {
+                "keep=$designCard keepLen=${designCard?.length ?: 0} " +
                     "exact=${cards.count { it.id == designCard }} libCount=${libraryCards.size} " +
-                    "near=$near first3=${cards.take(3).map { it.id }}",
-            )
+                    "near=$near first3=${cards.take(3).map { it.id }}"
+            }
             return@LaunchedEffect
         }
         selectedCard = null
-        println("FM_CARD_RESTORE_UNRESOLVED no card matched saved photo design=$designCard")
+        FmLog.info("FM_CARD_RESTORE_UNRESOLVED") { "no card matched saved photo design=$designCard" }
     }
 
     // Border changes are not undoable; the active photo owns the card it shows.
@@ -546,7 +547,7 @@ fun PhoneShell() {
         )
         if (error == null) {
             pendingWatermark = null
-            println("FM_WM_PENDING_APPLIED photo=$photoId sha=${store.overlayOf(photoId)?.asset?.sha256?.take(12) ?: "-"}")
+            FmLog.info("FM_WM_PENDING_APPLIED") { "photo=$photoId sha=${store.overlayOf(photoId)?.asset?.sha256?.take(12) ?: "-"}" }
         } else {
             watermarkError = "${error.code} ${error.message}"
         }
@@ -583,10 +584,10 @@ fun PhoneShell() {
         selectedCard = c1
         hydrateToken++
         pairDemoSeeded = true
-        println(
-            "FM_PAIR_DEMO photos=${store.photos.size} A=${c1.id} B=${c2.id} C=${c1.id} " +
-                "wm=${store.photoEntries().getOrNull(2)?.design?.overlay?.asset?.sha256?.take(8) ?: "<none>"}",
-        )
+        FmLog.info("FM_PAIR_DEMO") {
+            "photos=${store.photos.size} A=${c1.id} B=${c2.id} C=${c1.id} " +
+                "wm=${store.photoEntries().getOrNull(2)?.design?.overlay?.asset?.sha256?.take(8) ?: "<none>"}"
+        }
     }
 
     // The inspector model drives the export snapshot; building it here keeps the
@@ -630,13 +631,13 @@ fun PhoneShell() {
             if (mapped != ui) {
                 exportHookApplied = true
                 session.export = mapped
-                println("FM_EXPORT_LAUNCH_OVERRIDE format=${mapped.format.label} size=${mapped.sizeMode} longEdge=${mapped.longEdge}")
+                FmLog.info("FM_EXPORT_LAUNCH_OVERRIDE") { "format=${mapped.format.label} size=${mapped.sizeMode} longEdge=${mapped.longEdge}" }
             }
         }
-        println(
-            "FM_PHOTO_DESIGN load=$photoId card=${built.cardId} " +
-                "wm=${store.overlayOf(photoId)?.asset?.sha256?.take(8) ?: "-"} values=${session.values.size}",
-        )
+        FmLog.info("FM_PHOTO_DESIGN") {
+            "load=$photoId card=${built.cardId} " +
+                "wm=${store.overlayOf(photoId)?.asset?.sha256?.take(8) ?: "-"} values=${session.values.size}"
+        }
     }
 
     // Rows arrive after the first render. Merge their stored values without
@@ -652,7 +653,7 @@ fun PhoneShell() {
         val missing = stored.filterKeys { it !in session.values }
         if (missing.isNotEmpty()) {
             session.mergeMissingValues(missing)
-            println("FM_TEXT_ROWS_HYDRATE photo=$photoId keys=${missing.size} total=${session.values.size}")
+            FmLog.info("FM_TEXT_ROWS_HYDRATE") { "photo=$photoId keys=${missing.size} total=${session.values.size}" }
         }
     }
 
@@ -669,7 +670,7 @@ fun PhoneShell() {
             legacyToPreset(item, card.id, card.systemStyle, InspectorModelFactory.build(card, snapshot))
         }
         val migrated = store.importLegacyPresets(converted, expectedCount = legacy.size)
-        if (migrated > 0) println("FM_PRESET_MIGRATED count=$migrated legacy_kept=${PresetStore.items.size}")
+        if (migrated > 0) FmLog.info("FM_PRESET_MIGRATED") { "count=$migrated legacy_kept=${PresetStore.items.size}" }
     }
 
     // Evidence-only: open a specific card from FM_OPEN_CARD once the library is ready.
@@ -682,9 +683,9 @@ fun PhoneShell() {
             selectedCard = card
             if (tray.isEmpty) store.adoptSample()
             autoOpened = true
-            println("FM_OPEN_CARD ${card.id} name=${card.name}")
+            FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name}" }
         } else {
-            println("FM_OPEN_CARD_MISSING $id")
+            FmLog.info("FM_OPEN_CARD_MISSING") { "$id" }
             autoOpened = true
         }
     }
@@ -714,7 +715,7 @@ fun PhoneShell() {
             tool != EditorTool.Border -> tool = EditorTool.Border
             else -> {
                 val next = PhonePagePolicy.back(page) ?: return@BackHandler
-                println("FM_PHONE_PAGE ${page.name}->${next.name} viaBack")
+                FmLog.info("FM_PHONE_PAGE") { "${page.name}->${next.name} viaBack" }
                 page = next
             }
         }
@@ -734,7 +735,7 @@ fun PhoneShell() {
         val current = PhotoSelection.path
         if (current != photo.path) {
             PhotoSelection.set(photo.path)
-            println("FM_TRAY_SELECT ${photo.label} id=$id")
+            FmLog.info("FM_TRAY_SELECT") { "${photo.label} id=$id" }
         }
         syncTray()
     }
@@ -747,10 +748,10 @@ fun PhoneShell() {
             PhotoSelection.set(null)
             selectedCard = null
             tool = EditorTool.Border
-            println("FM_TRAY_EMPTY")
+            FmLog.info("FM_TRAY_EMPTY")
         } else {
             if (next != null && PhotoSelection.path != next.path) PhotoSelection.set(next.path)
-            println("FM_TRAY_REMOVE photos=${store.photos.size} next=${next?.displayName}")
+            FmLog.info("FM_TRAY_REMOVE") { "photos=${store.photos.size} next=${next?.displayName}" }
         }
         syncTray()
     }
@@ -765,9 +766,9 @@ fun PhoneShell() {
         if (tray.isEmpty) {
             store.adoptSample()
             PhotoSelection.set(null)
-            println("FM_TRAY_SAMPLE browse")
+            FmLog.info("FM_TRAY_SAMPLE") { "browse" }
         }
-        println("FM_OPEN_CARD ${card.id} name=${card.name} inPanel=true")
+        FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name} inPanel=true" }
     }
 
     Box(
@@ -782,12 +783,12 @@ fun PhoneShell() {
                 when (event.key) {
                     Key.Z -> {
                         val handled = if (event.isShiftPressed) session.redo() else session.undo()
-                        if (handled) println("FM_SHORTCUT ${if (event.isShiftPressed) "redo" else "undo"}")
+                        if (handled) FmLog.info("FM_SHORTCUT") { "${if (event.isShiftPressed) "redo" else "undo"}" }
                         handled
                     }
                     Key.Y -> {
                         val handled = session.redo()
-                        if (handled) println("FM_SHORTCUT redo")
+                        if (handled) FmLog.info("FM_SHORTCUT") { "redo" }
                         handled
                     }
                     else -> false
@@ -801,7 +802,7 @@ fun PhoneShell() {
                 onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
                 onOpenSettings = {
                     page = PhonePage.Settings
-                    println("FM_PHONE_PAGE Home->Settings viaGear")
+                    FmLog.info("FM_PHONE_PAGE") { "Home->Settings viaGear" }
                 },
                 onBatch = {
                     val destination = PhoneHomePolicy.batch(store.photos.size)
@@ -812,7 +813,7 @@ fun PhoneShell() {
                                 ?: WorkflowEnv.photoPicker?.invoke()
                         else -> Unit
                     }
-                    println("FM_HOME_BATCH $destination photos=${store.photos.size}")
+                    FmLog.info("FM_HOME_BATCH") { "$destination photos=${store.photos.size}" }
                 },
                 onPresets = {
                     when (PhoneHomePolicy.presets(store.photos.size)) {
@@ -827,7 +828,7 @@ fun PhoneShell() {
                         syncTray()
                     }
                     page = PhonePagePolicy.afterOpenRecent(exists)
-                    println("FM_HOME_RECENT photo=${edit.photoId} exists=$exists -> ${page.name}")
+                    FmLog.info("FM_HOME_RECENT") { "photo=${edit.photoId} exists=$exists -> ${page.name}" }
                 },
                 // 演示稿的「全部」只是个演示链接；手机上全部照片就在编辑页的胶片条里，
                 // 所以这里选中最上面那张并进编辑页，不做成一枚死按钮。
@@ -839,7 +840,7 @@ fun PhoneShell() {
                         syncTray()
                     }
                     page = PhonePagePolicy.afterOpenRecent(exists)
-                    println("FM_HOME_ALL photos=${store.photos.size} exists=$exists -> ${page.name}")
+                    FmLog.info("FM_HOME_ALL") { "photos=${store.photos.size} exists=$exists -> ${page.name}" }
                 },
             )
 
@@ -847,7 +848,7 @@ fun PhoneShell() {
                 errorText = store.saveError,
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.Settings) ?: PhonePage.Home
-                    println("FM_PHONE_PAGE Settings->${page.name} viaClose")
+                    FmLog.info("FM_PHONE_PAGE") { "Settings->${page.name} viaClose" }
                 },
             )
 
@@ -882,7 +883,7 @@ fun PhoneShell() {
                     val id = store.activePhotoId ?: return@PhoneEditorScreen
                     val next = store.projectWatermark(store.overlayOf(id), spec)
                     store.setOverlay(id, next)
-                    if (spec == null) println("FM_WM_CLEARED photo=$id")
+                    if (spec == null) FmLog.info("FM_WM_CLEARED") { "photo=$id" }
                 },
                 onPickWatermark = { WorkflowEnv.watermarkPicker?.invoke() },
                 customizedPhotoIds = tray.items
@@ -906,7 +907,7 @@ fun PhoneShell() {
                 // layers (keyboard / parameter page / focus / sheet) still win first.
                 onRequestHome = {
                     val next = PhonePagePolicy.back(PhonePage.Editor) ?: PhonePage.Home
-                    println("FM_PHONE_PAGE Editor->${next.name} viaTopBarBack")
+                    FmLog.info("FM_PHONE_PAGE") { "Editor->${next.name} viaTopBarBack" }
                     page = next
                 },
             )

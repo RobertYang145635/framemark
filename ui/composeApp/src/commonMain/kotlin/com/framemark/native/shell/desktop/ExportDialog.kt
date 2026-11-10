@@ -64,17 +64,18 @@ import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.EngineFailure
 import com.framemark.native.workflow.ExportNaming
 import com.framemark.native.workflow.ExportResult
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.ImageRect
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PreviewGeometry
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.workflow.DesignSnapshot
 import kotlinx.coroutines.launch
+import com.framemark.native.product.FmLog
 
 /**
  * WP-D2 导出对话框的公共外观件。桌面弹窗里的按钮/分段控件比手机薄一档
@@ -266,7 +267,9 @@ fun DesktopExportDialog(
     val platform = WorkflowEnv.platform
     val settings = session.export
     var qualityText by remember(settings.quality) { mutableStateOf(settings.quality.toString()) }
-    var longEdgeText by remember(settings.longEdge) { mutableStateOf(settings.longEdge.toString()) }
+    var longEdgeText by remember(settings.longEdge) {
+        mutableStateOf((settings.longEdge ?: ExportRules.LONG_EDGE_DEFAULT).toString())
+    }
     var outputDirectory by remember { mutableStateOf(platform?.exportDir ?: "未设置") }
     var result by remember { mutableStateOf<ExportResult?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -275,11 +278,13 @@ fun DesktopExportDialog(
     var frame by remember(card?.id, design, photo?.path) { mutableStateOf<PreviewFrame?>(null) }
 
     val webpAvailable = card != null && NativeEngine.supportsWebpExport()
-    val formats = if (webpAvailable) SampleFormat.entries.toList() else listOf(SampleFormat.Jpeg, SampleFormat.Png)
+    val formats = if (webpAvailable) ExportFormat.entries.toList() else listOf(ExportFormat.Jpeg, ExportFormat.Png)
     val qualityApplies = ExportRules.qualityApplies(settings.format, settings.webpLossless)
     val qualityError = if (qualityApplies) ExportRules.qualityError(qualityText) else null
     val longEdgeError = if (settings.sizeMode == ExportSizeMode.LongEdge) ExportRules.longEdgeError(longEdgeText) else null
-    val effectiveLongEdge = ExportRules.parseLongEdge(longEdgeText) ?: settings.longEdge
+    val effectiveLongEdge = ExportRules.parseLongEdge(longEdgeText)
+        ?: settings.longEdge
+        ?: ExportRules.LONG_EDGE_DEFAULT
     val editable = card != null && NativeEngine.supportsExport(card.id)
     val canExport = editable && qualityError == null && longEdgeError == null && !exporting
     val qualityValue = ExportRules.parseQuality(qualityText) ?: ExportRules.QUALITY_DEFAULT
@@ -319,15 +324,23 @@ fun DesktopExportDialog(
                         current.format,
                         current.webpLossless,
                     ),
+                    // A document may have chosen 指定长边 before any number was stored
+                    // (the product default is null = "not chosen"). Export exactly the
+                    // number the form shows instead of silently keeping the native size.
+                    longEdge = if (current.sizeMode == ExportSizeMode.LongEdge) {
+                        current.longEdge ?: effectiveLongEdge
+                    } else {
+                        current.longEdge
+                    },
                 )
                 // D-1/D-2 的证据行：一次导出把「界面显示」「实际下单」两套数都打出来，
                 // 出片后再用像素/字节/SHA 对账。
-                println(
-                    "FM_DESKTOP_EXPORT_RUN card=${target.id} format=${current.format.extension} " +
+                FmLog.info("FM_DESKTOP_EXPORT_RUN") {
+                    "card=${target.id} format=${current.format.extension} " +
                         "quality=${effective.quality} sizeMode=${current.sizeMode} " +
                         "longEdge=${effective.effectiveLongEdge ?: "-"} " +
-                        "photo=${photo?.widthPx ?: 0}x${photo?.heightPx ?: 0}",
-                )
+                        "photo=${photo?.widthPx ?: 0}x${photo?.heightPx ?: 0}"
+                }
                 val produced = NativeEngine.export(
                     card = target,
                     settings = effective,
@@ -340,12 +353,12 @@ fun DesktopExportDialog(
                 )
                 result = produced
                 session.lastExport = produced
-                println("FM_DESKTOP_EXPORT path=${produced.path} ${produced.width}x${produced.height} bytes=${produced.bytes}")
+                FmLog.info("FM_DESKTOP_EXPORT") { "path=${produced.path} ${produced.width}x${produced.height} bytes=${produced.bytes}" }
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
                 val failure = t as? EngineFailure
                 error = failure?.let { "${it.userMessage}（${it.code}）" } ?: "导出没有成功，请重试。"
-                println("FM_DESKTOP_EXPORT_FAIL ${failure?.code ?: "FM-E-INTERNAL-001"} ${t.message}")
+                FmLog.warn("FM_DESKTOP_EXPORT_FAIL") { "${failure?.code ?: "FM-E-INTERNAL-001"} ${t.message}" }
             } finally {
                 exporting = false
             }
@@ -441,7 +454,21 @@ fun DesktopExportDialog(
                             photoStem = ExportNaming.photoStem(photo?.displayName ?: photo?.path),
                             photoIndex = photoIndex,
                             modifier = Modifier.weight(1f).fillMaxHeight(),
-                            onChange = { next -> session.export = next; error = null },
+                            onChange = { next ->
+                                // Switching to 指定长边 pins the number shown in the field,
+                                // so the session never holds "long edge mode, no value".
+                                session.export = if (
+                                    next.sizeMode == ExportSizeMode.LongEdge && next.longEdge == null
+                                ) {
+                                    next.copy(
+                                        longEdge = ExportRules.parseLongEdge(longEdgeText)
+                                            ?: ExportRules.LONG_EDGE_DEFAULT,
+                                    )
+                                } else {
+                                    next
+                                }
+                                error = null
+                            },
                             onQualityText = { raw ->
                                 qualityText = raw
                                 ExportRules.parseQuality(raw)?.let { value ->
@@ -605,9 +632,9 @@ private fun ExportPreviewColumn(
 }
 
 private fun formatBadge(settings: ExportSettings, quality: Int): String = when (settings.format) {
-    SampleFormat.Jpeg -> "JPG · 质量 $quality"
-    SampleFormat.Png -> "PNG · 无损"
-    SampleFormat.WebP -> if (settings.webpLossless) "WebP · 无损" else "WebP · 质量 $quality"
+    ExportFormat.Jpeg -> "JPG · 质量 $quality"
+    ExportFormat.Png -> "PNG · 无损"
+    ExportFormat.WebP -> if (settings.webpLossless) "WebP · 无损" else "WebP · 质量 $quality"
 }
 
 /**
@@ -617,7 +644,7 @@ private fun formatBadge(settings: ExportSettings, quality: Int): String = when (
 @Composable
 private fun ExportFormColumn(
     settings: ExportSettings,
-    formats: List<SampleFormat>,
+    formats: List<ExportFormat>,
     qualityText: String,
     qualityError: String?,
     qualityValue: Int,

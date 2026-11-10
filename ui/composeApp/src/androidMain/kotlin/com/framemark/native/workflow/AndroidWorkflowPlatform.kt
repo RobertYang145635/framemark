@@ -21,6 +21,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.framemark.native.product.FmLog
 
 /**
  * Android implementation of the workflow platform: preset JSON in the app's
@@ -97,7 +98,7 @@ class AndroidWorkflowPlatform(private val context: Context) : WorkflowPlatform {
                             val markerDir = com.framemark.native.LaunchOptions.crashMarkerDir!!
                             val marker = File(markerDir, "marker-midwrite")
                             marker.writeText("midwrite written=$totalWritten pid=${android.os.Process.myPid()}")
-                            println("FM_CRASH_WINDOW midwrite written=$totalWritten pid=${android.os.Process.myPid()}")
+                            FmLog.info("FM_CRASH_WINDOW") { "midwrite written=$totalWritten pid=${android.os.Process.myPid()}" }
                             while (true) Thread.sleep(200)
                         }
                     }

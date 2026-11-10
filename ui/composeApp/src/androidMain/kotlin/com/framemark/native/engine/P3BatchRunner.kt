@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.os.SystemClock
 import com.framemark.native.workflow.DesignSnapshot
-import com.framemark.native.workflow.ExportSettings
+import com.framemark.native.product.ExportSettings
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PhotoSelection
@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import com.framemark.native.product.FmLog
 
 /**
  * Evidence-only harness for the phone P3 batch: three photos through the real
@@ -48,7 +49,7 @@ object P3BatchRunner {
         overlayPath: String,
     ) {
         if (running) {
-            println("FM_P3_SKIP already-running")
+            FmLog.info("FM_P3_SKIP") { "already-running" }
             return
         }
         running = true
@@ -128,14 +129,14 @@ object P3BatchRunner {
                         row.put("ok", false).put("error", (t.message ?: "error").take(400))
                     }
                     out.appendText(row.toString() + "\n")
-                    println("FM_P3_ROW $row")
+                    FmLog.info("FM_P3_ROW") { "$row" }
                 }
             } finally {
                 AndroidNativeRender.skipGalleryPublish = false
-                println(
-                    "FM_P3_DONE wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath} " +
-                        "globalBefore=${globalBefore ?: "<sample>"} globalAfter=${PhotoSelection.path ?: "<sample>"}",
-                )
+                FmLog.info("FM_P3_DONE") {
+                    "wallMs=${SystemClock.elapsedRealtime() - wall} dir=${dir.absolutePath} " +
+                        "globalBefore=${globalBefore ?: "<sample>"} globalAfter=${PhotoSelection.path ?: "<sample>"}"
+                }
                 running = false
             }
         }
@@ -185,7 +186,7 @@ object P3BatchRunner {
                 .put("error", (t.message ?: t::class.simpleName ?: "error").take(400))
         }
         out.appendText(json.toString() + "\n")
-        println("FM_P3_ROW $json")
+        FmLog.info("FM_P3_ROW") { "$json" }
     }
 
     private suspend fun preview(
@@ -228,7 +229,7 @@ object P3BatchRunner {
         }
         json.put("ms", SystemClock.elapsedRealtime() - started)
         out.appendText(json.toString() + "\n")
-        println("FM_P3_ROW $json")
+        FmLog.info("FM_P3_ROW") { "$json" }
     }
 
     /** Newest geom sidecar in the renderer's cache dir. */

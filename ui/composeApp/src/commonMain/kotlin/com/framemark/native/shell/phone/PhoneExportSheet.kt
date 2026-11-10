@@ -52,7 +52,7 @@ import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.PrimaryButton
-import com.framemark.native.workflow.SampleFormat
+import com.framemark.native.product.ExportFormat
 import com.framemark.native.workflow.SheetFieldLabel
 import com.framemark.native.workflow.SheetNote
 import com.framemark.native.workflow.SheetTag
@@ -61,6 +61,7 @@ import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 /**
  * Phone export sheet (report §7.6, demo `06-phone-export.png`).
@@ -104,7 +105,7 @@ fun PhoneExportSheet(
     val native = card != null && NativeEngine.supportsExport(card.id)
     val busyNow = busy || sharing || publishing
 
-    fun update(next: com.framemark.native.workflow.ExportSettings) {
+    fun update(next: com.framemark.native.product.ExportSettings) {
         session.export = PhoneExportOptions.normalized(next)
         error = null
     }
@@ -151,7 +152,7 @@ fun PhoneExportSheet(
                 )
                 session.lastExport = exported
                 result = exported
-                println("FM_PHONE_EXPORT card=${target.id} path=${exported.path} note=${exported.note ?: "-"}")
+                FmLog.info("FM_PHONE_EXPORT") { "card=${target.id} path=${exported.path} note=${exported.note ?: "-"}" }
                 if (shareAfter) share(exported.path)
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
@@ -159,7 +160,7 @@ fun PhoneExportSheet(
                 val engineFailure = failure as? EngineFailure
                 error = engineFailure?.let { "${it.userMessage}（${it.code}）" }
                     ?: "导出没有成功，请重试。"
-                println("FM_EXPORT_FAIL ${engineFailure?.code ?: "FM-E-INTERNAL-001"} ${failure.message}")
+                FmLog.warn("FM_EXPORT_FAIL") { "${engineFailure?.code ?: "FM-E-INTERNAL-001"} ${failure.message}" }
             } finally {
                 busy = false
                 session.exporting = false
@@ -305,10 +306,10 @@ private fun ExportSheetHeader(onClose: () -> Unit) {
 }
 
 /** 返修 P2-2: the promise the chosen format really keeps, in the demo's `.pexp-prev` line. */
-private fun formatQualityLabel(format: SampleFormat, webpLossless: Boolean): String = when (format) {
-    SampleFormat.Jpeg -> "JPG · 质量 100"
-    SampleFormat.Png -> "PNG · 无损"
-    SampleFormat.WebP -> if (webpLossless) "WebP · 无损" else "WebP · 质量 100"
+private fun formatQualityLabel(format: ExportFormat, webpLossless: Boolean): String = when (format) {
+    ExportFormat.Jpeg -> "JPG · 质量 100"
+    ExportFormat.Png -> "PNG · 无损"
+    ExportFormat.WebP -> if (webpLossless) "WebP · 无损" else "WebP · 质量 100"
 }
 
 /**
@@ -502,7 +503,7 @@ internal fun ColumnScope.ExportFormContent(
     overlay: () -> OverlaySpec?,
     photoPath: String?,
     native: Boolean,
-    settings: com.framemark.native.workflow.ExportSettings,
+    settings: com.framemark.native.product.ExportSettings,
     busy: Boolean,
     sharing: Boolean,
     error: String?,
@@ -511,7 +512,7 @@ internal fun ColumnScope.ExportFormContent(
     outputHeight: Int,
     canApplyToAll: Boolean,
     onApplyToAll: () -> Unit,
-    onFormat: (SampleFormat) -> Unit,
+    onFormat: (ExportFormat) -> Unit,
     onSize: (PhoneExportSize) -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
@@ -668,10 +669,10 @@ private fun ExportNote(text: String, minHeight: Dp = 0.dp) {
     }
 }
 
-/** `SampleFormat.label` is the enum's display name; the sheet prints it verbatim. */
-private fun phoneFormatLabel(format: SampleFormat): String = when (format) {
-    SampleFormat.Jpeg -> "JPG"
-    SampleFormat.Png -> "PNG"
-    SampleFormat.WebP -> "WebP"
+/** `ExportFormat.label` is the enum's display name; the sheet prints it verbatim. */
+private fun phoneFormatLabel(format: ExportFormat): String = when (format) {
+    ExportFormat.Jpeg -> "JPG"
+    ExportFormat.Png -> "PNG"
+    ExportFormat.WebP -> "WebP"
 }
 

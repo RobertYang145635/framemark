@@ -2,14 +2,11 @@ package com.framemark.native.shell.desktop
 
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
-import com.framemark.native.product.ExportFormat as ProductExportFormat
-import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
-import com.framemark.native.product.ExportSettings as ProductExportSettings
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
-import com.framemark.native.workflow.SampleFormat
 
 /**
  * WP-D2 批量导出工作区的纯逻辑：勾选规则、队列状态、失败原因。
@@ -194,28 +191,11 @@ object BatchQueueView {
     }
 }
 
-/** UI 的导出设置 → 产品文档的类型（与 `DesktopProjectController.toProduct` 同一映射）。 */
-fun ExportSettings.toProductSettings(): ProductExportSettings = ProductExportSettings(
-    format = when (format) {
-        SampleFormat.Jpeg -> ProductExportFormat.Jpeg
-        SampleFormat.Png -> ProductExportFormat.Png
-        SampleFormat.WebP -> ProductExportFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        ExportSizeMode.Original -> ProductExportSizeMode.Original
-        ExportSizeMode.LongEdge -> ProductExportSizeMode.LongEdge
-    },
-    longEdge = longEdge,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)
-
 /**
  * 批量真正用的设置：与 `enqueueBatch` 一致，JPEG 质量取本机偏好
  * （`local-export.properties` 里的 `jpegQuality`，桌面可调 60–100）。
  */
-fun batchSettings(settings: ProductExportSettings, preferredQuality: Int): ProductExportSettings =
+fun batchSettings(settings: ExportSettings, preferredQuality: Int): ExportSettings =
     settings.copy(quality = preferredQuality.coerceIn(ExportRules.QUALITY_MIN, ExportRules.QUALITY_MAX))
 
 /**
@@ -223,7 +203,7 @@ fun batchSettings(settings: ProductExportSettings, preferredQuality: Int): Produ
  * 键里覆盖照片指纹、设计（含水印）和导出设置，与 `enqueueBatch` 判重用的是同一个键，
  * 所以“已导出且设计没变”的判定与队列自身的去重完全一致，不会出现两套口径。
  */
-fun probeJob(photo: PhotoRef, design: PhotoDesign, settings: ProductExportSettings): BatchJob =
+fun probeJob(photo: PhotoRef, design: PhotoDesign, settings: ExportSettings): BatchJob =
     BatchJob.forPhoto(
         id = "probe-${photo.id}",
         photoPath = photo.path,
@@ -239,7 +219,7 @@ fun probeJob(photo: PhotoRef, design: PhotoDesign, settings: ProductExportSettin
 fun batchPhotoRows(
     photos: List<PhotoRef>,
     designs: Map<String, PhotoDesign>,
-    settings: ProductExportSettings,
+    settings: ExportSettings,
     jobs: List<BatchJob>,
     cardName: (String) -> String?,
 ): List<BatchPhotoRow> = photos.map { photo ->
@@ -259,20 +239,20 @@ fun batchPhotoRows(
 }
 
 /** 右侧“导出设置摘要”的四行（报告 §6：设置摘要 + 队列）。 */
-fun batchSettingsSummary(settings: ProductExportSettings, directory: String): List<Pair<String, String>> {
+fun batchSettingsSummary(settings: ExportSettings, directory: String): List<Pair<String, String>> {
     val format = when (settings.format) {
-        ProductExportFormat.Jpeg -> "JPG"
-        ProductExportFormat.Png -> "PNG"
-        ProductExportFormat.WebP -> if (settings.webpLossless) "WebP 无损" else "WebP 有损"
+        ExportFormat.Jpeg -> "JPG"
+        ExportFormat.Png -> "PNG"
+        ExportFormat.WebP -> if (settings.webpLossless) "WebP 无损" else "WebP 有损"
     }
     val size = when (settings.sizeMode) {
-        ProductExportSizeMode.Original -> "原尺寸"
-        ProductExportSizeMode.LongEdge -> "长边 ${settings.longEdge ?: 0} px"
+        ExportSizeMode.Original -> "原尺寸"
+        ExportSizeMode.LongEdge -> "长边 ${settings.longEdge ?: 0} px"
     }
     val quality = when (settings.format) {
-        ProductExportFormat.Jpeg -> "质量 ${settings.quality}"
-        ProductExportFormat.Png -> "无损编码"
-        ProductExportFormat.WebP ->
+        ExportFormat.Jpeg -> "质量 ${settings.quality}"
+        ExportFormat.Png -> "无损编码"
+        ExportFormat.WebP ->
             if (settings.webpLossless) "无损编码" else "质量 ${settings.quality}"
     }
     return listOf(

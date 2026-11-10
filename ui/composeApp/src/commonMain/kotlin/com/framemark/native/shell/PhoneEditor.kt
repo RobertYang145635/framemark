@@ -164,6 +164,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
+import com.framemark.native.product.FmLog
 
 /**
  * V2 phone editor, photo first (report §7): a dark 52 dp top bar (返回 · 照片切换 ·
@@ -233,9 +234,9 @@ fun PhoneEditorScreen(
         if (!LaunchOptions.demoApplied && LaunchOptions.demoEdits > 0) {
             LaunchOptions.demoApplied = true
             val applied = applyDemoEdits(session, built.controls, LaunchOptions.demoEdits)
-            println("FM_DEMO_EDITS applied=$applied card=${card?.id}")
+            FmLog.info("FM_DEMO_EDITS") { "applied=$applied card=${card?.id}" }
             repeat(LaunchOptions.undoSteps) { session.undo() }
-            if (LaunchOptions.undoSteps > 0) println("FM_DEMO_UNDO steps=${LaunchOptions.undoSteps}")
+            if (LaunchOptions.undoSteps > 0) FmLog.info("FM_DEMO_UNDO") { "steps=${LaunchOptions.undoSteps}" }
         }
         val presetName = LaunchOptions.autoSavePreset
         if (presetName != null && !LaunchOptions.autoSaveApplied) {
@@ -455,13 +456,13 @@ fun PhoneEditorScreen(
         LaunchedEffect(small, maxHeight, sheetLevel, draggedH == null, tool, photosOpen, fullParameterPage) {
             val total = maxHeight.value
             fun pct(v: Float) = "%.1f".format(if (total > 0f) v / total * 100f else 0f)
-            println(
-                "FM_AREA full=$fullParameterPage small=$small content=${"%.1f".format(total)}dp " +
+            FmLog.info("FM_AREA") {
+                "full=$fullParameterPage small=$small content=${"%.1f".format(total)}dp " +
                     "top=${topBarH.value} stage=${"%.1f".format(stageEstimate.value)} " +
                     "strip=${stripH.value} panel=${"%.1f".format(sheetHeight.value)} bar=${toolBarH.value} " +
                     "tool=${tool.label} level=$sheetLevel photosOpen=$photosOpen | " +
-                    "stage%=${pct(stageEstimate.value)} panel%=${pct(sheetHeight.value)}",
-            )
+                    "stage%=${pct(stageEstimate.value)} panel%=${pct(sheetHeight.value)}"
+            }
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -664,13 +665,13 @@ fun PhoneEditorScreen(
                                                     dy = 0f,
                                                 ),
                                             )
-                                            println("FM_WM_RESET")
+                                            FmLog.info("FM_WM_RESET")
                                         }
                                     }
                                 } else {
                                     {
                                         val changed = resetInspectorPage(tabModel, toolPage, session)
-                                        println("FM_PAGE_RESET page=${toolPage.name} changed=$changed")
+                                        FmLog.info("FM_PAGE_RESET") { "page=${toolPage.name} changed=$changed" }
                                     }
                                 },
                                 // 编辑中直接套用预设 (hand-off §3 decision 5): the phone keeps
@@ -723,7 +724,7 @@ fun PhoneEditorScreen(
                                 textOutputWidth = textOutputWidth,
                                 textOutputHeight = textOutputHeight,
                                 onTextSlotFocus = { key ->
-                                    println("FM_TEXT_FOCUS key=$key tool=$tool")
+                                    FmLog.info("FM_TEXT_FOCUS") { "key=$key tool=$tool" }
                                     focusedTextSlotKey = key
                                 },
                                 watermarkPane = if (toolPage == InspectorPage.Watermark) {

@@ -3,6 +3,7 @@ package com.framemark.native.workflow
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.applyConsumer
+import com.framemark.native.product.FmLog
 
 /**
  * Replaces only values owned by the current inspector model, then applies its
@@ -52,10 +53,10 @@ fun PhotoDesign.applyInspectorOverrides(
         if (direct == null && control.companions.isEmpty() && control.param.isNotBlank() &&
             control.param !in SLOT_CONSUMERS
         ) {
-            println(
-                "FM_DESIGN_DROP controlId=${control.controlId} consumer=${control.param} " +
-                    "value=$raw bound=0 reason=no-engine-binding",
-            )
+            FmLog.info("FM_DESIGN_DROP") {
+                "controlId=${control.controlId} consumer=${control.param} " +
+                    "value=$raw bound=0 reason=no-engine-binding"
+            }
             written = written.withParam(unmappedKey(control.param), raw)
         }
         next = written

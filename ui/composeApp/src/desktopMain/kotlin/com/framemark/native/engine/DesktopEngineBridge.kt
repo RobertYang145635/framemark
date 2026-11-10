@@ -21,6 +21,7 @@ import java.util.concurrent.TimeoutException
 import javax.imageio.ImageIO
 import kotlin.math.max
 import kotlin.math.roundToInt
+import com.framemark.native.product.FmLog
 
 data class EngineRenderResult(
     val path: String,
@@ -212,7 +213,7 @@ class DesktopEngineBridge(
                     // the engine several arguments — so only an argv-safe literal goes
                     // out, and the engine keeps its own default otherwise.
                     EngineArgs.themeForArgv(params["theme"] as? String) { rejected ->
-                        println("FM_THEME_REJECTED card=$cardId value=${rejected.take(64)} mode=drop")
+                        FmLog.info("FM_THEME_REJECTED") { "card=$cardId value=${rejected.take(64)} mode=drop" }
                     }?.let { args += listOf("--theme", it) }
                     args += overlayArgs
                     args
@@ -255,7 +256,7 @@ class DesktopEngineBridge(
                 // The native renderer now owns preview resizing. Passing the target
                 // here avoids allocating and encoding a full-resolution raw canvas.
                 argv += listOf("--preview-max-edge", maxEdge.toString())
-                println("FM_ENGINE_PREVIEW_SIZE card=$cardId maxEdge=$maxEdge")
+                FmLog.info("FM_ENGINE_PREVIEW_SIZE") { "card=$cardId maxEdge=$maxEdge" }
             }
 
             val previewWorkerKey = if (mode == "preview") {
@@ -264,10 +265,10 @@ class DesktopEngineBridge(
                 null
             }
             var run = if (previewWorkerKey != null) {
-                println(
-                    "FM_ENGINE_TRANSPORT mode=worker card=$cardId backend=${card.backend} " +
-                        "maxEdge=${maxEdge ?: "-"}",
-                )
+                FmLog.info("FM_ENGINE_TRANSPORT") {
+                    "mode=worker card=$cardId backend=${card.backend} " +
+                        "maxEdge=${maxEdge ?: "-"}"
+                }
                 runPreviewWorker(argv, cardId, previewWorkerKey)
             } else {
                 exec(argv, cardId)
@@ -277,7 +278,7 @@ class DesktopEngineBridge(
                 // The template's photo box cannot hold the whole photo (fixed-ratio
                 // side/square layouts). Keep the template ratio, and carry the
                 // caveat into the result instead of failing the export.
-                println("FM_NATIVE_FIT_FALLBACK card=$cardId reason=${run.output.lines().firstOrNull { it.contains("E4H-FIT-NATIVE-") }?.take(200)}")
+                FmLog.info("FM_NATIVE_FIT_FALLBACK") { "card=$cardId reason=${run.output.lines().firstOrNull { it.contains("E4H-FIT-NATIVE-") }?.take(200)}" }
                 val retry = argv.toMutableList()
                 val at = retry.indexOf("--fit")
                 if (at >= 0) {
@@ -297,7 +298,7 @@ class DesktopEngineBridge(
                 )
             }
 
-            println("FM_ENGINE_RAW path=${raw.path}")
+            FmLog.info("FM_ENGINE_RAW") { "path=${raw.path}" }
             // IR export is not successful unless this invocation produced a readable
             // report. Refuse a missing or malformed report rather than inferring success
             // from the raw PNG.
@@ -344,10 +345,10 @@ class DesktopEngineBridge(
             val outW = (rep.width * scale).roundToInt().coerceAtLeast(1)
             val outH = (rep.height * scale).roundToInt().coerceAtLeast(1)
             if (mode == "export") {
-                println(
-                    "FM_EXPORT_SCALE card=$cardId raw=${rep.width}x${rep.height} " +
-                        "requested=${requested ?: "-"} scale=${r3(scale)} out=${outW}x${outH}",
-                )
+                FmLog.info("FM_EXPORT_SCALE") {
+                    "card=$cardId raw=${rep.width}x${rep.height} " +
+                        "requested=${requested ?: "-"} scale=${r3(scale)} out=${outW}x${outH}"
+                }
             }
 
             val target = File(
@@ -956,7 +957,7 @@ class DesktopEngineBridge(
                         current
                     } else {
                         current?.close()
-                        println("FM_PREVIEW_WORKER_START backend=${key.backend} card=$cardId attempt=$attempt")
+                        FmLog.info("FM_PREVIEW_WORKER_START") { "backend=${key.backend} card=$cardId attempt=$attempt" }
                         val process = ProcessBuilder(startArgs)
                             .directory(workingDir)
                             .redirectErrorStream(true)
@@ -989,14 +990,14 @@ class DesktopEngineBridge(
             }
             closePreviewWorker(connection)
         }
-        println(
-            "FM_PREVIEW_WORKER_FALLBACK backend=${key.backend} card=$cardId " +
-                "reason=${lastFailure?.output?.lineSequence()?.lastOrNull()?.take(240)}",
-        )
+        FmLog.info("FM_PREVIEW_WORKER_FALLBACK") {
+            "backend=${key.backend} card=$cardId " +
+                "reason=${lastFailure?.output?.lineSequence()?.lastOrNull()?.take(240)}"
+        }
         return exec(argv, cardId)
     }
     private fun exec(argv: List<String>, cardId: String): RunResult {
-        println("FM_ENGINE_EXEC ${argv.joinToString(" ")}")
+        FmLog.info("FM_ENGINE_EXEC") { "${argv.joinToString(" ")}" }
         val result = ProcessRunner.run(argv, workingDir)
         return RunResult(result.code, result.output)
     }
@@ -1099,7 +1100,7 @@ class DesktopEngineBridge(
         } catch (e: Throwable) {
             // Cross-volume or a lock on the target: a byte copy is still cheaper
             // than decode + re-encode, and the original is removed by the caller.
-            println("FM_PHOTO_MOVE_FALLBACK from=${source.name} error=${e.message ?: e::class.simpleName}")
+            FmLog.info("FM_PHOTO_MOVE_FALLBACK") { "from=${source.name} error=${e.message ?: e::class.simpleName}" }
             source.copyTo(target, overwrite = true)
         }
     }
@@ -1115,7 +1116,7 @@ class DesktopEngineBridge(
     private fun sweepWorkDir() {
         val result = TempJanitor.sweep(work)
         if (result.removed > 0) {
-            println("FM_TEMP_SWEEP dir=${work.absolutePath} files=${result.removed} bytes=${result.bytes} kept=${result.kept}")
+            FmLog.info("FM_TEMP_SWEEP") { "dir=${work.absolutePath} files=${result.removed} bytes=${result.bytes} kept=${result.kept}" }
         }
     }
 

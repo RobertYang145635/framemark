@@ -8,6 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
+import com.framemark.native.product.FmLog
 
 /**
  * G5 timing probe (evidence only, `FM_G5_PROBE=1`).
@@ -41,7 +42,7 @@ object FeelProbe {
                         withFrameNanos { }
                         withFrameNanos { }
                         val ms = event.mark.elapsedNow().inWholeMicroseconds / 1000.0
-                        println("FM_FEEL_UI action=${event.action} id=${event.id} latencyMs=${fmt(ms)} detail=${event.detail}")
+                        FmLog.info("FM_FEEL_UI") { "action=${event.action} id=${event.id} latencyMs=${fmt(ms)} detail=${event.detail}" }
                     }
                 }
             }
@@ -57,7 +58,7 @@ object FeelProbe {
             val start = WorkflowEnv.platform?.processStartMillis() ?: return@LaunchedEffect
             val now = WorkflowEnv.platform?.nowMillis() ?: return@LaunchedEffect
             coldLogged = true
-            println("FM_COLD_START totalMs=${now - start}")
+            FmLog.info("FM_COLD_START") { "totalMs=${now - start}" }
         }
     }
 

@@ -63,6 +63,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.framemark.native.product.FmLog
 
 class MainActivity : ComponentActivity() {
 
@@ -206,10 +207,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.PickMultipleVisualMedia(MAX_PICK),
     ) { uris ->
         if (uris.isEmpty()) {
-            println("FM_PHOTO_PICK cancelled")
+            FmLog.info("FM_PHOTO_PICK") { "cancelled" }
             return@registerForActivityResult
         }
-        Thread { runCatching { importPickedPhotos(uris) }.onFailure { println("FM_PHOTO_PICK_FAIL ${it.message}") } }.start()
+        Thread { runCatching { importPickedPhotos(uris) }.onFailure { FmLog.warn("FM_PHOTO_PICK_FAIL") { "${it.message}"} } }.start()
     }
 
     /**
@@ -225,7 +226,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri == null) {
-            println("FM_WATERMARK_PICK cancelled")
+            FmLog.info("FM_WATERMARK_PICK") { "cancelled" }
             return@registerForActivityResult
         }
         Thread {
@@ -235,7 +236,7 @@ class MainActivity : ComponentActivity() {
                     BitmapFactory.decodeStream(input)
                 } ?: error("cannot decode watermark $mime")
                 importWatermarkBitmap(bitmap, mime)
-            }.onFailure { println("FM_WATERMARK_PICK_FAIL ${it.message}") }
+            }.onFailure { FmLog.warn("FM_WATERMARK_PICK_FAIL") { "${it.message}"} }
         }.start()
     }
 
@@ -244,7 +245,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri == null) {
-            println("FM_USER_LOGO_PICK cancelled")
+            FmLog.info("FM_USER_LOGO_PICK") { "cancelled" }
             return@registerForActivityResult
         }
         val repo = UserLogoEnv.repository
@@ -277,9 +278,9 @@ class MainActivity : ComponentActivity() {
                 } ?: error("无法读取所选图片")
                 repo.import(name, mime, bytes)
             }.onSuccess {
-                println("FM_USER_LOGO_IMPORTED id=${it.id} ${it.width}x${it.height} ${it.sizeBytes}B")
+                FmLog.info("FM_USER_LOGO_IMPORTED") { "id=${it.id} ${it.width}x${it.height} ${it.sizeBytes}B" }
             }.onFailure {
-                println("FM_USER_LOGO_IMPORT_FAIL ${it.message}")
+                FmLog.warn("FM_USER_LOGO_IMPORT_FAIL") { "${it.message}" }
                 UserLogoImportStatus.fail(it.message ?: "导入失败")
             }
         }
@@ -295,7 +296,7 @@ class MainActivity : ComponentActivity() {
         val slot = watermarkSlot
         val wmWidth = watermarkWidth
         val alpha = watermarkOpacity
-        println("FM_WATERMARK_CONVERT mime=$mime ${width}x$height -> ${out.absolutePath}")
+        FmLog.info("FM_WATERMARK_CONVERT") { "mime=$mime ${width}x$height -> ${out.absolutePath}" }
         bitmap.recycle()
         // The embedded asset has to declare real pixels, not only an aspect.
         PhoneWatermarkPick.set(width, height)
@@ -315,10 +316,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenMultipleDocuments(),
     ) { uris ->
         if (uris.isEmpty()) {
-            println("FM_PHOTO_PICK cancelled")
+            FmLog.info("FM_PHOTO_PICK") { "cancelled" }
             return@registerForActivityResult
         }
-        Thread { runCatching { importPickedPhotos(uris) }.onFailure { println("FM_PHOTO_PICK_FAIL ${it.message}") } }.start()
+        Thread { runCatching { importPickedPhotos(uris) }.onFailure { FmLog.warn("FM_PHOTO_PICK_FAIL") { "${it.message}"} } }.start()
     }
 
     private fun importPickedPhotos(uris: List<Uri>) {
@@ -377,7 +378,7 @@ class MainActivity : ComponentActivity() {
         }
         PhotoSelection.setPaths(paths, displayNames)
         val reasons = failures.joinToString(";") { (name, why) -> "$name=$why" }.take(400)
-        println("FM_PHOTO_IMPORT_RESULT ok=${paths.size} failed=${failures.size} reasons=${reasons.ifEmpty { "none" }}")
+        FmLog.info("FM_PHOTO_IMPORT_RESULT") { "ok=${paths.size} failed=${failures.size} reasons=${reasons.ifEmpty { "none" }}" }
         if (failures.isNotEmpty()) {
             // Import runs off the main thread; the toast has to be posted back to it.
             runOnUiThread {
@@ -410,7 +411,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     // Keep the original bytes so the renderer's TIFF path can still
                     // handle it; never silently drop the import.
-                    println("FM_PHOTO_IMPORT tiff-convert-failed error=$error")
+                    FmLog.info("FM_PHOTO_IMPORT") { "tiff-convert-failed error=$error" }
                     File(dir, "user-$stamp-$index.tif").also { keepFile(tmp, it) }
                 }
             }
@@ -429,7 +430,7 @@ class MainActivity : ComponentActivity() {
                 png
             }
         }
-        println("FM_PHOTO_PICK mime=${source.mime} kind=$kind path=${out.absolutePath} bytes=${out.length()}")
+        FmLog.info("FM_PHOTO_PICK") { "mime=${source.mime} kind=$kind path=${out.absolutePath} bytes=${out.length()}" }
         return out.absolutePath
     }
 
@@ -474,11 +475,11 @@ class MainActivity : ComponentActivity() {
         )
         // Evidence: printed before the first frame, so a burst capture can be paired
         // with the theme the launch window actually used.
-        println(
-            "FM_LAUNCH_THEME dark=${launchAppearance.dark} " +
+        FmLog.info("FM_LAUNCH_THEME") {
+            "dark=${launchAppearance.dark} " +
                 "mode=${launchAppearance.settings.mode.wire} systemDark=$initialSystemDark " +
-                "theme=${if (launchAppearance.dark) "Theme.FrameMark.Dark" else "Theme.FrameMark.Light"}",
-        )
+                "theme=${if (launchAppearance.dark) "Theme.FrameMark.Dark" else "Theme.FrameMark.Light"}"
+        }
         // WP-T: no more hard-coded light system bars. `enableEdgeToEdge()` with no
         // arguments follows the launch theme (values / values-night themes.xml)
         // so the first frame already has the right icon ink; the composition
@@ -499,13 +500,13 @@ class MainActivity : ComponentActivity() {
         val appearance = launchAppearance.also {
             AppearanceEnv.controller = it
         }
-        println("FM_APPEARANCE_INIT ${appearance.describe()}")
+        FmLog.info("FM_APPEARANCE_INIT") { "${appearance.describe()}" }
         // Evidence for T-1: printed in onCreate, i.e. before setContent and before
         // the first frame.
-        println(
-            "FM_APPEARANCE_PRECOMPOSE systemDark=$initialSystemDark dark=${appearance.dark} " +
-                "mode=${appearance.settings.mode.wire} source=configuration",
-        )
+        FmLog.info("FM_APPEARANCE_PRECOMPOSE") {
+            "systemDark=$initialSystemDark dark=${appearance.dark} " +
+                "mode=${appearance.settings.mode.wire} source=configuration"
+        }
         // WP-D1 phase 2: install the Android 最近使用 file store before the first
         // composition (same `settings/recent-frames.json` format as desktop).
         // Deliberately *above* the first `if (BuildConfig.DEBUG)` block: the
@@ -529,11 +530,11 @@ class MainActivity : ComponentActivity() {
                 // Clear only QA marker files, before the operation under test starts.
                 markerDir.listFiles()?.forEach { it.delete() }
                 LaunchOptions.crashMarkerDir = markerDir.absolutePath
-                println(
-                    "FM_CRASH_HOOK window=${LaunchOptions.crashWindow} markerDir=${markerDir.absolutePath} " +
+                FmLog.info("FM_CRASH_HOOK") {
+                    "window=${LaunchOptions.crashWindow} markerDir=${markerDir.absolutePath} " +
                         "queueAutoStart=${LaunchOptions.queueAutoStart} " +
-                        "resumeOnMarkerRemoval=${LaunchOptions.crashResumeOnMarkerRemoval}",
-                )
+                        "resumeOnMarkerRemoval=${LaunchOptions.crashResumeOnMarkerRemoval}"
+                }
             }
         }
         // U4: presets live in the app's private files dir; sample exports go to
@@ -565,7 +566,7 @@ class MainActivity : ComponentActivity() {
         val engineStatus = NativeEngineProbe.load()
         val ping = NativeEngineProbe.ping()
         Log.i("FrameMarkEngine", "FM_ENGINE_JNI status=$engineStatus abi=${NativeEngineProbe.abiBits()} ping=$ping")
-        println("FM_ENGINE_JNI status=$engineStatus abi=${NativeEngineProbe.abiBits()} ping=$ping")
+        FmLog.info("FM_ENGINE_JNI") { "status=$engineStatus abi=${NativeEngineProbe.abiBits()} ping=$ping" }
         // X1: one real card (vivo-zeiss:inside) renders on device; other cards /
         // ABIs without the Rust lib keep the placeholder workflow.
         val renderer = AndroidNativeRender(applicationContext)
@@ -617,7 +618,7 @@ class MainActivity : ComponentActivity() {
             if (paths.isNotEmpty()) {
                 projectStore?.adoptPaths(paths, paths.last())
                 PhotoSelection.setPaths(paths)
-                println("FM_EVIDENCE_IMPORT count=${paths.size} photos=${projectStore?.photos?.size ?: -1}")
+                FmLog.info("FM_EVIDENCE_IMPORT") { "count=${paths.size} photos=${projectStore?.photos?.size ?: -1}" }
             }
         }
         // Evidence: select one photo by path — the same call the strip makes.
@@ -625,7 +626,7 @@ class MainActivity : ComponentActivity() {
             val store = projectStore ?: return@let
             store.select(store.idForPath(path))
             PhotoSelection.set(path)
-            println("FM_EVIDENCE_SELECT path=$path id=${store.idForPath(path)}")
+            FmLog.info("FM_EVIDENCE_SELECT") { "path=$path id=${store.idForPath(path)}" }
         }
         // Evidence: run local files through the real import path (normalisation,
         // decoding, per-file failure), so a corrupt image can be mixed into a batch
@@ -639,7 +640,7 @@ class MainActivity : ComponentActivity() {
                             val label = entry.substringAfterLast('/')
                             ImportSource(label, label, "file") {
                                 runCatching { java.io.FileInputStream(File(entry)) }
-                                    .onFailure { println("FM_PHOTO_IMPORT_OPEN_FAIL $entry ${it.message}") }
+                                    .onFailure { FmLog.warn("FM_PHOTO_IMPORT_OPEN_FAIL") { "$entry ${it.message}"} }
                                     .getOrNull()
                             }
                         },
@@ -669,7 +670,7 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra("fmWatermark")?.takeIf { it.isNotBlank() }?.let { path ->
             Thread {
                 runCatching { importWatermarkFromPath(path) }
-                    .onFailure { println("FM_WATERMARK_PICK_FAIL ${it.message}") }
+                    .onFailure { FmLog.warn("FM_WATERMARK_PICK_FAIL") { "${it.message}"} }
             }.start()
         }
         if (intent?.getBooleanExtra("fmRenderAll", false) == true) {
@@ -757,7 +758,7 @@ class MainActivity : ComponentActivity() {
             val dark = resolveDark(appearance.settings.mode, systemDark)
             LaunchedEffect(dark) {
                 this@MainActivity.applySystemBarInk(dark)
-                println("FM_APPEARANCE_APPLIED ${appearance.describe()}")
+                FmLog.info("FM_APPEARANCE_APPLIED") { "${appearance.describe()}" }
             }
             FrameMarkApp()
         }

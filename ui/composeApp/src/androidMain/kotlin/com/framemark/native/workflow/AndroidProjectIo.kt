@@ -3,9 +3,13 @@ package com.framemark.native.workflow
 import android.content.Context
 import android.graphics.BitmapFactory
 import com.framemark.native.engine.ExifProbe
+import com.framemark.native.product.FmLog
+import com.framemark.native.product.WatermarkAsset
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.ProductFileSystem
 import com.framemark.native.shell.PhoneAssetIo
 import java.io.File
+import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -58,21 +62,50 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
                 target.toPath(),
                 StandardCopyOption.ATOMIC_MOVE,
             )
+            // Durable only after the directory entry itself is flushed.
+            fsyncParentDirectory(target)
             if (isPresetLibraryReplacement(source, target)) {
                 checkpointAfterPresetMutation("preset-after-replace")
             }
             true
         }.getOrElse { atomic ->
             runCatching {
+                // REPLACE_EXISTING is not atomic: keep the bytes being published and
+                // re-read the target afterwards. A short write must not be reported as
+                // a committed document.
+                val expected = source.readBytes()
                 Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                val landed = runCatching { target.readBytes() }.getOrNull()
+                if (landed == null || !landed.contentEquals(expected)) {
+                    FmLog.error("FS_REPLACE_MISMATCH") {
+                        "to=$to expected=${expected.size} actual=${landed?.size ?: -1}"
+                    }
+                    return@runCatching false
+                }
+                fsyncParentDirectory(target)
                 if (isPresetLibraryReplacement(source, target)) {
                     checkpointAfterPresetMutation("preset-after-replace")
                 }
                 true
             }.getOrElse {
-                println("FM_FS_REPLACE_FAIL from=$from to=$to atomic=${atomic.message} fallback=${it.message}")
+                FmLog.warn("FM_FS_REPLACE_FAIL") {
+                    "from=$from to=$to atomic=${atomic.message} fallback=${it.message}"
+                }
                 false
             }
+        }
+    }
+
+    /**
+     * Best-effort directory fsync: a rename can be lost on power loss until the
+     * containing directory entry is flushed. Linux/Android allow opening a directory
+     * read-only for this; Windows and some volumes refuse, so a failure is ignored —
+     * the document bytes themselves were verified before the rename.
+     */
+    private fun fsyncParentDirectory(file: File) {
+        val dir = file.parentFile ?: return
+        runCatching {
+            FileChannel.open(dir.toPath(), StandardOpenOption.READ).use { it.force(true) }
         }
     }
 
@@ -100,7 +133,7 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
         if (!markerDir.isDirectory) return
         val marker = File(markerDir, "marker-$stage")
         marker.writeText("$stage time=${System.currentTimeMillis()} pid=${android.os.Process.myPid()}")
-        println("FM_CRASH_WINDOW $stage marker=${marker.absolutePath}")
+        FmLog.info("FM_CRASH_WINDOW") { "$stage marker=${marker.absolutePath}" }
         if (com.framemark.native.LaunchOptions.crashResumeOnMarkerRemoval) {
             while (marker.exists()) Thread.sleep(100)
         } else {
@@ -116,11 +149,11 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
  */
 class AndroidPhoneAssetIo : PhoneAssetIo {
 
-    override fun readBytes(path: String): ByteArray? = runCatching {
-        val file = File(path)
-        if (!file.isFile) return null
-        file.readBytes()
-    }.getOrNull()
+    override fun readBytes(path: String): ByteArray? {
+        // Watermark assets are embedded into the project: bound the read at the
+        // product limit so an oversized pick throws a clear error instead of OOM.
+        return readFileBytesBounded(path, WatermarkAsset.MAX_BYTES)
+    }
 
     override fun imageBounds(path: String): IntArray? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

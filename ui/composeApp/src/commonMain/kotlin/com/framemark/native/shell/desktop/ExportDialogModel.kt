@@ -1,9 +1,9 @@
 package com.framemark.native.shell.desktop
 
 import com.framemark.native.workflow.ExportNaming
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.ImageRect
-import com.framemark.native.workflow.SampleFormat
 import kotlin.math.roundToInt
 
 /**
@@ -48,6 +48,12 @@ object ExportRules {
     const val LONG_EDGE_MIN = 1
     const val LONG_EDGE_MAX = 20000
 
+    /**
+     * 界面初值：文档里还没有长边（`ExportSettings.longEdge == null`）时，表单显示这个数字，
+     * 与产品文档此前的会话默认值一致。产品语义仍是「未选择」（null），这里只决定输入框内容。
+     */
+    const val LONG_EDGE_DEFAULT = 1600
+
     /** 常用长边（演示稿 `desktop.js` 的三个 chip 同款）。 */
     val LONG_EDGE_PRESETS = listOf(2048, 3000, 4096)
 
@@ -64,14 +70,14 @@ object ExportRules {
         if (parseLongEdge(text) == null) "长边应为 $LONG_EDGE_MIN–$LONG_EDGE_MAX 的整数像素。" else null
 
     /** 质量只对真正用它的编码器起作用：JPEG 与有损 WebP。 */
-    fun qualityApplies(format: SampleFormat, webpLossless: Boolean): Boolean = when (format) {
-        SampleFormat.Jpeg -> true
-        SampleFormat.Png -> false
-        SampleFormat.WebP -> !webpLossless
+    fun qualityApplies(format: ExportFormat, webpLossless: Boolean): Boolean = when (format) {
+        ExportFormat.Jpeg -> true
+        ExportFormat.Png -> false
+        ExportFormat.WebP -> !webpLossless
     }
 
     /** 提交给引擎的质量；不适用时按 100（成片与来源一致的无损档）。 */
-    fun effectiveQuality(text: String, format: SampleFormat, webpLossless: Boolean): Int =
+    fun effectiveQuality(text: String, format: ExportFormat, webpLossless: Boolean): Int =
         if (qualityApplies(format, webpLossless)) parseQuality(text) ?: QUALITY_DEFAULT else QUALITY_DEFAULT
 
     /** 当前表单能否提交：只有真实用到的字段才拦。 */
@@ -79,7 +85,7 @@ object ExportRules {
         sizeMode: ExportSizeMode,
         longEdgeText: String,
         qualityText: String,
-        format: SampleFormat,
+        format: ExportFormat,
         webpLossless: Boolean,
     ): Boolean {
         if (sizeMode == ExportSizeMode.LongEdge && parseLongEdge(longEdgeText) == null) return false
@@ -127,10 +133,10 @@ object ExportCopy {
     const val PNG_EXIF_NOTE = "PNG 不含拍摄信息（EXIF）。"
 
     /** 编码那一句。 */
-    fun encoderLine(format: SampleFormat, quality: Int, webpLossless: Boolean): String = when (format) {
-        SampleFormat.Jpeg -> "JPEG 质量 $quality、4:4:4（会重新编码一次）"
-        SampleFormat.Png -> "无损编码"
-        SampleFormat.WebP -> if (webpLossless) "无损编码" else "WebP 质量 $quality（有损，会重新编码一次）"
+    fun encoderLine(format: ExportFormat, quality: Int, webpLossless: Boolean): String = when (format) {
+        ExportFormat.Jpeg -> "JPEG 质量 $quality、4:4:4（会重新编码一次）"
+        ExportFormat.Png -> "无损编码"
+        ExportFormat.WebP -> if (webpLossless) "无损编码" else "WebP 质量 $quality（有损，会重新编码一次）"
     }
 
     /** 尺寸那一句；长边档不写「原分辨率」。 */
@@ -145,14 +151,14 @@ object ExportCopy {
     fun summaryLine(
         sizeMode: ExportSizeMode,
         longEdge: Int,
-        format: SampleFormat,
+        format: ExportFormat,
         quality: Int,
         webpLossless: Boolean,
     ): String = resolutionLine(sizeMode, longEdge) + "；" + encoderLine(format, quality, webpLossless)
 
     /** 拍摄信息（EXIF/GPS）的去留，按格式给准确说法。 */
-    fun metadataLines(format: SampleFormat): List<String> = when (format) {
-        SampleFormat.Png -> listOf(GPS_NOTE, PNG_EXIF_NOTE)
+    fun metadataLines(format: ExportFormat): List<String> = when (format) {
+        ExportFormat.Png -> listOf(GPS_NOTE, PNG_EXIF_NOTE)
         else -> listOf(GPS_NOTE)
     }
 }
@@ -196,7 +202,7 @@ object ExportEstimate {
     }
 
     /** 指定长边档：把画布长边归一到所选值（放大与缩小同式，D-1）。 */
-    fun output(canvas: ExportPixels?, sizeMode: ExportSizeMode, longEdge: Int): ExportPixels? {
+    fun output(canvas: ExportPixels?, sizeMode: ExportSizeMode, longEdge: Int?): ExportPixels? {
         if (canvas == null) return null
         // 公式只有一处：与右栏/顶栏/手机/桥接同一个 [OutputSize.applyLongEdge]。
         val scaled = com.framemark.native.inspector.OutputSize.applyLongEdge(
@@ -238,7 +244,7 @@ object ExportEstimate {
 
     fun estimatedBytes(
         pixels: ExportPixels?,
-        format: SampleFormat,
+        format: ExportFormat,
         quality: Int,
         webpLossless: Boolean,
     ): Long? {
@@ -246,9 +252,9 @@ object ExportEstimate {
         if (pixelCount <= 0L) return null
         val q = quality.coerceIn(ExportRules.QUALITY_MIN, ExportRules.QUALITY_MAX) / 100.0
         val megabytes = when (format) {
-            SampleFormat.Png -> pixelCount * PNG_PIXEL_BYTES / 1_000_000.0
-            SampleFormat.Jpeg -> pixelCount * (JPEG_BASE + JPEG_SLOPE * q * q * q) / 1_000_000.0
-            SampleFormat.WebP ->
+            ExportFormat.Png -> pixelCount * PNG_PIXEL_BYTES / 1_000_000.0
+            ExportFormat.Jpeg -> pixelCount * (JPEG_BASE + JPEG_SLOPE * q * q * q) / 1_000_000.0
+            ExportFormat.WebP ->
                 if (webpLossless) {
                     pixelCount * WEBP_LOSSLESS_PIXEL_BYTES / 1_000_000.0
                 } else {
@@ -273,7 +279,7 @@ object ExportEstimate {
     /** 预览列的那一行：“约 4000 × 3000 px · 约 3.2 MB”。 */
     fun previewLine(
         pixels: ExportPixels?,
-        format: SampleFormat,
+        format: ExportFormat,
         quality: Int,
         webpLossless: Boolean,
     ): String {

@@ -71,6 +71,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
+import com.framemark.native.product.FmLog
 
 private const val PREVIEW_MAX_EDGE = 1280
 private const val PREVIEW_MIN_EDGE = 640
@@ -288,7 +289,7 @@ fun NativeStagePreview(
                 // stale may be published, so the stage keeps its last frame.
                 busy = false
                 renderPhase = StageRenderPhase.Idle
-                println("FM_PREVIEW_CANCEL card=${card.id} reason=user")
+                FmLog.info("FM_PREVIEW_CANCEL") { "card=${card.id} reason=user" }
                 requestSignal.trySend(Unit)
                 return@LaunchedEffect
             }
@@ -366,11 +367,11 @@ fun NativeStagePreview(
                         decoded.textSlots,
                     )
                     busy = quality == "interactive"
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=cache-hit " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=cache-hit " +
                             "quality=$quality edge=$edge cache=decoded " +
-                            "wallMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "wallMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                     return true
                 }
 
@@ -387,12 +388,12 @@ fun NativeStagePreview(
                     renderCache.attachDecoded(requestKey, bitmap)
                     state = StageRender.Ready(requestKey, bitmap, cached.photoRect, cached.textSlots)
                     busy = quality == "interactive"
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=cache-hit " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=cache-hit " +
                             "quality=$quality edge=$edge cache=bytes " +
                             "decodeMs=${decodeStarted.elapsedNow().inWholeMilliseconds} " +
-                            "wallMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "wallMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                     return true
                 }
                 return false
@@ -411,10 +412,10 @@ fun NativeStagePreview(
                     while (true) {
                         coroutineContext.ensureActive()
                         if (!isCurrentRequest(request, version)) {
-                            println(
-                                "FM_PREVIEW_REQUEST card=${request.card.id} version=$version " +
-                                    "phase=stale-drop quality=$quality edge=$edge reason=coalesced",
-                            )
+                            FmLog.info("FM_PREVIEW_REQUEST") {
+                                "card=${request.card.id} version=$version " +
+                                    "phase=stale-drop quality=$quality edge=$edge reason=coalesced"
+                            }
                             return false
                         }
                         if (previewGate.tryLock()) {
@@ -429,17 +430,17 @@ fun NativeStagePreview(
                     // acquisition. Do not spend a full engine render on a request
                     // that is already known to be obsolete.
                     if (!isCurrentRequest(request, version)) {
-                        println(
-                            "FM_PREVIEW_REQUEST card=${request.card.id} version=$version " +
-                                "phase=stale-drop quality=$quality edge=$edge reason=acquired-stale",
-                        )
+                        FmLog.info("FM_PREVIEW_REQUEST") {
+                            "card=${request.card.id} version=$version " +
+                                "phase=stale-drop quality=$quality edge=$edge reason=acquired-stale"
+                        }
                         return false
                     }
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=submit " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=submit " +
                             "quality=$quality edge=$edge " +
-                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                     NativeEngine.preview(
                         request.card,
                         request.design,
@@ -452,18 +453,18 @@ fun NativeStagePreview(
                 }
                 val currentOnCompletion = isCurrentRequest(request, version)
                 if (quality != "interactive" && !currentOnCompletion) {
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=stale-drop " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=stale-drop " +
                             "quality=$quality edge=$edge reason=superseded " +
-                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                     return false
                 }
                 if (quality == "interactive" && version <= lastInteractiveVersion) {
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=stale-drop " +
-                            "quality=$quality edge=$edge reason=already-progressed",
-                    )
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=stale-drop " +
+                            "quality=$quality edge=$edge reason=already-progressed"
+                    }
                     return false
                 }
                 if (image == null) throw IllegalStateException("no native renderer")
@@ -507,19 +508,19 @@ fun NativeStagePreview(
                     }
                 }
                 if (published) {
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version " +
                             "phase=${if (currentOnCompletion) "applied" else "progress"} " +
                             "quality=$quality edge=$edge size=${image.width}x${image.height} " +
                             "engineMs=${image.ms} " +
-                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                 } else {
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$version phase=stale-drop " +
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$version phase=stale-drop " +
                             "quality=$quality edge=$edge reason=publish-gate " +
-                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                 }
                 return published
             }
@@ -536,11 +537,11 @@ fun NativeStagePreview(
                 fun current(): Boolean = isCurrentRequest(request, requestVersion)
 
                 busy = true
-                println(
-                    "FM_PREVIEW_REQUEST card=${request.card.id} version=$requestVersion phase=begin " +
+                FmLog.info("FM_PREVIEW_REQUEST") {
+                    "card=${request.card.id} version=$requestVersion phase=begin " +
                         "interactiveEdge=${request.interactiveMaxEdge} finalEdge=${request.maxEdge} " +
-                        "displayEdge=${request.displayEdge}",
-                )
+                        "displayEdge=${request.displayEdge}"
+                }
 
                 try {
                     // Exact final pixels win immediately. Otherwise the stage renders
@@ -633,16 +634,16 @@ fun NativeStagePreview(
                         drainSignals()
                     }
                 } catch (c: CancellationException) {
-                    println(
-                        "FM_PREVIEW_REQUEST card=${request.card.id} version=$requestVersion phase=cancelled " +
-                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}",
-                    )
+                    FmLog.info("FM_PREVIEW_REQUEST") {
+                        "card=${request.card.id} version=$requestVersion phase=cancelled " +
+                            "requestMs=${requestStarted.elapsedNow().inWholeMilliseconds}"
+                    }
                     throw c
                 } catch (t: Throwable) {
                     if (!isCurrentRequest(request, requestVersion)) continue
                     val reason = t.message ?: t::class.simpleName ?: "render failed"
                     PreviewDiagnostics.record(request.card.id, reason)
-                    println("FM_PREVIEW_RENDER_FAIL card=${request.card.id} reason=$reason")
+                    FmLog.warn("FM_PREVIEW_RENDER_FAIL") { "card=${request.card.id} reason=$reason" }
                     val previousReady = state as? StageRender.Ready
                     val visible = previousReady?.requestKey?.sameStageInputs(request.key) == true
                     if (!visible) {
@@ -691,11 +692,11 @@ fun NativeStagePreview(
                         .onGloballyPositioned { coords ->
                             if (ready.requestKey.sameStageInputs(key) && !layoutLogged) {
                                 layoutLogged = true
-                                println(
-                                    "FM_PREVIEW_LAYOUT card=${card.id} box=${coords.size.width}x${coords.size.height} " +
+                                FmLog.info("FM_PREVIEW_LAYOUT") {
+                                    "card=${card.id} box=${coords.size.width}x${coords.size.height} " +
                                         "bitmap=${ready.bitmap.width}x${ready.bitmap.height} " +
-                                        "wallMs=${layoutStartedAt.elapsedNow().inWholeMilliseconds}",
-                                )
+                                        "wallMs=${layoutStartedAt.elapsedNow().inWholeMilliseconds}"
+                                }
                             }
                         },
                 )
@@ -723,10 +724,10 @@ fun NativeStagePreview(
                             boxH = boxPx.height.toFloat(),
                         )
                     }
-                println(
-                    "FM_TEXT_HIGHLIGHT key=$highlightKey located=${highlightSlot?.located} " +
-                        "rect=$highlightRect label=${highlightedTextSlotLabel?.takeIf { it.isNotBlank() } ?: "-"}",
-                )
+                FmLog.info("FM_TEXT_HIGHLIGHT") {
+                    "key=$highlightKey located=${highlightSlot?.located} " +
+                        "rect=$highlightRect label=${highlightedTextSlotLabel?.takeIf { it.isNotBlank() } ?: "-"}"
+                }
                 if (highlightRect != null) {
                     // The chip names the box the user is editing. The position + role
                     // text comes from the page that owns the nav band; when a caller
@@ -816,10 +817,10 @@ fun NativeStagePreview(
                                     max = 4f,
                                     step = 0.001f,
                                 )
-                                println(
-                                    "FM_WATERMARK_DRAG dx=${"%.4f".format(qx)} " +
-                                        "dy=${"%.4f".format(qy)}",
-                                )
+                                FmLog.info("FM_WATERMARK_DRAG") {
+                                    "dx=${"%.4f".format(qx)} " +
+                                        "dy=${"%.4f".format(qy)}"
+                                }
                                 onWatermarkNudge(qx, qy)
                             }
                         },

@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import com.framemark.native.product.FmLog
 
 /**
  * P4c evidence-only harness: repeats real 50 MP exports through the app's own
@@ -37,11 +38,11 @@ object Perf50Runner {
         webpLossless: Boolean,
     ) {
         if (running) {
-            println("FM_PERF50_SKIP already-running")
+            FmLog.info("FM_PERF50_SKIP") { "already-running" }
             return
         }
         if (cards.isEmpty() || !File(photo).isFile) {
-            println("FM_PERF50_BADARGS cards=${cards.size} photo=$photo")
+            FmLog.info("FM_PERF50_BADARGS") { "cards=${cards.size} photo=$photo" }
             return
         }
         running = true
@@ -70,7 +71,7 @@ object Perf50Runner {
                 .put("edge", edge ?: "native")
                 .put("runs", runs)
             log.appendText(env.toString() + "\n")
-            println("FM_PERF50_ENV $env")
+            FmLog.info("FM_PERF50_ENV") { "$env" }
             var n = 0
             val total = cards.size * formats.size * runs
             try {
@@ -125,16 +126,16 @@ object Perf50Runner {
                             row.put("wallEndEpochMs", System.currentTimeMillis())
                             row.put("availMemMbAfter", ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }.availMem / 1024 / 1024)
                             log.appendText(row.toString() + "\n")
-                            println("FM_PERF50_ROW $row")
+                            FmLog.info("FM_PERF50_ROW") { "$row" }
                             n++
-                            println("FM_PERF50_PROGRESS $n/$total")
+                            FmLog.info("FM_PERF50_PROGRESS") { "$n/$total" }
                             delay(BETWEEN_RUN_MS)
                         }
                     }
                 }
             } finally {
                 AndroidNativeRender.skipGalleryPublish = false
-                println("FM_PERF50_DONE rows=$n dir=${dir.absolutePath}")
+                FmLog.info("FM_PERF50_DONE") { "rows=$n dir=${dir.absolutePath}" }
                 running = false
             }
         }

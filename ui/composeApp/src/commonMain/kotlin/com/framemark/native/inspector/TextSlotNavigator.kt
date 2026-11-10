@@ -63,6 +63,7 @@ import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.isCurrentTextSlot
 import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.textSlotControls
+import com.framemark.native.product.FmLog
 
 /**
  * 文字页的选择式控件（用户 2026-11-07 口径）：
@@ -396,15 +397,15 @@ internal fun TextSlotSelector(
         entries.joinToString("|") { "${it.navKey}#${it.label}#${it.readonly}" }
     }
     LaunchedEffect(navSignature) {
-        println(
-            "FM_TEXT_NAV card=$cardId boxes=${entries.size} canvas=${outputWidth}x${outputHeight} " +
+        FmLog.info("FM_TEXT_NAV") {
+            "card=$cardId boxes=${entries.size} canvas=${outputWidth}x${outputHeight} " +
                 entries.joinToString(" ") { entry ->
                     val slot = entry.slot
                     "${entry.order}:${entry.navKey}[${entry.fullLabel}]" +
                         "${if (entry.readonly) "ro" else "rw"}" +
                         "@${slot.x.toInt()},${slot.y.toInt()},${slot.w.toInt()}x${slot.h.toInt()}"
-                },
-        )
+                }
+        }
     }
     val fallback = rememberTextSlotSelectionState(
         cardId = cardId,

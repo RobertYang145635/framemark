@@ -5,10 +5,10 @@ import com.framemark.native.product.ProductFileSystem
 import com.framemark.native.product.SessionStore
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopWorkflowPlatform
-import com.framemark.native.workflow.ExportSettings
-import com.framemark.native.workflow.ExportSizeMode
+import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.ExportSizeMode
 import com.framemark.native.workflow.JvmProductFileSystem
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.WorkflowEnv
 import java.io.File
 import java.security.MessageDigest
@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
     check(imported.added == 3) { "expected 3 imported photos, got ${imported.added}" }
 
     val settings = ExportSettings(
-        format = SampleFormat.Jpeg,
+        format = ExportFormat.Jpeg,
         quality = 100,
         sizeMode = ExportSizeMode.LongEdge,
         longEdge = 1200,
@@ -182,7 +182,7 @@ fun main(args: Array<String>) {
         store = SessionStore(FailingTempFs(JvmProductFileSystem(failDir.path))),
     )
     failing.load()
-    failing.setExportSettings(ExportSettings(format = SampleFormat.Png))
+    failing.setExportSettings(ExportSettings(format = ExportFormat.Png))
     val writeOk = failing.saveNow()
     val writeFailureVisible = !writeOk && failing.saveError?.contains("FM-E-IO-003") == true
     failing.dispose()

@@ -16,9 +16,8 @@ import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.Preset
 import com.framemark.native.product.Project
 import com.framemark.native.product.SubmitOutcome
-import com.framemark.native.product.ExportFormat as ProductExportFormat
-import com.framemark.native.product.ExportSettings as ProductExportSettings
-import com.framemark.native.product.ExportSizeMode as ProductExportSizeMode
+import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
 import com.framemark.native.product.WatermarkAsset
@@ -39,6 +38,7 @@ import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
 import java.util.UUID
+import com.framemark.native.product.FmLog
 
 /**
  * Desktop project state: `product.Project` is the single source of truth and
@@ -238,15 +238,14 @@ class DesktopProjectController(
             // The active photo may be one of the targets: make the shell re-read it.
             hydrationVersion++
             saveNow()
-            println("FM_DESIGN_COPY source=$sourcePhotoId targets=${targets.size} changed=$changed")
+            FmLog.info("FM_DESIGN_COPY") { "source=$sourcePhotoId targets=${targets.size} changed=$changed" }
         }
         return changed
     }
 
     override fun setExportSettings(settings: ExportSettings) {
-        val mapped = settings.toProduct()
-        if (mapped == project.exportSettings) return
-        mutate { it.withExportSettings(mapped) }
+        if (settings == project.exportSettings) return
+        mutate { it.withExportSettings(settings) }
     }
 
     /** Project export options in the UI session's type. */
@@ -259,7 +258,7 @@ class DesktopProjectController(
      * 读这份偏好，单张导出走同一条路才对得上。
      */
     override fun exportSettingsForUi(): ExportSettings {
-        val settings = project.exportSettings.toWorkflow()
+        val settings = project.exportSettings
         val local = WorkflowEnv.platform?.configuredJpegQuality() ?: return settings
         return settings.copy(quality = local)
     }
@@ -386,7 +385,9 @@ class DesktopProjectController(
             val file = File(path)
             require(file.isFile) { "水印文件不存在" }
             require(file.name.lowercase().endsWith(".png")) { "水印必须是 PNG" }
-            val bytes = file.readBytes()
+            // Bounded: a 500 MB "watermark" is refused before it enters memory.
+            val bytes = readFileBytesBounded(path, WatermarkAsset.MAX_BYTES)
+                ?: error("水印文件不存在")
             val meta = PhotoMetadata.read(file) ?: error("无法读取水印图片")
             val asset = WatermarkAsset.create(file.name, "image/png", meta.width, meta.height, bytes)
             val applied = updateActiveOverlay { spec ->
@@ -519,7 +520,7 @@ class DesktopProjectController(
                             presetLoadFailed = false
                             presetLoadFailure = null
                             presetError = null
-                            println("FM_PRESET_EMPTY_LEGACY_MIGRATED sha=verified")
+                            FmLog.info("FM_PRESET_EMPTY_LEGACY_MIGRATED") { "sha=verified" }
                         }
                         is StoreResult.Failed -> {
                             presetLoadFailure = "${migration.error.code} ${migration.error.message}"
@@ -530,7 +531,7 @@ class DesktopProjectController(
                 }
             }
         }
-        println("FM_PRODUCT_PRESETS count=${presets.size} error=${presetError ?: "-"}")
+        FmLog.info("FM_PRODUCT_PRESETS") { "count=${presets.size} error=${presetError ?: "-"}" }
     }
 
     override fun clearPresetError() {
@@ -556,7 +557,7 @@ class DesktopProjectController(
     override fun deletePreset(id: String): Boolean {
         val target = presets.firstOrNull { it.id == id } ?: return false
         return persistPresets(presets.filterNot { it.id == id }).also { ok ->
-            if (ok) println("FM_PRODUCT_PRESET_DELETED id=$id name=${target.name}")
+            if (ok) FmLog.info("FM_PRODUCT_PRESET_DELETED") { "id=$id name=${target.name}" }
         }
     }
 
@@ -596,14 +597,14 @@ class DesktopProjectController(
         hydrationVersion++
         if (!saveNow()) {
             presetError = saveError ?: "FM-E-IO-003 预设已应用，但工程未写入磁盘"
-            println("FM_PRODUCT_PRESET_APPLY_FAIL id=$id save=$saveError")
+            FmLog.warn("FM_PRODUCT_PRESET_APPLY_FAIL") { "id=$id save=$saveError" }
             return false
         }
         presetError = null
-        println(
-            "FM_PRODUCT_PRESET_APPLIED id=$id card=${applied.cardId} " +
-                "watermark=${applied.overlay?.asset?.sha256?.take(12) ?: "-"}",
-        )
+        FmLog.info("FM_PRODUCT_PRESET_APPLIED") {
+            "id=$id card=${applied.cardId} " +
+                "watermark=${applied.overlay?.asset?.sha256?.take(12) ?: "-"}"
+        }
         return true
     }
 
@@ -612,7 +613,7 @@ class DesktopProjectController(
         return when (val result = store.exportPreset(preset, path)) {
             is StoreResult.Ok -> {
                 presetError = null
-                println("FM_PRODUCT_PRESET_EXPORTED id=$id path=$path")
+                FmLog.info("FM_PRODUCT_PRESET_EXPORTED") { "id=$id path=$path" }
                 true
             }
             is StoreResult.Failed -> {
@@ -663,7 +664,7 @@ class DesktopProjectController(
         if (!persistPresets(next)) return false
 
         presetError = null
-        println("FM_PRODUCT_PRESET_IMPORTED id=${preset.id} replace=${existingIndex >= 0}")
+        FmLog.info("FM_PRODUCT_PRESET_IMPORTED") { "id=${preset.id} replace=${existingIndex >= 0}" }
         return true
     }
 
@@ -718,7 +719,7 @@ class DesktopProjectController(
                 presetLoadFailed = false
                 presetLoadFailure = null
                 presetError = null
-                println("FM_PRESET_MIGRATED count=${converted.size} total=${migration.value.size}")
+                FmLog.info("FM_PRESET_MIGRATED") { "count=${converted.size} total=${migration.value.size}" }
                 converted.size
             }
             is StoreResult.Failed -> {
@@ -754,7 +755,7 @@ class DesktopProjectController(
                     0
                 } else {
                     legacyBatchJobs = null
-                    println("FM_BATCH_MIGRATED count=$added total=${next.jobs.size}")
+                    FmLog.info("FM_BATCH_MIGRATED") { "count=$added total=${next.jobs.size}" }
                     added
                 }
             }
@@ -794,11 +795,11 @@ class DesktopProjectController(
                 adoptLegacyBatch()
             }
         }
-        println(
-            "FM_PRODUCT_BATCH_LOADED items=${batchJobs.size} " +
+        FmLog.info("FM_PRODUCT_BATCH_LOADED") {
+            "items=${batchJobs.size} " +
                 "pending=${batchQueue.jobs.count { it.status == BatchJobStatus.Queued }} " +
-                "legacyPending=${legacyBatchJobs != null}",
-        )
+                "legacyPending=${legacyBatchJobs != null}"
+        }
     }
 
     /** The old hand-written `{"version":1,"items":[…]}` queue, when that is what is on disk. */
@@ -872,7 +873,7 @@ class DesktopProjectController(
                 }
                 is SubmitOutcome.Duplicate -> {
                     duplicates++
-                    println("FM_PRODUCT_BATCH_DUPLICATE photo=${photo.displayName} existing=${outcome.existingId}")
+                    FmLog.info("FM_PRODUCT_BATCH_DUPLICATE") { "photo=${photo.displayName} existing=${outcome.existingId}" }
                 }
             }
         }
@@ -886,18 +887,18 @@ class DesktopProjectController(
             undesigned = preflight.undesigned.size,
             addedIds = addedIds.toList(),
         )
-        println(
-            "FM_PRODUCT_BATCH_ENQUEUED selected=${photoIds.size} added=$added duplicate=$duplicates " +
+        FmLog.info("FM_PRODUCT_BATCH_ENQUEUED") {
+            "selected=${photoIds.size} added=$added duplicate=$duplicates " +
                 "undesigned=${preflight.undesigned.size} rejected=${rejected.size} " +
-                "reconciled=${batchLastSubmit?.reconciled} total=${batchJobs.size}",
-        )
+                "reconciled=${batchLastSubmit?.reconciled} total=${batchJobs.size}"
+        }
         return added
     }
 
     override fun cancelBatch() {
         if (!batchRunning) return
         batchCancelRequested = true
-        println("FM_PRODUCT_BATCH_CANCEL done=$batchDone")
+        FmLog.info("FM_PRODUCT_BATCH_CANCEL") { "done=$batchDone" }
     }
 
     override fun retryBatch(id: String) {
@@ -909,7 +910,7 @@ class DesktopProjectController(
         batchJobs = batchQueue.jobs
         batchError = null
         persistBatch()
-        println("FM_PRODUCT_BATCH_RETRY id=$id")
+        FmLog.info("FM_PRODUCT_BATCH_RETRY") { "id=$id" }
     }
 
     override fun removeBatchJob(id: String) {
@@ -969,7 +970,7 @@ class DesktopProjectController(
                     batchQueue = recoverBatchQueue(batchQueue, WorkflowEnv.platform, clock())
                     batchJobs = batchQueue.jobs
                     persistBatch()
-                    println("FM_PRODUCT_BATCH_INTERRUPTED id=${queued.id} photo=${queued.displayName} back_to_queue=true")
+                    FmLog.info("FM_PRODUCT_BATCH_INTERRUPTED") { "id=${queued.id} photo=${queued.displayName} back_to_queue=true" }
                     throw c
                 } catch (t: Throwable) {
                     produced = null
@@ -986,15 +987,15 @@ class DesktopProjectController(
                 batchJobs = batchQueue.jobs
                 if (!persistBatch()) break
                 onProgress?.invoke()
-                println(
-                    "FM_PRODUCT_BATCH_ITEM id=${queued.id} photo=${queued.displayName} " +
-                        "status=${batchQueue.job(queued.id)?.status} path=${produced?.path ?: "-"}",
-                )
+                FmLog.info("FM_PRODUCT_BATCH_ITEM") {
+                    "id=${queued.id} photo=${queued.displayName} " +
+                        "status=${batchQueue.job(queued.id)?.status} path=${produced?.path ?: "-"}"
+                }
             }
         } finally {
             batchRunning = false
         }
-        println("FM_PRODUCT_BATCH_SETTLED done=$batchDone failed=$batchFailed cancelled=${batchQueue.cancelledCount}")
+        FmLog.info("FM_PRODUCT_BATCH_SETTLED") { "done=$batchDone failed=$batchFailed cancelled=${batchQueue.cancelledCount}" }
     }
 
     /**
@@ -1024,7 +1025,7 @@ class DesktopProjectController(
         if (!storedFingerprint.isNullOrBlank() && platform.fileFingerprint(photo.path) != storedFingerprint) {
             throw EngineFailure("FM-E-INPUT-001", "照片内容已变化，请重新加入任务：${photo.displayName}")
         }
-        val settings = job.exportSettings.toWorkflow()
+        val settings = job.exportSettings
         return NativeEngine.exportCard(
             cardId = job.design.cardId,
             cardName = job.design.cardId,
@@ -1099,7 +1100,7 @@ class DesktopProjectController(
         saveJob?.cancel()
         saveJob = null
         if (!requireWritableProject()) {
-            println("FM_PROJECT_SAVE_BLOCKED reason=project-read-failed")
+            FmLog.warn("FM_PROJECT_SAVE_BLOCKED") { "reason=project-read-failed" }
             return@synchronized false
         }
         val snapshot = project
@@ -1193,35 +1194,3 @@ object DesktopProjectRuntime {
         current?.flush()
     }
 }
-
-private fun ExportSettings.toProduct(): ProductExportSettings = ProductExportSettings(
-    format = when (format) {
-        SampleFormat.Jpeg -> ProductExportFormat.Jpeg
-        SampleFormat.Png -> ProductExportFormat.Png
-        SampleFormat.WebP -> ProductExportFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        ExportSizeMode.Original -> ProductExportSizeMode.Original
-        ExportSizeMode.LongEdge -> ProductExportSizeMode.LongEdge
-    },
-    longEdge = longEdge,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)
-
-private fun ProductExportSettings.toWorkflow(): ExportSettings = ExportSettings(
-    format = when (format) {
-        ProductExportFormat.Jpeg -> SampleFormat.Jpeg
-        ProductExportFormat.Png -> SampleFormat.Png
-        ProductExportFormat.WebP -> SampleFormat.WebP
-    },
-    quality = quality,
-    sizeMode = when (sizeMode) {
-        ProductExportSizeMode.Original -> ExportSizeMode.Original
-        ProductExportSizeMode.LongEdge -> ExportSizeMode.LongEdge
-    },
-    longEdge = longEdge ?: 1600,
-    filenamePattern = filenamePattern,
-    webpLossless = webpLossless,
-)

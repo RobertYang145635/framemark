@@ -41,10 +41,12 @@ fun StoreResult<*>.errorOrNull(): StoreError? = (this as? StoreResult.Failed)?.e
  * interface stays platform-neutral so tests can inject failures and so the store
  * never touches `java.io` directly.
  *
- * [rename] must atomically replace `to` with `from` (same directory/volume) and
- * return false when it did not happen. `File.renameTo` does **not** qualify on
- * Windows (it refuses to replace an existing file); the platform adapter must use
- * `Files.move(..., ATOMIC_MOVE, REPLACE_EXISTING)`.
+ * [rename] must replace `to` with `from` (same directory/volume), atomically where
+ * the filesystem supports it, and return false when the replace did not happen.
+ * `File.renameTo` does **not** qualify on Windows (it refuses to replace an
+ * existing file), so the platform adapter uses `Files.move(..., ATOMIC_MOVE)` and
+ * falls back to `REPLACE_EXISTING` + a target read-back: the fallback is not atomic,
+ * and a short write must be reported as a failure, not as a saved document.
  */
 interface ProductFileSystem {
     val dataDir: String
@@ -127,11 +129,14 @@ class SchemaMigration(
  * Reads and writes the project, the preset library, single preset files and the
  * batch queue under `fs.dataDir`.
  *
- * Writes are atomic: full bytes into `<path>.tmp`, a size check, then an atomic
- * rename over the destination. A failure at any step returns the old document
- * untouched and a structured error. Reads are all-or-nothing: a wrong document
- * id, a future version, a missing migrator or a bad field fails the whole load
- * instead of returning a half-populated model.
+ * Writes are staged and verified: full bytes into `<path>.tmp`, a size check and a
+ * byte-for-byte read-back, then a replace over the destination (atomic where the
+ * filesystem supports it). A failure at any step returns the old document untouched
+ * and a structured error. Durability is bounded by what the OS flushed: the platform
+ * adapter requests an atomic move and a parent-directory fsync where the platform
+ * allows it, but neither can promise more than the filesystem gives. Reads are
+ * all-or-nothing: a wrong document id, a future version, a missing migrator or a bad
+ * field fails the whole load instead of returning a half-populated model.
  */
 private object DocumentWriteLocks {
     private val locks = Array(64) { Any() }

@@ -4,6 +4,7 @@ import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.BatchQueue
 import com.framemark.native.product.PhotoDesign as ProductDesign
+import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings as ProductSettings
 import java.io.File
 import java.nio.file.Files
@@ -63,7 +64,7 @@ class ExportCommitProtocolTest {
         runBlocking {
             assertFailsWith<EngineFailure> {
                 NativeEngine.exportCard("card", "边框", null,
-                    ExportSettings(format = SampleFormat.Png), DesignSnapshot("card", null, emptyMap(), emptyMap()),
+                    ProductSettings(format = ExportFormat.Png), DesignSnapshot("card", null, emptyMap(), emptyMap()),
                     nameIndex = 2, photoDisplayName = "原照片.jpg", onOutputPrepared = { path, size, hash ->
                         assertTrue(!File(path).exists())
                         assertEquals(4L, size)
@@ -83,7 +84,7 @@ class ExportCommitProtocolTest {
             val submissions = (1..2).map {
                 async(Dispatchers.Default) {
                     NativeEngine.exportCard("card", "边框", null,
-                        ExportSettings(format = SampleFormat.Png), DesignSnapshot("card", null, emptyMap(), emptyMap()),
+                        ProductSettings(format = ExportFormat.Png), DesignSnapshot("card", null, emptyMap(), emptyMap()),
                         nameIndex = 2, photoDisplayName = "中文 照片.jpg")
                 }
             }

@@ -14,6 +14,7 @@ import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinReg
 import com.sun.jna.ptr.IntByReference
 import java.io.File
+import com.framemark.native.product.FmLog
 
 /**
  * Windows appearance wiring (desktop only).
@@ -263,14 +264,14 @@ object WindowsTitleBar {
             )
         }
         lastApplied = dark
-        println("FM_APPEARANCE_TITLEBAR dark=$dark")
+        FmLog.info("FM_APPEARANCE_TITLEBAR") { "dark=$dark" }
         return true
     }
 
     private fun fail(reason: String): Boolean {
         if (!warned) {
             warned = true
-            println("FM_APPEARANCE_TITLEBAR_UNSUPPORTED $reason -> system default caption")
+            FmLog.info("FM_APPEARANCE_TITLEBAR_UNSUPPORTED") { "$reason -> system default caption" }
         }
         return false
     }
@@ -307,7 +308,7 @@ fun DesktopAppearanceEffects(
             override fun windowGainedFocus(e: java.awt.event.WindowEvent?) = watcher.poke()
         }
         window.addWindowFocusListener(focus)
-        println("FM_APPEARANCE_INIT ${controller.describe()} source=${systemTheme.lastSource}")
+        FmLog.info("FM_APPEARANCE_INIT") { "${controller.describe()} source=${systemTheme.lastSource}" }
         onDispose {
             window.removeWindowFocusListener(focus)
             watcher.stop()
@@ -319,6 +320,6 @@ fun DesktopAppearanceEffects(
         WindowsTitleBar.apply(window, dark)
     }
     LaunchedEffect(dark) {
-        println("FM_APPEARANCE_APPLIED ${controller.describe()} source=${systemTheme.lastSource}")
+        FmLog.info("FM_APPEARANCE_APPLIED") { "${controller.describe()} source=${systemTheme.lastSource}" }
     }
 }
