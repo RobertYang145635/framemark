@@ -36,11 +36,6 @@ class DesktopLibraryFilters {
         familyKey = null
     }
 
-    fun selectVendor(key: String?) {
-        vendorKey = key
-        familyKey = null
-    }
-
     fun jumpToFamily(vendor: String?, family: String?) {
         query = ""
         categoryKey = LibraryIndex.CATEGORY_VENDOR

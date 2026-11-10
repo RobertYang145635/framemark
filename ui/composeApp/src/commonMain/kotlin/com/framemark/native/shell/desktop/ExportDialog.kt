@@ -163,16 +163,6 @@ internal fun DlgSegment(
 }
 
 @Composable
-internal fun DlgLabel(text: String) {
-    Text(
-        text = text,
-        style = FmType.labelSmall,
-        color = FmPalette.onSurfaceMuted,
-        modifier = Modifier.padding(bottom = 6.dp),
-    )
-}
-
-@Composable
 internal fun DlgNote(text: String, error: Boolean = false) {
     Text(
         text = text,
@@ -181,23 +171,6 @@ internal fun DlgNote(text: String, error: Boolean = false) {
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
     )
-}
-
-@Composable
-internal fun DlgTag(text: String, modifier: Modifier = Modifier, numeric: Boolean = false) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.surfaceMuted)
-            .padding(horizontal = FmSpacing.sm, vertical = 3.dp),
-    ) {
-        Text(
-            text,
-            style = if (numeric) FmType.labelSmall.withNumericDigits() else FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-        )
-    }
 }
 
 @Composable

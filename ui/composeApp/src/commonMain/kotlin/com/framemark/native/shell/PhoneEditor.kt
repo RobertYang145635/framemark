@@ -561,57 +561,6 @@ fun PhoneEditorScreen(
 
 }
 
-/** Panel footer: original reference thumb + output size/filename. */
-@Composable
-private fun ReferenceAndOutput(
-    card: LibraryCard?,
-    outputW: Int,
-    outputH: Int,
-    exportEdge: Int,
-    fileName: String,
-) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = FmSpacing.md)) {
-        Text("原版参考", style = FmType.labelMedium, color = FmPalette.onSurface)
-        Text(
-            text = "供应商原版水印，仅作对照；成片以画布为准",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-        )
-        Spacer(Modifier.height(FmSpacing.xs))
-        if (card != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(96.dp)
-                    .clip(RoundedCornerShape(FmRadii.tile))
-                    .background(FmPalette.surfaceMuted)
-                    .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.tile)),
-            ) {
-                LibraryPreview(card = card, modifier = Modifier.fillMaxSize())
-            }
-        }
-        Spacer(Modifier.height(FmSpacing.sm))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = if (outputW > 0 && outputH > 0) {
-                    "输出 $outputW × $outputH · 长边 $exportEdge"
-                } else {
-                    "输出 —"
-                },
-                style = FmType.labelMedium,
-                color = FmPalette.onSurfaceSecondary,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                text = fileName,
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
 
 /** Constrained phone windows use a dedicated parameter page with the same editor state. */
 /**
