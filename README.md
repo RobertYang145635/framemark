@@ -9,7 +9,7 @@
 - `bridge/android*`：Android IR、手写与导出原生库。
 - `engine/data/`、`contracts/`：卡库、控件和渲染数据契约。
 - `scripts/native/`：仓库内构建入口、固定工具版本、来源校验与隔离运行时打包。
-- `src/`、`android/`：冻结的 Electron/Capacitor 实现，用于功能与历史行为对照；原生运行时仍读取明确列出的三份控件 JSON。
+- `legacy-web/`：冻结的 Electron/Capacitor 历史实现（原 `src/`、`capacitor.config.json`、`electron.vite.config.ts` 已整体移入），仅用于功能与历史行为对照，不参与产品与构建；原生构建原先从 `src/` 读取的三份控件 JSON 现位于 `bridge/desktop/controls-data/`。
 
 ## 构建
 

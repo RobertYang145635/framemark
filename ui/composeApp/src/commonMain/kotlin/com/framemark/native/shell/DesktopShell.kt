@@ -2,44 +2,25 @@ package com.framemark.native.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,14 +33,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -67,50 +42,22 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.framemark.native.FeelProbe
 import com.framemark.native.LaunchOptions
-import com.framemark.native.inspector.BorderSection
-import com.framemark.native.inspector.EditorTabList
-import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorPage
-import com.framemark.native.inspector.InspectorPageContent
-import com.framemark.native.inspector.InspectorTabModel
-import com.framemark.native.inspector.WatermarkPane
 import com.framemark.native.inspector.WatermarkZones
 import com.framemark.native.inspector.hasTextPage
 import com.framemark.native.inspector.inspectorTabsFor
-import com.framemark.native.inspector.resetInspectorPage
-import com.framemark.native.inspector.textSlotNavEntries
-import com.framemark.native.inspector.InspectorDataSource
 import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.RegistryPorts
 import com.framemark.native.workflow.PresetStore
-import com.framemark.native.inspector.InspectorModelFactory
-import com.framemark.native.inspector.InspectorSection
-import com.framemark.native.inspector.LogoBrandPanel
-import com.framemark.native.inspector.NativeTextSlotControls
-import com.framemark.native.inspector.OutputPixels
-import com.framemark.native.inspector.OutputSize
-import com.framemark.native.inspector.SectionCard
-import com.framemark.native.inspector.SectionCardShell
-import com.framemark.native.inspector.WatermarkSection
 import com.framemark.native.inspector.applyDemoEdits
 import com.framemark.native.library.InMemoryRecentFramesStore
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
-import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryScreen
 import com.framemark.native.library.LibraryTraversal
 import com.framemark.native.library.RecentFrames
@@ -118,60 +65,35 @@ import com.framemark.native.library.RecentFramesEnv
 import com.framemark.native.shell.desktop.DesktopLibraryFilters
 import com.framemark.native.shell.desktop.DesktopLibraryPanel
 import com.framemark.native.shell.desktop.DesktopSaveState
-import com.framemark.native.shell.desktop.DesktopStageCompareFlag
-import com.framemark.native.shell.desktop.DesktopStageMeta
-import com.framemark.native.shell.desktop.DesktopStageStatusKind
-import com.framemark.native.shell.desktop.DesktopStageStatusTag
-import com.framemark.native.shell.desktop.DesktopStageToolbar
 import com.framemark.native.shell.desktop.DesktopTopBarV2
 import com.framemark.native.shell.desktop.DesktopTrial
-import com.framemark.native.shell.desktop.OtherPhotoDesign
 import com.framemark.native.shell.desktop.desktopPageForLaunchTab
-import com.framemark.native.shell.desktop.desktopStageBackdrop
 import com.framemark.native.shell.desktop.desktopWorkflowWatermark
 import com.framemark.native.shell.desktop.BatchWorkspace
 import com.framemark.native.shell.desktop.DesktopApplyDesignDialog
-import com.framemark.native.shell.desktop.DesktopExportDialog
-import com.framemark.native.shell.desktop.DesktopCollapsedRail
-import com.framemark.native.shell.desktop.DesktopFilmstrip
-import com.framemark.native.shell.desktop.DesktopInspectorRail
-import com.framemark.native.shell.desktop.DesktopPane
-import com.framemark.native.shell.desktop.DesktopStageEmptyState
-import com.framemark.native.shell.desktop.HairlineEdge
+import com.framemark.native.shell.desktop.DesktopColumnLayout
+import com.framemark.native.shell.desktop.DesktopExportSheet
+import com.framemark.native.shell.desktop.DesktopHelpOverlay
+import com.framemark.native.shell.desktop.DesktopRemovePhotoDialog
+import com.framemark.native.shell.desktop.DesktopResetDesignDialog
+import com.framemark.native.shell.desktop.DesktopSavePresetDialog
 import com.framemark.native.theme.FmDesktop
-import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import com.framemark.native.theme.LocalAppearance
-import com.framemark.native.ui.resizeCursor
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.PhotoRef
-import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.product.ExportFormat
-import com.framemark.native.product.ExportSettings
-import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.InMemoryProjectHolder
-import com.framemark.native.workflow.NativeEngine
-import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.ProjectHolder
-import com.framemark.native.workflow.ProjectPhotoStage
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.ProjectStatusBanner
 import com.framemark.native.workflow.ProjectPresetSheet
-import com.framemark.native.workflow.PrimaryButton
-import com.framemark.native.workflow.PhotoThumbnail
-import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.TextSlotRegistry
 import com.framemark.native.workflow.WorkflowEnv
-import com.framemark.native.workflow.groupTextSlots
-import com.framemark.native.workflow.textFallbackControls
 import com.framemark.native.workflow.withNativeTextSlots
-import androidx.compose.ui.graphics.RectangleShape
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import com.framemark.native.product.FmLog
 
@@ -197,10 +119,15 @@ class DesktopLayoutState {
 
 private enum class StageMode { Edit, Batch }
 
-/** Narrow-window pane indices, `DesktopLayoutState.narrowPane`. */
-private const val STAGE_PANE = 0
-private const val LIBRARY_PANE = 1
-private const val PARAMS_PANE = 2
+/**
+ * Narrow-window pane indices, `DesktopLayoutState.narrowPane`.
+ *
+ * `internal` because the compact branch that reads them moved to
+ * `shell/desktop/DesktopColumnLayout.kt`; the values and their meaning are unchanged.
+ */
+internal const val STAGE_PANE = 0
+internal const val LIBRARY_PANE = 1
+internal const val PARAMS_PANE = 2
 
 /**
  * U5 desktop three-column workspace (>= 600 dp).
@@ -1045,63 +972,19 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
             }
 
-            if (helpOpen) {
-                HelpOverlay(onDismiss = { helpOpen = false })
-            }
-            if (savePresetOpen) {
-                AlertDialog(
-                    onDismissRequest = { savePresetOpen = false },
-                    title = { Text("保存预设") },
-                    text = {
-                        Column {
-                            Text(
-                                "把当前边框的参数与文字保存为预设，之后可以一键套用到其他照片。",
-                                style = FmType.bodyMedium,
-                                color = FmPalette.onSurfaceMuted,
-                            )
-                            Spacer(Modifier.height(FmSpacing.md))
-                            OutlinedTextField(
-                                value = savePresetName,
-                                onValueChange = { savePresetName = it },
-                                singleLine = true,
-                                label = { Text("预设名称") },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            enabled = savePresetName.isNotBlank(),
-                            onClick = {
-                                val clean = savePresetName.trim()
-                                savePresetOpen = false
-                                if (clean.isNotEmpty()) saveDesignPreset(clean)
-                            },
-                        ) { Text("保存") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { savePresetOpen = false }) { Text("取消") }
-                    },
-                )
-            }
-            if (resetConfirmOpen) {
-                AlertDialog(
-                    onDismissRequest = { resetConfirmOpen = false },
-                    title = { Text("恢复当前设计？") },
-                    text = {
-                        Text("只清空当前边框的参数修改，回到刚应用的设计；照片和水印保留，可以撤销。")
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            resetConfirmOpen = false
-                            resetCurrentDesign()
-                        }) { Text("恢复") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { resetConfirmOpen = false }) { Text("取消") }
-                    },
-                )
-            }
+            DesktopHelpOverlay(open = helpOpen, onDismiss = { helpOpen = false })
+            DesktopSavePresetDialog(
+                open = savePresetOpen,
+                name = savePresetName,
+                onNameChange = { savePresetName = it },
+                onDismiss = { savePresetOpen = false },
+                onSave = { name -> saveDesignPreset(name) },
+            )
+            DesktopResetDesignDialog(
+                open = resetConfirmOpen,
+                onDismiss = { resetConfirmOpen = false },
+                onConfirm = { resetCurrentDesign() },
+            )
             if (presetSheetOpen) {
                 ProjectPresetSheet(
                     projects = projects,
@@ -1111,43 +994,16 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     onDismiss = { presetSheetOpen = false },
                 )
             }
-            if (exportSheetOpen) {
-                val activeDesign = projects.activeDesign
-                val activePhoto = projects.activePhoto
-                val exportCard = if (activePhoto != null) {
-                    (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards
-                        ?.firstOrNull { it.id == activeDesign?.cardId }
-                } else {
-                    selectedCard
-                }
-                // WP-D2: Windows 用 V2 导出对话框（预览 / 格式 / 尺寸 / 质量 / 文件名
-                // 变量 / 保存位置 / 结果页）。手机导出用 shell/phone/PhoneExportSheet；
-                // workflow/ExportSheet.kt 已在 WP-FIX2 删除（全仓零调用点）。
-                DesktopExportDialog(
-                    session = session,
-                    card = exportCard,
-                    design = if (activePhoto != null) {
-                        activeDesign?.takeIf { it.cardId == exportCard?.id }?.toDesignSnapshot()
-                    } else {
-                        exportCard?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
-                    },
-                    photo = activePhoto,
-                    photoIndex = projects.photoIndex(projects.activePhotoId),
-                    overlay = { projects.overlaySpec() },
-                    // AU2 A-06/A-19：弹层的「约 W × H」也用同一份画布公式
-                    // （右栏 / 顶栏 / 手机 / 弹层 / 桥接），不再用预览帧的照片框占比
-                    // 反推——固定比例模板那里会多算一截（1664 × 1283 vs 真值 1131）。
-                    canonicalCanvas = stageCanvasPixels(
-                        model = (panelModel ?: model)?.takeIf { it.cardId == exportCard?.id },
-                        session = session,
-                        photo = activePhoto,
-                        rendered = IntSize.Zero,
-                    ),
-                    autoRun = LaunchOptions.runSampleExport,
-                    onDismiss = { exportSheetOpen = false },
-                )
-            }
-
+            DesktopExportSheet(
+                open = exportSheetOpen,
+                session = session,
+                model = model,
+                panelModel = panelModel,
+                selectedCard = selectedCard,
+                projects = projects,
+                cards = (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards,
+                onDismiss = { exportSheetOpen = false },
+            )
             if (applyDesignOpen) {
                 DesktopApplyDesignDialog(
                     source = projects.activePhoto,
@@ -1168,24 +1024,11 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
             }
 
-            removeTarget?.let { target ->
-                AlertDialog(
-                    onDismissRequest = { removeTarget = null },
-                    title = { Text("移除照片") },
-                    text = {
-                        Text("从工程中移除「${target.displayName}」？对应设计和水印会一起删除，不会删除原文件。")
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            projects.removePhoto(target.id)
-                            removeTarget = null
-                        }) { Text("移除") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { removeTarget = null }) { Text("取消") }
-                    },
-                )
-            }
+            DesktopRemovePhotoDialog(
+                target = removeTarget,
+                onDismiss = { removeTarget = null },
+                onRemove = { target -> projects.removePhoto(target.id) },
+            )
             if (projects.projectWritesBlocked) {
                 ProjectReadRecoveryBlock(
                     loading = !projects.loaded,
@@ -1199,1254 +1042,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             }
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Three columns
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun DesktopColumnLayout(
-    modifier: Modifier,
-    columns: DesktopColumns,
-    availableWidthDp: Float,
-    layout: DesktopLayoutState,
-    libraryContent: @Composable () -> Unit,
-    onCollapseLeft: () -> Unit,
-    onExpandLeft: () -> Unit,
-    onCollapseRight: () -> Unit,
-    onExpandRight: () -> Unit,
-    selectedCard: LibraryCard?,
-    model: InspectorCardModel?,
-    /** [model] plus the text rows the stage renderer reported; panel only. */
-    panelModel: InspectorCardModel?,
-    textSlots: TextSlotRegistry,
-    session: DesignSession,
-    inspectorState: InspectorLoadState,
-    onRetryInspector: () -> Unit,
-    tabModel: InspectorTabModel,
-    paramsPage: InspectorPage,
-    onSelectPage: (InspectorPage) -> Unit,
-    onTextSlotFocus: (String?) -> Unit,
-    highlightedTextSlotKey: String?,
-    projects: ProjectHolder,
-    onAddPhoto: () -> Unit,
-    onRemovePhoto: (String) -> Unit,
-    onSavePreset: (String) -> Unit,
-    onResetDesign: () -> Unit,
-    hoveredCard: LibraryCard?,
-    holdOriginal: Boolean,
-    onReuseDesign: (String) -> Unit,
-    onPickBorder: () -> Unit,
-    onApplyToOtherPhotos: () -> Unit,
-    /** 胶片条「批量导出」链接（`styles.css` 430 行 `.sinfo` 里的 link）。 */
-    onOpenBatch: () -> Unit,
-) {
-    val gap = FmDesktop.gap
-
-    /**
-     * 右栏外框（第二阶段）：WP-C 的四页签模型 / 页签条 / 页内容。水印页接
-     * `WatermarkPane`（九宫格 + 按格边距），其余页接 `InspectorPageContent`。
-     * 没选边框时只显示“从左侧选择一套边框”。
-     */
-    fun inspectorRail(collapse: () -> Unit): @Composable () -> Unit = {
-        val wmScope = rememberCoroutineScope()
-        val wm = desktopWorkflowWatermark(projects.watermark())
-        val activePhoto = projects.activePhoto
-        // FIX1: 照片的**显示**尺寸（EXIF 方向已应用），不再拿容器尺寸算比例 ——
-        // 竖拍照片存的是 2000 × 2667、引擎按 2667 × 2000 出片，比例反了会让舞台
-        // 画框和成片各说各话。
-        val activePhotoDisplay = activePhoto?.displayPixels()
-        val photoAspect = if (activePhotoDisplay != null && activePhotoDisplay.width > 0 && activePhotoDisplay.height > 0) {
-            activePhotoDisplay.width.toFloat() / activePhotoDisplay.height
-        } else {
-            wm?.photoAspect ?: 1.5f
-        }
-        val pageTab = tabModel.tab(paramsPage)
-        DesktopInspectorRail(
-            cardName = selectedCard?.name ?: "未选择边框",
-            categoryLine = listOfNotNull(selectedCard?.categoryName, selectedCard?.templateCategory)
-                .filter { it.isNotBlank() }.joinToString(" · "),
-            renderMode = when {
-                selectedCard == null -> "等待选择"
-                NativeEngine.supports(selectedCard.id) -> "实时渲染"
-                else -> "引擎样张"
-            },
-            tags = listOfNotNull(selectedCard?.badge),
-            tabModel = tabModel,
-            selectedPage = paramsPage,
-            onSelectPage = onSelectPage,
-            totalModified = tabModel.totalModified,
-            pageModified = pageTab?.modified ?: 0,
-            onResetPage = {
-                if (paramsPage == InspectorPage.Watermark) {
-                    projects.updateWatermark(
-                        anchor = WatermarkZones.DEFAULT_ANCHOR,
-                        width = WatermarkZones.DEFAULT_WIDTH,
-                        opacity = WatermarkZones.DEFAULT_OPACITY,
-                        dx = 0f,
-                        dy = 0f,
-                        rotation = 0f,
-                    )
-                } else {
-                    val changed = resetInspectorPage(tabModel, paramsPage, session)
-                    FmLog.info("FM_INSPECTOR_RESET") { "page=${paramsPage.name} changed=$changed" }
-                }
-            },
-            onSavePreset = { onSavePreset("${selectedCard?.name ?: "边框"} 预设") },
-            onApplyToOtherPhotos = onApplyToOtherPhotos,
-            onResetAll = onResetDesign,
-            onCollapse = collapse,
-            photoWidthPx = activePhotoDisplay?.width ?: 0,
-            photoHeightPx = activePhotoDisplay?.height ?: 0,
-            textSlots = textSlots.slots,
-            textSlotWidthPx = textSlots.width,
-            textSlotHeightPx = textSlots.height,
-            content = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.sm),
-                ) {
-                    when {
-                        selectedCard == null -> Text(
-                            text = "从左侧选择一套边框，这里会显示样式、文字、Logo 与水印。",
-                            style = FmType.bodyMedium,
-                            color = FmPalette.onSurfaceMuted,
-                            modifier = Modifier.padding(vertical = FmSpacing.lg),
-                        )
-                        panelModel == null || pageTab == null -> Column {
-                            Text(
-                                text = if (inspectorState is InspectorLoadState.Failed) {
-                                    "暂时无法加载可调参数。"
-                                } else {
-                                    "正在载入可调参数…"
-                                },
-                                style = FmType.bodyMedium,
-                                color = FmPalette.onSurfaceMuted,
-                                modifier = Modifier.padding(vertical = FmSpacing.lg),
-                            )
-                            if (inspectorState is InspectorLoadState.Failed) {
-                                Text(
-                                    text = "重试",
-                                    style = FmType.labelMedium,
-                                    color = FmPalette.primaryStrong,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(FmRadii.pill))
-                                        .clickable(onClick = onRetryInspector)
-                                        .padding(horizontal = FmSpacing.md, vertical = 4.dp),
-                                )
-                            }
-                        }
-                        paramsPage == InspectorPage.Logo && panelModel != null -> LogoBrandPanel(
-                            // WP-C report §2.2 item 6: the Logo page is the shared
-                            // LogoBrandPanel on desktop and phone, not raw controls.
-                            model = panelModel,
-                            session = session,
-                            modifier = Modifier.fillMaxWidth(),
-                            // 自动匹配要按照片品牌：slot 是异步到的，显式传参保证到货后重新解析。
-                            textSlots = textSlots.slots,
-                        )
-                        paramsPage == InspectorPage.Watermark -> WatermarkPane(
-                            spec = wm,
-                            photoAspect = photoAspect,
-                            onAnchor = { projects.updateWatermark(anchor = it) },
-                            onWidth = { projects.updateWatermark(width = it) },
-                            onOpacity = { projects.updateWatermark(opacity = it) },
-                            onPosition = { dx, dy -> projects.updateWatermark(dx = dx, dy = dy) },
-                            // AU2 A-11：rotation 全链路都在，以前只是缺入口。
-                            onRotation = { degrees -> projects.updateWatermark(rotation = degrees) },
-                            assetName = projects.watermark()?.asset?.name,
-                            onUpload = {
-                                val path = projects.pickWatermark()
-                                if (path != null) {
-                                    wmScope.launch { projects.importWatermark(path) }
-                                }
-                            },
-                            onApplyAll = { projects.applyWatermarkToAll() },
-                            onClear = { projects.clearWatermark() },
-                            onReset = {
-                                projects.updateWatermark(
-                                    anchor = WatermarkZones.DEFAULT_ANCHOR,
-                                    width = WatermarkZones.DEFAULT_WIDTH,
-                                    opacity = WatermarkZones.DEFAULT_OPACITY,
-                                    dx = 0f,
-                                    dy = 0f,
-                                    rotation = 0f,
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        else -> InspectorPageContent(
-                            tab = pageTab,
-                            session = session,
-                            modifier = Modifier.fillMaxWidth(),
-                            onTextSlotFocus = onTextSlotFocus,
-                            // 文字页的选择状态以卡片 id 为键（切换边框时回到第一个）。
-                            cardId = panelModel?.cardId,
-                        )
-                    }
-                }
-            },
-        )
-    }
-
-    if (columns.compact) {
-        // Not enough content width for three columns: one pane at a time, chosen
-        // by the hoisted [DesktopLayoutState.narrowPane] so the top bar's
-        // 「参数」 entry lands on the inspector instead of guessing.
-        val pane = layout.narrowPane
-        Column(modifier.fillMaxSize()) {
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-            ) {
-                listOf("照片", "边框库", "参数").forEachIndexed { index, label ->
-                    com.framemark.native.workflow.ChoiceChip(
-                        label = label,
-                        selected = pane == index,
-                        onClick = { layout.narrowPane = index },
-                    )
-                }
-            }
-            Spacer(Modifier.height(FmSpacing.sm))
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (pane) {
-                    LIBRARY_PANE -> libraryContent()
-                    PARAMS_PANE -> inspectorRail { layout.narrowPane = STAGE_PANE }()
-                    else -> EditStage(
-                        card = selectedCard, session = session, model = model, projects = projects,
-                        textSlots = textSlots,
-                        highlightedTextSlotKey = highlightedTextSlotKey,
-                        onAddPhoto = onAddPhoto, onRemovePhoto = onRemovePhoto,
-                        onOpenBatch = onOpenBatch,
-                        hoveredCard = hoveredCard, holdOriginal = holdOriginal,
-                        onReuseDesign = onReuseDesign, onPickBorder = onPickBorder,
-                        inspectorPage = paramsPage,
-                    )
-                }
-            }
-        }
-        return
-    }
-
-    val leftWidth = columns.left.dp
-    val rightWidth = columns.right.dp
-    val stageWidth = columns.stage.dp
-    val handleWidth = FmDesktop.handleWidth
-    // Centre the drag strip in the gap so it never covers a panel's edge.
-    val handleInset = (gap - handleWidth) / 2
-
-    Box(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(gap),
-        ) {
-            if (columns.showLeft) {
-                DesktopPanel(width = leftWidth, edge = HairlineEdge.Right) {
-                    libraryContent()
-                }
-            } else {
-                CollapsedRail(side = "left", onExpand = onExpandLeft)
-            }
-
-            DesktopPanel(modifier = Modifier.weight(1f)) {
-                EditStage(
-                    card = selectedCard,
-                    session = session,
-                    model = model,
-                    projects = projects,
-                    textSlots = textSlots,
-                    highlightedTextSlotKey = highlightedTextSlotKey,
-                    onAddPhoto = onAddPhoto,
-                    onRemovePhoto = onRemovePhoto,
-                    onOpenBatch = onOpenBatch,
-                    hoveredCard = hoveredCard,
-                    holdOriginal = holdOriginal,
-                    onReuseDesign = onReuseDesign,
-                    onPickBorder = onPickBorder,
-                    inspectorPage = paramsPage,
-                )
-            }
-
-            if (columns.showRight) {
-                DesktopPanel(width = rightWidth, edge = HairlineEdge.Left) {
-                    inspectorRail(onCollapseRight)()
-                }
-            } else {
-                CollapsedRail(side = "right", onExpand = onExpandRight)
-            }
-        }
-
-        if (columns.showLeft) {
-            ResizeHandle(
-                x = leftWidth + handleInset,
-                width = handleWidth,
-                onDrag = { delta ->
-                    // The requested width is user intent; computeDesktopColumns
-                    // clamps it to what the window can pay for on every frame.
-                    layout.leftWidth = (leftWidth + delta)
-                        .coerceIn(desktopLibraryMinWidth().dp, desktopLibraryMaxWidth().dp)
-                },
-            )
-        }
-        if (columns.showRight) {
-            ResizeHandle(
-                x = leftWidth + gap + stageWidth + handleInset,
-                width = handleWidth,
-                onDrag = { delta ->
-                    layout.rightWidth = (rightWidth - delta)
-                        .coerceIn(desktopInspectorMinWidth().dp, desktopInspectorMaxWidth().dp)
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun DesktopPanel(
-    modifier: Modifier = Modifier,
-    width: Dp? = null,
-    edge: HairlineEdge = HairlineEdge.None,
-    content: @Composable () -> Unit,
-) {
-    DesktopPane(
-        modifier = modifier,
-        width = width,
-        background = FmPalette.surface,
-        edge = edge,
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun CollapsedRail(side: String, onExpand: () -> Unit) {
-    DesktopCollapsedRail(side = side, onExpand = onExpand)
-}
-/**
- * Drag strip between a rail and the stage. Width is `FmDesktop.handleWidth` and
- * the caller centres it in the 12 dp gap, so the strip never covers a panel
- * edge and the hit area is a token instead of the gap's leftover space.
- */
-@Composable
-private fun ResizeHandle(x: Dp, width: Dp, onDrag: (Dp) -> Unit) {
-    val currentOnDrag by rememberUpdatedState(onDrag)
-    Box(
-        modifier = Modifier
-            .offset(x = x)
-            .width(width)
-            .fillMaxHeight()
-            .resizeCursor()
-            .pointerInput(Unit) {
-                detectDragGestures { change, drag ->
-                    change.consume()
-                    currentOnDrag(drag.x.toDp())
-                }
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .width(3.dp)
-                .height(36.dp)
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .background(FmPalette.outlineStrong),
-        )
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Centre stage
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun EditStage(
-    card: LibraryCard?,
-    session: DesignSession,
-    model: InspectorCardModel?,
-    projects: ProjectHolder,
-    /** Filled by the stage render; read by the 文字 tab. */
-    textSlots: TextSlotRegistry,
-    /** §3.3: row being edited in the 文字 tab; null draws no frame. */
-    highlightedTextSlotKey: String?,
-    onAddPhoto: () -> Unit,
-    onRemovePhoto: (String) -> Unit,
-    /** 胶片条右侧「批量导出」链接（`styles.css` 430 行 `.sinfo` 里的 link）。 */
-    onOpenBatch: () -> Unit,
-    hoveredCard: LibraryCard? = null,
-    holdOriginal: Boolean = false,
-    onReuseDesign: (String) -> Unit = {},
-    onPickBorder: () -> Unit = {},
-    /** 右栏当前页签；水印引导线只在 水印 页显示（WP-R D8）。 */
-    inspectorPage: InspectorPage? = null,
-) {
-    val native = card != null && NativeEngine.supports(card.id)
-    val activeDesign = projects.activeDesign
-    // The sample preview (no imported photo) is rendered straight from the
-    // session, so it has to see the renderer-backed text rows as well.
-    val panelModel = remember(model, textSlots.slots) { model?.withNativeTextSlots(textSlots.slots) }
-    val design = when {
-        projects.activePhoto != null -> activeDesign?.takeIf { it.cardId == card?.id }?.toDesignSnapshot()
-        activeDesign != null && activeDesign.cardId == card?.id -> activeDesign.toDesignSnapshot()
-        else -> card?.let { NativeEngine.designOf(it, panelModel ?: model, session) }
-    }
-    // §3.3: the stage's chip names the highlighted row (`左上 · 品牌`). The 文字 tab
-    // already derives that name from `textSlotNavEntries`; the stage only receives the
-    // finished string, so `workflow/` never re-implements the nav naming.
-    val highlightedTextSlotLabel = remember(
-        highlightedTextSlotKey,
-        textSlots.slots,
-        textSlots.width,
-        textSlots.height,
-    ) {
-        textSlotNavEntries(textSlots.slots, textSlots.width, textSlots.height)
-            .firstOrNull { it.navKey == highlightedTextSlotKey }
-            ?.let { entry ->
-                entry.role?.takeIf { it.isNotBlank() }?.let { "${entry.positionLabel} · $it" }
-                    ?: entry.positionLabel
-            }
-    }
-
-    var zoom by remember { mutableFloatStateOf(1f) }
-    var pan by remember { mutableStateOf(Offset.Zero) }
-    var stagePx by remember { mutableStateOf(IntSize.Zero) }
-    // 渲染帧的像素尺寸：只在参数族未知的卡片上给「→ 导出 W × H」兜底（见
-    // stageExportPixels）。已知参数族的尺寸不再依赖它，所以窗口宽度不会改数字。
-    var renderedPx by remember { mutableStateOf(IntSize.Zero) }
-    var comparing by remember { mutableStateOf(false) }
-
-    // AU2 A-06：顶栏的导出尺寸与右栏「导出尺寸」、手机样式页共用 [OutputSize]。
-    val exportPixels = stageExportPixels(
-        model = model?.takeIf { it.cardId == card?.id },
-        session = session,
-        photo = projects.activePhoto,
-        rendered = renderedPx,
-        settings = projects.exportSettingsForUi(),
-    )
-
-    LaunchedEffect(projects.activePhotoId) {
-        // A hold-compare cannot survive the photo it was comparing.
-        comparing = false
-    }
-
-    fun fitToWindow() {
-        zoom = 1f
-        pan = Offset.Zero
-        FmLog.info("FM_WHEEL") { "fit zoom=1.000" }
-    }
-
-    fun clampPan(next: Offset, z: Float = zoom): Offset {
-        if (z <= 1f) return Offset.Zero
-        val maxX = stagePx.width * (z - 1f) / 2f
-        val maxY = stagePx.height * (z - 1f) / 2f
-        return Offset(next.x.coerceIn(-maxX, maxX), next.y.coerceIn(-maxY, maxY))
-    }
-
-    /** 工具条 `−` / `+`：与滚轮同一套倍率与 100 % 吸附。 */
-    fun stepZoom(direction: Int) {
-        val factor = if (direction > 0) 1.25f else 0.8f
-        val raw = (zoom * factor).coerceIn(0.25f, 4f)
-        val next = if (raw in 0.94f..1.06f) 1f else raw
-        if (next == zoom) return
-        if (next <= 1f) {
-            zoom = next
-            pan = Offset.Zero
-        } else {
-            zoom = next
-            pan = clampPan(pan, next)
-        }
-        FmLog.info("FM_WHEEL") { "step=${if (direction > 0) "+" else "-"} zoom=${"%.3f".format(zoom)}" }
-    }
-
-    /** 25%..400% with a 100% detent; zoom steps are multiplicative. */
-    fun wheelZoom(anchor: Offset, dy: Float) {
-        val factor = if (dy < 0f) 1.1f else 1f / 1.1f
-        val raw = (zoom * factor).coerceIn(0.25f, 4f)
-        val next = if (raw in 0.94f..1.06f) 1f else raw
-        if (next == zoom) return
-        if (next <= 1f) {
-            zoom = next
-            pan = Offset.Zero
-        } else {
-            val center = Offset(stagePx.width / 2f, stagePx.height / 2f)
-            val proposed = anchor - center - (anchor - center - pan) * (next / zoom)
-            zoom = next
-            pan = clampPan(proposed, next)
-        }
-        FmLog.info("FM_WHEEL") {
-            "dy=${"%.0f".format(dy)} anchor=${"%.0f".format(anchor.x)},${"%.0f".format(anchor.y)} " +
-                "zoom=${"%.3f".format(zoom)} pan=${"%.1f".format(pan.x)},${"%.1f".format(pan.y)}"
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .background(desktopStageBackdrop())
-                .onSizeChanged { stagePx = it }
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            if (event.type != PointerEventType.Scroll) continue
-                            val change = event.changes.firstOrNull() ?: continue
-                            val dy = change.scrollDelta.y
-                            if (dy == 0f) continue
-                            // Consume so the wheel can never scroll the shell.
-                            change.consume()
-                            wheelZoom(change.position, dy)
-                        }
-                    }
-                }
-                .pointerInput(Unit) {
-                    detectDragGestures { change, drag ->
-                        if (zoom <= 1f) return@detectDragGestures
-                        change.consume()
-                        pan = clampPan(pan + drag)
-                    }
-                }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onDoubleTap = {
-                            zoom = 1f
-                            pan = Offset.Zero
-                            FmLog.info("FM_WHEEL") { "reset zoom=1.000" }
-                        },
-                    )
-                },
-        ) {
-            val previewed = hoveredCard
-            // `.stage-area { position:absolute; inset:0; padding: 56px 64px 84px }`
-            // —— 底部 84 已经容下悬浮工具条，不再单独扣一条预留高度。
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        start = FmDesktop.stagePadSide,
-                        end = FmDesktop.stagePadSide,
-                        top = FmDesktop.stagePadTop,
-                        bottom = FmDesktop.stagePadBottom,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (previewed != null) {
-                    // 悬停 0.4 秒后的预览：直接显示这张卡的打包预览图，不切换选中项。
-                    LibraryPreview(
-                        card = previewed,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else if (projects.photos.isEmpty()) {
-                    ImportPlaceholder(onAddPhoto = onAddPhoto)
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = zoom
-                                scaleY = zoom
-                                translationX = pan.x
-                                translationY = pan.y
-                            },
-                    ) {
-                    val activePhoto = projects.activePhoto
-                    // The shared wrapper (workflow.ProjectPhotoStage) owns the
-                    // native branch but exposes no `onTextSlots`, so the desktop
-                    // stage mirrors that exact branch to receive the renderer's
-                    // text rows. Everything else (watermark-only photo, static
-                    // card, placeholder) still goes through the shared wrapper.
-                    when {
-                        // Hold-to-compare shows the imported photo itself, never a
-                        // rendered frame and never a highlight.
-                        (comparing || holdOriginal) && activePhoto != null -> PhotoThumbnail(
-                            path = activePhoto.path,
-                            modifier = Modifier.fillMaxSize(),
-                            maxEdge = 1600,
-                            cornerRadius = FmRadii.stage,
-                            contentScale = ContentScale.Fit,
-                        )
-                        card != null && design != null && NativeEngine.supports(card.id) -> DesktopNativeStage(
-                            card = card,
-                            design = design,
-                            projects = projects,
-                            textSlots = textSlots,
-                            highlightedTextSlotKey = highlightedTextSlotKey,
-                            highlightedTextSlotLabel = highlightedTextSlotLabel,
-                            // 渲染帧与导出画布是同一个设计，宽高比一致；有了它 `.print`
-                            // 的投影才能贴着成品，而不是围着舞台上一块空白。
-                            printAspect = if (renderedPx.width > 0 && renderedPx.height > 0) {
-                                renderedPx.width.toFloat() / renderedPx.height
-                            } else {
-                                null
-                            },
-                            onRenderedPx = { w, h -> renderedPx = IntSize(w, h) },
-                            watermarkGuides = inspectorPage == InspectorPage.Watermark,
-                        )
-                        else -> ProjectPhotoStage(projects = projects, card = card, design = design)
-                    }
-                }
-            }
-            }
-
-            // ---- 舞台悬浮层（PARITY-SPEC §2C）：meta / status / 对比提示 / 工具条 ----
-            if (previewed == null) {
-                val activePhoto = projects.activePhoto
-                if (activePhoto != null && projects.activeDesign == null) {
-                    val candidates = projects.photos
-                        .filter { it.id != activePhoto.id }
-                        .mapNotNull { p ->
-                            projects.project.designs[p.id]?.let { OtherPhotoDesign(p.id, p.displayName) }
-                        }
-                    DesktopStageEmptyState(
-                        candidates = candidates,
-                        onReuse = onReuseDesign,
-                        onPickBorder = onPickBorder,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-            val metaPhoto = projects.activePhoto
-            // FIX1: 标题行的「原图」也走显示尺寸，和右栏 / 成片同一个口径。
-            val metaPhotoDisplay = metaPhoto?.displayPixels()
-            DesktopStageMeta(
-                fileName = metaPhoto?.displayName ?: card?.name ?: "尚未添加照片",
-                originalSize = metaPhotoDisplay
-                    ?.takeIf { it.width > 0 && it.height > 0 }
-                    ?.let { "${it.width} × ${it.height}" },
-                exportSize = exportSizeLabel(exportPixels),
-                modifier = Modifier.align(Alignment.TopStart),
-            )
-            DesktopStageStatusTag(
-                text = when {
-                    comparing || holdOriginal -> "原图"
-                    previewed != null -> "悬停预览 · ${previewed.name}"
-                    projects.activePhoto != null && activeDesign == null -> "未选边框"
-                    native -> "实时预览"
-                    card != null -> "引擎样张"
-                    else -> "未选边框"
-                },
-                kind = when {
-                    native && previewed == null && !comparing && !holdOriginal &&
-                        !(projects.activePhoto != null && activeDesign == null) -> DesktopStageStatusKind.Live
-                    else -> DesktopStageStatusKind.Static
-                },
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
-            if (comparing || holdOriginal) {
-                DesktopStageCompareFlag(modifier = Modifier.align(Alignment.TopCenter))
-            }
-            val appearance = LocalAppearance.current
-            DesktopStageToolbar(
-                zoomLabel = if (zoom <= 1f) "适合" else "${(zoom * 100).roundToInt()}%",
-                zoomDescription = "当前 ${(zoom * 100).roundToInt()}%，点击适合窗口",
-                compareActive = comparing || holdOriginal,
-                compareEnabled = projects.activePhoto != null,
-                tone = appearance.settings.stageTone,
-                onZoomOut = { stepZoom(-1) },
-                onFit = ::fitToWindow,
-                onZoomIn = { stepZoom(1) },
-                onCompareHold = { comparing = it },
-                onSelectTone = { appearance.setStageTone(it) },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-        }
-
-        if (projects.photos.isNotEmpty()) {
-            DesktopFilmstrip(
-                projects = projects,
-                onAddPhoto = onAddPhoto,
-                onRemovePhoto = onRemovePhoto,
-                onOpenBatch = onOpenBatch,
-            )
-        }
-    }
-
-    // 设计上下文（保存预设 / 恢复当前设计）已经上移到项目卡下拉，舞台本身不再有
-    // 演示稿之外的 `⋯` 菜单。
-}
-
-/**
- * Desktop stage for a card the native engine renders.
- *
- * The composition (padding, centred fill, overlay re-anchor after the first
- * frame) is the native branch of the shared `workflow.ProjectPhotoStage`, plus
- * the two things that wrapper cannot pass through:
- * `NativeStagePreview(onTextSlots = …)`, which is how the 文字 tab learns the
- * geometry of the rows the engine actually drew, and
- * `NativeStagePreview(highlightedTextSlotKey = …)`, which frames the row being
- * edited, and `NativeStagePreview(highlightedTextSlotLabel = …)`, which names that
- * row with the string the 文字 tab computed. Keep the two in sync if the wrapper's
- * native branch ever changes.
- */
-@Composable
-private fun DesktopNativeStage(
-    card: LibraryCard,
-    design: DesignSnapshot,
-    projects: ProjectHolder,
-    textSlots: TextSlotRegistry,
-    highlightedTextSlotKey: String?,
-    /** §3.3: the same row's display name (`左上 · 品牌`), computed by the 文字 tab. */
-    highlightedTextSlotLabel: String?,
-    /** 渲染帧宽高比：`.print` 的投影要贴着成品，不能围着整块舞台。 */
-    printAspect: Float?,
-    onRenderedPx: (Int, Int) -> Unit,
-    /** 水印引导线是否显示（只有打开水印页时为真，见 WP-R D8）。 */
-    watermarkGuides: Boolean = false,
-) {
-    // The watermark anchor needs the render's photo rect, which only exists after
-    // the first frame; bumping the version re-keys the overlay so the mark lands
-    // on the rendered image instead of the placeholder.
-    var geometryVersion by remember { mutableIntStateOf(0) }
-    val overlay = remember(projects.activePhotoId, projects.activeDesign?.overlay, geometryVersion) {
-        projects.overlaySpec()
-    }
-    val shadowColor = FmPalette.scrim
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .then(
-                    if (printAspect != null && printAspect > 0f) {
-                        Modifier.aspectRatio(printAspect)
-                    } else {
-                        Modifier.fillMaxSize()
-                    },
-                )
-                // `.print` 投影：`0 1px 2px, 0 18px 40px -12px, 0 40px 80px -30px`
-                // —— Compose 只有一层 shadow，取最大那层，颜色用遮罩令牌。
-                .shadow(
-                    elevation = 28.dp,
-                    shape = RectangleShape,
-                    clip = false,
-                    ambientColor = shadowColor,
-                    spotColor = shadowColor,
-                ),
-        ) {
-            NativeStagePreview(
-                card = card,
-                design = design,
-                modifier = Modifier.fillMaxSize(),
-                overlay = overlay,
-                photoPath = projects.activePhoto?.path,
-                onRendered = { w, h, _ ->
-                    geometryVersion++
-                    onRenderedPx(w, h)
-                },
-                onTextSlots = textSlots::update,
-                highlightedTextSlotKey = highlightedTextSlotKey,
-                highlightedTextSlotLabel = highlightedTextSlotLabel,
-                // WP-C §4.5: the watermark can be dragged directly on the photo; the
-                // dashed frame shows the cell it may move in, and the write-back is the
-                // same absolute dx/dy the 水印 page sliders use.
-                watermark = desktopWorkflowWatermark(projects.watermark()),
-                onWatermarkNudge = { dx, dy -> projects.updateWatermark(dx = dx, dy = dy) },
-                // WP-R D8：虚线区域框/十字辅助线只在编辑水印时出现。演示稿的普通
-                // 编辑态（有水印）没有这层线，所以按当前页签开关。
-                watermarkGuides = watermarkGuides,
-            )
-        }
-    }
-}
-
-/**
- * 舞台顶栏的导出像素。
- *
- * AU2 A-06：这里过去按**渲染帧的宽高比**反推（`photo.width × frameAspect`），
- * 与右栏 `curatedOutputSize` 的公式各算一遍，于是同一屏上出现 2666 / 2667 两种说法。
- * 现在已知参数族（`brand_footer` / `personal_border`）的卡片一律走 [OutputSize]，
- * 与右栏、手机、导出长边换算同式；只有参数族未知的卡片（厂商规格 / 比例模板）
- * 才退回渲染帧的**测量**宽高比 —— 那是实测值，不是第二套公式。
- *
- * 取不到照片尺寸或渲染帧时返回 null —— 宁可不写，也不写一个猜的数字。
- */
-internal fun stageExportPixels(
-    model: InspectorCardModel?,
-    session: DesignSession,
-    photo: PhotoRef?,
-    rendered: IntSize,
-    settings: ExportSettings,
-): OutputPixels? = OutputSize.applyLongEdge(
-    stageCanvasPixels(model, session, photo, rendered),
-    settings.sizeMode,
-    settings.effectiveLongEdge,
-)
-
-/**
- * 同一张卡的**未缩放**画布像素：右栏「导出尺寸」、顶栏、手机样式页与导出弹层
- * 共用它。已知参数族走 [OutputSize]，未知族才用渲染帧的测量宽高比兜底。
- *
- * FIX1: 入口的 `photo.widthPx/heightPx` 是**容器**尺寸（桌面导入器只读文件头，
- * 方向单列在 `PhotoRef.orientation`），而引擎按解码后（EXIF 已应用）的画面排版。
- * 所以这里先用 [PhotoRef.displayPixels] 归一，再交给 [OutputSize] —— 竖拍照片
- * 才不会出现「界面 2000 × 2889、成片 2667 × 2296」。
- */
-internal fun stageCanvasPixels(
-    model: InspectorCardModel?,
-    session: DesignSession,
-    photo: PhotoRef?,
-    rendered: IntSize,
-): OutputPixels? {
-    if (photo == null) return null
-    val display = photo.displayPixels()
-    if (display.width <= 0) return null
-    val controls = model?.controls.orEmpty()
-    return if (OutputSize.familyOf(controls) != OutputSize.Family.PhotoOnly) {
-        OutputSize.canvas(display.width, display.height, controls) { session.value(it) }
-    } else {
-        OutputSize.measuredCanvas(display.width, rendered.width, rendered.height)
-    }
-}
-
-/**
- * `PhotoRef` 的**显示**像素尺寸（EXIF 方向已应用）。
- *
- * 桌面导入器（`DesktopProjectController.importPhotos` → `PhotoMetadata.read`）存的是
- * 容器尺寸，方向单独存；引擎解码时 Skia 把方向烘进光栅，排版用的是显示尺寸。
- * 显示侧必须用同一个口径，否则竖拍照片会差出一整个旋转。
- *
- * 只给桌面显示侧用：手机导入器（`AndroidPhoneAssetIo.photoMeta`）已经把方向换进
- * `widthPx/heightPx` 了，那边不要再调本函数。
- */
-internal fun PhotoRef.displayPixels(): OutputPixels =
-    OutputSize.displayPixels(widthPx, heightPx, orientation)
-
-/** 「→ 导出 W × H」。null 时不写这一行。 */
-private fun exportSizeLabel(pixels: OutputPixels?): String? = pixels?.toString()
-
-/** The visible ~30 dp stage pill; callers wrap it in a ≥40 dp hit box. */
-@Composable
-private fun StagePill(label: String, active: Boolean, enabled: Boolean) {
-    Box(
-        modifier = Modifier
-            .height(30.dp)
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .background(if (active) FmPalette.primary else FmPalette.stageLine)
-            .padding(horizontal = FmSpacing.sm),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = FmType.labelSmall,
-            color = if (active) FmPalette.onPrimary else if (enabled) FmPalette.stageInk else FmPalette.stageMuted,
-            maxLines = 1,
-        )
-    }
-}
-
-/** Tap tool on the stage: 30 dp visible, 40 dp target (V06 §5). */
-@Composable
-private fun StageClickTool(
-    label: String,
-    description: String,
-    active: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .height(40.dp)
-            .widthIn(min = 44.dp)
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = description },
-        contentAlignment = Alignment.Center,
-    ) {
-        StagePill(label = label, active = active, enabled = enabled)
-    }
-}
-
-/** Hold-to-compare tool: the original photo is visible only while pressed. */
-@Composable
-private fun StageHoldTool(
-    label: String,
-    description: String,
-    active: Boolean,
-    enabled: Boolean,
-    onHoldChange: (Boolean) -> Unit,
-) {
-    val currentOnHoldChange by rememberUpdatedState(onHoldChange)
-    Box(
-        modifier = Modifier
-            .height(40.dp)
-            .widthIn(min = 44.dp)
-            .clip(RoundedCornerShape(FmRadii.chip))
-            .then(
-                if (enabled) {
-                    Modifier.pointerInput(Unit) {
-                        detectTapGestures(
-                            onPress = {
-                                currentOnHoldChange(true)
-                                tryAwaitRelease()
-                                currentOnHoldChange(false)
-                            },
-                        )
-                    }
-                } else {
-                    Modifier
-                },
-            )
-            .semantics {
-                contentDescription = description
-                role = Role.Button
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        StagePill(label = label, active = active, enabled = enabled)
-    }
-}
-
-/**
- * 设计上下文 menu on the stage title row: 保存预设 / 恢复当前设计. Both act on the
- * design, so they sit with the design instead of a tool strip under the stage;
- * the reset is confirmed and the watermark is deliberately left untouched.
- */
-@Composable
-private fun DesignMenuButton(
-    enabled: Boolean,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    canSavePreset: Boolean,
-    onSavePreset: () -> Unit,
-    onResetDesign: () -> Unit,
-) {
-    Box {
-        Box(
-            modifier = Modifier
-                .height(40.dp)
-                .widthIn(min = 44.dp)
-                .clip(RoundedCornerShape(FmRadii.chip))
-                .clickable(enabled = enabled, role = Role.Button, onClick = { onExpandedChange(true) })
-                .semantics { contentDescription = "设计菜单：保存预设、恢复当前设计" },
-            contentAlignment = Alignment.Center,
-        ) {
-            StagePill(label = "⋯", active = expanded, enabled = enabled)
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
-            DropdownMenuItem(
-                text = { Text("保存预设…", style = FmType.bodyMedium) },
-                enabled = canSavePreset,
-                onClick = {
-                    onExpandedChange(false)
-                    onSavePreset()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("恢复当前设计…", style = FmType.bodyMedium) },
-                enabled = enabled,
-                onClick = {
-                    onExpandedChange(false)
-                    onResetDesign()
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun StagePhoto(card: LibraryCard?, photoIndex: Int, design: DesignSnapshot?, native: Boolean) {
-    BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(FmSpacing.lg)) {
-        val width = minOf(maxWidth * 0.92f, maxHeight * 0.92f * 4f / 3f)
-        Box(
-            modifier = Modifier
-                .width(width)
-                .aspectRatio(4f / 3f)
-                .align(Alignment.Center)
-                .shadow(2.dp, RoundedCornerShape(FmRadii.tile))
-                .clip(RoundedCornerShape(FmRadii.tile))
-                .background(FmPalette.surface),
-        ) {
-            if (card != null) {
-                if (native && design != null) {
-                    NativeStagePreview(card = card, design = design, modifier = Modifier.fillMaxSize())
-                } else {
-                    LibraryPreview(card = card, modifier = Modifier.fillMaxSize())
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(photoBrush(photoIndex))
-                        .padding(FmSpacing.xxl),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text("从左侧选择边框", style = FmType.titleMedium, color = FmPalette.onSurface)
-                    Spacer(Modifier.height(FmSpacing.xs))
-                    Text(
-                        "175 套边框都可以在这里预览；参数在右侧调整。",
-                        style = FmType.bodyMedium,
-                        color = FmPalette.onSurfaceMuted,
-                    )
-                }
-            }
-        }
-        Tag(
-            text = when {
-                native -> "原生渲染"
-                card != null -> "静态预览 · 未套用参数"
-                else -> "示例照片 · 占位"
-            },
-            modifier = Modifier.align(Alignment.BottomStart),
-            onSurface = true,
-        )
-    }
-}
-
-@Composable
-private fun ImportPlaceholder(onAddPhoto: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(FmSpacing.xxl),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 420.dp)
-                .clip(RoundedCornerShape(FmRadii.panel))
-                .background(FmPalette.surface)
-                .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.panel))
-                .padding(FmSpacing.xxl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("导入照片", style = FmType.titleLarge, color = FmPalette.onSurface)
-            Spacer(Modifier.height(FmSpacing.xs))
-            Text(
-                "为照片加上边框、文字与水印",
-                style = FmType.bodyMedium,
-                color = FmPalette.onSurfaceMuted,
-            )
-            Spacer(Modifier.height(FmSpacing.xl))
-            PrimaryButton(
-                text = "选择照片",
-                onClick = onAddPhoto,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(FmSpacing.md))
-            Text(
-                "支持 JPEG / PNG / WebP / TIFF，可多选；失败的图片会单独列出。",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-            )
-        }
-    }
-}
-
-@Composable
-private fun Filmstrip(
-    photoCount: Int,
-    activePhoto: Int,
-    onSelectPhoto: (Int) -> Unit,
-    onAddPhoto: () -> Unit,
-) {
-    Column {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(FmPalette.outline),
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("照片", style = FmType.labelMedium, color = FmPalette.onSurface)
-            Spacer(Modifier.width(FmSpacing.sm))
-            Text(
-                "$photoCount 张 · 内置示例",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                "添加照片",
-                style = FmType.labelSmall,
-                color = FmPalette.primaryStrong,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(FmRadii.pill))
-                    .clickable(onClick = onAddPhoto)
-                    .padding(horizontal = FmSpacing.sm, vertical = 2.dp),
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-        ) {
-            for (index in 0 until photoCount) {
-                val active = index == activePhoto
-                Box(
-                    modifier = Modifier
-                        .width(68.dp)
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .background(photoBrush(index))
-                        .border(
-                            width = if (active) 2.dp else 1.dp,
-                            color = if (active) FmPalette.primary else FmPalette.outline,
-                            shape = RoundedCornerShape(FmRadii.chip),
-                        )
-                        .clickable { onSelectPhoto(index) },
-                    contentAlignment = Alignment.BottomStart,
-                ) {
-                    Text(
-                        text = (index + 1).toString().padStart(2, '0'),
-                        style = FmType.labelSmall.copy(fontSize = 10.sp),
-                        color = FmPalette.onSurfaceSecondary,
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .clip(RoundedCornerShape(FmRadii.pill))
-                            .background(FmPalette.surface.copy(alpha = 0.9f))
-                            .padding(horizontal = 4.dp, vertical = 1.dp),
-                    )
-                }
-            }
-            if (photoCount < 8) {
-                Box(
-                    modifier = Modifier
-                        .width(52.dp)
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .background(FmPalette.surfaceMuted)
-                        .border(1.dp, FmPalette.outlineStrong, RoundedCornerShape(FmRadii.chip))
-                        .clickable(onClick = onAddPhoto),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("＋", style = FmType.titleMedium, color = FmPalette.onSurfaceMuted)
-                }
-            }
-        }
-        Spacer(Modifier.height(FmSpacing.xs))
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Help (plain language)
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun HelpOverlay(onDismiss: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(FmPalette.scrim)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onDismiss,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 540.dp)
-                .fillMaxWidth(0.86f)
-                .clip(RoundedCornerShape(FmRadii.panel))
-                .background(FmPalette.surface)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {},
-                )
-                .padding(FmSpacing.xxl),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("快捷键", style = FmType.titleLarge, color = FmPalette.onSurface)
-                Spacer(Modifier.weight(1f))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(FmRadii.pill))
-                        .clickable(onClick = onDismiss)
-                        .padding(horizontal = FmSpacing.sm, vertical = 4.dp),
-                ) {
-                    Text("关闭", style = FmType.labelMedium, color = FmPalette.primaryStrong)
-                }
-            }
-            Spacer(Modifier.height(FmSpacing.xs))
-            Text(
-                "桌面版常用操作。手机尺寸下没有键盘快捷键。",
-                style = FmType.bodyMedium,
-                color = FmPalette.onSurfaceMuted,
-            )
-            Spacer(Modifier.height(FmSpacing.lg))
-            HelpSection("编辑")
-            HelpRow("Ctrl + Z", "撤销（连续切边框只算一步）")
-            HelpRow("Ctrl + Shift + Z / Ctrl + Y", "重做")
-            HelpSection("边框库")
-            HelpRow("← / →", "按库里的顺序逐个试上一个 / 下一个")
-            HelpRow("鼠标悬停 0.4 秒", "在舞台预览这张边框")
-            HelpRow("Ctrl + B", "折叠或展开左侧边框库（52 px 窄条）")
-            HelpRow("Ctrl + Shift + B", "折叠或展开右侧参数面板")
-            HelpSection("舞台")
-            HelpRow("按住 \\", "查看原图，松开恢复")
-            HelpRow("Ctrl + 滚轮", "缩放（25%–400%）")
-            HelpRow("双击", "适合窗口")
-            HelpSection("工作流")
-            HelpRow("Ctrl + E", "打开导出")
-            HelpRow("Ctrl + Shift + P", "打开预设")
-            HelpSection("帮助")
-            HelpRow("F1", "打开这份快捷键说明")
-            HelpRow("Esc", "关闭弹层")
-            Spacer(Modifier.height(FmSpacing.lg))
-            Text(
-                "预览仍是静态边框图，参数只改本地值；导出与批量导出均走原生引擎，文件写入导出目录。",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HelpSection(title: String) {
-    Text(
-        text = title,
-        style = FmType.labelSmall,
-        color = FmPalette.onSurfaceMuted,
-        modifier = Modifier.padding(top = FmSpacing.md, bottom = FmSpacing.xxs),
-    )
-}
-
-@Composable
-private fun HelpRow(keys: String, description: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = keys,
-            style = FmType.labelMedium,
-            color = FmPalette.onSurface,
-            maxLines = 1,
-            modifier = Modifier.widthIn(min = 150.dp, max = 210.dp),
-        )
-        Spacer(Modifier.width(FmSpacing.md))
-        Text(
-            text = description,
-            style = FmType.bodyMedium,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-        )
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Built-in sample photo placeholders (no reference assets)
-// ---------------------------------------------------------------------------
-
-/** WP-D1 §4.9: placeholder washes are tokens, not six hard-coded pastel pairs. */
-@Composable
-private fun photoBrush(index: Int): Brush {
-    val muted = FmPalette.surfaceMuted
-    val track = FmPalette.track
-    return Brush.linearGradient(listOf(muted, track))
 }
 
 /** G5 cold-start instrumentation: first Compose frame of the desktop shell. */

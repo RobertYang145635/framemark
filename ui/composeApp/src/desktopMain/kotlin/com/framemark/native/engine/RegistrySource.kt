@@ -94,7 +94,7 @@ class RegistrySource(explicitRoot: File? = null) {
         vendoredControls = VENDOR_KEYS.mapNotNull { key ->
             bundledOr(
                 "controls.$key.json",
-                "src/renderer/src/core/controls/data/controls.$key.json",
+                "bridge/desktop/controls-data/controls.$key.json",
             )
         },
         logos = bundledOr("logos.json", "engine/data/logos.json"),

@@ -39,7 +39,7 @@ internal object RealData {
         inspectorMetaJson = text("framemark/ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json"),
         controlsJson = text("framemark/engine/data/controls.json"),
         vendoredControlsJson = listOf("oppo", "xiaomi", "vivo").map {
-            text("framemark/src/renderer/src/core/controls/data/controls.$it.json")
+            text("framemark/bridge/desktop/controls-data/controls.$it.json")
         },
         logosJson = text("framemark/engine/data/logos.json"),
     )

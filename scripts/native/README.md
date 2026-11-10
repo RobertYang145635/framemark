@@ -62,7 +62,11 @@ and binary hash in `desktop-engines-provenance.json`.
 
 After those builds, `runtime.cjs` stages an isolated QA runtime from the
 repository-owned Android `x1ir.zip`, `bridge/desktop/cards-175.json`, and the
-current registry sources. It derives the actual card totals from the manifest,
+current registry sources. The three stock-style control documents are
+product-owned data at `bridge/desktop/controls-data/controls.{oppo,xiaomi,vivo}.json`;
+the required `no-legacy-web-dependency` gate fails the run if either this build
+script or `runtime.cjs` names the retired web-app tree again, or if a control
+document is missing or unparsable. It derives the actual card totals from the manifest,
 builds the decoded IR asset cache, includes the fonts, ICC profile, hand data,
 registry and manifest, checks packaged text/JSON for developer paths, and smoke
 renders an IR and hand card from the runtime data directory. The runtime,

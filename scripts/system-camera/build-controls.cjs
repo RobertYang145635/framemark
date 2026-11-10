@@ -4,6 +4,7 @@
  *
  *   node build-controls.cjs --extract            # 生成 staging/ir-index.json + staging/vendor-detail.json
  *   node build-controls.cjs --baseline=xiaomi    # 生成 staging/controls.xiaomi.json（oppo / vivo 同）
+ *   node build-controls.cjs --publish            # 把 staging/controls.*.json 投放到原生产物自有目录
  *   node build-controls.cjs --diff               # 小米 厂商optional vs IR optional 差异表
  *   node build-controls.cjs --rollout            # staging/rollout-plan.json（每批 <=5 套）
  *   node build-controls.cjs --validate           # 机检 staging/controls.*.json，非 0 退出码
@@ -12,10 +13,13 @@
  * 读入只有两类：
  *   - _research/editing-model/{slot-inventory,vendor-edit-model}.json  （前一轮 agent 的机读清单）
  *   - 厂商原始 JSON（_research/extracted/**）与 esbuild 加载 styles.ts（只为拿到节点路径域与条带方向）
- * 产物只写 _research/controls-impl/staging/ 与本脚本，绝不写 src/。
+ * 产物先写 _research/controls-impl/staging/（草稿）；`--publish` 再把三份 controls.*.json 拷进
+ * 原生工程自有数据目录 framemark/bridge/desktop/controls-data/ —— 这是 scripts/native/build.cjs
+ * 与 scripts/native/runtime.cjs 读取的唯一落点。本脚本不读也不写冻结的 legacy-web/ 历史 Web 工程。
  */
 const fs = require('fs')
 const path = require('path')
+const crypto = require('crypto')
 
 const ROOT = 'D:/border&watermark'
 const STAGING = path.join(ROOT, '_research', 'controls-impl', 'staging')
@@ -26,6 +30,9 @@ const IRX_P = path.join(STAGING, 'ir-index.json')
 const VDX_P = path.join(STAGING, 'vendor-detail.json')
 const FRAMEMARK = path.join(ROOT, 'framemark')
 const STYLES_TS = path.join(FRAMEMARK, 'src/renderer/src/core/system/styles.ts')
+// 原生产物自有数据目录：三份 controls.*.json 从这里被 scripts/native/{build,runtime}.cjs 读取。
+// 生成物只在 staging/ 里是草稿，`--publish` 之后才算落库。
+const PUBLISH_DIR = path.join(FRAMEMARK, 'bridge', 'desktop', 'controls-data')
 // OPPO 相册 style JSON 的唯一权威源＝适配器 oppo.cjs 的 ROOT（不是 extracted/ 那份旧拷贝！
 // extracted/ 少 5 个 realme 套、且 13 个同名文件大小不一致 ⇒ 用它取数会把厂商证据算旧/算漏）。
 const OPPO_GALLERY = path.join(ROOT, '_research/vendor-latest/oppo/assets/watermark_master_styles')
@@ -1308,6 +1315,34 @@ function rollout(irx) {
         console.log('  xiaomi diff: vendor-mapped-not-in-IR', extra, '| IR-optional-not-vendor-authorized', irOnly, '-> staging/xiaomi-optional-diff.json')
       }
     }
+  }
+
+  if (has('--publish')) {
+    // 唯一投放出口：staging 草稿 → 原生工程自有目录。只拷贝、不重新生成，
+    // 所以发布前必须先跑 --baseline 并让它通过 --validate。
+    fs.mkdirSync(PUBLISH_DIR, { recursive: true })
+    const published = []
+    for (const f of ['oppo', 'xiaomi', 'vivo']) {
+      const from = path.join(STAGING, 'controls.' + f + '.json')
+      if (!fs.existsSync(from)) {
+        console.log('PUBLISH FAIL — staging 草稿不存在:', from)
+        process.exit(1)
+      }
+      const doc = JSON.parse(fs.readFileSync(from, 'utf8'))
+      if (!Array.isArray(doc.records) || !doc.records.length) {
+        console.log('PUBLISH FAIL — staging 草稿没有 records:', from)
+        process.exit(1)
+      }
+      const to = path.join(PUBLISH_DIR, 'controls.' + f + '.json')
+      fs.copyFileSync(from, to)
+      published.push({
+        path: to,
+        records: doc.records.length,
+        sha256: crypto.createHash('sha256').update(fs.readFileSync(to)).digest('hex')
+      })
+    }
+    console.log('PUBLISH OK -> ' + PUBLISH_DIR)
+    for (const row of published) console.log('  ' + path.basename(row.path), row.records, 'records', row.sha256)
   }
 
   if (has('--validate')) {

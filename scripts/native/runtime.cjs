@@ -106,9 +106,9 @@ const REGISTRY_FILES = [
   ['engine/data/controls.json', 'controls.json'],
   ['engine/data/logos.json', 'logos.json'],
   ['ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json', 'inspector-meta.json'],
-  ['src/renderer/src/core/controls/data/controls.oppo.json', 'controls.oppo.json'],
-  ['src/renderer/src/core/controls/data/controls.xiaomi.json', 'controls.xiaomi.json'],
-  ['src/renderer/src/core/controls/data/controls.vivo.json', 'controls.vivo.json'],
+  ['bridge/desktop/controls-data/controls.oppo.json', 'controls.oppo.json'],
+  ['bridge/desktop/controls-data/controls.xiaomi.json', 'controls.xiaomi.json'],
+  ['bridge/desktop/controls-data/controls.vivo.json', 'controls.vivo.json'],
   ['bridge/desktop/ir-slot-binding.json', 'ir-slot-binding.json']
 ]
 
@@ -327,10 +327,17 @@ async function stageExactLogoCuts (root, dataRoot) {
       const key = cut.assetKey
       if (typeof key !== 'string' || !key.trim()) throw new Error(`Selected logo version ${version.id || '<unknown>'} has an empty assetKey`)
       const resolvedPath = cut.resolvedPath
-      if (typeof resolvedPath !== 'string' || !resolvedPath.startsWith('src/renderer/src/assets/')) {
+      // The catalog records a repository-relative source path per cut, but the
+      // packager only needs the part below `assets/` to derive the packaged
+      // Compose resource name. Matching that marker keeps this validation
+      // independent of which app layout produced the catalog, so the native
+      // runtime does not hardcode a historical source tree.
+      const assetMarker = '/assets/'
+      const markerIndex = typeof resolvedPath === 'string' ? resolvedPath.indexOf(assetMarker) : -1
+      if (markerIndex <= 0 || path.isAbsolute(resolvedPath)) {
         throw new Error(`Logo catalog cut ${key} has an unsupported resolvedPath`)
       }
-      const assetPart = resolvedPath.slice('src/renderer/src/assets/'.length)
+      const assetPart = resolvedPath.slice(markerIndex + assetMarker.length)
       if (!assetPart.toLowerCase().endsWith('.webp') || assetPart.split('/').includes('..')) {
         throw new Error(`Logo catalog cut ${key} is not a safe WebP path`)
       }

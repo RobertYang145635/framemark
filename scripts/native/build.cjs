@@ -509,9 +509,9 @@ function verifyDesktopRuntimeInputs () {
     'scripts/native/runtime.cjs',
     'scripts/native/logo-tools/package.json', 'scripts/native/logo-tools/package-lock.json',
     'scripts/native/prepare-logo-tools.ps1', 'scripts/native/verify-logo-version-stage.cjs',
-    'src/renderer/src/core/controls/data/controls.oppo.json',
-    'src/renderer/src/core/controls/data/controls.xiaomi.json',
-    'src/renderer/src/core/controls/data/controls.vivo.json'
+    'bridge/desktop/controls-data/controls.oppo.json',
+    'bridge/desktop/controls-data/controls.xiaomi.json',
+    'bridge/desktop/controls-data/controls.vivo.json'
   ]
   const rows = paths.map((relative) => {
     const filename = path.join(ROOT, relative)
@@ -533,6 +533,49 @@ function verifyDesktopRuntimeInputs () {
   } catch {}
   const manifestValid = Boolean(manifest && cardCounts && cardCounts.total > 0 && cardCounts.total === cardCounts.ir + cardCounts.hand)
   return { status: rows.every((row) => row.status === 'PASS') && manifestValid ? 'PASS' : 'FAIL', rows, manifestValid, cardCounts }
+}
+
+/**
+ * Gate: the native build must not inherit a dependency on the frozen
+ * Electron/Capacitor web app.
+ *
+ * The three stock-style control documents used to be read out of the legacy
+ * web tree. They are now product-owned data under `bridge/desktop/controls-data/`.
+ * This gate fails the run when either native script still names the legacy
+ * directory, or when a control document is missing or is not valid JSON — an
+ * unreadable control document silently degrades the stock-style registry, so it
+ * must stop the build rather than ship as a missing feature.
+ */
+function verifyNoLegacyWebDependency () {
+  // Assembled at runtime so this gate's own source cannot match its own needle.
+  const legacyNeedle = ['src', 'renderer'].join('/')
+  const scanned = ['scripts/native/build.cjs', 'scripts/native/runtime.cjs'].map((relative) => {
+    const filename = path.join(ROOT, relative)
+    if (!fs.existsSync(filename)) return { path: relative, status: 'FAIL', detail: 'native script is missing' }
+    const text = fs.readFileSync(filename, 'utf8')
+    const index = text.indexOf(legacyNeedle)
+    const line = index < 0 ? null : text.slice(0, index).split('\n').length
+    return {
+      path: relative,
+      status: index < 0 ? 'PASS' : 'FAIL',
+      line,
+      detail: index < 0 ? 'no legacy web app reference' : `references ${legacyNeedle} at line ${line}`
+    }
+  })
+  const controlData = ['oppo', 'xiaomi', 'vivo'].map((family) => {
+    const relative = `bridge/desktop/controls-data/controls.${family}.json`
+    const filename = path.join(ROOT, relative)
+    if (!fs.existsSync(filename)) return { path: relative, status: 'FAIL', detail: 'control document is missing' }
+    try {
+      const document = JSON.parse(fs.readFileSync(filename, 'utf8'))
+      const records = Array.isArray(document.records) ? document.records.length : 0
+      return { path: relative, status: 'PASS', detail: `parsed; records=${records}`, sha256: sha256File(filename) }
+    } catch (error) {
+      return { path: relative, status: 'FAIL', detail: `not valid JSON: ${error.message}` }
+    }
+  })
+  const pass = scanned.every((row) => row.status === 'PASS') && controlData.every((row) => row.status === 'PASS')
+  return { status: pass ? 'PASS' : 'FAIL', scanned, controlData }
 }
 
 function verifyAndroidPackageSourceInputs () {
@@ -713,6 +756,7 @@ async function main (options) {
   const sharedLogoData = verifySharedLogoData()
   const logoImageToolchain = verifyLogoImageToolchain()
   const desktopRuntimeInputs = verifyDesktopRuntimeInputs()
+  const noLegacyWebDependency = verifyNoLegacyWebDependency()
   const androidPackageSourceInputs = verifyAndroidPackageSourceInputs()
   const plan = [
     options.skipEngine ? 'SKIP e2b Cargo build; source-build e4hand and e5-worker' : 'Cargo build e2b, e4hand and e5-worker from repository sources for x86_64-pc-windows-msvc',
@@ -812,6 +856,7 @@ async function main (options) {
     required: !options.skipEngine
   })
   gates.push(requiredCheck('desktop-runtime-inputs', desktopRuntimeInputs.status, JSON.stringify(desktopRuntimeInputs)))
+  gates.push(requiredCheck('no-legacy-web-dependency', noLegacyWebDependency.status, JSON.stringify(noLegacyWebDependency)))
   gates.push({
     ...requiredCheck('android-package-source-inputs', androidPackageSourceInputs.status, JSON.stringify(androidPackageSourceInputs)),
     required: !options.skipGradle

@@ -2,7 +2,7 @@
 
 > **状态校正（2026-11-10, 0.9.0-rc10）**
 > - **撤回 SSOT 声明**：本页不再是“唯一的当前状态页（single source of truth）”。下方第 0–8 节是 2026-10-25 至 2026-10-27 Electron/Capacitor 实施期的记录，**已整体冻结为历史**；其中的计数、哈希、路径与“当前/本轮”字样只在当时有效，不能作为今天的验收依据。
-> - **当前技术栈**：Compose Multiplatform（Kotlin；Windows/JVM + Android）界面 + Rust/Skia 渲染与导出。Windows 通过子进程调用引擎，Android 通过 JNI 调用三个 Rust 静态库。**出货路径上没有 WebView**；`src/`、`android/`（Electron/Capacitor）及 `electron.vite.config.ts`、`capacitor.config.json` 只是冻结的历史实现，用于行为与数据对照，不参与发布。
+> - **当前技术栈**：Compose Multiplatform（Kotlin；Windows/JVM + Android）界面 + Rust/Skia 渲染与导出。Windows 通过子进程调用引擎，Android 通过 JNI 调用三个 Rust 静态库。**出货路径上没有 WebView**；`legacy-web/`（原 `src/`、`electron.vite.config.ts`、`capacitor.config.json`，现已整体移入该目录）只是冻结的历史 Electron/Capacitor 实现，用于行为与数据对照，不参与发布；原生构建原先从 `src/` 读取的三份控件 JSON 现位于 `bridge/desktop/controls-data/`（`no-legacy-web-dependency` 门禁保证构建不再引用旧目录）。
 > - **现在去哪里看状态**：仓库 `README.md`、`ui/README.md` 与 `docs/`（其中文件均以 `*-before-execution-*` 命名，属历史说明，不是现行指引），以及发布检查——`scripts/native/build.cjs` 的构建步骤与门禁、`node scripts/native/release-surface.test.cjs`（8 项）、`gradle -p ui :composeApp:desktopTest`（838 tests / 0 failures）。版本状态以仓库根 `version.properties` 为准（Android 与桌面打包共用）。本轮执行台账在控制目录 `execution-ui-v2-20261106/`（`STATUS-LEDGER.md`、`reports/`、`evidence/`），不属于源码包。
 > - **冻结范围**：第 0–8 节全部为历史，包括 W0–W5、REPACKAGE、CLOSE-OUT、ANCHOR-PACKAGE、VIVO、BRAND-ALIGN、V4-SHELL 等轮次。这些小节里的旧结论只可用于追溯当时的证据链，不代表当前交付状态。
 

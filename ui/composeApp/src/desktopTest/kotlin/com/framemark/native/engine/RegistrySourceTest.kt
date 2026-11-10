@@ -52,9 +52,9 @@ class RegistrySourceTest {
             "engine/data/capabilities.json",
             "ui/composeApp/src/commonMain/composeResources/files/data/inspector-meta.json",
             "engine/data/controls.json",
-            "src/renderer/src/core/controls/data/controls.oppo.json",
-            "src/renderer/src/core/controls/data/controls.xiaomi.json",
-            "src/renderer/src/core/controls/data/controls.vivo.json",
+            "bridge/desktop/controls-data/controls.oppo.json",
+            "bridge/desktop/controls-data/controls.xiaomi.json",
+            "bridge/desktop/controls-data/controls.vivo.json",
             "engine/data/logos.json",
             "bridge/desktop/ir-slot-binding.json",
         ).forEach { relative ->

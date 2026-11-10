@@ -39,7 +39,7 @@ async function main() {
   const ignore = (p) => {
     const n = p.split(path.sep).join('/').replace(/^\/+/, '')
     if (!n) return false
-    if (/^(android|src|scripts|_research|release|\.git)(\/|$)/.test(n)) return true
+    if (/^(android|src|legacy-web|scripts|_research|release|\.git)(\/|$)/.test(n)) return true
     // isolate-build scratch dirs under out/ (_g1/_pd/_av) are not runtime payload
     if (/^out\/_/.test(n)) return true
     if (/^(package-lock\.json|capacitor\.config\.json|tsconfig.*\.json|electron\.vite\.config\.ts)$/.test(n)) return true

@@ -121,8 +121,8 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:e
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:1012:FM_TEXT_FOCUS
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:1205:FM_PROJECT_RETRY_REQUESTED
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:1207:FM_PROJECT_RETRY_RESULT
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:1616:FM_INSPECTOR_RESET
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:1959:FM_WHEEL
+ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/desktop/DesktopColumnLayout.kt:evidence-hook-literal:167:FM_INSPECTOR_RESET
+ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/desktop/DesktopStagePane.kt:evidence-hook-literal:160:FM_WHEEL
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopShell.kt:evidence-hook-literal:2805:FM_FIRST_FRAME
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/DesktopWindowFit.kt:evidence-hook-literal:6:FM_WINDOW
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/NavMotion.kt:evidence-hook-literal:10:FM_MOTION_LOG
