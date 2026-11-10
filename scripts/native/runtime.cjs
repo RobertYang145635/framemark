@@ -169,8 +169,16 @@ function assertRepoPath (root, relative) {
   return resolved
 }
 
+// Windows ships bsdtar in System32; a Git-Bash PATH can shadow bare `tar.exe`
+// with GNU tar, which reads `E:\...` as a remote host and fails the whole
+// desktop-runtime step. Resolve the absolute path once, keep a fallback.
+const SYSTEM_TAR = (() => {
+  const candidate = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+  return fs.existsSync(candidate) ? candidate : 'tar.exe'
+})()
+
 function extractBundle (archive, destination) {
-  const listing = spawnSync('tar.exe', ['-tf', archive], { encoding: 'utf8', windowsHide: true })
+  const listing = spawnSync(SYSTEM_TAR, ['-tf', archive], { encoding: 'utf8', windowsHide: true })
   if (listing.status !== 0) throw new Error(`Could not list the repository asset archive: ${listing.stderr || listing.stdout}`)
   const entries = listing.stdout.split(/\r?\n/).filter(Boolean)
   const allowedRoots = new Set(['assets', 'designs', 'e4-extra-fonts', 'exif.jpg', 'extras', 'fallback', 'fonts', 'hand', 'icc', 'logos', 'manifest.json', 'photo.png', 'styles', 'META-INF'])
@@ -181,7 +189,7 @@ function extractBundle (archive, destination) {
     if (!allowedRoots.has(first)) throw new Error(`Unexpected root entry in asset archive: ${entry}`)
   }
   fs.mkdirSync(destination, { recursive: true })
-  const extracted = spawnSync('tar.exe', ['-xf', archive, '-C', destination], { encoding: 'utf8', windowsHide: true })
+  const extracted = spawnSync(SYSTEM_TAR, ['-xf', archive, '-C', destination], { encoding: 'utf8', windowsHide: true })
   if (extracted.status !== 0) throw new Error(`Could not extract the repository asset archive: ${extracted.stderr || extracted.stdout}`)
   for (const entry of entries) {
     const target = path.resolve(destination, ...entry.replaceAll('\\', '/').split('/'))

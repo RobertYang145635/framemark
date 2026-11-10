@@ -56,7 +56,7 @@ const ANDROID_PACKAGE_SOURCE_INPUTS = [
   'ui/composeApp/build.gradle.kts'
 ]
 function parseArgs (args) {
-  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, jobName: '', desktopClassCheck: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
+  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, package: false, jobName: '', desktopClassCheck: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
     if (arg === '--dry-run') out.dryRun = true
@@ -67,6 +67,7 @@ function parseArgs (args) {
     else if (arg === '--sign') out.sign = true
     else if (arg === '--release-qa') out.releaseQa = true
     else if (arg === '--skip-gates') out.skipGates = true
+    else if (arg === '--package') out.package = true
     else if (arg === '--job-name') out.jobName = args[++i] || ''
     else if (arg === '--check-desktop-classes') {
       out.desktopClassCheck = args[++i] || ''
@@ -78,9 +79,13 @@ function parseArgs (args) {
   if (out.sign && !out.release) throw new Error('--sign requires --release')
   if (out.releaseQa && !out.release) throw new Error('--release-qa requires --release')
   if (out.releaseQa && out.sign) throw new Error('--release-qa uses the Android debug signing key; do not combine with --sign')
+  if (out.package && out.skipGradle) throw new Error('--package needs the Gradle steps; do not combine it with --skip-gradle')
   if (out.jobName && !/^[a-zA-Z0-9._-]{1,80}$/.test(out.jobName)) throw new Error('--job-name may contain only letters, digits, dot, underscore and dash')
   if (!/^\.[A-Za-z][A-Za-z0-9_.]*$/.test(out.qaSuffix)) throw new Error('FM_QA_SUFFIX must be a dot-prefixed Android application ID suffix')
   if (!/^\.[A-Za-z][A-Za-z0-9_.]*$/.test(out.qaReleaseSuffix)) throw new Error('FM_QA_RELEASE_SUFFIX must be a dot-prefixed Android application ID suffix')
+  // Report compatibility: the opt-in flag must not appear in `options` (and
+  // therefore not in build-report.json) when the mode was not requested.
+  if (!out.package) delete out.package
   return out
 }
 
@@ -98,6 +103,11 @@ Usage: build-native.cmd [options]
   FM_QA_SUFFIX              isolated debug application id suffix (default: .qa20261102)
   FM_QA_RELEASE_SUFFIX      isolated release QA suffix (default: .qa20261102release)
   --skip-gates              mark required gates skipped; the command exits nonzero
+  --package                 opt-in release packaging: run the desktop test suite,
+                            build the QA-free product jar (-PfmQaSurface=false),
+                            stage a jlink runtime, write the portable win64 ZIP +
+                            arm64 APK + SHA256SUMS under
+                            build/runs/<runId>/deliverables, and smoke the launcher
   --job-name <name>         label logs under ${CONFIG.artifactDirectory}
   --check-desktop-classes <dir>
                             run only the WP-FIX1 desktop class manifest gate against
@@ -711,6 +721,7 @@ async function main (options) {
     options.skipGradle ? 'SKIP desktop and APK Gradle tasks' : 'Gradle desktop compile and Android debug APK',
     options.release ? (options.releaseQa ? 'Gradle isolated debug-signed release QA APK + package/ABI gates' : 'Gradle Android release APK + ABI and source-provenance gates') : 'SKIP Android release APK'
   ]
+  if (options.package) plan.push('Gradle desktopTest + QA-free desktopJar (-PfmQaSurface=false); jlink runtime; FrameMark-<versionName>-win64 portable ZIP + arm64 APK + SHA256SUMS; launcher smoke test')
   const preflight = {
     node: process.version,
     expectedNode: CONFIG.versions.node,
@@ -1112,6 +1123,35 @@ async function main (options) {
     gates.push(requiredCheck('release-native-source-build', sourceBuildStatus, detail))
   }
 
+  // WP-FIX1: one Gradle invocation shape for every app build/test step: the
+  // isolated build directory (`FM_GRADLE_OUTPUT_ROOT` + init script), no daemon
+  // and `--no-build-cache`. `ui/gradle.properties` sets `org.gradle.caching=true`,
+  // and a FROM-CACHE `compileKotlinDesktop` is how a package shipped classes that
+  // were never compiled from this tree (WP-Q4). `GRADLE_OPTS=
+  // -Dorg.gradle.caching=false` does not override it; the CLI flag does — and it
+  // covers desktop compile, desktopTest and desktopJar because it disables the
+  // cache for the whole invocation. `--package` reuses this same helper, so the
+  // product jar cannot come from a cache populated by another tree or another
+  // fmQaSurface variant.
+  const gradleIsolationScript = path.join(tmpRoot, 'gradle-isolated-output.init.gradle')
+  writeGradleIsolationScript(gradleIsolationScript)
+  const runGradleTask = (id, title, tasks, { projectCacheDir = path.join(tmpRoot, 'gradle-project-cache'), extraArgs = [], stacktrace = options.release, timeoutMs = 90 * 60 * 1000 } = {}) => {
+    const args = ['-Dorg.gradle.appname=gradle', '-classpath', path.join(tools.gradleHome, 'lib', '*'), 'org.gradle.launcher.GradleMain', '--no-daemon',
+      '--no-build-cache',
+      '--project-cache-dir', projectCacheDir, '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
+    // Kotlin's incremental path converter cannot relativize generated sources
+    // across Windows drive roots. This is an isolated full build anyway; avoid
+    // a reproducible daemon failure/fallback when sources and outputs differ.
+    if (process.platform === 'win32' && path.parse(UI).root.toLowerCase() !== path.parse(gradleOutputRoot).root.toLowerCase()) {
+      args.push('-Pkotlin.incremental=false')
+    }
+    if (options.releaseQa) args.push(`-PframemarkQaReleaseSuffix=${options.qaReleaseSuffix}`)
+    args.push(...tasks, ...extraArgs)
+    if (stacktrace) args.push('--stacktrace')
+    const env = { ...envBase, FM_ANDROID_PREBUILT_ROOT: androidPrebuiltRoot, FM_E2B_EXE: engineExe }
+    return step(id, title, (logFile) => runProcess(tools.java, args, { cwd: UI, env, logFile, timeoutMs }))
+  }
+
   const gradleTasks = [':composeApp:compileKotlinDesktop', ':composeApp:assembleDebug']
   if (options.release) gradleTasks.push(':composeApp:assembleRelease')
   const releaseInputsReady = !options.release || (
@@ -1124,29 +1164,7 @@ async function main (options) {
     } else if (!tools.java || !tools.gradleLauncher || !tools.androidSdk || !fs.existsSync(tools.java) || !fs.existsSync(tools.gradleLauncher)) {
       steps.push({ id: 'gradle', title: 'Build desktop and Android variants', required: true, status: 'FAIL', exitCode: 1, detail: 'JDK, Gradle or Android SDK is unresolved', log: null })
     } else {
-      const gradleLibs = path.join(tools.gradleHome, 'lib', '*')
-      const gradleIsolationScript = path.join(tmpRoot, 'gradle-isolated-output.init.gradle')
-      writeGradleIsolationScript(gradleIsolationScript)
-      const gradleArgs = ['-Dorg.gradle.appname=gradle', '-classpath', gradleLibs, 'org.gradle.launcher.GradleMain', '--no-daemon',
-        // WP-FIX1: `ui/gradle.properties` sets `org.gradle.caching=true`, and a
-        // FROM-CACHE `compileKotlinDesktop` is how a package shipped classes that
-        // were never compiled from this tree (WP-Q4). `GRADLE_OPTS=
-        // -Dorg.gradle.caching=false` does not override it; the CLI flag does —
-        // this single flag covers desktop compile, desktopTest and desktopJar
-        // because it disables the cache for the whole invocation.
-        '--no-build-cache',
-        '--project-cache-dir', path.join(tmpRoot, 'gradle-project-cache'), '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
-      // Kotlin's incremental path converter cannot relativize generated sources
-      // across Windows drive roots. This is an isolated full build anyway; avoid
-      // a reproducible daemon failure/fallback when sources and outputs differ.
-      if (process.platform === 'win32' && path.parse(UI).root.toLowerCase() !== path.parse(gradleOutputRoot).root.toLowerCase()) {
-        gradleArgs.push('-Pkotlin.incremental=false')
-      }
-      if (options.releaseQa) gradleArgs.push(`-PframemarkQaReleaseSuffix=${options.qaReleaseSuffix}`)
-      gradleArgs.push(...gradleTasks)
-      if (options.release) gradleArgs.push('--stacktrace')
-      const env = { ...envBase, FM_ANDROID_PREBUILT_ROOT: androidPrebuiltRoot, FM_E2B_EXE: engineExe }
-      const built = await step('gradle', 'Build desktop and Android variants', (logFile) => runProcess(tools.java, gradleArgs, { cwd: UI, env, logFile, timeoutMs: 90 * 60 * 1000 }))
+      const built = await runGradleTask('gradle', 'Build desktop and Android variants', gradleTasks)
       if (built.status === 'PASS') {
         const debugApk = path.join(gradleOutputRoot, 'composeApp/outputs/apk/debug/composeApp-debug.apk')
         if (fs.existsSync(debugApk)) gates.push(await verifyApk('debug-apk-arm64', debugApk, tools, step, `com.framemark.native${options.qaSuffix}`))
@@ -1271,6 +1289,255 @@ async function main (options) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // --package (opt-in): produce the shipped win64 portable package + arm64 APK
+  // from this run, and prove the shipped files are the ones this pipeline built.
+  // Without the flag none of these steps/gates exist and the report keeps its
+  // existing shape.
+  // ---------------------------------------------------------------------------
+  let releaseDeliverables = null
+  if (options.package) {
+    // The label has one source: version.properties. The commit comes from git.
+    const version = readVersionProperties()
+    const versionName = version.versionName
+    const gitCommit = readGitValue(['rev-parse', '--short', 'HEAD'], 'unknown')
+    const gitBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'], 'unknown')
+    const releaseCacheDir = path.join(tmpRoot, 'gradle-release-project-cache')
+    const releaseClassRoot = desktopClassRoot(gradleOutputRoot)
+    const releaseResourcesRoot = path.join(gradleOutputRoot, 'composeApp', 'processedResources', 'desktop', 'main')
+    const releaseJarPath = path.join(gradleOutputRoot, 'composeApp', 'libs', 'composeApp-desktop.jar')
+    const desktopClasspathFile = path.join(UI, 'composeApp', 'build', 'desktop-classpath.txt')
+    const runtimeSource = path.join(buildRoot, 'desktop-runtime')
+    const deliverablesRoot = path.join(runRoot, 'deliverables')
+    const stagingName = `FrameMark-${versionName}-win64`
+    const stagingDir = path.join(deliverablesRoot, stagingName)
+    const apkPath = path.join(deliverablesRoot, `FrameMark-${versionName}-arm64.apk`)
+    const zipPath = path.join(deliverablesRoot, `${stagingName}-portable.zip`)
+
+    // 1. release-tests: the acceptance suite through the same Gradle helper, the
+    // same isolated build directory and the same `--no-build-cache`. The JUnit XML
+    // totals decide the step: a failing test fails the run.
+    const testsStarted = Date.now()
+    const testsStep = await runGradleTask('release-tests', 'Run the desktop release test suite', [':composeApp:desktopTest'], { projectCacheDir: releaseCacheDir, timeoutMs: 60 * 60 * 1000 })
+    const junitDir = path.join(gradleOutputRoot, 'composeApp', 'test-results', 'desktopTest')
+    const junit = readJUnitTotals(junitDir, testsStarted - 5000)
+    const testsOk = testsStep.status === 'PASS' && junit.files > 0 && junit.tests > 0 && junit.failures === 0 && junit.errors === 0
+    const testsRow = steps.find((row) => row.id === 'release-tests')
+    if (testsRow) {
+      testsRow.status = testsOk ? 'PASS' : 'FAIL'
+      testsRow.exitCode = testsOk ? 0 : 1
+      testsRow.detail = JSON.stringify({ ...junit, gradle: testsStep.status, suiteDir: path.relative(ARTIFACT_ROOT, junitDir).replaceAll(path.sep, '/') })
+    }
+
+    // 2. release-desktop-jar: the rc4 trap is a class output that belongs to
+    // another commit (or to a QA-surface compile). Delete it, forbid the build
+    // cache and compile the product variant from source.
+    fs.rmSync(releaseClassRoot, { recursive: true, force: true })
+    fs.rmSync(desktopClasspathFile, { force: true })
+    const jarStarted = Date.now()
+    const jarStep = await runGradleTask('release-desktop-jar', 'Build the QA-free product desktop jar', [':composeApp:desktopJar', ':composeApp:dumpDesktopClasspath'], { projectCacheDir: releaseCacheDir, extraArgs: ['-PfmQaSurface=false'], timeoutMs: 60 * 60 * 1000 })
+    const jarExists = fs.existsSync(releaseJarPath) && fs.statSync(releaseJarPath).isFile()
+    const productJar = jarExists ? { path: releaseJarPath, bytes: fs.statSync(releaseJarPath).size, sha256: sha256File(releaseJarPath), builtByThisStep: fs.statSync(releaseJarPath).mtimeMs >= jarStarted - 1000 } : null
+    // `dumpDesktopClasspath` writes into the project directory (not the isolated
+    // build directory), so assert the file describes THIS run before app/lib uses it.
+    const classpathEntries = fs.existsSync(desktopClasspathFile) ? fs.readFileSync(desktopClasspathFile, 'utf8').trim().split(path.delimiter).filter(Boolean) : []
+    const classpathOk = classpathEntries.length > 1 &&
+      path.resolve(classpathEntries[0]) === path.resolve(releaseClassRoot) &&
+      path.resolve(classpathEntries[1]) === path.resolve(releaseResourcesRoot)
+    const classCount = fs.existsSync(releaseClassRoot) ? listFiles(releaseClassRoot).filter((file) => file.endsWith('.class')).length : 0
+    const jarOk = jarStep.status === 'PASS' && Boolean(productJar) && productJar.builtByThisStep && classpathOk && classCount > 0
+    const jarRow = steps.find((row) => row.id === 'release-desktop-jar')
+    if (jarRow) {
+      jarRow.status = jarOk ? 'PASS' : 'FAIL'
+      jarRow.exitCode = jarOk ? 0 : 1
+      jarRow.artifact = productJar ? path.relative(ARTIFACT_ROOT, productJar.path).replaceAll(path.sep, '/') : null
+      jarRow.detail = JSON.stringify({ jar: productJar, classRoot: path.relative(ARTIFACT_ROOT, releaseClassRoot).replaceAll(path.sep, '/'), classFiles: classCount, classpathEntries: classpathEntries.length, classpathDescribesThisRun: classpathOk, gradle: jarStep.status })
+    }
+
+    // 3. release-jar-surface: the QA-free proof has to read the artifact that is
+    // packaged, so list the product jar's entries instead of trusting the class
+    // directory. `-PfmQaSurface=false` excludes both packages at compile time, so
+    // any entry here means the packaged build carried the QA surface.
+    const jarList = await step('release-jar-surface-entries', 'List the product jar entries', (logFile) => runProcess(path.join(tools.javaHome, 'bin', 'jar.exe'), ['tf', releaseJarPath], { cwd: ROOT, env: process.env, logFile, timeoutMs: 60 * 1000 }))
+    const jarEntries = jarList.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    const qaEntries = jarEntries.filter((entry) => /^com\/framemark\/native\/(verify|qaenv)\//.test(entry))
+    const mainClassEntry = jarEntries.includes('com/framemark/native/MainKt.class')
+    // The package stages the class tree (not the jar), so the same proof has to
+    // hold for app/classes.
+    const classRootQaFiles = fs.existsSync(releaseClassRoot)
+      ? ['verify', 'qaenv'].flatMap((name) => listFiles(path.join(releaseClassRoot, 'com', 'framemark', 'native', name))).filter((file) => file.endsWith('.class'))
+      : []
+    const jarSurfaceOk = jarList.status === 'PASS' && jarEntries.length > 0 && qaEntries.length === 0 && mainClassEntry && classRootQaFiles.length === 0
+    gates.push(requiredCheck('release-jar-surface', jarSurfaceOk ? 'PASS' : 'FAIL', JSON.stringify({
+      jar: path.relative(ARTIFACT_ROOT, releaseJarPath).replaceAll(path.sep, '/'),
+      sha256: productJar?.sha256 || null,
+      entries: jarEntries.length,
+      verifyQaenvEntries: qaEntries.length,
+      verifyQaenvExamples: qaEntries.slice(0, 5),
+      mainClassEntry,
+      classRootQaClassFiles: classRootQaFiles.length
+    })))
+
+    // 4. release-package: jlink runtime + staging + launcher + VERSION.txt + ZIP +
+    // APK copy + SHA256SUMS, the same layout the hand-run packaging recipe used.
+    fs.rmSync(stagingDir, { recursive: true, force: true })
+    fs.rmSync(apkPath, { force: true })
+    fs.rmSync(zipPath, { force: true })
+    fs.mkdirSync(deliverablesRoot, { recursive: true })
+    const packageStep = await step('release-package', 'Assemble the portable win64 package and the arm64 APK', async (logFile) => {
+      fs.writeFileSync(logFile, '', 'utf8')
+      const say = (line) => fs.appendFileSync(logFile, `${line}\n`, 'utf8')
+      const runtimeStep = steps.find((row) => row.id === 'desktop-runtime')
+      if (!runtimeStep || runtimeStep.status !== 'PASS') throw new Error('the desktop-runtime step did not PASS; the package needs the bin/data/bridge tree this run staged')
+      if (!jarOk || !productJar) throw new Error('the product jar is missing or was not rebuilt by release-desktop-jar')
+      const missingParts = ['bin', 'data', 'bridge'].filter((part) => !fs.existsSync(path.join(runtimeSource, part)))
+      if (missingParts.length) throw new Error(`desktop runtime artifacts are missing: ${missingParts.join(', ')} (${runtimeSource})`)
+      for (const input of [releaseClassRoot, releaseResourcesRoot]) {
+        if (!fs.existsSync(input)) throw new Error(`staging input is missing: ${input}`)
+      }
+      fs.mkdirSync(stagingDir, { recursive: true })
+
+      // jlink runtime: the exact module set the rc10 packaging recipe used.
+      const jlinkOutput = path.join(tmpRoot, 'jlink-runtime')
+      fs.rmSync(jlinkOutput, { recursive: true, force: true })
+      const modules = ['java.base', 'java.datatransfer', 'java.xml', 'java.prefs', 'java.desktop', 'java.logging', 'java.management', 'java.security.sasl', 'java.naming', 'jdk.unsupported']
+      const jlinkArgs = ['--module-path', path.join(tools.javaHome, 'jmods'), '--add-modules', modules.join(','), '--output', jlinkOutput, '--strip-debug', '--no-man-pages', '--no-header-files', '--compress=zip-6']
+      say(`[1/5] jlink ${jlinkArgs.join(' ')}`)
+      const jlinkResult = await runProcess(path.join(tools.javaHome, 'bin', 'jlink.exe'), jlinkArgs, { cwd: ROOT, env: process.env, logFile: path.join(logRoot, 'release-jlink.log'), timeoutMs: 20 * 60 * 1000 })
+      if (jlinkResult.exitCode !== 0) throw new Error(`jlink failed (${jlinkResult.exitCode}): ${(jlinkResult.stderr || jlinkResult.stdout).slice(-1200)}`)
+      if (!fs.existsSync(path.join(jlinkOutput, 'bin', 'javaw.exe'))) throw new Error('the jlink runtime has no bin/javaw.exe')
+
+      // Staging: app/classes + app/resources + runtime/ + this run's bin/data/bridge.
+      const copies = [[releaseClassRoot, path.join('app', 'classes')], [releaseResourcesRoot, path.join('app', 'resources')], [jlinkOutput, 'runtime'], ...['bin', 'data', 'bridge'].map((part) => [path.join(runtimeSource, part), part])]
+      for (const [from, to] of copies) {
+        fs.cpSync(from, path.join(stagingDir, to), { recursive: true })
+        const stats = treeStats(path.join(stagingDir, to))
+        say(`[2/5] staged ${to}: ${stats.files} files, ${stats.bytes} bytes`)
+      }
+
+      // app/lib: every jar the isolated Gradle run put on the desktop runtime
+      // classpath. The class/resource directories are staged above.
+      const libDir = path.join(stagingDir, 'app', 'lib')
+      fs.mkdirSync(libDir, { recursive: true })
+      const jars = []
+      for (const entry of classpathEntries) {
+        if (!/\.jar$/i.test(entry)) continue
+        if (!fs.existsSync(entry)) throw new Error(`a jar on the desktop classpath is missing: ${entry}`)
+        const digest = sha256File(entry)
+        let name = path.basename(entry)
+        if (fs.existsSync(path.join(libDir, name)) && sha256File(path.join(libDir, name)) !== digest) name = `${path.basename(entry, '.jar')}-${digest.slice(0, 12)}.jar`
+        const target = path.join(libDir, name)
+        if (!fs.existsSync(target)) fs.copyFileSync(entry, target)
+        jars.push(name)
+      }
+      if (!jars.length) throw new Error('the desktop classpath listed no jars; app/lib would be empty')
+      say(`[2/5] app/lib jars: ${jars.length}`)
+
+      // Launcher + version stamp. The label is version.properties' versionName.
+      const launcherLabel = versionName
+      const launcher = [
+        '@echo off',
+        'setlocal',
+        'pushd "%~dp0"',
+        'set "FM_RUNTIME_ROOT=%CD%"',
+        'set "FM_WORKSPACE_ROOT=%CD%"',
+        `start "" "%CD%\\runtime\\bin\\javaw.exe" -Dfile.encoding=UTF-8 -Dframemark.build.label=${launcherLabel} -cp "%CD%\\app\\classes;%CD%\\app\\resources;%CD%\\app\\lib\\*" com.framemark.native.MainKt`,
+        'popd',
+        ''
+      ].join('\r\n')
+      fs.writeFileSync(path.join(stagingDir, 'FrameMark.bat'), launcher, 'ascii')
+
+      const built = new Date().toISOString().replace('T', ' ').slice(0, 19)
+      const versionText = [
+        `FrameMark ${versionName}`,
+        `built: ${built} (UTC)`,
+        `git: ${gitCommit} (${gitBranch})`,
+        `runId: ${runId}`,
+        `launcher label: -Dframemark.build.label=${launcherLabel}`,
+        `product jar: -PfmQaSurface=false, sha256 ${productJar.sha256}`,
+        `product jar entries: ${jarEntries.length}, verify/qaenv entries: ${qaEntries.length}`,
+        `app/lib jars: ${jars.length}`,
+        '运行：双击 FrameMark.bat（需要 Windows 10/11 x64，无需另装 Java）'
+      ].join('\r\n') + '\r\n'
+      fs.writeFileSync(path.join(stagingDir, 'VERSION.txt'), versionText, 'utf8')
+
+      // ZIP through the Windows tar, exactly like the recipe: the archive holds
+      // one top-level `FrameMark-<versionName>-win64/` directory.
+      const systemTar = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+      const tarExecutable = fs.existsSync(systemTar) ? systemTar : 'tar.exe'
+      say(`[3/5] ${tarExecutable} -a -c -f ${zipPath} ${stagingName}`)
+      const tarResult = await runProcess(tarExecutable, ['-a', '-c', '-f', zipPath, stagingName], { cwd: deliverablesRoot, env: process.env, logFile: path.join(logRoot, 'release-tar.log'), timeoutMs: 30 * 60 * 1000 })
+      if (tarResult.exitCode !== 0 || !fs.existsSync(zipPath)) throw new Error(`tar failed to create the portable ZIP (${tarResult.exitCode}): ${(tarResult.stderr || tarResult.stdout).slice(-1200)}`)
+
+      // The arm64 APK is this run's debug APK, renamed.
+      const debugApk = path.join(gradleOutputRoot, 'composeApp', 'outputs', 'apk', 'debug', 'composeApp-debug.apk')
+      if (!fs.existsSync(debugApk)) throw new Error(`this run has no debug APK: ${debugApk}`)
+      fs.copyFileSync(debugApk, apkPath)
+
+      const apkSize = fs.statSync(apkPath).size
+      const zipSize = fs.statSync(zipPath).size
+      const apkSha256 = sha256File(apkPath)
+      const zipSha256 = sha256File(zipPath)
+      // Same three-column format as the packaging recipe: name, size in MB, sha256.
+      const sums = [
+        `${path.basename(apkPath).padEnd(46)} ${(apkSize / (1024 * 1024)).toFixed(1).padStart(8)} MB  ${apkSha256}`,
+        `${path.basename(zipPath).padEnd(46)} ${(zipSize / (1024 * 1024)).toFixed(1).padStart(8)} MB  ${zipSha256}`
+      ].join('\r\n') + '\r\n'
+      fs.writeFileSync(path.join(deliverablesRoot, 'SHA256SUMS.txt'), sums, 'utf8')
+      say(`[4/5] apk ${apkSize} B sha256 ${apkSha256}`)
+      say(`[5/5] zip ${zipSize} B sha256 ${zipSha256}`)
+      releaseDeliverables = { directory: deliverablesRoot, apk: { path: apkPath, size: apkSize, sha256: apkSha256 }, zip: { path: zipPath, size: zipSize, sha256: zipSha256 }, launcherLabel }
+      return { exitCode: 0, stdout: JSON.stringify({ stagingDir, apkPath, zipPath, jars: jars.length }), stderr: '' }
+    })
+    const packageRow = steps.find((row) => row.id === 'release-package')
+    if (packageRow) {
+      packageRow.detail = releaseDeliverables
+        ? JSON.stringify({ staging: path.relative(ARTIFACT_ROOT, stagingDir).replaceAll(path.sep, '/'), apk: path.relative(ARTIFACT_ROOT, apkPath).replaceAll(path.sep, '/'), zip: path.relative(ARTIFACT_ROOT, zipPath).replaceAll(path.sep, '/'), launcherLabel: releaseDeliverables.launcherLabel })
+        : String(packageStep.stderr || 'release packaging failed').slice(-2000)
+    }
+
+    // 5. release-package-smoke: launch the packaged launcher once, require a live
+    // javaw that owns a real window, capture it, kill it and require no leftovers.
+    const smokeShot = path.join(stagingDir, 'smoke.png')
+    const smokeScript = path.join(tmpRoot, 'release-smoke.ps1')
+    fs.writeFileSync(smokeScript, RELEASE_SMOKE_SCRIPT, 'utf8')
+    const powershellExe = locateOnPath('powershell.exe') || path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+    const smoke = releaseDeliverables
+      ? await runProcess(powershellExe, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', smokeScript, '-Launcher', path.join(stagingDir, 'FrameMark.bat'), '-WorkingDirectory', stagingDir, '-Shot', smokeShot, '-WaitSeconds', '25'], { cwd: ROOT, env: process.env, logFile: path.join(logRoot, 'release-package-smoke.log'), timeoutMs: 5 * 60 * 1000 })
+      : { exitCode: 1, stdout: '', stderr: 'release-package did not produce a package to smoke', timedOut: false }
+    const smokeResult = parseSmokeResult(smoke.stdout)
+    const smokeOk = Boolean(smokeResult) && smokeResult.ok === true && smokeResult.windowHandle > 0 && Array.isArray(smokeResult.remainingPids) && smokeResult.remainingPids.length === 0
+    gates.push(requiredCheck('release-package-smoke', smokeOk ? 'PASS' : 'FAIL', JSON.stringify(smokeResult || { exitCode: smoke.exitCode, stderr: String(smoke.stderr || '').slice(-1500), stdout: String(smoke.stdout || '').slice(-500) })))
+
+    // 6. release-artifacts: the shipped files exist, are not truncated and match
+    // the SHA256SUMS.txt they travel with.
+    const sumsPath = path.join(deliverablesRoot, 'SHA256SUMS.txt')
+    const sumsText = fs.existsSync(sumsPath) ? fs.readFileSync(sumsPath, 'utf8') : ''
+    const sumsRows = sumsText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+      const match = line.match(/^(\S+)\s+([0-9][0-9,.]*) MB\s+([0-9a-f]{64})$/)
+      return match ? { name: match[1], megabytes: match[2], sha256: match[3] } : { line }
+    })
+    const sumsShapeOk = sumsRows.length === 2 && sumsRows.every((row) => Boolean(row.name && row.sha256))
+    const sumsMatchOk = sumsShapeOk && sumsRows.every((row) => {
+      const target = path.join(deliverablesRoot, row.name)
+      return fs.existsSync(target) && fs.statSync(target).isFile() && sha256File(target) === row.sha256
+    })
+    const apkMinimum = 100 * 1024 * 1024
+    const zipMinimum = 150 * 1024 * 1024
+    const artifactsOk = Boolean(releaseDeliverables) &&
+      fs.existsSync(releaseDeliverables.apk.path) && fs.statSync(releaseDeliverables.apk.path).size > apkMinimum &&
+      fs.existsSync(releaseDeliverables.zip.path) && fs.statSync(releaseDeliverables.zip.path).size > zipMinimum &&
+      sha256File(releaseDeliverables.apk.path) === releaseDeliverables.apk.sha256 &&
+      sha256File(releaseDeliverables.zip.path) === releaseDeliverables.zip.sha256 &&
+      sumsShapeOk && sumsMatchOk
+    gates.push(requiredCheck('release-artifacts', artifactsOk ? 'PASS' : 'FAIL', JSON.stringify({
+      apk: releaseDeliverables ? { path: path.relative(ARTIFACT_ROOT, releaseDeliverables.apk.path).replaceAll(path.sep, '/'), size: releaseDeliverables.apk.size, sha256: releaseDeliverables.apk.sha256 } : null,
+      zip: releaseDeliverables ? { path: path.relative(ARTIFACT_ROOT, releaseDeliverables.zip.path).replaceAll(path.sep, '/'), size: releaseDeliverables.zip.size, sha256: releaseDeliverables.zip.sha256 } : null,
+      thresholds: { apkMinimumBytes: apkMinimum, zipMinimumBytes: zipMinimum },
+      sha256sums: { file: path.relative(ARTIFACT_ROOT, sumsPath).replaceAll(path.sep, '/'), rows: sumsRows.length, shapeOk: sumsShapeOk, matchesFiles: sumsMatchOk }
+    })))
+  }
+
   if (options.skipGates) {
     gates.push(requiredCheck('required-gates-enabled', 'SKIP', '--skip-gates bypassed required build/release gates'))
   }
@@ -1297,9 +1564,16 @@ async function main (options) {
     desktopRuntimeProvenance,
     nativeBuildProvenance,
     androidPackageSourceIntegrity,
+    // Present only in --package mode; the default report keeps its shape.
+    ...(options.package ? { deliverables: releaseDeliverables } : {}),
     steps,
     gates,
-    summary: { exitCode, requiredFailures: requiredFailures.map((row) => row.id), result: exitCode === 0 ? 'PASS' : 'FAIL' }
+    summary: {
+      exitCode,
+      requiredFailures: requiredFailures.map((row) => row.id),
+      result: exitCode === 0 ? 'PASS' : 'FAIL',
+      ...(options.package ? { deliverables: releaseDeliverables } : {})
+    }
   }
   fs.writeFileSync(path.join(runRoot, 'build-report.json'), JSON.stringify(report, null, 2) + '\n', 'utf8')
   process.stdout.write(JSON.stringify(report.summary, null, 2) + `\nreport: ${path.relative(ROOT, path.join(runRoot, 'build-report.json')).replaceAll(path.sep, '/')}\n`)
@@ -1358,6 +1632,222 @@ async function signRelease (apk, tools, envBase, runRoot, step) {
   const expected = process.env.FM_SIGNING_CERT_SHA256.replaceAll(':', '').toLowerCase()
   return { status: verify.status === 'PASS' && actual.toLowerCase() === expected ? 'PASS' : 'FAIL', signedApk, detail: actual.toLowerCase() === expected ? 'certificate fingerprint verified' : 'certificate fingerprint mismatch' }
 }
+
+/** `--package`: the release label comes from the single version source, never a literal. */
+function readVersionProperties () {
+  const filename = path.join(ROOT, 'version.properties')
+  if (!fs.existsSync(filename)) throw new Error('version.properties is missing; the release label must come from it')
+  const values = {}
+  for (const line of fs.readFileSync(filename, 'utf8').split(/\r?\n/)) {
+    const text = line.trim()
+    if (!text || text.startsWith('#')) continue
+    const separator = text.indexOf('=')
+    if (separator < 0) throw new Error(`Invalid version.properties line: ${line}`)
+    values[text.slice(0, separator).trim()] = text.slice(separator + 1).trim()
+  }
+  const versionName = values.versionName || ''
+  if (!versionName) throw new Error('version.properties has no versionName; the release package needs a label')
+  if (!/^[0-9A-Za-z._-]+$/.test(versionName)) throw new Error(`versionName is not safe for file names or the launcher label: ${versionName}`)
+  return values
+}
+
+function readGitValue (args, fallback = null) {
+  try {
+    const { execFileSync } = require('node:child_process')
+    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || fallback
+  } catch { return fallback }
+}
+
+// JUnit XML totals of the isolated Gradle run. Reports written before the step
+// started are ignored, so the Konsist subset from arch-konsist can never satisfy
+// release-tests.
+function readJUnitTotals (dir, sinceMs = 0) {
+  const totals = { tests: 0, failures: 0, errors: 0, skipped: 0, suites: 0, files: 0 }
+  const files = listFiles(dir).filter((file) => file.endsWith('.xml') && (!sinceMs || fs.statSync(file).mtimeMs >= sinceMs))
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8')
+    for (const match of text.matchAll(/<testsuite\b([^>]*)>/g)) {
+      const attributes = match[1]
+      const count = (name) => Number((attributes.match(new RegExp(`(?:^|\\s)${name}="(\\d+)"`)) || [])[1] || 0)
+      totals.tests += count('tests')
+      totals.failures += count('failures')
+      totals.errors += count('errors')
+      totals.skipped += count('skipped')
+      totals.suites += 1
+    }
+  }
+  totals.files = files.length
+  return totals
+}
+
+function treeStats (dir) {
+  const files = listFiles(dir)
+  return { files: files.length, bytes: files.reduce((sum, file) => sum + fs.statSync(file).size, 0) }
+}
+
+// The smoke probe prints exactly one `SMOKE_JSON:` line; everything else is noise.
+function parseSmokeResult (stdout) {
+  const line = String(stdout || '').split(/\r?\n/).find((entry) => entry.startsWith('SMOKE_JSON:'))
+  if (!line) return null
+  try { return JSON.parse(line.slice('SMOKE_JSON:'.length)) } catch { return null }
+}
+
+// --package smoke probe: start the packaged launcher once, require a live javaw
+// that owns a main window handle, capture that window to PNG, kill the process
+// tree's javaw and require that nothing is left behind. One machine-readable
+// SMOKE_JSON line is printed; the release-package-smoke gate records it.
+const RELEASE_SMOKE_SCRIPT = `param(
+  [Parameter(Mandatory = $true)][string] $Launcher,
+  [Parameter(Mandatory = $true)][string] $WorkingDirectory,
+  [Parameter(Mandatory = $true)][string] $Shot,
+  [int] $WaitSeconds = 25
+)
+$ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
+$result = [ordered]@{
+  schema = 'framemark-release-smoke/v1'
+  ok = $false
+  launcher = $Launcher
+  workingDirectory = $WorkingDirectory
+  shot = $Shot
+  shotBytes = 0
+  pid = 0
+  windowHandle = 0
+  windowTitle = ''
+  windowWidth = 0
+  windowHeight = 0
+  sampledColors = 0
+  captureMethod = ''
+  foreground = $false
+  printWindowColors = 0
+  screenColors = 0
+  foundAfterMs = 0
+  killMs = 0
+  beforePids = @()
+  killedPids = @()
+  remainingPids = @()
+  error = $null
+}
+Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public struct FmSmokeRect { public int Left; public int Top; public int Right; public int Bottom; }
+public class FmSmokeWin32 {
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out FmSmokeRect rect);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, int hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+    [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
+}
+'@
+function Get-SampledColors($picture, $pictureWidth, $pictureHeight) {
+  $colors = @{}
+  $stepX = [Math]::Max(1, [int]($pictureWidth / 20))
+  $stepY = [Math]::Max(1, [int]($pictureHeight / 20))
+  for ($x = 0; $x -lt $pictureWidth; $x += $stepX) {
+    for ($y = 0; $y -lt $pictureHeight; $y += $stepY) {
+      $colors[$picture.GetPixel($x, $y).ToArgb()] = $true
+      if ($colors.Count -ge 64) { return $colors.Count }
+    }
+  }
+  return $colors.Count
+}
+$failure = $null
+try {
+  $result.beforePids = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+  $started = Get-Date
+  $arguments = if ($Launcher.Contains(' ')) { '"' + $Launcher + '"' } else { $Launcher }
+  Start-Process -FilePath $env:ComSpec -ArgumentList '/c', $arguments -WorkingDirectory $WorkingDirectory -WindowStyle Hidden | Out-Null
+  $deadline = $started.AddSeconds($WaitSeconds)
+  $target = $null
+  while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Milliseconds 500
+    $candidates = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | Where-Object { $result.beforePids -notcontains $_.Id })
+    $visible = @($candidates | Where-Object { $_.MainWindowHandle -ne 0 })
+    if ($visible.Count -gt 0) { $target = $visible[0]; break }
+  }
+  if ($null -eq $target) { throw ('no javaw main window appeared within ' + $WaitSeconds + 's') }
+  $result.foundAfterMs = [int]((Get-Date) - $started).TotalMilliseconds
+  $target.Refresh()
+  $result.pid = $target.Id
+  $result.windowHandle = [int64]$target.MainWindowHandle
+  $title = [string]$target.MainWindowTitle
+  if ($title.Length -gt 0) { $result.windowTitle = (@($title.ToCharArray()) | Where-Object { [int]$_ -ge 32 -and [int]$_ -lt 127 }) -join '' }
+  [FmSmokeWin32]::ShowWindow($target.MainWindowHandle, 9) | Out-Null
+  # Another foreground window (a browser, an editor) must not end up in the
+  # screenshot: raise the app above the normal z-order, then ask for the
+  # foreground. PrintWindow is preferred because it renders the window itself
+  # even when Windows refuses the foreground change.
+  [FmSmokeWin32]::SetWindowPos($target.MainWindowHandle, -1, 0, 0, 0, 0, 0x43) | Out-Null
+  [FmSmokeWin32]::BringWindowToTop($target.MainWindowHandle) | Out-Null
+  [FmSmokeWin32]::SetForegroundWindow($target.MainWindowHandle) | Out-Null
+  Start-Sleep -Milliseconds 1500
+  $result.foreground = ([FmSmokeWin32]::GetForegroundWindow().ToInt64() -eq $target.MainWindowHandle.ToInt64())
+  $rect = New-Object -TypeName FmSmokeRect
+  if (-not [FmSmokeWin32]::GetWindowRect($target.MainWindowHandle, [ref]$rect)) { throw 'GetWindowRect failed' }
+  $width = $rect.Right - $rect.Left
+  $height = $rect.Bottom - $rect.Top
+  $result.windowWidth = $width
+  $result.windowHeight = $height
+  if ($width -le 0 -or $height -le 0) { throw ('the window has no area: ' + $width + 'x' + $height) }
+  $bitmap = New-Object -TypeName System.Drawing.Bitmap -ArgumentList $width, $height
+  $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+  try {
+    $hdc = $graphics.GetHdc()
+    try { $printed = [FmSmokeWin32]::PrintWindow($target.MainWindowHandle, $hdc, 2) } finally { $graphics.ReleaseHdc($hdc) }
+    if ($printed) { $result.printWindowColors = Get-SampledColors $bitmap $width $height }
+    if ($result.printWindowColors -ge 5) {
+      $result.captureMethod = 'printwindow'
+    } else {
+      $result.captureMethod = 'screen'
+      $size = New-Object -TypeName System.Drawing.Size -ArgumentList $width, $height
+      $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $size)
+      $result.screenColors = Get-SampledColors $bitmap $width $height
+    }
+    if ($result.captureMethod -eq 'printwindow') { $result.sampledColors = $result.printWindowColors } else { $result.sampledColors = $result.screenColors }
+    $directory = Split-Path -Parent $Shot
+    if (-not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Force -Path $directory | Out-Null }
+    $bitmap.Save($Shot, [System.Drawing.Imaging.ImageFormat]::Png)
+  } finally {
+    $graphics.Dispose()
+    $bitmap.Dispose()
+  }
+  $result.shotBytes = (Get-Item -LiteralPath $Shot).Length
+  [FmSmokeWin32]::SetWindowPos($target.MainWindowHandle, -2, 0, 0, 0, 0, 0x43) | Out-Null
+} catch {
+  $failure = $_.Exception.Message
+}
+$killStarted = Get-Date
+try {
+  $result.killedPids = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | Where-Object { $result.beforePids -notcontains $_.Id } | ForEach-Object { $_.Id })
+  if ($result.pid -ne 0 -and $result.killedPids -notcontains $result.pid) { $result.killedPids = @($result.killedPids) + $result.pid }
+  foreach ($processId in $result.killedPids) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue }
+  $deadline = (Get-Date).AddSeconds(10)
+  while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Milliseconds 250
+    $alive = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | Where-Object { $result.beforePids -notcontains $_.Id })
+    if ($alive.Count -eq 0) { break }
+  }
+  $leftover = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | Where-Object { $result.beforePids -notcontains $_.Id })
+  foreach ($process in $leftover) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
+  if ($leftover.Count -gt 0) {
+    Start-Sleep -Milliseconds 500
+    $leftover = @(Get-Process -Name javaw -ErrorAction SilentlyContinue | Where-Object { $result.beforePids -notcontains $_.Id })
+  }
+  $result.remainingPids = @($leftover | ForEach-Object { $_.Id })
+} catch {
+  if ($null -eq $failure) { $failure = $_.Exception.Message }
+}
+$result.killMs = [int]((Get-Date) - $killStarted).TotalMilliseconds
+if ($null -ne $failure) { $result.error = $failure }
+$result.ok = ($null -eq $failure) -and ($result.windowHandle -gt 0) -and ($result.shotBytes -gt 0) -and ($result.remainingPids.Count -eq 0)
+'SMOKE_JSON:' + ($result | ConvertTo-Json -Compress -Depth 5)
+if ($result.ok) { exit 0 } else { exit 1 }
+`
 
 function runCli () {
   const options = parseArgs(process.argv.slice(2))

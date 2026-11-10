@@ -83,6 +83,7 @@ and build inputs must first be present in the chosen Git baseline.
 .\build-native.cmd --skip-gradle
 .\build-native.cmd --release
 .\build-native.cmd --release --release-qa
+.\build-native.cmd --package
 ```
 
 `--skip-engine` skips only the `e2b` source build. It cannot stage a complete
@@ -104,6 +105,21 @@ APK with a distinct application id and the Android debug signing key. That APK
 is for local device validation only and is not publishable. A normal release
 build has no QA suffix and remains unsigned unless the separate production
 signing option is supplied.
+
+`--package` turns the run into the shipped artifacts instead of only build
+evidence. After the existing steps it runs `:composeApp:desktopTest` through the
+same isolated Gradle invocation, deletes the desktop class output and rebuilds
+`:composeApp:desktopJar` with `-PfmQaSurface=false`, asserts the product jar and
+the staged class tree contain zero `com/framemark/native/(verify|qaenv)` entries,
+then stages the jlink runtime plus this run's `bin`/`data`/`bridge` and writes
+`FrameMark-<versionName>-win64-portable.zip`, `FrameMark-<versionName>-arm64.apk`
+and `SHA256SUMS.txt` under `<artifact root>/runs/<runId>/deliverables/`. It also
+launches the packaged `FrameMark.bat` once (window handle + screenshot + clean
+process exit) and re-hashes the shipped files. The label comes from
+`version.properties` and the commit from `git rev-parse --short HEAD`; the
+hand-run packaging recipe outside the repository is no longer needed. Packaging
+requires a PASSing `desktop-runtime` step, so `--skip-engine` cannot produce a
+package in the same run.
 
 Android CMake and Gradle restrict packaging to `arm64-v8a`; CMake fails if any
 of the IR, hand-renderer, or export static libraries is absent. QA Intent

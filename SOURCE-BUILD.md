@@ -43,6 +43,28 @@ gradle -p ui :composeApp:desktopTest --no-daemon
 `org.gradle.launcher.GradleMain`（Gradle 取自 `FM_GRADLE_HOME` / `GRADLE_HOME`），
 所以本仓库完全不需要 `gradlew`。请勿把 `gradle` 换成 `.\gradlew`——该文件不存在。
 
+## 发布产物（`--package`）
+
+`--package` 是 `scripts/native/build.cjs` 的显式发布模式；不带该参数时行为不变：
+
+```powershell
+.\build-native.cmd --package
+```
+
+它在本轮既有步骤之后依次：运行桌面测试套件（`:composeApp:desktopTest`，JUnit
+XML 有失败即失败）；删除桌面类输出并用 `-PfmQaSurface=false` 重建
+`:composeApp:desktopJar`；校验产品 jar（以及即将打进包里的类目录）中
+`com/framemark/native/verify|qaenv/` 条目为 0；用 jlink 运行时加本轮的
+`bin`/`data`/`bridge` 组装出
+`build\runs\<runId>\deliverables\FrameMark-<versionName>-win64-portable.zip`
+和 `FrameMark-<versionName>-arm64.apk`，并写 `SHA256SUMS.txt`；最后启动一次打包好的
+`FrameMark.bat`（要求出现窗口、截图 `smoke.png`、进程可被彻底清理）并复核两个产物的哈希。
+
+版本标签只来自 `version.properties` 的 `versionName`，提交号来自
+`git rev-parse --short HEAD`，不再依赖仓库外的手写打包脚本。该模式需要本轮
+`desktop-runtime` 步骤 PASS（引擎 `bin`/`data`/`bridge` 来自本轮），因此
+`--skip-engine` 无法在同一轮产出发布包。
+
 ## Android 端必须补齐的输入
 
 Android 构建依赖两个**输入**，不是构建产物：
