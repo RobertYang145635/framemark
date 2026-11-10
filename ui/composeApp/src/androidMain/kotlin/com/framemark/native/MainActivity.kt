@@ -21,7 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import android.util.Log
 import com.framemark.BuildConfig
 import com.framemark.R
-import com.framemark.native.engine.AndroidInspectorHints
+import com.framemark.native.shell.AndroidInspectorHints
 import com.framemark.native.engine.AndroidNativeRender
 import com.framemark.native.engine.ExifProbe
 import com.framemark.native.engine.IrBatchRunner

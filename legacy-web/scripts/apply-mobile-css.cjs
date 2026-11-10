@@ -1,5 +1,5 @@
 const fs = require('node:fs')
-const file = 'src/renderer/src/styles.css'
+const file = 'legacy-web/src/renderer/src/styles.css'
 const css = fs.readFileSync(file, 'utf8')
 const marker = '@media (max-width: 700px) {'
 const start = css.indexOf(marker)

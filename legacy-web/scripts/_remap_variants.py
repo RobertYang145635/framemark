@@ -1,6 +1,6 @@
 import io
 
-p = 'src/renderer/src/core/variants.ts'
+p = 'legacy-web/src/renderer/src/core/variants.ts'
 s = io.open(p, encoding='utf-8').read()
 
 old = """  // 留白

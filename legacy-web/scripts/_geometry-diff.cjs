@@ -21,9 +21,9 @@ const fs = require('node:fs')
 const path = require('node:path')
 const sharp = require('sharp')
 
-const project = path.resolve(__dirname, '..')
+const project = path.resolve(__dirname, '..', '..')
 const workspace = path.resolve(project, '..')
-const previewRoot = path.join(project, 'src/renderer/src/assets/previews')
+const previewRoot = path.join(project, 'legacy-web/src/renderer/src/assets/previews')
 const originalDir = path.join(workspace, '_research/original-47')
 const staleReport = path.join(workspace, '_research/preview-analysis/geometry-diff.json')
 

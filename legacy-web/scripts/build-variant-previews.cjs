@@ -9,8 +9,8 @@ const path = require('node:path')
 const fs = require('node:fs')
 const { _electron: electron } = require('playwright-core')
 
-const project = path.resolve(__dirname, '..')
-const previewsDir = path.join(project, 'src/renderer/src/assets/previews')
+const project = path.resolve(__dirname, '..', '..')
+const previewsDir = path.join(project, 'legacy-web/src/renderer/src/assets/previews')
 const outDir = path.join(previewsDir, 'rendered')
 const expectedVariants = 69
 const runId = `${process.pid}-${Date.now()}`

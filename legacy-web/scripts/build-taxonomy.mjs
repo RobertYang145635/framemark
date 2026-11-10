@@ -15,9 +15,9 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const OUT_FILE = path.join(ROOT, 'src/renderer/src/core/taxonomy.generated.ts')
-const VARIANT_ENTRY = path.join(ROOT, 'src/renderer/src/core/variants.ts')
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const OUT_FILE = path.join(ROOT, 'legacy-web/src/renderer/src/core/taxonomy.generated.ts')
+const VARIANT_ENTRY = path.join(ROOT, 'legacy-web/src/renderer/src/core/variants.ts')
 
 const CATEGORY_KEYS = ['vendor', 'text', 'impression', 'white', 'card', 'color', 'minimal']
 const CATEGORY_KEY_SET = new Set(CATEGORY_KEYS)

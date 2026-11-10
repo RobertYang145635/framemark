@@ -14,10 +14,10 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { _electron: electron } = require('playwright-core')
 
-const project = path.resolve(__dirname, '..')
+const project = path.resolve(__dirname, '..', '..')
 const workspace = path.resolve(project, '..')
-const previewRoot = path.join(project, 'src/renderer/src/assets/previews')
-const variantsFile = path.join(project, 'src/renderer/src/core/variants.ts')
+const previewRoot = path.join(project, 'legacy-web/src/renderer/src/assets/previews')
+const variantsFile = path.join(project, 'legacy-web/src/renderer/src/core/variants.ts')
 const originalDir = path.join(workspace, '_research/original-47')
 
 function arg(name, fallback) {

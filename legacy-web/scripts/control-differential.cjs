@@ -14,7 +14,7 @@
  *
  * It is a read-only audit: it does not delete or edit a control, a template or
  * a default. The only product-code surface it uses is the debug render API in
- * src/renderer/src/main.tsx (`params`, `text`, `logoFile`, `hash`).
+ * legacy-web/src/renderer/src/main.tsx (`params`, `text`, `logoFile`, `hash`).
  *
  * Non-vacuity (S9b): before the sweep, the audit's own classify() must call a
  * known-live param live, a synthetic never-read key no-op, a repeated render
@@ -41,7 +41,7 @@ const path = require('node:path')
 const { execFileSync } = require('node:child_process')
 const { _electron: electron } = require('playwright-core')
 
-const ROOT = path.resolve(__dirname, '..')
+const ROOT = path.resolve(__dirname, '..', '..')
 const RESEARCH = path.resolve(ROOT, '..', '_research')
 const INVENTORY = path.join(RESEARCH, 'hand-controls', 'controls.hand.json')
 const OUT_DIR = path.join(RESEARCH, 's7')
