@@ -1,11 +1,61 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.File
+import java.util.Properties
 
 plugins {
     kotlin("multiplatform")
     id("com.android.application")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// ---- The single version source ------------------------------------------------
+// `<repo>/version.properties` is the only place a human edits on a version bump.
+// Android (versionCode/versionName), the desktop package (jpackage numeric
+// packageVersion + the build label in the generated stamp) and the running UI all
+// read these values from here, so an APK, an MSI/app-image and the version shown
+// in the app cannot disagree. Fail fast and loudly: a missing, unparsable or
+// inconsistent file is a release-blocking configuration error, not a warning.
+val framemarkVersionFile = file("../../version.properties")
+if (!framemarkVersionFile.isFile) {
+    throw GradleException(
+        "version.properties is missing: ${framemarkVersionFile.absolutePath}\n" +
+            "It is the single version source. Create it with:\n" +
+            "  versionName=<release label, e.g. X.Y.Z-rcN>\n" +
+            "  packageVersion=<numeric X.Y.Z base>\n" +
+            "  versionCode=<positive integer>",
+    )
+}
+val framemarkVersion = Properties()
+try {
+    framemarkVersionFile.inputStream().use(framemarkVersion::load)
+} catch (e: Exception) {
+    throw GradleException("version.properties is unreadable or unparsable: ${framemarkVersionFile.absolutePath}", e)
+}
+fun framemarkVersionProperty(key: String): String =
+    framemarkVersion.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: throw GradleException(
+            "version.properties is missing required key `$key`: ${framemarkVersionFile.absolutePath}",
+        )
+val framemarkVersionLabel = framemarkVersionProperty("versionName")
+val framemarkPackageVersion = framemarkVersionProperty("packageVersion")
+val framemarkVersionCodeText = framemarkVersionProperty("versionCode")
+val framemarkVersionCode = framemarkVersionCodeText.toIntOrNull()?.takeIf { it > 0 }
+    ?: throw GradleException(
+        "version.properties versionCode must be a positive integer, got `$framemarkVersionCodeText`",
+    )
+if (!Regex("^\\d+\\.\\d+\\.\\d+$").matches(framemarkPackageVersion)) {
+    throw GradleException(
+        "version.properties packageVersion must be a numeric 3-part version (X.Y.Z) because " +
+            "jpackage/MSI reject non-numeric versions, got `$framemarkPackageVersion`",
+    )
+}
+if (framemarkVersionLabel != framemarkPackageVersion && !framemarkVersionLabel.startsWith("$framemarkPackageVersion-")) {
+    throw GradleException(
+        "version.properties is inconsistent: versionName `$framemarkVersionLabel` is not based on " +
+            "packageVersion `$framemarkPackageVersion` (expected `$framemarkPackageVersion` or " +
+            "`$framemarkPackageVersion-<suffix>`)",
+    )
 }
 
 val framemarkQaSuffix = providers.gradleProperty("framemarkQaSuffix").orNull ?: ".dev"
@@ -64,7 +114,7 @@ kotlin {
             // They are included by default so the documented dev/QA run
             // (tools\run-desktop.ps1 + RUNBOOK §5) keeps working unchanged, and a
             // release package is built with `-PfmQaSurface=false`:
-            //   ./gradlew -p ui :composeApp:desktopJar -PfmQaSurface=false
+            //   gradle -p ui :composeApp:desktopJar -PfmQaSurface=false
             // The compiled output then contains no verify/ and no qaenv/ class (and
             // therefore none of the FM_* literals); QaSurface.hooks resolves to null,
             // so the hooks become no-ops rather than being present-but-idle.
@@ -119,8 +169,8 @@ android {
         applicationId = "com.framemark.native"
         minSdk = 26
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.9.0-rc10"
+        versionCode = framemarkVersionCode
+        versionName = framemarkVersionLabel
         // The Android renderer is currently complete for arm64-v8a only.
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -169,21 +219,21 @@ android {
         // a unique suffix, for example -PframemarkQaSuffix=.qa20261102.
         getByName("debug") {
             applicationIdSuffix = framemarkQaSuffix
-            // WP-FIX1: no `versionNameSuffix`. The debug APK used to report
-            // `0.9.0-rc3-dev`, while the version the package must carry is
-            // `0.9.0-rc5` — `aapt2 dump badging` has to read exactly that, and the
-            // 设置页 reads the same string through PackageManager. Isolation between
-            // the QA build and a production install still comes from
-            // `applicationIdSuffix` above, not from the version label.
+            // WP-FIX1: no `versionNameSuffix`. The debug APK must report exactly
+            // the `versionName` from version.properties — `aapt2 dump badging` has
+            // to read that string, and the 设置页 reads the same string through
+            // PackageManager. Isolation between the QA build and a production
+            // install still comes from `applicationIdSuffix` above, not from the
+            // version label.
         }
     }
 }
 
-// P5a packaging. One version label for every desktop artifact: jpackage/MSI only
-// accept a numeric 3-part version, so the `-rc1` tag lives in the file names, in the
-// build stamp written into the package, and in -Dframemark.build.label.
-val framemarkPackageVersion = "0.9.0"
-val framemarkVersionLabel = "0.9.0-rc5"
+// P5a packaging. The desktop package version and label are the same values the
+// Android target uses (read from the repository-root version.properties above):
+// jpackage/MSI only accept a numeric 3-part version, so packageVersion is that
+// numeric base and the release-candidate tag lives in the label, the file names,
+// the build stamp written into the package, and -Dframemark.build.label.
 
 compose.desktop {
     application {
@@ -208,12 +258,23 @@ compose.desktop {
 // so a ZIP, an MSI and the running app can never disagree.
 tasks.register("writePackageVersionStamp") {
     val out = layout.buildDirectory.file("framemark-package-version.json")
+    inputs.file(framemarkVersionFile)
     doLast {
         out.get().asFile.parentFile.mkdirs()
         out.get().asFile.writeText(
             """{"packageVersion":"$framemarkPackageVersion","label":"$framemarkVersionLabel","packageName":"FrameMark"}""" + "\n",
         )
         println("framemark version stamp: " + out.get().asFile.absolutePath)
+    }
+}
+
+// Print exactly what this build resolved from version.properties. Release tooling
+// and the version-bump check read this instead of parsing the build script.
+tasks.register("printVersion") {
+    doLast {
+        println("versionName=$framemarkVersionLabel")
+        println("packageVersion=$framemarkPackageVersion")
+        println("versionCode=$framemarkVersionCode")
     }
 }
 

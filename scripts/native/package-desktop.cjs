@@ -6,6 +6,20 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const root = path.resolve(__dirname, '../..')
+// One version source: the same repository-root file the Gradle build reads.
+const versionProperties = Object.fromEntries(
+  fs.readFileSync(path.join(root, 'version.properties'), 'utf8')
+    .split(/\r?\n/)
+    .filter(line => line.trim() && !line.trim().startsWith('#'))
+    .map(line => {
+      const separator = line.indexOf('=')
+      if (separator < 0) throw new Error(`Invalid version.properties line: ${line}`)
+      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()]
+    })
+)
+if (!/^\d+\.\d+\.\d+$/.test(versionProperties.packageVersion || '')) {
+  throw new Error('version.properties packageVersion must be a numeric X.Y.Z base for jpackage')
+}
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'toolchain.json'), 'utf8'))
 const artifactRoot = path.resolve(root, process.env.FM_BUILD_ARTIFACT_ROOT || config.artifactDirectory)
 const args = {}
@@ -59,8 +73,10 @@ const destination = path.join(out, 'image')
 run(path.join(javaHome, 'bin/jpackage.exe'), ['--type', 'app-image', '--name', name,
   '--dest', destination, '--input', input, '--main-jar', path.basename(args['app-jar']),
   '--main-class', 'com.framemark.native.MainKt', '--runtime-image', jre,
-  '--app-version', '0.9.0', '--vendor', 'FrameMark', '--java-options', '-Dfile.encoding=UTF-8',
-  '--java-options', '-Dframemark.build.label=20261102-QA'], 'jpackage.log')
+  '--app-version', versionProperties.packageVersion, '--vendor', 'FrameMark', '--java-options', '-Dfile.encoding=UTF-8',
+  // Same single source as everything else: the jpackage image must carry the
+  // release label from version.properties, never a hand-typed stamp.
+  '--java-options', `-Dframemark.build.label=${versionProperties.versionName}`], 'jpackage.log')
 const image = path.join(destination, name)
 for (const part of ['bin', 'data', 'bridge']) {
   const source = path.join(runtime, part)

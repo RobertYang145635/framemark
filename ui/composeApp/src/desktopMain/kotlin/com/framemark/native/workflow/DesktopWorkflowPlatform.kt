@@ -132,7 +132,8 @@ class DesktopWorkflowPlatform(
     override fun fileSize(path: String): Long = File(path).length()
 
     /**
-     * Packaged builds carry `-Dframemark.build.label` (jpackage injects it); a run
+     * Packaged builds carry `-Dframemark.build.label` (the packaging launcher
+     * injects it; jpackage itself only sets `jpackage.app-version`); a run
      * started from the workspace falls back to the stamp file the packaging step
      * writes next to the runtime. Neither present means a dev build, and the shell
      * says so instead of showing a stale hard-coded version.
