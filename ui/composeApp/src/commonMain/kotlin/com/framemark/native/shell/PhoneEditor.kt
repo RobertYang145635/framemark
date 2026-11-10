@@ -122,7 +122,10 @@ import com.framemark.native.shell.phone.PhoneLibrarySheet
 import com.framemark.native.shell.phone.PhoneParameterPage
 import com.framemark.native.shell.phone.PhoneSheetGrabber
 import com.framemark.native.shell.phone.PhoneSheetHead
+import com.framemark.native.shell.phone.PhoneStageBands
 import com.framemark.native.shell.phone.PhoneStageChip
+import com.framemark.native.shell.phone.PhoneStageFallback
+import com.framemark.native.shell.phone.PhoneStageFallbackOverlay
 import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.PhoneSwipeHud
 import com.framemark.native.shell.phone.PhoneToolBar
@@ -938,21 +941,9 @@ private val SheetRadius = 22.dp
 // Stage (photo fills the remaining height, report §7.2)
 // ---------------------------------------------------------------------------
 
-/** Neck of the stage: the V2 photo area is full-bleed, so no corner radius. */
-private val StageEdge = 12.dp
-
-/**
- * Showcase `.pstage .stage-area { --pad: 14px 16px 58px }`: the photo band keeps
- * 14 dp above and 16 dp on both sides, and the 58 dp below is the strip the two
- * floating pills (`.pchip` / `.pcmp`, bottom 12) sit in — so the pills never cover
- * the printed frame.
- */
-private val StagePhotoTop = 14.dp
-private val StagePhotoSide = 16.dp
-private val StagePhotoBottom = 58.dp
-
-/** The two stage pills sit 12 dp from the stage's bottom-left / bottom-right. */
-private val StagePillInset = 12.dp
+// The stage's photo band and pill band live in `PhoneStageBands` (phone package):
+// the failed-preview placeholder draws inside the same photo band, so both places
+// must read one definition.
 
 /**
  * The dark photo stage. The photo takes every dp the chrome leaves (report §7.2);
@@ -1012,10 +1003,10 @@ private fun StageArea(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    start = StagePhotoSide,
-                    end = StagePhotoSide,
-                    top = StagePhotoTop,
-                    bottom = if (focusMode) StageEdge else StagePhotoBottom,
+                    start = PhoneStageBands.PhotoSide,
+                    end = PhoneStageBands.PhotoSide,
+                    top = PhoneStageBands.PhotoTop,
+                    bottom = PhoneStageBands.photoBottom(focusMode),
                 ),
         ) {
             Box(
@@ -1097,6 +1088,21 @@ private fun StageArea(
                 }
             }
         }
+        // 缺陷 2（"像别人家的照片"）：预览彻底失败时舞台显示的是内置静态样张，它自带
+        // 白边和山景，看起来就是一张别人的照片。这里给样张压一层 12 % 的舞台底色，再
+        // 正中间放一枚「示例图 · 当前照片预览暂不可用」胶囊 —— 只画，不改变回退触发条件，
+        // 也不进渲染管线。覆盖层只铺照片带（PhoneStageBands），下沿在胶囊带之上 2 dp。
+        if (
+            PhoneStageFallback.showsPlaceholder(
+                renderFailure = renderFailure,
+                compare = compare,
+            )
+        ) {
+            PhoneStageFallbackOverlay(
+                focusMode = focusMode,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         // The two V2 stage hints float over the photo (report §7.2): the applied
         // border on the left, 按住看原图 on the right. Everything else moved into
         // the dark top bar, so the photo keeps the whole middle of the screen.
@@ -1133,7 +1139,7 @@ private fun StageArea(
                 hint = hint,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = StagePillInset, bottom = StagePillInset),
+                    .padding(start = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
             )
             if (card != null) {
                 PhoneHoldCompareChip(
@@ -1141,7 +1147,7 @@ private fun StageArea(
                     onCompareChange = onCompareChange,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = StagePillInset, bottom = StagePillInset),
+                        .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
                 )
             }
         }

@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.framemark.native.theme.FmBreakpoints
 import com.framemark.native.theme.FmPalette
@@ -43,20 +44,66 @@ import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
 /**
+ * Height policy of the phone bottom sheet (U5).
+ *
+ * The phone sheet used to be one fixed shape: a column filling 90 % of the window.
+ * A content-height sheet — the export sheet, `06-phone-export.png` — wraps its
+ * content instead and is only capped at the same 90 % ceiling on short windows,
+ * where the body inside scrolls. The cap is what keeps the sheet reachable in
+ * landscape: it can never grow past [WrapMaxFraction], so the action row and the
+ * grabber stay inside the sheet.
+ *
+ * The functions are pure so the ceiling is unit-testable without a composition.
+ */
+object FmSheetMetrics {
+    /** The fixed share of the window every pre-existing phone sheet keeps. */
+    const val FillFraction: Float = 0.9f
+
+    /** The tallest a content-wrapped phone sheet may ever get (same ceiling). */
+    const val WrapMaxFraction: Float = 0.9f
+
+    /** The height cap of a content-wrapped sheet in a [windowHeight] window. */
+    fun wrapCap(windowHeight: Dp): Dp = windowHeight * WrapMaxFraction
+}
+
+/**
  * Modal secondary surface. The platform dialog owns focus and excludes the
  * background window from modal navigation; the responsive panel stays shared.
  *
  * U5: at >= 600 dp the same content becomes a centred dialog card (max 860 dp
  * wide, 88 % tall) instead of a full-width bottom sheet. The phone geometry is
  * unchanged.
+ *
+ * [wrapContent] opts a phone sheet into the content-height shape of [FmSheetMetrics]
+ * (the export sheet). The default keeps the historical 90 % fill, so no existing
+ * sheet changes size.
  */
 @Composable
 fun FmSheet(
     onDismiss: () -> Unit,
+    wrapContent: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        FmSheetSurface(onDismiss = onDismiss, wrapContent = wrapContent, content = content)
+    }
+}
+
+/**
+ * The sheet's own layout, without the platform [Dialog] shell: the scrim, the
+ * phone bottom sheet (grabber included) or the wide centred card.
+ *
+ * Split out of [FmSheet] so the sizing can be rendered headlessly: an offscreen
+ * `ImageComposeScene` renders a scene, not a platform dialog window. Tests call
+ * this with the window's constraints; production reaches it only through [FmSheet].
+ */
+@Composable
+internal fun FmSheetSurface(
+    onDismiss: () -> Unit,
+    wrapContent: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -86,7 +133,16 @@ fun FmSheet(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.9f)
+                    .then(
+                        if (wrapContent) {
+                            // Content height, but never past the old 90 % ceiling: on a
+                            // short window the body inside scrolls instead of pushing the
+                            // action row out of the sheet.
+                            Modifier.heightIn(max = FmSheetMetrics.wrapCap(maxHeight))
+                        } else {
+                            Modifier.fillMaxHeight(FmSheetMetrics.FillFraction)
+                        },
+                    )
                     .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
                     .background(FmPalette.surface)
                     .padding(start = FmSpacing.screen, end = FmSpacing.screen, top = FmSpacing.sm, bottom = FmSpacing.xl),
@@ -103,7 +159,6 @@ fun FmSheet(
                 content()
             }
         }
-    }
     }
 }
 

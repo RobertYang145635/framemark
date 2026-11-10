@@ -2,6 +2,7 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -34,6 +36,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -233,6 +236,71 @@ fun PhoneHoldCompareChip(
                 )
             }
         }
+    }
+}
+
+/**
+ * The failed-preview placeholder ([PhoneStageFallback]): one centred pill over
+ * the bundled static sample, so the fallback reads as "示例图" instead of as the
+ * user's photo. Styled like the other stage pills — `FmPalette.stage` at 88 %, a
+ * 1 dp `stageLine` rim, `FmType.labelSmall` in `stageInk` — and, like the
+ * bottom-left border pill, purely decorative: it has no click and no pointer input,
+ * so every touch still reaches the stage gestures.
+ *
+ * The caller draws it inside the photo band ([PhoneStageBands.photoBottom]), which
+ * ends 2 dp above the pill band: the chip physically cannot reach the border-name
+ * pill or 按住看原图.
+ */
+@Composable
+fun PhoneStageFallbackChip(modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(FmRadii.pill)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(FmPalette.stage.copy(alpha = PhoneStageFallback.ChipAlpha))
+            .border(1.dp, FmPalette.stageLine, shape)
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = PhoneStageFallback.ChipText,
+            style = FmType.labelSmall,
+            color = FmPalette.stageInk,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * The whole placeholder layer: a [PhoneStageFallback.DimAlpha] stage wash over the
+ * static sample and the centred [PhoneStageFallbackChip].
+ *
+ * It covers the **photo band only** — the same rectangle as the preview, inset by
+ * [PhoneStageBands] — so the two stage pills in the band under it are never dimmed
+ * or covered, in either normal or focus mode. Draw-only: no click, no pointer input.
+ */
+@Composable
+fun PhoneStageFallbackOverlay(
+    focusMode: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.padding(
+            start = PhoneStageBands.PhotoSide,
+            end = PhoneStageBands.PhotoSide,
+            top = PhoneStageBands.PhotoTop,
+            bottom = PhoneStageBands.photoBottom(focusMode),
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FmPalette.stage.copy(alpha = PhoneStageFallback.DimAlpha)),
+        )
+        PhoneStageFallbackChip()
     }
 }
 

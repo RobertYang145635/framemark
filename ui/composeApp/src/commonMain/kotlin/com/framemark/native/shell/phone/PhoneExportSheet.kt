@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
@@ -202,7 +203,14 @@ fun PhoneExportSheet(
         generate(shareAfter = false)
     }
 
-    FmSheet(onDismiss = { if (!busyNow) onDismiss() }) {
+    FmSheet(
+        onDismiss = { if (!busyNow) onDismiss() },
+        // `06-phone-export.png` is a content-height sheet: the summary card, 格式 / 尺寸,
+        // the two notes and the link decide the height, then the action row follows.
+        // The container still caps itself at 90 % of the window (FmSheetMetrics), so a
+        // short window scrolls the body instead of pushing 分享 / 保存 out of reach.
+        wrapContent = true,
+    ) {
         val current = result
         if (current != null) {
             ExportDoneContent(
@@ -245,6 +253,27 @@ fun PhoneExportSheet(
 
 private val PreviewWidth = 112.dp
 private val PreviewHeight = 96.dp
+
+/**
+ * The export sheet's height contract (the sheet wraps its content since the
+ * "full-height with an empty middle" report).
+ *
+ * Every row of the form has a fixed height except the resolution note: its text
+ * depends on the chosen 格式 / 尺寸 (JPEG's promise wraps to two lines at phone
+ * width, PNG's fits one). Reserving the height of the longest promise keeps the
+ * sheet's edge still — switching a segmented option must not resize the sheet.
+ * `PhoneExportSheetRenderTest` measures the sheet edge for every option state.
+ */
+internal object PhoneExportSheetLayout {
+    /** `ExportNote` is 12.5 sp on an 18 sp line box. */
+    val NoteLineHeight: Dp = 18.dp
+
+    /** The 原分辨率 ... JPEG ... promise is two lines; reserve for the longest one. */
+    const val NoteShelfLines: Int = 2
+
+    /** Height reserved for the option-dependent note, in dp. */
+    val NoteShelfHeight: Dp get() = NoteLineHeight * NoteShelfLines
+}
 
 /** Showcase `.bs-h b`: the sheet title is 18 px / 700 with only a close cross beside it. */
 @Composable
@@ -365,8 +394,11 @@ private fun ColumnScope.ExportDoneContent(
     onDone: () -> Unit,
 ) {
     Column(
+        // Same sizing rule as the form: content height by default (`fill = false`
+        // lets the sheet wrap), the height the action pair leaves free on a short
+        // window, and the buttons keep their own 48 dp either way.
         modifier = Modifier
-            .weight(1f)
+            .weight(1f, fill = false)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -464,7 +496,7 @@ private fun ColumnScope.ExportDoneContent(
  * line states whether the file is re-encoded and whether 原尺寸 is really un-resized.
  */
 @Composable
-private fun ColumnScope.ExportFormContent(
+internal fun ColumnScope.ExportFormContent(
     card: LibraryCard?,
     design: DesignSnapshot?,
     overlay: () -> OverlaySpec?,
@@ -490,8 +522,12 @@ private fun ColumnScope.ExportFormContent(
     ExportSheetHeader(onClose = { if (!busy) onClose() })
     Spacer(Modifier.height(10.dp))
     Column(
+        // `fill = false`: the body may stay at its content height (the sheet wraps),
+        // but the row still gets the height the action pair leaves free. Column lays
+        // the unweighted children out first, so 分享 / 保存到相册 always keep their
+        // 48 dp inside the sheet; only this body shrinks and scrolls on a short window.
         modifier = Modifier
-            .weight(1f)
+            .weight(1f, fill = false)
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -535,7 +571,13 @@ private fun ColumnScope.ExportFormContent(
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ExportNote("Android 导出质量固定为 100")
-            ExportNote(PhoneExportOptions.resolutionNote(size, format, settings.webpLossless))
+            // The one option-dependent row keeps a two-line shelf (see
+            // PhoneExportSheetLayout): 格式 / 尺寸 may change its text but not the
+            // sheet's height.
+            ExportNote(
+                text = PhoneExportOptions.resolutionNote(size, format, settings.webpLossless),
+                minHeight = PhoneExportSheetLayout.NoteShelfHeight,
+            )
             if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")
             if (canApplyToAll) {
                 Text(
@@ -607,9 +649,9 @@ private fun ExportFieldLabel(label: String, value: String? = null) {
 
 /** `.pnote`: the ⓘ + one-line explanation under the fields. */
 @Composable
-private fun ExportNote(text: String) {
+private fun ExportNote(text: String, minHeight: Dp = 0.dp) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().heightIn(min = minHeight),
         verticalAlignment = Alignment.Top,
     ) {
         Text(
