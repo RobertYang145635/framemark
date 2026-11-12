@@ -159,6 +159,13 @@ internal fun StageArea(
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)?,
     onWatermarkChange: (WatermarkSpec?) -> Unit,
     /**
+     * 水印九宫格画不画在照片上（只有 水印 工具 + 真的有一层水印时为 true，
+     * 见 `showsWatermarkAnchorLayer`）。它铺在照片矩形的九个格子上，点一格写回
+     * `anchor`（0..8），与旧面板九宫格同一个写入路径。
+     */
+    showWatermarkAnchorLayer: Boolean = false,
+    onWatermarkAnchorPick: (Int) -> Unit = {},
+    /**
      * The user's crop choice for this photo, when the photo box really crops it.
      * Null on a box that shows the whole photo — there is nothing to choose then,
      * and the stage keeps its historical gestures and pills untouched.
@@ -267,6 +274,20 @@ internal fun StageArea(
                                 stage = stageSize,
                                 density = density,
                                 onChange = onWatermarkChange,
+                            )
+                        }
+                    }
+                    // 九宫格画在水印层之上：位置选择在画布上，面板只留参数行。
+                    if (showWatermarkAnchorLayer) {
+                        val spec = watermark
+                        val geo = previewGeo
+                        if (spec != null && geo != null) {
+                            PhoneWatermarkAnchorLayer(
+                                geo = geo,
+                                stage = stageSize,
+                                density = density,
+                                anchor = spec.anchor,
+                                onPick = onWatermarkAnchorPick,
                             )
                         }
                     }

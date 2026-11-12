@@ -142,7 +142,7 @@ internal object PhoneTestControls {
             kind = "toggle",
         ),
         segment("params:footerMode", param = "params.footerMode", label = "页脚版式"),
-        slider("params:footerPct", param = "params.footerPct", label = "footerPct"),
+        slider("params:footerPct", param = "params.footerPct", label = "底部留白"),
     )
 
     fun textControls(): List<InspectorControl> = listOf(

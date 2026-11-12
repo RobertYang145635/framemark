@@ -1,6 +1,5 @@
 package com.framemark.native.shell
 
-import com.framemark.native.shell.phone.PhoneTestControls
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,14 +11,11 @@ import kotlin.test.assertTrue
  * 收起 (compact) level on 390×844, 360×800 and 412×915, and the 展开 level must
  * still keep a usable stage. Pure arithmetic, no Compose.
  *
- * **2026-11 版式过**：非边框工具的收起高度不再是一个固定的 34–42 %，而是
- * `PhonePageLayout.defaultSheetLevelFor` 按这一页**最高的一页**算出来的
- * （`chrome + 公共区 + 最高一页 + 6`）。所以下面每一条用到 Params / Text / Logo /
- * 水印 的用例都要传这一页真实的控件表，否则它量的是「空页」。
- *
- * **照片条**：因为高度由内容决定，800 dp 窗口里打开照片条不再自动让底板变矮 ——
- * 它先把「一页的许可」从 206 压到 150；只有许可变化真的让这一页多分一页时，底板
- * 才会变（`thePhotoStripShrinksThePageBudgetAndMayAddAPage` 钉住这条新语义）。
+ * **2026-11-10 固定画框**：非边框工具的收起高度是 `clamp(0.34 × 窗口, 280, 330)`
+ * （`phonePanelHeightDp`），四个工具、每一组都同一个数。旧的
+ * `thePhotoStripShrinksThePageBudgetAndMayAddAPage`（它断言照片条会把「一页的许可」
+ * 从 206 压到 150，于是水印多分一页、底板反而变矮）随分页政策一起删除，换成
+ * `thePhotoStripOnlyTakesFromTheStage`：照片条只从画布扣，不动面板。
  */
 class PhoneEditorSheetHeightsTest {
 
@@ -32,14 +28,6 @@ class PhoneEditorSheetHeightsTest {
     )
 
     private val tools = enumValues<EditorTool>().toList()
-
-    /** 每个工具页真实形状的控件表（`PhonePageLayoutTest` 用同一份）。 */
-    private fun controlsFor(tool: EditorTool) = when (tool) {
-        EditorTool.Border, EditorTool.Watermark -> emptyList()
-        EditorTool.Params -> PhoneTestControls.styleControls()
-        EditorTool.Text -> PhoneTestControls.textControls()
-        EditorTool.Logo -> PhoneTestControls.logoControls()
-    }
 
     @Test
     fun the_v2_chrome_is_52_dp_top_bar_and_62_dp_tool_bar() {
@@ -59,7 +47,6 @@ class PhoneEditorSheetHeightsTest {
                     imeVisible = false,
                     tool = tool,
                     photosOpen = false,
-                    controls = controlsFor(tool),
                 )
                 assertFalse(h.fullPage, "tool=$tool screen=${screen.height} should keep the preview layout")
                 assertTrue(
@@ -97,60 +84,62 @@ class PhoneEditorSheetHeightsTest {
     @Test
     fun the_expanded_level_is_taller_than_the_compact_level_on_every_screen() {
         screens.forEach { screen ->
-            val levels = assertNotNull(
-                phoneSheetLevels(screen.height, EditorTool.Border, photosOpen = false),
-                "levels missing on ${screen.height}",
-            )
-            assertTrue(
-                levels.expanded > levels.compact,
-                "screen=${screen.height} expanded=${levels.expanded} compact=${levels.compact}",
-            )
-            val stage = screen.height - 52f - 62f - levels.expanded
-            assertTrue(stage >= screen.height * 0.26f - 0.01f, "screen=${screen.height} stage=$stage")
+            tools.forEach { tool ->
+                val levels = assertNotNull(
+                    phoneSheetLevels(screen.height, tool, photosOpen = false),
+                    "levels missing on ${screen.height} for $tool",
+                )
+                assertTrue(
+                    levels.expanded > levels.compact,
+                    "screen=${screen.height} tool=$tool expanded=${levels.expanded} compact=${levels.compact}",
+                )
+                val stage = screen.height - 52f - 62f - levels.expanded
+                assertTrue(stage >= screen.height * 0.26f - 0.01f, "screen=${screen.height} stage=$stage")
+            }
         }
     }
 
     @Test
-    fun thePhotoStripShrinksThePageBudgetAndMayAddAPage() {
-        // 照片条拿走 64 dp；舞台 50 % 地板把**一页的许可**从 206 压到 150。
-        // Logo 页在 206 里是两页（最高 148）→ 底板 220；在 150 里还是两页（148 ≤ 150）
-        // → 还是 220：照片条没有让底板变矮，只是把画布让了出来。
-        val controls = PhoneTestControls.logoControls()
-        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = false, controls = controls)
-        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = true, controls = controls)
+    fun the_parameter_tools_all_open_at_the_same_fixed_level() {
+        screens.forEach { screen ->
+            val expected = phonePanelHeightDp(screen.height)
+            listOf(EditorTool.Params, EditorTool.Text, EditorTool.Logo, EditorTool.Watermark).forEach { tool ->
+                val levels = assertNotNull(phoneSheetLevels(screen.height, tool, photosOpen = false))
+                assertEquals(expected, levels.compact, 0.01f, "screen=${screen.height} tool=$tool")
+                assertEquals(levels, phoneSheetLevels(screen.height, EditorTool.Params, false))
+            }
+        }
+    }
+
+    @Test
+    fun thePhotoStripOnlyTakesFromTheStage() {
+        // 照片条拿走 64 dp，面板高度一个 dp 都不动（固定画框）。
+        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = false)
+        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = true)
         assertEquals(0f, closed.strip)
         assertEquals(64f, open.strip)
-        assertEquals(220f, closed.sheet, 0.01f)
-        assertEquals(220f, open.sheet, 0.01f)
-        assertTrue(open.stage >= 800f * 0.5f - 0.01f, "open stage=${open.stage}")
-        assertTrue(
-            fitsWithoutScroll(tool = EditorTool.Logo, controls = controls, sheetLevelDp = open.sheet),
-            "the clamped sheet must still hold every page",
-        )
-        // 水印页的许可被压到 150 时多分一页（2 → 3），底板反而更矮：274 → 220。
+        assertEquals(phonePanelHeightDp(800f), closed.sheet, 0.01f)
+        assertEquals(phonePanelHeightDp(800f), open.sheet, 0.01f)
+        assertEquals(64f, closed.stage - open.stage, 0.01f)
+        // 水印页也是同一个数（旧版这里会因为多分一页而变矮）。
         assertEquals(
-            274f,
-            computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, false).sheet,
-            0.01f,
-        )
-        assertEquals(
-            220f,
+            phonePanelHeightDp(800f),
             computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, true).sheet,
             0.01f,
         )
-        // 样式页两页都装得下，照片条不动它。
-        val styleControls = PhoneTestControls.styleControls()
-        val styleClosed = computePhoneEditorHeights(844f, 1f, false, EditorTool.Params, false, controls = styleControls)
-        val styleOpen = computePhoneEditorHeights(844f, 1f, false, EditorTool.Params, true, controls = styleControls)
-        assertEquals(209f, styleClosed.sheet, 0.01f)
-        assertEquals(209f, styleOpen.sheet, 0.01f)
+        assertEquals(
+            computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, false).sheet,
+            computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, true).sheet,
+            0.01f,
+        )
     }
 
     @Test
     fun a_window_too_short_for_a_usable_sheet_keeps_the_full_parameter_page() {
-        // 390 dp tall: 390 - 52 - 62 - 195 < MIN_SHEET_DP, so no usable compact
-        // sheet fits above the half-screen floor.
+        // 390 dp tall: neither the border card stack nor the fixed panel fits above a
+        // usable stage, so the full parameter page is the only valid layout.
         assertTrue(computePhoneEditorHeights(390f, 1f, false, EditorTool.Border, false).fullPage)
         assertTrue(phoneSheetLevels(390f, EditorTool.Border, photosOpen = false) == null)
+        assertTrue(phoneSheetLevels(390f, EditorTool.Params, photosOpen = false) == null)
     }
 }

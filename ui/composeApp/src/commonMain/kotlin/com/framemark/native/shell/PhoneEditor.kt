@@ -396,31 +396,22 @@ fun PhoneEditorScreen(
         // 窗口高度取一次：`maxHeight` 是 BoxWithConstraintsScope 的成员，进到更深的作用域
         // 里就不能隐式读了（底板预算与分页预算读的是同一个数）。
         val windowHeightDp = maxHeight.value
-        // 这一页自己的控件（`InspectorTabs` 已经把每个控件分到恰好一页）：底板开多高
-        // 由它们的内容决定，不再是一个固定的 34 %（`PhonePageLayout.kt`）。
-        val pageControls = phoneToolTab(tool, tabModel)?.let(::phonePageControls).orEmpty()
+        // 面板高度是**固定画框**：`clamp(0.34 × 窗口, 280, 330)`，四个工具、每一组
+        // 都是同一个数（`PhonePageLayout.kt` 已删，见 `PhonePanelLayout.kt`）。
         val budget = computePhoneEditorHeights(
             availableHeightDp = windowHeightDp,
             fontScale = density.fontScale,
             imeVisible = imeVisible,
             tool = tool,
             photosOpen = photosOpen,
-            controls = pageControls,
-            isIr = model?.isIr == true,
-            hasTextReport = textOutputWidth > 0,
-            hasWatermarkLayer = watermark != null,
         )
-        // The expanded level of the two-level sheet (null when the window is too
-        // short for a usable sheet, in which case the budget keeps the full page).
+        // The expanded level of the sheet (null when the window is too short for the
+        // fixed panel above a usable stage, in which case the budget keeps the full page).
         val levels = phoneSheetLevels(
             availableHeightDp = maxHeight.value,
             tool = tool,
             photosOpen = photosOpen,
             fontScale = density.fontScale,
-            controls = pageControls,
-            isIr = model?.isIr == true,
-            hasTextReport = textOutputWidth > 0,
-            hasWatermarkLayer = watermark != null,
         )
         val autoFullParameterPage = budget.fullPage
         LaunchedEffect(autoFullParameterPage) {
@@ -620,6 +611,12 @@ fun PhoneEditorScreen(
                             },
                             onTextSlots = onTextSlots,
                             onWatermarkChange = onWatermarkChange,
+                            // 水印位置改在画布上：九个格子里点一格，写回的就是旧面板
+                            // 九宫格写回的那个 anchor（同一份 `watermarkSpecForAnchor`）。
+                            showWatermarkAnchorLayer = showsWatermarkAnchorLayer(tool, watermark != null),
+                            onWatermarkAnchorPick = { anchor ->
+                                watermark?.let { spec -> onWatermarkChange(watermarkSpecForAnchor(spec, anchor)) }
+                            },
                             crop = cropUi,
                         )
                         if (!focusMode && photosOpen) {
@@ -643,14 +640,6 @@ fun PhoneEditorScreen(
                 PhoneSheetHost(
                     fullParameterPage = fullParameterPage,
                     sheetHeight = sheetHeight,
-                    // 一页能吃的净高：**这个窗口的舞台地板许可**（整块底板减 chrome 与
-                    // 公共区），与政策给这一页定高度时用的是同一个数。窗口更高时同一张卡
-                    // 可能少一页 —— 这就是「先加密、再分页」。
-                    pageBudgetDp = if (fullParameterPage) {
-                        pageBudgetForLevel(windowHeightDp, density.fontScale)
-                    } else {
-                        pageAllowanceForWindow(windowHeightDp, photosOpen, density.fontScale)
-                    },
                     snapHeights = snapHeights,
                     sheetLevel = sheetLevel,
                     onSheetLevelChange = { sheetLevel = it },

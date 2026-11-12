@@ -74,52 +74,38 @@ data class PhoneSheetLevels(val compact: Float, val half: Float, val expanded: F
 
 /**
  * Three-level sheet of the V2 phone editor: 收起 (compact), 半开 (half) and 展开
- * (expanded), plus the **content-driven** default height of a参数页.
+ * (expanded). The drag-to-snap behaviour survives; only the **default level** moved.
  *
- * The demo deck does not snap at all — `.psheet` is `height: var(--sh, 300px)`
- * dragged freely by its grabber (`design\FrameMark-UI-Redesign-V2-Appearance.html`
- * line 637) — so the level count is a product choice, not a parity requirement.
- * The task book asks for three steps (WP-F2 D3 fixed the old "Two levels only"
- * comment), so the continuous demo height is sampled at three stable stops: the
- * compact content height, the midpoint, and the demo's 54 % expanded height.
+ * **The 收起 level is now one fixed frame** (2026-11-10, measured from Lightroom on
+ * this phone): `clamp(0.34 × window, 280, 330)` dp, the same number for 样式 / 文字 /
+ * Logo / 水印 and for every group inside them — see `phonePanelHeightDp`. It does not
+ * read the tool's controls, so switching tools or groups cannot move the panel's top
+ * edge by a pixel. The border tool keeps its own landing panel and therefore its own
+ * content-driven compact height (`phoneCompactSheetMetrics`).
  *
- * `null` means the window cannot hold a usable compact sheet above the 50 % stage
- * reserve, or that the tool page's own content cannot fit the tallest level the
- * window allows; the caller then keeps the full parameter page.
- *
- * **The compact level is now decided by the page's content** ([defaultSheetLevelFor]):
- * the border tool keeps its 128 dp card stack, and a 样式 / 文字 / Logo / 水印 page
- * asks for exactly `chrome + 公共区 + 最高一页 + 6 dp` ([PHONE_PAGE_LEVEL_SLACK_DP]),
- * clamped by `MIN_SHEET_DP` and the stage floor. 一页能吃到多少由「这个窗口的舞台
- * 地板许可」决定（[pageAllowanceForWindow]）：加密之后同一张卡通常一页就够，只有
- * 很紧的窗口才多分一页。See `PhonePageLayout.kt`.
+ * `null` means the window cannot hold the fixed panel above the stage floor
+ * ([PHONE_PANEL_MIN_STAGE_DP]), or — for the border landing panel — cannot hold a
+ * usable compact sheet at all; the caller then keeps the full parameter page.
  */
 fun phoneSheetLevels(
     availableHeightDp: Float,
     tool: EditorTool,
     photosOpen: Boolean,
     fontScale: Float = 1f,
-    controls: List<InspectorControl> = emptyList(),
-    isIr: Boolean = false,
-    hasTextReport: Boolean = false,
-    hasWatermarkLayer: Boolean = true,
 ): PhoneSheetLevels? {
     val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
     val chrome = TOP_BAR_DP + TOOL_BAR_DP + (if (photosOpen) STRIP_DP else 0f)
     val compactMax = available - chrome - available * STAGE_MIN_FRACTION
-    if (compactMax < MIN_SHEET_DP) return null
-    val compact = defaultSheetLevelFor(
-        spec = PhonePageSpec(
-            tool = tool,
-            controls = controls,
-            isIr = isIr,
-            hasTextReport = hasTextReport,
-            hasWatermarkLayer = hasWatermarkLayer,
-        ),
-        availableHeightDp = available,
-        photosOpen = photosOpen,
-        fontScale = fontScale,
-    ) ?: return null
+    val compact = if (tool == EditorTool.Border) {
+        if (compactMax < MIN_SHEET_DP) return null
+        phoneCompactSheetMetrics(compactMax, fontScale).contentHeight.coerceAtMost(compactMax)
+    } else {
+        val panel = phonePanelHeightDp(available)
+        if (panel <= 0f) return null
+        // The fixed panel needs a photo to sit under; without one the full page wins.
+        if (available - chrome - panel < PHONE_PANEL_MIN_STAGE_DP) return null
+        panel
+    }
     val expandedMax = (available - chrome - available * EXPANDED_STAGE_MIN_FRACTION)
         .coerceAtLeast(compact)
     val expanded = (available * EXPANDED_SHEET_FRACTION).coerceIn(compact, expandedMax)
@@ -247,15 +233,15 @@ fun phoneCompactSheetMetrics(sheetHeightDp: Float, fontScale: Float = 1f): Phone
 /**
  * Area budget of the V2 phone editor at the sheet's **compact** level.
  * `fullPage` keeps the existing [useFullPhoneParameterPage] rule (<480 dp,
- * fontScale >= 1.5); a window too short for a usable sheet — or one whose
- * tallest tool-page group cannot fit the level the stage floor allows — falls
- * back to it as well. No value is ever negative, and top/stage/strip/sheet/bar
- * always fit inside [availableHeightDp], so the caller can lay them out without
- * another coerceIn.
+ * fontScale >= 1.5); a window too short for the fixed panel plus a usable stage
+ * falls back to it as well. No value is ever negative, and
+ * top/stage/strip/sheet/bar always fit inside [availableHeightDp], so the caller
+ * can lay them out without another coerceIn.
  *
- * [controls] are **this tool's page controls** (`phonePageControls`), not the whole
- * card: they decide the content-driven sheet height (see [defaultSheetLevelFor]).
- * The old `small` flag is gone with the fixed 34 % target it selected.
+ * **2026-11-10 固定画框**：非边框工具的收起高度不再由内容决定，也不再接受控件表
+ * （`controls` / `isIr` / `hasTextReport` / `hasWatermarkLayer` 四个入参随内容驱动的
+ * 分页政策一起删除）：它就是 [phonePanelHeightDp]，所以同一个窗口里四个工具、每一组
+ * 的 `sheet` 是同一个数。画布（`stage`）因此也不随工具变。
  */
 fun computePhoneEditorHeights(
     availableHeightDp: Float,
@@ -263,10 +249,6 @@ fun computePhoneEditorHeights(
     imeVisible: Boolean,
     tool: EditorTool,
     photosOpen: Boolean,
-    controls: List<InspectorControl> = emptyList(),
-    isIr: Boolean = false,
-    hasTextReport: Boolean = false,
-    hasWatermarkLayer: Boolean = true,
 ): PhoneEditorHeights {
     val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
     if (useFullPhoneParameterPage(available, fontScale, imeVisible)) {
@@ -277,10 +259,6 @@ fun computePhoneEditorHeights(
         tool = tool,
         photosOpen = photosOpen,
         fontScale = fontScale,
-        controls = controls,
-        isIr = isIr,
-        hasTextReport = hasTextReport,
-        hasWatermarkLayer = hasWatermarkLayer,
     ) ?: return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     val strip = if (photosOpen) STRIP_DP else 0f
     val stage = available - TOP_BAR_DP - TOOL_BAR_DP - strip - levels.compact
@@ -298,32 +276,29 @@ fun computePhoneEditorHeights(
 }
 
 /**
- * Smallest window that can still show the 52 dp top bar, 62 dp tool bar, a
- * usable stage and a scrollable parameter sheet after the user leaves the
+ * Smallest window that can still show the 52 dp top bar, 62 dp tool bar, the fixed
+ * parameter panel and [PHONE_PANEL_MIN_STAGE_DP] of photo after the user leaves the
  * constrained full-parameter page. Below this the full page is the only valid
  * layout and must stay.
  */
-const val FORCED_PREVIEW_MIN_DP = 220f
+const val FORCED_PREVIEW_MIN_DP = PHONE_PANEL_MIN_STAGE_DP + TOP_BAR_DP + TOOL_BAR_DP + PHONE_PANEL_MIN_DP
 
 fun canShowForcedPreview(availableHeightDp: Float): Boolean =
     availableHeightDp.isFinite() && availableHeightDp >= FORCED_PREVIEW_MIN_DP
 
 /**
  * Budget used when a constrained window (large font / short window) leaves the
- * automatic full-parameter page: keep the real chrome and a small stage so the
- * editor never collapses to a zero-height shell. The sheet takes the rest and
- * scrolls, so the user can still see the photo and switch tools.
+ * automatic full-parameter page: the real chrome plus the **same fixed panel** every
+ * other state uses, so leaving the full page never resurrects a second panel height.
+ * A window that cannot hold the panel and a usable stage keeps the full page.
  */
 fun forcedPreviewHeights(availableHeightDp: Float): PhoneEditorHeights {
     val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
     if (!canShowForcedPreview(available)) {
         return PhoneEditorHeights(0f, 0f, 0f, available, 0f, fullPage = true)
     }
-    val stage = (available * 0.20f).coerceIn(
-        60f,
-        (available - TOP_BAR_DP - TOOL_BAR_DP - 60f).coerceAtLeast(60f),
-    )
-    val sheet = (available - TOP_BAR_DP - TOOL_BAR_DP - stage).coerceAtLeast(60f)
+    val sheet = phonePanelHeightDp(available)
+    val stage = (available - TOP_BAR_DP - TOOL_BAR_DP - sheet).coerceAtLeast(0f)
     return PhoneEditorHeights(
         topBar = TOP_BAR_DP,
         stage = stage,
@@ -333,37 +308,6 @@ fun forcedPreviewHeights(availableHeightDp: Float): PhoneEditorHeights {
         fullPage = false,
     )
 }
-
-// ---------------------------------------------------------------------------
-// Parameter page: pinned band vs the single scrolling tool zone
-// ---------------------------------------------------------------------------
-
-/**
- * The pinned 设计 band of the parameter page, in dp: one 12.5 sp row (17) plus 8 dp
- * above and below (the `FmSpacing.sm` band padding) plus its 1 dp hairline.
- *
- * The band is the page's **common zone** — the export size of the selected design,
- * identical on all four pages — so it may never be the band that costs the tool zone
- * the last of its room. See [showsPhoneParameterSummary].
- */
-const val PHONE_PARAMETER_SUMMARY_DP = 34f
-
-/**
- * Smallest parameter-page viewport (dp) that still shows the pinned 设计 band.
- *
- * [PHONE_PARAMETER_SUMMARY_DP] plus one 72 dp touch-slider row (`PhoneSliderRow`:
- * 8 + 20 label + 40 track + 4). Below it the band is dropped instead of shrinking
- * the tool zone: the sheet floor is [MIN_SHEET_DP] = 120 dp, whose page viewport
- * after the grabber and the head is ~68 dp, and [forcedPreviewHeights] can hand out
- * an even shorter one. Two pinned bands over a zero-height scroller would make the
- * controls unreachable, which is the single thing this sheet must never do.
- *
- * `Float.POSITIVE_INFINITY` (an unbounded page) keeps the band.
- */
-const val PHONE_PARAMETER_SUMMARY_MIN_DP = 106f
-
-fun showsPhoneParameterSummary(pageHeightDp: Float): Boolean =
-    pageHeightDp >= PHONE_PARAMETER_SUMMARY_MIN_DP
 
 // ---------------------------------------------------------------------------
 // Tool routing

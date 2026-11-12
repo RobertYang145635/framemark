@@ -58,12 +58,10 @@ private val SheetHeadChevronSize = 40.dp
  * never steal each other's gesture.
  *
  * The band height comes from [com.framemark.native.shell.PhoneSheetChrome] (WP-P1-2):
- * the 收起 sheet gives every dp it can spare to the 128 dp card and its name instead
- * of a fixed 18 dp band.
+ * 参数页是固定画框的 16 dp 把手行，边框页按 128 dp 卡片那一摞取。
  *
- * **工具页分页的小指示器**：一组一页的横滑页把「第几页 / 共几页」画在把手行右端
- * （4 dp 圆点，[pageCount] > 1 时出现）。行高本来就要画把手，所以指示器不占任何
- * 新高度 —— 这正是参数页敢把「内容 + chrome + 公共区」压到刚刚好的原因。
+ * **2026-11-10：把手右端的分页小圆点删掉了。** 参数面板不再横滑分页（组已经是
+ * 钉住的 tab 行），所以「第几页 / 共几页」没有意义；把手只剩拖拽与点击两件事。
  */
 @Composable
 fun PhoneSheetGrabber(
@@ -72,8 +70,6 @@ fun PhoneSheetGrabber(
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
-    pageCount: Int = 0,
-    pageIndex: Int = 0,
 ) {
     val toggle by rememberUpdatedState(onToggle)
     val dragStart by rememberUpdatedState(onDragStart)
@@ -117,29 +113,6 @@ fun PhoneSheetGrabber(
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .background(FmPalette.outlineStrong),
         )
-        if (pageCount > 1) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 14.dp)
-                    .semantics {
-                        contentDescription = "第 ${pageIndex + 1} 组，共 $pageCount 组"
-                    },
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                repeat(pageCount) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(if (index == pageIndex) 5.dp else 4.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (index == pageIndex) FmPalette.primaryStrong else FmPalette.outlineStrong,
-                            ),
-                    )
-                }
-            }
-        }
     }
 }
 

@@ -1,6 +1,5 @@
 package com.framemark.native.shell
 
-import com.framemark.native.shell.phone.PhoneTestControls
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -9,11 +8,11 @@ import kotlin.test.assertTrue
 /**
  * Area-budget rules of the V2 phone layout (pure arithmetic, no Compose).
  *
- * **2026-11 版式过**：非边框工具的收起高度由这一页的内容决定
- * （`PhonePageLayout.defaultSheetLevelFor`），不再是固定的 34–42 %。原来的
- * `non_border_tools_take_34_to_42_percent_of_the_window` 因此被删掉、换成
- * `non_border_tools_open_at_their_content_height`：它断言的是新政策本身（矮页开得矮、
- * 高页开得高、都低于旧的 34 % 固定值），而不是一个已经不存在的常数。
+ * **2026-11-10 固定画框**：非边框工具的收起高度是 `clamp(0.34 × 窗口, 280, 330)`
+ * （`phonePanelHeightDp`），不再由内容决定。原来的
+ * `non_border_tools_open_at_their_content_height`（它断言「矮页开得矮、高页开得高」）
+ * 随之换成 `non_border_tools_open_at_the_fixed_panel_height`：后者断言的是新政策本身
+ * —— 同一窗口里三个工具读到**同一个**面板高度。
  */
 class PhoneEditorHeightsTest {
 
@@ -34,8 +33,7 @@ class PhoneEditorHeightsTest {
         assertEquals(52f, h.topBar)
         assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
-        // WP-PV2: with the card's 11 sp description line the stack needs 300 dp at this
-        // window (tier 1), so the border sheet is exactly as tall as its content.
+        // 边框页没有被固定画框接管：它的落地面板仍然是 128 dp 卡片那一摞（tier 1 = 300）。
         assertEquals(300f, h.sheet, 0.01f)
         // WP-P1 §4.1: the compact sheet leaves the stage at least half the window.
         assertTrue(h.stage >= 844f * 0.5f - 0.01f, "stage=${h.stage}")
@@ -99,7 +97,7 @@ class PhoneEditorHeightsTest {
     @Test
     fun every_tool_stays_inside_the_window_and_never_goes_negative() {
         val tools = enumValues<EditorTool>().toList()
-        val windows = listOf(844f, 800f, 640f, 480f, 390f)
+        val windows = listOf(915f, 844f, 800f, 700f, 640f, 570f, 480f, 390f)
         tools.forEach { tool ->
             windows.forEach { window ->
                 listOf(false, true).forEach { strip ->
@@ -113,10 +111,19 @@ class PhoneEditorHeightsTest {
                         "overflow tool=$tool window=$window strip=$strip sum=${sum(h)}",
                     )
                     if (!h.fullPage) {
+                        // 固定画框只在「照片还站得住」的窗口里出现。
                         assertTrue(
-                            h.stage >= window * 0.28f - 0.01f,
-                            "stage below 28% tool=$tool window=$window stage=${h.stage}",
+                            h.stage >= PHONE_PANEL_MIN_STAGE_DP - 0.01f,
+                            "stage below the floor tool=$tool window=$window stage=${h.stage}",
                         )
+                        if (tool != EditorTool.Border) {
+                            assertEquals(
+                                phonePanelHeightDp(window),
+                                h.sheet,
+                                0.01f,
+                                "tool=$tool window=$window",
+                            )
+                        }
                     }
                 }
             }
@@ -124,90 +131,58 @@ class PhoneEditorHeightsTest {
     }
 
     @Test
-    fun non_border_tools_open_at_their_content_height() {
-        // 密度过之后：样式页两页（最高 137）→ 209；文字页一页（148）→ 220；
-        // Logo 一整页（217）→ 303。三页 / 两页 / 六页的旧数字全部作废。
-        val style = computePhoneEditorHeights(
-            844f, 1f, false, EditorTool.Params, false,
-            controls = PhoneTestControls.styleControls(),
-        )
-        val text = computePhoneEditorHeights(
-            844f, 1f, false, EditorTool.Text, false,
-            controls = PhoneTestControls.textControls(),
-            hasTextReport = true,
-        )
-        val logo = computePhoneEditorHeights(
-            844f, 1f, false, EditorTool.Logo, false,
-            controls = PhoneTestControls.logoControls(),
-        )
+    fun non_border_tools_open_at_the_fixed_panel_height() {
+        // 同一个窗口里，样式 / 文字 / Logo 拿到的是**同一个**面板高度（内容不再参与）。
+        val style = computePhoneEditorHeights(844f, 1f, false, EditorTool.Params, false)
+        val text = computePhoneEditorHeights(844f, 1f, false, EditorTool.Text, false)
+        val logo = computePhoneEditorHeights(844f, 1f, false, EditorTool.Logo, false)
         assertFalse(style.fullPage)
         assertFalse(text.fullPage)
         assertFalse(logo.fullPage)
-        assertEquals(209f, style.sheet, 0.01f)
-        assertEquals(220f, text.sheet, 0.01f)
-        assertEquals(303f, logo.sheet, 0.01f)
-        // 样式与文字都低于旧的固定 34 %（287 dp）；Logo 这一页现在是**一整页**（217 dp
-        // 的内容），所以它要 303 dp 的底板 —— 仍然低于舞台 50 % 地板给到的上限。
-        assertTrue(style.sheet < 844f * 0.34f, "style=${style.sheet}")
-        assertTrue(text.sheet < 844f * 0.34f, "text=${text.sheet}")
-        assertTrue(logo.sheet <= 844f - 52f - 62f - 844f * 0.5f + 0.01f, "logo=${logo.sheet}")
-        // 矮页比高页矮，高页比矮页高 ——「内容决定高度」照旧。
-        assertTrue(style.sheet < text.sheet, "style=${style.sheet} text=${text.sheet}")
-        assertTrue(text.sheet < logo.sheet, "text=${text.sheet} logo=${logo.sheet}")
-        // 舞台因此比 50 % 地板给出的更多。
+        val expected = phonePanelHeightDp(844f)
+        assertEquals(expected, style.sheet, 0.01f)
+        assertEquals(expected, text.sheet, 0.01f)
+        assertEquals(expected, logo.sheet, 0.01f)
+        // 844 的 34 % 是 287（落在 [280, 330] 里，没有夹到边）。
+        assertEquals(844f * 0.34f, expected, 0.01f)
+        assertEquals(expected, style.stage.let { 844f - 52f - 62f - it }, 0.01f)
         assertTrue(style.stage > 844f * 0.5f, "style stage=${style.stage}")
-        assertTrue(logo.stage >= 844f * 0.5f - 0.01f, "logo stage=${logo.stage}")
-        // 每一页在它自己的高度里都放得下（没有任何一页需要竖向滚动）。
-        listOf(
-            EditorTool.Params to PhoneTestControls.styleControls(),
-            EditorTool.Text to PhoneTestControls.textControls(),
-            EditorTool.Logo to PhoneTestControls.logoControls(),
-        ).forEach { (tool, controls) ->
-            val h = computePhoneEditorHeights(844f, 1f, false, tool, false, controls = controls)
-            assertTrue(
-                fitsWithoutScroll(
-                    tool = tool,
-                    controls = controls,
-                    sheetLevelDp = h.sheet,
-                    hasTextReport = tool == EditorTool.Text,
-                ),
-                "tool=$tool sheet=${h.sheet} overflows",
-            )
-        }
     }
 
     @Test
-    fun photo_strip_only_costs_height_when_it_is_open() {
-        // 照片条仍然只在打开时占 64 dp；因为底板高度由内容决定，它从舞台那一侧出现。
-        // 样式页在 800 与 844 的许可都装下同一组两页，所以底板不变。
-        val controls = PhoneTestControls.styleControls()
-        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = false, controls = controls)
-        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true, controls = controls)
+    fun photo_strip_only_costs_the_stage() {
+        // 照片条打开只从画布那一侧扣 64 dp：面板高度一个 dp 都不动（固定画框）。
+        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = false)
+        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true)
         assertEquals(0f, closed.strip)
         assertEquals(64f, open.strip)
-        assertTrue(open.stage >= 800f * 0.5f - 0.01f, "open stage=${open.stage}")
         assertEquals(closed.sheet, open.sheet, 0.01f)
+        assertEquals(64f, closed.stage - open.stage, 0.01f)
+        assertTrue(closed.stage >= 800f * 0.5f - 0.01f, "closed stage=${closed.stage}")
+        // 打开照片条时画布会低于 50 % —— 那是照片条自己的 64 dp，不是面板长高了。
+        assertEquals(phonePanelHeightDp(800f), open.sheet, 0.01f)
     }
 
     @Test
-    fun leaving_a_constrained_full_page_keeps_real_chrome_and_a_scrollable_panel() {
+    fun leaving_a_constrained_full_page_keeps_the_same_fixed_panel() {
         // Font scale >= 1.5 (or a short window) starts on the full parameter page;
-        // "返回预览" used to leave a zero-height shell. The forced-preview budget
-        // must keep the real top/tool bars and a reachable stage.
+        // "返回预览" used to leave a zero-height shell. It now comes back to exactly
+        // the same fixed panel every other state uses.
         val h = forcedPreviewHeights(905f)
         assertFalse(h.fullPage)
         assertEquals(52f, h.topBar)
         assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
-        assertTrue(h.stage >= 60f, "stage=${h.stage}")
-        assertTrue(h.sheet >= 60f, "sheet=${h.sheet}")
+        assertEquals(phonePanelHeightDp(905f), h.sheet, 0.01f)
+        assertEquals(905f - 52f - 62f - h.sheet, h.stage, 0.01f)
+        assertTrue(h.stage >= PHONE_PANEL_MIN_STAGE_DP, "stage=${h.stage}")
         assertTrue(sum(h) <= 905f + 0.01f, "sum=${sum(h)}")
 
         assertTrue(canShowForcedPreview(FORCED_PREVIEW_MIN_DP))
         assertFalse(canShowForcedPreview(FORCED_PREVIEW_MIN_DP - 1f))
         assertTrue(
             forcedPreviewHeights(FORCED_PREVIEW_MIN_DP - 1f).fullPage,
-            "a window too short for any valid preview must stay on the full page",
+            "a window too short for the fixed panel must stay on the full page",
         )
     }
 }
