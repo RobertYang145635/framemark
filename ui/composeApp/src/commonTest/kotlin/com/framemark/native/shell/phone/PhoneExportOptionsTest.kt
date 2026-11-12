@@ -6,6 +6,8 @@ import com.framemark.native.product.ExportSizeMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -81,10 +83,87 @@ class PhoneExportOptionsTest {
     }
 
     @Test
-    fun anUnknownLongEdgeFallsBackToTheOriginalStep() {
-        val custom = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 1600)
-        assertEquals(PhoneExportSize.Original, PhoneExportOptions.sizeOf(custom))
-        assertEquals("原尺寸", PhoneExportOptions.sizeCaption(PhoneExportOptions.sizeOf(custom)))
+    fun aLongEdgeThatIsNotAStepResolvesToTheNearestStepAndShowsItself() {
+        // The old behaviour returned 原尺寸 for every custom edge, so a project
+        // exported at 3000 px showed "原尺寸" while the engine still used 3000.
+        val at3000 = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 3000)
+        assertEquals(PhoneExportSize.Long2048, PhoneExportOptions.sizeOf(at3000), "3000 更接近 2048")
+        assertEquals(3000, PhoneExportOptions.customLongEdge(at3000))
+        assertEquals("自定义 3000 px", PhoneExportOptions.sizeCaption(at3000))
+        assertEquals(PhoneExportOptions.CUSTOM_SIZE_ID, PhoneExportOptions.selectedSizeId(at3000))
+        assertEquals(
+            "自定义 3000",
+            PhoneExportOptions.sizeChoices(at3000).last().label,
+            "自定义值必须有自己的 chip，不能借用最近一档的文案",
+        )
+
+        val at5000 = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 5000)
+        assertEquals(PhoneExportSize.Long4096, PhoneExportOptions.sizeOf(at5000))
+
+        // 原尺寸 keeps its own caption and offers no custom chip.
+        assertEquals("原尺寸", PhoneExportOptions.sizeCaption(ExportSettings()))
+        assertNull(PhoneExportOptions.customLongEdge(ExportSettings()))
+        assertTrue(PhoneExportOptions.sizeChoices(ExportSettings()).none { it.isCustom })
+    }
+
+    @Test
+    fun tappingTheSelectedCustomChipKeepsTheRealLongEdge() {
+        val custom = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 3000)
+        val afterTap = PhoneExportOptions.applySizeChoice(custom, PhoneExportOptions.selectedSizeId(custom))
+        assertEquals(3000, afterTap.effectiveLongEdge, "点击已选中的自定义 chip 不得改变导出尺寸")
+        assertEquals(100, afterTap.quality)
+
+        val switched = PhoneExportOptions.applySizeChoice(custom, PhoneExportSize.Long2048.name)
+        assertEquals(2048, switched.effectiveLongEdge, "点固定档必须切到该档")
+        // An unknown id is ignored instead of silently resetting the size.
+        assertEquals(3000, PhoneExportOptions.applySizeChoice(custom, "nope").effectiveLongEdge)
+    }
+
+    @Test
+    fun aCustomLongEdgeNeverPromisesNoScaling() {
+        val custom = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 3000)
+        val note = PhoneExportOptions.resolutionNote(custom)
+        assertTrue(note.contains("3000"), note)
+        assertFalse(note.contains("不缩放"), note)
+        assertFalse(note.contains("原分辨率"), note)
+        // The real 原尺寸 promise is unchanged.
+        val original = PhoneExportOptions.resolutionNote(ExportSettings())
+        assertTrue(original.contains("原分辨率，不缩放"), original)
+    }
+
+    @Test
+    fun ultraHdrIsOfferedOnlyForJpegWithAGainMap() {
+        assertTrue(PhoneExportOptions.hdrEnabled(ExportFormat.Jpeg, hasGainMap = true))
+        assertFalse(PhoneExportOptions.hdrEnabled(ExportFormat.Jpeg, hasGainMap = false))
+        assertFalse(PhoneExportOptions.hdrEnabled(ExportFormat.Png, hasGainMap = true))
+        assertFalse(PhoneExportOptions.hdrEnabled(ExportFormat.WebP, hasGainMap = true))
+    }
+
+    @Test
+    fun theDisabledHdrSwitchExplainsItselfInOneLine() {
+        val noGainMap = PhoneExportOptions.hdrReason(ExportFormat.Jpeg, hasGainMap = false)
+        assertNotNull(noGainMap)
+        assertTrue(noGainMap.contains("HDR"), noGainMap)
+        assertFalse(noGainMap.contains('\n'), noGainMap)
+
+        val png = PhoneExportOptions.hdrReason(ExportFormat.Png, hasGainMap = true)
+        assertNotNull(png)
+        assertTrue(png.contains("JPEG"), png)
+        assertFalse(png.contains('\n'), png)
+
+        assertNull(PhoneExportOptions.hdrReason(ExportFormat.Jpeg, hasGainMap = true))
+    }
+
+    @Test
+    fun theHdrSwitchWritesThroughTheSameSettingsCopy() {
+        val base = ExportSettings(format = ExportFormat.Jpeg, quality = 87)
+        val enabled = PhoneExportOptions.applyPreserveHdr(base, true)
+        assertTrue(enabled.preserveHdr)
+        assertEquals(100, enabled.quality, "HDR 开关也必须把质量固定在 100")
+        assertFalse(PhoneExportOptions.applyPreserveHdr(enabled, false).preserveHdr)
+        // An explicit HDR choice survives a format change; the engine only honours it
+        // for JPEG, exactly like the desktop dialog.
+        assertTrue(PhoneExportOptions.applyFormat(enabled, ExportFormat.Png).preserveHdr)
     }
 
     @Test

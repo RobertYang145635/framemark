@@ -767,7 +767,13 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         // ColorOS freezes the whole uid cgroup seconds after HOME, so a debounced
         // write that has not run yet would be lost with the process.
-        projectStore?.flushBlocking()
+        val flushed = projectStore?.flushBlocking() ?: true
+        if (!flushed) {
+            // The store also refuses to write when the project could not be read, so
+            // this is either a real IO error or that guard. Either way the last edit
+            // did not reach the disk; leave a trace instead of failing silently.
+            FmLog.warn("FM_PROJECT_FLUSH_FAIL") { "onPause flush did not persist the project" }
+        }
         super.onPause()
     }
 

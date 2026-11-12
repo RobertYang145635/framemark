@@ -218,7 +218,7 @@ private fun androidx.compose.foundation.layout.BoxScope.BadgeLabel(card: Library
             .align(Alignment.TopStart)
             .padding(4.dp)
             .height(BadgeHeight)
-            .clip(RoundedCornerShape(5.dp))
+            .clip(RoundedCornerShape(FmRadii.badge))
             .background(FmPalette.surface.copy(alpha = 0.92f))
             .padding(horizontal = 6.dp),
         contentAlignment = Alignment.Center,
@@ -256,8 +256,14 @@ fun PhoneFramePreview(card: LibraryCard, modifier: Modifier = Modifier) {
     // （`DesktopLibraryThumb` → `DesktopLibraryPhotoThumbs` → `NativeEngine.preview`）。
     // 照片来源与两端各自的项目持有者一致：桌面是 `WorkflowEnv.projectHolder`，
     // 手机是 `PhoneProjectRuntime`（Android 不设 projectHolder）。都没有时退回随包预览。
-    val photoPath = desktopActivePhotoPath()
-        ?: PhoneProjectRuntime.current?.activePhoto?.path?.takeIf { it.isNotBlank() }
+    val active = PhoneProjectRuntime.current?.activePhoto
+    val photoPath = PhoneBorderPreview.photoPath(
+        desktopActive = desktopActivePhotoPath(),
+        activePath = active?.path,
+        activeWidth = active?.widthPx ?: 0,
+        activeHeight = active?.heightPx ?: 0,
+        bundledSample = com.framemark.native.workflow.WorkflowEnv.platform?.bundledSamplePhotoPath(),
+    )
     if (photoPath != null) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             DesktopLibraryThumb(

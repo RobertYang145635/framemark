@@ -50,20 +50,78 @@ object FmLog {
     /**
      * The redaction rule, exposed for tests. Only the message is redacted — the
      * tag is a fixed identifier.
+     *
+     * Two escapes are closed here:
+     *  - a path may contain spaces (`C:\Users\John Doe\pic.jpg`), so a value that
+     *    starts like an absolute path keeps consuming the following non-key tokens
+     *    and the *whole* path is reduced to its basename;
+     *  - a CR/LF inside the message would emit a second, unredacted line whose shape
+     *    is indistinguishable from a real evidence line (log forging). They are
+     *    replaced by the literal `\r` / `\n` before tokenising, so one call is
+     *    always exactly one line.
      */
     fun redact(message: String): String {
         if (message.isEmpty()) return message
-        return message.split(' ').joinToString(" ") { redactToken(it) }
+        val singleLine = message.replace("\r", "\\r").replace("\n", "\\n")
+        val tokens = singleLine.split(WHITESPACE).filter { it.isNotEmpty() }
+        if (tokens.isEmpty()) return ""
+        val out = ArrayList<String>(tokens.size)
+        var index = 0
+        while (index < tokens.size) {
+            val token = tokens[index]
+            val attribute = attributeOf(token)
+            when {
+                attribute != null && startsPath(attribute.second) -> {
+                    var whole = attribute.second
+                    var next = index + 1
+                    while (next < tokens.size && attributeOf(tokens[next]) == null) {
+                        whole += " " + tokens[next]
+                        next++
+                    }
+                    out += "${attribute.first}=${redactValue(whole)}"
+                    index = next
+                }
+                attribute == null && startsPath(token) -> {
+                    var whole = token
+                    var next = index + 1
+                    while (next < tokens.size && attributeOf(tokens[next]) == null) {
+                        whole += " " + tokens[next]
+                        next++
+                    }
+                    out += redactValue(whole)
+                    index = next
+                }
+                else -> {
+                    out += redactToken(token)
+                    index++
+                }
+            }
+        }
+        return out.joinToString(" ")
     }
 
     private fun emit(tag: String, message: () -> String, toError: Boolean, verboseOnly: Boolean) {
         if (verboseOnly && !verbose) return
         val body = message()
-        val line = if (body.isEmpty()) tag else redact("$tag $body")
-        sink(line, toError)
+        val raw = if (body.isEmpty()) tag else "$tag $body"
+        // Always through redact: it is also the CR/LF sanitiser, so even a tag-only
+        // line cannot smuggle a second line into the evidence stream.
+        sink(redact(raw), toError)
     }
 
     // ------------------------------------------------------------------ redaction
+
+    /** `key=value` when [token] is an attribute pair; null for tags, paths and bare words. */
+    private fun attributeOf(token: String): Pair<String, String>? {
+        val eq = token.indexOf('=')
+        if (eq <= 0 || eq == token.lastIndex) return null
+        if (!isAttributeKey(token.substring(0, eq))) return null
+        return token.substring(0, eq) to token.substring(eq + 1)
+    }
+
+    /** True when a bare token or an attribute value begins an absolute path. */
+    private fun startsPath(value: String): Boolean =
+        WINDOWS_ABSOLUTE.containsMatchIn(value) || value.startsWith('/')
 
     /**
      * One whitespace-delimited token. `key=value` keeps its key; the value is what
@@ -113,6 +171,9 @@ object FmLog {
     }
 
     private val WINDOWS_ABSOLUTE = Regex("""^[A-Za-z]:\\""")
+
+    /** Any whitespace run — a newline is a delimiter too, so it cannot forge a line. */
+    private val WHITESPACE = Regex("\\s+")
 
     /** An absolute POSIX path: at least two separators and a non-empty basename. */
     private val POSIX_ABSOLUTE = Regex("""^/(?:[^/]+/)+[^/]+$""")

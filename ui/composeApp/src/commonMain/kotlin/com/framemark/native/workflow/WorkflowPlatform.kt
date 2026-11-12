@@ -86,6 +86,18 @@ interface WorkflowPlatform {
      */
     fun samplePhotoPath(): String? = null
 
+    /**
+     * A photo that is guaranteed to render, for previews that must show *some*
+     * frame rather than the user's own picture — the border grid uses it when the
+     * active photo has no readable size (a file without EXIF measures 0x0, and
+     * every tile rendered nothing, which made the page look broken).
+     *
+     * Defaults to [samplePhotoPath]; platforms that use that hook for something
+     * else (Android points it at a QA-selected file first) override this with the
+     * bundled asset only.
+     */
+    fun bundledSamplePhotoPath(): String? = samplePhotoPath()
+
     /** SHA-256 hex for the batch photo fingerprint; null when unavailable. */
     fun fileFingerprint(path: String): String? = null
 

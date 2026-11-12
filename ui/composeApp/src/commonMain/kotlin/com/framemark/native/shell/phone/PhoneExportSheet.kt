@@ -53,6 +53,7 @@ import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.PrimaryButton
 import com.framemark.native.product.ExportFormat
+import com.framemark.native.product.UltraHdr
 import com.framemark.native.workflow.SheetFieldLabel
 import com.framemark.native.workflow.SheetNote
 import com.framemark.native.workflow.SheetTag
@@ -68,7 +69,8 @@ import com.framemark.native.product.FmLog
  *
  * Form → 正在保存 → 已保存, all inside one bottom sheet: the report's §3.5 complaint
  * was that the result used to be stacked under a long form. The form carries the
- * preview, 格式, exactly three 尺寸 steps, the fixed quality and the A-01 note
+ * preview, 格式, the three 尺寸 steps (plus the project's own "自定义 N px" edge when
+ * it has one), the fixed quality, the Ultra HDR switch and the A-01 note
  * (per format: 原尺寸 promises no rescaling, and JPEG says it re-encodes once —
  * 返修 P2-2); the result page repeats the real pixel size and offers
  * 分享 / 完成 and 「重试写入相册」.
@@ -104,6 +106,21 @@ fun PhoneExportSheet(
     val settings = PhoneExportOptions.normalized(session.export)
     val native = card != null && NativeEngine.supportsExport(card.id)
     val busyNow = busy || sharing || publishing
+
+    // Whether the active photo really carries an Ultra HDR gain map. Read off the UI
+    // thread: UltraHdr.locate() takes the whole buffer, and a photo is tens of MB.
+    var hdrGainMap by remember(photoPath) { mutableStateOf(false) }
+    LaunchedEffect(photoPath) {
+        val path = photoPath
+        hdrGainMap = if (path.isNullOrBlank()) {
+            false
+        } else {
+            withContext(Dispatchers.IO) {
+                val bytes = runCatching { platform?.readBytes(path) }.getOrNull()
+                bytes != null && UltraHdr.locate(bytes) != null
+            }
+        }
+    }
 
     fun update(next: com.framemark.native.product.ExportSettings) {
         session.export = PhoneExportOptions.normalized(next)
@@ -240,10 +257,12 @@ fun PhoneExportSheet(
                 // then the sheet prints the chosen step instead of inventing pixels.
                 outputWidth = 0,
                 outputHeight = 0,
+                hdrGainMap = hdrGainMap,
                 canApplyToAll = canApplyToAll,
                 onApplyToAll = onApplyToAll,
+                onPreserveHdr = { update(PhoneExportOptions.applyPreserveHdr(settings, it)) },
                 onFormat = { update(PhoneExportOptions.applyFormat(settings, it)) },
-                onSize = { update(PhoneExportOptions.applySize(settings, it)) },
+                onSize = { id -> update(PhoneExportOptions.applySizeChoice(settings, id)) },
                 onShare = { if (busyNow) Unit else generate(shareAfter = true) },
                 onSave = { if (busyNow) Unit else generate(shareAfter = false) },
                 onClose = { if (!busyNow) onDismiss() },
@@ -489,7 +508,8 @@ private fun ColumnScope.ExportDoneContent(
 }
 /**
  * The export form of `06-phone-export.png`: 导出 + ✕, the preview card (size, format
- * + quality, border name), 格式 and 尺寸 as touch segmented controls, the fixed-quality
+ * + quality, border name), 格式 and 尺寸 as touch segmented controls (the three steps
+ * plus the project's own 自定义 N px edge), the Ultra HDR switch, the fixed-quality
  * note and the [分享] / [保存到相册] pair.
  *
  * The two notes keep 返修 P2-2's wording: the demo's single line only says the
@@ -510,16 +530,20 @@ internal fun ColumnScope.ExportFormContent(
     note: String?,
     outputWidth: Int,
     outputHeight: Int,
+    /** The active photo really carries an Ultra HDR gain map (read off the UI thread). */
+    hdrGainMap: Boolean,
     canApplyToAll: Boolean,
     onApplyToAll: () -> Unit,
+    onPreserveHdr: (Boolean) -> Unit,
     onFormat: (ExportFormat) -> Unit,
-    onSize: (PhoneExportSize) -> Unit,
+    onSize: (String) -> Unit,
     onShare: () -> Unit,
     onSave: () -> Unit,
     onClose: () -> Unit,
 ) {
-    val size = PhoneExportOptions.sizeOf(settings)
     val format = PhoneExportOptions.formatOf(settings)
+    val sizeChoices = PhoneExportOptions.sizeChoices(settings)
+    val hdrEnabled = PhoneExportOptions.hdrEnabled(format, hdrGainMap)
     ExportSheetHeader(onClose = { if (!busy) onClose() })
     Spacer(Modifier.height(10.dp))
     Column(
@@ -541,7 +565,7 @@ internal fun ColumnScope.ExportFormContent(
             sizeLabel = if (outputWidth > 0 && outputHeight > 0) {
                 "$outputWidth × $outputHeight"
             } else {
-                PhoneExportOptions.sizeCaption(size)
+                PhoneExportOptions.sizeCaption(settings)
             },
             formatLabel = formatQualityLabel(format, settings.webpLossless),
         )
@@ -559,16 +583,54 @@ internal fun ColumnScope.ExportFormContent(
         Column {
             ExportFieldLabel(
                 label = "尺寸",
-                value = if (outputWidth > 0 && outputHeight > 0) "$outputWidth × $outputHeight" else null,
+                value = when {
+                    outputWidth > 0 && outputHeight > 0 -> "$outputWidth × $outputHeight"
+                    // A project long edge outside the three steps is surfaced as itself:
+                    // the nearest-step chip alone would contradict the engine's value.
+                    PhoneExportOptions.customLongEdge(settings) != null ->
+                        PhoneExportOptions.sizeCaption(settings)
+                    else -> null
+                },
             )
             PhoneSegmented(
-                options = PhoneExportOptions.SIZES.map { it.name to it.label },
-                selected = size.name,
-                onSelect = { name ->
-                    PhoneExportOptions.SIZES.firstOrNull { it.name == name }?.let(onSize)
-                },
+                options = sizeChoices.map { it.id to it.label },
+                selected = PhoneExportOptions.selectedSizeId(settings),
+                onSelect = onSize,
                 label = "尺寸",
             )
+        }
+        // Ultra HDR: the same switch as the desktop export dialog. Visible even when
+        // unusable, but disabled with the one-line reason — never a silent no-op.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+        ) {
+            androidx.compose.material3.Switch(
+                checked = settings.preserveHdr && hdrEnabled,
+                onCheckedChange = { if (!busy) onPreserveHdr(it) },
+                enabled = hdrEnabled && !busy,
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(FmSpacing.xxs),
+            ) {
+                Text(
+                    text = "保留 HDR（Ultra HDR）",
+                    style = FmType.bodyMedium,
+                    color = if (hdrEnabled) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+                )
+                Text(
+                    text = PhoneExportOptions.hdrReason(format, hdrGainMap)
+                        ?: if (settings.preserveHdr) {
+                            "已开启：成片仍可在 HDR 屏幕上还原高光"
+                        } else {
+                            "照片自带增益图，可保留 HDR 高光"
+                        },
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                )
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             ExportNote("Android 导出质量固定为 100")
@@ -576,7 +638,7 @@ internal fun ColumnScope.ExportFormContent(
             // PhoneExportSheetLayout): 格式 / 尺寸 may change its text but not the
             // sheet's height.
             ExportNote(
-                text = PhoneExportOptions.resolutionNote(size, format, settings.webpLossless),
+                text = PhoneExportOptions.resolutionNote(settings),
                 minHeight = PhoneExportSheetLayout.NoteShelfHeight,
             )
             if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")

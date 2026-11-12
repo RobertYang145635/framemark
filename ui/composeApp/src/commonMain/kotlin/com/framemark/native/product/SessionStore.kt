@@ -2,6 +2,22 @@ package com.framemark.native.product
 
 import com.framemark.native.workflow.WorkflowPlatform
 
+/**
+ * The largest document any [SessionStore] read will materialise.
+ *
+ * The limit is derived from what a document can really contain: a design embeds
+ * its watermark (**[WatermarkAsset.MAX_BYTES]**, 32 MiB) as base64 inside the JSON,
+ * so one watermarked photo contributes about 43 MiB. 50 MiB is therefore far above
+ * any real project (a typical PNG signature is well under 1 MiB, and dozens of
+ * photos stay in the single-digit MiB range) while still being far below a single
+ * corrupted download / copied video that a bad sync or a hand-edited file name can
+ * drop on the document path. The read stops at `limit + 1` bytes, so an oversized
+ * file is refused with [StoreCodes.IO_READ] instead of OOM-killing the app; the
+ * same value bounds the portable preset file in
+ * `com.framemark.native.workflow.PresetTransfer`.
+ */
+const val MAX_DOCUMENT_BYTES: Int = 50 * 1024 * 1024
+
 /** Error codes follow ARCH §7.2 so the UI can show the same text as the rest of the app. */
 object StoreCodes {
     const val IO_READ = "FM-E-IO-002"
@@ -56,6 +72,33 @@ interface ProductFileSystem {
     /** Raw document bytes. Adapters used for backups should override this method. */
     fun readBytes(path: String): ByteArray? = readText(path)?.encodeToByteArray()
 
+    /**
+     * Raw bytes of [path], refusing a file larger than [limitBytes].
+     *
+     * The bound exists because a document embeds its watermark as base64 and can be
+     * tens of MiB: the store must refuse an oversized/corrupted file *before* it is
+     * materialised. The default asks [fileSize] first and then [readBytes], which is
+     * exact for an adapter that keeps its files in memory; the real platform
+     * adapters override it with a stream stopped at `limitBytes + 1`. Oversize is
+     * reported with [FileTooLargeException] (a value, not an OOM), and a missing
+     * file is still `null`.
+     */
+    fun readBytesBounded(path: String, limitBytes: Int): ByteArray? {
+        require(limitBytes > 0) { "limitBytes 必须为正数" }
+        if (fileSize(path) > limitBytes) throw FileTooLargeException(path, limitBytes)
+        val bytes = readBytes(path) ?: return null
+        if (bytes.size > limitBytes) throw FileTooLargeException(path, limitBytes)
+        return bytes
+    }
+
+    /**
+     * SHA-256 (lower-case hex) of the file's bytes, or null when it is absent or
+     * unreadable. The default streams through the platform digest ([sha256OfFile]),
+     * so verifying a staged document never holds a second full copy of it; an
+     * adapter whose files live in memory overrides this with a direct array hash.
+     */
+    fun sha256Of(path: String): String? = sha256OfFile(path)
+
     /** True only when every byte reached the file. */
     fun writeBytes(path: String, bytes: ByteArray): Boolean
 
@@ -87,6 +130,14 @@ class PlatformFileSystem(
     override fun readText(path: String): String? = platform.readTextFile(path)
 
     override fun readBytes(path: String): ByteArray? = platform.readBytes(path)
+
+    /**
+     * This adapter forwards to a platform abstraction that already holds the bytes
+     * (a fake platform, or a bridge-backed one), so the digest is taken from
+     * [readBytes]. The real targets use [JvmProductFileSystem]/[AndroidProductFileSystem]
+     * and get the streaming default.
+     */
+    override fun sha256Of(path: String): String? = readBytes(path)?.let(Sha256::hex)
 
     override fun writeBytes(path: String, bytes: ByteArray): Boolean = platform.writeBytes(path, bytes)
 
@@ -130,13 +181,14 @@ class SchemaMigration(
  * batch queue under `fs.dataDir`.
  *
  * Writes are staged and verified: full bytes into `<path>.tmp`, a size check and a
- * byte-for-byte read-back, then a replace over the destination (atomic where the
- * filesystem supports it). A failure at any step returns the old document untouched
- * and a structured error. Durability is bounded by what the OS flushed: the platform
- * adapter requests an atomic move and a parent-directory fsync where the platform
- * allows it, but neither can promise more than the filesystem gives. Reads are
- * all-or-nothing: a wrong document id, a future version, a missing migrator or a bad
- * field fails the whole load instead of returning a half-populated model.
+ * streaming SHA-256 comparison, then a replace over the destination (atomic where
+ * the filesystem supports it). A failure at any step returns the old document
+ * untouched and a structured error. Durability is bounded by what the OS flushed:
+ * the platform adapter requests an atomic move and a parent-directory fsync where
+ * the platform allows it, but neither can promise more than the filesystem gives.
+ * Reads are bounded by [MAX_DOCUMENT_BYTES] and all-or-nothing: an oversized file,
+ * a wrong document id, a future version, a missing migrator or a bad field fails
+ * the whole load instead of returning a half-populated model.
  */
 private object DocumentWriteLocks {
     private val locks = Array(64) { Any() }
@@ -146,11 +198,21 @@ private object DocumentWriteLocks {
 class SessionStore(
     private val fs: ProductFileSystem,
     private val migrations: List<SchemaMigration> = emptyList(),
+    /**
+     * Read/write bound for one document; defaults to [MAX_DOCUMENT_BYTES]. The
+     * parameter exists so tests can exercise the refusal without allocating 50 MiB;
+     * no production call site overrides it.
+     */
+    private val maxDocumentBytes: Int = MAX_DOCUMENT_BYTES,
 ) {
+    init {
+        require(maxDocumentBytes > 0) { "文档上限必须为正数" }
+    }
+
     fun documentPath(kind: DocumentKind): String = join(fs.dataDir, kind.fileName)
 
     /** Raw text of a document, for callers that must tell legacy from product. */
-    fun documentText(kind: DocumentKind): String? = runCatching { fs.readText(documentPath(kind)) }.getOrNull()
+    fun documentText(kind: DocumentKind): StoreResult<String> = readTextAt(documentPath(kind))
 
     fun saveProject(project: Project): StoreResult<Unit> =
         saveAt(documentPath(DocumentKind.Project), { ProjectCodec.encode(project) })
@@ -334,6 +396,15 @@ class SessionStore(
         }
         val bytes = text.encodeToByteArray()
         val temp = "$path.tmp"
+        // The same bound as the read path: never publish a document the next launch
+        // would refuse to open (an oversized file is already unreadable).
+        if (bytes.size > maxDocumentBytes) {
+            return failed(
+                StoreCodes.IO_WRITE,
+                "文档超过 ${limitLabel(maxDocumentBytes)} 上限（${bytes.size} 字节），未写入；原文件保持不变",
+                path,
+            )
+        }
 
         val written = try {
             fs.writeBytes(temp, bytes)
@@ -362,8 +433,13 @@ class SessionStore(
             )
         }
 
-        val staged = try {
-            fs.readBytes(temp)
+        // Compare by streaming digest instead of reading the staged file back into a
+        // second full ByteArray: a document embeds its watermark as base64 and can be
+        // tens of MiB, and the whole point of the size check above is to avoid
+        // materialising it twice.
+        val expectedSha = Sha256.hex(bytes)
+        val stagedSha = try {
+            fs.sha256Of(temp)
         } catch (t: Throwable) {
             val note = cleanupNote(temp)
             return failed(StoreCodes.IO_WRITE, "无法读取并校验暂存文件：${t.message}$note", path, retryable = true, cause = t)
@@ -371,12 +447,14 @@ class SessionStore(
             val note = cleanupNote(temp)
             return failed(StoreCodes.IO_WRITE, "暂存文件无法读取；原文件保持不变$note", path, retryable = true)
         }
-        if (!staged.contentEquals(bytes)) {
+        if (!stagedSha.equals(expectedSha, ignoreCase = true)) {
             val note = cleanupNote(temp)
             return failed(StoreCodes.IO_WRITE, "暂存文件内容与待写入文档不一致；原文件保持不变$note", path, retryable = true)
         }
         try {
-            val stagedRoot = ProductJson.parseRoot(staged.decodeToString(throwOnInvalidSequence = true))
+            // The hash proves the staged file holds exactly these bytes, so validating
+            // the in-memory text also validates what landed on disk.
+            val stagedRoot = ProductJson.parseRoot(text)
             if (stagedRoot.isEmpty()) throw ProductDecodeException("暂存 JSON 对象为空")
         } catch (t: Throwable) {
             val note = cleanupNote(temp)
@@ -419,11 +497,12 @@ class SessionStore(
 
     // ---- read -------------------------------------------------------------
 
-    private fun <T> loadAt(
-        path: String,
-        kind: DocumentKind,
-        decode: (Map<String, Any?>) -> T,
-    ): StoreResult<T> {
+    /**
+     * The one bounded document read. A file above [maxDocumentBytes] is refused
+     * while reading (`limit + 1` bytes at most), so a corrupted download or a
+     * copied media file fails as a structured error instead of OOM-killing the app.
+     */
+    private fun readTextAt(path: String): StoreResult<String> {
         val exists = try {
             fs.exists(path)
         } catch (t: Throwable) {
@@ -431,11 +510,35 @@ class SessionStore(
         }
         if (!exists) return StoreResult.Missing
 
-        val text = try {
-            fs.readText(path)
+        val bytes = try {
+            fs.readBytesBounded(path, maxDocumentBytes)
+        } catch (tooLarge: FileTooLargeException) {
+            return failed(
+                StoreCodes.IO_READ,
+                "文档超过 ${limitLabel(tooLarge.limitBytes)} 上限，已拒绝读取（文件可能已被替换或损坏）",
+                path,
+            )
         } catch (t: Throwable) {
             return failed(StoreCodes.IO_READ, "读取文档失败：${t.message}", path, cause = t)
         } ?: return failed(StoreCodes.IO_READ, "文档存在但无法读取（权限或 IO 错误）", path)
+
+        return try {
+            StoreResult.Ok(bytes.decodeToString(throwOnInvalidSequence = true))
+        } catch (t: Throwable) {
+            failed(StoreCodes.IO_READ, "文档存在但不是有效 UTF-8：${t.message}", path, cause = t)
+        }
+    }
+
+    private fun <T> loadAt(
+        path: String,
+        kind: DocumentKind,
+        decode: (Map<String, Any?>) -> T,
+    ): StoreResult<T> {
+        val text = when (val read = readTextAt(path)) {
+            is StoreResult.Ok -> read.value
+            StoreResult.Missing -> return StoreResult.Missing
+            is StoreResult.Failed -> return read
+        }
 
         val root = try {
             ProductJson.parseRoot(text)
@@ -509,6 +612,10 @@ class SessionStore(
         retryable: Boolean = false,
         cause: Throwable? = null,
     ): StoreResult.Failed = StoreResult.Failed(StoreError(code, message, path, retryable, cause))
+
+    /** "N MB" for a production-sized bound, raw bytes for a small test bound. */
+    private fun limitLabel(limitBytes: Int): String =
+        if (limitBytes >= 1024 * 1024) "${limitBytes / 1024 / 1024} MB" else "$limitBytes 字节"
 
     private fun join(dir: String, name: String): String = dir.trimEnd('/', '\\') + "/" + name
 }

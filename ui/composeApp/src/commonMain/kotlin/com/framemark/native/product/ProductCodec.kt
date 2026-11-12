@@ -10,6 +10,15 @@ internal object Documents {
     const val BATCH = "framemark.batch"
 }
 
+/**
+ * The long edge range the document codec guarantees to read back.
+ *
+ * The desktop UI is deliberately stricter ([64, 20000]); anything it allows must
+ * live inside this range, or the app writes documents it cannot load.
+ */
+internal const val EXPORT_LONG_EDGE_FLOOR = 64
+internal const val EXPORT_LONG_EDGE_CEIL = 200_000
+
 private fun document(documentId: String, version: Int, body: String): String =
     "{\"document\":${ProductJson.quote(documentId)},\"schemaVersion\":$version,$body}"
 
@@ -21,6 +30,9 @@ internal fun encodeExport(settings: ExportSettings): String = buildString {
     append(",\"longEdge\":").append(settings.longEdge?.toString() ?: "null")
     append(",\"filenamePattern\":").append(ProductJson.quote(settings.filenamePattern))
     append(",\"webpLossless\":").append(settings.webpLossless)
+    // Omitted when false so a document that predates the field re-encodes byte for
+    // byte (WireFormatFreezeTest).
+    if (settings.preserveHdr) append(",\"preserveHdr\":true")
     append('}')
 }
 
@@ -36,19 +48,27 @@ internal fun decodeExport(raw: Any?, where: String): ExportSettings {
     val sizeMode = ExportSizeMode.fromId(sizeModeId)
         ?: throw ProductDecodeException("$where.sizeMode 不支持：$sizeModeId")
     val longEdge = map.optionalInt("longEdge", where)
-    if (sizeMode == ExportSizeMode.LongEdge) {
-        if (longEdge == null) throw ProductDecodeException("$where.longEdge 缺失（自定义长边模式）")
-        if (longEdge !in 64..200_000) throw ProductDecodeException("$where.longEdge 超出 64..200000：$longEdge")
+    if (sizeMode == ExportSizeMode.LongEdge && longEdge == null) {
+        throw ProductDecodeException("$where.longEdge 缺失（自定义长边模式）")
     }
-    val pattern = map.optionalString("filenamePattern", where) ?: "{photo}-{index}"
-    if (pattern.isBlank()) throw ProductDecodeException("$where.filenamePattern 为空")
+    // A value outside the representable range is a *preference* that an older
+    // build could write (the UI used to accept 1..20000 while this decoder only
+    // accepted 64..200000), not document corruption. Refusing to open the whole
+    // project over a cosmetic number would lose the user's photos and designs, so
+    // clamp instead of throwing.
+    val safeLongEdge = longEdge?.coerceIn(EXPORT_LONG_EDGE_FLOOR, EXPORT_LONG_EDGE_CEIL)
+    // A blank pattern is likewise a legal UI state (the field can be cleared), so
+    // it falls back to the default rather than making the project unreadable.
+    val pattern = map.optionalString("filenamePattern", where)?.takeIf { it.isNotBlank() }
+        ?: "{photo}-{index}"
     return ExportSettings(
         format = format,
         quality = quality,
         sizeMode = sizeMode,
-        longEdge = longEdge,
+        longEdge = safeLongEdge,
         filenamePattern = pattern,
         webpLossless = map.optionalBool("webpLossless", where) ?: true,
+        preserveHdr = map.optionalBool("preserveHdr", where) ?: false,
     )
 }
 
@@ -350,6 +370,7 @@ internal object PresetCodec {
         append(",\"longEdge\":").append(settings.longEdge?.toString() ?: "null")
         append(",\"filenamePattern\":").append(ProductJson.quote(settings.filenamePattern))
         append(",\"webpLossless\":").append(settings.webpLossless)
+        if (settings.preserveHdr) append(",\"preserveHdr\":true")
         append('}')
     }
 

@@ -2,6 +2,7 @@ package com.framemark.native.workflow
 
 import com.framemark.native.product.FmLog
 import com.framemark.native.product.ProductFileSystem
+import com.framemark.native.product.readFileBytesBounded
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.Files
@@ -28,6 +29,10 @@ class JvmProductFileSystem(override val dataDir: String) : ProductFileSystem {
     override fun readBytes(path: String): ByteArray? = runCatching {
         File(path).takeIf { it.isFile }?.readBytes()
     }.getOrNull()
+
+    /** Streams and stops at `limit + 1` bytes; never loads an oversized document. */
+    override fun readBytesBounded(path: String, limitBytes: Int): ByteArray? =
+        readFileBytesBounded(path, limitBytes)
 
     override fun writeBytes(path: String, bytes: ByteArray): Boolean = runCatching {
         val file = File(path)

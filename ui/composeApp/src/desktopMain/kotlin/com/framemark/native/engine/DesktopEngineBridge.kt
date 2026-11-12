@@ -34,6 +34,12 @@ data class EngineRenderResult(
     val textSlots: List<TextSlot>,
     val warnings: List<String>,
     val responseJson: String,
+    /**
+     * Engine-reported `photo_src`: the source-photo pixels the render sampled
+     * (x, y, w, h), never rescaled with the output. Null when the engine did not
+     * report it, which is the signal that the Kotlin crop fallback must run.
+     */
+    val photoSrc: DoubleArray? = null,
 )
 
 /** Compatibility import for existing desktop callers; the model is now shared. */
@@ -425,6 +431,9 @@ class DesktopEngineBridge(
                 textSlots = slots,
                 warnings = warnings,
                 responseJson = responseJson,
+                // Source-photo pixels: deliberately not multiplied by `scale`,
+                // which only maps the canvas to the requested output size.
+                photoSrc = rep.photoSrc,
             )
         } finally {
             // AU1-02: engine scratch files are deleted on both the success and
@@ -688,7 +697,24 @@ class DesktopEngineBridge(
         val photoRect: DoubleArray,
         val texts: List<RawText>,
         val requiredResourceErrors: List<String> = emptyList(),
+        /** Engine-reported `photo_src` in source pixels; null when absent. */
+        val photoSrc: DoubleArray? = null,
     )
+
+    /**
+     * `photo_src` (`[x, y, w, h]` in the photo file's pixels) from either report
+     * shape. Absent or unusable values are null, never an error: an older engine
+     * simply does not report it, and the caller then re-derives the crop.
+     */
+    private fun parsePhotoSrc(doc: Map<String, Any?>): DoubleArray? {
+        val values = doc["photo_src"].jsonList()
+        if (values.size != 4) return null
+        val rect = values.map { (it as? Number)?.toDouble() ?: return null }
+        if (rect.any { !it.isFinite() }) return null
+        if (rect[2] <= 0.0 || rect[3] <= 0.0) return null
+        if (rect[0] < 0.0 || rect[1] < 0.0) return null
+        return rect.toDoubleArray()
+    }
 
     private fun parseReport(card: EngineCard, report: File): RawReport {
         val doc = Json.parse(report.readText()).jsonMap()
@@ -793,7 +819,7 @@ class DesktopEngineBridge(
                 val declaredPaths = declarations.mapNotNull { it.path }.toSet()
                 val extras = draws.filter { it.path !in declaredPaths }
                 val texts = declarations + extras
-                RawReport(w, h, photo.toDoubleArray(), texts, resourceErrors)
+                RawReport(w, h, photo.toDoubleArray(), texts, resourceErrors, parsePhotoSrc(doc))
             }
             "hand" -> {
                 val canvas = doc["canvas"].jsonList()
@@ -826,7 +852,7 @@ class DesktopEngineBridge(
                         located = located,
                     )
                 }
-                RawReport(w, h, photo.toDoubleArray(), texts)
+                RawReport(w, h, photo.toDoubleArray(), texts, photoSrc = parsePhotoSrc(doc))
             }
             else -> error("unknown backend ${card.backend}")
         }

@@ -42,6 +42,89 @@ class SessionStoreTest {
     }
 
     @Test
+    fun a_document_over_the_read_limit_fails_with_a_structured_error() {
+        val fs = FakeFs()
+        // A small bound exercises the real refusal path without allocating 50 MiB.
+        val store = SessionStore(fs, maxDocumentBytes = 64)
+        fs.files[fs.projectPath] = ByteArray(128) { ' '.code.toByte() }
+        fs.files["/imports/huge.preset.json"] = ByteArray(128) { ' '.code.toByte() }
+
+        val project = store.loadProject()
+        assertTrue(project is StoreResult.Failed, "超限文档必须被拒绝：$project")
+        val projectError = project.errorOrNull()
+        assertNotNull(projectError)
+        assertEquals(StoreCodes.IO_READ, projectError.code)
+        assertTrue(projectError.message.contains("上限"), projectError.message)
+
+        val raw = store.documentText(DocumentKind.Project)
+        assertTrue(raw is StoreResult.Failed, "documentText 也必须受同一上限约束：$raw")
+        assertEquals(StoreCodes.IO_READ, raw.errorOrNull()?.code)
+
+        val imported = store.importPreset("/imports/huge.preset.json")
+        assertTrue(imported is StoreResult.Failed, "importPreset 也必须受同一上限约束：$imported")
+        assertEquals(StoreCodes.IO_READ, imported.errorOrNull()?.code)
+    }
+
+    @Test
+    fun a_normal_document_still_loads_under_the_default_limit() {
+        val fs = FakeFs()
+        val store = SessionStore(fs)
+        assertTrue(store.saveProject(sampleProject()) is StoreResult.Ok)
+        assertEquals(sampleProject(), store.loadProject().ok())
+    }
+
+    @Test
+    fun an_over_limit_document_is_never_published() {
+        val fs = FakeFs()
+        assertTrue(SessionStore(fs).saveProject(sampleProject()) is StoreResult.Ok)
+        val before = fs.files.getValue(fs.projectPath).copyOf()
+
+        val error = SessionStore(fs, maxDocumentBytes = 64)
+            .saveProject(sampleProject().copy(updatedAt = 999))
+            .errorOrNull()
+        assertNotNull(error)
+        assertEquals(StoreCodes.IO_WRITE, error.code)
+        assertTrue(error.message.contains("上限"), error.message)
+        assertContentEquals(before, fs.files.getValue(fs.projectPath), "超限写入破坏了旧文档")
+        assertFalse(fs.files.containsKey("${fs.projectPath}.tmp"), "超限写入不应留下临时文件")
+    }
+
+    @Test
+    fun saving_verifies_the_staged_file_by_digest_without_reading_it_back() {
+        val base = FakeFs()
+        val fs = CountingReadFs(base)
+
+        assertTrue(SessionStore(fs).saveProject(sampleProject()) is StoreResult.Ok)
+
+        assertEquals(0, fs.tempReads, "保存不得再次整份读取暂存文件：${fs.tempReads}")
+        assertEquals(1, fs.tempDigests, "暂存文件必须用一次流式摘要校验")
+        assertContentEquals(base.files.getValue(base.projectPath), fs.lastTempDigestInput)
+    }
+
+    /** Counts a full read of `<path>.tmp` against a streaming digest of the same file. */
+    private class CountingReadFs(private val base: FakeFs) : ProductFileSystem by base {
+        var tempReads = 0
+            private set
+        var tempDigests = 0
+            private set
+        var lastTempDigestInput: ByteArray = ByteArray(0)
+            private set
+
+        override fun readBytes(path: String): ByteArray? {
+            if (path.endsWith(".tmp")) tempReads++
+            return base.readBytes(path)
+        }
+
+        override fun sha256Of(path: String): String? {
+            if (path.endsWith(".tmp")) {
+                tempDigests++
+                lastTempDigestInput = base.files[path]?.copyOf() ?: ByteArray(0)
+            }
+            return base.sha256Of(path)
+        }
+    }
+
+    @Test
     fun corrupt_json_reports_a_structured_error_with_the_cause() {
         val fs = FakeFs()
         fs.files[fs.projectPath] = "{not json".encodeToByteArray()
@@ -147,8 +230,8 @@ class SessionStoreTest {
         assertTrue(SessionStore(base).saveProject(sampleProject()) is StoreResult.Ok)
         val before = base.files.getValue(base.projectPath).copyOf()
         val unreadableTemp = object : ProductFileSystem by base {
-            override fun readBytes(path: String): ByteArray? =
-                if (path.endsWith(".tmp")) null else base.readBytes(path)
+            override fun sha256Of(path: String): String? =
+                if (path.endsWith(".tmp")) null else base.sha256Of(path)
         }
 
         val error = SessionStore(unreadableTemp).saveProject(sampleProject().copy(updatedAt = 999)).errorOrNull()

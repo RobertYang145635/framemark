@@ -44,6 +44,9 @@ class PhoneBatchControlTest {
         override fun readBytes(path: String): ByteArray? = files[path]?.copyOf()
 
         @Synchronized
+        override fun sha256Of(path: String): String? = files[path]?.let { Sha256.hex(it) }
+
+        @Synchronized
         override fun writeBytes(path: String, bytes: ByteArray): Boolean {
             if (failWrites.get()) return false
             files[path] = bytes.copyOf()

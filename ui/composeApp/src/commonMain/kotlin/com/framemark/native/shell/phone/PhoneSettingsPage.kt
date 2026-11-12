@@ -159,7 +159,7 @@ fun PhoneSettingsPage(
 private val SettingsGroupShape = RoundedCornerShape(16.dp)
 
 /** `.seg` 药丸的 8 圆角（`.seg.touch .thumb`）。 */
-private val SegmentPillShape = RoundedCornerShape(8.dp)
+private val SegmentPillShape = RoundedCornerShape(FmRadii.chip)
 
 /** `.set-top`：52 高、左上返回箭头（32×32）+ 17/700「设置」。 */
 @Composable
@@ -208,7 +208,7 @@ private fun SettingsAppearanceSegment(selected: ThemeMode, onSelect: (ThemeMode)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(FmRadii.input))
             .background(FmPalette.outline)
             .padding(3.dp),
     ) {

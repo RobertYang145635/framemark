@@ -19,6 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -97,6 +102,11 @@ internal fun ColumnScope.PhoneSheetHost(
     onRetryLibrary: () -> Unit,
     pickBorder: (LibraryCard) -> Unit,
     onOpenPresets: () -> Unit,
+    /**
+     * Logo 页的 选择品牌：选择器是外壳画在整个编辑器之上的覆盖层（舞台仍在），
+     * 底板只负责把请求递上去。null 时 Logo 页走内联品牌页（桌面右栏）。
+     */
+    onOpenBrandPicker: (() -> Unit)? = null,
     onToolChange: (EditorTool) -> Unit,
     model: InspectorCardModel?,
     session: DesignSession,
@@ -115,6 +125,26 @@ internal fun ColumnScope.PhoneSheetHost(
     tools: List<EditorTool>,
     toolBarH: Dp,
 ) {
+                // 整页挑边框的开关：只有**用户自己点**才打开（工具条上的 边框、底板里的
+                // 「换一个边框」、无边框时的「去选边框」）。工具被改成 边框 不算点——
+                // 全高回退页的「返回」会把工具还原成进入前的 边框，那一刻再开一次边框库页
+                // 就是 rc14 P3-1：一次「返回预览」回不到舞台。规则见 PhoneSheetPagePolicy。
+                // 开关只是本地 UI 状态：不写设计、不移动底板档位。
+                var borderPageOpen by remember { mutableStateOf(false) }
+                // 用户切换工具的唯一入口：整页边框库跟着开关。
+                fun pickTool(next: EditorTool) {
+                    borderPageOpen = PhoneSheetPagePolicy.pageAfterToolPick(tool, next, borderPageOpen)
+                    onToolChange(next)
+                }
+                // 整页参数页（矮窗口 / 大字号的回退页；Logo 不在其列）接管底板时，
+                // 底板里不留在背后的页面；它把屏幕交还底板时，底板仍从自己的默认页开始。
+                LaunchedEffect(fullParameterPage) {
+                    borderPageOpen = if (fullParameterPage) {
+                        PhoneSheetPagePolicy.pageUnderFullHeightPage()
+                    } else {
+                        PhoneSheetPagePolicy.pageAfterFullHeightPageReturn()
+                    }
+                }
                 Box(
                     modifier = if (fullParameterPage) {
                         Modifier.fillMaxWidth().weight(1f)
@@ -203,7 +233,7 @@ internal fun ColumnScope.PhoneSheetHost(
                                 // Demo `.psh .adj`: 调整样式 › jumps from the border sheet to
                                 // the 样式 page of the applied card.
                                 onAdjustStyle = if (tool == EditorTool.Border && card != null) {
-                                    { onToolChange(EditorTool.Params) }
+                                    { pickTool(EditorTool.Params) }
                                 } else {
                                     null
                                 },
@@ -211,25 +241,34 @@ internal fun ColumnScope.PhoneSheetHost(
                         }
                         if (card == null && tool != EditorTool.Border) {
                             PanelRequiresBorder(
-                                onOpenBorder = { onToolChange(EditorTool.Border) },
+                                onOpenBorder = { pickTool(EditorTool.Border) },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                         } else if (tool == EditorTool.Border) {
                             PhoneLibrarySheet(
                                 index = libraryIndex,
-                                selectedCardId = card?.id,
-                                expanded = sheetLevel > 0 || fullParameterPage,
-                                metrics = sheetMetrics,
-                                categoryKey = borderCategory,
-                                onCategoryChange = { onBorderCategoryChange(it) },
-                                query = borderQuery,
-                                onQueryChange = { onBorderQueryChange(it) },
-                                inUse = inUseCardIds,
-                                recent = recentFrames,
+                                card = card,
                                 onRetry = onRetryLibrary,
-                                onPick = pickBorder,
+                                onOpenPage = { borderPageOpen = true },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
+                            // 整页挑边框：盖在编辑器上面的一层，不移动底板、不改工具，
+                            // 所以关掉它就精确回到进来之前的底板档位与工具。
+                            val pageIndex = libraryIndex
+                            if (borderPageOpen && pageIndex != null) {
+                                PhoneBorderPageDialog(
+                                    index = pageIndex,
+                                    appliedCard = card,
+                                    categoryKey = borderCategory,
+                                    onCategoryChange = { onBorderCategoryChange(it) },
+                                    query = borderQuery,
+                                    onQueryChange = { onBorderQueryChange(it) },
+                                    inUse = inUseCardIds,
+                                    recent = recentFrames,
+                                    onApply = pickBorder,
+                                    onDismiss = { borderPageOpen = false },
+                                )
+                            }
                         } else {
                             val photoAspect = previewGeo?.photoRect
                                 ?.takeIf { it.h > 0 }
@@ -250,6 +289,7 @@ internal fun ColumnScope.PhoneSheetHost(
                                     FmLog.info("FM_TEXT_FOCUS") { "key=$key tool=$tool" }
                                     onFocusedTextSlotChange(key)
                                 },
+                                onOpenBrandPicker = onOpenBrandPicker,
                                 watermarkPane = if (toolPage == InspectorPage.Watermark) {
                                     {
                                         WatermarkPane(
@@ -296,7 +336,7 @@ internal fun ColumnScope.PhoneSheetHost(
                         tool = tool,
                         availableTools = tools,
                         modifiedOf = { entry -> phoneToolShowsDot(entry, tabModel) },
-                        onSelect = onToolChange,
+                        onSelect = { pickTool(it) },
                     )
                 }
 }
@@ -384,5 +424,9 @@ internal fun ParameterPageHeader(
     }
 }
 
-/** Old mobile `.inspector-panel { border-radius: 22px 22px 0 0 }`. */
-internal val SheetRadius = 22.dp
+/**
+ * Old mobile `.inspector-panel { border-radius: 22px 22px 0 0 }`. 22 dp is the
+ * stage token, not the sheet role, so the sheet now uses [FmRadii.sheet] — the
+ * same radius as every other sheet surface (`FmSheetSurface`, dialogs).
+ */
+internal val SheetRadius = FmRadii.sheet

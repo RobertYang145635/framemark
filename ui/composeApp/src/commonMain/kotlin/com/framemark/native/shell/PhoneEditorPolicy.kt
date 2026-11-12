@@ -323,6 +323,37 @@ fun forcedPreviewHeights(availableHeightDp: Float): PhoneEditorHeights {
 }
 
 // ---------------------------------------------------------------------------
+// Parameter page: pinned band vs the single scrolling tool zone
+// ---------------------------------------------------------------------------
+
+/**
+ * The pinned 设计 band of the parameter page, in dp: one 12.5 sp row (17) plus 8 dp
+ * above and below (the `FmSpacing.sm` band padding) plus its 1 dp hairline.
+ *
+ * The band is the page's **common zone** — the export size of the selected design,
+ * identical on all four pages — so it may never be the band that costs the tool zone
+ * the last of its room. See [showsPhoneParameterSummary].
+ */
+const val PHONE_PARAMETER_SUMMARY_DP = 34f
+
+/**
+ * Smallest parameter-page viewport (dp) that still shows the pinned 设计 band.
+ *
+ * [PHONE_PARAMETER_SUMMARY_DP] plus one 72 dp touch-slider row (`PhoneSliderRow`:
+ * 8 + 20 label + 40 track + 4). Below it the band is dropped instead of shrinking
+ * the tool zone: the sheet floor is [MIN_SHEET_DP] = 120 dp, whose page viewport
+ * after the grabber and the head is ~68 dp, and [forcedPreviewHeights] can hand out
+ * an even shorter one. Two pinned bands over a zero-height scroller would make the
+ * controls unreachable, which is the single thing this sheet must never do.
+ *
+ * `Float.POSITIVE_INFINITY` (an unbounded page) keeps the band.
+ */
+const val PHONE_PARAMETER_SUMMARY_MIN_DP = 106f
+
+fun showsPhoneParameterSummary(pageHeightDp: Float): Boolean =
+    pageHeightDp >= PHONE_PARAMETER_SUMMARY_MIN_DP
+
+// ---------------------------------------------------------------------------
 // Tool routing
 // ---------------------------------------------------------------------------
 

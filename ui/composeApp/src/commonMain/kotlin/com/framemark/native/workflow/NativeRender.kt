@@ -5,6 +5,11 @@ import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.CropGeometry
+import com.framemark.native.product.PhotoCrop
+import com.framemark.native.product.PhotoCropParams
+import com.framemark.native.product.cropJpegTo
+import com.framemark.native.product.photoSourceSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -47,6 +52,13 @@ data class ImageRect(
  * (top-left origin, same coordinate space as [width]×[height]), so the UI can
  * place an overlay relative to the photo without knowing the canvas scale.
  * Null when the platform/engine did not report it (desktop today).
+ *
+ * [photoSrc] is the region of the **source photo file** the engine really
+ * sampled, x/y/w/h in source pixels (top-left origin). It is the engine's own
+ * answer to "which part of the photo survived the crop", so no caller has to
+ * re-derive the crop and a pre-crop in Kotlin can never compound with it. Null
+ * when the engine did not report it (an older binary); the export then falls
+ * back to the Kotlin crop computation.
  */
 data class NativeImage(
     val path: String,
@@ -58,6 +70,8 @@ data class NativeImage(
     val note: String? = null,
     /** Renderer-reported text rows in this image's pixel coordinate space. */
     val textSlots: List<TextSlot> = emptyList(),
+    /** Source pixels the renderer sampled for the photo; see [NativeImage.photoSrc]. */
+    val photoSrc: ImageRect? = null,
 )
 
 /**
@@ -200,36 +214,161 @@ object NativeEngine {
             index = nameIndex,
             outputDirectory = outputDirectory,
         )
-        val temporaryPath = withContext(Dispatchers.IO) {
+        var temporaryPath = withContext(Dispatchers.IO) {
             temporaryPath(platform, initialPath, settings.format.extension)
         }
         var committedPath: String? = null
-        val image = try {
-            api.render(
-                cardId = cardId,
-                design = design,
-                mode = "export",
-                maxEdge = null,
-                format = settings.format.toSampleFormat(),
-                quality = settings.quality,
-                longEdge = settings.effectiveLongEdge,
-                outputPath = temporaryPath,
-                webpLossless = settings.webpLossless,
-                overlay = overlay,
-                photoPath = photoPath,
-            )
+        // Every temporary this call owns, deleted in the `finally` below on success,
+        // failure and cancellation alike. A committed export temp has already been
+        // moved away by `commitExport`, so deleting its old name is a no-op.
+        val scratchPaths = LinkedHashSet<String>()
+
+        suspend fun renderTo(exportPath: String, sourcePhoto: String?): NativeImage = api.render(
+            cardId = cardId,
+            design = design,
+            mode = "export",
+            maxEdge = null,
+            format = settings.format.toSampleFormat(),
+            quality = settings.quality,
+            longEdge = settings.effectiveLongEdge,
+            outputPath = exportPath,
+            webpLossless = settings.webpLossless,
+            overlay = overlay,
+            photoPath = sourcePhoto,
+        )
+
+        suspend fun renderOrFail(exportPath: String, sourcePhoto: String?): NativeImage = try {
+            renderTo(exportPath, sourcePhoto)
         } catch (c: kotlin.coroutines.cancellation.CancellationException) {
             // Never relabel a cancelled run as an engine failure: the batch queue
             // depends on seeing the real cancellation.
-            withContext(NonCancellable + Dispatchers.IO) { platform.deleteExportTemporary(temporaryPath) }
             throw c
         } catch (t: Throwable) {
-            withContext(NonCancellable + Dispatchers.IO) { platform.deleteExportTemporary(temporaryPath) }
             if (t is EngineFailure) throw t
             throw EngineFailure("FM-E-ENGINE-002", t.message ?: "渲染失败", t)
         }
 
         try {
+            // ---- user crop -------------------------------------------------
+            // The engine applies `photoCropX/Y/Zoom` itself and reports the source
+            // rectangle it sampled (`NativeImage.photoSrc`), so this path must not
+            // pre-crop the photo on top of it — two crops would compound. The
+            // Kotlin pre-crop survives only as the fallback for an engine that does
+            // not report that rectangle (an older binary): there it is the only way
+            // the crop can reach the renderer at all.
+            val crop = PhotoCropParams.read(design.params)
+            var renderPhotoPath = photoPath
+            var appliedCrop = PhotoCrop.Default
+            // Only the fallback pre-crop produces one; the engine path reports its
+            // own rectangle through `NativeImage.photoSrc` instead.
+            var cropRect: DoubleArray? = null
+
+            suspend fun preCropFor(boxWidth: Double, boxHeight: Double): Boolean {
+                // Starts from the original photo again, so a failure below leaves the
+                // frame drawn from the photo it really used.
+                renderPhotoPath = photoPath
+                cropRect = null
+                if (crop.isDefault) return false
+                val source = photoPath?.takeIf { it.isNotBlank() } ?: return false
+                val size = withContext(Dispatchers.IO) { photoSourceSize(source) } ?: return false
+                if (size.size < 2 || size[0] <= 0 || size[1] <= 0) return false
+                if (!CropGeometry.cropsSource(size[0], size[1], boxWidth, boxHeight)) return false
+                val rect = CropGeometry.region(size[0], size[1], boxWidth, boxHeight, crop)
+                    ?: return false
+                val croppedPath = withContext(Dispatchers.IO) { cropTemporaryPath(platform, initialPath) }
+                // Registered before the write so a cancelled or failed write is cleaned
+                // up by the same `finally` that would have deleted a finished copy.
+                scratchPaths += croppedPath
+                if (!withContext(Dispatchers.IO) { cropJpegTo(source, rect, croppedPath) }) return false
+                renderPhotoPath = croppedPath
+                cropRect = rect
+                return true
+            }
+
+            var image = renderOrFail(temporaryPath, renderPhotoPath)
+
+            // Fallback only: an engine that reports `photoSrc` already applied the
+            // crop, and the photo it was handed must stay the original file.
+            if (!crop.isDefault && image.photoSrc == null) {
+                // The rendered box is the truth: crop to the box the engine really
+                // drew, so the fallback needs no recorded preview aspect and can
+                // never be planned against a stale one.
+                val box = image.photoRect
+                if (box != null && box.w > 0f && box.h > 0f &&
+                    preCropFor(box.w.toDouble(), box.h.toDouble())
+                ) {
+                    val secondPath = withContext(Dispatchers.IO) {
+                        temporaryPath(platform, initialPath, settings.format.extension)
+                    }
+                    scratchPaths += temporaryPath
+                    temporaryPath = secondPath
+                    image = renderOrFail(secondPath, renderPhotoPath)
+                    // Only a crop that really reached the renderer may reach the gain map.
+                    appliedCrop = crop
+                }
+            }
+
+            // Ultra HDR: the engine has written the SDR rendition. When the settings ask
+            // for HDR and the source photo carries a reusable gain map, the temporary
+            // file is wrapped in place *before* it is committed, so the commit keeps its
+            // atomic semantics and any failure below simply leaves the SDR bytes.
+            if (settings.preserveHdr &&
+                settings.format == com.framemark.native.product.ExportFormat.Jpeg
+            ) {
+                val rect = image.photoRect
+                if (rect != null && !photoPath.isNullOrBlank()) {
+                    withContext(Dispatchers.IO) {
+                        val source = runCatching { platform.readBytes(photoPath) }.getOrNull()
+                        val sdr = runCatching { platform.readBytes(temporaryPath) }.getOrNull()
+                        val wrapped = if (source != null && sdr != null) {
+                            runCatching {
+                                com.framemark.native.product.UltraHdrExport.wrap(
+                                    source = source,
+                                    sdrJpeg = sdr,
+                                    canvasWidth = image.width,
+                                    canvasHeight = image.height,
+                                    photoRect = doubleArrayOf(
+                                        rect.x.toDouble(), rect.y.toDouble(),
+                                        rect.w.toDouble(), rect.h.toDouble(),
+                                    ),
+                                    // The region the SDR render was cropped to, so
+                                    // highlights land where the pixels are.
+                                    crop = appliedCrop,
+                                    // The engine's own answer wins: it is the region it
+                                    // really sampled. It only describes the original
+                                    // photo when Kotlin did not hand the renderer a
+                                    // pre-cropped copy — a rect in that copy's pixels
+                                    // cannot be applied to the original bytes.
+                                    photoSrc = if (cropRect == null) {
+                                        image.photoSrc?.let { src ->
+                                            doubleArrayOf(
+                                                src.x.toDouble(), src.y.toDouble(),
+                                                src.w.toDouble(), src.h.toDouble(),
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                )
+                            }.getOrNull()
+                        } else {
+                            null
+                        }
+                        when {
+                            wrapped == null -> FmLog.info("FM_ULTRA_HDR_SKIP") {
+                                "card=$cardId reason=no-reusable-gain-map"
+                            }
+                            !platform.writeBytes(temporaryPath, wrapped) -> FmLog.warn("FM_ULTRA_HDR_WRITE_FAIL") {
+                                "card=$cardId kept as SDR"
+                            }
+                            else -> FmLog.info("FM_ULTRA_HDR_READY") {
+                                "card=$cardId bytes=${wrapped.size} canvas=${image.width}x${image.height}"
+                            }
+                        }
+                    }
+                }
+            }
+
             val prepared = withContext(Dispatchers.IO) {
                 val bytes = platform.fileSize(temporaryPath)
                 if (bytes <= 0L || !platform.exists(temporaryPath)) {
@@ -316,7 +455,10 @@ object NativeEngine {
             }
             val note = listOfNotNull(image.note, publishNote).filter { it.isNotBlank() }.joinToString("；").ifBlank { null }
             val outputBytes = withContext(Dispatchers.IO) { platform.fileSize(path) }
-            FmLog.info("FM_NATIVE_EXPORT") { "card=$cardId path=$path ${image.width}x${image.height} ms=${image.ms}" }
+            FmLog.info("FM_NATIVE_EXPORT") {
+                "card=$cardId path=$path ${image.width}x${image.height} ms=${image.ms} " +
+                    "crop=${cropRect?.joinToString { it.toInt().toString() } ?: "-"}"
+            }
             return ExportResult(
                 path = path,
                 fileName = path.substringAfterLast('/').substringAfterLast('\\'),
@@ -329,7 +471,10 @@ object NativeEngine {
                     outputDirectory ?: platform.exportDir, photoDisplayName),
             )
         } finally {
-            withContext(NonCancellable + Dispatchers.IO) { platform.deleteExportTemporary(temporaryPath) }
+            withContext(NonCancellable + Dispatchers.IO) {
+                platform.deleteExportTemporary(temporaryPath)
+                scratchPaths.forEach { platform.deleteExportTemporary(it) }
+            }
         }
     }
 
@@ -341,6 +486,20 @@ object NativeEngine {
             if (!platform.exists(candidate)) return candidate
         }
         throw EngineFailure("FM-E-IO-003", "无法创建唯一临时导出路径")
+    }
+
+    /**
+     * Scratch name for the pre-cropped photo copy: it lives next to the export
+     * (same directory, so no extra mount is needed) and is never committed.
+     */
+    private fun cropTemporaryPath(platform: WorkflowPlatform, nearPath: String): String {
+        val stem = nearPath.substringBeforeLast('.')
+        repeat(16) {
+            val random = kotlin.random.Random.nextInt().toUInt().toString(16)
+            val candidate = "$stem.fm-crop-$random.jpg"
+            if (!platform.exists(candidate)) return candidate
+        }
+        throw EngineFailure("FM-E-IO-003", "无法创建唯一临时裁切路径")
     }
 
     /**

@@ -3,19 +3,31 @@ package com.framemark.native.shell.phone
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.ExportSizeMode
+import kotlin.math.abs
 
 /**
- * The phone export options of report §7.6: 格式, 尺寸 with exactly three choices
- * (原尺寸 / 长边 2048 / 长边 4096) and a quality that is **fixed at 100** — the
- * phone sheet has no quality control at all, unlike the desktop dialog.
+ * The phone export options of report §7.6: 格式, 尺寸 with the three fixed steps
+ * (原尺寸 / 长边 2048 / 长边 4096) plus — when a project carries a long edge the
+ * three steps cannot express — one dynamic "自定义 N px" chip, and a quality that
+ * is **fixed at 100**: the phone sheet has no quality control at all, unlike the
+ * desktop dialog.
  *
- * Everything here is pure, so the three size steps, the fixed quality and the
- * format mapping are unit-testable without a composition (WP-P2 §4.2).
+ * Everything here is pure, so the size mapping, the fixed quality, the Ultra HDR
+ * gate and the format mapping are unit-testable without a composition (WP-P2 §4.2).
  */
 enum class PhoneExportSize(val label: String, val longEdge: Int?) {
     Original("原尺寸", null),
     Long2048("长边 2048", 2048),
     Long4096("长边 4096", 4096),
+}
+
+/**
+ * One chip of the 尺寸 row. [id] is what the segmented control reports back and
+ * [isCustom] marks the project's own long edge — a value the three fixed steps
+ * cannot represent, so it gets its own chip instead of silently borrowing a step.
+ */
+data class PhoneExportSizeChoice(val id: String, val label: String, val longEdge: Int?) {
+    val isCustom: Boolean get() = id == PhoneExportOptions.CUSTOM_SIZE_ID
 }
 
 object PhoneExportOptions {
@@ -28,12 +40,51 @@ object PhoneExportOptions {
     /** 格式: the three the native encoder can write on Android. */
     val FORMATS: List<ExportFormat> = listOf(ExportFormat.Jpeg, ExportFormat.Png, ExportFormat.WebP)
 
-    /** Which of the three steps [settings] currently asks for. */
+    /** Id of the dynamic chip carrying a project long edge that is not in [SIZES]. */
+    const val CUSTOM_SIZE_ID: String = "custom"
+
+    /**
+     * Which fixed step [settings] is closest to.
+     *
+     * `Original` only when no long edge is requested at all. A project exported at
+     * 3000 px must not be shown as 原尺寸 while the engine keeps using 3000: a
+     * value between two steps resolves to the nearest one (3000 → 2048), so a chip
+     * is always selected, and [customLongEdge]/[sizeCaption] surface the exact
+     * value instead of the step's label.
+     */
     fun sizeOf(settings: ExportSettings): PhoneExportSize {
-        if (settings.sizeMode != ExportSizeMode.LongEdge) return PhoneExportSize.Original
-        // An older project may hold a long edge that is not one of the three steps;
-        // keep it on the nearest step so the sheet always shows a selected chip.
-        return SIZES.firstOrNull { it.longEdge == settings.longEdge } ?: PhoneExportSize.Original
+        val longEdge = settings.effectiveLongEdge ?: return PhoneExportSize.Original
+        return SIZES.firstOrNull { it.longEdge == longEdge } ?: nearestStep(longEdge)
+    }
+
+    /** The project's own long edge when it is not one of the three steps; else null. */
+    fun customLongEdge(settings: ExportSettings): Int? {
+        val longEdge = settings.effectiveLongEdge ?: return null
+        return longEdge.takeIf { edge -> SIZES.none { it.longEdge == edge } }
+    }
+
+    /** The chips the 尺寸 row shows for [settings]: the three steps, plus a custom one. */
+    fun sizeChoices(settings: ExportSettings): List<PhoneExportSizeChoice> {
+        val steps = SIZES.map { PhoneExportSizeChoice(it.name, it.label, it.longEdge) }
+        val custom = customLongEdge(settings) ?: return steps
+        // The chip stays as short as "长边 2048" so it does not ellipsize at phone
+        // width; [sizeCaption] prints the exact "自定义 N px" value in the field.
+        return steps + PhoneExportSizeChoice(CUSTOM_SIZE_ID, "自定义 $custom", custom)
+    }
+
+    /** The highlighted chip: the custom value when one is set, else the nearest step. */
+    fun selectedSizeId(settings: ExportSettings): String =
+        if (customLongEdge(settings) != null) CUSTOM_SIZE_ID else sizeOf(settings).name
+
+    /**
+     * Applies one chip. The custom chip is already the selected project edge, so
+     * tapping it is a no-op apart from re-pinning the quality — the next export
+     * keeps the engine's real long edge instead of silently changing it.
+     */
+    fun applySizeChoice(settings: ExportSettings, id: String): ExportSettings {
+        if (id == CUSTOM_SIZE_ID) return settings.copy(quality = QUALITY)
+        val step = SIZES.firstOrNull { it.name == id } ?: return settings
+        return applySize(settings, step)
     }
 
     fun formatOf(settings: ExportSettings): ExportFormat =
@@ -62,6 +113,25 @@ object PhoneExportOptions {
         )
     }
 
+    /**
+     * Whether the Ultra HDR switch may be used: the export must be JPEG and the
+     * active photo must really carry a gain map ([com.framemark.native.product.UltraHdr.locate]).
+     * Anything else stays visible but disabled — no silent no-op and no fake HDR.
+     */
+    fun hdrEnabled(format: ExportFormat, hasGainMap: Boolean): Boolean =
+        format == ExportFormat.Jpeg && hasGainMap
+
+    /** The one-line reason the Ultra HDR switch is disabled; null when it can be used. */
+    fun hdrReason(format: ExportFormat, hasGainMap: Boolean): String? = when {
+        !hasGainMap -> "这张照片没有 HDR 增益图，只能导出 SDR"
+        format != ExportFormat.Jpeg -> "Ultra HDR 仅在 JPEG 格式下可用"
+        else -> null
+    }
+
+    /** Writes the HDR switch through the same copy path as 格式 / 尺寸 (no new JSON key). */
+    fun applyPreserveHdr(settings: ExportSettings, enabled: Boolean): ExportSettings =
+        settings.copy(preserveHdr = enabled, quality = QUALITY)
+
     /** The settings actually handed to the engine: quality always 100, format always valid. */
     fun normalized(settings: ExportSettings): ExportSettings =
         settings.copy(quality = QUALITY, format = formatOf(settings))
@@ -73,13 +143,26 @@ object PhoneExportOptions {
      * canvas **once** at q100 4:4:4, so a promise that the file is never encoded
      * again would be false — and 画质 is the first-ranked trust issue in
      * UX-RESEARCH. 原尺寸 promises no rescaling; the encoder is named for what it is.
+     *
+     * A custom long edge is not 原尺寸: it must say what the engine really does, so
+     * it never uses the "原分辨率，不缩放" wording.
      */
     fun resolutionNote(
         size: PhoneExportSize,
         format: ExportFormat,
         webpLossless: Boolean = true,
+    ): String = resolutionNoteFor(size.longEdge, format, webpLossless)
+
+    /** Settings-aware note: a custom long edge is described by its real value. */
+    fun resolutionNote(settings: ExportSettings): String =
+        resolutionNoteFor(settings.effectiveLongEdge, formatOf(settings), settings.webpLossless)
+
+    private fun resolutionNoteFor(
+        longEdge: Int?,
+        format: ExportFormat,
+        webpLossless: Boolean,
     ): String = when {
-        size != PhoneExportSize.Original -> "长边缩到 ${size.longEdge} px 后再编码。"
+        longEdge != null -> "长边缩到 $longEdge px 后再编码。"
         format == ExportFormat.Jpeg -> "原分辨率，不缩放；JPEG 质量 100、4:4:4（会重新编码一次）"
         format == ExportFormat.Png -> "原分辨率，不缩放；无损编码"
         webpLossless -> "原分辨率，不缩放；无损编码"
@@ -103,4 +186,18 @@ object PhoneExportOptions {
     /** 尺寸 chip caption: 原尺寸 has no number to print. */
     fun sizeCaption(size: PhoneExportSize): String =
         size.longEdge?.let { "长边 $it px" } ?: "原尺寸"
+
+    /**
+     * Caption of the real selection. A custom edge prints its exact value, so the
+     * preview never repeats a step label the engine is not going to use.
+     */
+    fun sizeCaption(settings: ExportSettings): String {
+        val longEdge = settings.effectiveLongEdge ?: return PhoneExportSize.Original.label
+        return if (customLongEdge(settings) != null) "自定义 $longEdge px" else "长边 $longEdge px"
+    }
+
+    private fun nearestStep(longEdge: Int): PhoneExportSize {
+        val steps = SIZES.filter { it.longEdge != null }
+        return steps.minByOrNull { abs(it.longEdge!! - longEdge) } ?: PhoneExportSize.Original
+    }
 }

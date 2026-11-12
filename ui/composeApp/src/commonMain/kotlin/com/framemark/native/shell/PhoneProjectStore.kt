@@ -7,6 +7,8 @@ import com.framemark.native.inspector.ControlType
 import com.framemark.native.inspector.ControlValue
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.product.PhotoDesign
+import com.framemark.native.product.PhotoCrop
+import com.framemark.native.product.PhotoCropParams
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.product.DocumentKind
 import com.framemark.native.product.FileTooLargeException
@@ -20,6 +22,7 @@ import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreCodes
 import com.framemark.native.product.StoreError
 import com.framemark.native.product.StoreResult
+import com.framemark.native.product.valueOrNull
 import com.framemark.native.product.WatermarkAsset
 import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.ProjectWatermarkSpec
@@ -117,11 +120,11 @@ object PhoneProjectRuntime {
 
 /**
  * The phone's project state: `product.Project` is the single source of truth and
- * `product.SessionStore` persists it. A write is staged into a temp file, the staged
- * bytes are read back and verified before the replace, and when the filesystem
- * refuses an atomic rename the fallback replace re-reads the target and compares it
- * with the bytes it published, so a short write is reported as a failure instead of
- * a saved document. Durability against power loss is still bounded by what the OS
+ * `product.SessionStore` persists it. A write is staged into a temp file, the
+ * staged size and a streaming SHA-256 are verified before the replace, and when the
+ * filesystem refuses an atomic rename the fallback replace re-reads the target and
+ * compares it with the bytes it published, so a short write is reported as a failure
+ * instead of a saved document. Durability against power loss is still bounded by what the OS
  * flushed: the bytes are correct when the call returns, but a force-stop or a
  * power cut cannot be stronger than the platform's own fsync (the parent directory
  * is flushed where the platform allows it). The photo list, one design per photo
@@ -340,7 +343,7 @@ class PhoneProjectStore(
                 presetDocumentState = PresetDocumentState.Unreadable
                 presetError = "${result.error.code} ${result.error.message}"
                 FmLog.warn("FM_PRESET_DOC_FAIL") { "code=${result.error.code} msg=${result.error.message}" }
-                val legacyText = store.documentText(DocumentKind.PresetLibrary)
+                val legacyText = store.documentText(DocumentKind.PresetLibrary).valueOrNull()
                 if (legacyText != null && LegacyDocuments.isEmptyLegacyPresetLibrary(legacyText)) {
                     when (val migration = store.migrateLegacyPresetLibrary(emptyList())) {
                         is StoreResult.Ok -> {
@@ -450,11 +453,13 @@ class PhoneProjectStore(
         displayNamesByPath: Map<String, String> = emptyMap(),
     ): List<String> {
         var next = project
+        val fingerprintCandidates = LinkedHashSet<String>()
         paths.forEach { path ->
             if (path.isBlank()) return@forEach
             val id = idForPath(path)
             val displayName = displayNamesByPath[path]?.takeIf { it.isNotBlank() }
                 ?: path.substringAfterLast('/').substringAfterLast('\\')
+            fingerprintCandidates += id
             val existing = next.photos.firstOrNull { it.id == id }
             if (existing != null) {
                 if (displayNamesByPath[path].isNullOrBlank() || existing.displayName == displayName) return@forEach
@@ -471,14 +476,54 @@ class PhoneProjectStore(
                 orientation = meta?.getOrNull(2) ?: 1,
                 widthPx = meta?.getOrNull(0) ?: 0,
                 heightPx = meta?.getOrNull(1) ?: 0,
-                fingerprint = io?.fingerprint(path),
+                // An import must not hash hundreds of MB on the caller thread (a Compose
+                // LaunchedEffect): the digest is filled in on the store's IO scope below.
+                fingerprint = null,
             )
             next = next.addPhoto(ref, inheritFrom(next))
         }
         activePath?.let { next = next.selectPhoto(idForPath(it)) }
         commit(next)
+        scheduleFingerprints(fingerprintCandidates)
         return next.photos.map { it.id }
     }
+
+    /**
+     * Fills in the fingerprints of just-imported photos on the store's own IO scope.
+     *
+     * [adoptPaths] stays synchronous (its call sites are Compose effects and the
+     * Android activity's pick callback): the photo is usable immediately, and the
+     * digest — which reads the whole file — is patched through the ordinary [commit]
+     * path once it is known. The patch re-reads the *current* project under the
+     * write lock, so a photo removed while the hash was running is not resurrected,
+     * a photo that already has a fingerprint is left alone, and a disposed store
+     * stops both the hashing and the patch.
+     */
+    private fun scheduleFingerprints(candidateIds: Set<String>) {
+        val assetIo = io ?: return
+        if (candidateIds.isEmpty() || isDisposed()) return
+        scope.launch {
+            val targets = synchronized(saveLock) {
+                if (isDisposed()) emptyList() else photosNeedingFingerprint(project, candidateIds)
+            }
+            if (targets.isEmpty()) return@launch
+            val fingerprints = LinkedHashMap<String, String>()
+            for (photo in targets) {
+                if (isDisposed()) return@launch
+                val fingerprint = runCatching { assetIo.fingerprint(photo.path) }.getOrNull()
+                if (fingerprint != null) fingerprints[photo.id] = fingerprint
+            }
+            if (fingerprints.isEmpty() || isDisposed()) return@launch
+            commitWith { current ->
+                // Re-check under the write lock: a dispose that lands between the hash
+                // and this patch must not mutate the model of a dead store.
+                if (isDisposed()) current else current.withFingerprints(fingerprints)
+            }
+        }
+    }
+
+    /** True once [dispose] ran; read under its own lock so the IO thread sees it. */
+    private fun isDisposed(): Boolean = synchronized(disposeLock) { disposed }
 
     fun adoptSample(): String {
         if (project.photos.none { it.id == SAMPLE_PHOTO_ID }) {
@@ -759,6 +804,21 @@ class PhoneProjectStore(
             rotation = ui.rotation,
             photoAspect = ui.photoAspect,
         )
+    }
+
+    // ---- photo crop --------------------------------------------------------
+
+    /**
+     * Writes the photo's crop into the design's own `params` and nowhere else, so
+     * autosave, the stage and the batch queue read one value. The defaults remove
+     * the keys again, which is what keeps a document that never used the crop UI
+     * byte-for-byte identical to one written before the feature existed.
+     */
+    fun setCrop(photoId: String, crop: PhotoCrop) {
+        val design = project.designs[photoId] ?: return
+        val next = PhotoCropParams.write(design, crop)
+        if (next == design) return
+        commit(project.setDesign(photoId, next))
     }
 
     // ---- export settings ---------------------------------------------------
@@ -1078,7 +1138,15 @@ class PhoneProjectStore(
         return design.copy(overlay = null) != shared.copy(overlay = null)
     }
 
-    private fun commit(next: Project): Boolean {
+    private fun commit(next: Project): Boolean = commitWith { next }
+
+    /**
+     * Applies [transform] to the project **as it is under the write lock**. The
+     * background fingerprint patch must go through this (not through a project
+     * snapshot it read earlier): building the next model from a stale snapshot
+     * could drop a concurrent edit and would resurrect a photo removed meanwhile.
+     */
+    private fun commitWith(transform: (Project) -> Project): Boolean {
         val committed = synchronized(saveLock) {
             // Before the first read the flag only means "no document authority was
             // established yet": the in-memory model may still change, while the disk
@@ -1089,6 +1157,7 @@ class PhoneProjectStore(
                 saveError = projectReadProtectionMessage()
                 return@synchronized false
             }
+            val next = transform(project)
             if (next == project) return@synchronized false
             project = next.touched(nowMillis)
             changeVersion++
@@ -1135,6 +1204,44 @@ class PhoneProjectStore(
 }
 
 data class PhonePhotoEntry(val photo: PhotoRef, val design: PhotoDesign?)
+
+/**
+ * The photos among [candidateIds] that still need a fingerprint: still in the
+ * project, still carrying a file path, and not hashed yet.
+ *
+ * Pure so the "what does the background pass actually hash" decision is testable
+ * without a scope or a real file: the sample photo (blank path) is skipped, an
+ * already-hashed photo is never re-read, and an id that is no longer in the
+ * project (removed between adopt and hash) produces nothing.
+ */
+internal fun photosNeedingFingerprint(project: Project, candidateIds: Collection<String>): List<PhotoRef> {
+    val candidates = candidateIds.toSet()
+    if (candidates.isEmpty()) return emptyList()
+    return project.photos.filter { photo ->
+        photo.id in candidates && photo.fingerprint == null && photo.path.isNotBlank()
+    }
+}
+
+/**
+ * Applies [fingerprints] to the photos that are **still present and still
+ * un-hashed**. A photo removed while its hash was running is simply absent from
+ * [photos], so the patch cannot resurrect it; a photo that already has a digest is
+ * left alone (first writer wins).
+ */
+internal fun Project.withFingerprints(fingerprints: Map<String, String>): Project {
+    if (fingerprints.isEmpty()) return this
+    var changed = false
+    val patched = photos.map { photo ->
+        val fingerprint = fingerprints[photo.id]
+        if (fingerprint != null && photo.fingerprint == null) {
+            changed = true
+            photo.copy(fingerprint = fingerprint)
+        } else {
+            photo
+        }
+    }
+    return if (changed) copy(photos = patched) else this
+}
 
 // ---------------------------------------------------------------------------
 // Mapping helpers
@@ -1241,6 +1348,9 @@ class InMemoryProductFileSystem(override val dataDir: String = "memory:/") : Pro
     override fun readText(path: String): String? = files[path]?.decodeToString()
 
     override fun readBytes(path: String): ByteArray? = files[path]?.copyOf()
+
+    /** In-memory files cannot stream, so the digest is taken from the stored bytes. */
+    override fun sha256Of(path: String): String? = files[path]?.let { Sha256.hex(it) }
 
     override fun writeBytes(path: String, bytes: ByteArray): Boolean {
         files[path] = bytes

@@ -69,8 +69,8 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
  *
  * This composable is deliberately a plain `Column` — it is hosted inside the
  * phone `EditorTabList` `LazyColumn` item and the desktop inspector scroll, so a
- * nested vertical lazy list here would be unbounded. The brand page is a
- * full-screen dialog and may use its own `LazyColumn`.
+ * nested vertical lazy list here would be unbounded. 手机端的品牌选择器是一层盖在
+ * 画布上的覆盖层面板（由外壳绘制，舞台仍可见）；桌面右栏仍是内联品牌页。
  */
 @Composable
 fun LogoBrandPanel(
@@ -83,13 +83,26 @@ fun LogoBrandPanel(
      * slot 是异步到的，显式参数能保证槽表更新后自动匹配重新解析。
      */
     textSlots: List<com.framemark.native.workflow.TextSlot> = emptyList(),
+    /**
+     * 手机端传「打开品牌选择器」的回调：覆盖层面的容器必须是整个编辑器（底板只画
+     * 自己的高度，盖不住舞台），所以这里只发请求，由外壳绘制。传 null 时保持桌面
+     * 右栏的内联品牌页 / 版本页；两条路径写入同一个 Brand 控件值。
+     */
+    onOpenBrandPicker: (() -> Unit)? = null,
 ) {
     // WP-V3: the page body moved to `LogoPanes.kt` so the desktop rail and the
     // phone sheet render the showcase structure (`logo.js` lgPaneLive / brand /
     // version pages). Signature and behaviour inputs are unchanged; the legacy
     // body below stays compiled (still reachable by tests via `logoBrandMode`)
     // but is no longer the rendered page.
-    CuratedLogoPane(model = model, session = session, dense = dense, modifier = modifier, textSlots = textSlots)
+    CuratedLogoPane(
+        model = model,
+        session = session,
+        dense = dense,
+        modifier = modifier,
+        textSlots = textSlots,
+        onOpenBrandPicker = onOpenBrandPicker,
+    )
 }
 
 @Composable
@@ -276,12 +289,25 @@ private fun LogoBreadcrumb() {
     }
 }
 
+/**
+ * 用户 Logo 库面板：导入入口 + 本机全局库列表 + 选中 / 删除。
+ *
+ * 桌面右栏与手机底板的「我的 Logo」来源段共用这一份（`LogoPanes.kt` 的
+ * [LogoSourceBody.User] 分支），不是两个选择器：两者都读
+ * [UserLogoEnv.repository]，选中都写 `session.set(control, entry.designValue)`，
+ * 所以导入与选中走的是同一条会话路径。
+ *
+ * [selectable] 只裁「选中」：库是全局的，列出 / 导入 / 删除与当前边框无关，
+ * 面板永远不因此禁用或隐藏；边框画不出用户 Logo 时由调用点拦住写入并显示原因
+ * （[USER_LOGO_UNSUPPORTED_ON_CARD]）。
+ */
 @Composable
-private fun UserLogoPanel(
+internal fun UserLogoPanel(
     control: InspectorControl,
     session: DesignSession,
     repo: UserLogoRepository?,
     dense: Boolean,
+    selectable: Boolean = true,
 ) {
     if (repo == null) {
         LogoHint("用户 Logo 库未安装。", dense)
@@ -363,6 +389,7 @@ private fun UserLogoPanel(
                     selected = entry.id == selectedId,
                     repo = repo,
                     dense = dense,
+                    selectable = selectable,
                     onPick = { session.set(control, entry.designValue) },
                     onDelete = {
                         scope.launch {
@@ -399,6 +426,8 @@ private fun UserLogoRow(
     selected: Boolean,
     repo: UserLogoRepository,
     dense: Boolean,
+    /** false = 当前边框画不出用户 Logo：行仍可看 / 可删，只是选中不写入。 */
+    selectable: Boolean,
     onPick: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -415,7 +444,7 @@ private fun UserLogoRow(
             .heightIn(min = if (dense) 56.dp else 48.dp)
             .clip(RoundedCornerShape(FmRadii.input))
             .background(if (selected) FmPalette.primarySoft else FmPalette.surfaceMuted)
-            .clickable(onClick = onPick)
+            .clickable(enabled = selectable, onClick = onPick)
             .semantics { contentDescription = "用户 Logo：${entry.name}" }
             .padding(horizontal = FmSpacing.sm, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -444,7 +473,11 @@ private fun UserLogoRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = if (selected) "已选" else "选择",
+            text = when {
+                selected -> "已选"
+                !selectable -> "不可选"
+                else -> "选择"
+            },
             style = FmType.labelSmall,
             color = if (selected) FmPalette.primaryStrong else FmPalette.onSurfaceMuted,
         )

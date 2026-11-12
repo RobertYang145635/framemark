@@ -113,11 +113,11 @@ class PhonePresetMigrationOrderTest {
 
         // Evidence only: the exact file-operation order the migration took.
         println("FM_MIGRATION_OPS ${fs.ops}")
-        val decodedStaged = fs.ops.indexOfFirst { it == "readText ${fs.tempPath}" }
+        val decodedStaged = fs.ops.indexOfFirst { it == "readBytesBounded ${fs.tempPath}" }
         val firstReplace = fs.ops.indexOfFirst { it == "rename ${fs.tempPath} -> ${base.presetsPath}" }
         assertTrue(
             decodedStaged >= 0 && (firstReplace < 0 || decodedStaged < firstReplace),
-            "替换线上库之前必须先完整解码暂存文档（readText 就是编解码器的读取通道）；实际操作序列：${fs.ops}",
+            "替换线上库之前必须先完整解码暂存文档（readBytesBounded 就是编解码器的读取通道）；实际操作序列：${fs.ops}",
         )
         assertTrue(
             fs.renamedNonOriginalToLive.isEmpty(),
@@ -406,7 +406,7 @@ class PhonePresetMigrationOrderTest {
         // pre-tamper read and the staged decode ran on the post-tamper content.
         assertTrue(
             fs.ops.count { it.startsWith("readBytes ${fs.tempPath}") } >= 1 &&
-                fs.ops.any { it == "readText ${fs.tempPath}" } &&
+                fs.ops.any { it == "readBytesBounded ${fs.tempPath}" } &&
                 fs.tamperApplied,
             "必须确有“字节比对在前、暂存解码在后”的中途改写：${fs.ops}",
         )
@@ -418,8 +418,8 @@ class PhonePresetMigrationOrderTest {
      * Fakes a staged document that every *byte* check accepts but that the codec reads
      * back differently: [readBytes] stays faithful (so the size check, the byte-equality
      * check and the JSON-root parse of the plain save transaction all pass), while the
-     * codec's own channel — [readText] — answers [lossyText] for exactly those bytes,
-     * wherever they live (the temp before a rename, the live path after one).
+     * codec's own channel — [readBytesBounded] — answers [lossyText] for exactly those
+     * bytes, wherever they live (the temp before a rename, the live path after one).
      *
      * Recovery is blocked: nothing may write or rename a `.restore.tmp`, so a
      * replace-before-decode implementation cannot hide behind its auto-restore.
@@ -435,12 +435,12 @@ class PhonePresetMigrationOrderTest {
         val tempPath get() = "$livePath.tmp"
         private var stagedBytes: ByteArray? = null
 
-        override fun readText(path: String): String? {
-            ops += "readText $path"
+        override fun readBytesBounded(path: String, limitBytes: Int): ByteArray? {
+            ops += "readBytesBounded $path"
             val raw = base.readBytes(path) ?: return null
+            if (raw.size > limitBytes) throw FileTooLargeException(path, limitBytes)
             val staged = stagedBytes
-            if (staged != null && raw.contentEquals(staged)) return lossyText
-            return raw.decodeToString()
+            return if (staged != null && raw.contentEquals(staged)) lossyText.encodeToByteArray() else raw
         }
 
         override fun readBytes(path: String): ByteArray? {
@@ -517,6 +517,13 @@ class PhonePresetMigrationOrderTest {
         override fun readText(path: String): String? {
             ops += "readText $path"
             return base.readText(path)
+        }
+
+        override fun readBytesBounded(path: String, limitBytes: Int): ByteArray? {
+            ops += "readBytesBounded $path"
+            val bytes = base.readBytes(path) ?: return null
+            if (bytes.size > limitBytes) throw FileTooLargeException(path, limitBytes)
+            return bytes
         }
 
         override fun rename(from: String, to: String): Boolean {

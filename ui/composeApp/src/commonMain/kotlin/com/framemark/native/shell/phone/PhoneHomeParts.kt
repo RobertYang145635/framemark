@@ -222,7 +222,7 @@ internal fun PhoneHomeTile(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip(RoundedCornerShape(11.dp))
+                .clip(RoundedCornerShape(FmRadii.tile))
                 .background(FmPalette.surfaceMuted),
             contentAlignment = Alignment.Center,
         ) {
@@ -278,7 +278,7 @@ internal fun PhoneHomeRecentCard(
                 style = TextStyle12Half.copy(fontWeight = FontWeight.Medium),
                 color = FmPalette.primary,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(FmRadii.badge))
                     .clickable(role = Role.Button, onClick = onOpenAll),
             )
         }

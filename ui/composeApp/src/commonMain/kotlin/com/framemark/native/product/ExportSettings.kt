@@ -28,6 +28,12 @@ data class ExportSettings(
     val longEdge: Int? = null,
     val filenamePattern: String = "{photo}-{index}",
     val webpLossless: Boolean = true,
+    /**
+     * Keep the source photo's HDR rendition by re-encapsulating its gain map as an
+     * Ultra HDR JPEG. Only meaningful for [ExportFormat.Jpeg] and only when the
+     * photo actually carries a gain map; otherwise the export is plain SDR.
+     */
+    val preserveHdr: Boolean = false,
 ) {
     /** Long edge handed to the engine; null means "keep the source size". */
     val effectiveLongEdge: Int? get() = if (sizeMode == ExportSizeMode.LongEdge) longEdge else null

@@ -268,9 +268,22 @@ class DesktopWorkflowPlatform(
 
     override fun samplePhotoPath(): String? {
         System.getenv("FM_BATCH_PHOTO")?.takeIf { it.isNotBlank() }?.let { return it }
-        val root = System.getenv("FM_WORKSPACE_ROOT")?.takeIf { it.isNotBlank() } ?: "D:/border&watermark"
-        val file = File(root, "_research/native/t1b/assets/img/photo-pil.png")
-        return if (file.isFile) file.absolutePath else null
+        // QA runs point FM_WORKSPACE_ROOT at the materials workspace. A packaged
+        // build has no materials tree, so the sample is looked up next to the
+        // runtime and is simply absent otherwise. A developer path used to be the
+        // fallback, which made the sample depend on this machine's disk layout and
+        // shipped a D: path inside the product.
+        val candidates = buildList {
+            System.getenv("FM_WORKSPACE_ROOT")?.takeIf { it.isNotBlank() }?.let {
+                add(File(it, "_research/native/t1b/assets/img/photo-pil.png"))
+            }
+            // The launcher pushes the working directory to the package root, so a
+            // packaged sample is found relatively — without baking a developer path
+            // into the product and without a new environment hook.
+            add(File("data/t1b/assets/img/photo-pil.png"))
+            add(File("data/assets/img/photo-pil.png"))
+        }
+        return candidates.firstOrNull { it.isFile }?.absolutePath
     }
 
     override fun fileFingerprint(path: String): String? = runCatching {

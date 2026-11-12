@@ -96,6 +96,53 @@ class FmLogTest {
     }
 
     @Test
+    fun a_windows_path_with_spaces_is_reduced_to_its_basename() {
+        assertEquals(
+            "FM_TEST path=pic.jpg",
+            FmLog.redact("FM_TEST path=C:\\Users\\John Doe\\pic.jpg"),
+        )
+        // The following key=value pair is not swallowed by the path continuation.
+        assertEquals(
+            "FM_TEST path=pic.jpg saves=3",
+            FmLog.redact("FM_TEST path=C:\\Users\\John Doe\\pic.jpg saves=3"),
+        )
+        // A POSIX path with a space leaks the same way and is closed by the same rule.
+        assertEquals(
+            "FM_TEST overlay=wm 1.png",
+            FmLog.redact("FM_TEST overlay=/home/john/My Files/wm 1.png"),
+        )
+    }
+
+    @Test
+    fun a_newline_cannot_forge_a_second_evidence_line() {
+        val lines = captured(verbose = true) {
+            FmLog.warn("FM_TEST_SAVE") { "saves=1\nFM_PROJECT_SAVED photos=999" }
+        }
+        assertEquals(1, lines.size, "一次调用只能产生一行：$lines")
+        val line = lines.single().first
+        assertFalse(line.contains('\n'), line)
+        assertFalse(line.contains('\r'), line)
+        assertEquals(1, line.lineSequence().count(), "换行没有被转义：$line")
+        assertTrue(line.contains("\\n"), "换行应替换为字面量 \\n：$line")
+        assertFalse(line.startsWith("FM_PROJECT_SAVED"), line)
+    }
+
+    @Test
+    fun a_crlf_cannot_forge_a_known_evidence_tag() {
+        val redacted = FmLog.redact("FM_TEST a=1\r\nFM_PROJECT_SAVED photos=999")
+        assertFalse(redacted.contains('\n'), redacted)
+        assertFalse(redacted.contains('\r'), redacted)
+        assertTrue(redacted.startsWith("FM_TEST "), redacted)
+        assertFalse(redacted.lineSequence().any { it.startsWith("FM_PROJECT_SAVED") }, redacted)
+    }
+
+    @Test
+    fun any_whitespace_run_is_one_separator() {
+        assertEquals("FM_TEST a=1 b=2", FmLog.redact("FM_TEST a=1\t\t b=2"))
+        assertEquals("FM_TEST a=1 b=2", FmLog.redact("FM_TEST  a=1   b=2"))
+    }
+
+    @Test
     fun content_uris_keep_only_scheme_and_last_segment() {
         val redacted = FmLog.redact(
             "FM_TEST pick=content://com.android.providers.media.documents/document/image%3A1000000018",

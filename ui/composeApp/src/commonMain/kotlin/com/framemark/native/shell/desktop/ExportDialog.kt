@@ -248,6 +248,20 @@ fun DesktopExportDialog(
     var error by remember { mutableStateOf<String?>(null) }
     var actionNote by remember { mutableStateOf<String?>(null) }
     var exporting by remember { mutableStateOf(false) }
+    // Whether this photo can contribute HDR at all. Read off the UI thread: the file
+    // can be tens of megabytes and only its header segments are needed.
+    var hdrAvailable by remember(photo?.path) { mutableStateOf(false) }
+    LaunchedEffect(photo?.path) {
+        val path = photo?.path
+        hdrAvailable = if (path.isNullOrBlank()) {
+            false
+        } else {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val bytes = runCatching { platform?.readBytes(path) }.getOrNull()
+                bytes != null && com.framemark.native.product.UltraHdr.locate(bytes) != null
+            }
+        }
+    }
     var frame by remember(card?.id, design, photo?.path) { mutableStateOf<PreviewFrame?>(null) }
 
     val webpAvailable = card != null && NativeEngine.supportsWebpExport()
@@ -474,6 +488,9 @@ fun DesktopExportDialog(
                         canExport = canExport,
                         error = error,
                         qualityNote = "Windows 质量可调 ${ExportRules.QUALITY_MIN}–${ExportRules.QUALITY_MAX}，默认 ${ExportRules.QUALITY_DEFAULT}；Android 固定 100。",
+                        hdrAvailable = hdrAvailable && settings.format == ExportFormat.Jpeg,
+                        preserveHdr = settings.preserveHdr,
+                        onPreserveHdr = { enabled -> session.export = settings.copy(preserveHdr = enabled) },
                         onCancel = { if (!exporting) onDismiss() },
                         onExport = { runExport() },
                     )
@@ -693,7 +710,7 @@ private fun ExportFormColumn(
                     }
                     Spacer(Modifier.height(4.dp))
                     DlgNote(
-                        longEdgeError ?: "长边归一到所选像素后再编码（小于该值时放大）；1 – 20000。",
+                        longEdgeError ?: "长边归一到所选像素后再编码（小于该值时放大）；${ExportRules.LONG_EDGE_MIN} – ${ExportRules.LONG_EDGE_MAX}。",
                         error = longEdgeError != null,
                     )
                     if (crop != null) {
@@ -903,6 +920,9 @@ private fun ExportDialogFooter(
     canExport: Boolean,
     error: String?,
     qualityNote: String,
+    hdrAvailable: Boolean,
+    preserveHdr: Boolean,
+    onPreserveHdr: (Boolean) -> Unit,
     onCancel: () -> Unit,
     onExport: () -> Unit,
 ) {
@@ -919,6 +939,30 @@ private fun ExportDialogFooter(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Column(Modifier.weight(1f)) {
+                // Ultra HDR is offered only when the photo really carries a gain map
+                // and the format is JPEG; otherwise the row stays visible but inert,
+                // with the reason spelled out instead of a silent no-op.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    androidx.compose.material3.Switch(
+                        checked = preserveHdr && hdrAvailable,
+                        onCheckedChange = { onPreserveHdr(it) },
+                        enabled = hdrAvailable && !exporting,
+                    )
+                    Column {
+                        DlgNote(if (preserveHdr && hdrAvailable) "保留 HDR：已开启" else "保留 HDR（Ultra HDR）")
+                        DlgNote(
+                            if (hdrAvailable) {
+                                "照片自带增益图，成片仍可在 HDR 屏幕上还原高光"
+                            } else {
+                                "此照片没有 HDR 增益图，或当前格式不是 JPEG，只能导出 SDR"
+                            },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
                 DlgNote(qualityNote)
                 if (error != null) {
                     Spacer(Modifier.height(2.dp))

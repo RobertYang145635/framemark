@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.inspector.FmColorSwatch
@@ -115,7 +116,7 @@ fun PhoneSegmented(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(FmRadii.input))
             .background(FmPalette.surfaceMuted)
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -126,11 +127,11 @@ fun PhoneSegmented(
                 modifier = Modifier
                     .weight(1f)
                     .height(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(FmRadii.chip))
                     .background(if (active) FmPalette.surface else androidx.compose.ui.graphics.Color.Transparent)
                     .then(
                         if (active) {
-                            Modifier.border(1.dp, FmPalette.outline, RoundedCornerShape(8.dp))
+                            Modifier.border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.chip))
                         } else {
                             Modifier
                         },
@@ -255,7 +256,7 @@ fun PhoneSliderRow(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(FmRadii.chip))
                         .semantics {
                             contentDescription = "恢复默认"
                             role = Role.Button
@@ -269,7 +270,7 @@ fun PhoneSliderRow(
             Row(
                 modifier = Modifier
                     .height(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(FmRadii.chip))
                     .background(FmPalette.surfaceMuted)
                     .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -422,13 +423,24 @@ fun PhoneSwatchRow(
     }
 }
 
-/** `.outsz`: a dashed-top row of 12 px supporting copy with its number on the right. */
+/**
+ * `.outsz`: a dashed-top row of 12 px supporting copy with its number on the right.
+ *
+ * [topPadding] is the 9 dp `.outsz` rule gap when the row sits under a dashed rule
+ * inside a group; a pinned band (`PhoneDesignSummary`) pads the band itself and
+ * passes `0.dp`.
+ */
 @Composable
-fun PhoneKeyValueRow(label: String, value: String, modifier: Modifier = Modifier) {
+fun PhoneKeyValueRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    topPadding: Dp = 9.dp,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 9.dp)
+            .padding(top = topPadding)
             .semantics(mergeDescendants = true) { contentDescription = "$label：$value" },
         verticalAlignment = Alignment.CenterVertically,
     ) {

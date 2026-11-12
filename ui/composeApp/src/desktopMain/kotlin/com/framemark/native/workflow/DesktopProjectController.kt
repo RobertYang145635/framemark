@@ -20,6 +20,7 @@ import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.readFileBytesBounded
 import com.framemark.native.product.SessionStore
 import com.framemark.native.product.StoreResult
+import com.framemark.native.product.valueOrNull
 import com.framemark.native.product.WatermarkAsset
 import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.product.toDesignSnapshot
@@ -512,7 +513,7 @@ class DesktopProjectController(
                 presetLoadFailed = true
                 presetLoadFailure = "${result.error.code} ${result.error.message}"
                 presetError = presetLoadFailure
-                val legacyText = store.documentText(DocumentKind.PresetLibrary)
+                val legacyText = store.documentText(DocumentKind.PresetLibrary).valueOrNull()
                 if (legacyText != null && LegacyDocuments.isEmptyLegacyPresetLibrary(legacyText)) {
                     when (val migration = store.migrateLegacyPresetLibrary(emptyList())) {
                         is StoreResult.Ok -> {
@@ -804,7 +805,7 @@ class DesktopProjectController(
 
     /** The old hand-written `{"version":1,"items":[…]}` queue, when that is what is on disk. */
     private fun adoptLegacyBatch() {
-        val text = store.documentText(DocumentKind.Batch) ?: return
+        val text = store.documentText(DocumentKind.Batch).valueOrNull() ?: return
         if (LegacyDocuments.isProductBatch(text)) return
         legacyBatchJobs = LegacyDocuments.legacyBatch(text)
         legacyBatchJobs?.let { batchJobs = it }

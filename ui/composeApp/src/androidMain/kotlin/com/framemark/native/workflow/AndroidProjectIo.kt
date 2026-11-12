@@ -35,6 +35,10 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
 
     override fun readBytes(path: String): ByteArray? = platform.readBytes(path)
 
+    /** Streams and stops at `limit + 1` bytes; never loads an oversized document. */
+    override fun readBytesBounded(path: String, limitBytes: Int): ByteArray? =
+        readFileBytesBounded(path, limitBytes)
+
     override fun writeBytes(path: String, bytes: ByteArray): Boolean = platform.writeBytes(path, bytes)
 
     override fun writeBytesIfAbsent(path: String, bytes: ByteArray): Boolean = runCatching {
@@ -60,6 +64,7 @@ class AndroidProductFileSystem(private val context: Context) : ProductFileSystem
             Files.move(
                 source.toPath(),
                 target.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
                 StandardCopyOption.ATOMIC_MOVE,
             )
             // Durable only after the directory entry itself is flushed.

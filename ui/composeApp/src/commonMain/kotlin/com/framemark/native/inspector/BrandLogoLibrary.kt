@@ -73,7 +73,16 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
  */
 private const val LOGO_PREVIEW_DIR = "files/logov/"
 
-data class LogoCut(val assetKey: String, val file: String, val preview: String)
+data class LogoCut(
+    val assetKey: String,
+    val file: String,
+    val preview: String,
+    /**
+     * Catalog `cuts[].ink`: `dark` / `light` / `color` / `ambiguous`. It only decides
+     * the label of the swatch (黑标 / 白标 / 彩标), never the persisted value.
+     */
+    val ink: String = "",
+)
 
 data class LogoVersion(
     val id: String,
@@ -158,7 +167,7 @@ object LogoBrandCatalog {
                             .takeIf { it.isNotBlank() }
                             ?.replace("/", "__")
                             .orEmpty()
-                        LogoCut(stem, c.jsonString("file").orEmpty(), preview)
+                        LogoCut(stem, c.jsonString("file").orEmpty(), preview, c.jsonString("ink").orEmpty())
                     },
                 )
             }

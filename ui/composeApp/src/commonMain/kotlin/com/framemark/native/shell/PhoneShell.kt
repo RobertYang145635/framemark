@@ -886,6 +886,12 @@ fun PhoneShell() {
                     if (spec == null) FmLog.info("FM_WM_CLEARED") { "photo=$id" }
                 },
                 onPickWatermark = { WorkflowEnv.watermarkPicker?.invoke() },
+                onCropChange = { crop ->
+                    // Same design write path as every other edit: PhotoDesign.params
+                    // → commit → autosave, so the batch queue reads the same value.
+                    val id = store.activePhotoId ?: return@PhoneEditorScreen
+                    store.setCrop(id, crop)
+                },
                 customizedPhotoIds = tray.items
                     .filter { store.customized(trayToPhotoId(it)) }
                     .map { it.id }

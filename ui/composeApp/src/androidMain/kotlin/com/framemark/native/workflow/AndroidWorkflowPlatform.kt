@@ -256,6 +256,14 @@ class AndroidWorkflowPlatform(private val context: Context) : WorkflowPlatform {
         com.framemark.native.workflow.PhotoSelection.path
             ?: runCatching { com.framemark.native.engine.EngineData.snapshot(context).photo }.getOrNull()
 
+    /**
+     * The bundled engine sample only — never the QA-selected path. The border grid
+     * uses this as the "show me the frame" photo, so it must not resolve back to the
+     * photo that just failed to preview.
+     */
+    override fun bundledSamplePhotoPath(): String? =
+        runCatching { com.framemark.native.engine.EngineData.snapshot(context).photo }.getOrNull()
+
     override fun fileFingerprint(path: String): String? = runCatching {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         File(path).inputStream().use { input ->

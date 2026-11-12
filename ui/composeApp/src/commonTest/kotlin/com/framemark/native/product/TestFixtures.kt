@@ -28,6 +28,12 @@ internal class FakeFs(override val dataDir: String = "/fm-data") : ProductFileSy
         return files[path]?.copyOf()
     }
 
+    /** In-memory files cannot stream, so the digest is taken from the stored bytes. */
+    override fun sha256Of(path: String): String? {
+        if (path == unreadablePath) return null
+        return files[path]?.let { Sha256.hex(it) }
+    }
+
     override fun writeBytes(path: String, bytes: ByteArray): Boolean {
         if (path == failWritePath) {
             writeException?.let { throw it }

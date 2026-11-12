@@ -45,7 +45,10 @@ object ExportRules {
     const val QUALITY_MIN = 60
     const val QUALITY_MAX = 100
     const val QUALITY_DEFAULT = 100
-    const val LONG_EDGE_MIN = 1
+    // Kept in step with the document codec (`EXPORT_LONG_EDGE_FLOOR`): a value the
+    // UI accepts must survive a save and a reload. These two used to disagree
+    // (1 vs 64), so typing 1 produced a project that could not be opened again.
+    const val LONG_EDGE_MIN = com.framemark.native.product.EXPORT_LONG_EDGE_FLOOR
     const val LONG_EDGE_MAX = 20000
 
     /**

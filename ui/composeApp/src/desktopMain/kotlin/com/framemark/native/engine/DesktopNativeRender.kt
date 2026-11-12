@@ -130,6 +130,11 @@ class DesktopNativeRender(
                 // WP-V4 A: 桌面渲染结果必须把报告里的文本行带回 UI；丢掉它，右栏
                 // 文字页只能退化成「页脚行选择」一条静态控件。
                 textSlots = result.textSlots,
+                // The engine's own crop answer: the export skips its pre-crop when
+                // this is present, so preview and export agree by construction.
+                photoSrc = result.photoSrc?.takeIf { it.size >= 4 }?.let {
+                    ImageRect(it[0].toFloat(), it[1].toFloat(), it[2].toFloat(), it[3].toFloat())
+                },
             )
         }
     }

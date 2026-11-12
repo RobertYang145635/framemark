@@ -5,12 +5,17 @@ import com.framemark.native.product.PRESET_SCHEMA_VERSION
 import com.framemark.native.product.ProjectPreset
 import com.framemark.native.product.PresetCodec
 import com.framemark.native.product.ProductJson
+import com.framemark.native.product.MAX_DOCUMENT_BYTES as DOCUMENT_BYTE_LIMIT
 import kotlin.random.Random
 
 /** Portable single-preset document validation and copy-ID generation. */
 internal object PresetTransfer {
-    // A 32 MiB embedded watermark expands to about 43 MiB in base64 JSON.
-    const val MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
+    /**
+     * One bound for every product document (see `product.MAX_DOCUMENT_BYTES`): a
+     * 32 MiB embedded watermark expands to about 43 MiB in base64 JSON, so 50 MiB
+     * covers a hero asset while refusing a corrupted/download-sized file.
+     */
+    const val MAX_DOCUMENT_BYTES = DOCUMENT_BYTE_LIMIT
     private val invalidFilenameChars = setOf('\\', '/', ':', '*', '?', '"', '<', '>', '|')
 
     fun decodeDocument(json: String, knownCardIds: Set<String>): ProjectPreset {

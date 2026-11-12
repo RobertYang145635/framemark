@@ -124,8 +124,10 @@ class PhoneExportSheetRenderTest {
                             note = null,
                             outputWidth = 0,
                             outputHeight = 0,
+                            hdrGainMap = false,
                             canApplyToAll = true,
                             onApplyToAll = {},
+                            onPreserveHdr = {},
                             onFormat = {},
                             onSize = {},
                             onShare = {},
@@ -303,11 +305,14 @@ class PhoneExportSheetRenderTest {
     }
 
     @Test
-    fun a_360x640_window_still_fits_the_whole_form() {
+    fun a_360x700_window_still_fits_the_whole_form() {
+        // 700 dp (not 640): the Ultra HDR switch row joined the form, so a 640 dp-tall
+        // window would legitimately hit the 90 % cap. The claim is still "the whole
+        // form fits in a small 360 dp-wide window and the sheet wraps its content".
         val frame = render(
-            name = "phone-360x640",
+            name = "phone-360x700",
             windowWidthDp = 360,
-            windowHeightDp = 640,
+            windowHeightDp = 700,
             settings = settingsFor(ExportFormat.Jpeg, PhoneExportSize.Original),
         )
         val heightDp = sheetHeightDp(frame)
@@ -315,11 +320,11 @@ class PhoneExportSheetRenderTest {
         val buttonBottom = saveButtonBottom(frame)
         println(
             "EXPORT_SHEET_MEASURE 360 sheetHeightDp=${"%.1f".format(heightDp)} " +
-                "button=${buttonTop}..$buttonBottom capDp=${"%.1f".format(640 * 0.9f)}",
+                "button=${buttonTop}..$buttonBottom capDp=${"%.1f".format(700 * 0.9f)}",
         )
         assertTrue(
-            heightDp < 640 * 0.9f,
-            "the 360x640 sheet hit the cap (${heightDp}dp) instead of wrapping its content",
+            heightDp < 700 * 0.9f,
+            "the 360x700 sheet hit the cap (${heightDp}dp) instead of wrapping its content",
         )
         assertTrue(buttonBottom < frame.image.height, "the action pair left the sheet")
         assertTrue(buttonTop > sheetTopRow(frame), "the action pair was not drawn inside the sheet")

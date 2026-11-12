@@ -91,8 +91,13 @@ class DesktopExportDialogTest {
 
     @Test
     fun long_edge_is_1_to_20000() {
-        assertEquals(1, ExportRules.parseLongEdge("1"))
+        assertEquals(ExportRules.LONG_EDGE_MIN, ExportRules.parseLongEdge("64"))
         assertEquals(20000, ExportRules.parseLongEdge("20000"))
+        // The floor used to be 1 while the document codec started at 64, so typing
+        // 1 produced a project that could never be loaded again. Both sides now
+        // share one constant; 1 and 63 must be refused by the form.
+        assertNull(ExportRules.parseLongEdge("1"))
+        assertNull(ExportRules.parseLongEdge("63"))
         assertNull(ExportRules.parseLongEdge("0"))
         assertNull(ExportRules.parseLongEdge("20001"))
         assertNull(ExportRules.parseLongEdge("-5"))

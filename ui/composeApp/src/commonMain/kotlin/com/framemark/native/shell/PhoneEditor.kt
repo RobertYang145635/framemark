@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -47,6 +48,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorLoadState
+import com.framemark.native.inspector.ControlType
+import com.framemark.native.inspector.PhoneLogoPickerOverlay
 import com.framemark.native.inspector.WatermarkZones
 import com.framemark.native.inspector.applyDemoEdits
 import com.framemark.native.inspector.hasTextPage
@@ -59,6 +62,10 @@ import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryTraversal
+import com.framemark.native.product.PhotoCrop
+import com.framemark.native.product.PhotoCropParams
+import com.framemark.native.product.photoSourceSize
+import com.framemark.native.shell.phone.PhoneCropUi
 import com.framemark.native.shell.phone.PhoneEditorTopBar
 import com.framemark.native.shell.phone.PhoneLibrarySheet
 import com.framemark.native.shell.phone.PhoneParameterPage
@@ -79,6 +86,8 @@ import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSpec
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.framemark.native.product.FmLog
 import com.framemark.native.shell.phone.photoIndexOf
 import com.framemark.native.shell.phone.panelTitle
@@ -86,7 +95,9 @@ import com.framemark.native.shell.phone.StageArea
 import com.framemark.native.shell.phone.PreviewGeo
 import com.framemark.native.shell.phone.PhotoStrip
 import com.framemark.native.shell.phone.PhoneSheetHost
+import com.framemark.native.shell.phone.PhoneSheetPagePolicy
 import com.framemark.native.shell.phone.ParameterPageHeader
+import com.framemark.native.shell.phone.cropApplies
 
 /**
  * V2 phone editor, photo first (report §7): a dark 52 dp top bar (返回 · 照片切换 ·
@@ -129,6 +140,12 @@ fun PhoneEditorScreen(
     watermark: WatermarkSpec? = null,
     onWatermarkChange: (WatermarkSpec?) -> Unit = {},
     onPickWatermark: () -> Unit = {},
+    /**
+     * The photo's chosen crop, written into the design through the same store path
+     * the other design edits use (so autosave and the batch queue see it). Only
+     * called on 完成, never per gesture sample.
+     */
+    onCropChange: (PhotoCrop) -> Unit = {},
     customizedPhotoIds: Set<Int> = emptySet(),
     onApplyAll: (() -> Unit)? = null,
     onOpenPhotoBatch: (() -> Unit)? = null,
@@ -173,6 +190,10 @@ fun PhoneEditorScreen(
     var stageSize by remember { mutableStateOf(IntSize.Zero) }
     var renderFailure by remember(card?.id) { mutableStateOf<String?>(null) }
     var previewGeo by remember(card?.id) { mutableStateOf<PreviewGeo?>(null) }
+    // 裁切: the pending crop is UI state until 完成 writes it into the design, so a
+    // drag can neither spam the project nor leave a half-edited document behind.
+    var cropActive by remember { mutableStateOf(false) }
+    var pendingCrop by remember { mutableStateOf(PhotoCrop.Default) }
     // V2 sheet: three stops — 收起 (0, the card strip), 半开 (1) and 展开 (2, the grid).
     // WP-X3 §5: the demo's `.psheet` is a freely dragged `height: var(--sh)`, so the
     // stop count is ours to pick; the task book asks for three (WP-F2 D3 measured
@@ -187,6 +208,12 @@ fun PhoneEditorScreen(
     var focusedTextSlotKey by remember { mutableStateOf<String?>(null) }
     var fullParametersDismissed by rememberSaveable { mutableStateOf(false) }
     var fullParametersManuallyOpen by rememberSaveable { mutableStateOf(false) }
+    // 品牌选择器是「盖在画布上的一层」，不是新页面：它必须画在整个编辑器之上
+    // （底板只会画在自己的高度里），所以开关由编辑器持有，Logo 页只负责请求打开。
+    // 舞台顶部留在遮罩下，用户挑品牌时仍看得见画布。
+    var logoPickerOpen by remember { mutableStateOf(false) }
+    // 换照片 / 换工具时选择器不再属于这一拍：收起来，绝不把它带到别的页面上。
+    LaunchedEffect(model?.cardId, tool) { logoPickerOpen = false }
     // Border sheet browsing state, kept across tool switches (showcase `ftab`).
     var borderCategory by rememberSaveable { mutableStateOf(LibraryIndex.CATEGORY_COMMON) }
     var borderQuery by rememberSaveable { mutableStateOf("") }
@@ -195,6 +222,54 @@ fun PhoneEditorScreen(
     // A-08: one short "已撤销" notice with its 重做 action after an undo.
     var undoNotice by remember { mutableStateOf(false) }
     val density = LocalDensity.current
+
+    // 裁切: the source size is probed from the file, never from the EXIF-oriented
+    // project metadata — the renderer draws the raw raster and the export pre-crop
+    // computes its rectangle in exactly those pixels, so both sides must agree.
+    val cropSourcePath = tray.selected?.path?.takeIf { it.isNotBlank() }
+    val cropSourceSize by produceState<IntArray?>(initialValue = null, key1 = cropSourcePath) {
+        value = withContext(Dispatchers.IO) { cropSourcePath?.let { photoSourceSize(it) } }
+    }
+    val cropSourceWidth = cropSourceSize?.getOrNull(0) ?: 0
+    val cropSourceHeight = cropSourceSize?.getOrNull(1) ?: 0
+    val storedCrop = remember(activeDesign) { PhotoCropParams.read(activeDesign?.params.orEmpty()) }
+    val cropBox = previewGeo?.photoRect
+    // The crop choice only exists where the engine would cut something away: an
+    // aspect-equal box shows the whole photo and gets no button and no mode.
+    val cropAvailable = cropBox != null && cropSourceWidth > 0 && cropSourceHeight > 0 &&
+        cropApplies(cropSourceWidth, cropSourceHeight, cropBox)
+    // A crop editor without a photo box has nothing to frame; drop out instead of
+    // leaving the stage in a mode that cannot be drawn.
+    LaunchedEffect(cropActive, cropAvailable) {
+        if (cropActive && !cropAvailable) cropActive = false
+    }
+    // Switching border, photo or tool re-frames the box the crop was chosen for, so
+    // the editor closes rather than silently applying a region to a new layout.
+    LaunchedEffect(card?.id, tray.selectedId, tool) { cropActive = false }
+    val cropUi = cropBox?.takeIf { cropAvailable }?.let { box ->
+        PhoneCropUi(
+            active = cropActive,
+            crop = if (cropActive) pendingCrop else storedCrop,
+            sourceWidth = cropSourceWidth,
+            sourceHeight = cropSourceHeight,
+            box = box,
+            photoPath = cropSourcePath,
+            onCropChange = { pendingCrop = it },
+            onEnter = {
+                pendingCrop = storedCrop
+                cropActive = true
+                // The crop layer is drawn inside the photo band, so the stage zoom/pan
+                // must be neutral or the frame would be scaled by the stage transform.
+                zoom = 1f
+                pan = Offset.Zero
+            },
+            onReset = { pendingCrop = PhotoCrop.Default },
+            onDone = {
+                cropActive = false
+                onCropChange(pendingCrop)
+            },
+        )
+    }
 
     val libraryIndex = (libraryState as? LibraryLoadState.Ready)?.let { LibraryIndex.of(it.snapshot) }
     // 最近使用 wiring: the platform entry installs the file-backed store in
@@ -325,8 +400,14 @@ fun PhoneEditorScreen(
             if (!autoFullParameterPage) fullParametersDismissed = false
         }
         // The full parameter page is the constrained-window fallback only: V2 has
-        // no separate "全部参数" entry because every page is a tool.
-        val fullParameterPage = autoFullParameterPage && !fullParametersDismissed
+        // no separate "全部参数" entry because every page is a tool. 工具不参与决定
+        // —— Logo 也是普通底板页（`PhoneSheetPagePolicy`），舞台始终留在它上面，
+        // 所以调 Logo 的每个参数都能在画布上立刻看见。
+        val fullParameterPage = PhoneSheetPagePolicy.usesFullHeightPage(
+            tool = tool,
+            constrainedWindow = autoFullParameterPage,
+            fullPageDismissed = fullParametersDismissed,
+        )
         val heights = if (fullParameterPage) {
             budget
         } else if (budget.fullPage && canShowForcedPreview(maxHeight.value)) {
@@ -361,9 +442,15 @@ fun PhoneEditorScreen(
         BackHandler(enabled = fullParameterPage) {
             closeFullParametersOrHideKeyboard()
         }
+        // The crop editor is the innermost layer while it is open: back leaves it
+        // without writing anything (完成 is the only exit that persists).
+        BackHandler(enabled = cropUi?.active == true) { cropActive = false }
         // Focus viewing hides every chrome layer; back leaves it before anything else.
         BackHandler(enabled = focusMode) { focusMode = false }
         BackHandler(enabled = sheetLevel > 0 && !fullParameterPage) { sheetLevel = 0 }
+        // 品牌选择器叠在编辑器最上层：它开着时先关它，结果与标题行的「关闭」相同。
+        // 后面注册的处理器优先，所以这一条排在上面四条之后。
+        BackHandler(enabled = logoPickerOpen) { logoPickerOpen = false }
 
         // Three levels: compact (heights.sheet from the budget), 半开, expanded.
         val compactLevel = heights.sheet.dp
@@ -420,6 +507,7 @@ fun PhoneEditorScreen(
                                     // Same layers the system back button walks.
                                     when {
                                         imeVisible -> keyboardController?.hide()
+                                        cropActive -> cropActive = false
                                         fullParameterPage -> closeFullParametersOrHideKeyboard()
                                         focusMode -> focusMode = false
                                         sheetLevel > 0 -> sheetLevel = 0
@@ -495,6 +583,7 @@ fun PhoneEditorScreen(
                             },
                             onTextSlots = onTextSlots,
                             onWatermarkChange = onWatermarkChange,
+                            crop = cropUi,
                         )
                         if (!focusMode && photosOpen) {
                             PhotoStrip(
@@ -554,8 +643,27 @@ fun PhoneEditorScreen(
                     previewGeo = previewGeo,
                     tools = tools,
                     toolBarH = toolBarH,
+                    // 手机端的 选择品牌 开在编辑器这一层（见下面那片覆盖层），而不是
+                    // 底板里的一页：选择器必须能盖住舞台，才能「舞台仍在，挑的字标
+                    // 立刻反映到画布」。logoPickerOpen 属于外壳，Logo 页只发请求。
+                    onOpenBrandPicker = { logoPickerOpen = true },
                 )
             }
+        }
+        // 品牌选择器：一层盖在编辑器上，不是新页面。它画在 Column 之后，所以底板、
+        // 工具条都在它下面；顶部条带是 FmPalette.scrim 下的舞台，用户仍看得见画布。
+        // 打开 / 关闭都不改工具、不移动底板档位，选完字标只是把 cut 键写进设计，
+        // 关掉就精确回到进来之前的那一页。
+        val logoBrandControl = model?.controls?.firstOrNull { it.type == ControlType.Brand }
+        if (!focusMode && logoPickerOpen && logoBrandControl != null) {
+            PhoneLogoPickerOverlay(
+                appliedAssetKey = session.value(logoBrandControl) as? String ?: "",
+                onDismiss = { logoPickerOpen = false },
+                onApply = { assetKey ->
+                    session.set(logoBrandControl, assetKey)
+                    logoPickerOpen = false
+                },
+            )
         }
     }
 

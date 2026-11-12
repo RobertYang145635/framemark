@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.jsonWithSurrogatesEscaped
 
 /**
  * Android [NativeRenderApi]: every card the bundled runtime can render — all
@@ -142,6 +143,9 @@ val fitNative = mode == "export" && longEdge == null
                 "native export produced no image: ${target.absolutePath}"
             }
             val photoRect = photoRectOf(geom, imageW, imageH)
+            // The engine applied `photoCropX/Y/Zoom` itself: report the source
+            // region it sampled so the export never pre-crops a second time.
+            val photoSrc = photoSrcOf(geom)
             val textSlots = textSlotsOf(
                 geom = geom,
                 imageW = imageW,
@@ -173,6 +177,7 @@ val fitNative = mode == "export" && longEdge == null
                 photoRect,
                 direct.note,
                 textSlots,
+                photoSrc = photoSrc,
             )
             } finally {
                 geom.delete()
@@ -201,6 +206,8 @@ val fitNative = mode == "export" && longEdge == null
         require(bounds.outWidth > 0 && bounds.outHeight > 0) { "engine wrote an unreadable PNG: ${png.absolutePath}" }
         // Engine photo draw box, rescaled to this image's pixels (overlay anchor).
         val photoRect = photoRectOf(geom, bounds.outWidth, bounds.outHeight)
+        // Source pixels the engine sampled — already in the photo file's space.
+        val photoSrc = photoSrcOf(geom)
         // Renderer-reported text rows, bound exactly like the desktop path so the
         // 文字 tab can group this render by canvas position.
         val textSlots = textSlotsOf(
@@ -220,6 +227,7 @@ val fitNative = mode == "export" && longEdge == null
                 renderMs,
                 photoRect,
                 textSlots = textSlots,
+                photoSrc = photoSrc,
             )
         }
 
@@ -285,7 +293,7 @@ val fitNative = mode == "export" && longEdge == null
                 .put("photoRect", photoRect?.let { listOf(it.x, it.y, it.w, it.h) })
                 .put("peakRssKb", peakRssKb()),
         )
-        NativeImage(target.absolutePath, bounds.outWidth, bounds.outHeight, totalMs, photoRect, note, textSlots)
+        NativeImage(target.absolutePath, bounds.outWidth, bounds.outHeight, totalMs, photoRect, note, textSlots, photoSrc = photoSrc)
         } finally {
             if (exportTarget != null) geom.delete()
         }
@@ -312,6 +320,37 @@ val fitNative = mode == "export" && longEdge == null
             (rect.optDouble(1).toFloat() * sy),
             (rect.optDouble(2).toFloat() * sx),
             (rect.optDouble(3).toFloat() * sy),
+        )
+    }.getOrNull()
+
+    /**
+     * Reads the engine geom's `photo_src`: the region of the **source photo file**
+     * the renderer really sampled, `[x, y, w, h]` in source pixels.
+     *
+     * Unlike [photoRectOf] this must not be rescaled: it already lives in the
+     * photo file's own raster space, not in this image's canvas. Both bridges
+     * write it at the geom root next to the photo box (`bridge/android`'s IR
+     * renderer from its own crop maths, `bridge/android-hand` from the draw
+     * report), and it is what tells the export that the engine — not Kotlin —
+     * applied `photoCropX/Y/Zoom`, so no second pre-crop may be added on top.
+     * Null when the running engine binary predates the field.
+     */
+    private fun photoSrcOf(geom: File): ImageRect? = runCatching {
+        if (!geom.isFile) return null
+        val rect = JSONObject(geom.readText()).optJSONArray("photo_src") ?: return null
+        if (rect.length() < 4) return null
+        val values = (0..3).map { rect.optDouble(it, Double.NaN) }
+        if (values.any { !it.isFinite() }) return null
+        if (values[2] <= 0.0 || values[3] <= 0.0) return null
+        // Same contract as the desktop parser: a rect that starts off the file
+        // cannot describe what was drawn, so the export falls back to its own
+        // recomputation instead of cutting the gain map at a negative origin.
+        if (values[0] < 0.0 || values[1] < 0.0) return null
+        ImageRect(
+            values[0].toFloat(),
+            values[1].toFloat(),
+            values[2].toFloat(),
+            values[3].toFloat(),
         )
     }.getOrNull()
 
@@ -675,7 +714,11 @@ val fitNative = mode == "export" && longEdge == null
                 .put("dataUrl", logo.dataUrl))
         }
         if (fitNative) doc.put("fitMode", "native")
-        return org.json.JSONObject().put("design", doc).toString()
+        // The payload crosses JNI, whose modified UTF-8 cannot carry characters
+        // outside the BMP; escaping the surrogate halves keeps it ASCII and the
+        // engine's own JSON parser rebuilds the text. Without this, one emoji in a
+        // text slot failed every render with "design_json is not UTF-8".
+        return jsonWithSurrogatesEscaped(org.json.JSONObject().put("design", doc).toString())
     }
 
     private data class HandResult(val ms: Long, val note: String?)

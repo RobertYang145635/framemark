@@ -158,7 +158,15 @@ internal fun StageArea(
     onFailed: (String) -> Unit,
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)?,
     onWatermarkChange: (WatermarkSpec?) -> Unit,
+    /**
+     * The user's crop choice for this photo, when the photo box really crops it.
+     * Null on a box that shows the whole photo — there is nothing to choose then,
+     * and the stage keeps its historical gestures and pills untouched.
+     */
+    crop: PhoneCropUi? = null,
 ) {
+    val activeCrop = crop?.takeIf { it.active }
+    val cropActive = activeCrop != null
     Box(
         modifier = modifier.background(FmPalette.stage),
     ) {
@@ -176,18 +184,28 @@ internal fun StageArea(
                 modifier = Modifier
                     .fillMaxSize()
                     .onSizeChanged { onStageSize(it) }
-                    // WP-X3 §4: one gesture node decides between 左右滑动换边框 and
-                    // 缩放/平移. Two stacked detectors could not coexist — the inner
-                    // `detectTransformGestures` consumed every drag first, so the
-                    // frame swipe always aborted (WP-F2 D4).
-                    .phoneStageGestures(
-                        swipeEnabled = swipeEnabled && !compare && zoom <= 1f,
-                        onStep = onFrameStep,
-                        onTransform = onTransform,
+                    // While the crop editor owns the stage every drag belongs to the
+                    // keep-region frame: the stage detectors would otherwise pan the
+                    // preview underneath the crop (they never check consumption).
+                    .then(
+                        if (cropActive) {
+                            Modifier
+                        } else {
+                            Modifier
+                                // WP-X3 §4: one gesture node decides between 左右滑动换边框
+                                // and 缩放/平移. Two stacked detectors could not coexist —
+                                // the inner `detectTransformGestures` consumed every drag
+                                // first, so the frame swipe always aborted (WP-F2 D4).
+                                .phoneStageGestures(
+                                    swipeEnabled = swipeEnabled && !compare && zoom <= 1f,
+                                    onStep = onFrameStep,
+                                    onTransform = onTransform,
+                                )
+                                .pointerInput(Unit) {
+                                    detectTapGestures(onDoubleTap = { onDoubleTap() })
+                                }
+                        },
                     )
-                    .pointerInput(Unit) {
-                        detectTapGestures(onDoubleTap = { onDoubleTap() })
-                    }
                     .graphicsLayer {
                         scaleX = zoom
                         scaleY = zoom
@@ -197,7 +215,11 @@ internal fun StageArea(
                 contentAlignment = Alignment.Center,
             ) {
                 val comparePath = tray.selected?.path ?: WorkflowEnv.platform?.samplePhotoPath()
-                if (compare && comparePath != null) {
+                if (activeCrop != null) {
+                    // The crop editor replaces the frame: it has to show the whole
+                    // photo, which the engine frame has already cut down.
+                    PhoneCropLayer(ui = activeCrop, modifier = Modifier.fillMaxSize())
+                } else if (compare && comparePath != null) {
                     // Hold-to-compare: the raw photo, no design frame, no fake overlay.
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -236,7 +258,7 @@ internal fun StageArea(
                         LibraryPreview(card = card, modifier = Modifier.fillMaxSize())
                     }
                 }
-                if (!compare) {
+                if (!compare && !cropActive) {
                     watermark?.let { spec ->
                         previewGeo?.let { geo ->
                             WatermarkOverlay(
@@ -255,7 +277,10 @@ internal fun StageArea(
         // 白边和山景，看起来就是一张别人的照片。这里给样张压一层 12 % 的舞台底色，再
         // 正中间放一枚「示例图 · 当前照片预览暂不可用」胶囊 —— 只画，不改变回退触发条件，
         // 也不进渲染管线。覆盖层只铺照片带（PhoneStageBands），下沿在胶囊带之上 2 dp。
+        // The crop editor draws the photo itself, so the fallback wash would only
+        // dim the user's own picture there.
         if (
+            !cropActive &&
             PhoneStageFallback.showsPlaceholder(
                 renderFailure = renderFailure,
                 compare = compare,
@@ -277,6 +302,7 @@ internal fun StageArea(
             // can do right now. A non-native card and a failed render say so here
             // instead of stacking another floating badge over the photo.
             val hint = when {
+                cropActive -> "单指拖动 · 双指缩放"
                 compare -> null
                 renderFailure != null -> "预览失败 · 显示静态图"
                 card == null -> null
@@ -285,21 +311,47 @@ internal fun StageArea(
                 else -> null
             }
             PhoneStageChip(
-                text = if (compare) "原图" else borderName ?: "未选边框",
-                description = "当前边框",
+                text = when {
+                    cropActive -> "裁切保留区域"
+                    compare -> "原图"
+                    else -> borderName ?: "未选边框"
+                },
+                description = if (cropActive) "裁切保留区域" else "当前边框",
                 hint = hint,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
             )
-            if (card != null) {
-                PhoneHoldCompareChip(
-                    comparing = compare,
-                    onCompareChange = onCompareChange,
+            if (activeCrop != null) {
+                // 重置 restores the frame to the engine's own region; 完成 is the one
+                // exit that writes the crop into the design (and thus the export).
+                PhoneCropActionRow(
+                    onReset = activeCrop.onReset,
+                    onDone = activeCrop.onDone,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
                 )
+            } else if (card != null) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
+                    horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // A small, always-visible entry — not a long-press and not a menu.
+                    if (crop != null) {
+                        PhoneCropEntryChip(
+                            onClick = crop.onEnter,
+                            marked = !crop.crop.isDefault,
+                        )
+                    }
+                    PhoneHoldCompareChip(
+                        comparing = compare,
+                        onCompareChange = onCompareChange,
+                    )
+                }
             }
         }
     }

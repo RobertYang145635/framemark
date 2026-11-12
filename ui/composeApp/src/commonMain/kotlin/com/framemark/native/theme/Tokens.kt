@@ -551,6 +551,8 @@ object FmSpacing {
 }
 
 object FmRadii {
+    /** Small status badge / tag inside a card. */
+    val badge = 6.dp
     val chip = 8.dp
     val input = 10.dp
     val tile = 12.dp
