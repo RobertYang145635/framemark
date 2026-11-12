@@ -266,7 +266,6 @@ class PhoneBorderPageStateTest {
                 imeVisible = false,
                 tool = EditorTool.Border,
                 photosOpen = false,
-                small = case.width < 380f,
             )
             assertFalse(heights.fullPage, "边框工具在 ${case.width}x${case.height} 应留在底板里")
             val metrics = phoneCompactSheetMetrics(heights.sheet)
@@ -300,7 +299,6 @@ class PhoneBorderPageStateTest {
             imeVisible = false,
             tool = EditorTool.Border,
             photosOpen = true,
-            small = false,
         )
         assertEquals(216f, heights.sheet, 0.01f)
         val metrics = phoneCompactSheetMetrics(heights.sheet)

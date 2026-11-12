@@ -72,8 +72,10 @@ import com.framemark.native.shell.phone.PhoneParameterPage
 import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.phoneLibraryTraversal
 import com.framemark.native.shell.phone.phoneLoadRecentFrames
+import com.framemark.native.shell.phone.phonePageControls
 import com.framemark.native.shell.phone.phoneRecordRecentFrame
 import com.framemark.native.shell.phone.phoneSwipeStep
+import com.framemark.native.shell.phone.phoneToolTab
 import com.framemark.native.shell.phone.phoneToolsFor
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -391,17 +393,32 @@ fun PhoneEditorScreen(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val imeVisible = WindowInsets.ime.getBottom(density) > 0
         val small = maxWidth < 380.dp
+        // 这一页自己的控件（`InspectorTabs` 已经把每个控件分到恰好一页）：底板开多高
+        // 由它们的内容决定，不再是一个固定的 34 %（`PhonePageLayout.kt`）。
+        val pageControls = phoneToolTab(tool, tabModel)?.let(::phonePageControls).orEmpty()
         val budget = computePhoneEditorHeights(
             availableHeightDp = maxHeight.value,
             fontScale = density.fontScale,
             imeVisible = imeVisible,
             tool = tool,
             photosOpen = photosOpen,
-            small = small,
+            controls = pageControls,
+            isIr = model?.isIr == true,
+            hasTextReport = textOutputWidth > 0,
+            hasWatermarkLayer = watermark != null,
         )
         // The expanded level of the two-level sheet (null when the window is too
         // short for a usable sheet, in which case the budget keeps the full page).
-        val levels = phoneSheetLevels(maxHeight.value, tool, photosOpen, small, density.fontScale)
+        val levels = phoneSheetLevels(
+            availableHeightDp = maxHeight.value,
+            tool = tool,
+            photosOpen = photosOpen,
+            fontScale = density.fontScale,
+            controls = pageControls,
+            isIr = model?.isIr == true,
+            hasTextReport = textOutputWidth > 0,
+            hasWatermarkLayer = watermark != null,
+        )
         val autoFullParameterPage = budget.fullPage
         LaunchedEffect(autoFullParameterPage) {
             if (!autoFullParameterPage) fullParametersDismissed = false
@@ -438,13 +455,11 @@ fun PhoneEditorScreen(
         val topBarH = heights.topBar.dp
         val stripH = heights.strip.dp
         val toolBarH = heights.toolBar.dp
-        // WP-P1-2: the 收起 sheet carries its own vertical stack (handle, title row,
-        // category row, chip row, strip padding, name line). The budget that decided
-        // the sheet height and the composables that draw it read the same numbers, so
-        // "128 dp 卡片 + 一行名称 fits" and "舞台 ≥ 50 %" are one calculation. It is
-        // keyed on the compact level, so dragging or expanding cannot resize the chrome
-        // under the finger.
-        val sheetMetrics = phoneCompactSheetMetrics(heights.sheet, density.fontScale)
+        // 底板顶部的两行（把手 + 标题行）。边框页仍读卡片阶梯（`phoneCompactSheetMetrics`
+        // 的 128 dp 卡片那一摞），参数页读自己的 chrome 阶梯（`phoneParameterSheetChrome`）：
+        // 参数页只画这两行，用卡片阶梯会凭空多要 100+ dp，那正是「开太高、还是放不下」
+        // 的一半原因。预算与绘制读同一个函数，所以两边的数字不可能分叉。
+        val chrome = phoneSheetChrome(heights.sheet, density.fontScale, tool)
         val fullHeaderH = (52f * density.fontScale.coerceIn(1f, 1.5f)).dp
         val keyboardController = LocalSoftwareKeyboardController.current
         fun closeFullParametersOrHideKeyboard() {
@@ -625,12 +640,13 @@ fun PhoneEditorScreen(
                 PhoneSheetHost(
                     fullParameterPage = fullParameterPage,
                     sheetHeight = sheetHeight,
-                    sheetMetrics = sheetMetrics,
                     snapHeights = snapHeights,
                     sheetLevel = sheetLevel,
                     onSheetLevelChange = { sheetLevel = it },
                     sheetDragPx = sheetDragPx,
                     onSheetDragPx = { sheetDragPx = it },
+                    grabberHeight = chrome.grabberDp.dp,
+                    headHeight = chrome.headDp.dp,
                     density = density,
                     tool = tool,
                     tabModel = tabModel,

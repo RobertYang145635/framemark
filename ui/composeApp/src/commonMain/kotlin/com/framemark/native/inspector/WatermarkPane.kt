@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +54,11 @@ private const val WATERMARK_ROTATION_RANGE = 45f
  * Legacy rule (HANDOFF part 2 §3.8): a preset whose centred direction carries an
  * offset is displayed and calculated as 0; the first user edit writes the
  * normalised value back. [WatermarkZones] does that conversion.
+ *
+ * **[part]**：手机底板按「一段一块」横滑，所以同一份内容可以被要求只画某一段
+ * （[WatermarkPanePart]）。传 `null` = 桌面右栏的整页（分组 + 发线，行为与改前完全
+ * 一致）；传某一段 = 手机的一页，裸块、无组头。每一段都远低于
+ * `PHONE_PAGE_GROUP_BUDGET_DP`（最大的是九宫格 132 dp），参数区因此不需要竖向滚动。
  */
 @Composable
 fun WatermarkPane(
@@ -80,249 +81,413 @@ fun WatermarkPane(
     onClear: (() -> Unit)? = null,
     onReset: (() -> Unit)? = null,
     dense: Boolean = false,
+    /** 只画这一段（手机的一页）；null = 整页（桌面右栏）。 */
+    part: WatermarkPanePart? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         if (spec == null) {
-            // `core.js:778 paneWm` 空态：标题 + 一句说明 + primary「添加图片水印」。
-            CuratedEmptyPane(
-                title = "还没有图片水印",
-                body = "签名、印章等透明 PNG，可放在九宫格任一位置再微调。",
-            )
-            if (onUpload != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 18.dp)
-                        .heightIn(min = 32.dp)
-                        .clip(RoundedCornerShape(FmRadii.chip))
-                        .background(FmPalette.primary)
-                        .clickable(role = Role.Button, onClick = onUpload)
-                        .semantics { contentDescription = uploadLabel },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("＋ 添加图片水印", style = FmType.labelMedium, color = FmPalette.onPrimary)
-                }
+            if (part == null || part == WatermarkPanePart.Empty) {
+                WatermarkEmptyBlock(dense = dense, onUpload = onUpload, uploadLabel = uploadLabel)
             }
             return@Column
         }
 
         val zone = WatermarkZones.zoneFor(spec.anchor)
-        CuratedGroup("图层") {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(FmRadii.tile))
-                    .background(FmPalette.surfaceMuted)
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+        if (part == null) {
+            // 桌面右栏：原来的三组 + 两条发线，内容与顺序都没挪。
+            CuratedGroup("图层") {
+                WatermarkLayerBlock(
+                    assetName = assetName,
+                    onUpload = onUpload,
+                    onClear = onClear,
+                    uploadLabel = uploadLabel,
+                )
+            }
+            CuratedRule()
+            CuratedGroup(
+                title = "位置",
+                right = {
+                    if (onReset != null) {
+                        CuratedLink("回到右下", onClick = onReset)
+                    }
+                },
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 48.dp, height = 36.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(FmPalette.surface)
-                        .border(1.dp, FmPalette.outline, RoundedCornerShape(6.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("PNG", style = CuratedSliderHint, color = FmPalette.onSurfaceMuted)
+                WatermarkPositionBlock(
+                    spec = spec,
+                    zone = zone,
+                    dense = dense,
+                    onAnchor = onAnchor,
+                    onWidth = onWidth,
+                    onPosition = onPosition,
+                )
+                WatermarkMarginsBlock(
+                    spec = spec,
+                    photoAspect = photoAspect,
+                    zone = zone,
+                    dense = dense,
+                    onPosition = onPosition,
+                )
+            }
+            CuratedRule()
+            CuratedGroup("外观") {
+                WatermarkWidthBlock(spec = spec, zone = zone, dense = dense, onWidth = onWidth)
+                WatermarkOpacityBlock(spec = spec, dense = dense, onOpacity = onOpacity)
+                if (onRotation != null) {
+                    WatermarkRotationBlock(spec = spec, dense = dense, onRotation = onRotation)
                 }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = assetName ?: "图片水印",
-                        style = TextStyle(
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        color = FmPalette.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "透明 PNG · 可拖动位置",
-                        style = CuratedSliderHint,
-                        color = FmPalette.onSurfaceMuted,
-                        maxLines = 1,
-                    )
-                }
-                if (onUpload != null) {
-                    WatermarkIconAction("↻", uploadLabel, FmPalette.onSurfaceMuted, onUpload)
-                }
-                if (onClear != null) {
-                    WatermarkIconAction("🗑", "移除水印", FmPalette.error, onClear)
+                CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")
+                if (onApplyAll != null || onReset != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
+                        if (onApplyAll != null) {
+                            GhostAction("应用到全部", onApplyAll)
+                        }
+                        if (onReset != null) {
+                            GhostAction("恢复默认", onReset)
+                        }
+                    }
                 }
             }
+            return@Column
         }
-        CuratedRule()
-        // 位置：九宫格 + 该格可改的「距…」滑块（`paneWm` 的 位置 组）。
-        CuratedGroup(
-            title = "位置",
-            right = {
-                if (onReset != null) {
-                    CuratedLink("回到右下", onClick = onReset)
-                }
-            },
+
+        // 手机的一页：一段一块，裸块（组头由分页器接替）。
+        when (part) {
+            WatermarkPanePart.Empty -> WatermarkEmptyBlock(
+                dense = dense,
+                onUpload = onUpload,
+                uploadLabel = uploadLabel,
+            )
+            WatermarkPanePart.Layer -> WatermarkLayerBlock(
+                assetName = assetName,
+                onUpload = onUpload,
+                onClear = onClear,
+                uploadLabel = uploadLabel,
+            )
+            WatermarkPanePart.Position -> WatermarkPositionBlock(
+                spec = spec,
+                zone = zone,
+                dense = dense,
+                onAnchor = onAnchor,
+                onWidth = onWidth,
+                onPosition = onPosition,
+            )
+            WatermarkPanePart.Margins -> WatermarkMarginsBlock(
+                spec = spec,
+                photoAspect = photoAspect,
+                zone = zone,
+                dense = dense,
+                onPosition = onPosition,
+            )
+            WatermarkPanePart.Width -> WatermarkWidthBlock(
+                spec = spec,
+                zone = zone,
+                dense = dense,
+                onWidth = onWidth,
+            )
+            WatermarkPanePart.Opacity -> WatermarkOpacityBlock(
+                spec = spec,
+                dense = dense,
+                onOpacity = onOpacity,
+            )
+            WatermarkPanePart.Rotation -> if (onRotation != null) {
+                WatermarkRotationBlock(spec = spec, dense = dense, onRotation = onRotation)
+                CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")
+            }
+        }
+    }
+}
+
+/** 水印页的分段（手机一页一段；桌面整页一次画完）。 */
+enum class WatermarkPanePart {
+    /** 还没有水印图层：说明 + 上传入口。 */
+    Empty,
+
+    /** 图层卡片（缩略 + 名称 + 更换 / 移除）。 */
+    Layer,
+
+    /** 九宫格位置。 */
+    Position,
+
+    /** 当前格的可改边距（居中格是固定说明）。 */
+    Margins,
+
+    /** 宽度（含本格上限说明）。 */
+    Width,
+
+    /** 不透明度。 */
+    Opacity,
+
+    /** 旋转 + 拖动说明。 */
+    Rotation,
+}
+
+/** 空态：说明 + primary「添加图片水印」。 */
+@Composable
+private fun WatermarkEmptyBlock(
+    dense: Boolean,
+    onUpload: (() -> Unit)?,
+    uploadLabel: String,
+) {
+    // `core.js:778 paneWm` 空态：标题 + 一句说明 + primary「添加图片水印」。
+    CuratedEmptyPane(
+        title = "还没有图片水印",
+        body = "签名、印章等透明 PNG，可放在九宫格任一位置再微调。",
+        dense = dense,
+    )
+    if (onUpload != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp)
+                .heightIn(min = 32.dp)
+                .clip(RoundedCornerShape(FmRadii.chip))
+                .background(FmPalette.primary)
+                .clickable(role = Role.Button, onClick = onUpload)
+                .semantics { contentDescription = uploadLabel },
+            contentAlignment = Alignment.Center,
         ) {
-        WatermarkZoneGrid(
-            anchor = spec.anchor,
-            onAnchor = { next ->
-                if (next != spec.anchor) {
-                    // Per-cell independence: a new cell starts from the model's
-                    // default margin (offsets reset), and a width that no longer
-                    // fits the new column is pulled back (report §9.1).
-                    onAnchor(next)
-                    onPosition(0f, 0f)
-                    val cap = WatermarkZones.widthCapFor(next)
-                    if (spec.width > cap) onWidth(cap)
-                }
-            },
-            dense = dense,
-        )
+            Text("＋ 添加图片水印", style = FmType.labelMedium, color = FmPalette.onPrimary)
+        }
+    }
+}
 
-        val legacyOffset = legacyCentredOffset(spec)
-        if (legacyOffset != null) {
+/** 图层卡片：48 × 36 的 PNG 板 + 名称 / 一句说明 + 两个图标动作。 */
+@Composable
+private fun WatermarkLayerBlock(
+    assetName: String?,
+    onUpload: (() -> Unit)?,
+    onClear: (() -> Unit)?,
+    uploadLabel: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(FmRadii.tile))
+            .background(FmPalette.surfaceMuted)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 48.dp, height = 36.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(FmPalette.surface)
+                .border(1.dp, FmPalette.outline, RoundedCornerShape(6.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("PNG", style = CuratedSliderHint, color = FmPalette.onSurfaceMuted)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
             Text(
-                text = "旧预设的居中方向带有偏移；这里按 0 显示，改动后才写入新值。",
-                style = FmType.labelSmall,
+                text = assetName ?: "图片水印",
+                style = TextStyle(
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = FmPalette.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "透明 PNG · 可拖动位置",
+                style = CuratedSliderHint,
                 color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
             )
         }
-        if (zone.pinned) {
-            Text(
-                text = "居中格子的水平和垂直都固定，换一个格子才能移动。",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-            )
-        } else {
-            MarginSlider(
-                spec = spec,
-                photoAspect = photoAspect,
-                edge = zone.horizontalEdge,
-                onPosition = onPosition,
-                dense = dense,
-            )
-            MarginSlider(
-                spec = spec,
-                photoAspect = photoAspect,
-                edge = zone.verticalEdge,
-                onPosition = onPosition,
-                dense = dense,
-            )
+        if (onUpload != null) {
+            WatermarkIconAction("↻", uploadLabel, FmPalette.onSurfaceMuted, onUpload)
         }
+        if (onClear != null) {
+            WatermarkIconAction("🗑", "移除水印", FmPalette.error, onClear)
+        }
+    }
+}
 
-        } // 位置 组结束
-        CuratedRule()
-        CuratedGroup("外观") {
-        // Width: capped by the column (47 % sides / 60 % middle).
-        val cap = zone.widthCap
-        val widthPercent = spec.width.coerceIn(0.05f, cap) * 100f
-        if (dense) {
-            FmTouchSliderRow(
-                label = "宽度",
-                value = widthPercent,
-                min = 5f,
-                max = cap * 100f,
-                step = 0.5f,
-                default = WatermarkZones.DEFAULT_WIDTH * 100f,
-                unit = "%",
-                onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
-            )
-        } else {
-            FmDesktopSliderRow(
-                label = "宽度",
-                value = widthPercent,
-                min = 5f,
-                max = cap * 100f,
-                step = 0.5f,
-                default = WatermarkZones.DEFAULT_WIDTH * 100f,
-                unit = "%",
-                onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
-            )
-        }
+/** 位置：九宫格（每格独立：换格从模型默认边距开始）。 */
+@Composable
+private fun WatermarkPositionBlock(
+    spec: WatermarkSpec,
+    zone: WatermarkZone,
+    dense: Boolean,
+    onAnchor: (Int) -> Unit,
+    onWidth: (Float) -> Unit,
+    onPosition: (dx: Float, dy: Float) -> Unit,
+) {
+    WatermarkZoneGrid(
+        anchor = spec.anchor,
+        onAnchor = { next ->
+            if (next != spec.anchor) {
+                // Per-cell independence: a new cell starts from the model's
+                // default margin (offsets reset), and a width that no longer
+                // fits the new column is pulled back (report §9.1).
+                onAnchor(next)
+                onPosition(0f, 0f)
+                val cap = WatermarkZones.widthCapFor(next)
+                if (spec.width > cap) onWidth(cap)
+            }
+        },
+        dense = dense,
+    )
+}
+
+/** 边距：居中格写「固定」说明，其余格给两条 `距…` 滑杆；旧预设的居中说明也在这里。 */
+@Composable
+private fun WatermarkMarginsBlock(
+    spec: WatermarkSpec,
+    photoAspect: Float,
+    zone: WatermarkZone,
+    dense: Boolean,
+    onPosition: (dx: Float, dy: Float) -> Unit,
+) {
+    val legacyOffset = legacyCentredOffset(spec)
+    if (legacyOffset != null) {
         Text(
-            text = "此格宽度上限 ${(cap * 100).toInt()}%",
+            text = "旧预设的居中方向带有偏移；这里按 0 显示，改动后才写入新值。",
             style = FmType.labelSmall,
             color = FmPalette.onSurfaceMuted,
         )
+    }
+    if (zone.pinned) {
+        Text(
+            text = "居中格子的水平和垂直都固定，换一个格子才能移动。",
+            style = FmType.labelSmall,
+            color = FmPalette.onSurfaceMuted,
+        )
+    } else {
+        MarginSlider(
+            spec = spec,
+            photoAspect = photoAspect,
+            edge = zone.horizontalEdge,
+            onPosition = onPosition,
+            dense = dense,
+        )
+        MarginSlider(
+            spec = spec,
+            photoAspect = photoAspect,
+            edge = zone.verticalEdge,
+            onPosition = onPosition,
+            dense = dense,
+        )
+    }
+}
 
-        val opacityPercent = spec.opacity.coerceIn(0.1f, 1f) * 100f
-        if (dense) {
-            FmTouchSliderRow(
-                label = "不透明度",
-                value = opacityPercent,
-                min = 10f,
-                max = 100f,
-                step = 1f,
-                default = WatermarkZones.DEFAULT_OPACITY * 100f,
-                unit = "%",
-                onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
-            )
-        } else {
-            FmDesktopSliderRow(
-                label = "不透明度",
-                value = opacityPercent,
-                min = 10f,
-                max = 100f,
-                step = 1f,
-                default = WatermarkZones.DEFAULT_OPACITY * 100f,
-                unit = "%",
-                onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
-            )
-        }
+/** 宽度：按格上限收窄，并在下面写清此格上限。 */
+@Composable
+private fun WatermarkWidthBlock(
+    spec: WatermarkSpec,
+    zone: WatermarkZone,
+    dense: Boolean,
+    onWidth: (Float) -> Unit,
+) {
+    // Width: capped by the column (47 % sides / 60 % middle).
+    val cap = zone.widthCap
+    val widthPercent = spec.width.coerceIn(0.05f, cap) * 100f
+    if (dense) {
+        FmTouchSliderRow(
+            label = "宽度",
+            value = widthPercent,
+            min = 5f,
+            max = cap * 100f,
+            step = 0.5f,
+            default = WatermarkZones.DEFAULT_WIDTH * 100f,
+            unit = "%",
+            onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
+        )
+    } else {
+        FmDesktopSliderRow(
+            label = "宽度",
+            value = widthPercent,
+            min = 5f,
+            max = cap * 100f,
+            step = 0.5f,
+            default = WatermarkZones.DEFAULT_WIDTH * 100f,
+            unit = "%",
+            onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
+        )
+    }
+    Text(
+        text = "此格宽度上限 ${(cap * 100).toInt()}%",
+        style = FmType.labelSmall,
+        color = FmPalette.onSurfaceMuted,
+    )
+}
 
-        // AU2 A-11：`rotation` 全链路都在（模型 / 落库 / 引擎 `--overlay-angle`），
-        // 但以前没有任何入口，两处构造都硬写 0。这里接出 −45..45° 的滑杆
-        // （模型本身允许 ±180，编辑区间收窄到常用范围，避免误拖成倒置）。
-        if (onRotation != null) {
-            val angle = spec.rotation.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE)
-            val label = "旋转"
-            val onChange: (Float) -> Unit = { raw ->
-                onRotation(raw.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE))
-            }
-            if (dense) {
-                FmTouchSliderRow(
-                    label = label,
-                    value = angle,
-                    min = -WATERMARK_ROTATION_RANGE,
-                    max = WATERMARK_ROTATION_RANGE,
-                    step = 1f,
-                    default = 0f,
-                    unit = "°",
-                    onValueChange = onChange,
-                    decimalPlaces = 0,
-                )
-            } else {
-                FmDesktopSliderRow(
-                    label = label,
-                    value = angle,
-                    min = -WATERMARK_ROTATION_RANGE,
-                    max = WATERMARK_ROTATION_RANGE,
-                    step = 1f,
-                    default = 0f,
-                    unit = "°",
-                    onValueChange = onChange,
-                    decimalPlaces = 0,
-                )
-            }
-        }
+/** 不透明度。 */
+@Composable
+private fun WatermarkOpacityBlock(
+    spec: WatermarkSpec,
+    dense: Boolean,
+    onOpacity: (Float) -> Unit,
+) {
+    val opacityPercent = spec.opacity.coerceIn(0.1f, 1f) * 100f
+    if (dense) {
+        FmTouchSliderRow(
+            label = "不透明度",
+            value = opacityPercent,
+            min = 10f,
+            max = 100f,
+            step = 1f,
+            default = WatermarkZones.DEFAULT_OPACITY * 100f,
+            unit = "%",
+            onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
+        )
+    } else {
+        FmDesktopSliderRow(
+            label = "不透明度",
+            value = opacityPercent,
+            min = 10f,
+            max = 100f,
+            step = 1f,
+            default = WatermarkZones.DEFAULT_OPACITY * 100f,
+            unit = "%",
+            onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
+        )
+    }
+}
 
-        CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")
-        if (onApplyAll != null || onReset != null) {
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
-                if (onApplyAll != null) {
-                    GhostAction("应用到全部", onApplyAll)
-                }
-                if (onReset != null) {
-                    GhostAction("恢复默认", onReset)
-                }
-            }
-        }
-        }
+/** 旋转 −45..45°（模型允许 ±180，编辑收窄到常用段，避免误拖成倒置）。 */
+@Composable
+private fun WatermarkRotationBlock(
+    spec: WatermarkSpec,
+    dense: Boolean,
+    onRotation: (Float) -> Unit,
+) {
+    val angle = spec.rotation.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE)
+    val label = "旋转"
+    val onChange: (Float) -> Unit = { raw ->
+        onRotation(raw.coerceIn(-WATERMARK_ROTATION_RANGE, WATERMARK_ROTATION_RANGE))
+    }
+    if (dense) {
+        FmTouchSliderRow(
+            label = label,
+            value = angle,
+            min = -WATERMARK_ROTATION_RANGE,
+            max = WATERMARK_ROTATION_RANGE,
+            step = 1f,
+            default = 0f,
+            unit = "°",
+            onValueChange = onChange,
+            decimalPlaces = 0,
+        )
+    } else {
+        FmDesktopSliderRow(
+            label = label,
+            value = angle,
+            min = -WATERMARK_ROTATION_RANGE,
+            max = WATERMARK_ROTATION_RANGE,
+            step = 1f,
+            default = 0f,
+            unit = "°",
+            onValueChange = onChange,
+            decimalPlaces = 0,
+        )
     }
 }
 

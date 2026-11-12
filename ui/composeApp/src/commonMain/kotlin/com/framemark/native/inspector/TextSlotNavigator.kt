@@ -784,11 +784,13 @@ private fun TextSlotEditCard(
                 )
             }
         }
-        if (entry.readonly) {
+        // 手机底板一页一组的预算只有 150 dp，行头已经有「只读」这个 chip，再单独占
+        // 一行说明就会把这一块顶出预算；桌面（dense = false）保留整句。
+        if (entry.readonly && !dense) {
             Spacer(Modifier.height(FmRhythm.inline))
             Text(
                 text = "这一行只读：渲染器没有给出可写的身份。",
-                style = if (dense) FmType.labelSmall else CuratedNote,
+                style = CuratedNote,
                 color = FmPalette.onSurfaceFaint,
                 maxLines = 2,
             )

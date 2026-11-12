@@ -19,7 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +46,8 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.product.FmLog
 import com.framemark.native.shell.EditorTool
-import com.framemark.native.shell.PhoneCompactSheetMetrics
+import com.framemark.native.shell.PhonePageSpec
+import com.framemark.native.shell.pageGroups
 import com.framemark.native.shell.phone.PhoneParameterPage
 import com.framemark.native.shell.phone.PhoneSheetGrabber
 import com.framemark.native.shell.phone.PhoneSheetHead
@@ -83,7 +87,12 @@ import kotlin.math.abs
 internal fun ColumnScope.PhoneSheetHost(
     fullParameterPage: Boolean,
     sheetHeight: Dp,
-    sheetMetrics: PhoneCompactSheetMetrics,
+    /**
+     * 底板顶部两行的实际高度（把手 + 标题行）。边框页读 128 dp 卡片阶梯、参数页读
+     * 自己的 chrome 阶梯，两者都由 `phoneSheetChrome` 算好后传进来。
+     */
+    grabberHeight: Dp,
+    headHeight: Dp,
     snapHeights: List<Dp>,
     sheetLevel: Int,
     onSheetLevelChange: (Int) -> Unit,
@@ -124,6 +133,22 @@ internal fun ColumnScope.PhoneSheetHost(
     tools: List<EditorTool>,
     toolBarH: Dp,
 ) {
+                // 参数页「一页分几组」与当前组：分组是纯政策（`pageGroups`），这里只
+                // 拿它的结果画小圆点并交给页面横滑。组号按工具 / 卡片重置，换页签永远
+                // 从第一组开始。字号缩放要进 key：1.5× 时同一页的块更高，分组可能变。
+                val fontScale = density.fontScale
+                val pageSpec = remember(tool, model, tabModel, textOutputWidth, watermark != null) {
+                    PhonePageSpec(
+                        tool = tool,
+                        controls = phoneToolTab(tool, tabModel)?.let(::phonePageControls).orEmpty(),
+                        isIr = model?.isIr == true,
+                        hasTextReport = textOutputWidth > 0,
+                        hasWatermarkLayer = watermark != null,
+                    )
+                }
+                val groups = remember(pageSpec, fontScale) { pageGroups(pageSpec, fontScale) }
+                var groupIndex by remember(tool, model?.cardId) { mutableIntStateOf(0) }
+                val safeGroupIndex = groupIndex.coerceIn(0, (groups.size - 1).coerceAtLeast(0))
                 Box(
                     modifier = if (fullParameterPage) {
                         Modifier.fillMaxWidth().weight(1f)
@@ -145,7 +170,9 @@ internal fun ColumnScope.PhoneSheetHost(
                         val pageModified = phoneToolModified(tool, tabModel)
                         if (!fullParameterPage) {
                             PhoneSheetGrabber(
-                                height = sheetMetrics.grabber.dp,
+                                height = grabberHeight,
+                                pageCount = groups.size,
+                                pageIndex = safeGroupIndex,
                                 onToggle = {
                                     // Grabber tap cycles through the three stops: 收起 →
                                     // 半开 → 展开 → 收起.
@@ -178,7 +205,7 @@ internal fun ColumnScope.PhoneSheetHost(
                                 },
                                 modified = pageModified,
                                 expanded = sheetLevel == snapHeights.lastIndex,
-                                height = sheetMetrics.head.dp,
+                                height = headHeight,
                                 onToggleExpanded = {
                                     onSheetDragPx(null)
                                     onSheetLevelChange((sheetLevel + 1) % snapHeights.size)
@@ -254,8 +281,10 @@ internal fun ColumnScope.PhoneSheetHost(
                                     onFocusedTextSlotChange(key)
                                 },
                                 onOpenBrandPicker = onOpenBrandPicker,
-                                watermarkPane = if (toolPage == InspectorPage.Watermark) {
-                                    {
+                                // 水印页按组渲染：每一组只要它那一段（`WatermarkPanePart`），
+                                // 一段一块、每块都放得进底板，参数区不再竖着滚。
+                                watermarkContent = if (toolPage == InspectorPage.Watermark) {
+                                    { part ->
                                         WatermarkPane(
                                             spec = watermark,
                                             photoAspect = photoAspect,
@@ -278,10 +307,16 @@ internal fun ColumnScope.PhoneSheetHost(
                                             onUpload = onPickWatermark,
                                             onClear = { onWatermarkChange(null) },
                                             dense = true,
+                                            part = part,
                                         )
                                     }
                                 } else {
                                     null
+                                },
+                                groups = groups,
+                                groupIndex = safeGroupIndex,
+                                onGroupIndexChange = {
+                                    groupIndex = it.coerceIn(0, (groups.size - 1).coerceAtLeast(0))
                                 },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                                 // 样式's own 导出尺寸 row (showcase `paneClassicStyle`'s

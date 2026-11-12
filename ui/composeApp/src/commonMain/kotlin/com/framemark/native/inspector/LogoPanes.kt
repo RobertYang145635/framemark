@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -72,6 +75,22 @@ internal fun CuratedLogoPane(
      * 时保持桌面右栏的内联品牌页 / 版本页；两条路径写的是同一个 Brand 控件值。
      */
     onOpenBrandPicker: (() -> Unit)? = null,
+    /**
+     * 手机底板分页用：只画这些控件键的行（null = 全部）。
+     *
+     * 每组一页时，一组只放「调整字标」里的两行；品牌动作是另一组。这一个参数让
+     * 同一份面板能被切成两页，而品牌 / 版本 / 我的 Logo 的写入路径一条都没换。
+     */
+    onlyKeys: Set<String>? = null,
+    /** 只画「没有可替换字标」的说明块（手机把它当成一页）。 */
+    showNotice: Boolean = true,
+    /** 只画三个动作 + 一行说明（手机把它当成一页）。 */
+    showActions: Boolean = true,
+    /**
+     * true = 桌面右栏的组结构（`CuratedGroup` + 组头）；false = 手机的裸块
+     * （组头由分页器的小圆点接替，60 dp 的组头让给内容）。
+     */
+    grouped: Boolean = true,
 ) {
     val brandControl = model.controls.firstOrNull { it.type == ControlType.Brand }
     val logoControls = model.sections.firstOrNull { it.section == InspectorSection.Logo }?.controls
@@ -80,26 +99,39 @@ internal fun CuratedLogoPane(
     val adjustments = (logoControls + model.controls.filter { it.param.endsWith("showLogo") })
         .filterNot { it.type == ControlType.Brand }
         .distinctBy { it.key }
+        .filter { onlyKeys == null || it.key in onlyKeys }
     // 这张边框能不能真的画用户 Logo：只认平台渲染器装进来的那一个探针
     // （`UserLogoSupport` ← `DesktopNativeRender` / `AndroidNativeRender` 的
     // `supportsUserLogo`），不按卡片名单另写一份判断。
     val supportsUserLogo = UserLogoSupport.supports(model.cardId)
     when (logoBrandMode(brandControl, logoControls)) {
-        LogoBrandMode.Absent -> Column(modifier = modifier.fillMaxWidth()) {
-            CuratedEmptyPane(
-                title = "这套边框未收录可替换 Logo",
-                body = "当前模板不支持可替换字标，也没有字标参数。",
-            )
+        LogoBrandMode.Absent -> if (showNotice) {
+            Column(modifier = modifier.fillMaxWidth()) {
+                CuratedEmptyPane(
+                    title = "这套边框未收录可替换 Logo",
+                    body = "当前模板不支持可替换字标，也没有字标参数。",
+                    dense = dense,
+                )
+            }
         }
-        LogoBrandMode.Fixed -> Column(modifier = modifier.fillMaxWidth()) {
-            CuratedEmptyPane(
-                title = "当前模板使用固定品牌字标",
-                body = "品牌字标由模板固定，不能替换为其他品牌；下面的字标参数仍可调整。",
-            )
-            if (adjustments.isNotEmpty()) {
-                CuratedRule()
-                CuratedGroup("调整字标") {
-                    adjustments.forEach { CuratedLogoAdjustment(it, session, adjustments) }
+        LogoBrandMode.Fixed -> if (showNotice || adjustments.isNotEmpty()) {
+            Column(modifier = modifier.fillMaxWidth()) {
+                if (showNotice) {
+                    CuratedEmptyPane(
+                        title = "当前模板使用固定品牌字标",
+                        body = "品牌字标由模板固定，不能替换为其他品牌；下面的字标参数仍可调整。",
+                        dense = dense,
+                    )
+                }
+                if (adjustments.isNotEmpty()) {
+                    if (grouped) {
+                        CuratedRule()
+                        CuratedGroup("调整字标") {
+                            adjustments.forEach { CuratedLogoAdjustment(it, session, adjustments) }
+                        }
+                    } else {
+                        adjustments.forEach { CuratedLogoAdjustment(it, session, adjustments) }
+                    }
                 }
             }
         }
@@ -112,6 +144,8 @@ internal fun CuratedLogoPane(
             textSlots = textSlots.ifEmpty { LocalCuratedTextSlots.current?.slots.orEmpty() },
             onOpenBrandPicker = onOpenBrandPicker,
             supportsUserLogo = supportsUserLogo,
+            showActions = showActions,
+            grouped = grouped,
         )
     }
 }
@@ -344,6 +378,10 @@ private fun BrandedCuratedLogo(
     onOpenBrandPicker: (() -> Unit)?,
     /** 当前边框能否画用户 Logo（`UserLogoSupport`）；见 [userLogoActionDecision]。 */
     supportsUserLogo: Boolean,
+    /** 手机分页：这一页画不画「三个动作」那一块。 */
+    showActions: Boolean = true,
+    /** false = 手机的裸块（无 `CuratedGroup` 组头）。 */
+    grouped: Boolean = true,
 ) {
     val raw = session.value(brandControl) as? String ?: ""
     var catalog by remember { mutableStateOf<List<LogoBrand>?>(null) }
@@ -412,94 +450,128 @@ private fun BrandedCuratedLogo(
             // 目录是异步加载的：首帧 brands 为空时不能把页面判成「品牌不存在」，
             // 所以品牌还解析不出来就先画品牌页，而不是画一块空白。
             val versionBrand = brands.firstOrNull { it.key == state.browseBrandKey } ?: summary.brand
-            if (state.versionPage && versionBrand != null) {
-                CuratedLogoVersionPage(
-                    brand = versionBrand,
-                    appliedRaw = raw,
-                    onBack = { pane = logoVersionBack(state) },
-                    onPick = { assetKey -> run(logoPickCut(state, assetKey)) },
-                )
+            val listBody: @Composable () -> Unit = {
+                if (state.versionPage && versionBrand != null) {
+                    CuratedLogoVersionPage(
+                        brand = versionBrand,
+                        appliedRaw = raw,
+                        onBack = { pane = logoVersionBack(state) },
+                        onPick = { assetKey -> run(logoPickCut(state, assetKey)) },
+                    )
+                } else {
+                    CuratedLogoBrandPage(
+                        brands = brands,
+                        appliedBrand = summary.brand,
+                        browsing = state.browseBrandKey,
+                        onBack = { pane = logoPaneBack(state) },
+                        onPickBrand = { key -> pane = logoBrowseBrand(state, key) },
+                    )
+                }
+            }
+            // 手机底板的高是算好的（一页一组），品牌 / 版本列表是**内容列表**，
+            // 规则允许它自带一个竖向滚动区；桌面右栏本来就在滚动列表里，不能再套。
+            if (dense) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { listBody() }
             } else {
-                CuratedLogoBrandPage(
-                    brands = brands,
-                    appliedBrand = summary.brand,
-                    browsing = state.browseBrandKey,
-                    onBack = { pane = logoPaneBack(state) },
-                    onPickBrand = { key -> pane = logoBrowseBrand(state, key) },
-                )
+                listBody()
             }
             return
         }
         LogoPaneBody.UserLibrary -> {
-            Column(modifier = modifier.fillMaxWidth()) {
-                // 返回入口就在面板原来的位置：点「我的 Logo」不会把用户带到另一个工具页。
-                LogoTop(
-                    back = "返回 Logo",
-                    crumb = "当前：${summary.title}",
-                    onBack = { pane = logoPaneBack(state) },
-                )
-                CuratedGroup(title = "我的 Logo", right = { CuratedCount("本机库") }) {
-                    UserLogoPanel(
-                        control = brandControl,
-                        session = session,
-                        repo = UserLogoEnv.repository,
-                        dense = dense,
-                        selectable = userAction.enabled,
+            val userBody: @Composable () -> Unit = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // 返回入口就在面板原来的位置：点「我的 Logo」不会把用户带到另一个工具页。
+                    LogoTop(
+                        back = "返回 Logo",
+                        crumb = "当前：${summary.title}",
+                        onBack = { pane = logoPaneBack(state) },
                     )
+                    CuratedGroup(title = "我的 Logo", right = { CuratedCount("本机库") }) {
+                        UserLogoPanel(
+                            control = brandControl,
+                            session = session,
+                            repo = UserLogoEnv.repository,
+                            dense = dense,
+                            selectable = userAction.enabled,
+                        )
+                    }
                 }
+            }
+            // 我的 Logo 同样是内容列表：手机端一个滚动区，桌面端跟着右栏滚。
+            if (dense) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { userBody() }
+            } else {
+                userBody()
             }
             return
         }
         LogoPaneBody.Panel -> Unit
     }
 
+    val actions: @Composable () -> Unit = {
+        PrimaryButton(
+            text = "更换 Logo",
+            onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(FmSpacing.sm))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+        ) {
+            GhostButton(
+                text = "自动匹配",
+                onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                modifier = Modifier.weight(1f),
+            )
+            GhostButton(
+                text = "我的 Logo",
+                onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
+                enabled = userAction.enabled,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(Modifier.height(FmSpacing.xs))
+        Text(
+            text = logoCaption(summary),
+            style = CuratedNote,
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
+        userAction.note?.let { note ->
+            Text(
+                text = note,
+                style = FmType.labelSmall,
+                color = FmPalette.error,
+                modifier = Modifier.padding(top = FmSpacing.xs),
+            )
+        }
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         // 1. 调整字标：进来第一件事就是能在画布还看得见的时候调位置 / 大小 / 显示。
         if (adjustments.isNotEmpty()) {
-            CuratedGroup("调整字标") {
-                orderedLogoAdjustments(adjustments).forEach { CuratedLogoAdjustment(it, session, adjustments) }
+            val rows: @Composable () -> Unit = {
+                orderedLogoAdjustments(adjustments).forEach {
+                    CuratedLogoAdjustment(it, session, adjustments)
+                }
+            }
+            if (grouped) {
+                CuratedGroup("调整字标") { rows() }
+            } else {
+                rows()
             }
         }
         // 2. 三个动作 + 一行说明。品牌 / 版本列表只能从「更换 Logo」进去。
-        CuratedGroup(title = "字标", right = { CuratedCount(logoSourceLabel(summary)) }) {
-            PrimaryButton(
-                text = "更换 Logo",
-                onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(FmSpacing.sm))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-            ) {
-                GhostButton(
-                    text = "自动匹配",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
-                    modifier = Modifier.weight(1f),
-                )
-                GhostButton(
-                    text = "我的 Logo",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
-                    enabled = userAction.enabled,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Spacer(Modifier.height(FmSpacing.xs))
-            Text(
-                text = logoCaption(summary),
-                style = CuratedNote,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
-            userAction.note?.let { note ->
-                Text(
-                    text = note,
-                    style = FmType.labelSmall,
-                    color = FmPalette.error,
-                    modifier = Modifier.padding(top = FmSpacing.xs),
-                )
+        if (showActions) {
+            if (grouped) {
+                CuratedGroup(title = "字标", right = { CuratedCount(logoSourceLabel(summary)) }) {
+                    actions()
+                }
+            } else {
+                actions()
             }
         }
     }

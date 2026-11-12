@@ -1,21 +1,23 @@
 package com.framemark.native.shell.phone
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,16 +30,16 @@ import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.InspectorPage
-import com.framemark.native.inspector.InspectorPageContent
 import com.framemark.native.inspector.InspectorTabInfo
 import com.framemark.native.inspector.LocalCuratedPhotoSize
 import com.framemark.native.inspector.LocalCuratedTextSlots
 import com.framemark.native.inspector.LogoBrandPanel
 import com.framemark.native.inspector.NativeTextSlotControls
-import com.framemark.native.inspector.StockAnchorControl
-import com.framemark.native.inspector.StylePageBody
+import com.framemark.native.inspector.StockAnchorBlock
+import com.framemark.native.inspector.StockAnchorPart
 import com.framemark.native.inspector.TextPageMode
 import com.framemark.native.inspector.TextSlotEmptyPane
+import com.framemark.native.inspector.WatermarkPanePart
 import com.framemark.native.inspector.fontScaleControlOf
 import com.framemark.native.inspector.footerModeControlOf
 import com.framemark.native.inspector.footerPctControlOf
@@ -56,6 +58,8 @@ import com.framemark.native.inspector.OutputSize
 import com.framemark.native.inspector.curatedOutputPixels
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.StockWatermarkControls
+import com.framemark.native.shell.PHONE_PAGE_BLOCK_GAP_DP
+import com.framemark.native.shell.PhonePageKeys
 import com.framemark.native.shell.showsPhoneParameterSummary
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmSpacing
@@ -80,21 +84,22 @@ import com.framemark.native.workflow.isUsableStaticTextControl
  *    恢复原文 + 隐藏开关) plus 文字大小 when the card declares a scale;
  *  - Logo: [LogoBrandPanel] on both platforms (the same brand/version data the
  *    desktop right rail uses — no second copy here);
- *  - 水印: [watermarkPane], owned by the editor because the layer lives there.
+ *  - 水印: the watermark pane, section by section.
  *
- * **面**（「不要让用户为了调参数上下来回滚」）: the page is two zones with at most one
- * scrollable region, and that region never contains a primary action.
+ * **不滚（owner 2026-11）**: 这一页里**没有竖向 scroll**。`PhonePageLayout.pageGroups`
+ * 把本页的控件分成若干「一组一页」，每组的高都算在 `PHONE_PAGE_GROUP_BUDGET_DP` 以内，
+ * 所以四页的每个控件都在默认底板的可见范围里；组多了就横滑（把手行右端的小圆点
+ * 标出第几组 / 共几组），参数区永远不出现滚动条。
  *
- *  - **公共区** ([PhoneDesignSummary]) — pinned above the tools, identical on all four
+ *  - **公共区** ([PhoneDesignSummary]) — pinned above the blocks, identical on all four
  *    pages, never scrolls and never moves when the tab changes: the export size of
  *    the selected design. No declared control can join it: `InspectorTabs.kt`'s
  *    `inspectorPageOf` partitions a card's controls, so every control belongs to
  *    exactly one page and hoisting one would mean duplicating a page's binding.
- *  - **工具区** — the only part that changes with [page] and the only scroller. The
- *    page header (title / 已改 N / 恢复默认) is the host's `PhoneSheetHead`, already
- *    pinned above both zones in the sheet; in the constrained full-page branch the
- *    公共区 is the pinned context.
- *  - [footer] — the page's primary actions, pinned *under* the scroller.
+ *  - **工具区** — the pager: one block per page. The page header (title / 已改 N /
+ *    恢复默认) is the host's `PhoneSheetHead`, pinned above both zones in the sheet;
+ *    in the constrained full-page branch the 公共区 is the pinned context.
+ *  - [footer] — the page's primary actions, pinned *under* the pager.
  */
 @Composable
 fun PhoneParameterPage(
@@ -108,7 +113,11 @@ fun PhoneParameterPage(
     textOutputWidth: Int = 0,
     textOutputHeight: Int = 0,
     onTextSlotFocus: ((String?) -> Unit)? = null,
-    watermarkPane: (@Composable () -> Unit)? = null,
+    /**
+     * 水印页按组渲染：每一组只画它那一段（`WatermarkPanePart`）。null = 这一页不是水印页。
+     * 外壳持有 `WatermarkSpec` 的写入回调，所以面板本身仍然「不拥有存储」。
+     */
+    watermarkContent: (@Composable (WatermarkPanePart) -> Unit)? = null,
     /**
      * 手机端 选择品牌 的打开请求：选择器是外壳画在整个编辑器之上的覆盖层面板，
      * 不是这一页里的一层，所以这里只把请求往上递。null = 桌面右栏的内联品牌页。
@@ -124,6 +133,14 @@ fun PhoneParameterPage(
      */
     photoWidthPx: Int = 0,
     photoHeightPx: Int = 0,
+    /**
+     * 本页的分组（`pageGroups` 的结果）：每一组一页，页内不再竖向滚动。
+     * 空列表 = 单页（没有可调内容时也至少有一个空态组，见 `pageBlocks`）。
+     */
+    groups: List<List<String>> = emptyList(),
+    /** 当前组下标（外壳持有：把手行的小圆点也读它）。 */
+    groupIndex: Int = 0,
+    onGroupIndexChange: (Int) -> Unit = {},
 ) {
     if (tab == null) {
         PanelNote(
@@ -164,6 +181,18 @@ fun PhoneParameterPage(
     // 这些参数只有样式页能拥有（`inspectorPageOf` 是一张分区表），所以传「整卡可见行」
     // 与传「样式页那一组」算出的数字相同 —— 四页因此读到同一个尺寸。
     val designControls = remember(model) { phoneVisibleControls(model?.controls.orEmpty()) }
+    // 组是政策算好的；空表（还没算出来 / 无内容）当作一个空组，页面永远有东西可画。
+    val pages = remember(groups) { groups.ifEmpty { listOf(emptyList()) } }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pages.size })
+    // 换页签 / 换卡片回到第一组：每一页自己的第一个块永远在同一个位置。
+    LaunchedEffect(page, model?.cardId) { pagerState.scrollToPage(0) }
+    // 页面 → 外壳：把手行的小圆点要跟着滑。
+    LaunchedEffect(pagerState.currentPage) { onGroupIndexChange(pagerState.currentPage) }
+    // 外壳 → 页面：小圆点被点（或组表变化）时把 pager 挪过去。
+    LaunchedEffect(groupIndex, pages.size) {
+        val target = groupIndex.coerceIn(0, pages.lastIndex)
+        if (pagerState.currentPage != target) pagerState.scrollToPage(target)
+    }
     CompositionLocalProvider(
         LocalCuratedPhotoSize provides if (photoWidthPx > 0 && photoHeightPx > 0) {
             CuratedPhotoSize(photoWidthPx, photoHeightPx)
@@ -175,91 +204,136 @@ fun PhoneParameterPage(
             // 先取出可用高度：`maxHeight` 是 BoxWithConstraintsScope 的成员，进到
             // Column 的作用域后就不能隐式读它了（布局 scope 的 DSL marker）。
             val pageHeightDp = maxHeight.value
-            // 滚动位移按页记（[phoneToolScrollFor]）：改前四页共用一条位移，新页签
-            // 一打开可能停在半路；现在切回一个页签回到自己那一行。
-            val toolOffsets = remember(model?.cardId) { mutableMapOf<InspectorPage, ScrollState>() }
             Column(modifier = Modifier.fillMaxSize()) {
                 // ---- 公共区：四页同一块，永不滚走、也不随页签挪动 ----
                 if (model != null && showsPhoneParameterSummary(pageHeightDp)) {
                     PhoneDesignSummary(controls = designControls, session = session)
                     PhoneZoneRule()
                 }
-                // ---- 工具区：本页唯一随页签变的容器，也是本页唯一的滚动区 ----
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(phoneToolScrollFor(toolOffsets, page)),
-                ) {
-                    when {
-                        page == InspectorPage.Watermark ->
-                            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                                watermarkPane?.invoke()
-                            }
-                        page == InspectorPage.Logo && model != null ->
-                            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                                // 自动匹配要读「照片品牌」：与桌面 rail 同一个 CompositionLocal，
-                                // 数据就是舞台渲染报告里的那张 slot 表（不再另造一份）。
-                                CompositionLocalProvider(
-                                    LocalCuratedTextSlots provides if (textSlots.isEmpty()) {
-                                        null
-                                    } else {
-                                        CuratedTextSlots(textSlots, textOutputWidth, textOutputHeight)
-                                    },
-                                ) {
-                                    LogoBrandPanel(
-                                        model = model,
-                                        session = session,
-                                        dense = true,
-                                        textSlots = textSlots,
-                                        // 手机端的品牌选择是盖在画布上的覆盖层面板（外壳绘制，
-                                        // 舞台仍在）；这里只发打开请求，不在矮底板里铺 61 行。
-                                        onOpenBrandPicker = onOpenBrandPicker,
-                                    )
-                                }
-                            }
-                        page == InspectorPage.Style && model != null -> PhoneStylePane(
-                            model = model,
-                            session = session,
-                            card = card,
-                            tab = tab,
-                        )
-                        textMode == TextPageMode.Selector && model != null -> Column {
-                            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                                NativeTextSlotControls(
-                                    model = model,
-                                    slots = textSlots,
-                                    outputWidth = textOutputWidth,
-                                    outputHeight = textOutputHeight,
-                                    session = session,
-                                    onTextSlotFocus = onTextSlotFocus,
-                                    dense = true,
-                                    selection = textSelection,
-                                )
-                            }
-                            PhoneTextScaleGroup(
-                                controls = tab.controls,
+                // ---- 工具区：一组一页的横滑页。没有竖向滚动容器 ----
+                if (model == null) {
+                    Box(Modifier.fillMaxWidth().weight(1f)) {
+                        PhonePageBlockFrame {
+                            PhoneEmptyBlock(page)
+                        }
+                    }
+                } else if (pages.size <= 1) {
+                    Box(Modifier.fillMaxWidth().weight(1f)) {
+                        PhonePageBlockFrame {
+                            PhonePageGroup(
+                                keys = pages.first(),
+                                page = page,
+                                tab = tab,
+                                model = model,
                                 session = session,
-                                boxCount = textEntries.count { !it.readonly },
+                                card = card,
+                                textSlots = textSlots,
+                                textOutputWidth = textOutputWidth,
+                                textOutputHeight = textOutputHeight,
+                                textEntries = textEntries,
+                                textSelection = textSelection,
+                                textMode = textMode,
+                                onTextSlotFocus = onTextSlotFocus,
+                                watermarkContent = watermarkContent,
+                                onOpenBrandPicker = onOpenBrandPicker,
                             )
                         }
-                        textMode == TextPageMode.Empty ->
-                            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                                TextSlotEmptyPane(dense = true)
-                            }
-                        else -> Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
-                            InspectorPageContent(
-                                tab = tab.copy(controls = phonePageControls(tab)),
+                    }
+                } else {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        pageSpacing = 0.dp,
+                    ) { index ->
+                        PhonePageBlockFrame {
+                            PhonePageGroup(
+                                keys = pages[index],
+                                page = page,
+                                tab = tab,
+                                model = model,
                                 session = session,
-                                dense = true,
+                                card = card,
+                                textSlots = textSlots,
+                                textOutputWidth = textOutputWidth,
+                                textOutputHeight = textOutputHeight,
+                                textEntries = textEntries,
+                                textSelection = textSelection,
+                                textMode = textMode,
+                                onTextSlotFocus = onTextSlotFocus,
+                                watermarkContent = watermarkContent,
+                                onOpenBrandPicker = onOpenBrandPicker,
                             )
                         }
                     }
                 }
-                // ---- 主操作固定在滚动区之外：页签怎么切都点得到 ----
+                // ---- 主操作固定在横滑页之外：页签怎么切都点得到 ----
                 footer?.invoke()
             }
         }
+    }
+}
+
+/**
+ * 一组的框：**只有** 18 dp 左右内边距 + 4 / 4 上下内边距，没有组头、没有卡片底。
+ *
+ * 分页后组头（`PhoneGroup` 的 16 + 22 + 8 + 14 = 60 dp）就是「一组 150 dp 只放得下
+ * 一个开关」的那 60 dp，所以组名让位给内容本身：每个控件都自带标签（滑杆标题、分段
+ * 选项、色板名字），组与组的边界由把手行的小圆点和横滑反馈表达。
+ */
+@Composable
+private fun PhonePageBlockFrame(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 4.dp),
+        content = content,
+    )
+}
+
+/** 一组的内容：按页签派给四个渲染器。 */
+@Composable
+private fun ColumnScope.PhonePageGroup(
+    keys: List<String>,
+    page: InspectorPage,
+    tab: InspectorTabInfo,
+    model: InspectorCardModel,
+    session: DesignSession,
+    card: LibraryCard?,
+    textSlots: List<TextSlot>,
+    textOutputWidth: Int,
+    textOutputHeight: Int,
+    textEntries: List<com.framemark.native.inspector.TextSlotNavEntry>,
+    textSelection: com.framemark.native.inspector.TextSlotSelectionState,
+    textMode: TextPageMode?,
+    onTextSlotFocus: ((String?) -> Unit)?,
+    watermarkContent: (@Composable (WatermarkPanePart) -> Unit)?,
+    onOpenBrandPicker: (() -> Unit)?,
+) {
+    when (page) {
+        InspectorPage.Style -> PhoneStyleGroup(keys = keys, model = model, session = session, card = card, tab = tab)
+        InspectorPage.Text -> PhoneTextGroup(
+            keys = keys,
+            model = model,
+            tab = tab,
+            session = session,
+            textSlots = textSlots,
+            textOutputWidth = textOutputWidth,
+            textOutputHeight = textOutputHeight,
+            textEntries = textEntries,
+            textSelection = textSelection,
+            textMode = textMode,
+            onTextSlotFocus = onTextSlotFocus,
+        )
+        InspectorPage.Logo -> PhoneLogoGroup(
+            keys = keys,
+            model = model,
+            session = session,
+            textSlots = textSlots,
+            textOutputWidth = textOutputWidth,
+            textOutputHeight = textOutputHeight,
+            onOpenBrandPicker = onOpenBrandPicker,
+        )
+        InspectorPage.Watermark -> PhoneWatermarkGroup(keys = keys, watermarkContent = watermarkContent)
     }
 }
 
@@ -303,39 +377,23 @@ private fun PhoneZoneRule() {
     )
 }
 
-/**
- * The tool zone's scroll offset for [page]: one per page, kept while the same card is
- * selected.
- *
- * The page used to own a single `rememberScrollState()` shared by all four tabs, so
- * opening a different tool inherited the previous tab's offset — a fresh page could
- * open halfway down a list the user had never scrolled. Keying the offset by page
- * makes 样式 → 文字 → 样式 return to the row being adjusted instead of the top.
- * A different card starts with an empty cache ([PhoneParameterPage] remembers it by
- * `model.cardId`), because the rows are different rows.
- */
-internal fun phoneToolScrollFor(
-    offsets: MutableMap<InspectorPage, ScrollState>,
-    page: InspectorPage,
-): ScrollState = offsets.getOrPut(page) { ScrollState(0) }
+/** 间距：同一页里两个块之间（与政策里的 `PHONE_PAGE_BLOCK_GAP_DP` 同一个数）。 */
+private val BlockGap = PHONE_PAGE_BLOCK_GAP_DP.dp
+
+// ---------------------------------------------------------------------------
+// 样式
+// ---------------------------------------------------------------------------
 
 /**
- * 样式 page of the showcase (`paneClassicStyle`): the theme swatches, the footer
- * layout segmented control with its one-line explanation and the footer-height touch
- * slider. The pane's last row, 导出尺寸 (`.outsz`), moved up into the page's pinned
- * 公共区 ([PhoneDesignSummary]): it is a property of the design, not of this page, and
- * it was the row furthest down the longest scroll.
+ * One 样式 group (`paneClassicStyle` structure, split into pageable blocks).
  *
- * `paneIrStyle` (vendor-spec cards) used to be **unconditionally** the read-only
- * 边框规格 block. The user decision 「这种是需要放开的，有的边框需要定死，有的不需要」
- * splits it: a vendor card that declares `stockAnchor` / the two offsets gets those
- * declared controls (水印位置 as a 3×3 grid, then the 水平/垂直微调 sliders) under the
- * same 边框规格 note; a card that declares nothing adjustable keeps exactly the old
- * read-only block. Any other card falls back to its declared controls, rendered with
- * the same `.touchui` chrome rather than a form of drop-downs.
+ * 区块顺序与政策一致：只读 边框规格（厂商卡）→ 底色 → 版式（含底部留白）→ 其余声明
+ * 控件（同一 section 的可以同页，见 `pageBlocks`）。每个块的内容和改前的 pane 完全
+ * 一样，只是不再套 60 dp 的组头。
  */
 @Composable
-private fun PhoneStylePane(
+private fun ColumnScope.PhoneStyleGroup(
+    keys: List<String>,
     model: InspectorCardModel,
     session: DesignSession,
     card: LibraryCard?,
@@ -343,49 +401,37 @@ private fun PhoneStylePane(
 ) {
     val controls = phonePageControls(tab)
     val theme = themeControlOf(controls)
-    // AU2 A-17：与桌面同一个 tail-match 判定，不再比对字面量 `params.footerMode`。
     val mode = footerModeControlOf(controls)
     val footerPct = footerPctControlOf(controls)
     // 只有「什么都没声明」的厂商规格卡才是只读的；同一个判据在桌面样式页也读
     // （`phoneStylePageBody` / `stockWatermarkPlan`，定义在 inspector 包）。
-    val body = phoneStylePageBody(isIr = model.isIr, controls = controls)
+    val specOnly = phoneStylePageBody(isIr = model.isIr, controls = controls) ==
+        com.framemark.native.inspector.StylePageBody.SpecOnly
     val movable = movableStockWatermark(controls)
-    if (body == StylePageBody.SpecOnly) {
-        // 只读块里的「文字 N 行」沿用 WP-C 的口径：渲染器报出来的文本框数。
-        PhoneSpecPane(
-            card = card,
-            slotCount = model.controls.count { isNativeTextSlotControl(it) },
-            textPositionFixed = true,
-        )
-        return
-    }
-    val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key)
-    // 声明可以重复同一条 anchorGrid 行，但 `params.stockAnchor` 只有一个字段：
-    // 九宫格只画一次。
-    val rest = withoutDuplicateStockAnchors(controls.filterNot { it.key in handled })
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // 声明了可移动水印的厂商规格卡：规格说明仍然在上，但文案不再说位置是固定的；
-        // 下面就是九宫格 + 微调，和手写卡一样走声明出来的控件。这一段的「文字 N 行」
-        // 数的是声明出来的文字行（IR 卡没有渲染器 slot）。
-        if (model.isIr) {
-            PhoneSpecPane(
+    val anchor = controls.firstOrNull { StockWatermarkControls.isAnchorParam(it.param) }
+    keys.forEachIndexed { index, key ->
+        if (index > 0) Spacer(Modifier.height(BlockGap))
+        when {
+            key == PhonePageKeys.SPEC -> PhoneSpecBlock(
                 card = card,
-                slotCount = model.controls.count { !it.hidden && it.type == ControlType.Text },
-                textPositionFixed = !movable,
+                slotCount = if (specOnly) {
+                    // 只读块里的「文字 N 行」沿用 WP-C 的口径：渲染器报出来的文本框数。
+                    model.controls.count { isNativeTextSlotControl(it) }
+                } else {
+                    // 声明了可移动水印的厂商规格卡：数声明出来的文字行（IR 卡没有 slot）。
+                    model.controls.count { !it.hidden && it.type == ControlType.Text }
+                },
+                textPositionFixed = if (specOnly) true else !movable,
             )
-        }
-        if (theme != null) {
-            PhoneGroup(title = "底色") {
+            theme != null && key == theme.key -> {
                 PhoneSwatchRow(
                     options = theme.options.map { it.value to it.display },
                     selected = session.value(theme)?.toString() ?: "",
                     onSelect = { value -> session.set(theme, value) },
                 )
             }
-        }
-        if (mode != null) {
-            val modeValue = session.value(mode)?.toString() ?: ""
-            PhoneGroup(title = "版式") {
+            mode != null && key == mode.key -> {
+                val modeValue = session.value(mode)?.toString() ?: ""
                 PhoneSegmented(
                     options = phoneModeOptions(mode.options.map { it.value to phoneModeLabel(it.display) }),
                     selected = modeValue,
@@ -393,39 +439,31 @@ private fun PhoneStylePane(
                     label = "版式",
                 )
                 PhoneSubNote(phoneModeNote(modeValue))
-                if (footerPct != null) {
-                    // AU2 A-03/A-07：叠加版式不读底部留白；经典/简约下低于短边 8.5%
-                    // 地板的那一段拖动没有变化，滑杆下限抬到地板。
-                    val disabledReason = footerPctDisabledReason(modeValue)
-                    val photo = LocalCuratedPhotoSize.current
-                    PhoneControlSlider(
-                        control = footerPct,
-                        session = session,
-                        hint = if (disabledReason != null) "叠加版式不生效" else "占照片宽度",
-                        enabled = disabledReason == null,
-                        disabledReason = disabledReason,
-                        effectiveMin = if (disabledReason != null) {
-                            null
-                        } else {
-                            photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
-                        },
-                    )
-                }
             }
-        } else if (footerPct != null) {
-            PhoneGroup(title = "版式") {
-                PhoneControlSlider(control = footerPct, session = session, hint = "占照片宽度")
+            footerPct != null && key == footerPct.key -> {
+                val modeValue = mode?.let { session.value(it)?.toString() } ?: ""
+                // AU2 A-03/A-07：叠加版式不读底部留白；经典/简约下低于短边 8.5%
+                // 地板的那一段拖动没有变化，滑杆下限抬到地板。
+                val disabledReason = if (mode != null) footerPctDisabledReason(modeValue) else null
+                val photo = LocalCuratedPhotoSize.current
+                PhoneControlSlider(
+                    control = footerPct,
+                    session = session,
+                    hint = if (disabledReason != null) "叠加版式不生效" else "占照片宽度",
+                    enabled = disabledReason == null,
+                    disabledReason = disabledReason,
+                    effectiveMin = if (disabledReason != null) {
+                        null
+                    } else {
+                        photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
+                    },
+                )
             }
-        }
-        if (rest.isNotEmpty()) {
-            rest.groupBy { it.section }.forEach { (section, rows) ->
-                PhoneGroup(title = section.title) {
-                    rows.forEachIndexed { index, control ->
-                        if (index > 0) Spacer(Modifier.height(4.dp))
-                        PhoneControlRow(control = control, session = session)
-                    }
-                }
-            }
+            key == PhonePageKeys.ANCHOR_GRID && anchor != null ->
+                StockAnchorBlock(control = anchor, session = session, dense = true, part = StockAnchorPart.Grid)
+            key == PhonePageKeys.ANCHOR_FOOTER && anchor != null ->
+                StockAnchorBlock(control = anchor, session = session, dense = true, part = StockAnchorPart.Footer)
+            else -> controls.firstOrNull { it.key == key }?.let { PhoneControlRow(control = it, session = session) }
         }
     }
 }
@@ -438,41 +476,160 @@ private fun PhoneStylePane(
  * [vendorSpecNote]).
  */
 @Composable
-private fun PhoneSpecPane(card: LibraryCard?, slotCount: Int, textPositionFixed: Boolean) {
-    PhoneGroup(title = "边框规格") {
-        PhoneSpecRows(
-            rows = buildList {
-                add("文字" to "$slotCount 行")
-                val source = listOfNotNull(
-                    card?.brand?.takeIf { it.isNotBlank() },
-                    card?.family?.takeIf { it.isNotBlank() },
-                ).joinToString(" · ")
-                if (source.isNotBlank()) add("来源" to source)
-            },
-        )
-        PhoneSubNote(vendorSpecNote(watermarkMovable = !textPositionFixed))
+private fun PhoneSpecBlock(card: LibraryCard?, slotCount: Int, textPositionFixed: Boolean) {
+    PhoneSpecRows(
+        rows = buildList {
+            add("文字" to "$slotCount 行")
+            val source = listOfNotNull(
+                card?.brand?.takeIf { it.isNotBlank() },
+                card?.family?.takeIf { it.isNotBlank() },
+            ).joinToString(" · ")
+            if (source.isNotBlank()) add("来源" to source)
+        },
+    )
+    PhoneSubNote(vendorSpecNote(watermarkMovable = !textPositionFixed))
+}
+
+// ---------------------------------------------------------------------------
+// 文字
+// ---------------------------------------------------------------------------
+
+/**
+ * 文字页一组：要么是渲染器报告的选择器（一整块），要么是一条声明控件（`StaticRows`）。
+ * 文字大小是单独的一组（滑杆一块），横滑一下就到，不用在页里找。
+ */
+@Composable
+private fun ColumnScope.PhoneTextGroup(
+    keys: List<String>,
+    model: InspectorCardModel,
+    tab: InspectorTabInfo,
+    session: DesignSession,
+    textSlots: List<TextSlot>,
+    textOutputWidth: Int,
+    textOutputHeight: Int,
+    textEntries: List<com.framemark.native.inspector.TextSlotNavEntry>,
+    textSelection: com.framemark.native.inspector.TextSlotSelectionState,
+    textMode: TextPageMode?,
+    onTextSlotFocus: ((String?) -> Unit)?,
+) {
+    if (PhonePageKeys.TEXT_SLOTS in keys) {
+        when (textMode) {
+            TextPageMode.Selector -> NativeTextSlotControls(
+                model = model,
+                slots = textSlots,
+                outputWidth = textOutputWidth,
+                outputHeight = textOutputHeight,
+                session = session,
+                onTextSlotFocus = onTextSlotFocus,
+                dense = true,
+                selection = textSelection,
+            )
+            TextPageMode.Empty -> TextSlotEmptyPane(dense = true)
+            else -> Unit
+        }
+        return
+    }
+    val controls = phonePageControls(tab)
+    val scale = fontScaleControlOf(controls)
+    keys.forEachIndexed { index, key ->
+        if (index > 0) Spacer(Modifier.height(BlockGap))
+        when {
+            scale != null && key == scale.key -> PhoneControlSlider(
+                control = scale,
+                session = session,
+                hint = textScaleHint(textEntries.count { !it.readonly }),
+            )
+            else -> controls.firstOrNull { it.key == key }?.let { PhoneControlRow(control = it, session = session) }
+        }
     }
 }
 
-/** The 文字 page's 文字大小 group (showcase `grp('文字大小', fmSlider(...))`). */
+// ---------------------------------------------------------------------------
+// Logo
+// ---------------------------------------------------------------------------
+
+/**
+ * Logo 页一组：面板只画 `onlyKeys` 里的行（`grouped = false`，组头由分页器接替）。
+ * 品牌库 / 版本页 / 我的 Logo 仍然只能由动作点进去，仍是盖在画布上的覆盖层。
+ */
 @Composable
-private fun PhoneTextScaleGroup(
-    controls: List<InspectorControl>,
+private fun ColumnScope.PhoneLogoGroup(
+    keys: List<String>,
+    model: InspectorCardModel,
     session: DesignSession,
-    /** 这一页有几个文本框：四行沿用演示稿口径，其他数量说人话。 */
-    boxCount: Int = 0,
+    textSlots: List<TextSlot>,
+    textOutputWidth: Int,
+    textOutputHeight: Int,
+    onOpenBrandPicker: (() -> Unit)?,
 ) {
-    // AU2 A-05: 这里原来比对字面量 `"text.fontScale"`，而注册表归一后 consumer 是
-    // `fontScale` —— 62 张手写卡的「文字大小」在手机上从来没出现过。改用与桌面
-    // 同一个判定，避免第三处再分叉。
-    val scale = fontScaleControlOf(controls) ?: return
-    PhoneGroup(title = "文字大小") {
-        PhoneControlSlider(
-            control = scale,
+    // 自动匹配要读「照片品牌」：与桌面 rail 同一个 CompositionLocal，
+    // 数据就是舞台渲染报告里的那张 slot 表（不再另造一份）。
+    CompositionLocalProvider(
+        LocalCuratedTextSlots provides if (textSlots.isEmpty()) {
+            null
+        } else {
+            CuratedTextSlots(textSlots, textOutputWidth, textOutputHeight)
+        },
+    ) {
+        val brandKey = model.controls.firstOrNull { it.type == ControlType.Brand }?.key
+        LogoBrandPanel(
+            model = model,
             session = session,
-            hint = textScaleHint(boxCount),
+            dense = true,
+            textSlots = textSlots,
+            // 手机端的品牌选择是盖在画布上的覆盖层面板（外壳绘制，舞台仍在）；
+            // 这里只发打开请求，不在矮底板里铺 61 行。
+            onOpenBrandPicker = onOpenBrandPicker,
+            onlyKeys = keys.toSet(),
+            showNotice = PhonePageKeys.LOGO_NOTICE in keys,
+            showActions = brandKey != null && brandKey in keys,
+            grouped = false,
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// 水印
+// ---------------------------------------------------------------------------
+
+/**
+ * 水印页一组：一段一块（图层 / 位置 / 边距 / 宽度 / 不透明度 / 旋转）。
+ * 水印数据仍由外壳持有，这里一个字段都不存。
+ */
+@Composable
+private fun ColumnScope.PhoneWatermarkGroup(
+    keys: List<String>,
+    watermarkContent: (@Composable (WatermarkPanePart) -> Unit)?,
+) {
+    keys.forEach { key ->
+        val part = when (key) {
+            PhonePageKeys.WATERMARK_EMPTY -> WatermarkPanePart.Empty
+            PhonePageKeys.WATERMARK_LAYER -> WatermarkPanePart.Layer
+            PhonePageKeys.WATERMARK_POSITION -> WatermarkPanePart.Position
+            PhonePageKeys.WATERMARK_MARGINS -> WatermarkPanePart.Margins
+            PhonePageKeys.WATERMARK_WIDTH -> WatermarkPanePart.Width
+            PhonePageKeys.WATERMARK_OPACITY -> WatermarkPanePart.Opacity
+            PhonePageKeys.WATERMARK_ROTATION -> WatermarkPanePart.Rotation
+            else -> null
+        }
+        if (part != null) watermarkContent?.invoke(part)
+    }
+}
+
+/** 这一页没有可画的内容（没有卡片模型时的兜底）。 */
+@Composable
+private fun PhoneEmptyBlock(page: InspectorPage) {
+    Text(
+        text = when (page) {
+            InspectorPage.Style -> "这套边框没有可调的样式参数。"
+            InspectorPage.Text -> "这套边框没有可调的文字参数。"
+            InspectorPage.Logo -> "这套边框没有可调的 Logo 参数。"
+            InspectorPage.Watermark -> ""
+        },
+        style = FmType.bodyMedium,
+        color = FmPalette.onSurfaceMuted,
+        modifier = Modifier.padding(vertical = FmSpacing.md),
+    )
 }
 
 /** One declared control in the showcase's touch chrome. */
@@ -493,7 +650,7 @@ private fun PhoneControlRow(control: InspectorControl, session: DesignSession) {
         ControlType.Select -> when {
             // 「这种是需要放开的」: 厂商水印位置用九宫格，不用十项下拉/色片。
             StockWatermarkControls.isAnchorParam(control.param) ->
-                StockAnchorControl(control = control, session = session, dense = true)
+                StockAnchorBlock(control = control, session = session, dense = true, part = StockAnchorPart.Grid)
             control.options.size <= 4 -> PhoneSegmented(
                 options = control.options.map { it.value to phoneModeLabel(it.display) },
                 selected = session.value(control)?.toString() ?: "",
@@ -637,6 +794,7 @@ internal fun phoneModeNote(value: String): String = when (value) {
 /** The declared default of a numeric control, used for the slider's tick and reset. */
 internal fun phoneDeclaredDefault(control: InspectorControl): Float? =
     (control.initial as? ControlValue.Num)?.value
+
 /**
  * Rows that can be drawn at all: no hidden rows, no blank labels, no internal
  * `params.slots` row, and no per-slot generated controls (those are drawn by
@@ -677,5 +835,3 @@ private fun PanelNote(text: String, modifier: Modifier, onRetry: (() -> Unit)?) 
         }
     }
 }
-
-

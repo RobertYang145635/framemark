@@ -55,7 +55,6 @@ class PhoneEditorCompactSheetTest {
             imeVisible = false,
             tool = EditorTool.Border,
             photosOpen = false,
-            small = screen.small,
         )
 
     // -----------------------------------------------------------------------
@@ -162,7 +161,7 @@ class PhoneEditorCompactSheetTest {
         // 307.7 dp from the 50 % floor; tier 1 is 300 dp, so the card, its name and its
         // description all fit and the stage keeps the rest.
         val available = 843.4f
-        val h = computePhoneEditorHeights(available, 1f, false, EditorTool.Border, false, true)
+        val h = computePhoneEditorHeights(available, 1f, false, EditorTool.Border, false)
         assertFalse(h.fullPage)
         assertEquals(300f, h.sheet, 0.01f)
         assertEquals(429.4f, h.stage, 0.01f)
@@ -251,7 +250,7 @@ class PhoneEditorCompactSheetTest {
         val insets = Insets(32f, 24f)
         val available = available(screen, insets)
         val closed = availableCase(screen, insets)
-        val open = computePhoneEditorHeights(available, 1f, false, EditorTool.Border, true, screen.small)
+        val open = computePhoneEditorHeights(available, 1f, false, EditorTool.Border, true)
         assertEquals(64f, open.strip)
         assertTrue(open.stage >= available * 0.5f - 0.01f, "open stage=${open.stage}")
         assertTrue(open.sheet <= closed.sheet, "open=${open.sheet} closed=${closed.sheet}")

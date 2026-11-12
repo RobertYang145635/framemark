@@ -162,6 +162,176 @@ internal fun AnchorCellsGrid(
  * [dense] follows the host chassis (phone touch scale vs desktop rail), the way
  * `ControlItem` does; the grid itself keeps the watermark page's cells.
  */
+/**
+ * The two blocks a vendor 水印位置 control splits into on the phone sheet.
+ *
+ * The whole control (label + 3×3 grid + 按规格 chip + 说明) is 254 dp — taller than
+ * the 150 dp a tool page may use ([com.framemark.native.shell.PHONE_PAGE_GROUP_BUDGET_DP]).
+ * Splitting it keeps every touch target: the grid page is the grid alone (132 dp),
+ * the second page carries the label, the chip and the 说明 (110 dp). Nothing is
+ * shrunk, and the phone sheet never needs a vertical scroll for it.
+ */
+enum class StockAnchorPart {
+    /** The 3×3 cells only (40 dp each, unchanged). */
+    Grid,
+
+    /** Label + 按规格 chip + the 说明 line. */
+    Footer,
+}
+
+/**
+ * One block of the vendor 水印位置 control (see [StockAnchorPart]).
+ *
+ * The same private pieces back [StockAnchorControl], so the phone's split page and
+ * the desktop / legacy single block cannot drift apart.
+ */
+@Composable
+internal fun StockAnchorBlock(
+    control: InspectorControl,
+    session: DesignSession,
+    dense: Boolean,
+    part: StockAnchorPart,
+    showReset: Boolean = false,
+) {
+    val raw = session.value(control).toString()
+    val index = stockAnchorIndex(raw)
+    when (part) {
+        StockAnchorPart.Grid -> AnchorCellsGrid(
+            selectedIndex = index,
+            dense = dense,
+            onPick = { picked -> session.set(control, stockAnchorValueAt(picked)) },
+            glyphOf = { StockAnchorCellLabels[it] },
+            descriptionOf = { "水印位置：${StockAnchorCellLabels[it]}" },
+        )
+        StockAnchorPart.Footer -> Column(modifier = Modifier.fillMaxWidth()) {
+            AnchorHeaderRow(control = control, index = index, dense = dense)
+            Spacer(Modifier.height(6.dp))
+            AnchorVendorChip(index = index, dense = dense) {
+                session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
+            }
+            AnchorNote(dense = dense)
+            if (showReset && session.isModified(control)) {
+                AnchorReset(control = control, session = session, dense = dense, paddingTop = 6.dp)
+            }
+        }
+    }
+}
+
+/** Label on the left, the current cell (or 按规格) on the right. */
+@Composable
+private fun AnchorHeaderRow(control: InspectorControl, index: Int?, dense: Boolean) {
+    val bodyStyle = if (dense) {
+        LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 20.sp)
+    } else {
+        FmType.bodyMedium
+    }
+    val valueStyle = if (dense) {
+        LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 18.sp)
+    } else {
+        FmType.labelSmall
+    }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = control.label.ifBlank { "水印位置" },
+            style = bodyStyle,
+            color = FmPalette.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = index?.let { StockAnchorCellLabels[it] } ?: "按规格",
+            style = valueStyle,
+            color = FmPalette.onSurfaceSecondary,
+        )
+    }
+}
+
+/** The wide 「按规格」 chip that writes [StockWatermarkControls.VENDOR_ANCHOR]. */
+@Composable
+private fun AnchorVendorChip(index: Int?, dense: Boolean, onPickVendor: () -> Unit) {
+    val valueStyle = if (dense) {
+        LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 18.sp)
+    } else {
+        FmType.labelSmall
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = if (dense) 40.dp else 32.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .background(if (index == null) FmPalette.primary else Color.Transparent)
+            .border(
+                width = 1.dp,
+                color = if (index == null) FmPalette.primary else FmPalette.outline,
+                shape = RoundedCornerShape(FmRadii.chip),
+            )
+            .clickable(role = Role.RadioButton, onClick = onPickVendor)
+            .semantics {
+                contentDescription = "水印位置：按规格"
+                selected = index == null
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "按规格",
+            style = valueStyle,
+            color = if (index == null) FmPalette.onPrimary else FmPalette.onSurfaceSecondary,
+        )
+    }
+}
+
+/** The 说明 under the chip (phone 12.5 sp, desktop `CuratedNote`). */
+@Composable
+private fun AnchorNote(dense: Boolean) {
+    Text(
+        text = "按厂商规格的位置；点任意一格让水印整体移到那一格，下面的微调仍然生效。",
+        style = if (dense) {
+            LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp)
+        } else {
+            CuratedNote
+        },
+        color = FmPalette.onSurfaceMuted,
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+    )
+}
+
+/** 「恢复默认」 link under the control (dense hosts that do not draw their own). */
+@Composable
+private fun AnchorReset(
+    control: InspectorControl,
+    session: DesignSession,
+    dense: Boolean,
+    paddingTop: androidx.compose.ui.unit.Dp,
+) {
+    Text(
+        text = "恢复默认",
+        style = if (dense) {
+            LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 16.sp)
+        } else {
+            CuratedNote
+        },
+        color = FmPalette.primaryStrong,
+        modifier = Modifier
+            .padding(top = paddingTop)
+            .heightIn(min = 32.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .clickable(role = Role.Button) { session.resetControl(control) }
+            .padding(horizontal = 4.dp),
+    )
+}
+
+/**
+ * One vendor card's 水印位置 in one block: label + current choice, the 3×3 grid, then
+ * a wide 「按规格」 chip that writes [StockWatermarkControls.VENDOR_ANCHOR].
+ *
+ * The phone sheet does not call this: its page budget is 150 dp and this block is
+ * 254 dp, so it uses the two [StockAnchorPart]s on two pages instead (same pieces,
+ * same writes).
+ *
+ * [dense] follows the host chassis (phone touch scale vs desktop rail), the way
+ * `ControlItem` does; the grid itself keeps the watermark page's cells.
+ */
 @Composable
 internal fun StockAnchorControl(
     control: InspectorControl,
@@ -173,33 +343,8 @@ internal fun StockAnchorControl(
 ) {
     val raw = session.value(control).toString()
     val index = stockAnchorIndex(raw)
-    val modified = session.isModified(control)
-    val bodyStyle = if (dense) {
-        LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 20.sp)
-    } else {
-        FmType.bodyMedium
-    }
-    val valueStyle = if (dense) {
-        LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 18.sp)
-    } else {
-        FmType.labelSmall
-    }
     Column(modifier = modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = control.label.ifBlank { "水印位置" },
-                style = bodyStyle,
-                color = FmPalette.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = index?.let { StockAnchorCellLabels[it] } ?: "按规格",
-                style = valueStyle,
-                color = FmPalette.onSurfaceSecondary,
-            )
-        }
+        AnchorHeaderRow(control = control, index = index, dense = dense)
         Spacer(Modifier.height(if (dense) 8.dp else 6.dp))
         AnchorCellsGrid(
             selectedIndex = index,
@@ -209,58 +354,12 @@ internal fun StockAnchorControl(
             descriptionOf = { "水印位置：${StockAnchorCellLabels[it]}" },
         )
         Spacer(Modifier.height(6.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = if (dense) 40.dp else 32.dp)
-                .clip(RoundedCornerShape(FmRadii.chip))
-                .background(if (index == null) FmPalette.primary else Color.Transparent)
-                .border(
-                    width = 1.dp,
-                    color = if (index == null) FmPalette.primary else FmPalette.outline,
-                    shape = RoundedCornerShape(FmRadii.chip),
-                )
-                .clickable(role = Role.RadioButton) {
-                    session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
-                }
-                .semantics {
-                    contentDescription = "水印位置：按规格"
-                    selected = index == null
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "按规格",
-                style = valueStyle,
-                color = if (index == null) FmPalette.onPrimary else FmPalette.onSurfaceSecondary,
-            )
+        AnchorVendorChip(index = index, dense = dense) {
+            session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
         }
-        Text(
-            text = "按厂商规格的位置；点任意一格让水印整体移到那一格，下面的微调仍然生效。",
-            style = if (dense) {
-                LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp)
-            } else {
-                CuratedNote
-            },
-            color = FmPalette.onSurfaceMuted,
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-        )
-        if (showReset && modified) {
-            Text(
-                text = "恢复默认",
-                style = if (dense) {
-                    LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 16.sp)
-                } else {
-                    CuratedNote
-                },
-                color = FmPalette.primaryStrong,
-                modifier = Modifier
-                    .padding(top = 6.dp)
-                    .heightIn(min = 32.dp)
-                    .clip(RoundedCornerShape(FmRadii.chip))
-                    .clickable(role = Role.Button) { session.resetControl(control) }
-                    .padding(horizontal = 4.dp),
-            )
+        AnchorNote(dense = dense)
+        if (showReset && session.isModified(control)) {
+            AnchorReset(control = control, session = session, dense = dense, paddingTop = 6.dp)
         }
     }
 }

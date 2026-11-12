@@ -1,11 +1,20 @@
 package com.framemark.native.shell
 
+import com.framemark.native.shell.phone.PhoneTestControls
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Area-budget rules of the V06 phone layout (pure arithmetic, no Compose). */
+/**
+ * Area-budget rules of the V2 phone layout (pure arithmetic, no Compose).
+ *
+ * **2026-11 版式过**：非边框工具的收起高度由这一页的内容决定
+ * （`PhonePageLayout.defaultSheetLevelFor`），不再是固定的 34–42 %。原来的
+ * `non_border_tools_take_34_to_42_percent_of_the_window` 因此被删掉、换成
+ * `non_border_tools_open_at_their_content_height`：它断言的是新政策本身（矮页开得矮、
+ * 高页开得高、都低于旧的 34 % 固定值），而不是一个已经不存在的常数。
+ */
 class PhoneEditorHeightsTest {
 
     private fun sum(h: PhoneEditorHeights): Float =
@@ -19,7 +28,6 @@ class PhoneEditorHeightsTest {
             imeVisible = false,
             tool = EditorTool.Border,
             photosOpen = false,
-            small = false,
         )
         assertFalse(h.fullPage)
         // WP-P1 §4.1/§4.2: the V2 chrome is a 52 dp dark top bar and a 62 dp bar.
@@ -42,7 +50,6 @@ class PhoneEditorHeightsTest {
             imeVisible = false,
             tool = EditorTool.Border,
             photosOpen = true,
-            small = true,
         )
         assertFalse(h.fullPage)
         assertEquals(64f, h.strip)
@@ -61,7 +68,6 @@ class PhoneEditorHeightsTest {
             imeVisible = false,
             tool = EditorTool.Border,
             photosOpen = false,
-            small = false,
         )
         assertTrue(h.fullPage)
         assertEquals(0f, h.topBar)
@@ -75,18 +81,18 @@ class PhoneEditorHeightsTest {
     @Test
     fun large_font_or_short_window_uses_the_full_parameter_page() {
         assertTrue(
-            computePhoneEditorHeights(800f, 1.5f, imeVisible = false, tool = EditorTool.Text, photosOpen = false, small = false).fullPage,
+            computePhoneEditorHeights(800f, 1.5f, imeVisible = false, tool = EditorTool.Text, photosOpen = false).fullPage,
         )
         // V06 UX feedback: IME alone keeps the imePadding()-measured preview;
         // only a genuinely short remaining window falls back to the full page.
         assertFalse(
-            computePhoneEditorHeights(800f, 1f, imeVisible = true, tool = EditorTool.Text, photosOpen = false, small = false).fullPage,
+            computePhoneEditorHeights(800f, 1f, imeVisible = true, tool = EditorTool.Text, photosOpen = false).fullPage,
         )
         assertTrue(
-            computePhoneEditorHeights(400f, 1f, imeVisible = true, tool = EditorTool.Text, photosOpen = false, small = false).fullPage,
+            computePhoneEditorHeights(400f, 1f, imeVisible = true, tool = EditorTool.Text, photosOpen = false).fullPage,
         )
         assertFalse(
-            computePhoneEditorHeights(800f, 1.49f, imeVisible = false, tool = EditorTool.Text, photosOpen = false, small = false).fullPage,
+            computePhoneEditorHeights(800f, 1.49f, imeVisible = false, tool = EditorTool.Text, photosOpen = false).fullPage,
         )
     }
 
@@ -97,7 +103,7 @@ class PhoneEditorHeightsTest {
         tools.forEach { tool ->
             windows.forEach { window ->
                 listOf(false, true).forEach { strip ->
-                    val h = computePhoneEditorHeights(window, 1f, false, tool, strip, window < 400f)
+                    val h = computePhoneEditorHeights(window, 1f, false, tool, strip)
                     assertTrue(
                         h.topBar >= 0f && h.stage >= 0f && h.strip >= 0f && h.sheet >= 0f && h.toolBar >= 0f,
                         "negative budget tool=$tool window=$window strip=$strip -> $h",
@@ -118,25 +124,68 @@ class PhoneEditorHeightsTest {
     }
 
     @Test
-    fun non_border_tools_take_34_to_42_percent_of_the_window() {
-        listOf(EditorTool.Params, EditorTool.Text, EditorTool.Logo, EditorTool.Watermark).forEach { tool ->
-            val h = computePhoneEditorHeights(844f, 1f, imeVisible = false, tool = tool, photosOpen = false, small = false)
-            assertFalse(h.fullPage, "tool=$tool should keep the preview layout at 844dp")
-            val share = h.sheet / 844f
-            assertTrue(share >= 0.33f && share <= 0.43f, "tool=$tool sheet share=$share")
+    fun non_border_tools_open_at_their_content_height() {
+        // 样式页最大的一组是「底部留白」92 dp（手机滑杆行），文字页是文字框选择器
+        // 134 dp，Logo 页是两条 curator 滑杆 148 dp。内容决定高度 → 164 / 212 / 226。
+        val style = computePhoneEditorHeights(
+            844f, 1f, false, EditorTool.Params, false,
+            controls = PhoneTestControls.styleControls(),
+        )
+        val text = computePhoneEditorHeights(
+            844f, 1f, false, EditorTool.Text, false,
+            controls = PhoneTestControls.textControls(),
+            hasTextReport = true,
+        )
+        val logo = computePhoneEditorHeights(
+            844f, 1f, false, EditorTool.Logo, false,
+            controls = PhoneTestControls.logoControls(),
+        )
+        assertFalse(style.fullPage)
+        assertFalse(text.fullPage)
+        assertFalse(logo.fullPage)
+        assertEquals(164f, style.sheet, 0.01f)
+        assertEquals(212f, text.sheet, 0.01f)
+        assertEquals(226f, logo.sheet, 0.01f)
+        // 都低于旧的固定 34 %（287 dp）：底板给画布让出了 61–123 dp。
+        assertTrue(style.sheet < 844f * 0.34f, "style=${style.sheet}")
+        assertTrue(text.sheet < 844f * 0.34f, "text=${text.sheet}")
+        assertTrue(logo.sheet < 844f * 0.34f, "logo=${logo.sheet}")
+        // 矮页比高页矮，高页比矮页高 —— 「两组滑杆的页开得矮，六项控件的页可以开高」。
+        assertTrue(style.sheet < text.sheet, "style=${style.sheet} text=${text.sheet}")
+        assertTrue(text.sheet < logo.sheet, "text=${text.sheet} logo=${logo.sheet}")
+        // 舞台因此比 50 % 地板给出的更多。
+        assertTrue(style.stage > 844f * 0.5f, "style stage=${style.stage}")
+        assertTrue(logo.stage > 844f * 0.5f, "logo stage=${logo.stage}")
+        // 每一页在它自己的高度里都放得下（没有任何一页需要竖向滚动）。
+        listOf(
+            EditorTool.Params to PhoneTestControls.styleControls(),
+            EditorTool.Text to PhoneTestControls.textControls(),
+            EditorTool.Logo to PhoneTestControls.logoControls(),
+        ).forEach { (tool, controls) ->
+            val h = computePhoneEditorHeights(844f, 1f, false, tool, false, controls = controls)
+            assertTrue(
+                fitsWithoutScroll(
+                    tool = tool,
+                    controls = controls,
+                    sheetLevelDp = h.sheet,
+                    hasTextReport = tool == EditorTool.Text,
+                ),
+                "tool=$tool sheet=${h.sheet} overflows",
+            )
         }
     }
 
     @Test
     fun photo_strip_only_costs_height_when_it_is_open() {
-        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = false, small = false)
-        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true, small = false)
+        // 照片条仍然只在打开时占 64 dp；因为底板高度由内容决定，它从舞台那一侧
+        // 出现（内容矮的页根本不用让底板变矮），舞台 50 % 地板照旧。
+        val controls = PhoneTestControls.styleControls()
+        val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = false, controls = controls)
+        val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true, controls = controls)
         assertEquals(0f, closed.strip)
         assertEquals(64f, open.strip)
-        // WP-P1 §4.1 changed who pays for the strip: the stage is already at its
-        // 50 % floor, so an open strip now shortens the sheet instead of the photo.
         assertTrue(open.stage >= 800f * 0.5f - 0.01f, "open stage=${open.stage}")
-        assertTrue(open.sheet < closed.sheet, "open sheet=${open.sheet} closed=${closed.sheet}")
+        assertEquals(closed.sheet, open.sheet, 0.01f)
     }
 
     @Test
@@ -161,4 +210,3 @@ class PhoneEditorHeightsTest {
         )
     }
 }
-

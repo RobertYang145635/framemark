@@ -330,11 +330,18 @@ internal fun CuratedCount(text: String) {
     )
 }
 
-/** `.empty-pane` — centred title + one sentence. */
+/**
+ * `.empty-pane` — centred title + one sentence.
+ *
+ * [dense] 是手机底板的紧凑档：上下 36 → 16 dp，让「说明 + 一个动作」这一块
+ * （例如水印空态 = 说明 89 + 上传 32）能整块放进一页的 150 dp 预算里，而不是被
+ * 截在底板里或逼出一个滚动条。桌面右栏保持原样。
+ */
 @Composable
-internal fun CuratedEmptyPane(title: String, body: String) {
+internal fun CuratedEmptyPane(title: String, body: String, dense: Boolean = false) {
+    val pad = if (dense) 16.dp else 36.dp
     Column(
-        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 36.dp, bottom = 36.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = pad, bottom = pad),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(title, style = CuratedGroupTitle, color = FmPalette.onSurface, maxLines = 2)

@@ -89,6 +89,14 @@ fun LogoBrandPanel(
      * 右栏的内联品牌页 / 版本页；两条路径写入同一个 Brand 控件值。
      */
     onOpenBrandPicker: (() -> Unit)? = null,
+    /**
+     * 手机底板分页：只画这些控件键的行 / 只画说明 / 只画三个动作（见 `CuratedLogoPane`）。
+     * 桌面右栏不传，保持整页。
+     */
+    onlyKeys: Set<String>? = null,
+    showNotice: Boolean = true,
+    showActions: Boolean = true,
+    grouped: Boolean = true,
 ) {
     // WP-V3: the page body moved to `LogoPanes.kt` so the desktop rail and the
     // phone sheet render the showcase structure (`logo.js` lgPaneLive / brand /
@@ -102,6 +110,10 @@ fun LogoBrandPanel(
         modifier = modifier,
         textSlots = textSlots,
         onOpenBrandPicker = onOpenBrandPicker,
+        onlyKeys = onlyKeys,
+        showNotice = showNotice,
+        showActions = showActions,
+        grouped = grouped,
     )
 }
 

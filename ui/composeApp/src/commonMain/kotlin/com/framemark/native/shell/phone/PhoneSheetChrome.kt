@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,7 +40,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.framemark.native.shell.PhoneCompactSheetMetrics
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmRhythm
@@ -56,9 +57,13 @@ private val SheetHeadChevronSize = 40.dp
  * resizes between them. Keeping one detector means the click and the drag can
  * never steal each other's gesture.
  *
- * The band height comes from [PhoneCompactSheetMetrics.grabber] (WP-P1-2): the
- * 收起 sheet gives every dp it can spare to the 128 dp card and its name instead
+ * The band height comes from [com.framemark.native.shell.PhoneSheetChrome] (WP-P1-2):
+ * the 收起 sheet gives every dp it can spare to the 128 dp card and its name instead
  * of a fixed 18 dp band.
+ *
+ * **工具页分页的小指示器**：一组一页的横滑页把「第几页 / 共几页」画在把手行右端
+ * （4 dp 圆点，[pageCount] > 1 时出现）。行高本来就要画把手，所以指示器不占任何
+ * 新高度 —— 这正是参数页敢把「内容 + chrome + 公共区」压到刚刚好的原因。
  */
 @Composable
 fun PhoneSheetGrabber(
@@ -67,6 +72,8 @@ fun PhoneSheetGrabber(
     onDragStart: () -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
+    pageCount: Int = 0,
+    pageIndex: Int = 0,
 ) {
     val toggle by rememberUpdatedState(onToggle)
     val dragStart by rememberUpdatedState(onDragStart)
@@ -110,6 +117,29 @@ fun PhoneSheetGrabber(
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .background(FmPalette.outlineStrong),
         )
+        if (pageCount > 1) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 14.dp)
+                    .semantics {
+                        contentDescription = "第 ${pageIndex + 1} 组，共 $pageCount 组"
+                    },
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                repeat(pageCount) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(if (index == pageIndex) 5.dp else 4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (index == pageIndex) FmPalette.primaryStrong else FmPalette.outlineStrong,
+                            ),
+                    )
+                }
+            }
+        }
     }
 }
 

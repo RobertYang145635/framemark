@@ -1,6 +1,5 @@
 package com.framemark.native.shell.phone
 
-import androidx.compose.foundation.ScrollState
 import com.framemark.native.inspector.ControlOption
 import com.framemark.native.inspector.ControlType
 import com.framemark.native.inspector.ControlValue
@@ -19,8 +18,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -29,8 +26,9 @@ import kotlin.test.assertTrue
  *
  *  - [showsPhoneParameterSummary] is the guard that keeps the pinned band from
  *    starving the tool zone at the sheet's floor (120 dp sheet → ~68 dp page).
- *  - [phoneToolScrollFor] is the "each tab opens where its own adjustment was
- *    left" rule; the old page shared one offset between all four tabs.
+ *  - 工具页**没有竖向滚动区**了（2026-11 版式过）：一页放不下就分页，见
+ *    `PhonePageLayout` 与 `PhonePageLayoutTest`。原来的「每页一条滚动位移」
+ *    （`phoneToolScrollFor`）随滚动区一起删除。
  *  - the 公共区's number is provably the number the 样式 page used to print: it is
  *    computed from the whole visible card, the page used to compute it from its own
  *    tab, and those agree because `OutputSize` only reads the layout params (which
@@ -70,22 +68,6 @@ class PhoneParameterSurfaceTest {
             PHONE_PARAMETER_SUMMARY_MIN_DP == PHONE_PARAMETER_SUMMARY_DP + 72f,
             "band + one PhoneSliderRow (8 + 20 + 40 + 4), was $PHONE_PARAMETER_SUMMARY_MIN_DP",
         )
-    }
-
-    // -----------------------------------------------------------------------
-    // One scroll offset per page
-    // -----------------------------------------------------------------------
-
-    @Test
-    fun eachPageKeepsItsOwnToolScrollOffset() {
-        val offsets = mutableMapOf<InspectorPage, ScrollState>()
-        val style = phoneToolScrollFor(offsets, InspectorPage.Style)
-        val text = phoneToolScrollFor(offsets, InspectorPage.Text)
-        assertNotSame(style, text, "两个页签不能共用一条位移")
-        assertSame(style, phoneToolScrollFor(offsets, InspectorPage.Style), "切回来还是同一条")
-        assertEquals(2, offsets.size)
-        // A page opens at the top: its first controls always sit at the same y.
-        assertTrue(offsets.values.all { it.value == 0 })
     }
 
     // -----------------------------------------------------------------------
