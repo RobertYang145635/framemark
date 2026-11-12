@@ -836,7 +836,15 @@ class PhoneProjectStore(
 
     // ---- presets -----------------------------------------------------------
 
-    /** Captures the active photo's design (watermark bytes included) as a preset. */
+    /**
+     * Captures the active photo's design (watermark bytes included) as a preset.
+     *
+     * Same document as the desktop writes (`ProjectPreset`: design + export settings
+     * + embedded watermark, persisted through `SessionStore.savePresets`), with only
+     * the local JPEG quality pinned to the platform's fixed value. The newest preset
+     * goes **first**, like the desktop library, so the design the user just saved is
+     * the first row under the save card instead of the last one behind a scroll.
+     */
     fun savePreset(name: String): ProjectPreset? {
         if (!ensurePresetDocumentWritable()) return null
         val design = project.activeDesign ?: run {
@@ -854,7 +862,7 @@ class PhoneProjectStore(
             createdAt = stamp,
             updatedAt = stamp,
         )
-        return if (persistPresets(presets + preset)) preset else null
+        return if (persistPresets(listOf(preset) + presets)) preset else null
     }
 
     fun deletePreset(id: String): Boolean {

@@ -27,10 +27,12 @@ import androidx.compose.ui.unit.dp
  *    (level 0 → 1, i.e. the *wrong* control), a tap 6 dp above `预设` did nothing, and
  *    a tap 5 dp above `热门` did nothing.
  *
- * So those four stay at 30/30/33/36 dp until either (a) the sheet bands are allowed to
- * grow (a product decision on the P1-2 budget), or (b) a touch delegate is added on a
- * taller ancestor (a Compose `pointerInput` on the sheet column that dispatches taps
- * landing in a slop ring — pays for itself only if it also has to keep scroll/drag
- * gestures intact). See `reports\WP-X3-REPORT.md` §4.4.
+ * So the remaining three stay at 30/33/36 dp until either (a) the sheet bands are
+ * allowed to grow (a product decision on the P1-2 budget), or (b) a touch delegate is
+ * added on a taller ancestor (a Compose `pointerInput` on the sheet column that
+ * dispatches taps landing in a slop ring — pays for itself only if it also has to
+ * keep scroll/drag gestures intact). 预设 is no longer one of them: its primary
+ * entry is now the tool bar's full-height action cell, where the band no longer
+ * gates the pointer. See `reports\WP-X3-REPORT.md` §4.4.
  */
 val PhoneTouchTarget = 44.dp

@@ -2,21 +2,21 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -39,14 +40,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
@@ -57,28 +57,38 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import com.framemark.native.workflow.PrimaryButton
 import kotlinx.coroutines.launch
 
+/** 覆盖层底部面板占窗口可用高度的比例：与品牌选择器同一个数字（产品决定：85–90 %）。 */
+internal const val PHONE_BORDER_LIBRARY_PANEL_FRACTION = 0.88f
+
 /**
- * 手机端全高边框页：整页 Dialog，和品牌选择器同一套交互语言。
+ * 手机端边框库的**覆盖层**：一层盖在画布上的面板，不是新页面。
  *
- * 布局（[PhoneBorderPageState.BANDS]，从上到下）：
- *  1. 固定标题行：「边框库」+ 当前边框 + 「返回预览」（[PageHead]）；
+ * 和 `inspector/PhoneLogoPicker.kt` 的做法一致：上半条带铺 `FmPalette.scrim`
+ * （舞台在遮罩下仍可见），底部再落一块 88 % 高、圆角朝上的面板。所以「挑边框」
+ * 的时候画布没有离开屏幕；选完关掉就精确回到进来之前的面板与工具。
+ *
+ * 边框工具本来的落地态是面板（[PhoneBorderPanel]）：当前边框 + 一个动作。库只在
+ * 用户点那个动作时出现，点一张卡 = 应用并关闭（[onApply] → 调用方的 `pickBorder`），
+ * 面板上立刻就是新的那一张；取消（遮罩 / [PhoneBorderPageState.LIBRARY_CLOSE_LABEL] /
+ * 系统返回）什么都不改。
+ *
+ * 布局（[PhoneBorderPageState.LIBRARY_BANDS]，从上到下）：
+ *  1. 固定标题行：[PhoneBorderPageState.LIBRARY_TITLE] + 当前边框 + 返回（[LibraryHead]）；
  *  2. 固定分类行：WP-L 的 8 个分类，等宽一格（[CategoryPagerRow]）；
  *  3. 固定搜索行：名称 / 品牌 / 系列（[BorderSearchRow]）；
  *  4. **唯一的滚动区**：一个分类一页的 `HorizontalPager`，每页一个 2 列
- *     `LazyVerticalGrid`（[BorderCardGrid]）——左右滑换分类，上下滚看这一分类；
- *  5. 固定页脚：选中项 + 「使用此边框」主按钮（[PageFooter]），永不进滚动区。
+ *     `LazyVerticalGrid`（[BorderCardGrid]）——左右滑换分类，上下滚看这一分类。
  *
- * 「点缩略图」只改本页的选中态，真正的写入仍然只有一个出口：页脚按钮 →
- * [onApply] → 调用方的 `pickBorder`。所以浏览、滑动都不会误改设计。
- *
- * [query] 非空时，网格换成跨全部边框的搜索结果（与底板里的搜索同一条
+ * [query] 非空时，网格换成跨全部边框的搜索结果（与面板上的搜索同一条
  * `LibraryIndex.search`）；分类行始终可见，点分类即清空搜索词回到该分类页。
+ *
+ * 宿主：外壳（`PhoneEditorScreen`）把它画在整个编辑器之上，`borderLibraryOpen` 归
+ * 外壳所有，所以打开 / 关闭都不移动底板档位、不改工具。
  */
 @Composable
-internal fun PhoneBorderPageDialog(
+internal fun PhoneBorderLibraryOverlay(
     index: LibraryIndex,
     /** 已经写在设计上的边框，打开时预选并标「当前」。 */
     appliedCard: LibraryCard?,
@@ -90,12 +100,11 @@ internal fun PhoneBorderPageDialog(
     recent: List<String>,
     onApply: (LibraryCard) -> Unit,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val categories = remember(index, inUse, recent) {
         index.categories(inUse = inUse, recent = recent)
     }
-    // 本页的候选：初始就是已经生效的那一张，所以「打开即已选」。
-    var picked by remember { mutableStateOf(appliedCard) }
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
         initialPage = PhoneBorderPageState.pageForCategory(categories, categoryKey),
@@ -117,65 +126,121 @@ internal fun PhoneBorderPageDialog(
         if (key != null && key != categoryKey) onCategoryChange(key)
     }
 
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        // 整页：底色铺满窗口，内容避开状态栏/导航栏（Dialog 窗口不继承外壳的 safeDrawing）。
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(FmPalette.canvas)
-                .windowInsetsPadding(WindowInsets.safeDrawing),
-        ) {
-            PageHead(appliedCard = appliedCard, onBack = onDismiss)
-            CategoryPagerRow(
-                categories = categories,
-                categoryKey = categoryKey,
-                onCategory = ::showCategory,
-            )
-            BorderSearchRow(query = query, onQueryChange = onQueryChange)
-            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                when {
-                    categories.isEmpty() -> PhoneLibraryNote(PhoneBorderPageState.EMPTY_CATEGORY_NOTE)
-                    query.isNotBlank() -> BorderSearchGrid(
-                        index = index,
-                        query = query,
-                        selectedCardId = picked?.id,
-                        onPick = { card -> picked = card },
+    val scrimInteraction = remember { MutableInteractionSource() }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val panelHeight = maxHeight * PHONE_BORDER_LIBRARY_PANEL_FRACTION
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 顶部条带 = 遮罩下的舞台。点它就关掉库，和标题行的「返回」同一结果；
+            // 它只占面板以上那条带，所以点面板本身绝不会误关。
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(FmPalette.scrim)
+                    .clickable(
+                        interactionSource = scrimInteraction,
+                        indication = null,
+                        onClick = onDismiss,
                     )
-                    else -> HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.Top,
-                    ) { page ->
-                        val key = PhoneBorderPageState.categoryKeyForPage(categories, page)
-                        if (key == null) {
-                            PhoneLibraryNote(PhoneBorderPageState.EMPTY_CATEGORY_NOTE)
-                        } else {
-                            BorderCategoryPage(
-                                index = index,
-                                categoryKey = key,
-                                selectedCardId = picked?.id,
-                                inUse = inUse,
-                                recent = recent,
-                                onPick = { card -> picked = card },
-                            )
-                        }
-                    }
-                }
-            }
-            PageFooter(
-                selected = picked,
-                onUse = {
-                    picked?.let(onApply)
-                    onDismiss()
-                },
+                    .semantics { contentDescription = "关闭边框库" },
             )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(panelHeight)
+                    .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
+                    .background(FmPalette.canvas)
+                    // 面板自己的空白处（标题行的留白、网格下方的内边距）也吃掉点击：
+                    // 覆盖层是一层真窗户，点它不该漏到后面底板的把手行或画布手势上。
+                    // 子节点先命中，所以卡片、分类、搜索的点击一个都不受影响。
+                    .pointerInput(Unit) { detectTapGestures { } },
+            ) {
+                BorderLibraryPanel(
+                    index = index,
+                    categories = categories,
+                    categoryKey = categoryKey,
+                    onCategory = ::showCategory,
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    inUse = inUse,
+                    recent = recent,
+                    appliedCard = appliedCard,
+                    pagerState = pagerState,
+                    // 点一张卡 = 应用 + 关闭：面板上马上就是新的那一张。
+                    onPick = { picked ->
+                        onApply(picked)
+                        onDismiss()
+                    },
+                    onDismiss = onDismiss,
+                )
+            }
         }
     }
 }
 
-/** 固定标题行：页面名 + 当前边框 + 回到预览。 */
+/**
+ * 面板内容：固定标题行 + 分类行 + 搜索行 + 唯一的滚动区。高度由
+ * [PhoneBorderLibraryOverlay] 决定，内容本身不假设塞满整块屏幕。
+ */
 @Composable
-private fun PageHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
+private fun BorderLibraryPanel(
+    index: LibraryIndex,
+    categories: List<LibraryCategory>,
+    categoryKey: String,
+    onCategory: (String) -> Unit,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    inUse: List<String>,
+    recent: List<String>,
+    appliedCard: LibraryCard?,
+    pagerState: PagerState,
+    onPick: (LibraryCard) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        LibraryHead(appliedCard = appliedCard, onBack = onDismiss)
+        CategoryPagerRow(
+            categories = categories,
+            categoryKey = categoryKey,
+            onCategory = onCategory,
+        )
+        BorderSearchRow(query = query, onQueryChange = onQueryChange)
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            when {
+                categories.isEmpty() -> PhoneLibraryNote(PhoneBorderPageState.EMPTY_CATEGORY_NOTE)
+                query.isNotBlank() -> BorderSearchGrid(
+                    index = index,
+                    query = query,
+                    selectedCardId = appliedCard?.id,
+                    onPick = onPick,
+                )
+                else -> HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalAlignment = Alignment.Top,
+                ) { page ->
+                    val key = PhoneBorderPageState.categoryKeyForPage(categories, page)
+                    if (key == null) {
+                        PhoneLibraryNote(PhoneBorderPageState.EMPTY_CATEGORY_NOTE)
+                    } else {
+                        BorderCategoryPage(
+                            index = index,
+                            categoryKey = key,
+                            selectedCardId = appliedCard?.id,
+                            inUse = inUse,
+                            recent = recent,
+                            onPick = onPick,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 固定标题行：库名 + 当前边框 + 回到面板。 */
+@Composable
+private fun LibraryHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(FmPalette.surface)) {
         Row(
             modifier = Modifier
@@ -184,10 +249,14 @@ private fun PageHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("边框库", style = FmType.titleMedium, color = FmPalette.onSurface)
+                Text(
+                    text = PhoneBorderPageState.LIBRARY_TITLE,
+                    style = FmType.titleMedium,
+                    color = FmPalette.onSurface,
+                )
                 Spacer(Modifier.height(FmSpacing.xxs))
                 Text(
-                    text = "当前：${appliedCard?.name ?: "还没有选边框"}",
+                    text = "当前：${PhoneBorderPageState.currentName(appliedCard)}",
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
@@ -201,12 +270,12 @@ private fun PageHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
                     .clip(RoundedCornerShape(FmRadii.pill))
                     .background(FmPalette.surfaceMuted)
                     .clickable(role = Role.Button, onClick = onBack)
-                    .semantics { contentDescription = "返回预览" }
+                    .semantics { contentDescription = "返回边框面板" }
                     .padding(horizontal = FmSpacing.md),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "返回预览",
+                    text = PhoneBorderPageState.LIBRARY_CLOSE_LABEL,
                     style = FmType.labelMedium,
                     color = FmPalette.onSurfaceSecondary,
                     maxLines = 1,
@@ -382,7 +451,7 @@ private fun BorderSearchGrid(
 }
 
 /**
- * 页面唯一的滚动容器：2 列网格。每个分组是「一个占满整行的标题 + 每张卡一个格子」，
+ * 覆盖层里唯一的滚动容器：2 列网格。每个分组是「一个占满整行的标题 + 每张卡一个格子」，
  * 所以标题与卡片在同一个网格里，没有第二个列表。
  */
 @Composable
@@ -491,36 +560,5 @@ private fun SeriesEntry(count: Int, onOpen: () -> Unit) {
             color = FmPalette.onSurfaceMuted,
             maxLines = 1,
         )
-    }
-}
-
-/** 固定页脚：选中项 + 主按钮 + 一句用法。 */
-@Composable
-private fun PageFooter(selected: LibraryCard?, onUse: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().background(FmPalette.surface)) {
-        ColumnRule()
-        Column(modifier = Modifier.padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md)) {
-            Text(
-                text = PhoneBorderPageState.footerTitle(selected),
-                style = FmType.labelMedium,
-                color = if (selected == null) FmPalette.onSurfaceMuted else FmPalette.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(FmSpacing.sm))
-            PrimaryButton(
-                text = PhoneBorderPageState.applyLabel(selected),
-                onClick = onUse,
-                enabled = PhoneBorderPageState.canApply(selected),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(FmSpacing.xs))
-            Text(
-                text = "左右滑动换分类；点缩略图选中，再点上面这个按钮应用到照片。",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 2,
-            )
-        }
     }
 }

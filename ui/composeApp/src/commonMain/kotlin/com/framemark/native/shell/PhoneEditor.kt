@@ -65,9 +65,9 @@ import com.framemark.native.library.LibraryTraversal
 import com.framemark.native.product.PhotoCrop
 import com.framemark.native.product.PhotoCropParams
 import com.framemark.native.product.photoSourceSize
+import com.framemark.native.shell.phone.PhoneBorderLibraryOverlay
 import com.framemark.native.shell.phone.PhoneCropUi
 import com.framemark.native.shell.phone.PhoneEditorTopBar
-import com.framemark.native.shell.phone.PhoneLibrarySheet
 import com.framemark.native.shell.phone.PhoneParameterPage
 import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.phoneLibraryTraversal
@@ -103,12 +103,15 @@ import com.framemark.native.shell.phone.cropApplies
  * V2 phone editor, photo first (report §7): a dark 52 dp top bar (返回 · 照片切换 ·
  * 撤销 / 重做 · 导出), the photo stage taking every remaining dp with the border
  * name and 按住看原图 floating over it, the two-level parameter sheet, and the
- * 62 dp five-tool bar (边框 / 样式 / 文字 / Logo / 水印, dots from WP-C's page model).
+ * 62 dp five-tool bar (边框 / 样式 / 文字 / Logo / 水印, dots from WP-C's page model)
+ * with a trailing 预设 action that opens the preset sheet on any tool.
  *
- * The border tool is the WP-L driven sheet ([PhoneLibrarySheet]); the four page
- * tools render WP-C's pages ([PhoneParameterPage]). Design values still flow
- * through [session] → the shell's write-back: this file changes layout and routing
- * only, never persistence.
+ * The border tool is the WP-L driven panel (`PhoneBorderPanel`): the current border
+ * plus one action, never the library itself. The library is an overlay above the
+ * editor (`PhoneBorderLibraryOverlay`), opened only by that action, so the canvas
+ * stays on screen while the user browses. The four page tools render WP-C's pages
+ * ([PhoneParameterPage]). Design values still flow through [session] → the shell's
+ * write-back: this file changes layout and routing only, never persistence.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -214,6 +217,10 @@ fun PhoneEditorScreen(
     var logoPickerOpen by remember { mutableStateOf(false) }
     // 换照片 / 换工具时选择器不再属于这一拍：收起来，绝不把它带到别的页面上。
     LaunchedEffect(model?.cardId, tool) { logoPickerOpen = false }
+    // 边框库覆盖层和品牌选择器是同一层的东西：画在整个编辑器之上（底板只会画在自己的
+    // 高度里），所以开关由编辑器持有，边框面板只负责发请求。边框页的落地态是面板，
+    // 库只有点「选择一个边框 / 换一个边框」才出现——工具切换、返回、系统返回都不开它。
+    var borderLibraryOpen by remember { mutableStateOf(false) }
     // Border sheet browsing state, kept across tool switches (showcase `ftab`).
     var borderCategory by rememberSaveable { mutableStateOf(LibraryIndex.CATEGORY_COMMON) }
     var borderQuery by rememberSaveable { mutableStateOf("") }
@@ -408,6 +415,16 @@ fun PhoneEditorScreen(
             constrainedWindow = autoFullParameterPage,
             fullPageDismissed = fullParametersDismissed,
         )
+        // 全高参数页（矮窗口的回退页）接管屏幕时，底板里不留在背后的覆盖层；它把屏幕
+        // 交还底板时，库也不跟着回来。规则与 rc14 P3-1 修的那一条同源（见
+        // `PhoneSheetPagePolicy`），只是现在「库」不是底板里的页，而是外壳的一层。
+        LaunchedEffect(fullParameterPage) {
+            borderLibraryOpen = if (fullParameterPage) {
+                PhoneSheetPagePolicy.pageUnderFullHeightPage()
+            } else {
+                PhoneSheetPagePolicy.pageAfterFullHeightPageReturn()
+            }
+        }
         val heights = if (fullParameterPage) {
             budget
         } else if (budget.fullPage && canShowForcedPreview(maxHeight.value)) {
@@ -451,6 +468,8 @@ fun PhoneEditorScreen(
         // 品牌选择器叠在编辑器最上层：它开着时先关它，结果与标题行的「关闭」相同。
         // 后面注册的处理器优先，所以这一条排在上面四条之后。
         BackHandler(enabled = logoPickerOpen) { logoPickerOpen = false }
+        // 边框库覆盖层同理：返回 / 系统返回都是「取消」（什么都不改，回到面板）。
+        BackHandler(enabled = borderLibraryOpen) { borderLibraryOpen = false }
 
         // Three levels: compact (heights.sheet from the budget), 半开, expanded.
         val compactLevel = heights.sheet.dp
@@ -617,16 +636,15 @@ fun PhoneEditorScreen(
                     tabModel = tabModel,
                     card = card,
                     libraryIndex = libraryIndex,
-                    borderCategory = borderCategory,
-                    onBorderCategoryChange = { borderCategory = it },
-                    borderQuery = borderQuery,
-                    onBorderQueryChange = { borderQuery = it },
-                    inUseCardIds = inUseCardIds,
-                    recentFrames = recentFrames,
                     onRetryLibrary = onRetryLibrary,
-                    pickBorder = ::pickBorder,
                     onOpenPresets = onOpenPresets,
-                    onToolChange = onToolChange,
+                    onToolChange = { next ->
+                        // 换工具就不再属于这一拍：库覆盖层先收起来，再换页。规则在
+                        // `PhoneSheetPagePolicy` 里（换工具永远不开库、库只属于 边框）。
+                        borderLibraryOpen =
+                            PhoneSheetPagePolicy.pageAfterToolPick(tool, next, borderLibraryOpen)
+                        onToolChange(next)
+                    },
                     model = model,
                     session = session,
                     inspectorState = inspectorState,
@@ -647,6 +665,12 @@ fun PhoneEditorScreen(
                     // 底板里的一页：选择器必须能盖住舞台，才能「舞台仍在，挑的字标
                     // 立刻反映到画布」。logoPickerOpen 属于外壳，Logo 页只发请求。
                     onOpenBrandPicker = { logoPickerOpen = true },
+                    // 边框库同一套做法：面板上的「选择一个边框 / 换一个边框」只把请求
+                    // 递上来，库覆盖层由外壳画（下面那片），所以打开它不移动底板档位。
+                    // 全高参数页上不存在这块面板，规则因此也写在 policy 里。
+                    onOpenBorderLibrary = {
+                        borderLibraryOpen = PhoneSheetPagePolicy.pageAfterLibraryAction(fullParameterPage)
+                    },
                 )
             }
         }
@@ -663,6 +687,24 @@ fun PhoneEditorScreen(
                     session.set(logoBrandControl, assetKey)
                     logoPickerOpen = false
                 },
+            )
+        }
+        // 边框库覆盖层：和品牌选择器同一层、同一套呈现（遮罩 + 0.88 高的圆角底部面板）。
+        // 点一张卡就是应用（走同一个 `pickBorder`）并关闭，所以回到的是面板——上面
+        // 已经是新的那一张；遮罩 / 返回 / 系统返回是取消，什么都不改。
+        val borderOverlayIndex = libraryIndex
+        if (!focusMode && borderLibraryOpen && borderOverlayIndex != null) {
+            PhoneBorderLibraryOverlay(
+                index = borderOverlayIndex,
+                appliedCard = card,
+                categoryKey = borderCategory,
+                onCategoryChange = { borderCategory = it },
+                query = borderQuery,
+                onQueryChange = { borderQuery = it },
+                inUse = inUseCardIds,
+                recent = recentFrames,
+                onApply = ::pickBorder,
+                onDismiss = { borderLibraryOpen = false },
             )
         }
     }

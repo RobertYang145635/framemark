@@ -19,11 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +44,6 @@ import com.framemark.native.library.LibraryIndex
 import com.framemark.native.product.FmLog
 import com.framemark.native.shell.EditorTool
 import com.framemark.native.shell.PhoneCompactSheetMetrics
-import com.framemark.native.shell.phone.PhoneLibrarySheet
 import com.framemark.native.shell.phone.PhoneParameterPage
 import com.framemark.native.shell.phone.PhoneSheetGrabber
 import com.framemark.native.shell.phone.PhoneSheetHead
@@ -70,9 +65,15 @@ import kotlin.math.abs
 
 /**
  * The phone editor's parameter host: the draggable bottom sheet (grabber, title
- * row, the WP-L border sheet or the four WP-C parameter pages — including the
- * watermark pane and the full-page fallback for a window too short for a usable
- * sheet) plus the five-tool bar that switches pages.
+ * row, the border landing panel [PhoneBorderPanel] or the four WP-C parameter
+ * pages — including the watermark pane and the full-page fallback for a window too
+ * short for a usable sheet) plus the five-tool bar that switches pages.
+ *
+ * The border **library** is not a page here: it is an overlay drawn by the editor
+ * above the whole shell (`PhoneBorderLibraryOverlay`), so this host only forwards
+ * the request ([onOpenBorderLibrary]). That keeps the rule "the border page is a
+ * panel, the library is a layer" in one place: the shell owns the layer, the sheet
+ * owns the panel, and neither moves the other.
  *
  * Every value stays owned by [PhoneEditorScreen]: this is a pure move of the panel
  * block that used to be inline there, with each state read passed down as a
@@ -93,14 +94,7 @@ internal fun ColumnScope.PhoneSheetHost(
     tabModel: InspectorTabModel,
     card: LibraryCard?,
     libraryIndex: LibraryIndex?,
-    borderCategory: String,
-    onBorderCategoryChange: (String) -> Unit,
-    borderQuery: String,
-    onBorderQueryChange: (String) -> Unit,
-    inUseCardIds: List<String>,
-    recentFrames: List<String>,
     onRetryLibrary: () -> Unit,
-    pickBorder: (LibraryCard) -> Unit,
     onOpenPresets: () -> Unit,
     /**
      * Logo 页的 选择品牌：选择器是外壳画在整个编辑器之上的覆盖层（舞台仍在），
@@ -108,6 +102,11 @@ internal fun ColumnScope.PhoneSheetHost(
      */
     onOpenBrandPicker: (() -> Unit)? = null,
     onToolChange: (EditorTool) -> Unit,
+    /**
+     * 边框工具的 选择一个边框 / 换一个边框：库覆盖层由外壳画在整个编辑器之上
+     * （和品牌选择器同一层），底板只负责把请求递上去。
+     */
+    onOpenBorderLibrary: () -> Unit = {},
     model: InspectorCardModel?,
     session: DesignSession,
     inspectorState: InspectorLoadState,
@@ -125,26 +124,6 @@ internal fun ColumnScope.PhoneSheetHost(
     tools: List<EditorTool>,
     toolBarH: Dp,
 ) {
-                // 整页挑边框的开关：只有**用户自己点**才打开（工具条上的 边框、底板里的
-                // 「换一个边框」、无边框时的「去选边框」）。工具被改成 边框 不算点——
-                // 全高回退页的「返回」会把工具还原成进入前的 边框，那一刻再开一次边框库页
-                // 就是 rc14 P3-1：一次「返回预览」回不到舞台。规则见 PhoneSheetPagePolicy。
-                // 开关只是本地 UI 状态：不写设计、不移动底板档位。
-                var borderPageOpen by remember { mutableStateOf(false) }
-                // 用户切换工具的唯一入口：整页边框库跟着开关。
-                fun pickTool(next: EditorTool) {
-                    borderPageOpen = PhoneSheetPagePolicy.pageAfterToolPick(tool, next, borderPageOpen)
-                    onToolChange(next)
-                }
-                // 整页参数页（矮窗口 / 大字号的回退页；Logo 不在其列）接管底板时，
-                // 底板里不留在背后的页面；它把屏幕交还底板时，底板仍从自己的默认页开始。
-                LaunchedEffect(fullParameterPage) {
-                    borderPageOpen = if (fullParameterPage) {
-                        PhoneSheetPagePolicy.pageUnderFullHeightPage()
-                    } else {
-                        PhoneSheetPagePolicy.pageAfterFullHeightPageReturn()
-                    }
-                }
                 Box(
                     modifier = if (fullParameterPage) {
                         Modifier.fillMaxWidth().weight(1f)
@@ -233,7 +212,7 @@ internal fun ColumnScope.PhoneSheetHost(
                                 // Demo `.psh .adj`: 调整样式 › jumps from the border sheet to
                                 // the 样式 page of the applied card.
                                 onAdjustStyle = if (tool == EditorTool.Border && card != null) {
-                                    { pickTool(EditorTool.Params) }
+                                    { onToolChange(EditorTool.Params) }
                                 } else {
                                     null
                                 },
@@ -241,34 +220,19 @@ internal fun ColumnScope.PhoneSheetHost(
                         }
                         if (card == null && tool != EditorTool.Border) {
                             PanelRequiresBorder(
-                                onOpenBorder = { pickTool(EditorTool.Border) },
+                                onOpenBorder = { onToolChange(EditorTool.Border) },
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
                         } else if (tool == EditorTool.Border) {
-                            PhoneLibrarySheet(
+                            // 边框页的落地态就是这块面板：当前边框 + 一个动作。库是盖在
+                            // 画布上的覆盖层（外壳画的），只有点这个动作才出现。
+                            PhoneBorderPanel(
                                 index = libraryIndex,
                                 card = card,
                                 onRetry = onRetryLibrary,
-                                onOpenPage = { borderPageOpen = true },
+                                onOpenLibrary = onOpenBorderLibrary,
                                 modifier = Modifier.fillMaxWidth().weight(1f),
                             )
-                            // 整页挑边框：盖在编辑器上面的一层，不移动底板、不改工具，
-                            // 所以关掉它就精确回到进来之前的底板档位与工具。
-                            val pageIndex = libraryIndex
-                            if (borderPageOpen && pageIndex != null) {
-                                PhoneBorderPageDialog(
-                                    index = pageIndex,
-                                    appliedCard = card,
-                                    categoryKey = borderCategory,
-                                    onCategoryChange = { onBorderCategoryChange(it) },
-                                    query = borderQuery,
-                                    onQueryChange = { onBorderQueryChange(it) },
-                                    inUse = inUseCardIds,
-                                    recent = recentFrames,
-                                    onApply = pickBorder,
-                                    onDismiss = { borderPageOpen = false },
-                                )
-                            }
                         } else {
                             val photoAspect = previewGeo?.photoRect
                                 ?.takeIf { it.h > 0 }
@@ -336,7 +300,10 @@ internal fun ColumnScope.PhoneSheetHost(
                         tool = tool,
                         availableTools = tools,
                         modifiedOf = { entry -> phoneToolShowsDot(entry, tabModel) },
-                        onSelect = { pickTool(it) },
+                        onSelect = { onToolChange(it) },
+                        // 验收人「保存预设和使用预设我没看到」：入口常驻在工具条尾部，
+                        // 不再只藏在 边框 页头的长按菜单里。打开的是同一个预设面板。
+                        onOpenPresets = onOpenPresets,
                     )
                 }
 }

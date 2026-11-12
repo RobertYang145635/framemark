@@ -7,9 +7,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * 「我的 Logo」在画不出用户 Logo 的边框上必须拦住选中，而不是写一个引擎会丢掉的值
- * （Android IR/厂商卡、桌面 IR 卡）。用户库是全局的，所以列出 / 导入 / 删除照旧；
- * 这里只钉「选中」这一个写入点，以及面板头部那一行原因。
+ * 「我的 Logo」在画不出用户 Logo 的边框上必须拦在入口，而不是写一个引擎会丢掉的值
+ * （Android IR/厂商卡、桌面 IR 卡）。拦的位置是面板上的**动作**：置灰 + 按钮下面那
+ * 一行原因；库本身（列出 / 导入 / 删除）的代码一行没动。
  */
 class UserLogoCapabilityTest {
 
@@ -18,77 +18,46 @@ class UserLogoCapabilityTest {
         "这张边框不支持用户 Logo，请先换成支持它的边框，或使用「自动匹配」"
 
     @Test
-    fun supportedCardAllowsTheTapWithoutANote() {
-        // 能画用户 Logo 的边框：任何来源段、有没有已生效用户值，都和以前一模一样。
-        listOf("user", "lib", "auto").forEach { segment ->
-            listOf(false, true).forEach { applied ->
-                val decision = userLogoSelectionDecision(
-                    segment = segment,
-                    supportsUserLogo = true,
-                    hasAppliedUserValue = applied,
-                )
-                assertTrue(decision.allowed, "segment=$segment applied=$applied")
-                assertNull(decision.note, "segment=$segment applied=$applied")
-            }
-        }
+    fun supportedCardEnablesMyLogoWithoutANote() {
+        val decision = userLogoActionDecision(supportsUserLogo = true)
+        assertTrue(decision.enabled)
+        assertNull(decision.note)
     }
 
     @Test
-    fun unsupportedCardBlocksTheUserSegmentAndShowsTheReason() {
-        val decision = userLogoSelectionDecision(
-            segment = "user",
-            supportsUserLogo = false,
-            hasAppliedUserValue = false,
-        )
-        assertFalse(decision.allowed)
+    fun unsupportedCardDisablesMyLogoAndShowsTheReason() {
+        val decision = userLogoActionDecision(supportsUserLogo = false)
+        assertFalse(decision.enabled)
         assertEquals(unsupportedNote, decision.note)
         assertEquals(USER_LOGO_UNSUPPORTED_ON_CARD, decision.note)
     }
 
     @Test
-    fun unsupportedCardWithAnAppliedUserValueKeepsTheReasonShown() {
-        // 老工程 / 刚从支持它的边框切过来：`user:…` 还在值里，但画不出来。
-        // 停在「我的 Logo」段继续拦；切到别的段也要把那行原因留在头部。
-        assertFalse(
-            userLogoSelectionDecision("user", supportsUserLogo = false, hasAppliedUserValue = true).allowed,
-        )
-        listOf("user", "lib", "auto").forEach { segment ->
-            val decision = userLogoSelectionDecision(
-                segment = segment,
-                supportsUserLogo = false,
-                hasAppliedUserValue = true,
-            )
-            assertEquals(unsupportedNote, decision.note, "segment=$segment")
+    fun theReasonIsTheSameFrozenSentenceEverywhere() {
+        // 动作被拦时面板上那一行就是 `USER_LOGO_UNSUPPORTED_ON_CARD`，没有第二份文案。
+        assertEquals(unsupportedNote, userLogoActionDecision(supportsUserLogo = false).note)
+        assertNull(userLogoActionDecision(supportsUserLogo = true).note)
+    }
+
+    @Test
+    fun theAutoMatchActionIsNeverBlocked() {
+        // 需要用户 Logo 能力的是「我的 Logo」这一下；自动匹配永远可用。
+        listOf(true, false).forEach { supported ->
+            val auto = logoPanelAction(LogoPaneState.Landing, LogoPanelAction.Auto, phonePicker = supported)
+            assertEquals(LOGO_SOURCE_AUTO, auto.write)
+            assertEquals(LogoPaneBody.Panel, auto.state.body)
         }
     }
 
     @Test
-    fun otherSegmentsWithoutAUserValueAreUnaffected() {
-        listOf("auto", "lib").forEach { segment ->
-            val decision = userLogoSelectionDecision(
-                segment = segment,
-                supportsUserLogo = false,
-                hasAppliedUserValue = false,
-            )
-            assertTrue(decision.allowed, "segment=$segment")
-            assertNull(decision.note, "segment=$segment")
+    fun replaceAndAutoStayReachableWhenMyLogoCannotBeOpened() {
+        // 边框画不出用户 Logo：更换 Logo / 自动匹配照旧，只有「我的 Logo」置灰。
+        val blocked = userLogoActionDecision(supportsUserLogo = false)
+        assertFalse(blocked.enabled)
+        listOf(LogoPanelAction.Replace, LogoPanelAction.Auto).forEach { action ->
+            val next = logoPanelAction(LogoPaneState.Landing, action, phonePicker = true)
+            assertTrue(next.openPicker || next.write != null, "$action")
+            assertTrue(next.state.body != LogoPaneBody.UserLibrary, "$action")
         }
-    }
-
-    @Test
-    fun everyOfferedSegmentIsCoveredByTheDecision() {
-        // 段键来自 `LogoSources`；未知键按品牌段处理，不能画出一个没人裁决过的段。
-        val decisions = LogoSources.associate { option ->
-            option.value to userLogoSelectionDecision(
-                segment = option.value,
-                supportsUserLogo = false,
-                hasAppliedUserValue = false,
-            )
-        }
-        assertEquals(setOf("auto", "lib", "user"), decisions.keys)
-        assertEquals(listOf("user"), decisions.filterValues { !it.allowed }.keys.toList())
-        assertEquals(listOf("user"), decisions.filterValues { it.note != null }.keys.toList())
-        assertTrue(userLogoSelectionDecision("bogus", false, false).allowed)
-        assertNull(userLogoSelectionDecision("bogus", false, false).note)
     }
 }

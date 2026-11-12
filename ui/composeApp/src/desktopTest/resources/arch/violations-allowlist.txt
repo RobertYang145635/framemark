@@ -8,7 +8,7 @@
 # A stale entry (no matching violation) FAILS ArchAllowlistHygieneKonsistTest: delete it.
 #
 # Entries per rule:
-#   evidence-hook-literal: 359
+#   evidence-hook-literal: 357
 #   launch-state-isolation: 4
 #   layer-direction: 102
 
@@ -94,9 +94,7 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/FmControls.kt
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/FmSlider.kt:evidence-hook-literal:51:FM_TOUCH_SLIDER_HEIGHT_DP
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/InspectorScreen.kt:evidence-hook-literal:1144:FM_DEMO_EDITS
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/InspectorScreen.kt:evidence-hook-literal:1144:FM_UNDO
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt:evidence-hook-literal:122:FM_LOGO_PICK
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt:evidence-hook-literal:151:FM_LOGO_PANE
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt:evidence-hook-literal:206:FM_LOGO_PAGE
+ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt:evidence-hook-literal:370:FM_LOGO_PANE
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/TextSlotNavigator.kt:evidence-hook-literal:400:FM_TEXT_NAV
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/inspector/TextSlotNavigator.kt:evidence-hook-literal:422:FM_CONTROL_PROBE
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/library/LibraryPreview.kt:evidence-hook-literal:36:FM_PREVIEW_FAIL

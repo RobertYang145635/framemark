@@ -24,7 +24,8 @@ import com.framemark.native.theme.FmType
  * 边框库的「载入中 / 载入失败」界面。
  *
  * 生效路径只有两条：桌面左栏在 `libraryIndex == null`（即 Loading / Failed）时调用；
- * 手机左栏用 `PhoneLibrarySheet`，从不调用本函数。数据就绪后桌面换 `DesktopLibraryPanel`。
+ * 手机端用 `PhoneBorderPanel` 的 选择一个边框（库是覆盖层
+ * `PhoneBorderLibraryOverlay`），从不调用本函数。数据就绪后桌面换 `DesktopLibraryPanel`。
  *
  * 因此原来的 `Ready` 分支（`LibraryReady` 及其分类 chip / 厂商筛选 / 搜索框 /
  * 卡片网格 / 族索引等约 800 行）**任何一端都不可达**——`LibraryIndex.of` 永远返回

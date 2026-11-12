@@ -15,10 +15,11 @@ import com.framemark.native.theme.FmType
 /**
  * 边框底板里「分组 + 卡片」两种排布的条目账本。
  *
- * 两轴滚动的 收起 卡片条与 3 列 展开 网格已经由整页的 [PhoneBorderPageDialog] 取代
- * （一页一个分类、2 列网格、只有一个滚动容器），这里只留下纯下标计算：它们是
- * 「分组跳转落点」的回归契约（`PhoneLibraryJumpIndexTest` / `PhoneLibrarySwipeTest`
- * 直接测这些函数），跳转按钮和卡片条不应当各算一套。
+ * 两轴滚动的 收起 卡片条与 3 列 展开 网格已经由边框库覆盖层
+ * （[PhoneBorderLibraryOverlay]：一页一个分类、2 列网格、只有一个滚动容器）取代，
+ * 这里只留下纯下标计算：它们是「分组跳转落点」的回归契约
+ * （`PhoneLibraryJumpIndexTest` / `PhoneLibrarySwipeTest` 直接测这些函数），跳转按钮
+ * 和卡片条不应当各算一套。
  */
 
 /** Columns of the old 展开 grid (3 cards per row); kept for the jump-index contract. */
@@ -39,7 +40,7 @@ fun phoneStripJumpIndex(groups: List<LibraryCardGroup>, groupKey: String?): Int 
 fun phoneGridJumpIndex(groups: List<LibraryCardGroup>, groupKey: String?): Int =
     phoneLibraryItemIndex(groups, groupKey, ::phoneGridItems)
 
-/** Empty/loading/error note for the border sheet body and the full-height border page. */
+/** Empty/loading/error note for the border panel and the border library overlay. */
 @Composable
 fun PhoneLibraryNote(text: String, modifier: Modifier = Modifier) {
     Box(

@@ -137,9 +137,9 @@ fun EditorTabList(
             }
         }
         if (logoPanelShown && model != null) {
-            // One entry for the whole Logo tab: brand entry → auto match → exact
-            // cuts → non-Brand adjustments. The old raw Brand row underneath was
-            // the duplicate users saw twice.
+            // One entry for the whole Logo tab: 调整字标 → 更换 Logo / 自动匹配 / 我的
+            // Logo → 当前字标说明. The old raw Brand row underneath was the duplicate
+            // users saw twice, and the brand list no longer lands here.
             item(key = "panel:logoBrand") {
                 LogoBrandPanel(model = model, session = session, dense = dense)
             }

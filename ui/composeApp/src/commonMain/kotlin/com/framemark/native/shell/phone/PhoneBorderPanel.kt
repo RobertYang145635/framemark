@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryIndex
@@ -32,24 +35,30 @@ import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.PrimaryButton
 
 /**
- * 手机端 边框 工具在底板里的内容：**不再是**两轴滚动的卡片条。
+ * 手机端 边框 工具的**落地面板**：边框页本身不是库。
  *
- * 挑边框发生在整页的 [PhoneBorderPageDialog]（进入 边框 工具即自动打开），所以这里
- * 只剩「当前边框 + 再进一次」的入口：一屏放得下，没有任何滚动容器，也就没有
- * 「竖着滚的容器套着横着滚的列表」。
+ * 和 Logo 页同一套做法（`CuratedLogoPane` 的落地块）：一屏三件事——
+ *  1. 当前边框：缩略图（当前照片套这张边框，量不出尺寸时退回落包里那张样张，
+ *     见 [PhoneFramePreview]）+ 名称 + 一句数据自带的类别 / 品牌 / 系列；
+ *  2. 一个主按钮：`选择一个边框` / `换一个边框`（[PhoneBorderPageState.actionLabel]）；
+ *  3. 一行说明：库有多大（分类数 / 张数来自目录，不写死）。
  *
- * 关掉整页后回到的正是这一屏——底板档位（收起 / 半开 / 展开）与当前工具都没有被
- * 改过：整页只是盖在上面的一层，打开和关闭都不写设计、不移动底板，和品牌选择器
- * 关闭后回到原来的页面是同一套做法。
+ * 库（分类翻页 + 2 列网格 + 搜索）只在用户点这个按钮时出现，而且是盖在画布上的
+ * 覆盖层 [PhoneBorderLibraryOverlay]，不是把编辑器换掉的另一页。
+ *
+ * **没有滚动容器**：缩略图边长由 [PhoneBorderPageState.panelLayout] 按这块面板的实际
+ * 高度在这个阶梯里挑（128 / 112 / 96 / 84 / 72 / 60 / 48 dp，从库里那张卡自己的
+ * 128 dp 起步），说明行在窗口最矮时让位。所以缩略图、按钮、说明永远都在这一屏里，
+ * 用户不需要滚一下才够得到按钮。
  */
 @Composable
-fun PhoneLibrarySheet(
+fun PhoneBorderPanel(
     index: LibraryIndex?,
-    /** 当前已应用的边框；整页里的初始选中就是它。 */
+    /** 当前已应用的边框；面板与覆盖层的「当前」都读它。 */
     card: LibraryCard?,
     onRetry: (() -> Unit)?,
-    /** 打开整页挑边框（[PhoneBorderPageDialog] 由调用方挂在工具切换的那一层）。 */
-    onOpenPage: () -> Unit,
+    /** 打开边框库覆盖层（[PhoneBorderLibraryOverlay] 由外壳画在整个编辑器之上）。 */
+    onOpenLibrary: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (index == null) {
@@ -57,32 +66,45 @@ fun PhoneLibrarySheet(
         return
     }
     val categoryCount = remember(index) { index.categories().size }
-    Column(
-        modifier = modifier.fillMaxSize().padding(FmSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(FmSpacing.md),
-    ) {
-        CurrentBorderRow(card = card)
-        PrimaryButton(
-            text = if (card == null) "打开边框库挑一个" else "换一个边框",
-            onClick = onOpenPage,
-            modifier = Modifier.fillMaxWidth(),
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // 这块面板拿到的就是「底板高度 − 把手行 − 标题行」，所以预算直接对着它算。
+        val layout = PhoneBorderPageState.panelLayout(
+            availableHeightDp = maxHeight.value,
+            fontScale = LocalDensity.current.fontScale,
         )
-        Text(
-            text = "整页挑边框：$categoryCount 个分类左右滑动，共 ${index.cards.size} 个边框。",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 2,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.sm),
+        ) {
+            CurrentBorderRow(card = card, tileDp = layout.tileDp.dp)
+            Spacer(Modifier.height(FmSpacing.sm))
+            PrimaryButton(
+                text = PhoneBorderPageState.actionLabel(card),
+                onClick = onOpenLibrary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (layout.showsNote) {
+                Spacer(Modifier.height(FmSpacing.xs))
+                Text(
+                    text = PhoneBorderPageState.libraryNote(categoryCount, index.cards.size),
+                    style = FmType.labelSmall,
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
-/** 底板里的当前边框：方图 + 名称 + 类别/系列（数据自带，不猜）。 */
+/** 面板里的当前边框：方图 + 名称 + 类别/系列（数据自带，不猜）。 */
 @Composable
-private fun CurrentBorderRow(card: LibraryCard?) {
+private fun CurrentBorderRow(card: LibraryCard?, tileDp: Dp) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(tileDp)
                 .clip(RoundedCornerShape(FmRadii.tile))
                 .background(FmPalette.stage)
                 .padding(FmSpacing.xs),
@@ -97,7 +119,7 @@ private fun CurrentBorderRow(card: LibraryCard?) {
         Spacer(Modifier.width(FmSpacing.md))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = card?.name ?: "还没有选边框",
+                text = PhoneBorderPageState.currentName(card),
                 style = FmType.titleSmall,
                 color = FmPalette.onSurface,
                 maxLines = 1,
@@ -105,11 +127,13 @@ private fun CurrentBorderRow(card: LibraryCard?) {
             )
             Spacer(Modifier.height(FmSpacing.xxs))
             Text(
-                text = card?.let { phoneCardDescription(it) }.takeUnless { it.isNullOrBlank() }
-                    ?: "选一张边框后，样式 / 文字 / Logo / 水印才会出现。",
+                text = PhoneBorderPageState.currentDescription(
+                    card = card,
+                    description = card?.let { phoneCardDescription(it) },
+                ),
                 style = FmType.labelSmall,
                 color = FmPalette.onSurfaceMuted,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }

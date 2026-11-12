@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.ProjectPreset
+import com.framemark.native.shell.phone.PhonePresetEntryPolicy
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -71,6 +72,7 @@ fun PhonePresetSheet(
     var renameDraft by remember { mutableStateOf("") }
     var pendingImport by remember { mutableStateOf<ProjectPreset?>(null) }
     var pendingApply by remember { mutableStateOf<ProjectPreset?>(null) }
+    var saveNotice by remember { mutableStateOf<String?>(null) }
     var transferMessage by remember { mutableStateOf<String?>(null) }
     var transferBusy by remember { mutableStateOf(false) }
     val transferScope = rememberCoroutineScope()
@@ -282,19 +284,34 @@ fun PhonePresetSheet(
             )
             Spacer(Modifier.height(FmSpacing.md))
             PrimaryButton(
-                text = "保存当前设计",
-                enabled = store.activeDesign != null,
+                text = PhonePresetEntryPolicy.SAVE_LABEL,
+                enabled = PhonePresetEntryPolicy.saveEnabled(store.activeDesign != null),
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     val saved = store.savePreset(draftName)
                     if (saved != null) {
                         draftName = "我的预设 ${store.presets.size + 1}"
+                        saveNotice = PhonePresetEntryPolicy.savedMessage(saved.name, saved.embeddedWatermarkBytes)
                         FmLog.info("FM_PRESET_SAVED") { "id=${saved.id} wm=${saved.overlay?.asset?.sha256?.take(12) ?: "none"} bytes=${saved.embeddedWatermarkBytes}" }
                     } else {
+                        saveNotice = null
                         FmLog.warn("FM_PRESET_SAVE_FAIL") { "msg=${store.presetError ?: "no active design"}" }
                     }
                 },
             )
+            if (store.activeDesign == null) {
+                Spacer(Modifier.height(FmSpacing.sm))
+                SheetNote("先选择并应用一套边框，再保存预设。")
+            }
+            // 验收人「保存预设我没看到」：成功也要有回音，复用面板里的状态文本位置。
+            saveNotice?.let { message ->
+                Spacer(Modifier.height(FmSpacing.sm))
+                Text(
+                    text = message,
+                    style = FmType.labelSmall,
+                    color = FmPalette.success,
+                )
+            }
             store.presetError?.let { message ->
                 Spacer(Modifier.height(FmSpacing.sm))
                 Text(
@@ -307,7 +324,11 @@ fun PhonePresetSheet(
 
         Spacer(Modifier.height(FmSpacing.lg))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("已保存 ${presets.size} 套", style = FmType.labelMedium, color = FmPalette.onSurfaceSecondary)
+            Text(
+                text = PhonePresetEntryPolicy.APPLY_TITLE,
+                style = FmType.titleSmall,
+                color = FmPalette.onSurface,
+            )
             Spacer(Modifier.weight(1f))
             GhostButton(
                 text = if (transferBusy) "处理中…" else "导入预设",
@@ -315,11 +336,16 @@ fun PhonePresetSheet(
                 onClick = ::beginImport,
             )
         }
-        Text("带水印 ${presets.count { it.overlay != null }} 套", style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
+        Text(
+            text = "已保存 ${presets.size} 套 · 带水印 ${presets.count { it.overlay != null }} 套 · 新保存的排在最前",
+            style = FmType.labelSmall,
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 2,
+        )
         Spacer(Modifier.height(FmSpacing.sm))
 
         if (presets.isEmpty()) {
-            SheetNote("还没有保存的预设。保存当前设计后会出现在这里。")
+            SheetNote("还没有保存的预设。填好名称后点「${PhonePresetEntryPolicy.SAVE_LABEL}」，它会出现在这里。")
             return@FmSheet
         }
 
@@ -368,7 +394,12 @@ fun PhonePresetSheet(
                         Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
                             GhostButton("改名", onClick = { renamingId = preset.id; renameDraft = preset.name })
                             GhostButton("删除", onClick = { store.deletePreset(preset.id) })
-                            PrimaryButton(text = "套用", modifier = Modifier.weight(1f), onClick = { requestApply(preset) })
+                            PrimaryButton(
+                                text = "套用",
+                                enabled = PhonePresetEntryPolicy.applyEnabled(store.activePhotoId != null),
+                                modifier = Modifier.weight(1f),
+                                onClick = { requestApply(preset) },
+                            )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
                             GhostButton(

@@ -40,18 +40,23 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
+import com.framemark.native.workflow.GhostButton
+import com.framemark.native.workflow.PrimaryButton
 import com.framemark.native.workflow.UserLogoEnv
 import com.framemark.native.workflow.UserLogoLibrary
 import com.framemark.native.workflow.UserLogoSupport
 import com.framemark.native.product.FmLog
 
 /**
- * Logo 页（演示稿 `logo.js` 的 `lgPaneLive`）：来源三选一 → 当前 Logo 卡 →
- * 「选择品牌」入口 → 品牌页 → 版本页 → 「显示」组。
+ * Logo 页（演示稿 `logo.js` 的 `lgPaneLive`，按 UI-v2 复测的反馈重排）。
  *
- * 与 WP-SL 的旧面板相比，这里只换**页面结构与文案**：品牌库数据、版本/字标
- * 键、预览图加载、`logoBrandMode` 判定全部沿用 `BrandLogoLibrary.kt` 的既有
- * 实现，没有新增数据源，也没有改「浏览不写入、只有点具体版本才写入」的规则。
+ * 面板正文 = **调整字标**（位置 / 大小 / 显示 Logo）+ **三个动作**（更换 Logo /
+ * 自动匹配 / 我的 Logo）+ 一行 `当前：品牌 · 款式`。落地永远是这一块：进来先看见
+ * 「现在用的是哪个字标」，并且当场就能调；品牌库是一层盖在画布上的覆盖层（手机）
+ * 或内联品牌页（桌面），只能由「更换 Logo」点进去。
+ *
+ * 数据与写入点一个没换：品牌库数据、版本/字标键、预览图加载、`logoBrandMode` 判定
+ * 沿用 `BrandLogoLibrary.kt`；仍是「浏览不写入、只有点具体字标才写入」。
  */
 @Composable
 internal fun CuratedLogoPane(
@@ -111,42 +116,223 @@ internal fun CuratedLogoPane(
     }
 }
 
-/** `.seg` 三选一：自动匹配 / 品牌库 / 我的 Logo. */
-internal val LogoSources = listOf(
-    ControlOption("auto", "自动匹配"),
-    ControlOption("lib", "品牌库"),
-    ControlOption("user", "我的 Logo"),
-)
+// ---------------------------------------------------------------------------
+// Logo 页的视图状态与决策（纯函数：没有 Compose、没有资源，commonTest 直接覆盖）
+// ---------------------------------------------------------------------------
+
+/** 写入 Brand 控件的「自动匹配」值。取值域是 `auto` / 品牌键 / 精确 cut 键。 */
+internal const val LOGO_SOURCE_AUTO = "auto"
 
 /**
- * 选中「Logo 来源」的哪一段，当前 Logo 卡下面就画哪一块。
+ * Logo 页此刻画哪一块正文。
  *
- * 分段是**视图选择**，不是已生效值的镜像：以前选中项直接由当前值反推（`mode`），
- * 于是点「我的 Logo」只把旧值原样写回去、下面什么也不画，用户库面板
- * （`UserLogoPanel`）在手机与桌面都不可达。
+ * 落地永远是 [Panel]：进来就是「调位置 / 大小 + 三个动作」，画布仍在，手上立刻有活。
+ * 品牌库 / 版本库 / 我的 Logo 都只能由**明确的点击**进入，而且各自都带返回入口 ——
+ * 选完 / 取消都回得到同一块面板，不会停在列表上，也不会什么都不画。
  */
-internal enum class LogoSourceBody {
+internal enum class LogoPaneBody {
     /**
-     * 品牌来源：品牌入口 → 品牌页 → 版本页（手机端是盖在画布上的选择器）。
-     * 「自动匹配」也走这一块——自动匹配没有自己可挑的列表，入口仍然要留着。
+     * 落地态：调整字标（位置 / 大小 / 显示 Logo）+ 更换 Logo / 自动匹配 / 我的 Logo
+     * + 一行 `当前：…` 说明。这一块是唯一的落地与返回落点。
      */
-    Brand,
+    Panel,
+
+    /** 品牌库列表（桌面右栏的内联品牌页；手机上只有盖在画布上的覆盖层）。 */
+    LibraryList,
 
     /** 我的 Logo：本机全局用户库，导入与选中都写回同一个 Brand 控件。 */
+    UserLibrary,
+}
+
+/**
+ * 面板的视图状态：只记「现在看哪一块」，**不存已生效值的副本**。
+ *
+ * 说明行里的品牌 / 版本都由 [logoSummary] 现算，所以选中、取消、目录重新载入之后都
+ * 不会留下一份过期的镜像。旧实现用 `segment` 记视图选择、又用 `page` 记列表页，
+ * 两个字段可以互相矛盾：选完品牌还停在列表页，或者回到一个谁也不认的段。
+ */
+internal data class LogoPaneState(
+    val body: LogoPaneBody = LogoPaneBody.Panel,
+    /** 内联版本页正在看哪个品牌；null = 用已生效值的品牌。 */
+    val browseBrandKey: String? = null,
+    /** [LogoPaneBody.LibraryList] 的子页：true = 版本页，false = 品牌页。 */
+    val versionPage: Boolean = false,
+) {
+    companion object {
+        /** 打开 Logo 工具的第一帧：调整 + 动作。任何已生效值都不会让它落在列表上。 */
+        val Landing = LogoPaneState()
+    }
+}
+
+/** 一次点击的完整结果：新状态 + 要写的值（null = 不改已生效字标）+ 是否开覆盖层。 */
+internal data class LogoPaneAction(
+    val state: LogoPaneState,
+    val write: String? = null,
+    val openPicker: Boolean = false,
+)
+
+/** 面板上的三个动作；品牌 / 版本列表只从「更换 Logo」开始。 */
+internal enum class LogoPanelAction {
+    /** 更换 Logo：手机端开盖在画布上的覆盖层，桌面端进内联品牌页。 */
+    Replace,
+
+    /** 自动匹配：就地写 `auto`，停在面板上（不导航、不开覆盖层）。 */
+    Auto,
+
+    /** 我的 Logo：本机用户库（画不出用户 Logo 的边框由 `userLogoActionDecision` 拦下）。 */
     User,
 }
 
-/** 分段键 → 当前 Logo 卡下面画哪一块。未知键落回品牌块，画不出空段。 */
-internal fun logoSourceBody(segment: String): LogoSourceBody =
-    if (segment == "user") LogoSourceBody.User else LogoSourceBody.Brand
+/**
+ * 点一个动作之后会发生什么。
+ *
+ * - [LogoPanelAction.Replace]：手机端只发「开覆盖层」的请求，正文不动 —— 覆盖层选完 /
+ *   关掉都回到同一块面板；桌面端进内联品牌页（品牌页再进版本页）。
+ * - [LogoPanelAction.Auto]：写 `auto` 并停在面板上，说明行立刻变成「自动匹配」。
+ * - [LogoPanelAction.User]：进本机用户库正文（桌面上也是内联），每行只写 Brand 控件。
+ */
+internal fun logoPanelAction(
+    state: LogoPaneState,
+    action: LogoPanelAction,
+    phonePicker: Boolean,
+): LogoPaneAction = when (action) {
+    LogoPanelAction.Auto -> LogoPaneAction(
+        state = state.copy(body = LogoPaneBody.Panel, versionPage = false),
+        write = LOGO_SOURCE_AUTO,
+    )
+    LogoPanelAction.Replace -> LogoPaneAction(
+        state = state.copy(
+            body = if (phonePicker) LogoPaneBody.Panel else LogoPaneBody.LibraryList,
+            versionPage = false,
+        ),
+        openPicker = phonePicker,
+    )
+    LogoPanelAction.User -> LogoPaneAction(
+        state = state.copy(body = LogoPaneBody.UserLibrary, versionPage = false),
+    )
+}
+
+/** 挑中一枚具体字标：写它，正文回到面板（覆盖层与内联版本页共用这一条）。 */
+internal fun logoPickCut(state: LogoPaneState, assetKey: String): LogoPaneAction =
+    LogoPaneAction(state = state.copy(body = LogoPaneBody.Panel, versionPage = false), write = assetKey)
 
 /**
- * 点某一段时要写入 Brand 控件的值；null = 只切视图、不改已经生效的字标。
- * 品牌库与我的 Logo 都是「浏览」，和品牌页同一条规则：点具体条目才写入。
+ * 取消 / 返回面板：一个字都不写，正文回到面板。
+ *
+ * 和 [logoPickCut] 一起钉死「选完 / 取消都落在同一块面板」：覆盖层是选中了还是被关掉，
+ * 回来的都是同一个正文，不会停在列表页，也不会停在谁也不认识的段。
  */
-internal fun logoSegmentWrite(segment: String): String? =
-    if (segment == "auto") "auto" else null
+internal fun logoPaneBack(state: LogoPaneState): LogoPaneState =
+    state.copy(body = LogoPaneBody.Panel, versionPage = false)
 
+/** 覆盖层的返回值 → 面板要做什么；null / 空白键 = 取消，一个字都不写。 */
+internal fun logoPickerResult(state: LogoPaneState, pickedAssetKey: String?): LogoPaneAction =
+    pickedAssetKey?.takeIf { it.isNotBlank() }?.let { logoPickCut(state, it) }
+        ?: LogoPaneAction(logoPaneBack(state))
+
+/** 内联版本页里点「返回品牌」：列表内部后退，不回到面板。 */
+internal fun logoVersionBack(state: LogoPaneState): LogoPaneState = state.copy(versionPage = false)
+
+/** 内联品牌页里点一个品牌：只决定版本页列哪个品牌，不改已生效值。 */
+internal fun logoBrowseBrand(state: LogoPaneState, brandKey: String): LogoPaneState =
+    state.copy(browseBrandKey = brandKey, versionPage = true)
+
+/** 面板上「当前用的是哪一种字标」。 */
+internal enum class LogoSummaryKind { Applied, Auto, User }
+
+/**
+ * 「当前字标」摘要：面板上那一条 `当前：…` 说明，不是一页。
+ *
+ * 三级判定与引擎同口径：`user:…` → 我的 Logo；能在品牌库里落地（精确 cut 键，或品牌键
+ * `laika`）→ 品牌 · 版本；其余（`auto` / 空 / 未收录 / 目录还没载入）→ 自动匹配。引擎对
+ * 手改出来、库里没有的值同样落到自动解析，所以界面也这么说，不谎报「未收录」。
+ */
+internal data class LogoSummary(
+    val kind: LogoSummaryKind,
+    /** `品牌 · 版本` / 自动匹配 / 我的 Logo。 */
+    val title: String,
+    /** 自动匹配时照片品牌的名字（引擎按它选字标）；没有 → null。 */
+    val photoBrandLabel: String? = null,
+    /** 已生效值落在的品牌；自动匹配与用户 Logo 时为 null。 */
+    val brand: LogoBrand? = null,
+)
+
+/**
+ * 现算当前字标摘要。[photoBrandLabel] 是舞台渲染报告里的照片品牌
+ * （`LogoPhotoBrand`）：自动匹配画的就是它的字标，所以说明行照实说「按照片品牌 X」。
+ */
+internal fun logoSummary(
+    raw: String,
+    brands: List<LogoBrand>,
+    photoBrandLabel: String? = null,
+): LogoSummary {
+    if (UserLogoLibrary.isUserLogo(raw)) {
+        return LogoSummary(kind = LogoSummaryKind.User, title = "我的 Logo")
+    }
+    val brand = logoBrandForAssetKey(brands, raw) ?: logoBrandForKeyValue(brands, raw)
+    if (brand != null) {
+        // 取值域是「精确 cut 键 / 品牌键」：品牌键没有自己的版本，落回最新版本。
+        val version = logoVersionForAssetKey(brands, raw)
+            ?: brand.versions.firstOrNull { it.id == brand.canonicalVersion }
+            ?: brand.versions.firstOrNull()
+        return LogoSummary(
+            kind = LogoSummaryKind.Applied,
+            title = if (version != null) "${logoBrandTitle(brand)} · ${version.name}" else logoBrandTitle(brand),
+            brand = brand,
+        )
+    }
+    return LogoSummary(
+        kind = LogoSummaryKind.Auto,
+        title = "自动匹配",
+        photoBrandLabel = photoBrandLabel,
+    )
+}
+
+/**
+ * 动作下面那一行说明：现在生效的是哪一个字标。**一行**，不是一页。
+ * 自动匹配连「它正按什么解析」一起说清楚（照片品牌 / 边框自己的品牌）。
+ */
+internal fun logoCaption(summary: LogoSummary): String = when (summary.kind) {
+    LogoSummaryKind.Applied -> "当前：${summary.title}"
+    LogoSummaryKind.User -> "当前：我的 Logo · 保存在全局 Logo 库"
+    LogoSummaryKind.Auto -> summary.photoBrandLabel?.let { "当前：自动匹配 · 按照片品牌 $it" }
+        ?: "当前：自动匹配 · 按边框自己的品牌"
+}
+
+/** 组标题右边那个小计数：现在用的是哪一条来源。 */
+internal fun logoSourceLabel(summary: LogoSummary): String = when (summary.kind) {
+    LogoSummaryKind.Applied -> "品牌库"
+    LogoSummaryKind.User -> "用户"
+    LogoSummaryKind.Auto -> "自动"
+}
+
+/**
+ * 取证钩子（只读 [com.framemark.native.LaunchOptions]，UI 永不写）：桌面截图脚本把
+ * 面板直接摆到品牌页 / 版本页截图。null = 正常落地（面板）—— 产品的落地态永远不是列表。
+ */
+private fun logoEvidencePane(): LogoPaneState? {
+    val browse = com.framemark.native.LaunchOptions.logoBrowseBrand?.takeIf { it.isNotBlank() }
+    val versions = com.framemark.native.LaunchOptions.logoPage == "versions" ||
+        !com.framemark.native.LaunchOptions.logoPickVersion.isNullOrBlank()
+    return when {
+        com.framemark.native.LaunchOptions.logoPage == "brands" ->
+            LogoPaneState(body = LogoPaneBody.LibraryList, browseBrandKey = browse)
+        versions -> LogoPaneState(body = LogoPaneBody.LibraryList, browseBrandKey = browse, versionPage = true)
+        else -> null
+    }
+}
+
+/**
+ * 品牌字标面板（手机底板与桌面右栏同一份）。
+ *
+ * 正文只有一块，顺序固定：
+ *  1. **调整字标**（位置 / 大小 / 显示 Logo）—— 用户是盯着画布调这些的，所以放在最上；
+ *  2. **三个动作**：更换 Logo（开覆盖层）/ 自动匹配（就地写 `auto`）/ 我的 Logo（本机库）；
+ *  3. 一行 `当前：品牌 · 款式`（自动匹配时说清按什么解析）。
+ *
+ * 品牌库、版本页、我的 Logo 都只能由动作点进去，各带返回入口，所以落地与返回永远是
+ * 这一块 —— 没有分段控件，也没有任何一页列表会自己冒出来。
+ */
 @Composable
 private fun BrandedCuratedLogo(
     brandControl: InspectorControl,
@@ -156,226 +342,164 @@ private fun BrandedCuratedLogo(
     modifier: Modifier,
     textSlots: List<com.framemark.native.workflow.TextSlot>,
     onOpenBrandPicker: (() -> Unit)?,
-    /** 当前边框能否画用户 Logo（`UserLogoSupport`）；见 [userLogoSelectionDecision]。 */
+    /** 当前边框能否画用户 Logo（`UserLogoSupport`）；见 [userLogoActionDecision]。 */
     supportsUserLogo: Boolean,
 ) {
     val raw = session.value(brandControl) as? String ?: ""
     var catalog by remember { mutableStateOf<List<LogoBrand>?>(null) }
     LaunchedEffect(Unit) { catalog = LogoBrandCatalog.load() }
-    var page by remember(brandControl.key) {
-        mutableStateOf(
-            when {
-                com.framemark.native.LaunchOptions.logoPage == "brands" -> LogoPage.Brands
-                // WP-V4: a pick implies the version page, so the capture hook needs
-                // only `FM_LOGO_PICK` to reach 14/16.
-                com.framemark.native.LaunchOptions.logoPage == "versions" -> LogoPage.Versions
-                !com.framemark.native.LaunchOptions.logoPickVersion.isNullOrBlank() -> LogoPage.Versions
-                else -> LogoPage.Logo
-            },
-        )
-    }
-    var browseBrandKey by remember(brandControl.key) {
-        mutableStateOf(com.framemark.native.LaunchOptions.logoBrowseBrand?.takeIf { it.isNotBlank() })
-    }
-    // 手机端：品牌入口要开的是外壳绘制的覆盖层面板（舞台仍在），这里只回调打开；
-    // 桌面端 onOpenBrandPicker 为 null，走下面的内联品牌页 / 版本页。
-    val phonePicker = onOpenBrandPicker
-
     val brands = catalog.orEmpty()
-    // 取值域是「auto / 品牌键 / 精确 cut 键」：先按 cut 键找版本，找不到再按品牌键
-    // 落回品牌条目（`laika` 这类值就是「这本边框用徕卡品牌」）。
-    val appliedBrandByCut = logoBrandForAssetKey(brands, raw)
-    val appliedBrandByKey = if (appliedBrandByCut == null) logoBrandForKeyValue(brands, raw) else null
-    val appliedBrand = appliedBrandByCut ?: appliedBrandByKey
-    val appliedVersion = logoVersionForAssetKey(brands, raw)
-        ?: appliedBrandByKey?.let { brand ->
-            brand.versions.firstOrNull { it.id == brand.canonicalVersion } ?: brand.versions.firstOrNull()
-        }
-    val isAuto = isAutoMatchBrandValue(raw)
-    val isUser = UserLogoLibrary.isUserLogo(raw)
-    // 引擎渲染报告里「品牌」那一行的内容 = 照片 EXIF 的 Make。只有真·自动匹配时
-    // 才有这一行：一旦指定了某个品牌字标，引擎画的是那枚字标，品牌文字行就没了。
+    // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
+    // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
     val photoBrand = LogoPhotoBrand.resolve(textSlots, brands)
     val photoMake = LogoPhotoBrand.makeText(textSlots)
-    // 现场诊断（与仓库里其它 FM_ 钩子同风格）：自动匹配/品牌键的分支很难从截图区分，
+    val summary = logoSummary(raw, brands, photoBrand?.brand?.label)
+    // 画不出用户 Logo 的边框只拦「我的 Logo」这一下：引擎画不出来，进去选就是一次
+    // 静默无效。原因（`USER_LOGO_UNSUPPORTED_ON_CARD`）就显示在按钮下面。
+    val userAction = userLogoActionDecision(supportsUserLogo)
+    // 手机端：更换 Logo 开的是外壳绘制的覆盖层面板（舞台仍在），这里只回调打开；
+    // 桌面端 onOpenBrandPicker 为 null，走内联品牌页 / 版本页。
+    val phonePicker = onOpenBrandPicker
+
+    // 视图状态：null = 还没点过 ⇒ 落地态（面板）。取证钩子只改初始页，见 logoEvidencePane。
+    var pane by remember(brandControl.key) { mutableStateOf(logoEvidencePane()) }
+    val state = pane ?: LogoPaneState.Landing
+
+    // 现场诊断（与仓库里其它 FM_ 钩子同风格）：自动匹配 / 品牌键的分支很难从截图区分，
     // 打一行就够定位「未收录」到底是没读到品牌、还是值不在库里。
     FmLog.info("FM_LOGO_PANE") {
-        "raw=${raw.take(48)} isAuto=$isAuto isUser=$isUser brands=${brands.size} " +
+        "raw=${raw.take(48)} kind=${summary.kind} body=${state.body} brands=${brands.size} " +
             "cutKey=${logoBrandForAssetKey(brands, raw)?.key} brandKey=${logoBrandForKeyValue(brands, raw)?.key} " +
             "make=$photoMake photoBrand=${photoBrand?.brand?.key} " +
             "slots=${textSlots.size} " +
             "brandRows=${textSlots.filter { (it.key ?: it.id).contains("make") || (it.key ?: it.id).contains("brand") }
                 .joinToString("|") { (it.key ?: it.id) + "=" + it.text.take(16) }}"
     }
-    // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
-    // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
-    // 值既不是 auto 也不在库里（老工程 / 手改文档）时，引擎同样落到自动解析，
-    // 所以界面也按自动匹配显示，不谎报「未收录」。
-    val effectivelyAuto = isAuto || appliedBrand == null
-    val mode = when {
-        isUser -> "user"
-        effectivelyAuto -> "auto"
-        else -> "lib"
+
+    fun run(action: LogoPaneAction) {
+        pane = action.state
+        action.write?.let { session.set(brandControl, it) }
+        if (action.openPicker) phonePicker?.invoke()
     }
-    // 分段记住用户点的那一段；初始值仍由当前值决定，所以重新打开面板看到的就是
-    // 正在用的那条来源。品牌库 / 我的 Logo 只切下面的内容，不改已生效的字标。
-    var segment by remember(brandControl.key) { mutableStateOf(mode) }
-    // 用户库面板在画不出用户 Logo 的边框上仍然可看 / 可导入 / 可删，只拦「选中」这一下：
-    // 引擎画不出来，写进去就是一次静默无效。已生效值是 `user:…` 时头部也照实说明。
-    val userSelection = userLogoSelectionDecision(
-        segment = segment,
-        supportsUserLogo = supportsUserLogo,
-        hasAppliedUserValue = isUser,
-    )
 
     // WP-V4 evidence hook: click one named version once the catalog is available.
     // The write is the same `session.set(brandControl, assetKey)` a real click does,
     // so undo/modified-count/stage all behave exactly as in the demo.
     var autoPicked by remember(brandControl.key) { mutableStateOf(false) }
-    LaunchedEffect(brands, page) {
+    LaunchedEffect(brands, state.versionPage, state.browseBrandKey) {
         val pick = com.framemark.native.LaunchOptions.logoPickVersion
-        if (autoPicked || pick.isNullOrBlank() || brands.isEmpty() || page != LogoPage.Versions) {
+        if (autoPicked || pick.isNullOrBlank() || brands.isEmpty() || !state.versionPage) {
             return@LaunchedEffect
         }
-        val brand = brands.firstOrNull { it.key == browseBrandKey } ?: appliedBrand ?: return@LaunchedEffect
+        val brand = brands.firstOrNull { it.key == state.browseBrandKey } ?: summary.brand ?: return@LaunchedEffect
         val version = brand.versions.firstOrNull { it.name.contains(pick, ignoreCase = true) }
             ?: return@LaunchedEffect
         val cut = version.cuts.firstOrNull() ?: return@LaunchedEffect
         autoPicked = true
-        browseBrandKey = brand.key
-        session.set(brandControl, cut.assetKey)
-        if (com.framemark.native.LaunchOptions.logoAfterBack) page = LogoPage.Logo
+        run(
+            if (com.framemark.native.LaunchOptions.logoAfterBack) {
+                // 取证钩子（`logoAfterBack`）：像用户点完一样回到面板（`desktop-afterback`）。
+                logoPickerResult(state, cut.assetKey)
+            } else {
+                // 不然就停在版本页，让 `desktop-selected` 拍到「已选」。
+                LogoPaneAction(state = state, write = cut.assetKey)
+            },
+        )
     }
 
-    when (page) {
-        LogoPage.Brands -> {
-            CuratedLogoBrandPage(
-                brands = brands,
-                appliedBrand = appliedBrand,
-                browsing = browseBrandKey,
-                onBack = { page = LogoPage.Logo },
-                onPickBrand = { key ->
-                    browseBrandKey = key
-                    page = LogoPage.Versions
-                },
-            )
-            return
-        }
-        LogoPage.Versions -> {
-            val brand = brands.firstOrNull { it.key == browseBrandKey } ?: appliedBrand
+    when (state.body) {
+        LogoPaneBody.LibraryList -> {
             // 目录是异步加载的：首帧 brands 为空时不能把页面判成「品牌不存在」，
-            // 否则 `FM_LOGO_PAGE=versions` 会被自己弹回品牌页。
-            if (brand == null) {
-                if (brands.isNotEmpty()) page = LogoPage.Brands
-                return
+            // 所以品牌还解析不出来就先画品牌页，而不是画一块空白。
+            val versionBrand = brands.firstOrNull { it.key == state.browseBrandKey } ?: summary.brand
+            if (state.versionPage && versionBrand != null) {
+                CuratedLogoVersionPage(
+                    brand = versionBrand,
+                    appliedRaw = raw,
+                    onBack = { pane = logoVersionBack(state) },
+                    onPick = { assetKey -> run(logoPickCut(state, assetKey)) },
+                )
+            } else {
+                CuratedLogoBrandPage(
+                    brands = brands,
+                    appliedBrand = summary.brand,
+                    browsing = state.browseBrandKey,
+                    onBack = { pane = logoPaneBack(state) },
+                    onPickBrand = { key -> pane = logoBrowseBrand(state, key) },
+                )
             }
-            CuratedLogoVersionPage(
-                brand = brand,
-                appliedRaw = raw,
-                onBack = { page = LogoPage.Brands },
-                onPick = { assetKey ->
-                    session.set(brandControl, assetKey)
-                    page = LogoPage.Logo
-                },
-            )
             return
         }
-        LogoPage.Logo -> Unit
+        LogoPaneBody.UserLibrary -> {
+            Column(modifier = modifier.fillMaxWidth()) {
+                // 返回入口就在面板原来的位置：点「我的 Logo」不会把用户带到另一个工具页。
+                LogoTop(
+                    back = "返回 Logo",
+                    crumb = "当前：${summary.title}",
+                    onBack = { pane = logoPaneBack(state) },
+                )
+                CuratedGroup(title = "我的 Logo", right = { CuratedCount("本机库") }) {
+                    UserLogoPanel(
+                        control = brandControl,
+                        session = session,
+                        repo = UserLogoEnv.repository,
+                        dense = dense,
+                        selectable = userAction.enabled,
+                    )
+                }
+            }
+            return
+        }
+        LogoPaneBody.Panel -> Unit
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        CuratedGroup(
-            title = "Logo 来源",
-            right = { CuratedCount(when (segment) { "lib" -> "品牌库"; "user" -> "用户"; else -> "自动" }) },
-        ) {
-            CuratedSegmented(
-                options = LogoSources,
-                selected = segment,
-                touch = dense,
-                onSelect = { next ->
-                    // 品牌库 / 我的 Logo 只切下面的视图：点它们不改已经生效的字标
-                    // （旧实现把旧值原样写回去，于是「我的 Logo」看着什么都没发生），
-                    // 只有「自动匹配」本身就是一个取值。
-                    segment = next
-                    val write = logoSegmentWrite(next)
-                    if (write != null) {
-                        session.set(brandControl, write)
-                    } else if (next == "lib") {
-                        if (phonePicker != null) phonePicker() else page = LogoPage.Brands
-                    }
-                },
+        // 1. 调整字标：进来第一件事就是能在画布还看得见的时候调位置 / 大小 / 显示。
+        if (adjustments.isNotEmpty()) {
+            CuratedGroup("调整字标") {
+                orderedLogoAdjustments(adjustments).forEach { CuratedLogoAdjustment(it, session, adjustments) }
+            }
+        }
+        // 2. 三个动作 + 一行说明。品牌 / 版本列表只能从「更换 Logo」进去。
+        CuratedGroup(title = "字标", right = { CuratedCount(logoSourceLabel(summary)) }) {
+            PrimaryButton(
+                text = "更换 Logo",
+                onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
+                modifier = Modifier.fillMaxWidth(),
             )
-            // 画不出用户 Logo 时的唯一一行解释：换边框，或回到「自动匹配」。
-            userSelection.note?.let { note ->
+            Spacer(Modifier.height(FmSpacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            ) {
+                GhostButton(
+                    text = "自动匹配",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                    modifier = Modifier.weight(1f),
+                )
+                GhostButton(
+                    text = "我的 Logo",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
+                    enabled = userAction.enabled,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(FmSpacing.xs))
+            Text(
+                text = logoCaption(summary),
+                style = CuratedNote,
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
+            userAction.note?.let { note ->
                 Text(
                     text = note,
                     style = FmType.labelSmall,
                     color = FmPalette.error,
                     modifier = Modifier.padding(top = FmSpacing.xs),
                 )
-            }
-            Spacer(Modifier.height(10.dp))
-            CuratedLogoNowCard(
-                assetKey = when {
-                    isUser -> raw
-                    appliedVersion != null && appliedBrand != null -> raw
-                    // 自动匹配画的是引擎按照片品牌选中的那枚字标（`_black` app-logo）。
-                    effectivelyAuto -> photoBrand?.assetKey
-                    else -> raw
-                },
-                plateFallback = when {
-                    // 没有照片品牌可画时，「自动匹配」这四个字比「未收录」准确：
-                    // 未收录说的是品牌库里没有，而这里常常是这一帧没报告品牌行。
-                    effectivelyAuto && photoBrand == null -> "自动"
-                    isUser -> "—"
-                    else -> null
-                },
-                title = when {
-                    isUser -> "我的 Logo"
-                    appliedVersion != null && appliedBrand != null ->
-                        "${logoBrandTitle(appliedBrand)} · ${appliedVersion.name}"
-                    // 演示稿 `lgPaneLive`：有照片品牌时显示品牌名。
-                    effectivelyAuto -> photoBrand?.brand?.label ?: "自动匹配"
-                    else -> "未收录"
-                },
-                sub = when {
-                    isUser -> "我的 Logo · 保存在全局 Logo 库"
-                    appliedVersion != null && appliedBrand != null -> "边框自带标志 · 已选版本"
-                    effectivelyAuto && photoBrand != null -> "自动匹配 · 按照片品牌 ${photoBrand.brand.label}"
-                    // 指定了品牌字标时引擎不画品牌文字行，这一帧就读不到照片品牌。
-                    effectivelyAuto -> "自动匹配 · 按边框自己的品牌"
-                    // 演示稿：照片品牌“X”未收录，可从品牌库选择（没有 make 时写“未知”）。
-                    else -> "照片品牌“${photoMake ?: "未知"}”未收录，可从品牌库选择"
-                },
-            )
-            Spacer(Modifier.height(10.dp))
-            when (logoSourceBody(segment)) {
-                LogoSourceBody.Brand -> CuratedLogoEntry(
-                    subtitle = if (phonePicker != null) {
-                        "${brands.size} 个品牌 · ${brands.sumOf { it.versions.size }} 个版本，面板里按分类挑"
-                    } else {
-                        "${brands.size} 个品牌 · ${brands.sumOf { it.versions.size }} 个版本，单列按年代"
-                    },
-                    onClick = {
-                        if (phonePicker != null) phonePicker() else page = LogoPage.Brands
-                    },
-                )
-                // 我的 Logo：复用桌面右栏那份用户库面板（不是新选择器）。它读同一个
-                // `UserLogoEnv.repository`、写同一个 Brand 控件，所以导入与选中都走
-                // 普通会话路径，手机端不需要另开一条。
-                LogoSourceBody.User -> UserLogoPanel(
-                    control = brandControl,
-                    session = session,
-                    repo = UserLogoEnv.repository,
-                    dense = dense,
-                    selectable = userSelection.allowed,
-                )
-            }
-        }
-        if (adjustments.isNotEmpty()) {
-            CuratedRule()
-            CuratedGroup("显示") {
-                orderedLogoAdjustments(adjustments).forEach { CuratedLogoAdjustment(it, session, adjustments) }
             }
         }
     }
@@ -389,91 +513,6 @@ private fun orderedLogoAdjustments(controls: List<InspectorControl>): List<Inspe
     return controls.sortedBy(::rank)
 }
 
-private enum class LogoPage { Logo, Brands, Versions }
-
-/** `lgp-now` — 64 × 40 plate + title + subtitle. */
-@Composable
-private fun CuratedLogoNowCard(
-    assetKey: String?,
-    title: String,
-    sub: String,
-    plateFallback: String? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(FmRadii.tile))
-            .background(FmPalette.surfaceMuted)
-            .padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        LogoNowPlate(assetKey = assetKey, fallback = plateFallback)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold),
-                color = FmPalette.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = sub,
-                style = CuratedNote,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-/**
- * 「当前 Logo」卡的字标位：入参是**持久化的 cut 键**（`panasionic_black`、
- * `ver:laika:…`），而 [LogoPlate] 认的是打包的 webp 名，中间差一步
- * [LogoBrandCatalog.previewForAssetKey]。这一步以前缺失，于是选中的版本在卡片上
- * 显示「未收录」（WP-Q 的 `desktop-afterback` 就是这样），自动匹配也画不出图。
- */
-@Composable
-private fun LogoNowPlate(assetKey: String?, fallback: String?) {
-    val key = assetKey?.takeIf { it.isNotBlank() && !isAutoMatchBrandValue(it) }
-    var resolved by remember(key) { mutableStateOf(false) }
-    var preview by remember(key) { mutableStateOf<String?>(null) }
-    LaunchedEffect(key) {
-        preview = if (key == null) null else LogoBrandCatalog.previewForAssetKey(key)
-        resolved = true
-    }
-    val placeholder = when {
-        !resolved -> "—"
-        else -> fallback ?: if (key != null) "未收录" else "自动"
-    }
-    LogoPlate(preview, 64.dp, 40.dp, fallback = if (preview != null) null else placeholder)
-}
-
-/** `lgp-entry` — 「选择品牌」 + subtitle + 「进入 ›」. */
-@Composable
-private fun CuratedLogoEntry(subtitle: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(FmRadii.tile))
-            .background(FmPalette.surfaceMuted)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = "选择品牌" }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = "选择品牌",
-                style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold),
-                color = FmPalette.onSurface,
-            )
-            Text(subtitle, style = CuratedNote, color = FmPalette.onSurfaceMuted, maxLines = 2)
-        }
-        Text("进入 ›", style = CuratedNote, color = FmPalette.primaryStrong)
-    }
-}
 
 /** Logo artwork plate — stays a light surface in both appearances. */
 @Composable

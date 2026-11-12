@@ -2,6 +2,7 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -40,12 +43,16 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.shell.EditorTool
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
 /** 62 dp bar (report §7.3); 1 dp hairline + 61 dp of cells. */
 private val ToolBarDivider = 1.dp
 private val ToolGlyphSize = 24.dp
 private val ToolDotSize = 7.dp
+
+/** The trailing 预设 cell: a narrower operator cell, not a sixth tab. */
+private val PresetCellWidth = 58.dp
 
 /**
  * V2 five-tool bar: 边框 · 样式 · 文字 · Logo · 水印. The selected cell turns blue
@@ -55,6 +62,13 @@ private val ToolDotSize = 7.dp
  *
  * The bar only reports the tap; the caller decides which page a tool opens
  * ([phoneToolPage]).
+ *
+ * **Trailing 预设 action** ([onOpenPresets]): the preset page used to be reachable
+ * only from the border sheet's head menu (long-press the expand chevron), so the
+ * owner of this build could not find save/apply at all. It is an action, not a
+ * page — it never joins the tab group — and it stays visible on every tool, so
+ * "save what I just made" does not require switching back to 边框 first. It opens
+ * the same [com.framemark.native.shell.PhonePresetSheet]; nothing here saves.
  */
 @Composable
 fun PhoneToolBar(
@@ -63,6 +77,7 @@ fun PhoneToolBar(
     availableTools: List<EditorTool>,
     modifiedOf: (EditorTool) -> Boolean,
     onSelect: (EditorTool) -> Unit,
+    onOpenPresets: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -95,7 +110,74 @@ fun PhoneToolBar(
                     modifier = Modifier.weight(1f),
                 )
             }
+            val openPresets = onOpenPresets
+            if (openPresets != null) {
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(ToolGlyphSize)
+                        .background(FmPalette.outline),
+                )
+                Box(modifier = Modifier.width(FmSpacing.xs))
+                PresetActionCell(
+                    onClick = openPresets,
+                    modifier = Modifier.width(PresetCellWidth),
+                )
+            }
         }
+    }
+}
+
+/**
+ * The always-visible 预设 action: tinted like a call to action (not like the
+ * selected tab), one tap, full bar height — so its touch target is the whole
+ * cell instead of the 30 dp pill AU4-05 measured inside the sheet head.
+ */
+@Composable
+private fun PresetActionCell(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(vertical = FmSpacing.xs)
+            .clip(RoundedCornerShape(FmRadii.tile))
+            .background(FmPalette.primarySoft)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "预设，保存当前设计或套用已保存的预设"
+                role = Role.Button
+            }
+            .clickable(role = Role.Button, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        PhonePresetGlyph(tint = FmPalette.primaryStrong, modifier = Modifier.size(ToolGlyphSize))
+        Box(modifier = Modifier.height(3.dp))
+        Text(
+            text = PhonePresetEntryPolicy.ACTION_LABEL,
+            style = FmType.labelSmall.copy(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+            color = FmPalette.primaryStrong,
+            maxLines = 1,
+        )
+    }
+}
+
+/** A bookmark: "this design is saved". Stroke-based so it follows [tint]. */
+@Composable
+private fun PhonePresetGlyph(tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val stroke = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val path = Path().apply {
+            moveTo(w * 0.26f, w * 0.16f)
+            lineTo(w * 0.74f, w * 0.16f)
+            lineTo(w * 0.74f, w * 0.84f)
+            lineTo(w * 0.5f, w * 0.64f)
+            lineTo(w * 0.26f, w * 0.84f)
+            close()
+        }
+        drawPath(path = path, color = tint, style = stroke)
     }
 }
 

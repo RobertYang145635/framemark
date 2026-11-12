@@ -58,17 +58,17 @@ import org.jetbrains.compose.resources.decodeToImageBitmap
  * The 品牌 Logo page of the shared inspector (V06, both platforms).
  *
  * One column, fixed order:
- *  1. current browsing brand + 选择品牌 › (opens the brand page);
- *  2. 自动匹配照片品牌 (setting it back to the auto value is the only write here);
- *  3. the browsing brand's cuts, one row per exact catalog asset;
- *  4. 调整字标: this card's non-Brand Logo controls.
+ *  1. 调整字标: this card's non-Brand Logo controls (位置 / 大小 / 显示 Logo);
+ *  2. 更换 Logo (the only entry into the brand library — an overlay on the phone),
+ *     自动匹配 (writes `auto` in place) and 我的 Logo (the machine-wide user library);
+ *  3. a one-line `当前：品牌 · 款式` caption.
  *
  * Only tapping one specific cut writes `session.set(brandControl, cut.assetKey)`.
  * Browsing a brand never changes the applied value: the brand page only sets the
  * local `browseBrandKey` filter and returns.
  *
  * This composable is deliberately a plain `Column` — it is hosted inside the
- * phone `EditorTabList` `LazyColumn` item and the desktop inspector scroll, so a
+ * phone sheet's single scroll region and the desktop inspector scroll, so a
  * nested vertical lazy list here would be unbounded. 手机端的品牌选择器是一层盖在
  * 画布上的覆盖层面板（由外壳绘制，舞台仍可见）；桌面右栏仍是内联品牌页。
  */
@@ -292,14 +292,13 @@ private fun LogoBreadcrumb() {
 /**
  * 用户 Logo 库面板：导入入口 + 本机全局库列表 + 选中 / 删除。
  *
- * 桌面右栏与手机底板的「我的 Logo」来源段共用这一份（`LogoPanes.kt` 的
- * [LogoSourceBody.User] 分支），不是两个选择器：两者都读
- * [UserLogoEnv.repository]，选中都写 `session.set(control, entry.designValue)`，
- * 所以导入与选中走的是同一条会话路径。
+ * 桌面右栏与手机底板共用这一份（`LogoPanes.kt` 的 [LogoPaneBody.UserLibrary] 正文），
+ * 不是第二个选择器：两者都读 [UserLogoEnv.repository]，选中都写
+ * `session.set(control, entry.designValue)`，所以导入与选中走的是同一条会话路径。
  *
- * [selectable] 只裁「选中」：库是全局的，列出 / 导入 / 删除与当前边框无关，
- * 面板永远不因此禁用或隐藏；边框画不出用户 Logo 时由调用点拦住写入并显示原因
- * （[USER_LOGO_UNSUPPORTED_ON_CARD]）。
+ * [selectable] 只裁「选中」：库本身是全局的，列出 / 导入 / 删除与当前边框无关。
+ * 入口那一下由面板拦（`userLogoActionDecision`：画不出用户 Logo 的边框上「我的 Logo」
+ * 动作置灰并给出原因），所以正常路径下面板不会以 `selectable = false` 打开。
  */
 @Composable
 internal fun UserLogoPanel(
