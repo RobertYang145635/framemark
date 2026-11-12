@@ -82,6 +82,15 @@ import kotlin.math.roundToInt
 internal const val FM_TOUCH_SLIDER_HEIGHT_DP = 40
 internal val FmTouchSliderHeight: Dp = FM_TOUCH_SLIDER_HEIGHT_DP.dp
 
+/**
+ * 手机密度档的一行：44 dp（WCAG 2.5.5 AAA 触控地板，与 `PhoneTouchTarget` 同值）。
+ *
+ * 2026-11 的密度过把「标签 + 轨道 + 数值」放进这一行，所以它既是行高也是触控高度；
+ * 任何一行都不许低于它来「挤进一页」。`inspector` 不依赖 `shell`，所以这里是同一个
+ * 地板在 inspector 侧的名字（策略层的 `PHONE_PAGE_MIN_TOUCH_DP` 与它同值）。
+ */
+internal val FmDenseRowHeight: Dp = 44.dp
+
 /** Touch thumb / track per report §9; desktop thumb / track per the same table. */
 internal val FmTouchThumbSize = 24.dp
 internal val FmTouchTrackThickness = 6.dp
@@ -330,8 +339,71 @@ internal fun FmTouchSliderRow(
     onReset: (() -> Unit)? = null,
     /** D1-3: fixed decimals in the drag bubble (watermark margins use 1). */
     decimalPlaces: Int = 3,
+    /**
+     * 手机密度档：标签 + 轨道 + 数值挤进一行 [FmDenseRowHeight]（2026-11）。水印页用
+     * 它把「边距两条」「不透明度 + 旋转」各压成一行；桌面右栏不传，保持 ± 与两行。
+     */
+    compact: Boolean = false,
+    /** compact 档里标签列宽：整行 88 dp，两条并排的格子传 56 dp。 */
+    labelWidth: Dp = 88.dp,
 ) {
     val modified = FmSliderMath.isModified(value, default)
+    if (compact) {
+        Row(
+            modifier = modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.widthIn(max = labelWidth),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (modified) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(FmPalette.primary))
+                    Spacer(Modifier.width(FmRhythm.inlineWide))
+                }
+                Column {
+                    Text(
+                        text = label,
+                        style = CuratedSliderLabel,
+                        color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (!enabled && !disabledReason.isNullOrBlank()) {
+                        Text(
+                            text = disabledReason,
+                            style = CuratedSliderHint.copy(fontSize = 10.sp, lineHeight = 13.sp),
+                            color = FmPalette.onSurfaceMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
+            FmSlider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = min..max,
+                modifier = Modifier.weight(1f),
+                enabled = enabled,
+                modified = modified,
+                defaultValue = default,
+                step = step,
+                onReset = onReset,
+                touch = true,
+                valueText = { FmUnits.formatNumber(it * scale, decimalPlaces) + (unit ?: "") },
+            )
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
+            Text(
+                text = FmUnits.formatNumber(value.coerceIn(min, max) * scale, decimalPlaces) + (unit ?: ""),
+                style = CuratedSliderLabel.copy(fontWeight = FontWeight.Medium),
+                color = FmPalette.onSurface,
+                maxLines = 1,
+            )
+        }
+        return
+    }
     Column(modifier = modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -704,6 +776,13 @@ internal fun CuratedSliderRow(
      * 所以滑杆下限直接抬到地板，不再留一段死区。
      */
     effectiveMin: Float? = null,
+    /**
+     * 手机密度档（2026-11）：标签 + 轨道 + 数值挤进**一行 [FmDenseRowHeight]**，
+     * 省掉的是标签行的高度，不是触控高度。桌面右栏不传，保持两行原样。
+     */
+    compact: Boolean = false,
+    /** compact 档里标签列宽：整行 88 dp，两条并排的格子传 56 dp。 */
+    labelWidth: androidx.compose.ui.unit.Dp = 88.dp,
 ) {
     val declaredMin = control.min ?: 0f
     val max = control.max ?: 1f
@@ -717,6 +796,66 @@ internal fun CuratedSliderRow(
     // WP-X3 §6: the curated slider is the desktop's control row, so it publishes the
     // same `FM_CONTROL_BOUNDS` / `FM_CONTROL_STATE` lines the old ControlItem did.
     curatedProbeState(control, value)
+    if (compact) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .heightIn(min = FmDenseRowHeight)
+                .probeBounds("control:${control.key}"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.widthIn(max = labelWidth),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (modified) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(FmPalette.primary))
+                    Spacer(Modifier.width(FmRhythm.inlineWide))
+                }
+                Column {
+                    Text(
+                        text = label,
+                        style = CuratedSliderLabel,
+                        color = if (enabled) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val sub = if (!enabled) disabledReason else hint
+                    if (!sub.isNullOrBlank()) {
+                        Text(
+                            text = sub,
+                            style = CuratedSliderHint.copy(fontSize = 10.sp, lineHeight = 13.sp),
+                            color = FmPalette.onSurfaceMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
+            FmSlider(
+                value = value,
+                onValueChange = { session.set(control, it) },
+                valueRange = min..max,
+                step = control.step,
+                defaultValue = default,
+                onReset = if (default != null) ({ session.resetControl(control) }) else null,
+                modified = modified,
+                enabled = enabled,
+                touch = true,
+                valueText = { FmUnits.formatNumber(it * scale, decimalPlaces) + (unit ?: "") },
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
+            Text(
+                text = FmUnits.formatNumber(value * scale, decimalPlaces) + (unit ?: ""),
+                style = CuratedSliderLabel.copy(fontWeight = FontWeight.Medium),
+                color = FmPalette.onSurface,
+                maxLines = 1,
+            )
+        }
+        return
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()

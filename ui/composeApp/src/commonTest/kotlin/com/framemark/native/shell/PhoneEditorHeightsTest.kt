@@ -125,8 +125,8 @@ class PhoneEditorHeightsTest {
 
     @Test
     fun non_border_tools_open_at_their_content_height() {
-        // 样式页最大的一组是「底部留白」92 dp（手机滑杆行），文字页是文字框选择器
-        // 134 dp，Logo 页是两条 curator 滑杆 148 dp。内容决定高度 → 164 / 212 / 226。
+        // 密度过之后：样式页两页（最高 137）→ 209；文字页一页（148）→ 220；
+        // Logo 一整页（217）→ 303。三页 / 两页 / 六页的旧数字全部作废。
         val style = computePhoneEditorHeights(
             844f, 1f, false, EditorTool.Params, false,
             controls = PhoneTestControls.styleControls(),
@@ -143,19 +143,20 @@ class PhoneEditorHeightsTest {
         assertFalse(style.fullPage)
         assertFalse(text.fullPage)
         assertFalse(logo.fullPage)
-        assertEquals(164f, style.sheet, 0.01f)
-        assertEquals(212f, text.sheet, 0.01f)
-        assertEquals(226f, logo.sheet, 0.01f)
-        // 都低于旧的固定 34 %（287 dp）：底板给画布让出了 61–123 dp。
+        assertEquals(209f, style.sheet, 0.01f)
+        assertEquals(220f, text.sheet, 0.01f)
+        assertEquals(303f, logo.sheet, 0.01f)
+        // 样式与文字都低于旧的固定 34 %（287 dp）；Logo 这一页现在是**一整页**（217 dp
+        // 的内容），所以它要 303 dp 的底板 —— 仍然低于舞台 50 % 地板给到的上限。
         assertTrue(style.sheet < 844f * 0.34f, "style=${style.sheet}")
         assertTrue(text.sheet < 844f * 0.34f, "text=${text.sheet}")
-        assertTrue(logo.sheet < 844f * 0.34f, "logo=${logo.sheet}")
-        // 矮页比高页矮，高页比矮页高 —— 「两组滑杆的页开得矮，六项控件的页可以开高」。
+        assertTrue(logo.sheet <= 844f - 52f - 62f - 844f * 0.5f + 0.01f, "logo=${logo.sheet}")
+        // 矮页比高页矮，高页比矮页高 ——「内容决定高度」照旧。
         assertTrue(style.sheet < text.sheet, "style=${style.sheet} text=${text.sheet}")
         assertTrue(text.sheet < logo.sheet, "text=${text.sheet} logo=${logo.sheet}")
         // 舞台因此比 50 % 地板给出的更多。
         assertTrue(style.stage > 844f * 0.5f, "style stage=${style.stage}")
-        assertTrue(logo.stage > 844f * 0.5f, "logo stage=${logo.stage}")
+        assertTrue(logo.stage >= 844f * 0.5f - 0.01f, "logo stage=${logo.stage}")
         // 每一页在它自己的高度里都放得下（没有任何一页需要竖向滚动）。
         listOf(
             EditorTool.Params to PhoneTestControls.styleControls(),
@@ -177,8 +178,8 @@ class PhoneEditorHeightsTest {
 
     @Test
     fun photo_strip_only_costs_height_when_it_is_open() {
-        // 照片条仍然只在打开时占 64 dp；因为底板高度由内容决定，它从舞台那一侧
-        // 出现（内容矮的页根本不用让底板变矮），舞台 50 % 地板照旧。
+        // 照片条仍然只在打开时占 64 dp；因为底板高度由内容决定，它从舞台那一侧出现。
+        // 样式页在 800 与 844 的许可都装下同一组两页，所以底板不变。
         val controls = PhoneTestControls.styleControls()
         val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = false, controls = controls)
         val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Params, photosOpen = true, controls = controls)

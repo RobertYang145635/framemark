@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -165,17 +166,19 @@ internal fun AnchorCellsGrid(
 /**
  * The two blocks a vendor 水印位置 control splits into on the phone sheet.
  *
- * The whole control (label + 3×3 grid + 按规格 chip + 说明) is 254 dp — taller than
- * the 150 dp a tool page may use ([com.framemark.native.shell.PHONE_PAGE_GROUP_BUDGET_DP]).
- * Splitting it keeps every touch target: the grid page is the grid alone (132 dp),
- * the second page carries the label, the chip and the 说明 (110 dp). Nothing is
- * shrunk, and the phone sheet never needs a vertical scroll for it.
+ * The whole control (label + 3×3 grid + 按规格 chip + 说明) is 218 dp at the old
+ * sizing — taller than the 150 dp the tightest carried window leaves a page
+ * ([com.framemark.native.shell.PHONE_PAGE_GROUP_BUDGET_DP]). Splitting it keeps every
+ * touch target: the grid page is the grid alone (132 dp), the second page carries the
+ * label, the chip and one guidance line (**66 dp**: the label / chip share one
+ * 44 dp row, the sentence 22). Nothing is shrunk, and the phone sheet never needs a
+ * vertical scroll — on the roomier windows the 210 dp pair fits **one** page again.
  */
 enum class StockAnchorPart {
     /** The 3×3 cells only (40 dp each, unchanged). */
     Grid,
 
-    /** Label + 按规格 chip + the 说明 line. */
+    /** Label + 当前值 + 按规格 chip on one 44 dp row, then one line of guidance. */
     Footer,
 }
 
@@ -204,12 +207,46 @@ internal fun StockAnchorBlock(
             descriptionOf = { "水印位置：${StockAnchorCellLabels[it]}" },
         )
         StockAnchorPart.Footer -> Column(modifier = Modifier.fillMaxWidth()) {
-            AnchorHeaderRow(control = control, index = index, dense = dense)
-            Spacer(Modifier.height(6.dp))
-            AnchorVendorChip(index = index, dense = dense) {
-                session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
+            if (dense) {
+                // 2026-11 密度过：标签 / 当前值 / 按规格 挤进一行 44 dp，说明只留一句。
+                Row(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = control.label.ifBlank { "水印位置" },
+                        style = LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 20.sp),
+                        color = FmPalette.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = index?.let { StockAnchorCellLabels[it] } ?: "按规格",
+                        style = LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 18.sp),
+                        color = FmPalette.onSurfaceSecondary,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    AnchorVendorChip(index = index, dense = true, inline = true) {
+                        session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
+                    }
+                }
+                Text(
+                    text = "点任意一格移动水印；下面的微调仍然生效。",
+                    style = LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+                    color = FmPalette.onSurfaceMuted,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                )
+            } else {
+                AnchorHeaderRow(control = control, index = index, dense = dense)
+                Spacer(Modifier.height(6.dp))
+                AnchorVendorChip(index = index, dense = dense) {
+                    session.set(control, StockWatermarkControls.VENDOR_ANCHOR)
+                }
+                AnchorNote(dense = dense)
             }
-            AnchorNote(dense = dense)
             if (showReset && session.isModified(control)) {
                 AnchorReset(control = control, session = session, dense = dense, paddingTop = 6.dp)
             }
@@ -247,9 +284,19 @@ private fun AnchorHeaderRow(control: InspectorControl, index: Int?, dense: Boole
     }
 }
 
-/** The wide 「按规格」 chip that writes [StockWatermarkControls.VENDOR_ANCHOR]. */
+/**
+ * The wide 「按规格」 chip that writes [StockWatermarkControls.VENDOR_ANCHOR].
+ *
+ * [inline] 是手机密度档的一行形态（2026-11）：宽度包住文字、高度 44 dp，和标签一起
+ * 排在同一行里；桌面与整块形态仍然是通栏那条。
+ */
 @Composable
-private fun AnchorVendorChip(index: Int?, dense: Boolean, onPickVendor: () -> Unit) {
+private fun AnchorVendorChip(
+    index: Int?,
+    dense: Boolean,
+    inline: Boolean = false,
+    onPickVendor: () -> Unit,
+) {
     val valueStyle = if (dense) {
         LocalTextStyle.current.copy(fontSize = 14.sp, lineHeight = 18.sp)
     } else {
@@ -257,8 +304,13 @@ private fun AnchorVendorChip(index: Int?, dense: Boolean, onPickVendor: () -> Un
     }
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = if (dense) 40.dp else 32.dp)
+            .then(
+                if (inline) {
+                    Modifier.height(FmDenseRowHeight)
+                } else {
+                    Modifier.fillMaxWidth().heightIn(min = if (dense) 40.dp else 32.dp)
+                },
+            )
             .clip(RoundedCornerShape(FmRadii.chip))
             .background(if (index == null) FmPalette.primary else Color.Transparent)
             .border(
@@ -270,7 +322,8 @@ private fun AnchorVendorChip(index: Int?, dense: Boolean, onPickVendor: () -> Un
             .semantics {
                 contentDescription = "水印位置：按规格"
                 selected = index == null
-            },
+            }
+            .padding(horizontal = if (inline) 14.dp else 0.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

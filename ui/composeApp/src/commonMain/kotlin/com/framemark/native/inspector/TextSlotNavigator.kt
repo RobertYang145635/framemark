@@ -444,7 +444,7 @@ internal fun TextSlotSelector(
                 },
                 onSelect = { entry -> state.selectedKey = entry.navKey },
             )
-            Spacer(Modifier.height(if (dense) FmRhythm.rowLoose else FmRhythm.row))
+            Spacer(Modifier.height(if (dense) FmRhythm.inlineWide else FmRhythm.row))
         }
         TextSlotEditCard(
             entry = selected,
@@ -638,10 +638,157 @@ private fun TextSlotEditCard(
         slot.hidden && (session.value(offControl) as? Boolean != false)
     val override = textControl?.let { (session.value(it) as? String).orEmpty() }.orEmpty()
     var text by remember(textControl?.key, entry.navKey) { mutableStateOf(override) }
+    if (dense) {
+        // 2026-11 密度过：标签 / 输入 / 眼睛（与「已改」时的恢复）挤进**一行 44 dp**。
+        // 原来标签行 + 输入行是 72 dp；文字页因此从「选择器一页 + 大小一页」变成一页。
+        // 触控目标没有变小：眼睛与恢复都是 44 × 44，输入框 34 高在 44 的行里。
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (modified) {
+                Box(
+                    Modifier
+                        .padding(end = 4.dp)
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(FmPalette.primary),
+                )
+            }
+            Column(Modifier.widthIn(max = 96.dp)) {
+                Text(
+                    text = entry.label,
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurfaceMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!entry.role.isNullOrBlank()) {
+                    Text(
+                        text = entry.role,
+                        style = FmType.labelSmall.copy(fontSize = 10.5.sp, lineHeight = 13.sp),
+                        color = FmPalette.onSurfaceFaint,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(Modifier.width(FmRhythm.inlineLoose))
+            if (textControl == null) {
+                Text(
+                    text = ExifGapNotice.rowSummary(slot.text, slot.raw),
+                    style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
+                    color = FmPalette.onSurfaceSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 34.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(FmPalette.surfaceMuted)
+                        .semantics { contentDescription = "${entry.fullLabel}，只读" }
+                        .padding(
+                            horizontal = FmRhythm.inlineLoose,
+                            vertical = FmRhythm.inlineLoose,
+                        ),
+                )
+            } else {
+                BasicTextField(
+                    value = text,
+                    onValueChange = { next ->
+                        text = next
+                        if (next == raw) session.resetControl(textControl) else session.set(textControl, next)
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp,
+                        color = if (hidden) FmPalette.onSurfaceFaint else FmPalette.onSurface,
+                        textDecoration = if (hidden) TextDecoration.LineThrough else null,
+                    ),
+                    cursorBrush = SolidColor(FmPalette.primary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 34.dp)
+                        .clip(RoundedCornerShape(5.dp))
+                        .background(FmPalette.surface)
+                        .semantics { contentDescription = entry.fullLabel }
+                        .padding(
+                            horizontal = FmRhythm.inlineLoose,
+                            vertical = FmRhythm.inlineLoose,
+                        ),
+                    decorationBox = { inner ->
+                        Box {
+                            if (text.isEmpty()) {
+                                Text(
+                                    text = raw.ifBlank { "（空）" },
+                                    style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
+                                    color = FmPalette.onSurfaceFaint,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            inner()
+                        }
+                    },
+                )
+            }
+            if (entry.readonly) {
+                Text(
+                    text = "只读",
+                    style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp),
+                    color = FmPalette.onSurfaceFaint,
+                    modifier = Modifier.padding(start = FmRhythm.inlineLoose),
+                )
+            } else if (textControl != null && modified) {
+                Box(
+                    modifier = Modifier
+                        .size(FmDenseRowHeight)
+                        .clip(RoundedCornerShape(FmRadii.chip))
+                        .clickable(role = Role.Button) {
+                            session.resetControl(textControl)
+                            text = ""
+                        }
+                        .semantics { contentDescription = "恢复原文" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "↺",
+                        style = TextStyle(fontSize = 15.sp, lineHeight = 18.sp),
+                        color = FmPalette.primaryStrong,
+                    )
+                }
+            }
+            when {
+                (showControl != null || offControl != null) && !controlledElsewhere ->
+                    TextSlotEye(
+                        visible = !hidden,
+                        label = entry.label,
+                        dense = true,
+                        onToggle = {
+                            when {
+                                showControl != null ->
+                                    session.set(showControl, !(session.value(showControl) as? Boolean ?: true))
+                                offControl != null ->
+                                    session.set(offControl, !(session.value(offControl) as? Boolean ?: true))
+                            }
+                        },
+                    )
+                controlledElsewhere -> Text(
+                    text = "全局控制",
+                    style = TextStyle(fontSize = 10.5.sp, lineHeight = 13.sp),
+                    color = FmPalette.onSurfaceFaint,
+                    modifier = Modifier.padding(start = FmRhythm.inlineLoose),
+                )
+            }
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = if (dense) FmRhythm.row else FmRhythm.inlineLoose),
+            .padding(vertical = FmRhythm.inlineLoose),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(
@@ -842,11 +989,17 @@ private fun TextSlotDiagram(
 
 /** `.trow .eye` — 15 px 眼睛；隐藏态加一道斜线，语义上是开关。 */
 @Composable
-private fun TextSlotEye(visible: Boolean, label: String, onToggle: () -> Unit) {
+private fun TextSlotEye(
+    visible: Boolean,
+    label: String,
+    onToggle: () -> Unit,
+    /** 手机密度档：44 × 44 的触控格（桌面 28）。 */
+    dense: Boolean = false,
+) {
     val ink = if (visible) FmPalette.onSurfaceSecondary else FmPalette.onSurfaceFaint
     Box(
         modifier = Modifier
-            .size(28.dp)
+            .size(if (dense) FmDenseRowHeight else 28.dp)
             .clip(RoundedCornerShape(FmRadii.chip))
             .clickable(role = Role.Switch, onClick = onToggle)
             .semantics {

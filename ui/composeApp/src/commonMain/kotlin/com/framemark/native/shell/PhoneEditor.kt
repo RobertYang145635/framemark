@@ -393,11 +393,14 @@ fun PhoneEditorScreen(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val imeVisible = WindowInsets.ime.getBottom(density) > 0
         val small = maxWidth < 380.dp
+        // 窗口高度取一次：`maxHeight` 是 BoxWithConstraintsScope 的成员，进到更深的作用域
+        // 里就不能隐式读了（底板预算与分页预算读的是同一个数）。
+        val windowHeightDp = maxHeight.value
         // 这一页自己的控件（`InspectorTabs` 已经把每个控件分到恰好一页）：底板开多高
         // 由它们的内容决定，不再是一个固定的 34 %（`PhonePageLayout.kt`）。
         val pageControls = phoneToolTab(tool, tabModel)?.let(::phonePageControls).orEmpty()
         val budget = computePhoneEditorHeights(
-            availableHeightDp = maxHeight.value,
+            availableHeightDp = windowHeightDp,
             fontScale = density.fontScale,
             imeVisible = imeVisible,
             tool = tool,
@@ -640,6 +643,14 @@ fun PhoneEditorScreen(
                 PhoneSheetHost(
                     fullParameterPage = fullParameterPage,
                     sheetHeight = sheetHeight,
+                    // 一页能吃的净高：**这个窗口的舞台地板许可**（整块底板减 chrome 与
+                    // 公共区），与政策给这一页定高度时用的是同一个数。窗口更高时同一张卡
+                    // 可能少一页 —— 这就是「先加密、再分页」。
+                    pageBudgetDp = if (fullParameterPage) {
+                        pageBudgetForLevel(windowHeightDp, density.fontScale)
+                    } else {
+                        pageAllowanceForWindow(windowHeightDp, photosOpen, density.fontScale)
+                    },
                     snapHeights = snapHeights,
                     sheetLevel = sheetLevel,
                     onSheetLevelChange = { sheetLevel = it },

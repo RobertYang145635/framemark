@@ -57,8 +57,9 @@ private const val WATERMARK_ROTATION_RANGE = 45f
  *
  * **[part]**：手机底板按「一段一块」横滑，所以同一份内容可以被要求只画某一段
  * （[WatermarkPanePart]）。传 `null` = 桌面右栏的整页（分组 + 发线，行为与改前完全
- * 一致）；传某一段 = 手机的一页，裸块、无组头。每一段都远低于
- * `PHONE_PAGE_GROUP_BUDGET_DP`（最大的是九宫格 132 dp），参数区因此不需要竖向滚动。
+ * 一致）；传某一段 = 手机的一页，裸块、无组头。每一段都是一行 44 dp（九宫格 132），
+ * 所以两段能并成一页（图层+位置），三段能并成一页（边距+宽度+外观）—— 参数区因此
+ * 永远不需要竖向滚动，页数也只有 2–3 页。
  */
 @Composable
 fun WatermarkPane(
@@ -166,6 +167,7 @@ fun WatermarkPane(
                 onUpload = onUpload,
                 onClear = onClear,
                 uploadLabel = uploadLabel,
+                dense = dense,
             )
             WatermarkPanePart.Position -> WatermarkPositionBlock(
                 spec = spec,
@@ -188,20 +190,23 @@ fun WatermarkPane(
                 dense = dense,
                 onWidth = onWidth,
             )
-            WatermarkPanePart.Opacity -> WatermarkOpacityBlock(
+            WatermarkPanePart.Appearance -> WatermarkAppearanceBlock(
                 spec = spec,
                 dense = dense,
                 onOpacity = onOpacity,
+                onRotation = onRotation,
             )
-            WatermarkPanePart.Rotation -> if (onRotation != null) {
-                WatermarkRotationBlock(spec = spec, dense = dense, onRotation = onRotation)
-                CuratedSubNote("也可以直接在照片上拖动；拖动时会框出这一格能到的范围。")
-            }
         }
     }
 }
 
-/** 水印页的分段（手机一页一段；桌面整页一次画完）。 */
+/**
+ * 水印页的分段（手机一页一段；桌面整页一次画完）。
+ *
+ * 2026-11 密度过：`Opacity` 与 `Rotation` 合成一段 [Appearance]，因为手机把两条滑杆
+ * 放在**一行**里（各占一半）；旋转下面那句「也可以直接在照片上拖动」不再单占一行 ——
+ * 图层卡片上已经有「透明 PNG · 可拖动位置」，那就是这一页的引导语。
+ */
 enum class WatermarkPanePart {
     /** 还没有水印图层：说明 + 上传入口。 */
     Empty,
@@ -212,17 +217,14 @@ enum class WatermarkPanePart {
     /** 九宫格位置。 */
     Position,
 
-    /** 当前格的可改边距（居中格是固定说明）。 */
+    /** 当前格的可改边距（两条并排；居中格 / 没有空间时是两格「固定」）。 */
     Margins,
 
-    /** 宽度（含本格上限说明）。 */
+    /** 宽度（一格，带数值；上限就是滑杆的上限，不再另写一行）。 */
     Width,
 
-    /** 不透明度。 */
-    Opacity,
-
-    /** 旋转 + 拖动说明。 */
-    Rotation,
+    /** 不透明度 + 旋转（两条并排一行）。 */
+    Appearance,
 }
 
 /** 空态：说明 + primary「添加图片水印」。 */
@@ -255,20 +257,27 @@ private fun WatermarkEmptyBlock(
     }
 }
 
-/** 图层卡片：48 × 36 的 PNG 板 + 名称 / 一句说明 + 两个图标动作。 */
+/**
+ * 图层卡片：48 × 36 的 PNG 板 + 名称 / 一句说明 + 两个图标动作。整行 44 dp。
+ *
+ * [dense]（手机）下两个图标动作也是 44 × 44 的触控格、卡片上下不再留 8 dp，
+ * 于是这一块正好是一行 [FmDenseRowHeight]，而动作的可点面从 26 长到了 44。
+ */
 @Composable
 private fun WatermarkLayerBlock(
     assetName: String?,
     onUpload: (() -> Unit)?,
     onClear: (() -> Unit)?,
     uploadLabel: String,
+    dense: Boolean = false,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(FmRadii.tile))
             .background(FmPalette.surfaceMuted)
-            .padding(8.dp),
+            // 2026-11 密度过：上下 8 → 0，整块就是 36 + 图标格里最高的那个（44）= 44 dp。
+            .padding(horizontal = 8.dp, vertical = if (dense) 0.dp else 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -302,10 +311,10 @@ private fun WatermarkLayerBlock(
             )
         }
         if (onUpload != null) {
-            WatermarkIconAction("↻", uploadLabel, FmPalette.onSurfaceMuted, onUpload)
+            WatermarkIconAction("↻", uploadLabel, FmPalette.onSurfaceMuted, onUpload, dense = dense)
         }
         if (onClear != null) {
-            WatermarkIconAction("🗑", "移除水印", FmPalette.error, onClear)
+            WatermarkIconAction("🗑", "移除水印", FmPalette.error, onClear, dense = dense)
         }
     }
 }
@@ -347,12 +356,40 @@ private fun WatermarkMarginsBlock(
     onPosition: (dx: Float, dy: Float) -> Unit,
 ) {
     val legacyOffset = legacyCentredOffset(spec)
-    if (legacyOffset != null) {
+    if (!dense && legacyOffset != null) {
         Text(
             text = "旧预设的居中方向带有偏移；这里按 0 显示，改动后才写入新值。",
             style = FmType.labelSmall,
             color = FmPalette.onSurfaceMuted,
         )
+    }
+    if (dense) {
+        // 两条并排一行（2026-11 密度过）：两格各自仍是 44 dp 的一行，并排只省掉另一行。
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
+        ) {
+            Box(Modifier.weight(1f)) {
+                MarginSlider(
+                    spec = spec,
+                    photoAspect = photoAspect,
+                    edge = zone.horizontalEdge,
+                    onPosition = onPosition,
+                    dense = true,
+                )
+            }
+            Box(Modifier.weight(1f)) {
+                MarginSlider(
+                    spec = spec,
+                    photoAspect = photoAspect,
+                    edge = zone.verticalEdge,
+                    onPosition = onPosition,
+                    dense = true,
+                )
+            }
+        }
+        return
     }
     if (zone.pinned) {
         Text(
@@ -366,19 +403,19 @@ private fun WatermarkMarginsBlock(
             photoAspect = photoAspect,
             edge = zone.horizontalEdge,
             onPosition = onPosition,
-            dense = dense,
+            dense = false,
         )
         MarginSlider(
             spec = spec,
             photoAspect = photoAspect,
             edge = zone.verticalEdge,
             onPosition = onPosition,
-            dense = dense,
+            dense = false,
         )
     }
 }
 
-/** 宽度：按格上限收窄，并在下面写清此格上限。 */
+/** 宽度：按格上限收窄；手机上上限就是滑杆的上限（值框里的 % 已经在说同一件事）。 */
 @Composable
 private fun WatermarkWidthBlock(
     spec: WatermarkSpec,
@@ -390,6 +427,8 @@ private fun WatermarkWidthBlock(
     val cap = zone.widthCap
     val widthPercent = spec.width.coerceIn(0.05f, cap) * 100f
     if (dense) {
+        // 2026-11 密度过：一行 44 dp；原来那句「此格宽度上限 47%」不再占一行 ——
+        // 滑杆的上限就是它，拖到头看得见。
         FmTouchSliderRow(
             label = "宽度",
             value = widthPercent,
@@ -399,24 +438,61 @@ private fun WatermarkWidthBlock(
             default = WatermarkZones.DEFAULT_WIDTH * 100f,
             unit = "%",
             onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
+            compact = true,
         )
-    } else {
-        FmDesktopSliderRow(
-            label = "宽度",
-            value = widthPercent,
-            min = 5f,
-            max = cap * 100f,
-            step = 0.5f,
-            default = WatermarkZones.DEFAULT_WIDTH * 100f,
-            unit = "%",
-            onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
-        )
+        return
     }
+    FmDesktopSliderRow(
+        label = "宽度",
+        value = widthPercent,
+        min = 5f,
+        max = cap * 100f,
+        step = 0.5f,
+        default = WatermarkZones.DEFAULT_WIDTH * 100f,
+        unit = "%",
+        onValueChange = { onWidth((it / 100f).coerceIn(0.05f, cap)) },
+    )
     Text(
         text = "此格宽度上限 ${(cap * 100).toInt()}%",
         style = FmType.labelSmall,
         color = FmPalette.onSurfaceMuted,
     )
+}
+
+/**
+ * 外观：不透明度 + 旋转**并排一行**（2026-11 密度过）。
+ *
+ * 旋转的编辑区间仍是 ±45°；原来单独占一行的那句「也可以直接在照片上拖动」不再出现
+ * —— 图层卡片上的「透明 PNG · 可拖动位置」已经是这一页的引导语（每页一句）。
+ */
+@Composable
+private fun WatermarkAppearanceBlock(
+    spec: WatermarkSpec,
+    dense: Boolean,
+    onOpacity: (Float) -> Unit,
+    onRotation: ((Float) -> Unit)?,
+) {
+    if (dense) {
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
+        ) {
+            Box(Modifier.weight(1f)) {
+                WatermarkOpacityBlock(spec = spec, dense = true, onOpacity = onOpacity)
+            }
+            if (onRotation != null) {
+                Box(Modifier.weight(1f)) {
+                    WatermarkRotationBlock(spec = spec, dense = true, onRotation = onRotation)
+                }
+            }
+        }
+        return
+    }
+    WatermarkOpacityBlock(spec = spec, dense = false, onOpacity = onOpacity)
+    if (onRotation != null) {
+        WatermarkRotationBlock(spec = spec, dense = false, onRotation = onRotation)
+    }
 }
 
 /** 不透明度。 */
@@ -437,6 +513,8 @@ private fun WatermarkOpacityBlock(
             default = WatermarkZones.DEFAULT_OPACITY * 100f,
             unit = "%",
             onValueChange = { onOpacity((it / 100f).coerceIn(0.1f, 1f)) },
+            compact = true,
+            labelWidth = 64.dp,
         )
     } else {
         FmDesktopSliderRow(
@@ -475,6 +553,8 @@ private fun WatermarkRotationBlock(
             unit = "°",
             onValueChange = onChange,
             decimalPlaces = 0,
+            compact = true,
+            labelWidth = 56.dp,
         )
     } else {
         FmDesktopSliderRow(
@@ -491,17 +571,18 @@ private fun WatermarkRotationBlock(
     }
 }
 
-/** `.ibtn.sm` in the layer card — a 26 dp square glyph action. */
+/** `.ibtn.sm` in the layer card — a 26 dp square glyph action (44 dp on the phone). */
 @Composable
 private fun WatermarkIconAction(
     glyph: String,
     description: String,
     tint: Color,
     onClick: () -> Unit,
+    dense: Boolean = false,
 ) {
     Box(
         modifier = Modifier
-            .size(26.dp)
+            .size(if (dense) FmDenseRowHeight else 26.dp)
             .clip(RoundedCornerShape(FmRadii.chip))
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description },
@@ -527,7 +608,14 @@ private fun GhostAction(text: String, onClick: () -> Unit) {
     }
 }
 
-/** One margin slider; hidden when the cell has no editable axis on this edge. */
+/**
+ * One margin slider; a dense cell with its own 「固定」 line when the cell has no
+ * editable axis on this edge.
+ *
+ * 2026-11 密度过：手机那一档（[dense]）没有自己的标签行，整格就是一行
+ * [FmDenseRowHeight]；边缘不可调时不再是页面里的一行说明，而是**同一格的置灰态**
+ * （页高因此不随格子变化）。
+ */
 @Composable
 private fun MarginSlider(
     spec: WatermarkSpec,
@@ -536,7 +624,10 @@ private fun MarginSlider(
     onPosition: (Float, Float) -> Unit,
     dense: Boolean,
 ) {
-    if (edge == null) return
+    if (edge == null) {
+        if (dense) DenseFixedCell(label = "边距", value = "固定")
+        return
+    }
     val maxPct = WatermarkZones.maxMarginPct(
         anchor = spec.anchor,
         width = spec.width,
@@ -552,11 +643,15 @@ private fun MarginSlider(
         WatermarkEdge.Bottom -> "距下边"
     }
     if (maxPct <= 0.05f) {
-        Text(
-            text = "$label：此格已没有可调空间（水印已占满这一格）。",
-            style = FmType.labelSmall,
-            color = FmPalette.onSurfaceMuted,
-        )
+        if (dense) {
+            DenseFixedCell(label = label, value = "无空间")
+        } else {
+            Text(
+                text = "$label：此格已没有可调空间（水印已占满这一格）。",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+        }
         return
     }
     // Default margin in % of width, both axes per report §9.1.
@@ -583,6 +678,8 @@ private fun MarginSlider(
             unit = "%",
             decimalPlaces = 1,
             onValueChange = onChange,
+            compact = true,
+            labelWidth = 52.dp,
         )
     } else {
         FmDesktopSliderRow(
@@ -595,6 +692,30 @@ private fun MarginSlider(
             unit = "%",
             decimalPlaces = 1,
             onValueChange = onChange,
+        )
+    }
+}
+
+/** 不可调的边距格：一行 [FmDenseRowHeight]，标签 + 原因，不另占页高。 */
+@Composable
+private fun DenseFixedCell(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = CuratedSliderLabel,
+            color = FmPalette.onSurfaceFaint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            style = CuratedSliderHint,
+            color = FmPalette.onSurfaceMuted,
+            maxLines = 1,
         )
     }
 }

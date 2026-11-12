@@ -86,17 +86,22 @@ import com.framemark.native.workflow.isUsableStaticTextControl
  *    desktop right rail uses — no second copy here);
  *  - 水印: the watermark pane, section by section.
  *
- * **不滚（owner 2026-11）**: 这一页里**没有竖向 scroll**。`PhonePageLayout.pageGroups`
- * 把本页的控件分成若干「一组一页」，每组的高都算在 `PHONE_PAGE_GROUP_BUDGET_DP` 以内，
- * 所以四页的每个控件都在默认底板的可见范围里；组多了就横滑（把手行右端的小圆点
- * 标出第几组 / 共几组），参数区永远不出现滚动条。
+ * **不滚（owner 2026-11，第二版）**: 这一页里**没有竖向 scroll**。
+ * `PhonePageLayout.pageGroups` 把本页的行按**这个窗口的许可**（舞台 50 % 地板留给底板
+ * 的整块高度减 chrome 与公共区）分成若干「一页」，所以：
+ *
+ *  - **先加密**：开关 / 滑杆 / 分段都是一行 44 dp（标签与控件并排），两条滑杆并排也
+ *    只占一行；色板一行六列；每页最多一句引导语；
+ *  - **再分页**：内容仍然超过许可时才分页，并且切在语义边界上（水印「图层+位置 |
+ *    边距+宽度+外观」），页数因此从上一版的 4 / 2 / 3 / 6 降到 2 / 1 / ≤2 / ≤3；
+ *  - 组多了才横滑（把手行右端的小圆点标出第几页 / 共几页），参数区永远没有滚动条。
  *
  *  - **公共区** ([PhoneDesignSummary]) — pinned above the blocks, identical on all four
  *    pages, never scrolls and never moves when the tab changes: the export size of
  *    the selected design. No declared control can join it: `InspectorTabs.kt`'s
  *    `inspectorPageOf` partitions a card's controls, so every control belongs to
  *    exactly one page and hoisting one would mean duplicating a page's binding.
- *  - **工具区** — the pager: one block per page. The page header (title / 已改 N /
+ *  - **工具区** — the pager: one page at a time. The page header (title / 已改 N /
  *    恢复默认) is the host's `PhoneSheetHead`, pinned above both zones in the sheet;
  *    in the constrained full-page branch the 公共区 is the pinned context.
  *  - [footer] — the page's primary actions, pinned *under* the pager.
@@ -134,8 +139,8 @@ fun PhoneParameterPage(
     photoWidthPx: Int = 0,
     photoHeightPx: Int = 0,
     /**
-     * 本页的分组（`pageGroups` 的结果）：每一组一页，页内不再竖向滚动。
-     * 空列表 = 单页（没有可调内容时也至少有一个空态组，见 `pageBlocks`）。
+     * 本页的分页（`pageGroups(...)` 的结果）：每一页一屏，页内不再竖向滚动。
+     * 空列表 = 单页（没有可调内容时也至少有一个空态页，见 `pageBlocks`）。
      */
     groups: List<List<String>> = emptyList(),
     /** 当前组下标（外壳持有：把手行的小圆点也读它）。 */
@@ -274,11 +279,11 @@ fun PhoneParameterPage(
 }
 
 /**
- * 一组的框：**只有** 18 dp 左右内边距 + 4 / 4 上下内边距，没有组头、没有卡片底。
+ * 一页的框：**只有** 18 dp 左右内边距 + 4 / 4 上下内边距，没有组头、没有卡片底。
  *
- * 分页后组头（`PhoneGroup` 的 16 + 22 + 8 + 14 = 60 dp）就是「一组 150 dp 只放得下
+ * 分页后组头（`PhoneGroup` 的 16 + 22 + 8 + 14 = 60 dp）就是「一页 150 dp 只放得下
  * 一个开关」的那 60 dp，所以组名让位给内容本身：每个控件都自带标签（滑杆标题、分段
- * 选项、色板名字），组与组的边界由把手行的小圆点和横滑反馈表达。
+ * 选项、色板名字），页与页的边界由把手行的小圆点和横滑反馈表达。
  */
 @Composable
 private fun PhonePageBlockFrame(content: @Composable ColumnScope.() -> Unit) {
@@ -457,6 +462,7 @@ private fun ColumnScope.PhoneStyleGroup(
                     } else {
                         photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
                     },
+                    compact = true,
                 )
             }
             key == PhonePageKeys.ANCHOR_GRID && anchor != null ->
@@ -538,6 +544,7 @@ private fun ColumnScope.PhoneTextGroup(
                 control = scale,
                 session = session,
                 hint = textScaleHint(textEntries.count { !it.readonly }),
+                compact = true,
             )
             else -> controls.firstOrNull { it.key == key }?.let { PhoneControlRow(control = it, session = session) }
         }
@@ -608,8 +615,7 @@ private fun ColumnScope.PhoneWatermarkGroup(
             PhonePageKeys.WATERMARK_POSITION -> WatermarkPanePart.Position
             PhonePageKeys.WATERMARK_MARGINS -> WatermarkPanePart.Margins
             PhonePageKeys.WATERMARK_WIDTH -> WatermarkPanePart.Width
-            PhonePageKeys.WATERMARK_OPACITY -> WatermarkPanePart.Opacity
-            PhonePageKeys.WATERMARK_ROTATION -> WatermarkPanePart.Rotation
+            PhonePageKeys.WATERMARK_APPEARANCE -> WatermarkPanePart.Appearance
             else -> null
         }
         if (part != null) watermarkContent?.invoke(part)
@@ -632,7 +638,7 @@ private fun PhoneEmptyBlock(page: InspectorPage) {
     )
 }
 
-/** One declared control in the showcase's touch chrome. */
+/** One declared control in the showcase's touch chrome (densified 44 dp rows). */
 @Composable
 private fun PhoneControlRow(control: InspectorControl, session: DesignSession) {
     when (control.type) {
@@ -641,7 +647,8 @@ private fun PhoneControlRow(control: InspectorControl, session: DesignSession) {
             checked = session.value(control) as? Boolean ?: false,
             onCheckedChange = { session.set(control, it) },
         )
-        ControlType.Slider -> PhoneControlSlider(control = control, session = session)
+        // 2026-11 密度过：滑杆一行（标签 + 轨道 + 数值）。
+        ControlType.Slider -> PhoneControlSlider(control = control, session = session, compact = true)
         ControlType.Color -> PhoneSwatchRow(
             options = control.options.map { it.value to it.display },
             selected = session.value(control)?.toString() ?: "",
@@ -681,6 +688,10 @@ private fun PhoneControlSlider(
     disabledReason: String? = null,
     /** 生效下限（例如底部留白的短边 8.5% 地板，AU2 A-07）。 */
     effectiveMin: Float? = null,
+    /** 密度档：标签 + 轨道 + 数值一行 44 dp（2026-11）。 */
+    compact: Boolean = false,
+    /** compact 档里标签列宽：整行 88 dp，两条并排的格子传 56 dp。 */
+    labelWidth: androidx.compose.ui.unit.Dp = 88.dp,
 ) {
     val raw = (session.value(control) as? Number)?.toFloat()
         ?: (control.initial as? ControlValue.Num)?.value
@@ -709,6 +720,8 @@ private fun PhoneControlSlider(
         decimals = phoneDecimalsOf(control.step?.let { it * scale }),
         enabled = enabled,
         disabledReason = disabledReason,
+        compact = compact,
+        labelWidth = labelWidth,
     )
 }
 

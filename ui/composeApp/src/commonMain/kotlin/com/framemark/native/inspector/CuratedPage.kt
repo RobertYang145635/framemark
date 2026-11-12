@@ -455,13 +455,21 @@ internal fun CuratedTextRow(control: InspectorControl, session: DesignSession) {
 
 /** `.row` + `sw` — label left, switch right; the whole row toggles. */
 @Composable
-internal fun CuratedSwitchRow(control: InspectorControl, session: DesignSession) {
+internal fun CuratedSwitchRow(
+    control: InspectorControl,
+    session: DesignSession,
+    /**
+     * 手机密度档（2026-11）：行高 44 dp（[FmDenseRowHeight]）而不是 36，标签用
+     * 手机字号。桌面右栏不传，保持原来的 36 dp 紧凑行。
+     */
+    dense: Boolean = false,
+) {
     val on = session.value(control) as? Boolean ?: (control.initial as? ControlValue.Flag)?.value ?: false
     curatedProbeState(control, on)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 36.dp)
+            .heightIn(min = if (dense) FmDenseRowHeight else 36.dp)
             .probeBounds("control:${control.key}")
             .clickable(role = Role.Switch) { session.set(control, !on) }
             .semantics { contentDescription = control.label },
@@ -469,7 +477,11 @@ internal fun CuratedSwitchRow(control: InspectorControl, session: DesignSession)
     ) {
         Text(
             text = control.label,
-            style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
+            style = if (dense) {
+                TextStyle(fontSize = 15.sp, lineHeight = 20.sp)
+            } else {
+                TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
+            },
             color = FmPalette.onSurfaceSecondary,
             maxLines = 1,
             modifier = Modifier.weight(1f),

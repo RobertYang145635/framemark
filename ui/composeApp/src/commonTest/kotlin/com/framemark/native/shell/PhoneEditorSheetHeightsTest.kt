@@ -13,13 +13,13 @@ import kotlin.test.assertTrue
  * still keep a usable stage. Pure arithmetic, no Compose.
  *
  * **2026-11 版式过**：非边框工具的收起高度不再是一个固定的 34–42 %，而是
- * `PhonePageLayout.defaultSheetLevelFor` 按这一页最高的一组算出来的
- * （`chrome + 公共区 + 最高一组 + 6`）。所以下面每一条用到 Params / Text / Logo /
+ * `PhonePageLayout.defaultSheetLevelFor` 按这一页**最高的一页**算出来的
+ * （`chrome + 公共区 + 最高一页 + 6`）。所以下面每一条用到 Params / Text / Logo /
  * 水印 的用例都要传这一页真实的控件表，否则它量的是「空页」。
  *
  * **照片条**：因为高度由内容决定，800 dp 窗口里打开照片条不再自动让底板变矮 ——
- * 只有当舞台 50 % 地板真的顶到（内容高于地板允许的底板）时底板才会被夹低。
- * `the_photo_strip_only_shortens_the_sheet_when_the_stage_floor_binds` 钉住这条新语义。
+ * 它先把「一页的许可」从 206 压到 150；只有许可变化真的让这一页多分一页时，底板
+ * 才会变（`thePhotoStripShrinksThePageBudgetAndMayAddAPage` 钉住这条新语义）。
  */
 class PhoneEditorSheetHeightsTest {
 
@@ -111,31 +111,39 @@ class PhoneEditorSheetHeightsTest {
     }
 
     @Test
-    fun the_photo_strip_only_shortens_the_sheet_when_the_stage_floor_binds() {
-        // Logo 页最大的一组是 148 dp，内容决定的高度是 226 dp；800 dp 窗口的舞台
-        // 地板只允许 222 dp，所以这时底板被夹到 222 —— 仍然放得下（150 ≥ 148）。
+    fun thePhotoStripShrinksThePageBudgetAndMayAddAPage() {
+        // 照片条拿走 64 dp；舞台 50 % 地板把**一页的许可**从 206 压到 150。
+        // Logo 页在 206 里是两页（最高 148）→ 底板 220；在 150 里还是两页（148 ≤ 150）
+        // → 还是 220：照片条没有让底板变矮，只是把画布让了出来。
         val controls = PhoneTestControls.logoControls()
         val closed = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = false, controls = controls)
         val open = computePhoneEditorHeights(800f, 1f, false, EditorTool.Logo, photosOpen = true, controls = controls)
         assertEquals(0f, closed.strip)
         assertEquals(64f, open.strip)
+        assertEquals(220f, closed.sheet, 0.01f)
+        assertEquals(220f, open.sheet, 0.01f)
         assertTrue(open.stage >= 800f * 0.5f - 0.01f, "open stage=${open.stage}")
-        assertEquals(226f, closed.sheet, 0.01f)
-        assertEquals(222f, open.sheet, 0.01f)
         assertTrue(
-            fitsWithoutScroll(
-                tool = EditorTool.Logo,
-                controls = controls,
-                sheetLevelDp = open.sheet,
-            ),
-            "the clamped sheet must still hold the tallest group",
+            fitsWithoutScroll(tool = EditorTool.Logo, controls = controls, sheetLevelDp = open.sheet),
+            "the clamped sheet must still hold every page",
         )
-        // 一份更矮的页（样式页 92 dp 的一组）用不着让照片条动它：高度只看内容。
+        // 水印页的许可被压到 150 时多分一页（2 → 3），底板反而更矮：274 → 220。
+        assertEquals(
+            274f,
+            computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, false).sheet,
+            0.01f,
+        )
+        assertEquals(
+            220f,
+            computePhoneEditorHeights(800f, 1f, false, EditorTool.Watermark, true).sheet,
+            0.01f,
+        )
+        // 样式页两页都装得下，照片条不动它。
         val styleControls = PhoneTestControls.styleControls()
         val styleClosed = computePhoneEditorHeights(844f, 1f, false, EditorTool.Params, false, controls = styleControls)
         val styleOpen = computePhoneEditorHeights(844f, 1f, false, EditorTool.Params, true, controls = styleControls)
-        assertEquals(164f, styleClosed.sheet, 0.01f)
-        assertEquals(164f, styleOpen.sheet, 0.01f)
+        assertEquals(209f, styleClosed.sheet, 0.01f)
+        assertEquals(209f, styleOpen.sheet, 0.01f)
     }
 
     @Test

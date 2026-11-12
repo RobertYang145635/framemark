@@ -88,6 +88,13 @@ internal fun ColumnScope.PhoneSheetHost(
     fullParameterPage: Boolean,
     sheetHeight: Dp,
     /**
+     * 这个窗口里**一页可以吃到的净高**：收起档传
+     * `PhonePageLayout.pageAllowanceForWindow`（舞台 50 % 地板允许的整块底板减 chrome
+     * 与公共区），整页回退档传 `pageBudgetForLevel(整窗)`。加密之后一页可以占满它，
+     * 所以分页只在内容仍然超过它时发生；同一张卡在更矮的窗口里可能多一页，这是政策本身。
+     */
+    pageBudgetDp: Float,
+    /**
      * 底板顶部两行的实际高度（把手 + 标题行）。边框页读 128 dp 卡片阶梯、参数页读
      * 自己的 chrome 阶梯，两者都由 `phoneSheetChrome` 算好后传进来。
      */
@@ -135,7 +142,7 @@ internal fun ColumnScope.PhoneSheetHost(
 ) {
                 // 参数页「一页分几组」与当前组：分组是纯政策（`pageGroups`），这里只
                 // 拿它的结果画小圆点并交给页面横滑。组号按工具 / 卡片重置，换页签永远
-                // 从第一组开始。字号缩放要进 key：1.5× 时同一页的块更高，分组可能变。
+                // 从第一组开始。字号缩放要进 key：1.5× 时同一页的行更高，分组可能变。
                 val fontScale = density.fontScale
                 val pageSpec = remember(tool, model, tabModel, textOutputWidth, watermark != null) {
                     PhonePageSpec(
@@ -146,7 +153,10 @@ internal fun ColumnScope.PhoneSheetHost(
                         hasWatermarkLayer = watermark != null,
                     )
                 }
-                val groups = remember(pageSpec, fontScale) { pageGroups(pageSpec, fontScale) }
+                // 预算进 key：窗口（高度 / 照片条）变了，一页能装多少就变了。
+                val groups = remember(pageSpec, fontScale, pageBudgetDp) {
+                    pageGroups(pageSpec, fontScale, pageBudgetDp)
+                }
                 var groupIndex by remember(tool, model?.cardId) { mutableIntStateOf(0) }
                 val safeGroupIndex = groupIndex.coerceIn(0, (groups.size - 1).coerceAtLeast(0))
                 Box(

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmRhythm
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
@@ -509,44 +511,81 @@ private fun BrandedCuratedLogo(
     }
 
     val actions: @Composable () -> Unit = {
-        PrimaryButton(
-            text = "更换 Logo",
-            onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(FmSpacing.sm))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-        ) {
-            GhostButton(
-                text = "自动匹配",
-                onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
-                modifier = Modifier.weight(1f),
-            )
-            GhostButton(
-                text = "我的 Logo",
-                onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
-                enabled = userAction.enabled,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Spacer(Modifier.height(FmSpacing.xs))
-        Text(
-            text = logoCaption(summary),
-            style = CuratedNote,
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
-        userAction.note?.let { note ->
+        if (dense) {
+            // 手机密度档（2026-11）：三个动作并排一行（每个 44 dp），下面仍然只有
+            // 一行说明。「我的 Logo」画不出用户字标时，理由就用这一行说明，不再另起一行。
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            ) {
+                PrimaryButton(
+                    text = "更换 Logo",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
+                    modifier = Modifier.weight(1f),
+                    minHeight = DenseButtonHeight,
+                )
+                GhostButton(
+                    text = "自动匹配",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                    modifier = Modifier.weight(1f),
+                    minHeight = DenseButtonHeight,
+                )
+                GhostButton(
+                    text = "我的 Logo",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
+                    enabled = userAction.enabled,
+                    modifier = Modifier.weight(1f),
+                    minHeight = DenseButtonHeight,
+                )
+            }
+            Spacer(Modifier.height(FmSpacing.xs))
             Text(
-                text = note,
-                style = FmType.labelSmall,
-                color = FmPalette.error,
-                modifier = Modifier.padding(top = FmSpacing.xs),
+                text = userAction.note ?: logoCaption(summary),
+                style = CuratedNote,
+                color = if (userAction.note != null) FmPalette.error else FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+        } else {
+            PrimaryButton(
+                text = "更换 Logo",
+                onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(FmSpacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+            ) {
+                GhostButton(
+                    text = "自动匹配",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                    modifier = Modifier.weight(1f),
+                )
+                GhostButton(
+                    text = "我的 Logo",
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.User, phonePicker != null)) },
+                    enabled = userAction.enabled,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(FmSpacing.xs))
+            Text(
+                text = logoCaption(summary),
+                style = CuratedNote,
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
+            userAction.note?.let { note ->
+                Text(
+                    text = note,
+                    style = FmType.labelSmall,
+                    color = FmPalette.error,
+                    modifier = Modifier.padding(top = FmSpacing.xs),
+                )
+            }
         }
     }
 
@@ -554,8 +593,29 @@ private fun BrandedCuratedLogo(
         // 1. 调整字标：进来第一件事就是能在画布还看得见的时候调位置 / 大小 / 显示。
         if (adjustments.isNotEmpty()) {
             val rows: @Composable () -> Unit = {
-                orderedLogoAdjustments(adjustments).forEach {
-                    CuratedLogoAdjustment(it, session, adjustments)
+                if (dense) {
+                    // 相邻两条滑杆一行（`logoAdjustmentRows` 与分页政策同一份行表）。
+                    logoAdjustmentRows(adjustments).forEach { row ->
+                        if (row.size > 1) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                row.forEach { control ->
+                                    Box(Modifier.weight(1f)) {
+                                        CuratedLogoAdjustment(control, session, adjustments, dense = true)
+                                    }
+                                }
+                            }
+                        } else {
+                            CuratedLogoAdjustment(row.first(), session, adjustments, dense = true)
+                        }
+                    }
+                } else {
+                    orderedLogoAdjustments(adjustments).forEach {
+                        CuratedLogoAdjustment(it, session, adjustments)
+                    }
                 }
             }
             if (grouped) {
@@ -632,19 +692,64 @@ internal fun LogoPlate(
 internal fun logoBrandTitle(brand: LogoBrand): String =
     if (brand.cn.isBlank()) brand.label else "${brand.label} · ${brand.cn}"
 
-/** One 显示 row: switches, segments and sliders of the Logo section. */
+/**
+ * 手机一页里「调整字标」的行：先按 [orderedLogoAdjustments] 排（显示 → 位置 → 大小 →
+ * 水平位置），再把**相邻两条滑杆并成一行**（各占一半，行高仍是一条 44 dp 的密度档
+ * 滑杆），其余控件一行一个。
+ *
+ * 这是政策（`PhonePageLayout.pageBlocks`）与渲染（[BrandedCuratedLogo]）共用的同一个
+ * 纯函数：分页器按它算行高，面板按它画行，所以「两条滑杆一行」不会在两边各写一套。
+ */
+internal fun logoAdjustmentRows(controls: List<InspectorControl>): List<List<InspectorControl>> {    val rows = ArrayList<MutableList<InspectorControl>>()
+    var openSliderRow: MutableList<InspectorControl>? = null
+    orderedLogoAdjustments(controls).forEach { control ->
+        if (control.type == ControlType.Slider) {
+            val open = openSliderRow
+            if (open != null && open.size == 1) {
+                open += control
+                openSliderRow = null
+            } else {
+                val row = mutableListOf(control)
+                rows += row
+                openSliderRow = row
+            }
+        } else {
+            openSliderRow = null
+            rows += mutableListOf(control)
+        }
+    }
+    return rows
+}
+
+/**
+ * 两个动作按钮并排时，[PrimaryButton] / [GhostButton] 在手机密度档收 48 → 44：
+ * 仍然是同一个按钮、同一个写入路径，只是高度落到触控地板（不再多占 4 dp）。
+ */
+private val DenseButtonHeight = 44.dp
+
+/**
+ * 「调整字标」里的一行（One 显示 row：开关 / 分段 / 滑杆）。桌面（`dense = false`）保持
+ * 原来的整块形态；手机密度档（2026-11）把标签与控件压成一行 44 dp：
+ *  - 开关 → [CuratedSwitchRow] 的 44 dp 行；
+ *  - 滑杆 → [CuratedSliderRow] 的 compact 行（两条并排时各占一半）；
+ *  - 位置分段 → 标签在左、[CuratedSegmented] 的 40 dp 触控按钮在右（整行 44）。
+ *
+ * 居左时那句「左侧文字会消失」的说明在手机不再单占一行：画布就在底板上面，选完
+ * 立刻看得见；桌面右栏保留整句。
+ */
 @Composable
 internal fun CuratedLogoAdjustment(
     control: InspectorControl,
     session: DesignSession,
     /** 同一张卡的其余 Logo 控件：位置会决定「水平位置」是否生效、以及居左的后果。 */
     siblings: List<InspectorControl> = emptyList(),
+    dense: Boolean = false,
 ) {
     val headerPos = siblings.firstOrNull { it.param.endsWith("logoPos") }
         ?: (control.takeIf { it.param.endsWith("logoPos") })
     val logoPosition = headerPos?.let { session.value(it)?.toString() }
     when (control.type) {
-        ControlType.Switch -> CuratedSwitchRow(control, session)
+        ControlType.Switch -> CuratedSwitchRow(control, session, dense = dense)
         ControlType.Slider -> {
             // AU2 A-04：`logoCenterX` 只在「位置 = 居中」分支被引擎读；居左/居右
             // 时拖动没有任何效果，所以置灰并说明，而不是让用户白拖。
@@ -662,31 +767,56 @@ internal fun CuratedLogoAdjustment(
                 decimalPlaces = 1,
                 enabled = inactiveReason == null,
                 disabledReason = inactiveReason,
+                compact = dense,
+                labelWidth = if (dense) 56.dp else 88.dp,
             )
         }
         ControlType.Select -> {
             val value = session.value(control).toString()
-            Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                Text(
-                    text = logoAdjustLabel(control),
-                    style = CuratedNote,
-                    color = FmPalette.onSurfaceMuted,
-                )
-                Spacer(Modifier.height(6.dp))
-                CuratedSegmented(
-                    options = orderedLogoOptions(control.options),
-                    selected = value,
-                    onSelect = { session.set(control, it) },
-                )
-                if (control.param.endsWith("logoPos") && value == "left") {
-                    // AU2 A-02：引擎 `brand_footer.rs:776-778` 里居左会直接不画左侧
-                    // 品牌/机型两行（不是挪位）。引擎侧本轮不改，至少在选择处就说实话。
-                    Spacer(Modifier.height(6.dp))
+            if (dense) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = FmDenseRowHeight),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = logoLeftHidesTextNote(siblings, session),
+                        text = logoAdjustLabel(control),
+                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 16.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                        modifier = Modifier.widthIn(max = 72.dp),
+                    )
+                    Spacer(Modifier.width(FmRhythm.inlineLoose))
+                    CuratedSegmented(
+                        options = orderedLogoOptions(control.options),
+                        selected = value,
+                        onSelect = { session.set(control, it) },
+                        modifier = Modifier.weight(1f),
+                        touch = true,
+                    )
+                }
+            } else {
+                Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    Text(
+                        text = logoAdjustLabel(control),
                         style = CuratedNote,
                         color = FmPalette.onSurfaceMuted,
                     )
+                    Spacer(Modifier.height(6.dp))
+                    CuratedSegmented(
+                        options = orderedLogoOptions(control.options),
+                        selected = value,
+                        onSelect = { session.set(control, it) },
+                    )
+                    if (control.param.endsWith("logoPos") && value == "left") {
+                        // AU2 A-02：引擎 `brand_footer.rs:776-778` 里居左会直接不画左侧
+                        // 品牌/机型两行（不是挪位）。引擎侧本轮不改，至少在选择处就说实话。
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = logoLeftHidesTextNote(siblings, session),
+                            style = CuratedNote,
+                            color = FmPalette.onSurfaceMuted,
+                        )
+                    }
                 }
             }
         }

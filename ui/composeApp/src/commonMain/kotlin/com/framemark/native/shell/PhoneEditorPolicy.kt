@@ -89,10 +89,10 @@ data class PhoneSheetLevels(val compact: Float, val half: Float, val expanded: F
  *
  * **The compact level is now decided by the page's content** ([defaultSheetLevelFor]):
  * the border tool keeps its 128 dp card stack, and a 样式 / 文字 / Logo / 水印 page
- * asks for exactly `chrome + 公共区 + 最高一组 + 6 dp` ([PHONE_PAGE_LEVEL_SLACK_DP]),
- * clamped by `MIN_SHEET_DP` and the stage floor. That is why a page with two
- * sliders opens shorter than one with a 3×3 grid — and why no page needs to
- * scroll to reach a control. See `PhonePageLayout.kt`.
+ * asks for exactly `chrome + 公共区 + 最高一页 + 6 dp` ([PHONE_PAGE_LEVEL_SLACK_DP]),
+ * clamped by `MIN_SHEET_DP` and the stage floor. 一页能吃到多少由「这个窗口的舞台
+ * 地板许可」决定（[pageAllowanceForWindow]）：加密之后同一张卡通常一页就够，只有
+ * 很紧的窗口才多分一页。See `PhonePageLayout.kt`.
  */
 fun phoneSheetLevels(
     availableHeightDp: Float,

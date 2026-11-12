@@ -188,12 +188,17 @@ fun PrimaryButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    /**
+     * 最小高度。默认 48 dp；手机密度档（三个动作并排一行）传 44 —— 44 是触控地板，
+     * 不再为了「按钮看起来更胖」多占 4 dp 的页高。桌面与其它调用点不传。
+     */
+    minHeight: Dp = 48.dp,
 ) {
     val background = if (enabled) FmPalette.primary else FmPalette.surfaceMuted
     val foreground = if (enabled) FmPalette.onPrimary else FmPalette.onSurfaceFaint
     Box(
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = minHeight)
             .clip(RoundedCornerShape(FmRadii.pill))
             .background(background)
             .border(
@@ -215,10 +220,12 @@ fun GhostButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    /** 见 [PrimaryButton]：手机密度档传 44（触控地板），默认保持 48。 */
+    minHeight: Dp = 48.dp,
 ) {
     Box(
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = minHeight)
             .clip(RoundedCornerShape(FmRadii.pill))
             .background(FmPalette.surface)
             .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.pill))
