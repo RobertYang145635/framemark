@@ -433,7 +433,10 @@ private fun MarginSlider(
         assetAspect = spec.aspect,
         edge = edge,
     )
-    val current = WatermarkZones.marginPct(spec, photoAspect, edge).coerceIn(0f, maxPct)
+    val current = WatermarkZones.marginPct(spec, photoAspect, edge)
+    // 真值可能略超格子上限（宽水印的格子上限是 0.5 − 宽度，可能小于模型默认的 5 %）：
+    // 显示真值并把滑杆上限抬到真值，不写一个用户没设过的数。
+    val upper = maxOf(maxPct, current)
     val label = when (edge) {
         WatermarkEdge.Left -> "距左边"
         WatermarkEdge.Right -> "距右边"
@@ -448,19 +451,14 @@ private fun MarginSlider(
         )
         return
     }
-    // Default margin in % of width, both axes per report §9.1.
-    val aspect = photoAspect.takeIf { it.isFinite() && it > 0.01f } ?: 1.5f
-    val defaultPct = if (edge == WatermarkEdge.Top || edge == WatermarkEdge.Bottom) {
-        // The model default is a normalised height offset; distances are width based.
-        (WatermarkZones.DEFAULT_MARGIN / aspect * 100f).coerceIn(0f, maxPct)
-    } else {
-        (WatermarkZones.DEFAULT_MARGIN * 100f).coerceIn(0f, maxPct)
-    }
+    // Default margin is the model's MARGIN in the engine's own unit: % of the photo
+    // width on the sides, % of the photo height on the top/bottom edges.
+    val defaultPct = (WatermarkZones.DEFAULT_MARGIN * 100f).coerceIn(0f, maxPct)
     FmDesktopSliderRow(
         label = label,
-        value = current,
+        value = current.coerceIn(0f, upper),
         min = 0f,
-        max = maxPct,
+        max = upper,
         step = 0.1f,
         default = defaultPct,
         unit = "%",

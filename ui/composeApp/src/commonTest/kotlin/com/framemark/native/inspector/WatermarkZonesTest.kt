@@ -91,11 +91,11 @@ class WatermarkZonesTest {
         // 1:3 photo (w/h = 1/3); a 3:1 mark at 25 % width is only 2.78 % tall.
         val photoAspect = 1f / 3f
         val topMax = WatermarkZones.maxMarginPct(1, 0.25f, photoAspect, 3f, WatermarkEdge.Top)
-        // (0.5 - 0.25 * (1/3) / 3) / (1/3) * 100 = 141.67 %.
-        assertEquals(141.67f, topMax, 0.05f)
+        // (0.5 - 0.25 * (1/3) / 3) * 100 = 47.22 % of the photo height.
+        assertEquals(47.22f, topMax, 0.05f)
         // The bottom row is the mirror image.
         val bottomMax = WatermarkZones.maxMarginPct(7, 0.25f, photoAspect, 3f, WatermarkEdge.Bottom)
-        assertEquals(141.67f, bottomMax, 0.05f)
+        assertEquals(47.22f, bottomMax, 0.05f)
     }
 
     @Test
@@ -103,8 +103,8 @@ class WatermarkZonesTest {
         // 3:1 photo (w/h = 3); the same mark is 25 % tall now.
         val photoAspect = 3f
         val bottomMax = WatermarkZones.maxMarginPct(7, 0.25f, photoAspect, 3f, WatermarkEdge.Bottom)
-        // (1 - 0.5 - 0.25) / 3 * 100 = 8.33 %.
-        assertEquals(8.33f, bottomMax, 0.05f)
+        // (1 - 0.5 - 0.25) * 100 = 25 % of the photo height.
+        assertEquals(25f, bottomMax, 0.05f)
         // Middle column keeps its 60 % cap, so the horizontal range is bigger.
         val leftMax = WatermarkZones.maxMarginPct(3, 0.25f, photoAspect, 3f, WatermarkEdge.Left)
         assertEquals(25f, leftMax, 1e-4f)
@@ -135,6 +135,23 @@ class WatermarkZonesTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun movingOneAxisNeverRewritesTheOther() {
+        // A 45.5 % wide mark in a side column: the zone cap for 距左 is 0.5 − 0.455 =
+        // 4.5 %, while the model default is 5 %. Dragging 距上 used to re-clamp 距左 as
+        // a side effect, silently rewriting a number the user never touched.
+        val photoAspect = 4f / 3f
+        val base = spec(anchor = 0, width = 0.455f, photoAspect = photoAspect)
+        assertEquals(5f, WatermarkZones.marginPct(base, photoAspect, WatermarkEdge.Left), 1e-4f)
+        assertEquals(4.5f, WatermarkZones.maxMarginPct(0, 0.455f, photoAspect, 3f, WatermarkEdge.Left), 1e-3f)
+
+        val (dx, dy) = WatermarkZones.positionFor(base, photoAspect, WatermarkEdge.Top, 20f)
+        assertEquals(0f, dx, 1e-6f, "距上 must not move 距左")
+        // 20 % of the photo height minus the 5 % default: the engine's y is 0.20.
+        assertEquals(0.15f, dy, 1e-4f)
+        assertEquals(0.20f, base.copy(dy = dy).rect(photoAspect)[1], 1e-4f)
     }
 
     @Test
@@ -236,13 +253,46 @@ class WatermarkZonesTest {
     }
 
     @Test
-    fun marginDistanceUsesThePhotoWidthOnBothAxes() {
-        // 4:3 photo, mark at top edge with dy = 0.05 normalised height.
+    fun marginDistanceUsesThePhotoWidthOnTheSidesAndTheHeightOnTopAndBottom() {
+        // 4:3 photo, mark at the top edge with the model default dy = 0.05 (height).
         val photoAspect = 4f / 3f
         val placed = spec(anchor = 1, dy = 0f, photoAspect = photoAspect)
         val margin = WatermarkZones.marginPct(placed, photoAspect, WatermarkEdge.Top)
-        // Base position is MARGIN = 0.05 of the height → 3.75 % of the width.
-        assertEquals(3.75f, margin, 0.05f)
-        assertTrue(abs(margin - 3.75f) < 0.05f)
+        // The engine receives y = 0.05 → the number is 5.0, not 3.75 (width-folded).
+        assertEquals(5f, margin, 0.05f)
+        // Horizontal edges keep the width unit: x = 0.05 → 5.0 as well.
+        val leftAligned = placed.copy(anchor = 3, dx = 0f)
+        assertEquals(5f, WatermarkZones.marginPct(leftAligned, photoAspect, WatermarkEdge.Left), 0.05f)
+    }
+
+    @Test
+    fun theShownNumberIsExactlyWhatTheEngineConsumes() {
+        // The renderer paints `OverlaySpec(x, y, w, h)` as fractions of the photo draw
+        // box: x of its width, y of its height. Whatever the panel shows must equal
+        // those fractions × 100 for both axes, on a photo that is not square.
+        val photoAspect = 4f / 3f
+        for (anchor in 0..8) {
+            val zone = WatermarkZones.zoneFor(anchor)
+            for (edge in listOfNotNull(zone.horizontalEdge, zone.verticalEdge)) {
+                val base = spec(anchor, photoAspect = photoAspect)
+                val max = WatermarkZones.maxMarginPct(anchor, base.width, photoAspect, 3f, edge)
+                val target = max / 2f
+                val (dx, dy) = WatermarkZones.positionFor(base, photoAspect, edge, target)
+                val placed = base.copy(dx = dx, dy = dy)
+                val rect = placed.rect(photoAspect)
+                val engineFraction = when (edge) {
+                    WatermarkEdge.Left -> rect[0]
+                    WatermarkEdge.Right -> 1f - (rect[0] + rect[2])
+                    WatermarkEdge.Top -> rect[1]
+                    WatermarkEdge.Bottom -> 1f - (rect[1] + rect[3])
+                }
+                assertEquals(
+                    target,
+                    engineFraction * 100f,
+                    0.06f,
+                    "anchor=$anchor edge=$edge: shown number must equal the engine fraction",
+                )
+            }
+        }
     }
 }

@@ -15,8 +15,13 @@ import kotlin.math.min
  *    never rewritten until the user edits the watermark;
  *  - the watermark may only move inside its own zone (quarter / half / full);
  *  - the width cap follows the column: 47 % on left/right, 60 % in the middle;
- *  - distances are "distance to the chosen edge" in % of the photo **width** on
- *    both axes (report §9.1), so equal numbers look equal.
+ *  - 边的距离用**引擎自己的单位**（2026-11-13 对齐）：横向是"照片宽度的 %"，纵向是
+ *    "照片高度的 %"。这正是 `OverlaySpec` / `WatermarkSpec.rect()` 交给渲染器的两个
+ *    分数（`x = 宽度的百分比`、`y = 高度的百分比`），所以面板上的数字就是引擎吃到的
+ *    数字：距左 10 → 引擎 `x = 0.10`；距上 10 → 引擎 `y = 0.10`。
+ *    旧口径把两个方向都折成"照片宽度的 %"（距上 10 实际写 `y = 0.10 × 画幅宽高比`，
+ *    4:3 照片上等于往下 13.3 % 的高度），数字与落点对不上，且横图上纵向范围被压到
+ *    8 %。引擎侧没有这个折算，UI 折了 —— 分叉在 UI，按引擎的单位显示即可。
  *
  * The data model (`anchor + dx/dy`, `nudged` / `withRectNudge`) is read-only;
  * this file converts between it and the UI, and reuses `withRectNudge` so a
@@ -125,23 +130,27 @@ internal object WatermarkZones {
         return spec.copy(dx = dx, dy = dy).aabb(photoAspect)
     }
 
-    /** Current margin (in % of photo width) for [edge]. */
+    /**
+     * Current margin for [edge], in the unit the engine consumes: **% of the photo
+     * width** on the horizontal edges, **% of the photo height** on the vertical ones
+     * (i.e. exactly `rect()[0] * 100` and `rect()[1] * 100`).
+     */
     fun marginPct(spec: WatermarkSpec, photoAspect: Float, edge: WatermarkEdge): Float {
         val b = box(spec, photoAspect)
-        val aspect = safeAspect(photoAspect)
         val fraction = when (edge) {
             WatermarkEdge.Left -> b[0]
             WatermarkEdge.Right -> 1f - (b[0] + b[2])
-            WatermarkEdge.Top -> b[1] / aspect
-            WatermarkEdge.Bottom -> (1f - (b[1] + b[3])) / aspect
+            WatermarkEdge.Top -> b[1]
+            WatermarkEdge.Bottom -> 1f - (b[1] + b[3])
         }
         return (fraction * 100f).coerceAtLeast(0f)
     }
 
     /**
-     * Largest margin this cell can show, in % of photo width: the watermark may
-     * only move until it touches the zone's far edge (report §9.1: "最大值到
-     * 水印碰到中线为止").
+     * Largest margin this cell can show, in the engine's own unit (% of the photo
+     * width on the horizontal edges, % of the photo height on the vertical ones):
+     * the watermark may only move until it touches the zone's far edge (report §9.1:
+     * "最大值到水印碰到中线为止").
      *
      * Returns 0 when the watermark is already too tall/wide for the zone — the
      * pane then shows a fixed position with an explanation instead of an
@@ -157,18 +166,19 @@ internal object WatermarkZones {
         val zone = zoneFor(anchor)
         val w = width.coerceIn(0.01f, zone.widthCap)
         val h = watermarkHeight(w, photoAspect, assetAspect)
-        val aspect = safeAspect(photoAspect)
         val fraction = when (edge) {
             WatermarkEdge.Left -> max(0f, zone.xMax - w)
             WatermarkEdge.Right -> max(0f, 1f - zone.xMin - w)
-            WatermarkEdge.Top -> max(0f, zone.yMax - h) / aspect
-            WatermarkEdge.Bottom -> max(0f, 1f - zone.yMin - h) / aspect
+            WatermarkEdge.Top -> max(0f, zone.yMax - h)
+            WatermarkEdge.Bottom -> max(0f, 1f - zone.yMin - h)
         }
         return fraction * 100f
     }
 
     /**
-     * Absolute `dx/dy` for placing the watermark with [margin] on [edge].
+     * Absolute `dx/dy` for placing the watermark with [margin] on [edge]; [margin] is
+     * in the same unit [marginPct] returns (% of width on the sides, % of height on
+     * the top/bottom edges), so the slider number is what the engine receives.
      *
      * The other axis keeps its current offset, except on a centred direction
      * where it is written back as 0 (HANDOFF §3.8: only after a user edit).
@@ -181,26 +191,24 @@ internal object WatermarkZones {
     ): Pair<Float, Float> {
         val zone = zoneFor(spec.anchor)
         val b = box(spec, photoAspect)
-        val aspect = safeAspect(photoAspect)
         val width = b[2]
         val height = b[3]
         val margin = (marginPct.coerceAtLeast(0f)) / 100f
-        var x = b[0]
-        var y = b[1]
-        when (edge) {
-            WatermarkEdge.Left -> x = margin
-            WatermarkEdge.Right -> x = 1f - margin - width
-            WatermarkEdge.Top -> y = margin * aspect
-            WatermarkEdge.Bottom -> y = 1f - margin * aspect - height
-        }
-        // Stay inside the cell's zone; if the zone is smaller than the watermark
-        // the target collapses to the zone start instead of producing a NaN range.
+        // 只夹**被拖的那条轴**：另一条轴保持模型里的现值。旧实现两条轴一起重新夹进
+        // 格子里，于是拖「距上」会顺手把「距左」从 5.0 % 改成 4.5 %（宽水印的格子上限
+        // 就是 4.5 %）—— 用户没碰过的数字被改了，这正是「对不上」的一部分。
         val xLo = max(0f, zone.xMin)
         val xHi = max(xLo, min(1f - width, zone.xMax - width))
         val yLo = max(0f, zone.yMin)
         val yHi = max(yLo, min(1f - height, zone.yMax - height))
-        x = x.coerceIn(xLo, xHi)
-        y = y.coerceIn(yLo, yHi)
+        var x = b[0]
+        var y = b[1]
+        when (edge) {
+            WatermarkEdge.Left -> x = margin.coerceIn(xLo, xHi)
+            WatermarkEdge.Right -> x = (1f - margin - width).coerceIn(xLo, xHi)
+            WatermarkEdge.Top -> y = margin.coerceIn(yLo, yHi)
+            WatermarkEdge.Bottom -> y = (1f - margin - height).coerceIn(yLo, yHi)
+        }
         val targetDx = spec.dx + (x - b[0])
         val targetDy = spec.dy + (y - b[1])
         val (ndx, ndy) = normalizedOffsets(spec.anchor, targetDx, targetDy)

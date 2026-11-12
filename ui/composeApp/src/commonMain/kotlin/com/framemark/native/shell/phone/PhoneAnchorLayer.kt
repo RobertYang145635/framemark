@@ -2,7 +2,9 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -18,10 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.framemark.native.shell.PHONE_PARAM_ROW_MIN_TOUCH_DP
@@ -137,8 +141,13 @@ internal fun watermarkAnchorLayerBox(
 }
 
 /**
- * 画在照片上的九宫格**热点层**。每一格都是独立触控目标（≥ 44 dp），格子里只有一个
- * ~10 dp 的圆点（当前格实心，其余细环）；照片本身不被覆盖。
+ * 画在照片上的九宫格**热点层**。每一格中心都是一个 ≥ 44 dp 的独立触控目标，格子里只有
+ * 一个 ~10 dp 的圆点（当前格实心，其余细环）；照片本身不被覆盖。
+ *
+ * **触控面就是那 44 dp，不是整格**（2026-11-13）：这一层是 `StageArea` 里画的最后一块，
+ * 铺满照片时 Compose 的命中测试只会把指针交给最上层那个带 pointerInput 的节点，
+ * 于是水印页上**水印拖不动**（样式页能拖）—— f53ce9b 把九宫格从面板挪到画布上带来的
+ * 回归。把触控面收回到每个热点中心 44 dp 之后，照片其余位置的手势照旧落给水印层。
  *
  * 参数表里没有图片：这一层拿到的只有几何（[geo] / [stage]）、密度和当前的 anchor。
  * 点一格调 [onPick]，参数是政策层写进 `WatermarkSpec.anchor` 的那个 index。
@@ -154,6 +163,7 @@ internal fun BoxScope.PhoneWatermarkAnchorLayer(
     val minCellPx = with(density) { PHONE_PARAM_ROW_MIN_TOUCH_DP.dp.toPx() }
     val box = watermarkAnchorLayerBox(geo, stage, minCellPx) ?: return
     val current = anchor.coerceIn(0, 8)
+    val touchPx = with(density) { PHONE_PARAM_ROW_MIN_TOUCH_DP.dp }
     Column(
         modifier = Modifier
             .align(Alignment.TopStart)
@@ -164,12 +174,17 @@ internal fun BoxScope.PhoneWatermarkAnchorLayer(
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
                 for (col in 0 until 3) {
                     val index = row * 3 + col
-                    AnchorHotspot(
-                        index = index,
-                        active = index == current,
+                    Box(
                         modifier = Modifier.weight(1f).fillMaxSize(),
-                        onPick = onPick,
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        AnchorHotspot(
+                            index = index,
+                            active = index == current,
+                            modifier = Modifier.size(touchPx),
+                            onPick = onPick,
+                        )
+                    }
                 }
             }
         }
@@ -192,10 +207,24 @@ private fun AnchorHotspot(
     val visual = anchorHotspotVisual(active)
     Box(
         modifier = modifier
-            .clickable(role = Role.Button) { onPick(index) }
             .semantics {
                 contentDescription = "水印位置：${WatermarkAnchorLabels[index]}"
                 selected = active
+                role = Role.Button
+            }
+            // 只吃「点」，不吃「拖」（2026-11-13）：这一层铺满照片，用 `clickable`
+            // 会把 down/up 都消费掉，于是水印页上**拖不动水印**了（样式页能拖，水印页
+            // 不能 —— 九宫格是 f53ce9b 才铺到画布上的）。这里不消费 down/move，只有
+            // 抬指时位移仍在 touchSlop 以内才算选了这一格，拖动照旧落给下面的水印层。
+            .pointerInput(index) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val up = waitForUpOrCancellation()
+                    if (up != null && (up.position - down.position).getDistance() <= viewConfiguration.touchSlop) {
+                        up.consume()
+                        onPick(index)
+                    }
+                }
             },
         contentAlignment = Alignment.Center,
     ) {

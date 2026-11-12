@@ -106,6 +106,11 @@ fun PhoneSliderParamRow(
     val max = range.endInclusive
     val clamped = if (value.isFinite()) value.coerceIn(min, max) else min
     var editing by remember { mutableStateOf(false) }
+    // 拖动气泡：显示值每帧跟手，写回按 100 ms 封顶并在松手时补一笔。一次 60–120 Hz
+    // 的拖动因此从「每个样本一次 session.set + 一次引擎预览请求」变成最多 10 次/秒。
+    val commit = rememberDragCommit(clamped) { next -> onValueChange(next) }
+    val shown = if (commit.dragging) commit.live else clamped
+    val shownText = if (commit.dragging) phoneParamNumberText(shown, decimals, unit) else valueText
     Column(modifier = modifier.fillMaxWidth()) {
         // ---- 第一行：标签在左、数值在右 ----
         Row(
@@ -123,7 +128,7 @@ fun PhoneSliderParamRow(
             )
             Spacer(Modifier.width(FmRhythm.inlineLoose))
             Text(
-                text = valueText,
+                text = shownText,
                 style = TextStyle(
                     fontSize = PHONE_PARAM_VALUE_SP.sp,
                     lineHeight = 20.sp,
@@ -146,7 +151,7 @@ fun PhoneSliderParamRow(
                         },
                     )
                     .semantics {
-                        contentDescription = "$label：$valueText"
+                        contentDescription = "$label：$shownText"
                         role = Role.Button
                         if (enabled) stateDescription = "可输入精确值，双击恢复默认"
                     }
@@ -159,10 +164,11 @@ fun PhoneSliderParamRow(
             contentAlignment = Alignment.CenterStart,
         ) {
             FmSlider(
-                value = clamped,
+                value = shown,
                 onValueChange = { next ->
-                    onValueChange(if (next.isFinite()) next.coerceIn(min, max) else min)
+                    commit.sample(if (next.isFinite()) next.coerceIn(min, max) else min)
                 },
+                onValueChangeFinished = { commit.release() },
                 valueRange = range,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = enabled,
@@ -171,7 +177,9 @@ fun PhoneSliderParamRow(
                 step = step,
                 onReset = onReset,
                 touch = true,
-                valueText = { valueText },
+                valueText = { next ->
+                    if (commit.dragging) phoneParamNumberText(next, decimals, unit) else valueText
+                },
             )
         }
         if (!enabled && !disabledReason.isNullOrBlank()) {

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +74,12 @@ fun FmSlider(
     step: Float? = null,
     /** Called by double tap / Delete when a default exists. */
     onReset: (() -> Unit)? = null,
+    /**
+     * 松手（或手势被取消）时回调一次。拖动气泡用它补写最后一笔：拖动期间
+     * [onValueChange] 仍然每个样本都回调，要不要合并节奏由调用方决定
+     * （`PhoneSliderParamRow` 走 `rememberDragCommit`）。
+     */
+    onValueChangeFinished: (() -> Unit)? = null,
     /** Touch density (24 dp thumb, 40 dp row) instead of the desktop one. */
     touch: Boolean = false,
     /** Number formatting for the semantics description. */
@@ -113,6 +120,7 @@ fun FmSlider(
 
     val focusRequester = remember { FocusRequester() }
     var focusMark by remember { mutableStateOf<TimeMark?>(null) }
+    val latestOnValueChangeFinished by rememberUpdatedState(onValueChangeFinished)
 
     Box(
         modifier = modifier
@@ -171,6 +179,9 @@ fun FmSlider(
                             if (change.changedToUpIgnoreConsumed()) finished = true
                         }
                     }
+                    // 松手 / 手势丢失都算一次拖动结束：拖动气泡在这里补写最后一笔，
+                    // 所以「松手才真正落值」和「拖动中被合并的中间样本」都不丢。
+                    latestOnValueChangeFinished?.invoke()
                     if (!dragged) {
                         val now = TimeSource.Monotonic.markNow()
                         val previous = lastTap

@@ -730,16 +730,17 @@ private fun MarginRow(
         FixedSliderRow(label = label, valueText = "无空间", reason = "这一格已经没有可调空间（水印已占满）。")
         return
     }
-    val aspect = photoAspect.takeIf { it.isFinite() && it > 0.01f } ?: 1.5f
-    val defaultPct = if (edge == WatermarkEdge.Top || edge == WatermarkEdge.Bottom) {
-        (WatermarkZones.DEFAULT_MARGIN / aspect * 100f).coerceIn(0f, maxPct)
-    } else {
-        (WatermarkZones.DEFAULT_MARGIN * 100f).coerceIn(0f, maxPct)
-    }
+    // 默认边距就是模型常量 5 % —— 横向按宽度、纵向按高度，和 `WatermarkSpec.rect()`
+    // 给引擎的两个分数同一个单位（2026-11-13 对齐；旧口径纵向要除以宽高比）。
+    val defaultPct = (WatermarkZones.DEFAULT_MARGIN * 100f).coerceIn(0f, maxPct)
+    // 数值显示**模型里的真值**，不夹到格子上限：宽水印的格子上限（0.5 − 宽度）可能
+    // 比模型默认的 5 % 还小，夹显示就会写一个用户没设过的数（例：真值 5.0 % 显示 4.5 %）。
+    val current = WatermarkZones.marginPct(spec, photoAspect, edge)
+    val upper = maxOf(maxPct, current)
     PhoneSliderParamRow(
         label = label,
-        value = WatermarkZones.marginPct(spec, photoAspect, edge).coerceIn(0f, maxPct),
-        range = 0f..maxPct,
+        value = current.coerceIn(0f, upper),
+        range = 0f..upper,
         defaultValue = defaultPct,
         step = 0.1f,
         unit = "%",

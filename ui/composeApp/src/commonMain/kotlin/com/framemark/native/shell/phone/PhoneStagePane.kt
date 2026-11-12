@@ -90,11 +90,7 @@ import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowEnv
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlin.time.TimeMark
-import kotlin.time.TimeSource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /** Last native frame's pixel size plus the engine photo box (overlay anchor). */
@@ -437,35 +433,14 @@ private fun BoxScope.WatermarkOverlay(
     if (photoW <= 1f || photoH <= 1f) return
     val aspect = photoW / photoH
 
-    // The Compose layer is the only phone watermark layer. Draw every gesture
-    // sample locally, but publish the project value on a fixed 10 Hz cadence so
-    // a drag cannot force the whole editor/project to recompose per touch sample.
-    var liveSpec by remember(spec.path) { mutableStateOf(spec) }
-    var dragging by remember(spec.path) { mutableStateOf(false) }
+    // The Compose layer is the only phone watermark layer. Every gesture sample is
+    // drawn locally, but the project value is published on the shared drag bubble
+    // (`rememberDragCommit`, 10 Hz + commit on release) so a drag cannot force the
+    // whole editor/project to recompose per touch sample.
     val latestOnChange by rememberUpdatedState(onChange)
-    val commitSignal = remember(spec.path) { Channel<Unit>(Channel.CONFLATED) }
-    LaunchedEffect(spec) {
-        if (!dragging && liveSpec != spec) liveSpec = spec
-    }
-
-    LaunchedEffect(commitSignal) {
-        val intervalMs = 100L
-        var lastCommitAt: TimeMark? = null
-        while (true) {
-            commitSignal.receive()
-            val remaining = lastCommitAt?.let {
-                intervalMs - it.elapsedNow().inWholeMilliseconds
-            } ?: 0L
-            if (remaining > 0L) delay(remaining)
-            latestOnChange(liveSpec)
-            lastCommitAt = TimeSource.Monotonic.markNow()
-            // Every wake-up is level-triggered by liveSpec; intermediate samples
-            // collapse instead of producing one project commit each.
-            while (commitSignal.tryReceive().isSuccess) {
-                // Coalesced into the next fixed-interval commit.
-            }
-        }
-    }
+    val latestSpec by rememberUpdatedState(spec)
+    val commit = rememberDragCommit(spec) { next -> latestOnChange(next) }
+    val liveSpec = if (commit.dragging) commit.live else spec
 
     val r = liveSpec.rect(aspect)
     val box = liveSpec.aabb(aspect)
@@ -481,8 +456,7 @@ private fun BoxScope.WatermarkOverlay(
 
     LaunchedEffect(aspect, liveSpec.photoAspect) {
         if (abs(aspect - liveSpec.photoAspect) > 0.01f) {
-            liveSpec = liveSpec.copy(photoAspect = aspect)
-            commitSignal.trySend(Unit)
+            commit.nudge(liveSpec.copy(photoAspect = aspect))
         }
     }
 
@@ -508,23 +482,18 @@ private fun BoxScope.WatermarkOverlay(
                 .graphicsLayer { rotationZ = liveSpec.rotation }
                 .pointerInput(liveSpec.path, aspect) {
                     detectDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragEnd = {
-                            dragging = false
-                            commitSignal.trySend(Unit)
-                        },
-                        onDragCancel = {
-                            dragging = false
-                            commitSignal.trySend(Unit)
-                        },
+                        onDragStart = { commit.sample(latestSpec) },
+                        onDragEnd = { commit.release() },
+                        onDragCancel = { commit.release() },
                     ) { change, drag ->
                         change.consume()
-                        liveSpec = liveSpec.withRectNudge(
-                            drag.x / photoW,
-                            drag.y / photoH,
-                            aspect,
+                        commit.sample(
+                            commit.live.withRectNudge(
+                                drag.x / photoW,
+                                drag.y / photoH,
+                                aspect,
+                            ),
                         )
-                        commitSignal.trySend(Unit)
                     }
                 },
         ) {
