@@ -675,6 +675,9 @@ fn render_pass(
             let mut ctx = Ctx2D::new(sk_canvas, report_cell);
             ctx.set_overlay(sh.overlay.clone());
             ctx.set_photo_1to1(snap);
+            // render-v1 photo crop: the draws need the user's region themselves
+            // (a pan has to move the cover slice inside the template's window).
+            ctx.set_user_crop(hand::UserCrop::read(sh.params));
             let mut env = Env {
                 ctx,
                 w: cw as f32,
@@ -797,6 +800,10 @@ fn render(args: &[String]) -> Result<(), String> {
         params.insert("photoAspect".into(), v);
         println!("e4hand.fit=native photo={}x{} lockedAspect={:.6}", iw, ih, iw / ih);
     }
+    // render-v1 photo crop: the user's window inside the template's own crop.
+    // The layout keeps reading `crop` (pw/ph and the design ratio are the
+    // template's), so nothing but the sampled source pixels moves.
+    let view = hand::crop_window(crop, iw, ih, hand::UserCrop::read(&params));
 
     // A1: the photo carries its own shooting information; the card's sample EXIF
     // is only a fallback for the bundled sample photo (no user photo selected).
@@ -891,7 +898,7 @@ fn render(args: &[String]) -> Result<(), String> {
             let (px, rect) = render_pass(
                 &mut gpu,
                 &shared,
-                crop,
+                view,
                 preview_pw,
                 preview_ph,
                 preview_cw,
@@ -908,7 +915,7 @@ fn render(args: &[String]) -> Result<(), String> {
             (px, preview_cw, preview_ch, rect, cell)
         } else {
             let cell = mk_report(cw, ch);
-            let (px, rect) = render_pass(&mut gpu, &shared, crop, crop.pw, crop.ph, cw, ch, &cell, None)?;
+            let (px, rect) = render_pass(&mut gpu, &shared, view, view.pw, view.ph, cw, ch, &cell, None)?;
             (px, cw, ch, rect, cell)
         }
     } else if let Some(preview_edge) = preview_max_edge {
@@ -923,7 +930,7 @@ fn render(args: &[String]) -> Result<(), String> {
         let (_pilot_px, pilot_rect) = render_pass(
             &mut gpu,
             &shared,
-            crop,
+            view,
             pilot_w,
             pilot_h,
             pilot_cw,
@@ -968,7 +975,7 @@ fn render(args: &[String]) -> Result<(), String> {
         let (px, rect) = render_pass(
             &mut gpu,
             &shared,
-            crop,
+            view,
             preview_pw,
             preview_ph,
             preview_cw,
@@ -1002,7 +1009,7 @@ fn render(args: &[String]) -> Result<(), String> {
         // measures the box the template actually wants.
         let (cw_a, ch_a) = layout_of(iw, ih)?;
         let cell_a = mk_report(cw_a, ch_a);
-        let (px_a, rect_a) = render_pass(&mut gpu, &shared, crop, iw, ih, cw_a, ch_a, &cell_a, Some((iw, ih)))?;
+        let (px_a, rect_a) = render_pass(&mut gpu, &shared, view, iw, ih, cw_a, ch_a, &cell_a, Some((iw, ih)))?;
         let (box_w, box_h) = (rect_a[2], rect_a[3]);
         if !(box_w > 0.0) || !(box_h > 0.0) {
             return Err(format!(
@@ -1045,7 +1052,7 @@ fn render(args: &[String]) -> Result<(), String> {
             let (pw_b, ph_b) = (iw * f, ih * f);
             let (cw_b, ch_b) = layout_of(pw_b, ph_b)?;
             let cell_b = mk_report(cw_b, ch_b);
-            let (px_b, rect_b) = render_pass(&mut gpu, &shared, crop, pw_b, ph_b, cw_b, ch_b, &cell_b, Some((iw, ih)))?;
+            let (px_b, rect_b) = render_pass(&mut gpu, &shared, view, pw_b, ph_b, cw_b, ch_b, &cell_b, Some((iw, ih)))?;
             let resid_px = (rect_b[2] - iw).abs().max((rect_b[3] - ih).abs());
             if resid_px > 1.0 {
                 return Err(format!(
@@ -1089,6 +1096,19 @@ fn render(args: &[String]) -> Result<(), String> {
     );
 
     let rep = report_cell.borrow();
+    // The source pixels the photo draw sampled. The draw report keeps the exact
+    // src rect of every image draw, so this is the rectangle that reached Skia
+    // (cover windows and the user crop included) rather than a re-derivation.
+    // The **last** `photo` draw pairs with `photo_rect`: `record_photo`
+    // overwrites the box on every photo draw, so the two must come from the same
+    // draw for the gain-map pass to line them up.
+    let photo_src = rep
+        .images
+        .iter()
+        .rev()
+        .find(|d| d.key == "photo")
+        .and_then(|d| d.src.as_ref())
+        .map(|r| [r.x, r.y, r.w, r.h]);
     let mut out_json = json!({
         "card": card.card,
         "template": card.template_id,
@@ -1105,6 +1125,11 @@ fn render(args: &[String]) -> Result<(), String> {
         })),
         "report": &*rep,
     });
+    // `[x, y, w, h]` in the photo file's own raster space; absent when the card
+    // has no photo draw at all.
+    if let Some(src) = photo_src {
+        out_json["photo_src"] = json!(src);
+    }
     if let Some(edge) = preview_max_edge {
         out_json["preview"] = json!({
             "max_edge": edge,

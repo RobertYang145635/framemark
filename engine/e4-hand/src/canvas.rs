@@ -48,6 +48,10 @@ pub struct Ctx2D<'a> {
     /// `--fit native`: force the photo's own draw box to integral pixels at
     /// exactly this size, so the source pixels land 1:1 (see `snap_photo`).
     photo_1to1: Option<(f32, f32)>,
+    /// render-v1 photo crop: where the user's kept region sits in the source.
+    /// The photo draws read it so a pan moves the sampled slice even when the
+    /// template's window spans the whole photo (see `hand::cover_src`).
+    user_crop: crate::hand::UserCrop,
 }
 
 impl<'a> Ctx2D<'a> {
@@ -65,11 +69,26 @@ impl<'a> Ctx2D<'a> {
             overlay: None,
             overlay_done: false,
             photo_1to1: None,
+            user_crop: crate::hand::UserCrop::default(),
         }
     }
 
     pub fn set_photo_1to1(&mut self, size: Option<(f32, f32)>) {
         self.photo_1to1 = size;
+    }
+
+    pub fn set_user_crop(&mut self, user: crate::hand::UserCrop) {
+        self.user_crop = user;
+    }
+
+    /// The design's crop, or `None` at the defaults — every photo draw keeps
+    /// today's geometry unless the user actually chose a region.
+    pub fn user_crop(&self) -> Option<crate::hand::UserCrop> {
+        if self.user_crop.is_default() {
+            None
+        } else {
+            Some(self.user_crop)
+        }
     }
 
     /// Snap a template's photo box onto the pixel grid at the source size.

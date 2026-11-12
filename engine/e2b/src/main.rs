@@ -127,7 +127,82 @@ fn parse_overrides(doc: &Value) -> ir::Overrides {
             }
         }
     }
+    // render-v1 photo crop: three floats in the same free-form map, omitted at
+    // their defaults, so a design without them renders exactly as before.
+    for (key, slot) in [("photoCropX", &mut ov.photo_crop.cx), ("photoCropY", &mut ov.photo_crop.cy)] {
+        if let Some(n) = params.get(key).and_then(|v| v.as_f64()) {
+            if n.is_finite() {
+                *slot = n as f32;
+            }
+        }
+    }
+    if let Some(n) = params.get("photoCropZoom").and_then(|v| v.as_f64()) {
+        if n.is_finite() {
+            ov.photo_crop.zoom = n as f32;
+        }
+    }
+    ov.photo_crop = ov.photo_crop.normalised();
     ov
+}
+
+/// Sub-pixel slack below which a snapped `cover` extent or origin counts as the
+/// image edge. A proportional photo box lands within this of the full image, so
+/// the default crop stays the whole raster instead of a 1-ulp sliver of it.
+const PHOTO_SRC_SNAP: f32 = 1e-3;
+
+/// The part of a `iw` x `ih` photo the `box_w` x `box_h` photo box samples, as
+/// `[x, y, w, h]` in source pixels.
+///
+/// `cover` decides the base extent (`s = max(box_w/iw, box_h/ih)`); the user's
+/// crop scales that extent by `zoom` (`s_eff = s * zoom`, so a larger zoom
+/// keeps a smaller region) and centres it on the source point
+/// `(cx * iw, cy * ih)`. The rectangle is clamped so it never leaves the image
+/// and never collapses (a 1 px image still samples 1 px), and it is snapped to
+/// the full size within [PHOTO_SRC_SNAP] so the defaults — zoom 1, centre 0.5,
+/// box aspect equal to the photo's — are exactly the whole image the engine
+/// drew before the crop existed.
+fn photo_src_rect(iw: f32, ih: f32, box_w: f32, box_h: f32, crop: ir::PhotoCrop) -> [f32; 4] {
+    if !(iw.is_finite() && ih.is_finite() && iw > 0.0 && ih > 0.0) {
+        return [0.0, 0.0, 0.0, 0.0];
+    }
+    let whole = [0.0, 0.0, iw, ih];
+    if !(box_w.is_finite() && box_h.is_finite() && box_w > 0.0 && box_h > 0.0) {
+        return whole;
+    }
+    let crop = crop.normalised();
+    let s = (box_w / iw).max(box_h / ih);
+    let s_eff = s * crop.zoom;
+    if !(s.is_finite() && s > 0.0 && s_eff.is_finite() && s_eff > 0.0) {
+        return whole;
+    }
+    let sw = photo_src_extent(box_w / s_eff, iw);
+    let sh = photo_src_extent(box_h / s_eff, ih);
+    let sx = photo_src_origin(crop.cx * iw - sw / 2.0, iw - sw);
+    let sy = photo_src_origin(crop.cy * ih - sh / 2.0, ih - sh);
+    [sx, sy, sw, sh]
+}
+
+/// A source extent inside `1..=full`, snapped onto `full` at the image edge.
+fn photo_src_extent(v: f32, full: f32) -> f32 {
+    if (v - full).abs() <= PHOTO_SRC_SNAP {
+        full
+    } else {
+        // `f32::min` returns the non-NaN operand, so a NaN extent keeps the image.
+        v.min(full).max(1.0_f32.min(full))
+    }
+}
+
+/// A source origin inside `0..=max`, snapped onto `0`/`max` at the image edge.
+fn photo_src_origin(v: f32, max: f32) -> f32 {
+    let hi = if max.is_finite() { max.max(0.0) } else { 0.0 };
+    let v = if v.is_finite() { v.clamp(0.0, hi) } else { 0.0 };
+    if v <= PHOTO_SRC_SNAP {
+        0.0
+    } else if hi - v <= PHOTO_SRC_SNAP {
+        hi
+    } else {
+        v
+    }
 }
 
 fn sampling_low() -> SamplingOptions {
@@ -1008,6 +1083,9 @@ fn render_once(args: Vec<String>) {
 
     let d021_override = std::env::var("E2B_D021_EM").ok().and_then(|v| v.parse::<f32>().ok());
     let items_out = std::cell::RefCell::new(Vec::<Value>::new());
+    // The source rectangle the photo draw really sampled; reported below so no
+    // caller has to re-derive the crop.
+    let photo_src_out: Cell<[f32; 4]> = Cell::new([0.0, 0.0, pw, ph]);
     let vectors: Value =
         serde_json::from_str(include_str!("vivo_vector_art.json")).expect("vector art");
 
@@ -1590,10 +1668,17 @@ fn render_once(args: Vec<String>) {
             }
             let mut photo_paint = Paint::default();
             photo_paint.set_anti_alias(true);
+            // render-v1 photo crop: the photo box is filled by `cover`, and the
+            // user's crop moves/zooms the very source rectangle that window
+            // samples. At the defaults this is the whole raster — the draw the
+            // engine always made — so an untouched design is pixel-identical.
+            let src = photo_src_rect(pw, ph, dst.width(), dst.height(), env.ov.photo_crop);
+            photo_src_out.set(src);
+            let src_rect = Rect::from_xywh(src[0], src[1], src[2], src[3]);
             draw_image_rect(
                 canvas,
                 &photo,
-                Some(Rect::from_xywh(0.0, 0.0, pw, ph)),
+                Some(src_rect),
                 dst,
                 photo_sampling,
                 Some(&photo_paint),
@@ -1611,7 +1696,7 @@ fn render_once(args: Vec<String>) {
                 draw_image_rect(
                     canvas,
                     &photo,
-                    Some(Rect::from_xywh(0.0, 0.0, pw, ph)),
+                    Some(src_rect),
                     fake,
                     photo_sampling,
                     Some(&photo_paint),
@@ -1648,6 +1733,9 @@ fn render_once(args: Vec<String>) {
         "reference_width_mode": style.reference_width_mode,
         "margins": {"left": style.margins.left, "top": style.margins.top, "right": style.margins.right, "bottom": style.margins.bottom},
         "photo": [layout.photo.x*k, layout.photo.y*k, layout.photo.w*k, layout.photo.h*k],
+        // The source pixels the photo draw sampled (the crop the engine applied),
+        // always in the photo file's own raster space: `[x, y, w, h]`.
+        "photo_src": photo_src_out.get(),
         "overlay": overlay.as_ref().map(|o| json!({
             "rect_norm": o.rect,
             "opacity": o.opacity,
@@ -1802,5 +1890,95 @@ mod asset_resolution_tests {
             resolve_asset(&contained.to_string_lossy(), std::slice::from_ref(&allowed)),
             Some(contained.canonicalize().expect("canonical contained fixture")),
         );
+    }
+}
+
+#[cfg(test)]
+mod photo_crop_tests {
+    use super::{parse_overrides, photo_src_rect};
+    use crate::ir::PhotoCrop;
+    use serde_json::json;
+
+    /// 4000x3000 photo, square 1000 box: `cover` keeps 3000x3000 at 500,0.
+    #[test]
+    fn defaults_reproduce_todays_centred_rect() {
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default()),
+            [500.0, 0.0, 3000.0, 3000.0]
+        );
+        // A box with the photo's own aspect keeps the whole image, exactly.
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 800.0, 600.0, PhotoCrop::default()),
+            [0.0, 0.0, 4000.0, 3000.0]
+        );
+        // ...and so does a portrait photo in a square box, mirrored.
+        assert_eq!(
+            photo_src_rect(3000.0, 4000.0, 1000.0, 1000.0, PhotoCrop::default()),
+            [0.0, 500.0, 3000.0, 3000.0]
+        );
+    }
+
+    #[test]
+    fn zoom_two_halves_the_sampled_extent() {
+        let r = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 0.5, cy: 0.5, zoom: 2.0 });
+        assert_eq!(r, [1250.0, 750.0, 1500.0, 1500.0]);
+        // The kept aspect stays the photo box's aspect, so the draw never warps.
+        assert!((r[2] / r[3] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn corner_pan_clamps_into_the_image() {
+        let top_left = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 0.0, cy: 0.0, zoom: 2.0 });
+        assert_eq!(top_left, [0.0, 0.0, 1500.0, 1500.0]);
+        let bottom_right = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 1.0, cy: 1.0, zoom: 2.0 });
+        assert_eq!(bottom_right, [2500.0, 1500.0, 1500.0, 1500.0]);
+        // A centre outside 0..1 is clamped, never pushed off the photo.
+        let off = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: -3.0, cy: 4.0, zoom: 2.0 });
+        assert_eq!(off, [0.0, 1500.0, 1500.0, 1500.0]);
+    }
+
+    #[test]
+    fn zoom_is_clamped_to_the_ui_range() {
+        let beyond = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 0.5, cy: 0.5, zoom: 99.0 });
+        let deepest = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 0.5, cy: 0.5, zoom: 8.0 });
+        assert_eq!(beyond, deepest);
+        let below = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: 0.5, cy: 0.5, zoom: 0.0 });
+        assert_eq!(below, photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default()));
+        let nan = photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop { cx: f32::NAN, cy: f32::NAN, zoom: f32::NAN });
+        assert_eq!(nan, photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default()));
+    }
+
+    #[test]
+    fn one_pixel_images_never_produce_an_empty_rect() {
+        let r = photo_src_rect(1.0, 1.0, 1.0, 1.0, PhotoCrop { cx: 0.0, cy: 0.0, zoom: 8.0 });
+        assert_eq!(r, [0.0, 0.0, 1.0, 1.0]);
+        let r = photo_src_rect(1.0, 4000.0, 10.0, 10.0, PhotoCrop { cx: 1.0, cy: 1.0, zoom: 8.0 });
+        assert_eq!(r[2], 1.0);
+        assert!(r[3] >= 1.0 && r[1] + r[3] <= 4000.0 + 1e-3);
+        // A box that cannot describe a rectangle keeps the whole image.
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 0.0, 10.0, PhotoCrop::default()),
+            [0.0, 0.0, 4000.0, 3000.0]
+        );
+        assert_eq!(
+            photo_src_rect(0.0, 3000.0, 10.0, 10.0, PhotoCrop::default()),
+            [0.0, 0.0, 0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn design_params_read_the_three_crop_keys() {
+        let ov = parse_overrides(&json!({ "design": { "params": {
+            "photoCropX": 0.25,
+            "photoCropY": "0.75",
+            "photoCropZoom": 3
+        }}}));
+        assert_eq!(ov.photo_crop.cx, 0.25);
+        // The keys are numbers in the document, not strings: a string is ignored.
+        assert_eq!(ov.photo_crop.cy, 0.5);
+        assert_eq!(ov.photo_crop.zoom, 3.0);
+        // A design without the keys is the default crop (no-op render).
+        let none = parse_overrides(&json!({ "design": { "params": {} } }));
+        assert!(none.photo_crop.is_default());
     }
 }

@@ -263,11 +263,13 @@ pub fn draw_photo_cover(
         Some(s) => s,
         None => (x, y, w, h),
     };
-    let scale = (w / crop.sw).max(h / crop.sh);
-    let sw = w / scale;
-    let sh = h / scale;
-    let sx = crop.sx + (crop.sw - sw) / 2.0;
-    let sy = crop.sy + (crop.sh - sh) / 2.0;
+    // `cover` slice inside the window the template chose. A user crop moves the
+    // slice to its own source point (clamped inside that window), which is what
+    // makes a pan visible at zoom 1; at the defaults this is the centred rect.
+    let (iw, ih) = (photo.width() as f32, photo.height() as f32);
+    let user = ctx.user_crop().unwrap_or_default();
+    let src = crate::hand::cover_src(*crop, user, iw, ih, w, h);
+    let (sx, sy, sw, sh) = (src[0], src[1], src[2], src[3]);
     if shadow > 0.0 {
         ctx.fill_round_rect_shadow(
             x,

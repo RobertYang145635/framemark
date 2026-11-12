@@ -258,6 +258,9 @@ fn draw_pass(
         canvas.scale((scale, scale));
         let mut ctx = Ctx2D::new(canvas, &report_cell);
         ctx.set_photo_1to1(snap);
+        // render-v1 photo crop: the photo draws read the user's region so a pan
+        // moves the cover slice inside the template's window (see hand::cover_src).
+        ctx.set_user_crop(hand::UserCrop::read(params));
         ctx.set_overlay(overlay);
         let mut env = Env {
             ctx,
@@ -456,6 +459,12 @@ fn render_card_impl(
             hand::crop_full(iw, ih)
         }
     };
+    // render-v1 photo crop: the user's window inside the template's own crop,
+    // exactly as `engine/e4-hand/src/main.rs` computes it. The layout keeps
+    // reading `crop` (`pw`/`ph` and the template ratio are the template's), so
+    // nothing but the sampled source pixels moves; at the defaults this is
+    // `crop` untouched and today's render is reproduced byte for byte.
+    let view = hand::crop_window(crop, iw, ih, hand::UserCrop::read(&params));
 
     // A1: a user photo carries its own shooting information. The card's sample
     // EXIF is only used when no user photo was supplied (bundled sample preview).
@@ -614,7 +623,7 @@ fn render_card_impl(
             &fonts,
             &te,
             &themes,
-            crop,
+            view,
             pw_b,
             ph_b,
             cw_b,
@@ -666,9 +675,9 @@ fn render_card_impl(
                 &fonts,
                 &te,
                 &themes,
-                crop,
-                crop.pw,
-                crop.ph,
+                view,
+                view.pw,
+                view.ph,
                 cw,
                 ch,
                 scale,
@@ -684,6 +693,20 @@ fn render_card_impl(
     let photo_rect = pass.photo_rect;
     let mut surface = pass.surface;
     let rep = pass.report;
+    // The source pixels the photo draw sampled. The draw report keeps the exact
+    // src rect of every image draw, so this is the rectangle that reached Skia
+    // (the template's own `cover` window and the user crop included) rather than
+    // a re-derivation — the same derivation `engine/e4-hand/src/main.rs` makes.
+    // The **last** `photo` draw pairs with `photo_rect`: `record_photo` overwrites
+    // the box on every photo draw, so the two must come from the same draw for the
+    // gain-map pass to line them up.
+    let photo_src = rep
+        .images
+        .iter()
+        .rev()
+        .find(|d| d.key == "photo")
+        .and_then(|d| d.src.as_ref())
+        .map(|r| [r.x, r.y, r.w, r.h]);
 
     let snapshot = surface.image_snapshot();
     let raw_rgba = if let Some(out_png) = out_png {
@@ -715,7 +738,7 @@ fn render_card_impl(
         Some(rgba)
     };
 
-    let geom_doc = json!({
+    let mut geom_doc = json!({
         "card": card.card,
         "template": card.template_id,
         "canvas": [cw, ch],
@@ -728,6 +751,12 @@ fn render_card_impl(
         },
         "report": &rep,
     });
+    // `[x, y, w, h]` in the photo file's own raster space; absent when the card
+    // has no photo draw at all (same contract as the desktop hand report, so
+    // Kotlin's `photoSrc` feed reads both with one parser).
+    if let Some(src) = photo_src {
+        geom_doc["photo_src"] = json!(src);
+    }
     let geom_json = serde_json::to_string_pretty(&geom_doc).unwrap_or_default();
     let geom = HandGeom {
         canvas: [cw, ch],
@@ -987,3 +1016,363 @@ mod tests {
         )));
     }
 }
+
+/// The hand bridge's copy of the crop maths is `engine/e4-hand/src/hand.rs`'s
+/// `crop_window` (pulled in read-only via `#[path]`), which is why these cases
+/// are the desktop's: if they ever disagree, the phone renders a different frame
+/// from the same document. They pin exactly what the phone did before the crop
+/// existed — a `crop` that reaches the draw untouched.
+#[cfg(test)]
+mod photo_crop_tests {
+    use crate::hand::{compute_crop, cover_src, crop_full, crop_window, Crop, UserCrop};
+
+    fn same(a: Crop, b: Crop) -> bool {
+        a.sx == b.sx && a.sy == b.sy && a.sw == b.sw && a.sh == b.sh && a.pw == b.pw && a.ph == b.ph
+    }
+
+    /// The app's design document is the only way the crop reaches this bridge;
+    /// if a param is lost between `apply_app_design` and `UserCrop::read`, the
+    /// user's window silently reverts to the engine default. This is the exact
+    /// document the phone logs for the glass-white-1 card.
+    #[test]
+    fn app_design_crop_reaches_the_window() {
+        let mut design: crate::hand::Design =
+            serde_json::from_value(serde_json::json!({ "templateId": "all-latin" })).unwrap();
+        let app = serde_json::json!({ "design": {
+            "cardId": "glass-white-1",
+            "styleId": null,
+            "params": { "blur": 39, "photoCropX": 0.28422307362779975, "theme": "white" },
+            "text": {}
+        }});
+        super::apply_app_design(&mut design, &app).unwrap();
+        let params = crate::hand::merge_params(&Default::default(), &design.params);
+        let user = crate::hand::UserCrop::read(&params);
+        assert!(
+            !user.is_default(),
+            "crop lost before crop_window: {user:?} params={params:?}"
+        );
+        let base = compute_crop(8192.0, 6144.0, "");
+        let view = crop_window(base, 8192.0, 6144.0, user);
+        assert!(view.sx < 1000.0, "window did not move left: {view:?}");
+    }
+
+    /// 4000x3000 photo in the template's `1:1` window: `cover` keeps 3000x3000
+    /// at 500,0, and the default crop must keep exactly that.
+    #[test]
+    fn defaults_reproduce_todays_window() {
+        let base = compute_crop(4000.0, 3000.0, "1:1");
+        assert_eq!(
+            (base.sx, base.sy, base.sw, base.sh, base.pw, base.ph),
+            (500.0, 0.0, 3000.0, 3000.0, 3000.0, 3000.0)
+        );
+        let view = crop_window(base, 4000.0, 3000.0, UserCrop::default());
+        assert!(same(view, base), "default crop changed the window: {view:?}");
+
+        // A design-ratio window keeps the whole photo and stays untouched too.
+        let full = compute_crop(4000.0, 3000.0, "");
+        let view = crop_window(full, 4000.0, 3000.0, UserCrop::default());
+        assert!(same(view, full));
+        assert!(UserCrop::read(&Default::default()).is_default());
+    }
+
+    #[test]
+    fn zoom_two_halves_the_sampled_extent() {
+        let base = compute_crop(4000.0, 3000.0, "1:1");
+        let view = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!((view.sw, view.sh), (1500.0, 1500.0));
+        // Centred on the base window's centre (2000, 1500).
+        assert_eq!((view.sx, view.sy), (1250.0, 750.0));
+        // `pw`/`ph` are the layout's, not the sample's: the box never moves.
+        assert_eq!((view.pw, view.ph), (base.pw, base.ph));
+        // Keeping the same aspect as the base window means the draw never warps.
+        assert!((view.sw / view.sh - base.sw / base.sh).abs() < 1e-5);
+    }
+
+    #[test]
+    fn corner_pan_clamps_into_the_image() {
+        let base = crop_full(4000.0, 3000.0);
+        let top_left = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!((top_left.sx, top_left.sy, top_left.sw, top_left.sh), (0.0, 0.0, 2000.0, 1500.0));
+        let bottom_right = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 1.0,
+                cy: 1.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!(
+            (bottom_right.sx, bottom_right.sy, bottom_right.sw, bottom_right.sh),
+            (2000.0, 1500.0, 2000.0, 1500.0)
+        );
+        // A centre outside 0..1 is clamped, never pushed off the photo.
+        let off = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: -3.0,
+                cy: 4.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!((off.sx, off.sy), (0.0, 1500.0));
+        // The same pan inside a 1:1 template window still reaches the photo's
+        // own edge: the origin clamps to the image, not to the design window.
+        let square = compute_crop(4000.0, 3000.0, "1:1");
+        let square_tl = crop_window(
+            square,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!((square_tl.sx, square_tl.sy), (0.0, 0.0));
+        let square_br = crop_window(
+            square,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 1.0,
+                cy: 1.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!((square_br.sx, square_br.sy), (2500.0, 1500.0));
+        // ...and the window never leaves the photo.
+        for view in [top_left, bottom_right, off, square_tl, square_br] {
+            assert!(view.sx >= 0.0 && view.sy >= 0.0);
+            assert!(view.sx + view.sw <= 4000.0 && view.sy + view.sh <= 3000.0);
+        }
+    }
+
+    /// The phone's primary crop gesture is a drag, and at zoom 1 the extent
+    /// does not change — so the origin must follow the user's point inside the
+    /// image. Clamping it to the design window made "drag to reposition" a
+    /// no-op on every template whose window is the whole photo.
+    #[test]
+    fn pan_at_zoom_one_moves_the_window() {
+        let base = compute_crop(4000.0, 3000.0, "1:1"); // 3000x3000 at 500,0
+        let left = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.0,
+                cy: 0.5,
+                zoom: 1.0,
+            },
+        );
+        assert_eq!(left.sx, 0.0, "pan left must clamp to the photo's left edge");
+        assert_ne!(left.sx, 500.0, "pan at zoom 1 must leave the centred origin");
+        let right = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.75,
+                cy: 0.5,
+                zoom: 1.0,
+            },
+        );
+        assert_eq!((right.sx, right.sw), (1000.0, 3000.0));
+        assert!(right.sx > 0.0 && right.sx != 500.0);
+        // A window as wide as the photo has no horizontal slack; the slice is
+        // chosen by `cover_src` instead (next test).
+        let full = crop_full(4000.0, 3000.0);
+        let view = crop_window(
+            full,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.75,
+                cy: 0.5,
+                zoom: 1.0,
+            },
+        );
+        assert_eq!((view.sx, view.sw), (0.0, 4000.0));
+    }
+
+    /// `glass-white-1` draws a portrait box over a 4:3 photo with the whole
+    /// photo as its window, so this is the exact shape that used to ignore the
+    /// drag: at zoom 1 the cover slice must slide with the user.
+    #[test]
+    fn cover_slice_moves_with_the_user_at_zoom_one() {
+        let full = crop_full(8192.0, 6144.0);
+        let (w, h) = (3778.86, 5460.79);
+        let default = cover_src(full, UserCrop::default(), 8192.0, 6144.0, w, h);
+        assert!((default[2] - 4251.65).abs() < 0.5, "{default:?}");
+        assert!((default[3] - 6144.0).abs() < 1e-3, "{default:?}");
+        assert!((default[0] - (8192.0 - default[2]) / 2.0).abs() < 1e-3, "{default:?}");
+
+        let cx = 0.28422307362779975;
+        let panned = cover_src(
+            full,
+            UserCrop {
+                cx,
+                cy: 0.5,
+                zoom: 1.0,
+            },
+            8192.0,
+            6144.0,
+            w,
+            h,
+        );
+        assert!((panned[0] - (cx as f32 * 8192.0 - panned[2] / 2.0)).abs() < 1e-2);
+        assert_ne!(panned[0], default[0], "pan must not keep the centred slice");
+        assert!(panned[0] >= 0.0 && panned[0] + panned[2] <= 8192.0 + 1e-3);
+
+        // The left corner clamps onto the raster edge, not onto a negative one.
+        let edge = cover_src(
+            full,
+            UserCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 1.0,
+            },
+            8192.0,
+            6144.0,
+            w,
+            h,
+        );
+        assert_eq!((edge[0], edge[1]), (0.0, 0.0));
+
+        // zoom 2: the narrowed window still leaves the cover slice centred on
+        // the user's point — the same rectangle the phone produced before.
+        let view = crop_window(
+            full,
+            8192.0,
+            6144.0,
+            UserCrop {
+                cx,
+                cy: 0.5,
+                zoom: 2.0,
+            },
+        );
+        let src = cover_src(
+            view,
+            UserCrop {
+                cx,
+                cy: 0.5,
+                zoom: 2.0,
+            },
+            8192.0,
+            6144.0,
+            w,
+            h,
+        );
+        assert!(src[0] >= view.sx - 1e-2 && src[0] + src[2] <= view.sx + view.sw + 1e-2);
+        assert!((src[0] - 1265.44).abs() < 0.5, "{src:?}");
+        assert!((src[2] - 2125.82).abs() < 0.5, "{src:?}");
+    }
+
+    #[test]
+    fn one_pixel_images_never_produce_an_empty_window() {
+        let tiny = crop_full(1.0, 1.0);
+        let view = crop_window(
+            tiny,
+            1.0,
+            1.0,
+            UserCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 8.0,
+            },
+        );
+        assert_eq!(
+            (view.sx, view.sy, view.sw, view.sh),
+            (0.0, 0.0, 1.0, 1.0),
+            "a 1 px photo must still sample 1 px"
+        );
+        // One axis is a single pixel, the other is not: neither may collapse.
+        let slab = crop_full(1.0, 4000.0);
+        let view = crop_window(
+            slab,
+            1.0,
+            4000.0,
+            UserCrop {
+                cx: 1.0,
+                cy: 1.0,
+                zoom: 8.0,
+            },
+        );
+        assert_eq!(view.sw, 1.0);
+        assert!(view.sh >= 1.0 && view.sy + view.sh <= 4000.0 + 1e-3);
+        // A source or window that cannot describe a rectangle keeps the base.
+        let base = crop_full(4000.0, 3000.0);
+        assert!(same(
+            crop_window(
+                base,
+                0.0,
+                3000.0,
+                UserCrop {
+                    cx: 0.0,
+                    cy: 0.0,
+                    zoom: 2.0,
+                },
+            ),
+            base
+        ));
+        assert!(same(
+            crop_window(
+                Crop::default(),
+                4000.0,
+                3000.0,
+                UserCrop {
+                    cx: 0.0,
+                    cy: 0.0,
+                    zoom: 2.0,
+                },
+            ),
+            Crop::default()
+        ));
+        // Zoom below the UI's 1 and non-finite centres are the defaults, not a
+        // degenerate window.
+        let below = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 0.0,
+            },
+        );
+        assert!(same(below, base));
+        let nan = crop_window(
+            base,
+            4000.0,
+            3000.0,
+            UserCrop {
+                cx: f32::NAN,
+                cy: f32::NAN,
+                zoom: f32::NAN,
+            },
+        );
+        assert!(same(nan, base));
+    }
+}
+

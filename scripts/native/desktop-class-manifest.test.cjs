@@ -121,10 +121,13 @@ test('the gate only inspects compileKotlinDesktop, not other cached tasks', () =
   assert.equal(verifyDesktopCompileNotFromCache(log).status, 'PASS')
 })
 
-test('a missing gradle log is reported as absent', () => {
+test('a missing gradle log fails the cache gate instead of passing vacuously', () => {
   const dir = tempDir('fm-cache-gate-missing-')
   const result = verifyDesktopCompileNotFromCache(path.join(dir, 'nope.log'))
-  assert.equal(result.status, 'PASS')
+  // WP-RELEASE: no log means no evidence that --no-build-cache ran, so the gate
+  // fails closed. The old return was PASS with an empty fromCache list.
+  assert.equal(result.status, 'FAIL')
   assert.equal(result.logPresent, false)
   assert.deepEqual(result.scheduled, [])
+  assert.match(result.detail, /log is missing/)
 })

@@ -566,6 +566,41 @@ pub struct Overrides {
     pub theme: Option<String>,
     /// `brandLogoFile` — a decoded/logos stem picked in the Inspector.
     pub brand: Option<String>,
+    /// `photoCropX` / `photoCropY` / `photoCropZoom` (defaults = the centred draw).
+    pub photo_crop: PhotoCrop,
+}
+
+/// render-v1 photo crop: which part of the source photo the photo box keeps.
+///
+/// ([cx], [cy]) is normalised to the source (`0.5` = the engine's own centre)
+/// and [zoom] multiplies the base `cover` extent, so `1` is the engine default
+/// and a larger value keeps a smaller region. The defaults reproduce the
+/// pre-crop render exactly, so an untouched design never moves a pixel.
+#[derive(Clone, Copy, Debug)]
+pub struct PhotoCrop {
+    pub cx: f32,
+    pub cy: f32,
+    pub zoom: f32,
+}
+
+impl Default for PhotoCrop {
+    fn default() -> Self {
+        Self { cx: 0.5, cy: 0.5, zoom: 1.0 }
+    }
+}
+
+impl PhotoCrop {
+    /// Finite, centre inside the source and zoom inside the UI's own 1..=8.
+    pub fn normalised(self) -> Self {
+        let centre = |v: f32| if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.5 };
+        let zoom = if self.zoom.is_finite() { self.zoom.clamp(1.0, 8.0) } else { 1.0 };
+        Self { cx: centre(self.cx), cy: centre(self.cy), zoom }
+    }
+
+    /// True when this keeps exactly the region the engine kept before the crop.
+    pub fn is_default(&self) -> bool {
+        self.cx == 0.5 && self.cy == 0.5 && self.zoom == 1.0
+    }
 }
 
 impl Overrides {

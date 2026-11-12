@@ -426,7 +426,87 @@ fn parse_overrides(doc: &Value) -> ir::Overrides {
             }
         }
     }
+    // render-v1 photo crop: three floats in the same free-form map, omitted at
+    // their defaults, so a design without them renders exactly as before.
+    for (key, slot) in [
+        ("photoCropX", &mut ov.photo_crop.cx),
+        ("photoCropY", &mut ov.photo_crop.cy),
+    ] {
+        if let Some(n) = params.get(key).and_then(|v| v.as_f64()) {
+            if n.is_finite() {
+                *slot = n as f32;
+            }
+        }
+    }
+    if let Some(n) = params.get("photoCropZoom").and_then(|v| v.as_f64()) {
+        if n.is_finite() {
+            ov.photo_crop.zoom = n as f32;
+        }
+    }
+    ov.photo_crop = ov.photo_crop.normalised();
     ov
+}
+
+/// Sub-pixel slack below which a snapped `cover` extent or origin counts as the
+/// image edge. A proportional photo box lands within this of the full image, so
+/// the default crop stays the whole raster instead of a 1-ulp sliver of it.
+const PHOTO_SRC_SNAP: f32 = 1e-3;
+
+/// The part of a `iw` x `ih` photo the `box_w` x `box_h` photo box samples, as
+/// `[x, y, w, h]` in source pixels.
+///
+/// Verbatim port of `engine/e2b/src/main.rs::photo_src_rect` (e2b is a
+/// Windows-gated binary with no `[lib]`, so its paint code cannot be pulled in
+/// with `#[path]`): `cover` decides the base extent (`s = max(box_w/iw,
+/// box_h/ih)`), the user's crop scales that extent by `zoom` (`s_eff = s *
+/// zoom`, so a larger zoom keeps a smaller region) and centres it on the source
+/// point `(cx * iw, cy * ih)`. The rectangle is clamped so it never leaves the
+/// image and never collapses (a 1 px image still samples 1 px), and it is snapped
+/// to the full size within [PHOTO_SRC_SNAP] so the defaults — zoom 1, centre
+/// 0.5, box aspect equal to the photo's — are exactly the whole image this
+/// bridge drew before the crop existed.
+fn photo_src_rect(iw: f32, ih: f32, box_w: f32, box_h: f32, crop: ir::PhotoCrop) -> [f32; 4] {
+    if !(iw.is_finite() && ih.is_finite() && iw > 0.0 && ih > 0.0) {
+        return [0.0, 0.0, 0.0, 0.0];
+    }
+    let whole = [0.0, 0.0, iw, ih];
+    if !(box_w.is_finite() && box_h.is_finite() && box_w > 0.0 && box_h > 0.0) {
+        return whole;
+    }
+    let crop = crop.normalised();
+    let s = (box_w / iw).max(box_h / ih);
+    let s_eff = s * crop.zoom;
+    if !(s.is_finite() && s > 0.0 && s_eff.is_finite() && s_eff > 0.0) {
+        return whole;
+    }
+    let sw = photo_src_extent(box_w / s_eff, iw);
+    let sh = photo_src_extent(box_h / s_eff, ih);
+    let sx = photo_src_origin(crop.cx * iw - sw / 2.0, iw - sw);
+    let sy = photo_src_origin(crop.cy * ih - sh / 2.0, ih - sh);
+    [sx, sy, sw, sh]
+}
+
+/// A source extent inside `1..=full`, snapped onto `full` at the image edge.
+fn photo_src_extent(v: f32, full: f32) -> f32 {
+    if (v - full).abs() <= PHOTO_SRC_SNAP {
+        full
+    } else {
+        // `f32::min` returns the non-NaN operand, so a NaN extent keeps the image.
+        v.min(full).max(1.0_f32.min(full))
+    }
+}
+
+/// A source origin inside `0..=max`, snapped onto `0`/`max` at the image edge.
+fn photo_src_origin(v: f32, max: f32) -> f32 {
+    let hi = if max.is_finite() { max.max(0.0) } else { 0.0 };
+    let v = if v.is_finite() { v.clamp(0.0, hi) } else { 0.0 };
+    if v <= PHOTO_SRC_SNAP {
+        0.0
+    } else if hi - v <= PHOTO_SRC_SNAP {
+        hi
+    } else {
+        v
+    }
 }
 
 pub struct RgbaRender {
@@ -561,8 +641,14 @@ fn render_design_impl(
     ));
 
     let mut photo = load_photo(photo_path)?;
+    // The ratio hint crops the photo before layout. Remember where that window
+    // sits in the file so the reported `photo_src` stays in the file's pixels.
+    let mut ratio_view: Option<RatioView> = None;
     if let Some((rw, rh)) = options.ratio {
-        photo = crop_to_ratio(&photo, rw, rh).ok_or_else(|| "ratio crop failed".to_string())?;
+        let (cropped, view) =
+            crop_to_ratio(&photo, rw, rh).ok_or_else(|| "ratio crop failed".to_string())?;
+        photo = cropped;
+        ratio_view = Some(view);
     }
     let (pw, ph) = (photo.width() as f32, photo.height() as f32);
 
@@ -679,6 +765,9 @@ fn render_design_impl(
     let mut brands = brand::BrandLib::load(Path::new(brands_path));
 
     let mut overlay_meta: Option<serde_json::Value> = None;
+    // The source pixels the photo draw sampled, in the photo file's own raster
+    // space once the ratio pre-crop is undone (see `RatioView`).
+    let photo_src_out = std::cell::Cell::new([0.0f32, 0.0f32, pw, ph]);
     let mut surface = Surface::new_raster_n32_premul((out_w, out_h))
         .ok_or_else(|| "cannot create raster surface".to_string())?;
     {
@@ -735,10 +824,25 @@ fn render_design_impl(
         canvas.clip_rect(photo_rect, ClipOp::Intersect, true);
         let mut photo_paint = Paint::default();
         photo_paint.set_anti_alias(true);
+        // render-v1 photo crop: the photo box is filled by `cover`, and the
+        // user's crop moves/zooms the very source rectangle that window samples.
+        // At the defaults this is the whole raster — the draw this bridge always
+        // made — so an untouched design stays pixel-identical.
+        let photo_src =
+            photo_src_rect(pw, ph, photo_rect.width(), photo_rect.height(), bits.ov.photo_crop);
+        photo_src_out.set(match ratio_view {
+            Some(view) => view.to_source(photo_src),
+            None => photo_src,
+        });
         draw_image_rect(
             canvas,
             &photo,
-            Some(Rect::from_xywh(0.0, 0.0, pw, ph)),
+            Some(Rect::from_xywh(
+                photo_src[0],
+                photo_src[1],
+                photo_src[2],
+                photo_src[3],
+            )),
             photo_rect,
             photo_sampling,
             Some(&photo_paint),
@@ -835,6 +939,11 @@ fn render_design_impl(
         "output": [out_w, out_h],
         "layout": [layout.w, layout.h],
         "photo": [layout.photo.x * k, layout.photo.y * k, layout.photo.w * k, layout.photo.h * k],
+        // The source pixels the photo draw sampled (the crop this bridge
+        // applied), always in the photo file's own raster space: `[x, y, w, h]`.
+        // Same key and unit as the desktop reports, so Kotlin's `photoSrc` feed
+        // (and the Ultra HDR gain-map cut) works on both platforms unchanged.
+        "photo_src": photo_src_out.get(),
         "overlay": overlay_meta,
         "textSlots": text_slots,
         "bands": geom_bands.iter().map(|b| serde_json::json!({
@@ -1364,7 +1473,31 @@ fn paint_vector_nodes(canvas: &Canvas, nodes: &[Value]) {
     }
 }
 
-fn crop_to_ratio(img: &Image, rw: f32, rh: f32) -> Option<Image> {
+/// Where the ratio pre-crop's raster sits inside the photo file the caller
+/// handed in: a rect in the cropped raster maps to the file's own pixels with
+/// `x + rect.x * sx` / `y + rect.y * sy`. Kept so the reported `photo_src` stays
+/// in the source file's raster space even when `--ratio` (the app's `ratio`
+/// inspector hint) already cropped the photo before layout.
+#[derive(Debug, Clone, Copy)]
+struct RatioView {
+    x: f32,
+    y: f32,
+    sx: f32,
+    sy: f32,
+}
+
+impl RatioView {
+    fn to_source(self, rect: [f32; 4]) -> [f32; 4] {
+        [
+            self.x + rect[0] * self.sx,
+            self.y + rect[1] * self.sy,
+            rect[2] * self.sx,
+            rect[3] * self.sy,
+        ]
+    }
+}
+
+fn crop_to_ratio(img: &Image, rw: f32, rh: f32) -> Option<(Image, RatioView)> {
     if rw <= 0.0 || rh <= 0.0 {
         return None;
     }
@@ -1376,7 +1509,8 @@ fn crop_to_ratio(img: &Image, rw: f32, rh: f32) -> Option<Image> {
         (iw, iw / target)
     };
     let (sx, sy) = ((iw - sw) / 2.0, (ih - sh) / 2.0);
-    let mut surface = Surface::new_raster_n32_premul((sw.round() as i32, sh.round() as i32))?;
+    let (swr, shr) = (sw.round(), sh.round());
+    let mut surface = Surface::new_raster_n32_premul((swr as i32, shr as i32))?;
     let canvas = surface.canvas();
     let dst = Rect::from_xywh(0.0, 0.0, sw, sh);
     draw_image_rect(
@@ -1387,7 +1521,14 @@ fn crop_to_ratio(img: &Image, rw: f32, rh: f32) -> Option<Image> {
         SamplingOptions::default(),
         None,
     );
-    Some(surface.image_snapshot())
+    // The raster is the rounded extent, so the inverse map carries that ratio.
+    let view = RatioView {
+        x: sx,
+        y: sy,
+        sx: if swr > 0.0 { sw / swr } else { 1.0 },
+        sy: if shr > 0.0 { sh / shr } else { 1.0 },
+    };
+    Some((surface.image_snapshot(), view))
 }
 
 fn halign(s: &str) -> text::HAlign {
@@ -1576,3 +1717,237 @@ fn draw_image_rect(
         ),
     };
 }
+
+/// The Android copy of the crop math must agree with `engine/e2b`'s to the
+/// float, because the desktop and the phone have to draw the same frame from the
+/// same document. These are the desktop's own cases, plus the ratio-space
+/// mapping this bridge needs and the document reader at the other end.
+#[cfg(test)]
+mod photo_crop_tests {
+    use super::{parse_overrides, photo_src_rect, RatioView};
+    use crate::ir::PhotoCrop;
+    use serde_json::json;
+
+    /// 4000x3000 photo, square 1000 box: `cover` keeps 3000x3000 at 500,0.
+    #[test]
+    fn defaults_reproduce_todays_centred_rect() {
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default()),
+            [500.0, 0.0, 3000.0, 3000.0]
+        );
+        // A box with the photo's own aspect keeps the whole image, exactly.
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 800.0, 600.0, PhotoCrop::default()),
+            [0.0, 0.0, 4000.0, 3000.0]
+        );
+        // ...and so does a portrait photo in a square box, mirrored.
+        assert_eq!(
+            photo_src_rect(3000.0, 4000.0, 1000.0, 1000.0, PhotoCrop::default()),
+            [0.0, 500.0, 3000.0, 3000.0]
+        );
+    }
+
+    #[test]
+    fn zoom_two_halves_the_sampled_extent() {
+        let r = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!(r, [1250.0, 750.0, 1500.0, 1500.0]);
+        // The kept aspect stays the photo box's aspect, so the draw never warps.
+        assert!((r[2] / r[3] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn corner_pan_clamps_into_the_image() {
+        let top_left = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!(top_left, [0.0, 0.0, 1500.0, 1500.0]);
+        let bottom_right = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 1.0,
+                cy: 1.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!(bottom_right, [2500.0, 1500.0, 1500.0, 1500.0]);
+        // A centre outside 0..1 is clamped, never pushed off the photo.
+        let off = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: -3.0,
+                cy: 4.0,
+                zoom: 2.0,
+            },
+        );
+        assert_eq!(off, [0.0, 1500.0, 1500.0, 1500.0]);
+    }
+
+    #[test]
+    fn zoom_is_clamped_to_the_ui_range() {
+        let beyond = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 99.0,
+            },
+        );
+        let deepest = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 8.0,
+            },
+        );
+        assert_eq!(beyond, deepest);
+        let below = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: 0.5,
+                cy: 0.5,
+                zoom: 0.0,
+            },
+        );
+        assert_eq!(
+            below,
+            photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default())
+        );
+        let nan = photo_src_rect(
+            4000.0,
+            3000.0,
+            1000.0,
+            1000.0,
+            PhotoCrop {
+                cx: f32::NAN,
+                cy: f32::NAN,
+                zoom: f32::NAN,
+            },
+        );
+        assert_eq!(
+            nan,
+            photo_src_rect(4000.0, 3000.0, 1000.0, 1000.0, PhotoCrop::default())
+        );
+    }
+
+    #[test]
+    fn one_pixel_images_never_produce_an_empty_rect() {
+        let r = photo_src_rect(
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            PhotoCrop {
+                cx: 0.0,
+                cy: 0.0,
+                zoom: 8.0,
+            },
+        );
+        assert_eq!(r, [0.0, 0.0, 1.0, 1.0]);
+        let r = photo_src_rect(
+            1.0,
+            4000.0,
+            10.0,
+            10.0,
+            PhotoCrop {
+                cx: 1.0,
+                cy: 1.0,
+                zoom: 8.0,
+            },
+        );
+        assert_eq!(r[2], 1.0);
+        assert!(r[3] >= 1.0 && r[1] + r[3] <= 4000.0 + 1e-3);
+        // A box that cannot describe a rectangle keeps the whole image.
+        assert_eq!(
+            photo_src_rect(4000.0, 3000.0, 0.0, 10.0, PhotoCrop::default()),
+            [0.0, 0.0, 4000.0, 3000.0]
+        );
+        assert_eq!(
+            photo_src_rect(0.0, 3000.0, 10.0, 10.0, PhotoCrop::default()),
+            [0.0, 0.0, 0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn design_params_read_the_three_crop_keys() {
+        let ov = parse_overrides(&json!({ "design": { "params": {
+            "photoCropX": 0.25,
+            "photoCropY": "0.75",
+            "photoCropZoom": 3
+        }}}));
+        assert_eq!(ov.photo_crop.cx, 0.25);
+        // The keys are numbers in the document, not strings: a string is ignored.
+        assert_eq!(ov.photo_crop.cy, 0.5);
+        assert_eq!(ov.photo_crop.zoom, 3.0);
+        // A design without the keys is the default crop (no-op render).
+        let none = parse_overrides(&json!({ "design": { "params": {} } }));
+        assert!(none.photo_crop.is_default());
+        // Non-numeric values fall back to the default instead of poisoning the rect.
+        let bad = parse_overrides(&json!({ "design": { "params": {
+            "photoCropX": null,
+            "photoCropY": "NaN",
+            "photoCropZoom": false
+        }}}));
+        assert!(bad.photo_crop.is_default());
+    }
+
+    /// The ratio hint crops the photo before layout; the reported rect must still
+    /// address the file the caller handed in, or the gain map is cut elsewhere.
+    #[test]
+    fn ratio_pre_crop_maps_the_rect_back_into_the_file() {
+        let view = RatioView {
+            x: 500.0,
+            y: 0.0,
+            sx: 1.0,
+            sy: 1.0,
+        };
+        assert_eq!(
+            view.to_source([250.0, 100.0, 1500.0, 1500.0]),
+            [750.0, 100.0, 1500.0, 1500.0]
+        );
+        // A rounded raster scales the extent back to the exact window.
+        let rounded = RatioView {
+            x: 0.0,
+            y: 0.0,
+            sx: 3000.0 / 2999.0,
+            sy: 1.0,
+        };
+        let mapped = rounded.to_source([0.0, 0.0, 2999.0, 2000.0]);
+        assert!((mapped[2] - 3000.0).abs() < 1e-3);
+        assert_eq!(mapped[3], 2000.0);
+    }
+}
+

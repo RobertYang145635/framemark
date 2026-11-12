@@ -56,7 +56,7 @@ const ANDROID_PACKAGE_SOURCE_INPUTS = [
   'ui/composeApp/build.gradle.kts'
 ]
 function parseArgs (args) {
-  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, package: false, jobName: '', desktopClassCheck: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
+  const out = { dryRun: false, skipEngine: false, skipAndroidNative: false, skipGradle: false, release: false, sign: false, releaseQa: false, skipGates: false, package: false, debugApk: false, jobName: '', desktopClassCheck: '', qaSuffix: process.env.FM_QA_SUFFIX || '.qa20261102', qaReleaseSuffix: process.env.FM_QA_RELEASE_SUFFIX || '.qa20261102release' }
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
     if (arg === '--dry-run') out.dryRun = true
@@ -68,6 +68,7 @@ function parseArgs (args) {
     else if (arg === '--release-qa') out.releaseQa = true
     else if (arg === '--skip-gates') out.skipGates = true
     else if (arg === '--package') out.package = true
+    else if (arg === '--debug-apk') out.debugApk = true
     else if (arg === '--job-name') out.jobName = args[++i] || ''
     else if (arg === '--check-desktop-classes') {
       out.desktopClassCheck = args[++i] || ''
@@ -76,16 +77,23 @@ function parseArgs (args) {
     else if (arg === '--help' || arg === '-h') out.help = true
     else throw new Error(`Unknown option: ${arg}`)
   }
-  if (out.sign && !out.release) throw new Error('--sign requires --release')
+  if (out.sign && !out.release && !out.package) throw new Error('--sign requires --release (or --package, to sign the APK that gets packaged)')
   if (out.releaseQa && !out.release) throw new Error('--release-qa requires --release')
   if (out.releaseQa && out.sign) throw new Error('--release-qa uses the Android debug signing key; do not combine with --sign')
   if (out.package && out.skipGradle) throw new Error('--package needs the Gradle steps; do not combine it with --skip-gradle')
+  // --package and --release-qa both select the release variant's application-id
+  // suffix; --package uses the debug build's suffix (install continuity) and
+  // --release-qa uses its own, so one run can only mean one of them.
+  if (out.package && out.releaseQa) throw new Error('--package builds the release APK with the debug build\'s application-id suffix; do not combine it with --release-qa')
+  if (out.debugApk && !out.package) throw new Error('--debug-apk is only meaningful with --package: it packages the debug QA APK instead of the release APK')
+  if (out.debugApk && (out.release || out.releaseQa || out.sign)) throw new Error('--debug-apk packages the debug QA APK; it cannot be combined with --release, --release-qa or --sign')
   if (out.jobName && !/^[a-zA-Z0-9._-]{1,80}$/.test(out.jobName)) throw new Error('--job-name may contain only letters, digits, dot, underscore and dash')
   if (!/^\.[A-Za-z][A-Za-z0-9_.]*$/.test(out.qaSuffix)) throw new Error('FM_QA_SUFFIX must be a dot-prefixed Android application ID suffix')
   if (!/^\.[A-Za-z][A-Za-z0-9_.]*$/.test(out.qaReleaseSuffix)) throw new Error('FM_QA_RELEASE_SUFFIX must be a dot-prefixed Android application ID suffix')
-  // Report compatibility: the opt-in flag must not appear in `options` (and
+  // Report compatibility: the opt-in flags must not appear in `options` (and
   // therefore not in build-report.json) when the mode was not requested.
   if (!out.package) delete out.package
+  if (!out.debugApk) delete out.debugApk
   return out
 }
 
@@ -98,16 +106,31 @@ Usage: build-native.cmd [options]
   --skip-android-native     reuse hash-checked arm64 libraries (debug only)
   --skip-gradle             do not compile the desktop app or APKs
   --release                 also build and verify the Android release APK
-  --sign                    sign the release APK (requires FM_SIGNING_* variables)
+  --sign                    sign the release APK with FM_SIGNING_* variables (this is
+                            the publishing path for --package; without it the shipped
+                            release APK would still carry the Android debug key)
   --release-qa              build a debug-signed, isolated release variant for local QA only
   FM_QA_SUFFIX              isolated debug application id suffix (default: .qa20261102)
   FM_QA_RELEASE_SUFFIX      isolated release QA suffix (default: .qa20261102release)
   --skip-gates              mark required gates skipped; the command exits nonzero
   --package                 opt-in release packaging: run the desktop test suite,
-                            build the QA-free product jar (-PfmQaSurface=false),
-                            stage a jlink runtime, write the portable win64 ZIP +
-                            arm64 APK + SHA256SUMS under
-                            build/runs/<runId>/deliverables, and smoke the launcher
+                            build the QA-free product jar (-PfmQaSurface=false) and
+                            the arm64 release APK (-PframemarkQaReleaseSuffix=<the
+                            debug build's suffix>, so the app id stays installable
+                            over the debug QA build), stage a jlink runtime, write
+                            the portable win64 ZIP + arm64 APK + SHA256SUMS under
+                            build/runs/<runId>/deliverables, and smoke the launcher.
+                            The APK must not be application-debuggable. Without
+                            --sign the release variant keeps the Android debug key:
+                            SHA256SUMS.txt is stamped "QA ARTIFACT — DEBUG-SIGNED,
+                            NOT PUBLISHABLE" and the report classifies it
+                            LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE. --sign with
+                            FM_SIGNING_* produces the production-signed package.
+  --debug-apk               with --package: produce the debug QA APK instead,
+                            named <name>-arm64-DEBUGQA.apk, excluded from
+                            SHA256SUMS.txt and not a release artifact. The APK is
+                            application-debuggable, so package-apk-class fails and
+                            the command exits nonzero.
   --job-name <name>         label logs under ${CONFIG.artifactDirectory}
   --check-desktop-classes <dir>
                             run only the WP-FIX1 desktop class manifest gate against
@@ -249,7 +272,14 @@ function verifyReleaseSurface () {
   const manifestPath = path.join(ROOT, 'ui/composeApp/src/androidMain/AndroidManifest.xml')
   const source = fs.readFileSync(sourcePath, 'utf8')
   const manifest = fs.readFileSync(manifestPath, 'utf8')
-  return checkReleaseSurface(source, manifest)
+  const analysis = enumerateDebugGuardedIntentHooks(source)
+  return {
+    ...checkReleaseSurface(source, manifest),
+    intentHooks: analysis.hooks.length,
+    guardedIntentHooks: analysis.hooks.filter((hook) => hook.guarded).length,
+    unguardedIntentHooks: analysis.unguarded.map((hook) => ({ line: hook.line, owner: hook.owner, text: hook.text })),
+    debugBlocks: analysis.blocks.length
+  }
 }
 
 // Returns the index of the "}" that closes the "{" at openIndex. Only brace
@@ -267,19 +297,89 @@ function findBlockEnd (text, openIndex) {
   return -1
 }
 
+const DEBUG_GUARD_OPEN = 'if (BuildConfig.DEBUG) {'
+// Every way MainActivity can read an Intent extra: LaunchOptions.<x> =
+// intent?.getStringExtra(...), a bare `intent.getStringExtra(...)?.let { ... }`
+// hook, and the `intent?.getBooleanExtra(...) == true` form. A QA hook that is
+// not in this shape (e.g. `val raw = intent?.getStringExtra("fmX")`) is still
+// caught because the match is the read itself, not the assignment.
+const INTENT_EXTRA_READ_PATTERN = '\\bintent\\s*\\??\\.\\s*get[A-Za-z0-9_]*Extra\\s*\\('
+
+function lineNumberAt (text, index) {
+  return text.slice(0, index).split('\n').length
+}
+
+function findDebugBlocks (text) {
+  const blocks = []
+  let index = text.indexOf(DEBUG_GUARD_OPEN)
+  while (index >= 0) {
+    const brace = text.indexOf('{', index)
+    const end = brace < 0 ? -1 : findBlockEnd(text, brace)
+    blocks.push({ openIndex: index, line: lineNumberAt(text, index), end: end < 0 ? -1 : end + 1 })
+    index = text.indexOf(DEBUG_GUARD_OPEN, index + DEBUG_GUARD_OPEN.length)
+  }
+  return blocks
+}
+
+/**
+ * Enumerate every Intent-extra read in a MainActivity source and report whether
+ * it sits inside an `if (BuildConfig.DEBUG) { ... }` block.
+ *
+ * The previous guard located exactly one line (`LaunchOptions.openCardId = ...`)
+ * and checked that line against the nearest preceding DEBUG block, so moving any
+ * other QA hook out of the block was undetected. This walks the whole file: the
+ * gate passes only when EVERY read is inside some DEBUG block.
+ *
+ * Comment lines (`//`, `*`, `/*`) are ignored; a commented-out hook cannot run.
+ */
+function enumerateDebugGuardedIntentHooks (source) {
+  const text = String(source).replaceAll('\r\n', '\n')
+  const blocks = findDebugBlocks(text)
+  const hooks = []
+  const pattern = new RegExp(INTENT_EXTRA_READ_PATTERN, 'g')
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index
+    const lineStart = text.lastIndexOf('\n', index - 1) + 1
+    const lineEnd = text.indexOf('\n', index)
+    const line = text.slice(lineStart, lineEnd < 0 ? text.length : lineEnd)
+    const trimmed = line.trim()
+    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue
+    const prefix = text.slice(lineStart, index)
+    const launchOption = (prefix.match(/LaunchOptions\.([A-Za-z0-9_]+)\s*=\s*$/) || prefix.match(/LaunchOptions\.([A-Za-z0-9_]+)\s*=/))?.[1]
+    const assignee = (prefix.match(/([A-Za-z0-9_]+)\s*=\s*$/))?.[1]
+    const guarded = blocks.some((block) => block.end > block.openIndex && index > block.openIndex && index < block.end)
+    hooks.push({
+      line: lineNumberAt(text, index),
+      index,
+      guarded,
+      owner: launchOption ? `LaunchOptions.${launchOption}` : (assignee || 'intent extra read'),
+      text: trimmed
+    })
+  }
+  return { hooks, unguarded: hooks.filter((hook) => !hook.guarded), blocks }
+}
+
 // The normal UI entry is a setContent call at the eight-space content indent.
 // It may open a single-line or a multi-line block, so only the opening is
 // matched. The debug-only QA intent hooks must live inside the debug guard and
 // the guard block must end on the line immediately above that entry: a bare
 // "}" line followed by setContent, with no code in between.
+//
+// Two independent conditions make this hard to defeat:
+//   * structural: the DEBUG block that holds the openCardId anchor is the block
+//     that ends immediately above `setContent {` (nothing can be inserted after
+//     the guard and before the UI entry);
+//   * exhaustive: every Intent-extra read in the file is inside a DEBUG block,
+//     not only the one line the old guard looked at.
 function checkReleaseSurface (source, manifest) {
   const text = String(source).replaceAll('\r\n', '\n')
   const manifestText = String(manifest).replaceAll('\r\n', '\n')
+  const analysis = enumerateDebugGuardedIntentHooks(text)
   const qaStart = text.indexOf('LaunchOptions.openCardId = intent?.getStringExtra("fmCard")')
-  // The guard that matters is the one nearest before the hooks. Taking the
+  // The guard that matters is the one nearest before the anchor. Taking the
   // first guard in the file would accept hooks sitting outside every debug
   // block as long as some earlier debug block exists.
-  const guard = qaStart >= 0 ? text.lastIndexOf('if (BuildConfig.DEBUG) {', qaStart) : -1
+  const guard = qaStart >= 0 ? text.lastIndexOf(DEBUG_GUARD_OPEN, qaStart) : -1
   const content = text.search(/\n        setContent\s*\{/)
   let close = -1
   if (content >= 0) {
@@ -291,10 +391,19 @@ function checkReleaseSurface (source, manifest) {
   // block that happens to sit between the hooks and the UI entry.
   const contained = guard >= 0 && qaStart > guard && close > qaStart && content > close &&
     guardBlockEnd >= 0 && guardBlockEnd === close + 8
+  // A source with no Intent hook at all cannot prove anything: the QA surface
+  // was deleted, and the anchor check above already fails it. Requiring at
+  // least one hook also keeps this from vacuously passing on an empty file.
+  const everyHookGuarded = analysis.hooks.length > 0 && analysis.unguarded.length === 0
   const exportedLauncher = /<activity[\s\S]*?android:exported="true"[\s\S]*?<\/activity>/.test(manifestText) &&
     /<action android:name="android\.intent\.action\.MAIN"\s*\/>/.test(manifestText) &&
     /<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>/.test(manifestText)
-  return { status: contained && exportedLauncher ? 'PASS' : 'FAIL', debugGuardContainsQaHooks: contained, normalExportedLauncherPreserved: exportedLauncher }
+  const debugGuardContainsQaHooks = contained && everyHookGuarded
+  return {
+    status: debugGuardContainsQaHooks && exportedLauncher ? 'PASS' : 'FAIL',
+    debugGuardContainsQaHooks,
+    normalExportedLauncherPreserved: exportedLauncher
+  }
 }
 
 function verifyPinnedBuildConfiguration () {
@@ -372,19 +481,30 @@ function verifyDesktopClassManifest (classRoot, required = DESKTOP_REQUIRED_CLAS
  * cache. The build passes `--no-build-cache`; this reads the run's own gradle log
  * so a future edit that drops the flag (or a `gradle.properties` that re-enables
  * it through an init script) fails the build instead of shipping stale classes.
+ *
+ * A missing log is NOT a pass: without the log there is no evidence that the
+ * flag was passed, so the gate fails closed (the previous version returned PASS
+ * for an empty `fromCache` list even when the file did not exist).
  */
 function verifyDesktopCompileNotFromCache (gradleLog, task = DESKTOP_CACHE_TASK) {
   const file = String(gradleLog)
-  const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
+  const logPresent = fs.existsSync(file)
+  const text = logPresent ? fs.readFileSync(file, 'utf8') : ''
   const lines = text.split(/\r?\n/)
   const taskPrefix = `Task :composeApp:${task}`
   const fromCache = lines.filter((line) => line.includes(taskPrefix) && /FROM-CACHE/i.test(line))
   const scheduled = lines.filter((line) => line.includes(taskPrefix))
+  const detail = logPresent
+    ? (fromCache.length
+        ? `${task} was served FROM-CACHE; re-run the Gradle invocation with --no-build-cache (see the WP-FIX1 note in scripts/native/build.cjs)`
+        : `${task} was compiled in this run (log ${file.replaceAll(path.sep, '/')})`)
+    : `the Gradle log is missing (${file.replaceAll(path.sep, '/')}); --no-build-cache cannot be proven. Run the Gradle steps (do not pass --skip-gradle) and keep logs/<step>.log`
   return {
-    status: fromCache.length === 0 ? 'PASS' : 'FAIL',
+    status: logPresent && fromCache.length === 0 ? 'PASS' : 'FAIL',
     task,
     log: file.replaceAll(path.sep, '/'),
-    logPresent: fs.existsSync(file),
+    logPresent,
+    detail,
     scheduled: scheduled.map((line) => line.replace(/^>\s*Task\s+/, '').trim()),
     fromCache: fromCache.map((line) => line.replace(/^>\s*Task\s+/, '').trim())
   }
@@ -664,6 +784,65 @@ function requiredCheck (id, status, detail) {
 }
 
 /**
+ * Every required step/gate that is not PASS. `--package` uses this before it
+ * writes a single deliverable: a FAIL or SKIP anywhere means the run must not
+ * produce a publishable ZIP/APK/SHA256SUMS (the old flow scored gates only after
+ * packaging, so a FAIL run still left a complete, hash-consistent package).
+ */
+function collectRequiredFailures (rows) {
+  return rows.filter((row) => row.required && row.status !== 'PASS')
+}
+
+// Three-column checksum rows: `<name> <size> MB  <sha256>`. Non-matching lines
+// (comments in DEBUG-QA-APK.txt) are returned as `{ line }` so callers can
+// decide whether they are allowed.
+function parseChecksumLines (text) {
+  return String(text).split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
+    const match = line.match(/^(\S+)\s+([0-9][0-9,.]*) MB\s+([0-9a-f]{64})$/)
+    return match ? { name: match[1], megabytes: match[2], sha256: match[3], line } : { line }
+  })
+}
+
+/**
+ * Remove the publishable files of a failed run. The ZIP, any release APK and
+ * SHA256SUMS.txt are deleted; a `--debug-apk` artifact is kept because it is
+ * explicitly not publishable (the file name carries `-DEBUGQA`, its hash lives
+ * in DEBUG-QA-APK.txt, it is absent from the checksum file and RELEASE-STATUS.json
+ * records the failure). The staged tree is kept for diagnosis as well. Returns
+ * what was deleted.
+ */
+function purgePublishableDeliverables (deliverablesRoot) {
+  const removed = []
+  if (!deliverablesRoot || !fs.existsSync(deliverablesRoot)) return removed
+  for (const entry of fs.readdirSync(deliverablesRoot, { withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    const debugQaArtifact = /-DEBUGQA\.apk$/i.test(entry.name) || entry.name === 'DEBUG-QA-APK.txt'
+    const isPublishable = !debugQaArtifact && (/\.(zip|apk)$/i.test(entry.name) || entry.name === 'SHA256SUMS.txt')
+    if (!isPublishable) continue
+    const filename = path.join(deliverablesRoot, entry.name)
+    fs.rmSync(filename, { force: true })
+    removed.push(entry.name)
+  }
+  return removed
+}
+
+/**
+ * `RELEASE-STATUS.json`: the machine-readable record that replaces the
+ * deliverables on a failed run (schema above; `blockers` is the reason).
+ */
+function writeReleaseStatus (deliverablesRoot, document) {
+  fs.mkdirSync(deliverablesRoot, { recursive: true })
+  const filename = path.join(deliverablesRoot, 'RELEASE-STATUS.json')
+  const payload = {
+    schema: 'framemark-release-status/v1',
+    createdAt: new Date().toISOString(),
+    ...document
+  }
+  fs.writeFileSync(filename, JSON.stringify(payload, null, 2) + '\n', 'utf8')
+  return { path: filename, document: payload }
+}
+
+/**
  * ARCH1: key desktop classes must still be declared where this manifest says they are.
  * This is a packaging guard ("the entry point and the QA surface did not vanish"), not an
  * architecture-rule scanner — the import graph and singleton concepts belong to Konsist
@@ -699,11 +878,49 @@ function verifyDesktopClassSources () {
  *     packages when it is false (this is the mechanism WP-X3 §7 added);
  *  2. no in-repo script that builds a desktop jar may omit `-PfmQaSurface=false`.
  *
+ * WP-RELEASE: the build-script exclusion only covers `desktopMain`, so a QA class
+ * moved into `commonMain`/`androidMain`, or a renamed package, would not be
+ * excluded. The source-set check below fails when any QA-token source lives
+ * outside `desktopMain` (where the exclusion works), and the `--package`
+ * `release-qa-surface-tokens` gate re-checks the compiled product class tree.
+ *
  * What this does NOT prove: that a released binary was built from a QA-free classpath.
  * `scripts/native/package-desktop.cjs` consumes prebuilt jars, so the flag has to be
  * passed by whoever invokes `:composeApp:desktopJar` (the runbook's `run-desktop`
  * entry point). That gap is recorded in `reports/ARCH1-REPORT.md`.
  */
+const QA_SURFACE_TOKENS = ['verify', 'qaenv', 'devtools']
+const QA_SURFACE_SOURCE_SETS = ['commonMain', 'androidMain', 'desktopMain']
+
+/** Every source file whose package or path names the QA surface, by source set. */
+function findQaSurfaceSources () {
+  const sourceRoot = path.join(UI, 'composeApp', 'src')
+  const rows = []
+  for (const sourceSet of QA_SURFACE_SOURCE_SETS) {
+    const dir = path.join(sourceRoot, sourceSet)
+    if (!fs.existsSync(dir)) continue
+    for (const file of listFiles(dir).filter((name) => name.endsWith('.kt'))) {
+      const relative = path.relative(ROOT, file).replaceAll(path.sep, '/')
+      const text = fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n')
+      const packageName = (text.match(/^package\s+([A-Za-z0-9_.]+)/m) || [])[1] || ''
+      const tokens = QA_SURFACE_TOKENS.filter((token) =>
+        packageName.split('.').includes(token) || relative.toLowerCase().includes(`/${token}/`))
+      if (tokens.length) rows.push({ sourceSet, file: relative, package: packageName, tokens })
+    }
+  }
+  return rows
+}
+
+/**
+ * Packaged class names that still name the QA surface. Used against the product
+ * jar entries and the staged class tree: `-PfmQaSurface=false` must remove the
+ * whole surface regardless of the source set or the package name it lives in.
+ */
+function qaSurfaceClassOffenders (classPaths) {
+  return [...classPaths].filter((entry) =>
+    QA_SURFACE_TOKENS.some((token) => String(entry).toLowerCase().includes(token)))
+}
+
 function verifyPackagingSurface () {
   const checks = []
   const buildScript = path.join(ROOT, 'ui/composeApp/build.gradle.kts')
@@ -711,6 +928,24 @@ function verifyPackagingSurface () {
   checks.push({ id: 'fmQaSurface-switch', ok: /fmQaSurface/.test(text), detail: 'ui/composeApp/build.gradle.kts defines the fmQaSurface switch' })
   checks.push({ id: 'verify-excluded', ok: /com\/framemark\/native\/verify\/\*\*/.test(text), detail: 'verify/** excluded when fmQaSurface=false' })
   checks.push({ id: 'qaenv-excluded', ok: /com\/framemark\/native\/qaenv\/\*\*/.test(text), detail: 'qaenv/** excluded when fmQaSurface=false' })
+  // WP-RELEASE: the exclusion only reaches `desktopMain`. A QA class in
+  // `commonMain`/`androidMain` (or a renamed package) would compile into the
+  // product; moving it must fail here instead of silently shipping.
+  let qaSurfaceSources = []
+  try { qaSurfaceSources = findQaSurfaceSources() } catch (error) {
+    checks.push({ id: 'qa-surface-source-sets', ok: false, detail: `could not scan ui/composeApp/src: ${error.message}` })
+  }
+  if (!checks.some((check) => check.id === 'qa-surface-source-sets')) {
+    const outsideDesktop = qaSurfaceSources.filter((row) => row.sourceSet !== 'desktopMain')
+    checks.push({
+      id: 'qa-surface-source-sets',
+      ok: outsideDesktop.length === 0,
+      detail: outsideDesktop.length
+        ? `QA-surface sources outside desktopMain: ${outsideDesktop.map((row) => `${row.file} (${row.tokens.join('/')})`).join(', ')}. ` +
+          'Move them under desktopMain (excluded by -PfmQaSurface=false) or add their package to the exclusion in ui/composeApp/build.gradle.kts.'
+        : `${qaSurfaceSources.length} QA-surface source(s), all under desktopMain where -PfmQaSurface=false excludes them`
+    })
+  }
   const scripts = []
   const walkScripts = (dir) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -733,7 +968,7 @@ function verifyPackagingSurface () {
       : 'no in-repo script builds :composeApp:desktopJar (packaged jars come from the runbook entry point); mechanism check only',
   })
   const failed = checks.filter((check) => !check.ok)
-  return { status: failed.length ? 'FAIL' : 'PASS', checks, failed: failed.map((check) => check.id) }
+  return { status: failed.length ? 'FAIL' : 'PASS', checks, failed: failed.map((check) => check.id), qaSurfaceSources }
 }
 
 
@@ -762,10 +997,18 @@ async function main (options) {
     options.skipEngine ? 'SKIP e2b Cargo build; source-build e4hand and e5-worker' : 'Cargo build e2b, e4hand and e5-worker from repository sources for x86_64-pc-windows-msvc',
     'Stage isolated relocatable Windows QA runtime from repository Android asset ZIP and current desktop manifest',
     options.skipAndroidNative ? 'SKIP Android staticlib rebuild; verify checked-in hashes' : 'Cargo build three Android arm64 staticlibs to staging',
-    options.skipGradle ? 'SKIP desktop and APK Gradle tasks' : 'Gradle desktop compile and Android debug APK',
-    options.release ? (options.releaseQa ? 'Gradle isolated debug-signed release QA APK + package/ABI gates' : 'Gradle Android release APK + ABI and source-provenance gates') : 'SKIP Android release APK'
+    options.skipGradle
+      ? 'SKIP desktop and APK Gradle tasks'
+      : options.package && !options.debugApk
+        ? `Gradle desktop compile, Android debug APK and Android release APK (-PframemarkQaReleaseSuffix=${options.qaSuffix})`
+        : 'Gradle desktop compile and Android debug APK',
+    options.package
+      ? (options.debugApk ? 'Package the DEBUG QA arm64 APK (not a release artifact; not in SHA256SUMS.txt)' : 'Package the release arm64 APK (must not be debuggable or debug-signed)')
+      : (options.release ? (options.releaseQa ? 'Gradle isolated debug-signed release QA APK + package/ABI gates' : 'Gradle Android release APK + ABI and source-provenance gates') : 'SKIP Android release APK')
   ]
-  if (options.package) plan.push('Gradle desktopTest + QA-free desktopJar (-PfmQaSurface=false); jlink runtime; FrameMark-<versionName>-win64 portable ZIP + arm64 APK + SHA256SUMS; launcher smoke test')
+  if (options.package) plan.push(options.debugApk
+    ? 'Gradle desktopTest + QA-free desktopJar (-PfmQaSurface=false); jlink runtime; FrameMark-<versionName>-win64 portable ZIP + DEBUG QA arm64 APK (kept out of SHA256SUMS.txt) + SHA256SUMS; launcher smoke test'
+    : `Gradle desktopTest + QA-free desktopJar (-PfmQaSurface=false); Android release APK with -PframemarkQaReleaseSuffix=${options.qaSuffix}; jlink runtime; FrameMark-<versionName>-win64 portable ZIP + release arm64 APK + SHA256SUMS; launcher smoke test`)
   const preflight = {
     node: process.version,
     expectedNode: CONFIG.versions.node,
@@ -848,7 +1091,21 @@ async function main (options) {
     ),
     required: options.skipAndroidNative
   })
-  gates.push(requiredCheck('release-intent-source-guard', releaseSurface.status, JSON.stringify(releaseSurface)))
+  gates.push(requiredCheck(
+    'release-intent-source-guard',
+    releaseSurface.status,
+    releaseSurface.status === 'PASS'
+      ? JSON.stringify({
+          intentHooks: releaseSurface.intentHooks,
+          guardedIntentHooks: releaseSurface.guardedIntentHooks,
+          debugBlocks: releaseSurface.debugBlocks,
+          detail: 'every Intent-extra read in MainActivity.kt is inside an if (BuildConfig.DEBUG) { ... } block, the block holding LaunchOptions.openCardId ends immediately above setContent {, and the exported MAIN/LAUNCHER activity is preserved'
+        })
+      : `move every LaunchOptions.<x> = intent?.get*Extra(...) / Intent-extra read back inside an if (BuildConfig.DEBUG) { ... } block in ` +
+        `ui/composeApp/src/androidMain/kotlin/com/framemark/native/MainActivity.kt, keep the DEBUG block that holds ` +
+        `LaunchOptions.openCardId as the statement immediately before setContent {, and keep the exported MAIN/LAUNCHER activity; ` +
+        `unguarded: ${JSON.stringify(releaseSurface.unguardedIntentHooks || [])}`
+  ))
   gates.push(requiredCheck('pinned-build-configuration', buildConfiguration.status, JSON.stringify(buildConfiguration.checks)))
   gates.push(requiredCheck('shared-logo-data-sha256', sharedLogoData.status, JSON.stringify(sharedLogoData)))
   gates.push({
@@ -1158,12 +1415,15 @@ async function main (options) {
       }
     }
   }
-  if (options.release) {
+  // A release-class artifact — including the release APK `--package` ships — may
+  // not be built from provenance-unverified checked-in archives. The explicit
+  // `--debug-apk` escape hatch keeps the debug reuse rules.
+  if (options.release || (options.package && !options.debugApk)) {
     const sourceBuildStatus = nativeBuildProvenance?.status === 'PASS' ? 'PASS' : (options.skipAndroidNative ? 'SKIP' : 'FAIL')
     const detail = sourceBuildStatus === 'PASS'
       ? 'all three Android static libraries were built from repository Cargo sources in this run'
       : options.skipAndroidNative
-        ? 'release builds may not reuse provenance-unverified checked-in static archives'
+        ? 'release builds may not reuse provenance-unverified checked-in static archives; drop --skip-android-native'
         : 'Android source build did not produce a verified set of all three static libraries'
     gates.push(requiredCheck('release-native-source-build', sourceBuildStatus, detail))
   }
@@ -1180,7 +1440,7 @@ async function main (options) {
   // fmQaSurface variant.
   const gradleIsolationScript = path.join(tmpRoot, 'gradle-isolated-output.init.gradle')
   writeGradleIsolationScript(gradleIsolationScript)
-  const runGradleTask = (id, title, tasks, { projectCacheDir = path.join(tmpRoot, 'gradle-project-cache'), extraArgs = [], stacktrace = options.release, timeoutMs = 90 * 60 * 1000 } = {}) => {
+  const runGradleTask = (id, title, tasks, { projectCacheDir = path.join(tmpRoot, 'gradle-project-cache'), extraArgs = [], stacktrace = options.release, timeoutMs = 90 * 60 * 1000, qaReleaseSuffix } = {}) => {
     const args = ['-Dorg.gradle.appname=gradle', '-classpath', path.join(tools.gradleHome, 'lib', '*'), 'org.gradle.launcher.GradleMain', '--no-daemon',
       '--no-build-cache',
       '--project-cache-dir', projectCacheDir, '--init-script', gradleIsolationScript, `-PframemarkQaSuffix=${options.qaSuffix}`]
@@ -1190,16 +1450,30 @@ async function main (options) {
     if (process.platform === 'win32' && path.parse(UI).root.toLowerCase() !== path.parse(gradleOutputRoot).root.toLowerCase()) {
       args.push('-Pkotlin.incremental=false')
     }
-    if (options.releaseQa) args.push(`-PframemarkQaReleaseSuffix=${options.qaReleaseSuffix}`)
+    // `--package` passes the DEBUG build's suffix to the release variant so the
+    // delivered app id stays `com.framemark.native<qaSuffix>` and an APK can be
+    // installed over the debug QA build. `--release-qa` keeps its own suffix.
+    const releaseSuffix = qaReleaseSuffix !== undefined ? qaReleaseSuffix : (options.releaseQa ? options.qaReleaseSuffix : null)
+    if (releaseSuffix) args.push(`-PframemarkQaReleaseSuffix=${releaseSuffix}`)
     args.push(...tasks, ...extraArgs)
     if (stacktrace) args.push('--stacktrace')
     const env = { ...envBase, FM_ANDROID_PREBUILT_ROOT: androidPrebuiltRoot, FM_E2B_EXE: engineExe }
     return step(id, title, (logFile) => runProcess(tools.java, args, { cwd: UI, env, logFile, timeoutMs }))
   }
 
+  // A normal `--package` run must package the RELEASE variant; only the explicit
+  // `--debug-apk` escape hatch keeps the debug variant. The two modes never share
+  // one Gradle invocation's release task list.
+  const packageRelease = Boolean(options.package && !options.debugApk)
+  // Production intent: a plain `--release` run, or any run that requested the
+  // production signing step. A `--package` QA run (no --release/--sign) is not
+  // production intent: its QA-suffixed, debug-key-signed release APK is a
+  // stamped QA artifact (LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE), not a product.
+  const productionIntent = Boolean(options.sign || (options.release && !options.releaseQa))
   const gradleTasks = [':composeApp:compileKotlinDesktop', ':composeApp:assembleDebug']
-  if (options.release) gradleTasks.push(':composeApp:assembleRelease')
-  const releaseInputsReady = !options.release || (
+  if (options.release || packageRelease) gradleTasks.push(':composeApp:assembleRelease')
+  const needsReleaseInputs = Boolean(options.release || packageRelease)
+  const releaseInputsReady = !needsReleaseInputs || (
     steps.some((row) => row.id === 'desktop-runtime' && row.status === 'PASS') &&
     nativeBuildProvenance?.status === 'PASS'
   )
@@ -1209,7 +1483,9 @@ async function main (options) {
     } else if (!tools.java || !tools.gradleLauncher || !tools.androidSdk || !fs.existsSync(tools.java) || !fs.existsSync(tools.gradleLauncher)) {
       steps.push({ id: 'gradle', title: 'Build desktop and Android variants', required: true, status: 'FAIL', exitCode: 1, detail: 'JDK, Gradle or Android SDK is unresolved', log: null })
     } else {
-      const built = await runGradleTask('gradle', 'Build desktop and Android variants', gradleTasks)
+      const built = await runGradleTask('gradle', 'Build desktop and Android variants', gradleTasks, {
+        qaReleaseSuffix: packageRelease ? options.qaSuffix : undefined
+      })
       if (built.status === 'PASS') {
         const debugApk = path.join(gradleOutputRoot, 'composeApp/outputs/apk/debug/composeApp-debug.apk')
         if (fs.existsSync(debugApk)) gates.push(await verifyApk('debug-apk-arm64', debugApk, tools, step, `com.framemark.native${options.qaSuffix}`))
@@ -1240,9 +1516,9 @@ async function main (options) {
     gates.push(requiredCheck(
       'desktop-build-cache-disabled',
       cacheGate.status,
-      cacheGate.fromCache.length
-        ? `${cacheGate.task} was served FROM-CACHE: ${cacheGate.fromCache.join(' | ')}`
-        : `${cacheGate.task} was not FROM-CACHE (scheduled: ${cacheGate.scheduled.join(', ') || 'none'})`
+      cacheGate.status === 'PASS'
+        ? `${cacheGate.task} was not FROM-CACHE (scheduled: ${cacheGate.scheduled.join(', ') || 'none'})`
+        : `${cacheGate.fromCache.length ? `${cacheGate.task} was served FROM-CACHE: ${cacheGate.fromCache.join(' | ')}. ` : ''}${cacheGate.detail}`
     ))
   }
 
@@ -1315,22 +1591,45 @@ async function main (options) {
     required: !options.skipGradle
   })
 
-  if (options.release) {
+  // The release-class APK this run built. `--package` packages this file (or the
+  // signed copy when --sign ran); `--debug-apk` packages the debug APK instead
+  // and never reaches here.
+  let releasePackageApk = null
+  const needsReleaseApk = Boolean(options.release || (options.package && !options.debugApk))
+  if (needsReleaseApk) {
+    // `--package` passes -PframemarkQaReleaseSuffix=<debug suffix> to the release
+    // variant, so its app id must equal the debug build's; a plain --release
+    // build carries no suffix. A mismatch here means the release Gradle
+    // invocation did not receive the property.
+    const releaseApplicationId = options.package ? `com.framemark.native${options.qaSuffix}` : 'com.framemark.native'
     const releaseApk = findReleaseApk(gradleOutputRoot)
     if (releaseApk) {
       if (options.releaseQa) {
         gates.push(await verifyApk('release-qa-apk-arm64', releaseApk, tools, step, `com.framemark.native${options.qaReleaseSuffix}`))
         gates.push(await verifyQaSignature(releaseApk, tools, step))
+        releasePackageApk = releaseApk
       } else if (options.sign) {
         const signed = await signRelease(releaseApk, tools, envBase, runRoot, step)
         gates.push(requiredCheck('release-signature', signed.status, signed.detail || 'signing did not complete'))
-        if (signed.status === 'PASS') gates.push(await verifyApk('signed-release-apk-arm64', signed.signedApk, tools, step, 'com.framemark.native'))
+        if (signed.status === 'PASS') {
+          releasePackageApk = signed.signedApk
+          gates.push(await verifyApk('signed-release-apk-arm64', signed.signedApk, tools, step, releaseApplicationId))
+        }
       } else {
-        gates.push(await verifyApk('release-apk-arm64', releaseApk, tools, step, 'com.framemark.native'))
-        gates.push(requiredCheck('release-signature', 'SKIP', 'release APK was built unsigned; --sign was not requested'))
+        gates.push(await verifyApk('release-apk-arm64', releaseApk, tools, step, releaseApplicationId))
+        // A plain --release run is expected to be unsigned. `--package` without
+        // --sign is judged by package-apk-class instead, which names the real
+        // problem (the release variant built here carries the Android debug key
+        // because it is built with the QA suffix).
+        if (options.release) gates.push(requiredCheck('release-signature', 'SKIP', 'release APK was built unsigned; --sign was not requested'))
+        releasePackageApk = releaseApk
       }
     } else {
-      gates.push(requiredCheck('release-apk-arm64', 'FAIL', 'release APK does not exist after Gradle task'))
+      gates.push(requiredCheck(
+        'release-apk-arm64',
+        'FAIL',
+        `release APK does not exist after the Gradle task; run :composeApp:assembleRelease (${path.join(gradleOutputRoot, 'composeApp/outputs/apk/release').replaceAll(path.sep, '/')}) and drop --skip-gradle`
+      ))
     }
   }
 
@@ -1341,10 +1640,14 @@ async function main (options) {
   // existing shape.
   // ---------------------------------------------------------------------------
   let releaseDeliverables = null
+  let releaseDeliverablesRoot = null
+  let releaseVersionName = null
+  let releaseStatus = null
   if (options.package) {
     // The label has one source: version.properties. The commit comes from git.
     const version = readVersionProperties()
     const versionName = version.versionName
+    releaseVersionName = versionName
     const gitCommit = readGitValue(['rev-parse', '--short', 'HEAD'], 'unknown')
     const gitBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'], 'unknown')
     const releaseCacheDir = path.join(tmpRoot, 'gradle-release-project-cache')
@@ -1354,10 +1657,17 @@ async function main (options) {
     const desktopClasspathFile = path.join(UI, 'composeApp', 'build', 'desktop-classpath.txt')
     const runtimeSource = path.join(buildRoot, 'desktop-runtime')
     const deliverablesRoot = path.join(runRoot, 'deliverables')
+    releaseDeliverablesRoot = deliverablesRoot
     const stagingName = `FrameMark-${versionName}-win64`
     const stagingDir = path.join(deliverablesRoot, stagingName)
-    const apkPath = path.join(deliverablesRoot, `FrameMark-${versionName}-arm64.apk`)
+    // The default deliverable is the RELEASE APK. `--debug-apk` is the only way
+    // to ship the debug one, and its file name says so.
+    const apkName = options.debugApk ? `FrameMark-${versionName}-arm64-DEBUGQA.apk` : `FrameMark-${versionName}-arm64.apk`
+    const apkPath = path.join(deliverablesRoot, apkName)
     const zipPath = path.join(deliverablesRoot, `${stagingName}-portable.zip`)
+    const sumsPath = path.join(deliverablesRoot, 'SHA256SUMS.txt')
+    const debugApkNotePath = path.join(deliverablesRoot, 'DEBUG-QA-APK.txt')
+    const debugApkPath = path.join(gradleOutputRoot, 'composeApp', 'outputs', 'apk', 'debug', 'composeApp-debug.apk')
 
     // 1. release-tests: the acceptance suite through the same Gradle helper, the
     // same isolated build directory and the same `--no-build-cache`. The JUnit XML
@@ -1420,16 +1730,131 @@ async function main (options) {
       verifyQaenvEntries: qaEntries.length,
       verifyQaenvExamples: qaEntries.slice(0, 5),
       mainClassEntry,
-      classRootQaClassFiles: classRootQaFiles.length
+      classRootQaClassFiles: classRootQaFiles.length,
+      ...(jarSurfaceOk ? {} : { hint: 'rebuild the product jar with -PfmQaSurface=false and keep the verify/qaenv packages out of the packaged class tree' })
     })))
+
+    // 3b. release-qa-surface-tokens: the name regex above only knows the two
+    // historical package names, and `-PfmQaSurface=false` only excludes
+    // `desktopMain`. A QA class moved to commonMain/androidMain, or a renamed
+    // package, would compile and be packaged with no gate noticing. This check
+    // reads the compiled product tree (jar entries and staged classes) and
+    // rejects ANY class whose name or package mentions the QA surface.
+    const packagedClassEntries = jarEntries.filter((entry) => /^com\/framemark\/native\/.*\.class$/.test(entry))
+    const classRootClassEntries = fs.existsSync(releaseClassRoot)
+      ? listFiles(releaseClassRoot).filter((file) => file.endsWith('.class')).map((file) => path.relative(releaseClassRoot, file).replaceAll(path.sep, '/'))
+      : []
+    const tokenOffenders = [...new Set([
+      ...qaSurfaceClassOffenders(packagedClassEntries),
+      ...qaSurfaceClassOffenders(classRootClassEntries)
+    ])]
+    const qaSurfaceSourcesOutsideDesktop = (packagingSurface.qaSurfaceSources || []).filter((row) => row.sourceSet !== 'desktopMain')
+    const qaSurfaceTokensOk = jarList.status === 'PASS' && classRootClassEntries.length > 0 &&
+      tokenOffenders.length === 0 && qaSurfaceSourcesOutsideDesktop.length === 0
+    gates.push(requiredCheck(
+      'release-qa-surface-tokens',
+      qaSurfaceTokensOk ? 'PASS' : 'FAIL',
+      qaSurfaceTokensOk
+        ? JSON.stringify({
+            jarClassEntries: packagedClassEntries.length,
+            classRootClassFiles: classRootClassEntries.length,
+            qaSurfaceTokens: QA_SURFACE_TOKENS,
+            qaSurfaceSourcesOutsideDesktop: 0,
+            detail: 'no packaged class name or package contains verify/qaenv/devtools and every QA-surface source is excluded by -PfmQaSurface=false'
+          })
+        : JSON.stringify({
+            jarClassEntries: packagedClassEntries.length,
+            classRootClassFiles: classRootClassEntries.length,
+            qaSurfaceTokens: QA_SURFACE_TOKENS,
+            offenders: tokenOffenders.slice(0, 20),
+            offenderCount: tokenOffenders.length,
+            qaSurfaceSourcesOutsideDesktop: qaSurfaceSourcesOutsideDesktop.map((row) => row.file),
+            hint: 'the packaged product must not contain the QA surface: move each QA class under desktopMain (excluded by -PfmQaSurface=false) or add its package to the desktopMain exclusion in ui/composeApp/build.gradle.kts, then rebuild the product jar with -PfmQaSurface=false and re-package'
+          })
+    ))
+
+    // 3c. package-apk-present / package-apk-arm64 / package-apk-class: assert the
+    // exact APK that would be copied into deliverables/ BEFORE anything is
+    // written. The default deliverable is the release variant; `--debug-apk`
+    // flips the assertion so the escape hatch has to prove it really is the
+    // debug QA APK.
+    const packageApkSource = options.debugApk ? debugApkPath : releasePackageApk
+    const packageApplicationId = `com.framemark.native${options.qaSuffix}`
+    let packageApkClassGate = null
+    if (!packageApkSource || !fs.existsSync(packageApkSource)) {
+      gates.push(requiredCheck(
+        'package-apk-present',
+        'FAIL',
+        options.debugApk
+          ? `--debug-apk needs this run's debug APK (${debugApkPath.replaceAll(path.sep, '/')}); build :composeApp:assembleDebug in this run`
+          : '--package needs this run\'s release APK (composeApp/outputs/apk/release) or the --sign output; nothing will be packaged. ' +
+            'Pass --debug-apk only to deliberately produce the (non-publishable) debug QA APK.'
+      ))
+    } else {
+      gates.push(await verifyApk(
+        'package-apk-arm64',
+        packageApkSource,
+        tools,
+        step,
+        packageApplicationId,
+        options.debugApk ? null : 'the delivered APK must be the release variant with the debug build\'s application id; check that -PframemarkQaReleaseSuffix=<suffix> reached the release Gradle invocation'
+      ))
+      packageApkClassGate = await verifyApkClass('package-apk-class', packageApkSource, tools, step, {
+        qaSuffix: options.qaSuffix,
+        productionIntent
+      })
+      gates.push(packageApkClassGate)
+    }
 
     // 4. release-package: jlink runtime + staging + launcher + VERSION.txt + ZIP +
     // APK copy + SHA256SUMS, the same layout the hand-run packaging recipe used.
+    // A FAIL or SKIP anywhere above means nothing is written: the old flow
+    // scored the required gates only after this step, so a failed run still left
+    // a complete, hash-consistent deliverables/ that looked publishable.
     fs.rmSync(stagingDir, { recursive: true, force: true })
     fs.rmSync(apkPath, { force: true })
     fs.rmSync(zipPath, { force: true })
+    fs.rmSync(sumsPath, { force: true })
+    fs.rmSync(debugApkNotePath, { force: true })
     fs.mkdirSync(deliverablesRoot, { recursive: true })
-    const packageStep = await step('release-package', 'Assemble the portable win64 package and the arm64 APK', async (logFile) => {
+
+    const packageBlockers = collectRequiredFailures([...steps, ...gates])
+    // `--debug-apk` exists to produce a local QA APK. That APK is debuggable, so
+    // `package-apk-class` always fails for it (the run still exits nonzero), but
+    // the artifact is still produced: marked DEBUGQA, kept out of
+    // SHA256SUMS.txt, and the post-packaging purge leaves it in place because it
+    // is not a release artifact. Every other blocker still refuses packaging.
+    const artifactBlockers = options.debugApk
+      ? packageBlockers.filter((row) => row.id !== 'package-apk-class')
+      : packageBlockers
+    if (artifactBlockers.length) {
+      const statusFile = writeReleaseStatus(deliverablesRoot, {
+        status: 'FAIL',
+        phase: 'refused-before-packaging',
+        runId,
+        versionName,
+        head: readHead(),
+        blockers: packageBlockers.map((row) => ({
+          id: row.id,
+          kind: steps.includes(row) ? 'step' : 'gate',
+          status: row.status,
+          detail: String(row.detail || '').slice(0, 600)
+        })),
+        deliverables: null,
+        instruction: 'Fix every listed required step/gate and re-run. Nothing was published: no ZIP, no APK and no SHA256SUMS.txt was written.'
+      })
+      releaseStatus = statusFile.document
+      steps.push({
+        id: 'release-package',
+        title: 'Assemble the portable win64 package and the arm64 APK',
+        required: true,
+        status: 'FAIL',
+        exitCode: 1,
+        log: null,
+        detail: `refused to write deliverables: ${packageBlockers.length} required step/gate(s) are not PASS (${packageBlockers.map((row) => `${row.id}=${row.status}`).join(', ')}); failure recorded in ${path.relative(ARTIFACT_ROOT, statusFile.path).replaceAll(path.sep, '/')}`
+      })
+    } else {
+      const packageStep = await step('release-package', 'Assemble the portable win64 package and the arm64 APK', async (logFile) => {
       fs.writeFileSync(logFile, '', 'utf8')
       const say = (line) => fs.appendFileSync(logFile, `${line}\n`, 'utf8')
       const runtimeStep = steps.find((row) => row.id === 'desktop-runtime')
@@ -1501,6 +1926,7 @@ async function main (options) {
         `launcher label: -Dframemark.build.label=${launcherLabel}`,
         `product jar: -PfmQaSurface=false, sha256 ${productJar.sha256}`,
         `product jar entries: ${jarEntries.length}, verify/qaenv entries: ${qaEntries.length}`,
+        `apk: ${path.basename(apkPath)} (${options.debugApk ? 'DEBUG QA APK: application-debuggable, debug-signed, not in SHA256SUMS.txt, not publishable' : (packageApkClassGate && packageApkClassGate.qaSignedNotPublishable ? 'QA ARTIFACT: debug-signed, isolated QA application id, NOT PUBLISHABLE (see the SHA256SUMS.txt header)' : 'release APK: not application-debuggable, non-debug signing certificate')})`,
         `app/lib jars: ${jars.length}`,
         '运行：双击 FrameMark.bat（需要 Windows 10/11 x64，无需另装 Java）'
       ].join('\r\n') + '\r\n'
@@ -1514,59 +1940,107 @@ async function main (options) {
       const tarResult = await runProcess(tarExecutable, ['-a', '-c', '-f', zipPath, stagingName], { cwd: deliverablesRoot, env: process.env, logFile: path.join(logRoot, 'release-tar.log'), timeoutMs: 30 * 60 * 1000 })
       if (tarResult.exitCode !== 0 || !fs.existsSync(zipPath)) throw new Error(`tar failed to create the portable ZIP (${tarResult.exitCode}): ${(tarResult.stderr || tarResult.stdout).slice(-1200)}`)
 
-      // The arm64 APK is this run's debug APK, renamed.
-      const debugApk = path.join(gradleOutputRoot, 'composeApp', 'outputs', 'apk', 'debug', 'composeApp-debug.apk')
-      if (!fs.existsSync(debugApk)) throw new Error(`this run has no debug APK: ${debugApk}`)
-      fs.copyFileSync(debugApk, apkPath)
+      // The arm64 APK is this run's verified APK: the release variant by
+      // default, the debug QA APK only with --debug-apk. There is deliberately
+      // no fallback to `composeApp-debug.apk` on the default path.
+      if (!fs.existsSync(packageApkSource)) throw new Error(`the verified APK disappeared before packaging: ${packageApkSource}`)
+      fs.copyFileSync(packageApkSource, apkPath)
 
       const apkSize = fs.statSync(apkPath).size
       const zipSize = fs.statSync(zipPath).size
       const apkSha256 = sha256File(apkPath)
       const zipSha256 = sha256File(zipPath)
       // Same three-column format as the packaging recipe: name, size in MB, sha256.
-      const sums = [
-        `${path.basename(apkPath).padEnd(46)} ${(apkSize / (1024 * 1024)).toFixed(1).padStart(8)} MB  ${apkSha256}`,
-        `${path.basename(zipPath).padEnd(46)} ${(zipSize / (1024 * 1024)).toFixed(1).padStart(8)} MB  ${zipSha256}`
-      ].join('\r\n') + '\r\n'
-      fs.writeFileSync(path.join(deliverablesRoot, 'SHA256SUMS.txt'), sums, 'utf8')
-      say(`[4/5] apk ${apkSize} B sha256 ${apkSha256}`)
+      const checksumRow = (name, size, sha256) => `${name.padEnd(46)} ${(size / (1024 * 1024)).toFixed(1).padStart(8)} MB  ${sha256}`
+      const apkRow = checksumRow(path.basename(apkPath), apkSize, apkSha256)
+      const zipRow = checksumRow(path.basename(zipPath), zipSize, zipSha256)
+      // The device-QA release variant keeps the Android debug key on purpose, so
+      // the checksum file is stamped: an artifact that cannot be published must
+      // not look like one. `release-artifacts` asserts the stamp is present.
+      const qaSigned = Boolean(packageApkClassGate && packageApkClassGate.qaSignedNotPublishable)
+      const sumsLines = []
+      if (options.debugApk) {
+        // The debug QA APK is not a release artifact: SHA256SUMS.txt carries the
+        // ZIP only, and the APK's size/hash live in a sidecar that says what it
+        // is. `release-artifacts` asserts the APK is absent from the sums rows.
+        sumsLines.push(`# DEBUG QA APK ${path.basename(apkPath)} is deliberately not listed below: it is application-debuggable and is not a release artifact.`)
+        sumsLines.push(zipRow)
+        fs.writeFileSync(debugApkNotePath, [
+          '# DEBUG QA APK (packaged with --debug-apk)',
+          '# This APK is application-debuggable and signed with the Android debug key.',
+          '# It is deliberately absent from SHA256SUMS.txt and must not be published',
+          '# as a release artifact.',
+          apkRow
+        ].join('\r\n') + '\r\n', 'utf8')
+      } else {
+        if (qaSigned) sumsLines.push('QA ARTIFACT — DEBUG-SIGNED, NOT PUBLISHABLE')
+        sumsLines.push(apkRow, zipRow)
+      }
+      fs.writeFileSync(sumsPath, sumsLines.join('\r\n') + '\r\n', 'utf8')
+      say(`[4/5] apk ${apkSize} B sha256 ${apkSha256} (${options.debugApk ? 'DEBUG QA; not in SHA256SUMS.txt' : (qaSigned ? 'QA artifact, debug-signed, NOT PUBLISHABLE' : 'release APK')})`)
       say(`[5/5] zip ${zipSize} B sha256 ${zipSha256}`)
-      releaseDeliverables = { directory: deliverablesRoot, apk: { path: apkPath, size: apkSize, sha256: apkSha256 }, zip: { path: zipPath, size: zipSize, sha256: zipSha256 }, launcherLabel }
+      releaseDeliverables = {
+        directory: deliverablesRoot,
+        classification: options.debugApk
+          ? 'LOCAL_QA_DEBUG_APK_NOT_PUBLISHABLE'
+          : ((packageApkClassGate && packageApkClassGate.classification) || 'NOT_PUBLISHABLE'),
+        apk: { path: apkPath, name: path.basename(apkPath), size: apkSize, sha256: apkSha256, inChecksumFile: !options.debugApk },
+        zip: { path: zipPath, name: path.basename(zipPath), size: zipSize, sha256: zipSha256 },
+        launcherLabel
+      }
       return { exitCode: 0, stdout: JSON.stringify({ stagingDir, apkPath, zipPath, jars: jars.length }), stderr: '' }
     })
-    const packageRow = steps.find((row) => row.id === 'release-package')
-    if (packageRow) {
-      packageRow.detail = releaseDeliverables
-        ? JSON.stringify({ staging: path.relative(ARTIFACT_ROOT, stagingDir).replaceAll(path.sep, '/'), apk: path.relative(ARTIFACT_ROOT, apkPath).replaceAll(path.sep, '/'), zip: path.relative(ARTIFACT_ROOT, zipPath).replaceAll(path.sep, '/'), launcherLabel: releaseDeliverables.launcherLabel })
-        : String(packageStep.stderr || 'release packaging failed').slice(-2000)
+      const packageRow = steps.find((row) => row.id === 'release-package')
+      if (packageRow) {
+        packageRow.detail = releaseDeliverables
+          ? JSON.stringify({ staging: path.relative(ARTIFACT_ROOT, stagingDir).replaceAll(path.sep, '/'), apk: path.relative(ARTIFACT_ROOT, apkPath).replaceAll(path.sep, '/'), zip: path.relative(ARTIFACT_ROOT, zipPath).replaceAll(path.sep, '/'), apkClass: releaseDeliverables.classification, launcherLabel: releaseDeliverables.launcherLabel })
+          : String(packageStep.stderr || 'release packaging failed').slice(-2000)
+      }
     }
 
     // 5. release-package-smoke: launch the packaged launcher once, require a live
     // javaw that owns a real window, capture it, kill it and require no leftovers.
-    const smokeShot = path.join(stagingDir, 'smoke.png')
-    const smokeScript = path.join(tmpRoot, 'release-smoke.ps1')
-    fs.writeFileSync(smokeScript, RELEASE_SMOKE_SCRIPT, 'utf8')
-    const powershellExe = locateOnPath('powershell.exe') || path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-    const smoke = releaseDeliverables
-      ? await runProcess(powershellExe, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', smokeScript, '-Launcher', path.join(stagingDir, 'FrameMark.bat'), '-WorkingDirectory', stagingDir, '-Shot', smokeShot, '-WaitSeconds', '25'], { cwd: ROOT, env: process.env, logFile: path.join(logRoot, 'release-package-smoke.log'), timeoutMs: 5 * 60 * 1000 })
-      : { exitCode: 1, stdout: '', stderr: 'release-package did not produce a package to smoke', timedOut: false }
-    const smokeResult = parseSmokeResult(smoke.stdout)
-    const smokeOk = Boolean(smokeResult) && smokeResult.ok === true && smokeResult.windowHandle > 0 && Array.isArray(smokeResult.remainingPids) && smokeResult.remainingPids.length === 0
-    gates.push(requiredCheck('release-package-smoke', smokeOk ? 'PASS' : 'FAIL', JSON.stringify(smokeResult || { exitCode: smoke.exitCode, stderr: String(smoke.stderr || '').slice(-1500), stdout: String(smoke.stdout || '').slice(-500) })))
+    if (releaseDeliverables) {
+      const smokeShot = path.join(stagingDir, 'smoke.png')
+      const smokeScript = path.join(tmpRoot, 'release-smoke.ps1')
+      fs.writeFileSync(smokeScript, RELEASE_SMOKE_SCRIPT, 'utf8')
+      const powershellExe = locateOnPath('powershell.exe') || path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+      const smoke = await runProcess(powershellExe, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', smokeScript, '-Launcher', path.join(stagingDir, 'FrameMark.bat'), '-WorkingDirectory', stagingDir, '-Shot', smokeShot, '-WaitSeconds', '25'], { cwd: ROOT, env: process.env, logFile: path.join(logRoot, 'release-package-smoke.log'), timeoutMs: 5 * 60 * 1000 })
+      const smokeResult = parseSmokeResult(smoke.stdout)
+      const smokeOk = Boolean(smokeResult) && smokeResult.ok === true && smokeResult.windowHandle > 0 && Array.isArray(smokeResult.remainingPids) && smokeResult.remainingPids.length === 0
+      gates.push(requiredCheck('release-package-smoke', smokeOk ? 'PASS' : 'FAIL', JSON.stringify(smokeResult || { exitCode: smoke.exitCode, stderr: String(smoke.stderr || '').slice(-1500), stdout: String(smoke.stdout || '').slice(-500) })))
+    } else {
+      gates.push(requiredCheck('release-package-smoke', 'FAIL', JSON.stringify({
+        notRun: true,
+        detail: 'release-package did not produce a package to smoke; nothing was published. See the release-package step and RELEASE-STATUS.json.'
+      })))
+    }
 
     // 6. release-artifacts: the shipped files exist, are not truncated and match
-    // the SHA256SUMS.txt they travel with.
-    const sumsPath = path.join(deliverablesRoot, 'SHA256SUMS.txt')
+    // the checksum file they travel with. With --debug-apk the APK must be absent
+    // from the checksum rows and its hash must live in DEBUG-QA-APK.txt instead;
+    // a QA-signed release must carry the NOT PUBLISHABLE stamp.
     const sumsText = fs.existsSync(sumsPath) ? fs.readFileSync(sumsPath, 'utf8') : ''
-    const sumsRows = sumsText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).map((line) => {
-      const match = line.match(/^(\S+)\s+([0-9][0-9,.]*) MB\s+([0-9a-f]{64})$/)
-      return match ? { name: match[1], megabytes: match[2], sha256: match[3] } : { line }
-    })
-    const sumsShapeOk = sumsRows.length === 2 && sumsRows.every((row) => Boolean(row.name && row.sha256))
-    const sumsMatchOk = sumsShapeOk && sumsRows.every((row) => {
+    const sumsRows = parseChecksumLines(sumsText)
+    const checksumRows = sumsRows.filter((row) => Boolean(row.name && row.sha256))
+    const expectedSumsNames = options.debugApk ? [path.basename(zipPath)] : [path.basename(apkPath), path.basename(zipPath)]
+    const sumsShapeOk = checksumRows.length === expectedSumsNames.length &&
+      expectedSumsNames.every((name) => checksumRows.some((row) => row.name === name))
+    const sumsMatchOk = sumsShapeOk && checksumRows.every((row) => {
       const target = path.join(deliverablesRoot, row.name)
       return fs.existsSync(target) && fs.statSync(target).isFile() && sha256File(target) === row.sha256
     })
+    const debugNoteRows = fs.existsSync(debugApkNotePath)
+      ? parseChecksumLines(fs.readFileSync(debugApkNotePath, 'utf8')).filter((row) => row.name)
+      : []
+    const debugApkHashOk = !options.debugApk || (
+      debugNoteRows.length === 1 &&
+      debugNoteRows[0].name === path.basename(apkPath) &&
+      fs.existsSync(apkPath) && sha256File(apkPath) === debugNoteRows[0].sha256
+    )
+    const debugApkExcludedFromSums = !options.debugApk || !checksumRows.some((row) => row.name === path.basename(apkPath))
+    const qaStampExpected = Boolean(packageApkClassGate && packageApkClassGate.qaSignedNotPublishable && !options.debugApk)
+    const qaStampPresent = !qaStampExpected || sumsText.includes('QA ARTIFACT — DEBUG-SIGNED, NOT PUBLISHABLE')
     const apkMinimum = 100 * 1024 * 1024
     const zipMinimum = 150 * 1024 * 1024
     const artifactsOk = Boolean(releaseDeliverables) &&
@@ -1574,12 +2048,14 @@ async function main (options) {
       fs.existsSync(releaseDeliverables.zip.path) && fs.statSync(releaseDeliverables.zip.path).size > zipMinimum &&
       sha256File(releaseDeliverables.apk.path) === releaseDeliverables.apk.sha256 &&
       sha256File(releaseDeliverables.zip.path) === releaseDeliverables.zip.sha256 &&
-      sumsShapeOk && sumsMatchOk
+      sumsShapeOk && sumsMatchOk && debugApkHashOk && debugApkExcludedFromSums && qaStampPresent
     gates.push(requiredCheck('release-artifacts', artifactsOk ? 'PASS' : 'FAIL', JSON.stringify({
-      apk: releaseDeliverables ? { path: path.relative(ARTIFACT_ROOT, releaseDeliverables.apk.path).replaceAll(path.sep, '/'), size: releaseDeliverables.apk.size, sha256: releaseDeliverables.apk.sha256 } : null,
+      apk: releaseDeliverables ? { path: path.relative(ARTIFACT_ROOT, releaseDeliverables.apk.path).replaceAll(path.sep, '/'), name: releaseDeliverables.apk.name, size: releaseDeliverables.apk.size, sha256: releaseDeliverables.apk.sha256, classification: releaseDeliverables.classification } : null,
       zip: releaseDeliverables ? { path: path.relative(ARTIFACT_ROOT, releaseDeliverables.zip.path).replaceAll(path.sep, '/'), size: releaseDeliverables.zip.size, sha256: releaseDeliverables.zip.sha256 } : null,
       thresholds: { apkMinimumBytes: apkMinimum, zipMinimumBytes: zipMinimum },
-      sha256sums: { file: path.relative(ARTIFACT_ROOT, sumsPath).replaceAll(path.sep, '/'), rows: sumsRows.length, shapeOk: sumsShapeOk, matchesFiles: sumsMatchOk }
+      sha256sums: { file: path.relative(ARTIFACT_ROOT, sumsPath).replaceAll(path.sep, '/'), rows: checksumRows.length, headerLines: sumsRows.length - checksumRows.length, shapeOk: sumsShapeOk, matchesFiles: sumsMatchOk, expectedNames: expectedSumsNames, qaStampExpected, qaStampPresent },
+      debugApkNote: options.debugApk ? { file: path.relative(ARTIFACT_ROOT, debugApkNotePath).replaceAll(path.sep, '/'), rows: debugNoteRows.length, hashMatches: debugApkHashOk, absentFromSums: debugApkExcludedFromSums } : null,
+      ...(artifactsOk ? {} : { hint: 'the deliverables are not publishable: fix the release-package step, then re-run; a failed run removes the ZIP/release APK/SHA256SUMS and writes RELEASE-STATUS.json instead (a -DEBUGQA.apk is kept because it is explicitly non-publishable)' })
     })))
   }
 
@@ -1590,18 +2066,54 @@ async function main (options) {
     gates.push(requiredCheck('release-intent-source-guard', 'FAIL', 'QA Intent hook guard is missing or does not end before normal UI content'))
   }
 
-  const requiredFailures = [
-    ...steps.filter((row) => row.required && row.status !== 'PASS'),
-    ...gates.filter((row) => row.required && row.status !== 'PASS')
-  ]
+  const requiredFailures = collectRequiredFailures([...steps, ...gates])
   const exitCode = requiredFailures.length ? 1 : 0
+
+  // A failed run must not leave publishable artifacts. The pre-packaging check
+  // already refused to write them; this second pass catches post-packaging gates
+  // (smoke, checksum re-verification) and anything else that failed late: the
+  // ZIP, the APK and SHA256SUMS.txt are removed and RELEASE-STATUS.json records
+  // the failure instead.
+  if (options.package && releaseDeliverablesRoot && requiredFailures.length) {
+    const purged = purgePublishableDeliverables(releaseDeliverablesRoot)
+    const keptForQa = fs.existsSync(releaseDeliverablesRoot)
+      ? fs.readdirSync(releaseDeliverablesRoot).filter((name) => /-DEBUGQA\.apk$/i.test(name) || name === 'DEBUG-QA-APK.txt')
+      : []
+    const statusFile = writeReleaseStatus(releaseDeliverablesRoot, {
+      status: 'FAIL',
+      phase: releaseDeliverables ? 'after-packaging' : 'before-packaging',
+      runId,
+      versionName: releaseVersionName,
+      head: readHead(),
+      blockers: requiredFailures.map((row) => ({
+        id: row.id,
+        kind: steps.includes(row) ? 'step' : 'gate',
+        status: row.status,
+        detail: String(row.detail || '').slice(0, 600)
+      })),
+      purged,
+      keptForQa,
+      deliverables: null,
+      instruction: keptForQa.length
+        ? 'The run failed, so the ZIP, the release APK and SHA256SUMS.txt were removed. The -DEBUGQA.apk and DEBUG-QA-APK.txt were kept because they are explicitly not publishable (application-debuggable, absent from the checksum file). Fix the listed required steps/gates and re-run for a release artifact.'
+        : (purged.length
+            ? 'The run failed, so the ZIP, the APK and SHA256SUMS.txt were removed. Nothing in this directory is publishable: fix the listed required steps/gates and re-run.'
+            : 'The run failed before any deliverable was written. Fix the listed required steps/gates and re-run.')
+    })
+    releaseStatus = statusFile.document
+    releaseDeliverables = null
+  }
+
+  const releaseArtifactClassification = options.package
+    ? (releaseDeliverables ? releaseDeliverables.classification : 'NOT_PUBLISHED')
+    : (options.release ? (options.releaseQa ? 'LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE' : 'UNSIGNED_OR_PRODUCTION_SIGNED') : null)
   const report = {
     schema: 'framemark-native-build-report/v1',
     createdAt: new Date().toISOString(),
     repoRoot: ROOT,
     head: readHead(),
     options,
-    releaseArtifactClassification: options.release ? (options.releaseQa ? 'LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE' : 'UNSIGNED_OR_PRODUCTION_SIGNED') : null,
+    releaseArtifactClassification,
     toolchain: CONFIG,
     preflight,
     desktopBuildProvenance,
@@ -1610,14 +2122,14 @@ async function main (options) {
     nativeBuildProvenance,
     androidPackageSourceIntegrity,
     // Present only in --package mode; the default report keeps its shape.
-    ...(options.package ? { deliverables: releaseDeliverables } : {}),
+    ...(options.package ? { deliverables: releaseDeliverables, releaseStatus } : {}),
     steps,
     gates,
     summary: {
       exitCode,
       requiredFailures: requiredFailures.map((row) => row.id),
       result: exitCode === 0 ? 'PASS' : 'FAIL',
-      ...(options.package ? { deliverables: releaseDeliverables } : {})
+      ...(options.package ? { deliverables: releaseDeliverables, releaseStatus } : {})
     }
   }
   fs.writeFileSync(path.join(runRoot, 'build-report.json'), JSON.stringify(report, null, 2) + '\n', 'utf8')
@@ -1637,9 +2149,9 @@ function findReleaseApk (gradleOutputRoot) {
   return fs.existsSync(dir) ? listFiles(dir).find((file) => file.toLowerCase().endsWith('.apk')) || null : null
 }
 
-async function verifyApk (id, apk, tools, step, expectedApplicationId = 'com.framemark.native') {
+async function verifyApk (id, apk, tools, step, expectedApplicationId = 'com.framemark.native', hint = null) {
   const jarResult = await step(`${id}-entries`, 'Inspect APK native library entries', (logFile) => runProcess(path.join(tools.javaHome, 'bin', 'jar.exe'), ['tf', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
-  if (jarResult.status !== 'PASS') return requiredCheck(id, 'FAIL', `could not inspect APK: ${apk}`)
+  if (jarResult.status !== 'PASS') return requiredCheck(id, 'FAIL', `could not inspect APK: ${apk}${hint ? `; ${hint}` : ''}`)
   const native = jarResult.stdout.split(/\r?\n/).filter((line) => /^lib\/[^/]+\/.*\.so$/i.test(line))
   const abis = [...new Set(native.map((line) => line.split('/')[1]))].sort()
   const hasEngine = native.includes('lib/arm64-v8a/libframemark_engine.so')
@@ -1648,14 +2160,107 @@ async function verifyApk (id, apk, tools, step, expectedApplicationId = 'com.fra
   const badging = await step(`${id}-badging`, 'Verify APK application id', (logFile) => runProcess(aapt, ['dump', 'badging', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
   const packageMatch = badging.stdout.match(/^package: name='([^']+)'/m)
   const packageOk = badging.status === 'PASS' && packageMatch?.[1] === expectedApplicationId
-  return requiredCheck(id, onlyArm64 && packageOk ? 'PASS' : 'FAIL', JSON.stringify({ abis, hasEngine, packageOk, expectedApplicationId, actualApplicationId: packageMatch?.[1] || null, apk: path.relative(ROOT, apk).replaceAll(path.sep, '/') }))
+  return requiredCheck(id, onlyArm64 && packageOk ? 'PASS' : 'FAIL', JSON.stringify({ abis, hasEngine, packageOk, expectedApplicationId, actualApplicationId: packageMatch?.[1] || null, apk: path.relative(ROOT, apk).replaceAll(path.sep, '/'), ...(packageOk && onlyArm64 ? {} : { hint }) }))
+}
+
+// `apksigner verify --print-certs` prints one DN line per signer.
+function parseSignerSubjects (stdout) {
+  return [...String(stdout || '').matchAll(/^Signer #\d+ certificate DN:\s*([^\r\n]+)$/gm)].map((match) => match[1].trim())
+}
+
+/**
+ * The release-class decision for a delivered APK.
+ *
+ * The defect this gate exists for is an APK that says it is `application-
+ * debuggable`: that is never a release artifact, with no exceptions. The signing
+ * certificate is a separate axis:
+ *
+ *  - the device-QA release variant deliberately keeps the Android debug
+ *    keystore, so a `CN=Android Debug` certificate is accepted as a QA artifact
+ *    ONLY when the delivered applicationId still carries this run's QA suffix
+ *    (that id cannot be published as the product); it is stamped
+ *    `QA ARTIFACT — DEBUG-SIGNED, NOT PUBLISHABLE` in SHA256SUMS.txt and reported
+ *    as `LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE`;
+ *  - a production-intent run (`--release` without `--release-qa`, or `--sign`)
+ *    must carry a non-debug certificate, i.e. the production keystore;
+ *  - anything unsigned is never shippable.
+ */
+function classifyApkClass ({ debuggable, signerSubjects, applicationId = null, qaSuffix = null, productionIntent = false }) {
+  const subjects = Array.isArray(signerSubjects) ? signerSubjects : []
+  const signed = subjects.length === 1
+  const debugCertificate = signed && subjects[0].split(',').some((part) => part.trim() === 'CN=Android Debug')
+  const qaApplicationId = Boolean(qaSuffix && applicationId && String(applicationId).endsWith(qaSuffix))
+  const failures = []
+  // Rule 1 (no exceptions): a debuggable APK is not a release artifact. The
+  // --debug-apk escape hatch still packages it (marked DEBUGQA and kept out of
+  // SHA256SUMS.txt), but it can never pass this gate.
+  if (debuggable) {
+    failures.push('the delivered APK is application-debuggable; --package must ship :composeApp:assembleRelease, not composeApp-debug.apk (--debug-apk produces a DEBUGQA artifact, never a release)')
+  }
+  if (productionIntent) {
+    if (!signed) failures.push('this is a production-intent run (--release without --release-qa, or --sign) but the delivered APK is not signed; pass --sign with the FM_SIGNING_* production keystore')
+    if (debugCertificate) failures.push('this is a production-intent run but the delivered APK is signed with the Android debug certificate (CN=Android Debug); pass --sign with the production keystore (FM_SIGNING_*)')
+  } else if (!signed) {
+    failures.push('the delivered APK is not signed; pass --sign with the FM_SIGNING_* variables to sign it')
+  } else if (debugCertificate && !qaApplicationId) {
+    failures.push(`the delivered APK is signed with the Android debug certificate (CN=Android Debug) but its application id (${applicationId || 'unknown'}) does not carry the QA suffix (${qaSuffix || 'not set'}); package a QA build or sign with the production keystore (FM_SIGNING_*)`)
+  }
+  const classification = failures.length
+    ? 'NOT_PUBLISHABLE'
+    : productionIntent
+      ? 'PRODUCTION_SIGNED'
+      : (debugCertificate ? 'LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE' : 'RELEASE_APK_SIGNED')
+  return {
+    status: failures.length ? 'FAIL' : 'PASS',
+    debuggable: Boolean(debuggable),
+    signerCount: subjects.length,
+    debugCertificate,
+    qaApplicationId,
+    productionIntent: Boolean(productionIntent),
+    classification,
+    stamp: classification === 'LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE' ? 'QA ARTIFACT — DEBUG-SIGNED, NOT PUBLISHABLE' : null,
+    failures
+  }
+}
+
+/**
+ * Packaging gate `package-apk-class`: read the delivered APK's badging (which
+ * also gives the applicationId that decides the QA-suffix rule) and certificate
+ * with the same aapt/apksigner tools `verifyApk`/`verifyQaSignature` use, then
+ * apply classifyApkClass().
+ */
+async function verifyApkClass (id, apk, tools, step, { qaSuffix = null, productionIntent = false } = {}) {
+  const aapt = path.join(tools.androidSdk, 'build-tools', CONFIG.versions.androidBuildTools, 'aapt.exe')
+  const badging = await step(`${id}-badging`, 'Verify the delivered APK is not application-debuggable', (logFile) => runProcess(aapt, ['dump', 'badging', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
+  const debuggable = badging.status === 'PASS' && /^application-debuggable$/m.test(badging.stdout)
+  const packageMatch = badging.stdout.match(/^package: name='([^']+)'/m)
+  const applicationId = packageMatch?.[1] || null
+  const apksignerJar = path.join(tools.androidSdk, 'build-tools', CONFIG.versions.androidBuildTools, 'lib', 'apksigner.jar')
+  const verification = await step(`${id}-certificate`, 'Verify the delivered APK signing certificate', (logFile) => runProcess(tools.java, ['-jar', apksignerJar, 'verify', '--verbose', '--print-certs', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
+  const subjects = verification.status === 'PASS' ? parseSignerSubjects(verification.stdout) : []
+  const result = classifyApkClass({ debuggable, signerSubjects: subjects, applicationId, qaSuffix, productionIntent })
+  const gate = requiredCheck(id, result.status, JSON.stringify({
+    ...result,
+    badging: badging.status,
+    apksigner: verification.status,
+    certificateSubjects: subjects,
+    apk: path.relative(ROOT, apk).replaceAll(path.sep, '/'),
+    ...(result.status === 'PASS' ? {} : { hint: result.failures.join(' | ') })
+  }))
+  // Callers stamp SHA256SUMS.txt and the report from these fields. They live on
+  // the gate object (not only inside the JSON detail) so the packaging step
+  // does not have to re-parse its own detail string.
+  gate.classification = result.classification
+  gate.qaSignedNotPublishable = result.classification === 'LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE'
+  gate.stamp = result.stamp
+  return gate
 }
 
 async function verifyQaSignature (apk, tools, step) {
   const apksignerJar = path.join(tools.androidSdk, 'build-tools', CONFIG.versions.androidBuildTools, 'lib', 'apksigner.jar')
   const verification = await step('verify-release-qa-signature', 'Verify isolated QA release signature', (logFile) => runProcess(tools.java, ['-jar', apksignerJar, 'verify', '--verbose', '--print-certs', apk], { cwd: ROOT, env: process.env, logFile, timeoutMs: 30000 }))
-  const subjects = [...verification.stdout.matchAll(/^Signer #\d+ certificate DN:\s*([^\r\n]+)$/gm)]
-  const debugCertificate = subjects.length === 1 && subjects[0][1].split(',').some((part) => part.trim() === 'CN=Android Debug')
+  const subjects = parseSignerSubjects(verification.stdout)
+  const debugCertificate = subjects.length === 1 && subjects[0].split(',').some((part) => part.trim() === 'CN=Android Debug')
   return requiredCheck(
     'release-qa-debug-signature',
     verification.status === 'PASS' && debugCertificate ? 'PASS' : 'FAIL',
@@ -1908,10 +2513,19 @@ if (require.main === module) runCli()
 
 module.exports = {
   DESKTOP_REQUIRED_CLASSES,
+  QA_SURFACE_TOKENS,
   checkReleaseSurface,
+  classifyApkClass,
+  collectRequiredFailures,
   desktopClassRoot,
+  enumerateDebugGuardedIntentHooks,
+  findQaSurfaceSources,
+  parseChecksumLines,
+  purgePublishableDeliverables,
+  qaSurfaceClassOffenders,
   verifyDesktopClassManifest,
   verifyDesktopClassSources,
   verifyDesktopCompileNotFromCache,
-  verifyPackagingSurface
+  verifyPackagingSurface,
+  writeReleaseStatus
 }

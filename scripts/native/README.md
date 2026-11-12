@@ -88,6 +88,8 @@ and build inputs must first be present in the chosen Git baseline.
 .\build-native.cmd --release
 .\build-native.cmd --release --release-qa
 .\build-native.cmd --package
+.\build-native.cmd --package --sign
+.\build-native.cmd --package --debug-apk
 ```
 
 `--skip-engine` skips only the `e2b` source build. It cannot stage a complete
@@ -114,16 +116,48 @@ signing option is supplied.
 evidence. After the existing steps it runs `:composeApp:desktopTest` through the
 same isolated Gradle invocation, deletes the desktop class output and rebuilds
 `:composeApp:desktopJar` with `-PfmQaSurface=false`, asserts the product jar and
-the staged class tree contain zero `com/framemark/native/(verify|qaenv)` entries,
-then stages the jlink runtime plus this run's `bin`/`data`/`bridge` and writes
+the staged class tree contain zero `com/framemark/native/(verify|qaenv)` entries
+and no class name/package mentioning `verify`/`qaenv`/`devtools`, then stages the
+jlink runtime plus this run's `bin`/`data`/`bridge` and writes
 `FrameMark-<versionName>-win64-portable.zip`, `FrameMark-<versionName>-arm64.apk`
 and `SHA256SUMS.txt` under `<artifact root>/runs/<runId>/deliverables/`. It also
 launches the packaged `FrameMark.bat` once (window handle + screenshot + clean
 process exit) and re-hashes the shipped files. The label comes from
 `version.properties` and the commit from `git rev-parse --short HEAD`; the
 hand-run packaging recipe outside the repository is no longer needed. Packaging
-requires a PASSing `desktop-runtime` step, so `--skip-engine` cannot produce a
-package in the same run.
+requires a PASSing `desktop-runtime` step and source-built Android libraries, so
+`--skip-engine` and `--skip-android-native` cannot produce a package in the same
+run.
+
+`--package` builds and ships the **release** variant: the Gradle invocation adds
+`:composeApp:assembleRelease` and passes
+`-PframemarkQaReleaseSuffix=<the debug build's suffix>`, so the delivered app id
+stays `com.framemark.native<qaSuffix>` (installable over the debug QA build). The
+delivered APK is gated before it is copied and must never be
+`application-debuggable`. Without `--sign` the release variant keeps the Android
+debug key on purpose, so the artifact is stamped unmistakably: `SHA256SUMS.txt`
+starts with `QA ARTIFACT — DEBUG-SIGNED, NOT PUBLISHABLE` and the report
+classifies it `LOCAL_QA_DEBUG_SIGNED_NOT_PUBLISHABLE` (the QA-suffixed app id is
+not the product id). Pass `--package --sign` with the `FM_SIGNING_*` variables
+(the certificate fingerprint is checked against `FM_SIGNING_CERT_SHA256`) for a
+production-signed package. A production-intent run (`--release` without
+`--release-qa`, or `--sign`) fails when the delivered APK is unsigned or carries
+the Android debug certificate.
+
+`--package --debug-apk` is the explicit escape hatch: it produces
+`FrameMark-<versionName>-arm64-DEBUGQA.apk` from `composeApp-debug.apk`, keeps it
+out of `SHA256SUMS.txt` (its size and hash go into `DEBUG-QA-APK.txt`) and marks
+the report `LOCAL_QA_DEBUG_APK_NOT_PUBLISHABLE`. Because the APK is
+application-debuggable, `package-apk-class` fails and the command exits nonzero:
+the file is a local QA artifact, never a release.
+
+A failed run never leaves publishable artifacts: if any required step or gate is
+not `PASS` before packaging, the ZIP, the release APK and `SHA256SUMS.txt` are
+not written; if a post-packaging gate (launcher smoke, checksum re-verification)
+fails, they are removed again. Either way the run writes
+`<artifact root>/runs/<runId>/deliverables/RELEASE-STATUS.json` with the failed
+gate ids, and the command exits nonzero. The only artifact a failed run keeps is
+the `-DEBUGQA.apk` plus its sidecar, because it is explicitly not publishable.
 
 Android CMake and Gradle restrict packaging to `arm64-v8a`; CMake fails if any
 of the IR, hand-renderer, or export static libraries is absent. QA Intent
