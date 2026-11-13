@@ -1,0 +1,72 @@
+[
+  {
+    "case": "leica-red-dot-fixed",
+    "note": "brand-key color cut (laika)",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\leica-red-dot-fixed.png",
+    "ok": true,
+    "expectBrand": "laika",
+    "expectSize": "1024x1024",
+    "logoLine": "FM_LOGO brand=laika asset=fmlogo_e2e7d3d809e7a12b8f08bd7d328f04e31698ead8a4e7ed4b4e7409c57f1afe0a 1024x1024",
+    "failureLine": ""
+  },
+  {
+    "case": "curated-canon",
+    "note": "curated ver: cut",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\curated-canon.png",
+    "ok": true,
+    "expectBrand": "ver:canon:canon-wordmark-1",
+    "expectSize": "1600x335",
+    "logoLine": "FM_LOGO brand=ver:canon:canon-wordmark-1 asset=fmlogo_059f9ceea7a1fbd2a242610a8516714b455f4c9f3e8c68f9874e32d175002869 1600x335",
+    "failureLine": ""
+  },
+  {
+    "case": "curated-sony",
+    "note": "curated ver: cut",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\curated-sony.png",
+    "ok": true,
+    "expectBrand": "ver:sony:sony-logo-1",
+    "expectSize": "1600x281",
+    "logoLine": "FM_LOGO brand=ver:sony:sony-logo-1 asset=fmlogo_5a834c65fcdee7aca761a01f042e5afa975d76c52ff57e779a08b332f17a92f8 1600x281",
+    "failureLine": ""
+  },
+  {
+    "case": "curated-lumix",
+    "note": "curated ver: cut",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\curated-lumix.png",
+    "ok": true,
+    "expectBrand": "ver:panasionic:lumix",
+    "expectSize": "1600x312",
+    "logoLine": "FM_LOGO brand=ver:panasionic:lumix asset=fmlogo_2dae2539244579e09639230243dade98454235780252cdd1689cc73a019d8895 1600x312",
+    "failureLine": ""
+  },
+  {
+    "case": "restored-agfa-rhombus",
+    "note": "owner kept old 1620px original (root agfa-2 512px dropped)",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\restored-agfa-rhombus.png",
+    "ok": true,
+    "expectBrand": "agfa_red",
+    "expectSize": "1620x399",
+    "logoLine": "FM_LOGO brand=agfa_red asset=fmlogo_8a9b545a2c2592bd5084549a8d4852480373e1a250ab0af6fd4373d61db76cc7 1620x399",
+    "failureLine": ""
+  },
+  {
+    "case": "restored-binde-black",
+    "note": "owner kept old 1024px original (root pentax-1 512px dropped)",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\restored-binde-black.png",
+    "ok": true,
+    "expectBrand": "binde_black",
+    "expectSize": "1024x200",
+    "logoLine": "FM_LOGO brand=binde_black asset=fmlogo_574413efbf0b7db7962b73aa344d533e4ef61049cec8d04f3a55d1810f4ba583 1024x200",
+    "failureLine": ""
+  },
+  {
+    "case": "restored-vivo-blue",
+    "note": "owner kept old 1024px original (root vivo-logo-2019 512px dropped)",
+    "shot": "E:\\FrameMark\\work\\ui-v2\\evidence\\verify-rc14\\restored-vivo-blue.png",
+    "ok": true,
+    "expectBrand": "vivo_blue",
+    "expectSize": "1024x271",
+    "logoLine": "FM_LOGO brand=vivo_blue asset=fmlogo_9f5146e0e212da440061758feb59377500a3b7ea531b811f24c879f5aad77edc 1024x271",
+    "failureLine": ""
+  }
+]

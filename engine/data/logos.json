@@ -19,22 +19,22 @@
   },
   "counts": {
     "brands": 102,
-    "versions": 361,
-    "selectedVersions": 361,
+    "versions": 358,
+    "selectedVersions": 358,
     "unselectedVersions": 0,
     "selectedIdsMissingFromCatalog": 0,
-    "cuts": 490,
-    "cutsResolved": 490,
+    "cuts": 487,
+    "cutsResolved": 487,
     "cutsMissing": 0,
     "appLogoFiles": 166,
-    "logoVersionFiles": 373,
+    "logoVersionFiles": 370,
     "logoVersionBrandDirs": 98,
-    "distinctFilesUsed": 490,
+    "distinctFilesUsed": 487,
     "usedByCardVendorLogo": 9,
     "unreferencedAppLogoFiles": 0,
     "selectedVersionsWithoutResolvableCut": [],
-    "declaredVsActualDimensionMismatches": 133,
-    "declaredVsActualDimensionMismatchesVersionCuts": 133,
+    "declaredVsActualDimensionMismatches": 130,
+    "declaredVsActualDimensionMismatchesVersionCuts": 130,
     "declaredVsActualDimensionMismatchesAppCuts": 0
   },
   "brands": [
@@ -1830,14 +1830,6 @@
       "w": 1023,
       "h": 1024
     },
-    "src/renderer/src/assets/logo-versions/agfa/agfa-2.webp": {
-      "sha256": "a8f6382075d6bc9576bb48cb6cf9520a761215c64dd2d7e00b018068b9d26ecc",
-      "bytes": 5334,
-      "format": "webp",
-      "variant": "VP8",
-      "w": 512,
-      "h": 159
-    },
     "src/renderer/src/assets/logo-versions/agfa/agfa-51304.webp": {
       "sha256": "49d86930d99eb30030de061f02dc0797892e70753aa77627374d904f7b85112f",
       "bytes": 5880,
@@ -1909,14 +1901,6 @@
       "variant": "VP8X",
       "w": 431,
       "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/binde/pentax-1.webp": {
-      "sha256": "afa3af18be1e3ca4b603c0dce2f5c99443739d61b8d773c4efa38b8a54f85cba",
-      "bytes": 4662,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 98
     },
     "src/renderer/src/assets/logo-versions/binde/pentax-red.webp": {
       "sha256": "ddd0efd2dba4a0cfe3f5ee6938cc29f1061dfd64da949c762ca20fe2e3f7bf66",
@@ -2845,14 +2829,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 192
-    },
-    "src/renderer/src/assets/logo-versions/vivo/vivo-logo-2019.webp": {
-      "sha256": "fd4e10acacaac1946ebefb743f5b71a4f09d25d32ff63b41b46afd9c4f59b42e",
-      "bytes": 11150,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 135
     },
     "src/renderer/src/assets/logo-versions/vivo/vivo-red.webp": {
       "sha256": "7df0acfbae29f806f6fb70bc7aec96758d8590c387c5d55e2c21dbaae925eacf",
@@ -6238,34 +6214,6 @@
       ]
     },
     {
-      "id": "pentax-1",
-      "brandKey": "binde",
-      "name": "Pentax 1",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "pentax-1",
-      "cuts": [
-        {
-          "id": "pentax-1",
-          "assetKey": "ver:binde:pentax-1",
-          "file": "previews/binde/pentax-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 684,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/binde/pentax-1.webp",
-          "sha256": "afa3af18be1e3ca4b603c0dce2f5c99443739d61b8d773c4efa38b8a54f85cba",
-          "actualWidth": 512,
-          "actualHeight": 98
-        }
-      ]
-    },
-    {
       "id": "pentax-red",
       "brandKey": "binde",
       "name": "PENTAX wordmark (red)",
@@ -7661,34 +7609,6 @@
           "sha256": "77926c510682b1eb016c5afbe58d213edc1044fc8a7e17bc4686f28c36eeae5a",
           "actualWidth": 512,
           "actualHeight": 102
-        }
-      ]
-    },
-    {
-      "id": "agfa-2",
-      "brandKey": "agfa",
-      "name": "Agfa 2",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "agfa-2",
-      "cuts": [
-        {
-          "id": "agfa-2",
-          "assetKey": "ver:agfa:agfa-2",
-          "file": "previews/agfa/agfa-2.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 744,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/agfa/agfa-2.webp",
-          "sha256": "a8f6382075d6bc9576bb48cb6cf9520a761215c64dd2d7e00b018068b9d26ecc",
-          "actualWidth": 512,
-          "actualHeight": 159
         }
       ]
     },
@@ -10835,34 +10755,6 @@
           "sha256": "288ac4210131a874df146be2f923c48ea6bd1b3e467dbf7feb21906f2eb2a5f5",
           "actualWidth": 1024,
           "actualHeight": 271
-        }
-      ]
-    },
-    {
-      "id": "vivo-logo-2019",
-      "brandKey": "vivo",
-      "name": "Vivo Logo 2019",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "vivo-logo-2019",
-      "cuts": [
-        {
-          "id": "vivo-logo-2019",
-          "assetKey": "ver:vivo:vivo-logo-2019",
-          "file": "previews/vivo/vivo-logo-2019.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 634,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/vivo/vivo-logo-2019.webp",
-          "sha256": "fd4e10acacaac1946ebefb743f5b71a4f09d25d32ff63b41b46afd9c4f59b42e",
-          "actualWidth": 512,
-          "actualHeight": 135
         }
       ]
     },
