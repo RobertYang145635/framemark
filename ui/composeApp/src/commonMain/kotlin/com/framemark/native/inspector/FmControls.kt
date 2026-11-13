@@ -1,6 +1,6 @@
 package com.framemark.native.inspector
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,7 +27,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +41,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.theme.FmElevation
@@ -1041,9 +1046,146 @@ internal fun FmSliderValueBox(
 }
 
 /**
+ * `.seg` 滑块（白色浮块）的几何与过渡 —— 纯函数，绘制与测试共用
+ * （`FmSegmentedGeometryTest`）。
+ *
+ * 只用一个参照系：**控件外框**。[geometry] 的 `widthPx` 是 `.padding(Inset)` 之前
+ * 量到的宽度（含内边距），内容区 = 外框 − 2 × [Inset]，一格 = 内容区 / count。滑块
+ * 是 padding **以内**的子元素，所以它要的 x 相对内容区就是 `cell × index`：内边距
+ * 只在这里减一次，绘制点既不加 2 dp 也不减 2 dp。
+ *
+ * 2026-11-11 修复（用户口径「位置对应不上」）。旧实现把两个参照系混着用：
+ *  - `onGloballyPositioned` 其实挂在 `.padding(2.dp)` **之后**，量到的已经是**内容
+ *    宽度**（320 px 的控件报 316 px，见 `SegmentedThumbRenderTest`），代码却又减了
+ *    一次 `4f * density` → 每格窄 `4/n` dp，越往右越偏左；
+ *  - `(2f + cellPx * index) / density` 把 2 **px** 当成 2 dp 用，绘制点又额外
+ *    `- 2.dp` → 再叠一个 `2/density − 2` dp。
+ *  两项合计第 i 格偏左 `4i/n + (2/density − 2)` dp（density 2、5 格时末格 4.2 dp），
+ *  滑块还比格窄 `4/n` dp，末格右缘因此离内容区右缘更远。
+ *  - 宽度还没量到时 `cellPx = -4/n` 是**负数**，而弹簧的 target 由测量宽度算出，
+ *    所以首次测量、换面板、滚进视野都会把弹簧从 x≈0 重新拉一遍（「横条自己会滑」）。
+ */
+internal object FmSegmented {
+
+    /** `.seg` 的内边距（设计稿 2 dp）；绘制与几何共用这一个值。 */
+    val Inset = 2.dp
+
+    /** 选中格**真的**变化时的弹簧；手感与原实现一致（damping 0.8 / stiffness 700）。 */
+    val Spring = spring<Float>(dampingRatio = 0.8f, stiffness = 700f)
+
+    /**
+     * 一帧的滑块几何（px）。[widthPx] > 0 才是「宽度已知」，否则一个像素都不画。
+     */
+    fun geometry(
+        widthPx: Float,
+        count: Int,
+        index: Int,
+        density: Float,
+    ): SegmentedThumbGeometry {
+        if (count <= 0) return SegmentedThumbGeometry(count = 0, cellPx = 0f, xPx = 0f)
+        if (!density.isFinite() || density <= 0f) {
+            return SegmentedThumbGeometry(count = count, cellPx = 0f, xPx = 0f)
+        }
+        if (!widthPx.isFinite() || widthPx <= 0f) {
+            return SegmentedThumbGeometry(count = count, cellPx = 0f, xPx = 0f)
+        }
+        // 内边距只减这一次：外框 → 内容区。
+        val contentPx = widthPx - 2f * Inset.value * density
+        if (!contentPx.isFinite() || contentPx <= 0f) {
+            return SegmentedThumbGeometry(count = count, cellPx = 0f, xPx = 0f)
+        }
+        val cellPx = contentPx / count
+        if (!cellPx.isFinite() || cellPx <= 0f) {
+            return SegmentedThumbGeometry(count = count, cellPx = 0f, xPx = 0f)
+        }
+        val clamped = index.coerceIn(0, count - 1)
+        return SegmentedThumbGeometry(count = count, cellPx = cellPx, xPx = cellPx * clamped)
+    }
+
+    /**
+     * 这一帧滑块该怎么动：只有「上一次落位之后选中格真的换了」才 [animate]。
+     *
+     * [fromXPx] / [toXPx] 都用**当前**宽度算，所以动画起点永远是上一个格子此刻的
+     * 精确位置 —— 换格和改宽度出现在同一帧也不跳；反过来，同一格上只是宽度变了，
+     * 结果是 `animate = false` 且 `fromXPx == toXPx`，直接落位。
+     */
+    fun motion(
+        previousIndex: Int?,
+        widthPx: Float,
+        count: Int,
+        index: Int,
+        density: Float,
+    ): SegmentedThumbMotion {
+        val next = geometry(widthPx, count, index, density)
+        val target = if (count <= 0) 0 else index.coerceIn(0, count - 1)
+        if (previousIndex == null || count <= 0 || !next.visible) {
+            return SegmentedThumbMotion(
+                animate = false,
+                fromIndex = target.toFloat(),
+                toIndex = target.toFloat(),
+                fromXPx = next.xPx,
+                toXPx = next.xPx,
+            )
+        }
+        val previous = previousIndex.coerceIn(0, count - 1)
+        val animate = previous != target
+        val fromXPx = if (animate) geometry(widthPx, count, previous, density).xPx else next.xPx
+        return SegmentedThumbMotion(
+            animate = animate,
+            fromIndex = previous.toFloat(),
+            toIndex = target.toFloat(),
+            fromXPx = fromXPx,
+            toXPx = next.xPx,
+        )
+    }
+}
+
+/** 一帧的滑块矩形（px）；[visible] 为 false 时什么都不画。 */
+internal data class SegmentedThumbGeometry(
+    /** 有几格。 */
+    val count: Int,
+    /** 一格宽度（= 滑块宽度）的 px；0 表示宽度还不知道。 */
+    val cellPx: Float,
+    /** 选中格左缘，相对控件**内容区**左缘（2 dp 内边距以内）的 px。 */
+    val xPx: Float,
+) {
+    val visible: Boolean get() = count > 0 && cellPx > 0f
+
+    /** 滑块宽度（px）：正好一格；宽度未知时 0。 */
+    val widthPx: Float get() = if (visible) cellPx else 0f
+
+    /**
+     * 弹簧的小数格索引 → 当前宽度下的 x。动画只跑在**格索引**上，所以改宽度改变不了
+     * 动画目标（滑块不会因为测量自己滑），而 x 永远按当前格宽精确重算。
+     */
+    fun xForIndex(animatedIndex: Float): Float {
+        if (!visible) return 0f
+        return cellPx * animatedIndex.coerceIn(0f, (count - 1).toFloat())
+    }
+}
+
+/** 滑块这一帧的过渡：要不要跑弹簧、从哪一格到哪一格、两端的精确 px。 */
+internal data class SegmentedThumbMotion(
+    /** true = 选中格真的变了，走弹簧；false = 直接精确落位。 */
+    val animate: Boolean,
+    /** 起点格索引（动画从上一个格子此刻的精确位置开始）。 */
+    val fromIndex: Float,
+    /** 终点格索引。 */
+    val toIndex: Float,
+    /** 起点 px（当前宽度下上一格的精确位置）。 */
+    val fromXPx: Float,
+    /** 终点 px（当前宽度下选中格的精确位置）。 */
+    val toXPx: Float,
+)
+
+/**
  * `.seg` — `--seg` slot, 2 dp padding, radius 8; buttons h28 / 12.5 px; the
  * selected thumb is a white surface with a soft shadow that slides (300 ms
  * spring). Content-sized, so it also works inside a lazy row.
+ *
+ * 滑块的位置全部来自 [FmSegmented.geometry]：首次测量、面板改宽、重组、滚进视野都
+ * 直接落在选中格的精确位置上；只有选中格真的变了才走 [FmSegmented.Spring]，而且从
+ * 上一个格子此刻的位置起步。
  */
 @Composable
 internal fun CuratedSegmented(
@@ -1053,31 +1195,45 @@ internal fun CuratedSegmented(
     modifier: Modifier = Modifier,
     touch: Boolean = false,
 ) {
-    var widthPx by remember { mutableStateOf(0f) }
-    val density = androidx.compose.ui.platform.LocalDensity.current.density
-    val cellPx = if (options.isEmpty()) 0f else (widthPx - 4f * density) / options.size
+    // 控件**外框**宽度（px）：量在 `.padding` 之前，几何函数里只减一次内边距。
+    var widthPx by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
     val index = options.indexOfFirst { it.value == selected }.coerceAtLeast(0)
-    val thumbX by androidx.compose.animation.core.animateDpAsState(
-        targetValue = ((2f + cellPx * index) / density).dp,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 700f),
-        label = "segThumbX",
-    )
-    val thumbW = ((cellPx) / density).dp
+    val geometry = FmSegmented.geometry(widthPx, options.size, index, density.density)
+    // 弹簧跑在「格索引」上而不是 px 上：宽度/测量变化动不了动画目标，滑块因此只会
+    // 在真的换格时移动。
+    val thumbIndex = remember { Animatable(index.toFloat()) }
+    // 上一次动画落位完成的格；只有它和当前 index 不同才是「用户换了选中格」。
+    var settledIndex by remember { mutableIntStateOf(index) }
+    LaunchedEffect(index) {
+        val motion = FmSegmented.motion(settledIndex, widthPx, options.size, index, density.density)
+        if (motion.animate) {
+            thumbIndex.animateTo(motion.toIndex, FmSegmented.Spring)
+            // 弹簧按阈值停下，终点必须精确落在格子上。
+            thumbIndex.snapTo(motion.toIndex)
+        } else {
+            // 首次测量 / 换面板 / 回到这个面板：直接落位，不回放任何过渡。
+            thumbIndex.snapTo(motion.toIndex)
+        }
+        settledIndex = index
+    }
     val surface = FmPalette.surface
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .onGloballyPositioned { widthPx = it.size.width.toFloat() }
             .clip(RoundedCornerShape(FmRadii.chip))
             .background(FmPalette.surfaceMuted)
-            .padding(2.dp)
-            .onGloballyPositioned { widthPx = it.size.width.toFloat() },
+            .padding(FmSegmented.Inset),
     ) {
-        if (thumbW > 0.dp) {
+        if (geometry.visible) {
             Box(
                 Modifier
                     .padding(top = 2.dp, bottom = 2.dp)
-                    .offset(x = thumbX - 2.dp, y = 0.dp)
-                    .width(thumbW)
+                    // x 相对内容区左缘：内边距已经在 Box 的 padding 里，这里再加/减
+                    // 2 dp 就会再次错位（旧实现的毛病）。
+                    .offset { IntOffset(geometry.xForIndex(thumbIndex.value).roundToInt(), 0) }
+                    .width(with(density) { geometry.widthPx.toDp() })
                     .height((if (touch) 40 else 28).dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(surface)

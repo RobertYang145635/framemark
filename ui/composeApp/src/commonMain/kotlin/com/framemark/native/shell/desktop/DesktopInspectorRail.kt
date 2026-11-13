@@ -1,6 +1,6 @@
 package com.framemark.native.shell.desktop
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,7 +30,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.inspector.CuratedPhotoSize
@@ -66,6 +70,7 @@ import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.columnRule
 import com.framemark.native.workflow.TextSlot
+import kotlin.math.roundToInt
 
 /**
  * 右栏外框（WP-V3）：标题 · 分类行 · 分页条 · 底栏。
@@ -355,112 +360,142 @@ private fun InspectorIconButton(
  * 2 dp `--ink` bar that slides under the **label** (`width = label + 12`,
  * §2E). A page with unsaved changes carries a numeric badge (10 px, `accent-soft`
  * plate, radius 8).
+ *
+ * 2026-11-13 修复（用户口径「右边栏的横条位置对应不上」）。旧实现有三个缺陷：
+ *  - 格宽用 `stripWidth / count` 算，而页签行是 `.padding(horizontal = 10.dp)` ——
+ *    内边距从没被减掉，每格宽出 `2 × 10 / count` dp，第 i 格因此**右**偏
+ *    `(i + 0.5) × 20 / count` dp（4 格时每格 5 dp，末格最明显）；
+ *  - `animateDpAsState` 的 target 由 `stripWidth` / `labelWidths` 算出，首次测量、
+ *    换面板、改窗口宽度都会把弹簧重新拉一遍（横条自己会滑）；
+ *  - `targetX.dp` / `barWidth.dp` 把 **px** 浮点数当 dp 用，外层 `.offset` 又按 density
+ *    乘了一次：density 2 时横条画在 2 倍位置，末页签直接被推出右栏（实测不可见）。
+ *
+ * 现在的参照系只有一个：**页签行外框**（[FmTabInk.geometry] 的 `stripWidthPx` 量在
+ * `.padding` 之前），内边距只在那里减一次；横条是内边距**以内**的子元素，所以它的
+ * offset 就是内容区坐标，既不加 10 dp 也不再减一次。弹簧只跑「小数页签索引」：换页签
+ * 才滑动，测量 / 改宽 / 换面板一律精确落位。
  */
 @Composable
-private fun InspectorPageTabs(
+internal fun InspectorPageTabs(
     model: InspectorTabModel,
     selected: InspectorPage,
     onSelect: (InspectorPage) -> Unit,
 ) {
     val tabs = InspectorPage.entries.mapNotNull { model.tab(it) }
-    var stripWidth by remember { mutableStateOf(0f) }
-    // State map: the first measure of a label must trigger one recompose.
+    // 页签**外框**宽度（px）：量在 `.padding(horizontal = 10.dp)` 之前，几何里只减一次。
+    var stripWidthPx by remember { mutableFloatStateOf(0f) }
+    // 每个页签「标签 + 数字徽标」这一组的宽度（px）：指示条 = 组宽 + 12 dp（§2E）。
     val labelWidths = remember { mutableStateMapOf<InspectorPage, Float>() }
-    val density = LocalDensity.current.density
-    val cellWidth = if (tabs.isEmpty()) 0f else stripWidth / tabs.size
+    val density = LocalDensity.current
     val index = tabs.indexOfFirst { it.page == selected }.coerceAtLeast(0)
-    val labelWidth = if (labelWidths.containsKey(selected)) labelWidths.getValue(selected) else 0f
-    val barWidth = if (labelWidth > 0f) labelWidth + 12.dp.value * density else 0f
-    val targetX = if (cellWidth > 0f && labelWidth > 0f) {
-        index * cellWidth + (cellWidth - labelWidth) / 2f - 6.dp.value * density
-    } else {
-        0f
+    val track = FmTabInk.geometry(stripWidthPx, tabs.size, density.density)
+    val bar = FmTabInk.bar(track, labelWidths[tabs.getOrNull(index)?.page] ?: 0f, density.density)
+    // 弹簧跑在「小数页签索引」上而不是 px 上：宽度 / 测量 / 换面板动不了动画目标。
+    val pages = tabs.map { it.page }
+    val inkIndex = remember(pages) { Animatable(index.toFloat()) }
+    // 上一次动画落位完成的页签；只有它和 index 不同才是「用户换了页签」。
+    var settledIndex by remember(pages) { mutableIntStateOf(index) }
+    LaunchedEffect(pages, index) {
+        val step = FmTabInk.motion(settledIndex, tabs.size, index)
+        if (step.animate) {
+            inkIndex.animateTo(step.toIndex, FmTabInk.Spring)
+            // 弹簧按阈值停下，终点必须精确落在选中页签上。
+            inkIndex.snapTo(step.toIndex)
+        } else {
+            // 首次测量 / 换面板 / 改宽度：直接落位，不回放任何过渡。
+            inkIndex.snapTo(step.toIndex)
+        }
+        settledIndex = step.toIndex.roundToInt()
     }
-    val animatedX by animateDpAsState(
-        targetValue = targetX.dp,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 700f),
-        label = "tabIndicatorX",
-    )
-    val animatedWidth by animateDpAsState(
-        targetValue = barWidth.dp,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 700f),
-        label = "tabIndicatorW",
-    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
-            .onGloballyPositioned { stripWidth = it.size.width.toFloat() },
+            .height(FmTabInk.StripHeight)
+            .onGloballyPositioned { stripWidthPx = it.size.width.toFloat() },
     ) {
-        Row(modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp)) {
-            tabs.forEach { tab ->
-                val active = tab.page == selected
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable(role = Role.Tab) { onSelect(tab.page) }
-                        .semantics {
-                            contentDescription = if (tab.modified > 0) {
-                                "${tab.label}，已改 ${tab.modified} 项"
-                            } else {
-                                tab.label
-                            }
-                            stateDescription = if (active) "已选" else "未选"
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = tab.label,
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp,
-                                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                            ),
-                            color = if (active) FmPalette.onSurface else FmPalette.onSurfaceMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.onGloballyPositioned {
-                                labelWidths[tab.page] = it.size.width.toFloat()
+        // 内容区：10 dp 内边距只在这里出现一次，页签行与指示条共用同一个参照系。
+        Box(modifier = Modifier.fillMaxSize().padding(horizontal = FmTabInk.Inset)) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                tabs.forEach { tab ->
+                    val active = tab.page == selected
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable(role = Role.Tab) { onSelect(tab.page) }
+                            .semantics {
+                                contentDescription = if (tab.modified > 0) {
+                                    "${tab.label}，已改 ${tab.modified} 项"
+                                } else {
+                                    tab.label
+                                }
+                                stateDescription = if (active) "已选" else "未选"
                             },
-                        )
-                        if (tab.modified > 0) {
-                            Spacer(Modifier.width(5.dp))
-                            Box(
-                                modifier = Modifier
-                                    .heightIn(min = 16.dp)
-                                    .widthIn(min = 16.dp)
-                                    .clip(RoundedCornerShape(FmRadii.chip))
-                                    .background(FmPalette.primarySoft)
-                                    .padding(horizontal = 4.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = tab.modified.toString(),
-                                    style = FmNumeric.frameNumber.copy(
-                                        fontSize = 10.sp,
-                                        lineHeight = 16.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                    ),
-                                    color = FmPalette.primaryStrong,
-                                    textAlign = TextAlign.Center,
-                                )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            // 指示条 = 这一组（标签 + 徽标）的宽度 + 12 dp：徽标出现时跟着变宽。
+                            modifier = Modifier.onGloballyPositioned {
+                                val width = it.size.width.toFloat()
+                                if (labelWidths[tab.page] != width) labelWidths[tab.page] = width
+                            },
+                        ) {
+                            Text(
+                                text = tab.label,
+                                style = TextStyle(
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp,
+                                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
+                                color = if (active) FmPalette.onSurface else FmPalette.onSurfaceMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (tab.modified > 0) {
+                                Spacer(Modifier.width(5.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .heightIn(min = 16.dp)
+                                        .widthIn(min = 16.dp)
+                                        .clip(RoundedCornerShape(FmRadii.chip))
+                                        .background(FmPalette.primarySoft)
+                                        .padding(horizontal = 4.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = tab.modified.toString(),
+                                        style = FmNumeric.frameNumber.copy(
+                                            fontSize = 10.sp,
+                                            lineHeight = 16.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                        ),
+                                        color = FmPalette.primaryStrong,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        if (animatedWidth > 0.dp) {
-            Box(
-                modifier = Modifier
-                    .offset(x = animatedX + 10.dp, y = 37.dp)
-                    .width(animatedWidth)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(FmPalette.onSurface),
-            )
+            if (bar.visible) {
+                Box(
+                    modifier = Modifier
+                        // x 是内容区坐标（px）：内边距已经在父 Box 的 padding 里，这里再加/
+                        // 减 10 dp 就又会错位；宽度到绘制点才 px→dp（`.toDp()`）。
+                        .offset {
+                            IntOffset(
+                                bar.xForIndex(inkIndex.value).roundToInt(),
+                                FmTabInk.BarTop.roundToPx(),
+                            )
+                        }
+                        .width(with(density) { bar.widthPx.toDp() })
+                        .height(FmTabInk.BarHeight)
+                        .clip(RoundedCornerShape(FmTabInk.BarHeight))
+                        .background(FmPalette.onSurface),
+                )
+            }
         }
     }
 }
@@ -507,4 +542,154 @@ private fun InspectorFootButton(
     }
 }
 
-/** Local dp→px for the indicator math (the strip is measured in pixels). */
+/**
+ * `.itabs` 指示条的纯几何 / 过渡（2026-11-13「右边栏横条位置对应不上」）。
+ *
+ * 唯一的参照系是**页签行外框**：[geometry] 的 `stripWidthPx` 是 `.padding(horizontal =
+ * [Inset])` **之前**量到的宽度，内容区 = 外框 − 2 × [Inset]，一格 = 内容区 / count。
+ * 指示条是内边距**以内**的子元素，所以 [FmTabBar.xForIndex] 返回的 x 相对内容区左缘：
+ * 内边距只在 [geometry] 里减一次，绘制点既不加 [Inset] 也不减 [Inset]。
+ *
+ * 页签是等宽格（`Modifier.weight(1f)`），横条按演示稿 §2E 仍是「标签 + 12 dp」宽、在格内
+ * 居中：等宽格决定**位置**，标签宽度只决定**长度**（数字徽标出现时跟着变宽）。
+ *
+ * 旧实现的三处缺陷（修复前逐条核对过）：
+ *  - 格宽用**外框** / count，10 dp 内边距从没被减掉 → 第 i 格**右**偏
+ *    `(i + 0.5) × 2 × Inset / count`（4 格时每格 5 dp，末格最明显）；
+ *  - `animateDpAsState` 的 target 由测量宽度算出 → 首次测量 / 换面板 / 改窗口都会重拉
+ *    弹簧（「横条自己会滑」）；
+ *  - `targetX.dp` / `barWidth.dp` 把 px 当 dp，外层 `.offset` 又乘一次 density：
+ *    density 2 时末页签的横条被画到右栏外面（用户截图里就是「横条不见了」）。
+ */
+internal object FmTabInk {
+
+    /** `.itabs` 的左右内边距（页签行与指示条共用这一个值）。 */
+    val Inset: Dp = FmRhythm.rowLoose
+
+    /** 页签条高度：演示稿 h40。 */
+    val StripHeight: Dp = 40.dp
+
+    /** 设计稿 2 px `--ink` 横条：高 2 dp、离栏底 1 dp（顶边 37 dp，与原实现一致）。 */
+    val BarHeight: Dp = 2.dp
+    val BarBottomGap: Dp = 1.dp
+    val BarTop: Dp get() = StripHeight - BarHeight - BarBottomGap
+
+    /** §2E：横条比标签宽 12 dp（左右各 6 dp）。 */
+    val BarGap: Dp = 12.dp
+
+    /** 选中页签真的变化时的弹簧；手感与原实现一致（damping 0.82 / stiffness 700）。 */
+    val Spring = spring<Float>(dampingRatio = 0.82f, stiffness = 700f)
+
+    /**
+     * 一帧的页签格（px）。[stripWidthPx] 是**外框**宽度，返回的 x 相对**内容区**左缘。
+     * 宽度未知 / 过窄、页签数为 0 或 density 非法时 [FmTabGeometry.visible] 为 false，
+     * 一个像素都不画。
+     */
+    fun geometry(stripWidthPx: Float, count: Int, density: Float): FmTabGeometry {
+        if (count <= 0) return FmTabGeometry(count = 0, contentWidthPx = 0f, cellWidthPx = 0f)
+        if (!density.isFinite() || density <= 0f) return FmTabGeometry(count, 0f, 0f)
+        if (!stripWidthPx.isFinite() || stripWidthPx <= 0f) return FmTabGeometry(count, 0f, 0f)
+        // 内边距只减这一次：外框 → 内容区。
+        val contentPx = stripWidthPx - 2f * Inset.value * density
+        if (!contentPx.isFinite() || contentPx <= 0f) return FmTabGeometry(count, 0f, 0f)
+        val cellPx = contentPx / count
+        if (!cellPx.isFinite() || cellPx <= 0f) return FmTabGeometry(count, 0f, 0f)
+        return FmTabGeometry(count, contentPx, cellPx)
+    }
+
+    /**
+     * 指示条的宽度（px）：标签组宽 + [BarGap]，最多一格（长标签不许顶出自己的格）。
+     * 标签还没量到（`labelWidthPx <= 0`）时返回 0 = 这一帧不画。
+     */
+    fun bar(track: FmTabGeometry, labelWidthPx: Float, density: Float): FmTabBar {
+        if (!track.visible) return FmTabBar(track, 0f)
+        if (!labelWidthPx.isFinite() || labelWidthPx <= 0f) return FmTabBar(track, 0f)
+        if (!density.isFinite() || density <= 0f) return FmTabBar(track, 0f)
+        val wanted = labelWidthPx + BarGap.value * density
+        val width = wanted.coerceIn(0f, track.cellWidthPx)
+        return FmTabBar(track, if (width.isFinite()) width else 0f)
+    }
+
+    /**
+     * 这一帧要不要跑弹簧：只有「上一次落位之后选中页签真的换了」才
+     * [FmTabMotion.animate]。
+     *
+     * 索引与宽度无关，所以首次测量 / 改宽度 / 换面板都不会动画。动画起点是**上一页签的
+     * 索引**，绘制时按**当前**格宽求 x（[FmTabBar.xForIndex]），于是起点永远落在上一页签
+     * 此刻的精确位置上。
+     */
+    fun motion(previousIndex: Int?, count: Int, index: Int): FmTabMotion {
+        if (count <= 0) return FmTabMotion(animate = false, fromIndex = 0f, toIndex = 0f)
+        val target = index.coerceIn(0, count - 1)
+        if (previousIndex == null) {
+            return FmTabMotion(animate = false, fromIndex = target.toFloat(), toIndex = target.toFloat())
+        }
+        val previous = previousIndex.coerceIn(0, count - 1)
+        return FmTabMotion(
+            animate = previous != target,
+            fromIndex = previous.toFloat(),
+            toIndex = target.toFloat(),
+        )
+    }
+}
+
+/** 一帧的页签格（px）；坐标相对**内容区**左缘（[FmTabInk.Inset] 以内）。 */
+internal data class FmTabGeometry(
+    /** 有几格。 */
+    val count: Int,
+    /** 内容区宽度 = 外框 − 2 × [FmTabInk.Inset]；0 表示还不知道。 */
+    val contentWidthPx: Float,
+    /** 一格宽度 = 内容区 / count；0 表示不可画。 */
+    val cellWidthPx: Float,
+) {
+    val visible: Boolean get() = count > 0 && contentWidthPx > 0f && cellWidthPx > 0f
+
+    /** 内容区右缘 = 末格右缘（末格必须贴住它，不许短一截）。 */
+    val contentRightPx: Float get() = if (visible) contentWidthPx else 0f
+
+    /** 第 [index] 格左缘（夹到合法范围）。 */
+    fun leftPx(index: Int): Float =
+        if (!visible) 0f else cellWidthPx * index.coerceIn(0, count - 1)
+
+    /** 第 [index] 格右缘；最后一格就是内容区右缘。 */
+    fun rightPx(index: Int): Float {
+        if (!visible) return 0f
+        val clamped = index.coerceIn(0, count - 1)
+        return if (clamped == count - 1) contentWidthPx else leftPx(clamped) + cellWidthPx
+    }
+}
+
+/** 指示条这一帧的宽度（px）；[visible] 为 false 时什么都不画。 */
+internal data class FmTabBar(
+    val track: FmTabGeometry,
+    /** 横条宽度 = 标签组宽 + 12 dp，夹到一格宽；0 表示不画。 */
+    val widthPx: Float,
+) {
+    val visible: Boolean get() = track.visible && widthPx > 0f
+
+    /**
+     * 弹簧的小数页签索引 → 横条左缘（相对内容区，px）。
+     *
+     * x 永远按**当前**格宽重算：换格与改宽度同帧发生也不跳，改宽度本身也不会让横条产生
+     * 过渡（只有索引在动）。居中偏移 `(cell − width) / 2` 让横条的**中心**正好压在页签格
+     * 的中心上；两端再夹一次，保证永不越出内容区。
+     */
+    fun xForIndex(animatedIndex: Float): Float {
+        if (!visible) return 0f
+        val last = (track.count - 1).toFloat()
+        val at = if (animatedIndex.isFinite()) animatedIndex.coerceIn(0f, last) else 0f
+        val cell = track.cellWidthPx
+        val x = cell * at + (cell - widthPx) / 2f
+        return x.coerceIn(0f, track.contentRightPx - widthPx)
+    }
+}
+
+/** 指示条这一帧的过渡：要不要跑弹簧、从哪一页签到哪一页签。 */
+internal data class FmTabMotion(
+    /** true = 选中页签真的变了，走弹簧；false = 直接精确落位。 */
+    val animate: Boolean,
+    /** 起点页签索引（弹簧从上一页签此刻的精确位置起步）。 */
+    val fromIndex: Float,
+    /** 终点页签索引（已夹到合法范围）。 */
+    val toIndex: Float,
+)

@@ -33,7 +33,7 @@ import com.framemark.native.product.jsonWithSurrogatesEscaped
 
 /**
  * Android [NativeRenderApi]: every card the bundled runtime can render — all
- * 106 IR styles and all 69 hand templates (175 total). Previews stay PNGs from
+ * 111 IR styles and all 69 hand templates (180 total). Previews stay PNGs from
  * the renderer; exports go through the E5 chain (Skia q100 4:4:4 + 456B ICC +
  * EXIF thumbnail) and land in the app's external Pictures dir, mirrored into
  * MediaStore.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "framemark-logos/v1",
-  "generatedAt": "2026-11-13T05:30:00.000Z",
+  "generatedAt": "2026-11-13T12:40:00.000Z",
   "sources": {
     "catalog": {
       "role": "logo-catalog",
@@ -18,23 +18,23 @@
     "versionDir": "src/renderer/src/assets/logo-versions"
   },
   "counts": {
-    "brands": 104,
-    "versions": 428,
-    "selectedVersions": 428,
+    "brands": 102,
+    "versions": 361,
+    "selectedVersions": 361,
     "unselectedVersions": 0,
     "selectedIdsMissingFromCatalog": 0,
-    "cuts": 570,
-    "cutsResolved": 570,
+    "cuts": 490,
+    "cutsResolved": 490,
     "cutsMissing": 0,
     "appLogoFiles": 166,
-    "logoVersionFiles": 423,
-    "logoVersionBrandDirs": 99,
-    "distinctFilesUsed": 570,
+    "logoVersionFiles": 373,
+    "logoVersionBrandDirs": 98,
+    "distinctFilesUsed": 490,
     "usedByCardVendorLogo": 9,
-    "unreferencedAppLogoFiles": 7,
+    "unreferencedAppLogoFiles": 0,
     "selectedVersionsWithoutResolvableCut": [],
-    "declaredVsActualDimensionMismatches": 183,
-    "declaredVsActualDimensionMismatchesVersionCuts": 183,
+    "declaredVsActualDimensionMismatches": 133,
+    "declaredVsActualDimensionMismatchesVersionCuts": 133,
     "declaredVsActualDimensionMismatchesAppCuts": 0
   },
   "brands": [
@@ -53,7 +53,7 @@
       "cn": "佳能",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "canon-script"
+      "canonicalVersion": "canon-wordmark-1"
     },
     {
       "key": "nikon",
@@ -61,7 +61,7 @@
       "cn": "尼康",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "nikon-yellow-block"
+      "canonicalVersion": "nikon"
     },
     {
       "key": "sony",
@@ -69,7 +69,7 @@
       "cn": "索尼",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "sony-wordmark"
+      "canonicalVersion": "sony-logo-1"
     },
     {
       "key": "panasionic",
@@ -77,15 +77,7 @@
       "cn": "松下",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "panasonic-blue"
-    },
-    {
-      "key": "lumix",
-      "label": "LUMIX",
-      "cn": "LUMIX",
-      "group": "camera",
-      "lifecycle": "active",
-      "canonicalVersion": "lumix-wordmark"
+      "canonicalVersion": "panasonic"
     },
     {
       "key": "fushi",
@@ -93,7 +85,7 @@
       "cn": "富士",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "fujifilm-red-symbol"
+      "canonicalVersion": "fujifilm"
     },
     {
       "key": "hasu",
@@ -101,7 +93,7 @@
       "cn": "哈苏",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "hasselblad-black"
+      "canonicalVersion": "hasselblad"
     },
     {
       "key": "aolinbasi",
@@ -109,7 +101,7 @@
       "cn": "奥林巴斯",
       "group": "camera",
       "lifecycle": "rebranded",
-      "canonicalVersion": "olympus-wordmark",
+      "canonicalVersion": "olympus-2",
       "note": "Imaging business sold to JIP in 2021; cameras now sold as OM SYSTEM."
     },
     {
@@ -118,7 +110,7 @@
       "cn": "宾得",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "pentax-black",
+      "canonicalVersion": "pentax",
       "note": "Owned by Ricoh Imaging since 2011; brand retained."
     },
     {
@@ -127,7 +119,7 @@
       "cn": "理光",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "ricoh-red-2005"
+      "canonicalVersion": "ricoh-logo-2005-neu"
     },
     {
       "key": "caisi",
@@ -135,7 +127,7 @@
       "cn": "蔡司",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "zeiss-lens-emblem"
+      "canonicalVersion": "zeiss-2"
     },
     {
       "key": "dji",
@@ -159,7 +151,7 @@
       "cn": "康泰时",
       "group": "camera",
       "lifecycle": "discontinued",
-      "canonicalVersion": "contax-wordmark",
+      "canonicalVersion": "contax",
       "note": "Kyocera ended the Contax brand in 2005."
     },
     {
@@ -168,7 +160,7 @@
       "cn": "美能达",
       "group": "camera",
       "lifecycle": "discontinued",
-      "canonicalVersion": "minolta-blue-circle",
+      "canonicalVersion": "minolta",
       "note": "Merged into Konica Minolta 2003; camera brand retired 2006."
     },
     {
@@ -177,7 +169,7 @@
       "cn": "柯尼卡",
       "group": "camera",
       "lifecycle": "discontinued",
-      "canonicalVersion": "konica-rainbow-arc",
+      "canonicalVersion": "konica-1",
       "note": "Merged with Minolta 2003; Konica camera brand retired."
     },
     {
@@ -186,7 +178,7 @@
       "cn": "柯尼卡美能达",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "km-horizontal",
+      "canonicalVersion": "konica-minolta",
       "note": "Company active; camera business sold to Sony in 2006."
     },
     {
@@ -222,7 +214,7 @@
       "cn": "玛米亚",
       "group": "camera",
       "lifecycle": "rebranded",
-      "canonicalVersion": "mamiya-script",
+      "canonicalVersion": "mamiya-logo",
       "note": "Mamiya Digital Imaging absorbed by Phase One (2013+); name largely retired."
     },
     {
@@ -248,7 +240,7 @@
       "cn": "宝丽来",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "polaroid-spectrum",
+      "canonicalVersion": "polaroid",
       "note": "Polaroid brand operated by Polaroid International / licensees."
     },
     {
@@ -311,17 +303,8 @@
       "cn": "阿尔帕",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "alpa-blue",
+      "canonicalVersion": "alpa-14940",
       "note": "ALPA Capaul & Weber AG, Zurich."
-    },
-    {
-      "key": "zenit",
-      "label": "ZENIT",
-      "cn": "泽尼特",
-      "group": "camera",
-      "lifecycle": "active",
-      "canonicalVersion": "zenit-gap",
-      "note": "Krasnogorsk/Zenit still markets lenses and cameras; correct logo not captured."
     },
     {
       "key": "lomo",
@@ -347,7 +330,7 @@
       "cn": "卡西欧",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "casio-blue"
+      "canonicalVersion": "casio"
     },
     {
       "key": "cosina",
@@ -355,7 +338,7 @@
       "cn": "确善能",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "cosina-blue"
+      "canonicalVersion": "cosina-logo"
     },
     {
       "key": "horseman",
@@ -398,7 +381,7 @@
       "cn": "图丽",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "tokina-blue",
+      "canonicalVersion": "tokina-logo",
       "note": "Kenko Tokina; blue is the current corporate color."
     },
     {
@@ -415,7 +398,7 @@
       "cn": "GoPro",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "gopro-mono"
+      "canonicalVersion": "gopro-2"
     },
     {
       "key": "arri",
@@ -423,7 +406,7 @@
       "cn": "阿莱",
       "group": "camera",
       "lifecycle": "active",
-      "canonicalVersion": "arri-blue"
+      "canonicalVersion": "arri"
     },
     {
       "key": "red",
@@ -440,7 +423,7 @@
       "cn": "诺基亚",
       "group": "phone",
       "lifecycle": "licensed",
-      "canonicalVersion": "nokia-2023",
+      "canonicalVersion": "nokia-new-logo-2023-png-vector",
       "note": "Phones licensed to HMD Global; new logo unveiled Feb 2023."
     },
     {
@@ -449,7 +432,7 @@
       "cn": "摩托罗拉",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "motorola-2016",
+      "canonicalVersion": "motorola-new-logo",
       "note": "Lenovo-owned; batwing + lowercase wordmark since 2016."
     },
     {
@@ -491,7 +474,7 @@
       "cn": "苹果",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "apple-mono",
+      "canonicalVersion": "apple-13",
       "note": "Rainbow apple retired 1998; mono mark since."
     },
     {
@@ -508,7 +491,7 @@
       "cn": "小米",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "xiaomi-2021",
+      "canonicalVersion": "xiaomi-1",
       "note": "2021 identity: orange rounded-square 'mi' + wordmark."
     },
     {
@@ -526,7 +509,7 @@
       "cn": "vivo",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "vivo-blue"
+      "canonicalVersion": "vivo-2"
     },
     {
       "key": "honor",
@@ -534,7 +517,7 @@
       "cn": "荣耀",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "honor-uppercase",
+      "canonicalVersion": "honor-1",
       "note": "Uppercase wordmark since the 2019 independence from Huawei."
     },
     {
@@ -543,7 +526,7 @@
       "cn": "三星",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "samsung-blue",
+      "canonicalVersion": "samsung-electronics",
       "note": "Blue #1428A0 wordmark since 1993."
     },
     {
@@ -561,7 +544,7 @@
       "cn": "魅族",
       "group": "phone",
       "lifecycle": "active",
-      "canonicalVersion": "meizu-cyan",
+      "canonicalVersion": "meizu-3",
       "note": "Geely-owned since 2022."
     },
     {
@@ -975,30 +958,6 @@
       "w": 1024,
       "h": 194
     },
-    "src/renderer/src/assets/logos/apple.webp": {
-      "sha256": "f51c292503132664a64f09eb474cd019b21c32eecd1249a86edac3b9d1ba723e",
-      "bytes": 21008,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 840,
-      "h": 1024
-    },
-    "src/renderer/src/assets/logos/apple_black.webp": {
-      "sha256": "05da1ffc16a8520fe4b06822a9bead40923c95f52739ca2bf779261c3945f304",
-      "bytes": 14060,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 840,
-      "h": 1024
-    },
-    "src/renderer/src/assets/logos/apple_white.webp": {
-      "sha256": "c2e28c91713ea90911bd3f1edbbb30002abc061346ba7a49d73161f90cc90778",
-      "bytes": 14914,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 840,
-      "h": 1024
-    },
     "src/renderer/src/assets/logos/arri_black.webp": {
       "sha256": "0d2ec65e570de2c652baa8dabec9d69f88668f0295721731f12cc5ec6aa5bb3e",
       "bytes": 43256,
@@ -1014,14 +973,6 @@
       "variant": "VP8L",
       "w": 1620,
       "h": 498
-    },
-    "src/renderer/src/assets/logos/binde.webp": {
-      "sha256": "ddfac35bc5c2a3400b813c47678f7bf362aeb603b40afa7669b344f5efd97472",
-      "bytes": 10862,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 200
     },
     "src/renderer/src/assets/logos/binde_black.webp": {
       "sha256": "975dd80e58988f8070b39358c0e39feba7314bba614d65f0a15796a07ca8e093",
@@ -1087,14 +1038,6 @@
       "w": 1620,
       "h": 863
     },
-    "src/renderer/src/assets/logos/canon_red.webp": {
-      "sha256": "36637573bd2c5a1d1704f6c6df873222780bf5e841b337eddbcda39b8a2fb378",
-      "bytes": 19840,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 213
-    },
     "src/renderer/src/assets/logos/canon_white.webp": {
       "sha256": "d4a99d3d4a1f940279743e95f09f65d948331213259e7a77dbef6edc19e97ad6",
       "bytes": 12886,
@@ -1118,22 +1061,6 @@
       "variant": "VP8L",
       "w": 1620,
       "h": 321
-    },
-    "src/renderer/src/assets/logos/contax_black.webp": {
-      "sha256": "38def40f250ab8cb868f0e81c6e0e1afb8a9eb224e6a0986bf1e2a63f3046961",
-      "bytes": 13822,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 286
-    },
-    "src/renderer/src/assets/logos/contax_white.webp": {
-      "sha256": "04cd6d239b79bb095a5d8325be77208e362507c678f517c772dc3f853c0b72bc",
-      "bytes": 13822,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 286
     },
     "src/renderer/src/assets/logos/cosina_black.webp": {
       "sha256": "a25170da87469747ab56b2850888d328cf00d606a9920833ee48d561facb04a7",
@@ -1183,22 +1110,6 @@
       "w": 1620,
       "h": 508
     },
-    "src/renderer/src/assets/logos/fushi_black.webp": {
-      "sha256": "9ea7ad8880b1940694e16b47e22936ddd04640e317712026704d5f19d88635dd",
-      "bytes": 5914,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 167
-    },
-    "src/renderer/src/assets/logos/fushi_white.webp": {
-      "sha256": "d08f0811180920c5d81a71ac71efb2db0a4d0c805a33e06b2575db58746dd605",
-      "bytes": 5954,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 167
-    },
     "src/renderer/src/assets/logos/google_black.webp": {
       "sha256": "6c41bfdfbca039978158a2608ae3d0e6eb6a648e4962c79b12136bc06f77bef9",
       "bytes": 594,
@@ -1214,22 +1125,6 @@
       "variant": "VP8L",
       "w": 70,
       "h": 70
-    },
-    "src/renderer/src/assets/logos/gopro_black.webp": {
-      "sha256": "b9847cb3f09d4f63ffb220a96f94d9380a282223eaf38275613802d38dabb1af",
-      "bytes": 12038,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 473
-    },
-    "src/renderer/src/assets/logos/gopro_white.webp": {
-      "sha256": "72d99defee3c9d68f0c4ad8ac67a725fa478cb94cc9cde37a4139d58b615a89d",
-      "bytes": 12038,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 473
     },
     "src/renderer/src/assets/logos/graflex_black.webp": {
       "sha256": "6be6a674b4f935c53293eb4adee2b5776a5af8a954132b44ab5a5ea1d2fc17d2",
@@ -1255,14 +1150,6 @@
       "w": 512,
       "h": 512
     },
-    "src/renderer/src/assets/logos/hassel_h_white.webp": {
-      "sha256": "819cbfcc54a35fa16f7c7bb344b2bcdd5605511ecbbbfeae2540d40612ce16f3",
-      "bytes": 1148,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 512,
-      "h": 373
-    },
     "src/renderer/src/assets/logos/hassel_h_white_official.webp": {
       "sha256": "67d643f539c8757ff69966adbff0a878733b2f97e8061f55442c07bd1a6c2007",
       "bytes": 874,
@@ -1271,22 +1158,6 @@
       "w": 512,
       "h": 512
     },
-    "src/renderer/src/assets/logos/hassel_wordmark_black.webp": {
-      "sha256": "f4dcf1309ad0551624466d1a005ec4fa1140779a017d3b7097415cdbb8c14220",
-      "bytes": 6358,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1475,
-      "h": 118
-    },
-    "src/renderer/src/assets/logos/hassel_wordmark_white.webp": {
-      "sha256": "c7045e9a457c684933632951ddf67c356e3819afa472d4dc54210ada5c7da1fc",
-      "bytes": 5784,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1475,
-      "h": 118
-    },
     "src/renderer/src/assets/logos/hasu_black.webp": {
       "sha256": "729909c9f324d24d3d1c56090754df60e8002b044ab8faa4c893d05f8ccce0d7",
       "bytes": 19302,
@@ -1294,22 +1165,6 @@
       "variant": "VP8X",
       "w": 1024,
       "h": 766
-    },
-    "src/renderer/src/assets/logos/hasu_long_black.webp": {
-      "sha256": "b0a41e5176b624e780869eb03ce3e77f1f63b6f3c6b4d638eac2b8022848ed41",
-      "bytes": 8698,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 70
-    },
-    "src/renderer/src/assets/logos/hasu_long_white.webp": {
-      "sha256": "05332ad042091a57ce650b7c65b4587c269ac41236548eabf431fef52f7cf415",
-      "bytes": 8868,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 70
     },
     "src/renderer/src/assets/logos/hasu_white.webp": {
       "sha256": "5a1f57773131cdd82ebc87355d1a7da0b94c6c894882a77e2a4000584146ba64",
@@ -1322,22 +1177,6 @@
     "src/renderer/src/assets/logos/honor.webp": {
       "sha256": "3b6ee45b36320f87677114948bdc9bf1fffdf9a567cb8dd03304a17f56c9fa08",
       "bytes": 21080,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 198
-    },
-    "src/renderer/src/assets/logos/honor_black.webp": {
-      "sha256": "7c2497e9e3ab8a88d0aa8066037d43931bb128fe3ea4898d55f38af63bf13547",
-      "bytes": 10394,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 198
-    },
-    "src/renderer/src/assets/logos/honor_white.webp": {
-      "sha256": "1b366607d657a8cbf100c06898aa7b62974bb885d38ee03739b1e9d5c0ac63d9",
-      "bytes": 11018,
       "format": "webp",
       "variant": "VP8X",
       "w": 1024,
@@ -1511,22 +1350,6 @@
       "w": 920,
       "h": 392
     },
-    "src/renderer/src/assets/logos/logo.webp": {
-      "sha256": "a6096c3c1f10fe83b86af6e0759082ade92b41a67be1bf06c0c6e94697fa4974",
-      "bytes": 2076,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 132,
-      "h": 132
-    },
-    "src/renderer/src/assets/logos/logo_empty.webp": {
-      "sha256": "d27ce3eec31e95e3d93e7d3c308a115c5d4cab06919357ca1abf2494291bd071",
-      "bytes": 23832,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 1024
-    },
     "src/renderer/src/assets/logos/lomo_black.webp": {
       "sha256": "2f51af9bd77a610ac2a57e362fd562c1ef928dedfd4e6f4b9e6f3d85d1ba4021",
       "bytes": 3066,
@@ -1542,22 +1365,6 @@
       "variant": "VP8L",
       "w": 1060,
       "h": 188
-    },
-    "src/renderer/src/assets/logos/lumix_black.webp": {
-      "sha256": "e5a5b012a38b294335fdc45f700b146f23b997c2b037e12b5efcb9cdfb8c0796",
-      "bytes": 6326,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 200
-    },
-    "src/renderer/src/assets/logos/lumix_white.webp": {
-      "sha256": "e7a5f4ae8458022a294c0270aeea2ad54020b069431b07c7b24bf05e54f7c24c",
-      "bytes": 6896,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 200
     },
     "src/renderer/src/assets/logos/lumo_black.webp": {
       "sha256": "eea03ab78fe0be919e40a15a9af52b66f06e8872ef0ca9d4f29a7c23df35d232",
@@ -1598,14 +1405,6 @@
       "variant": "VP8L",
       "w": 1024,
       "h": 189
-    },
-    "src/renderer/src/assets/logos/meizu_blue.webp": {
-      "sha256": "a10062cf6b8f935e770c43a532b1761fa7d7c7f9d89b52447540a7fcb0996163",
-      "bytes": 56204,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1024,
-      "h": 188
     },
     "src/renderer/src/assets/logos/meizu_white.webp": {
       "sha256": "fbb799f0816da23ef1ff1d72942038d15f3a33699a4493a058474a11140eb4da",
@@ -1759,22 +1558,6 @@
       "w": 1024,
       "h": 256
     },
-    "src/renderer/src/assets/logos/panasionic_black.webp": {
-      "sha256": "f12e6d7671835454951425c09a679d55497cd59c79f3b75c31ab4c003e7d8ee9",
-      "bytes": 10902,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 157
-    },
-    "src/renderer/src/assets/logos/panasionic_white.webp": {
-      "sha256": "95d629e8764572b3afbc14063371b07f1e1eb6a01b0f73252d21886c526af816",
-      "bytes": 11360,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 157
-    },
     "src/renderer/src/assets/logos/phaseone_black.webp": {
       "sha256": "832f641e5634844daa12a6f4ef73844abc658a5e7bd364a579168bc8bcfe8f22",
       "bytes": 16302,
@@ -1790,22 +1573,6 @@
       "variant": "VP8L",
       "w": 1620,
       "h": 241
-    },
-    "src/renderer/src/assets/logos/polaroid_black.webp": {
-      "sha256": "b41618f0ad972fdb7ddfe3eb2f89265dad49fdf44074728ab69a4bcaaf1ad9f7",
-      "bytes": 16014,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 287
-    },
-    "src/renderer/src/assets/logos/polaroid_white.webp": {
-      "sha256": "073b10ea6b0b5096de283dcd242ae1d4e7e73155ffa9680955ab5b9fbee63182",
-      "bytes": 16014,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 287
     },
     "src/renderer/src/assets/logos/praktica_black.webp": {
       "sha256": "bef9249ef5be351445ecc795040b7552b75fba3595cbaf352f2dda919a5535a5",
@@ -1863,14 +1630,6 @@
       "w": 1024,
       "h": 185
     },
-    "src/renderer/src/assets/logos/ricoh_red.webp": {
-      "sha256": "7397735951e373b4df6bc5482e1dd6d223ffd3c702fd246927cd52b7d1634504",
-      "bytes": 16678,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 185
-    },
     "src/renderer/src/assets/logos/ricoh_white.webp": {
       "sha256": "a4180f9417a91a995bed7bcae8cf7b23a29da1fa9d37dc31d7b87855a09501df",
       "bytes": 7504,
@@ -1894,30 +1653,6 @@
       "variant": "VP8L",
       "w": 1620,
       "h": 479
-    },
-    "src/renderer/src/assets/logos/samsung_black.webp": {
-      "sha256": "8924abf0255002fceb551445a6e47aa0e9d6c4db98aaf2fced6aa7d690fff445",
-      "bytes": 12256,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 159
-    },
-    "src/renderer/src/assets/logos/samsung_blue.webp": {
-      "sha256": "372325f476b0c78f979cd3e3f4e5458ca7b0d42db609eaa7539b16fe97e8ebe4",
-      "bytes": 18532,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 159
-    },
-    "src/renderer/src/assets/logos/samsung_white.webp": {
-      "sha256": "3eae0dacbd552951a512dd7e687af25ac8116e81ee243e3958aaf8c2dca6bcbd",
-      "bytes": 13286,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 159
     },
     "src/renderer/src/assets/logos/seagull_black.webp": {
       "sha256": "7ff19608c7ba55c7d45e7837c68b17efb95d2bb5b67969b9f20df7a1b59946c4",
@@ -1966,22 +1701,6 @@
       "variant": "VP8L",
       "w": 605,
       "h": 210
-    },
-    "src/renderer/src/assets/logos/sony_black.webp": {
-      "sha256": "2fc8dda5a8478502b95de983569bf311c96227b73ae8d3f40b8e5a021facf0a2",
-      "bytes": 10106,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 173
-    },
-    "src/renderer/src/assets/logos/sony_white.webp": {
-      "sha256": "2fdeb890155727538a12a2b5c879ec45fabe599e38aeadd9b73a8bbfaf41d15e",
-      "bytes": 10804,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 173
     },
     "src/renderer/src/assets/logos/tamron_black.webp": {
       "sha256": "11eed96d12cde26306758d055e8bc93ccbfe1334f4509a0713f5c1de145ac279",
@@ -2047,14 +1766,6 @@
       "w": 1156,
       "h": 231
     },
-    "src/renderer/src/assets/logos/voigtlander_white.webp": {
-      "sha256": "40b03836633e095c4737664c73cadffcb59d7169c770aba4ce4b350beb7679dd",
-      "bytes": 3380,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1156,
-      "h": 231
-    },
     "src/renderer/src/assets/logos/xiaomi.webp": {
       "sha256": "7928a71817cd1bc0f56e8fa0b36a5d68246b83fd1fe485d29a441ae51513d3aa",
       "bytes": 12224,
@@ -2064,22 +1775,6 @@
       "h": 1024
     },
     "src/renderer/src/assets/logos/xiaomi_loing.webp": {
-      "sha256": "2536deb80a495ed4d7d70650f2e5de2a1d68adf4a2fe957425dca17cf6fc3e3e",
-      "bytes": 14840,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 260
-    },
-    "src/renderer/src/assets/logos/xiaomi_loing_black.webp": {
-      "sha256": "2536deb80a495ed4d7d70650f2e5de2a1d68adf4a2fe957425dca17cf6fc3e3e",
-      "bytes": 14840,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 1024,
-      "h": 260
-    },
-    "src/renderer/src/assets/logos/xiaomi_loing_white.webp": {
       "sha256": "2536deb80a495ed4d7d70650f2e5de2a1d68adf4a2fe957425dca17cf6fc3e3e",
       "bytes": 14840,
       "format": "webp",
@@ -2135,22 +1830,6 @@
       "w": 1023,
       "h": 1024
     },
-    "src/renderer/src/assets/logos/zenit_black.webp": {
-      "sha256": "88045faaeb58637260f0242ba3fe476635c0a65dd968b0b5b6063c67ab5c85aa",
-      "bytes": 60762,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 857,
-      "h": 820
-    },
-    "src/renderer/src/assets/logos/zenit_white.webp": {
-      "sha256": "cc4e80c8664c412279ea6e65665da8b68b3830c14099019e529f538801637538",
-      "bytes": 60762,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 857,
-      "h": 820
-    },
     "src/renderer/src/assets/logo-versions/agfa/agfa-2.webp": {
       "sha256": "a8f6382075d6bc9576bb48cb6cf9520a761215c64dd2d7e00b018068b9d26ecc",
       "bytes": 5334,
@@ -2167,14 +1846,6 @@
       "w": 512,
       "h": 175
     },
-    "src/renderer/src/assets/logo-versions/agfa/agfa-mono.webp": {
-      "sha256": "754f61fe6cdcd7a83984da3343ed2d3d7bfddda8fe2c2cd9138b2f9e851a16f7",
-      "bytes": 6484,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 114
-    },
     "src/renderer/src/assets/logo-versions/agfa/agfacolour.webp": {
       "sha256": "ec72ec393273992fee53e07c55859599f1b9b64162867c5e07c9edb601ad7425",
       "bytes": 43770,
@@ -2190,14 +1861,6 @@
       "variant": "VP8",
       "w": 512,
       "h": 188
-    },
-    "src/renderer/src/assets/logo-versions/alpa/alpa-blue.webp": {
-      "sha256": "08422a324777893775ceede662ee880e81666518d9e0f890280549abde66eff1",
-      "bytes": 13164,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 141
     },
     "src/renderer/src/assets/logo-versions/aolinbasi/olympus-1.webp": {
       "sha256": "3f2499f67b8217358b09bd8cfe077900121c031801f81ed8e9ed19cfb29440ec",
@@ -2231,14 +1894,6 @@
       "w": 512,
       "h": 143
     },
-    "src/renderer/src/assets/logo-versions/aolinbasi/olympus-wordmark.webp": {
-      "sha256": "425bf9b2e13bada80097ccb8dfdae8d8fd95040c7bd20233d4bef9b5c5d62316",
-      "bytes": 5188,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 63
-    },
     "src/renderer/src/assets/logo-versions/aolinbasi/om-system.webp": {
       "sha256": "776115facc78cc9f68b5e46f424ca0d0662521a38b161164847b12ebfd6958d5",
       "bytes": 5046,
@@ -2255,30 +1910,6 @@
       "w": 431,
       "h": 512
     },
-    "src/renderer/src/assets/logo-versions/apple/apple-rainbow.webp": {
-      "sha256": "cce7d08e7d3e3a701e96833c3affdae165950b221bf62f8ea1251bc71c49f200",
-      "bytes": 15772,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 461,
-      "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/arri/arri-62359.webp": {
-      "sha256": "b6e5618cf7826e7789da5828304efa450e1828a8eda838fbc3450e81d70dcf31",
-      "bytes": 6098,
-      "format": "webp",
-      "variant": "VP8",
-      "w": 512,
-      "h": 182
-    },
-    "src/renderer/src/assets/logo-versions/arri/arri-blue.webp": {
-      "sha256": "76473ea22badc638998ba8996d47ed52f5e3ea71c3df46523f0fb0190e6616f6",
-      "bytes": 13566,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 147
-    },
     "src/renderer/src/assets/logo-versions/binde/pentax-1.webp": {
       "sha256": "afa3af18be1e3ca4b603c0dce2f5c99443739d61b8d773c4efa38b8a54f85cba",
       "bytes": 4662,
@@ -2286,14 +1917,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 98
-    },
-    "src/renderer/src/assets/logo-versions/binde/pentax-black.webp": {
-      "sha256": "69a4d7d9b0e52d4a03d1a238bc8ec1abf647ddea58328821f05b1fa86d97dc58",
-      "bytes": 4552,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 91
     },
     "src/renderer/src/assets/logo-versions/binde/pentax-red.webp": {
       "sha256": "ddd0efd2dba4a0cfe3f5ee6938cc29f1061dfd64da949c762ca20fe2e3f7bf66",
@@ -2318,22 +1941,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 274
-    },
-    "src/renderer/src/assets/logo-versions/caisi/zeiss-lens-emblem.webp": {
-      "sha256": "cadb879884db57163964604b4d40f77449b544ae60271abf4635eb708b079351",
-      "bytes": 8662,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/caisi/zeiss-mono.webp": {
-      "sha256": "c4fcb708705aec2f6f2065b36b50923c41cb6dba2cca6ee4b6d1517b38159e7b",
-      "bytes": 7458,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
     },
     "src/renderer/src/assets/logo-versions/canon/canon-1953.webp": {
       "sha256": "278c65ca422dabc12a75efe56300b7c09d576009e220c9061077c2bf8f3787fc",
@@ -2407,38 +2014,6 @@
       "w": 512,
       "h": 97
     },
-    "src/renderer/src/assets/logo-versions/casio/casio-blue.webp": {
-      "sha256": "afe22c231400d6e7eda721de38e63db289444934b827112d1be09d0325087c27",
-      "bytes": 12288,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 97
-    },
-    "src/renderer/src/assets/logo-versions/casio/casio-mono.webp": {
-      "sha256": "55b6bfaa9d51efcb19c566a6510939df4162ebfe98e0f2995b950df60488183d",
-      "bytes": 6194,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 92
-    },
-    "src/renderer/src/assets/logo-versions/cosina/cosina-blue.webp": {
-      "sha256": "e01d0c189b02127a65674a546768e41d18cdcaacc5f8b93f78b7f5f07a4f0153",
-      "bytes": 10072,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 118
-    },
-    "src/renderer/src/assets/logo-versions/dji/dji-2006.webp": {
-      "sha256": "6303278af09c8c3dd88b13defd3d3ac0a67c12379e314f9660d34adf1e9d987c",
-      "bytes": 13348,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 294
-    },
     "src/renderer/src/assets/logo-versions/fushi/fujifilm-1980.webp": {
       "sha256": "8851610fcad896e4091a819cf7f0e58e38785c0f17aef487b40190d9d801c375",
       "bytes": 5058,
@@ -2446,14 +2021,6 @@
       "variant": "VP8",
       "w": 512,
       "h": 415
-    },
-    "src/renderer/src/assets/logo-versions/fushi/fujifilm-diagonal.webp": {
-      "sha256": "e648f9c81a041612fe5cff0d3af9af45a72840a8ded30b8508965a6de932f6f9",
-      "bytes": 8550,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 376
     },
     "src/renderer/src/assets/logo-versions/fushi/fujifilm-green-banner.webp": {
       "sha256": "379fb5b3157234091dec7c0c52d73a86ef49d4bb18a73c2da69089070f7227c2",
@@ -2479,14 +2046,6 @@
       "w": 512,
       "h": 104
     },
-    "src/renderer/src/assets/logo-versions/fushi/fujifilm-green-strip.webp": {
-      "sha256": "ef791c28246ea6aa6a058b8d3aa53d18b6bd3da54f6d36a32c72e15a5bcef22d",
-      "bytes": 4180,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 50
-    },
     "src/renderer/src/assets/logo-versions/fushi/fujifilm-green-vertical.webp": {
       "sha256": "0dae63fda5a88ec7c71135fce4021399b840c0806b3a709e907dcd95eb0a799b",
       "bytes": 6596,
@@ -2510,22 +2069,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 79
-    },
-    "src/renderer/src/assets/logo-versions/fushi/fujifilm-red-symbol.webp": {
-      "sha256": "112022121c37b49eaa2b78a602d41b8f057fcab371cdd61c52ea42ee020c1541",
-      "bytes": 7748,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 268
-    },
-    "src/renderer/src/assets/logo-versions/fushi/fujifilm-rule.webp": {
-      "sha256": "9fca7ce44425c3639935554d753178c38c98df1c431bd301b0bdad903f87adba",
-      "bytes": 5464,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 117
     },
     "src/renderer/src/assets/logo-versions/fushi/fujifilm-vertical.webp": {
       "sha256": "b8f09f254e8261b547b1ff457c56821c50f5c2410c9ce7e3933e1fb54a81fb2b",
@@ -2599,14 +2142,6 @@
       "w": 512,
       "h": 182
     },
-    "src/renderer/src/assets/logo-versions/hasu/hasselblad-blue.webp": {
-      "sha256": "e1344ab0a9ae64355700f1fc63963c3c4ed93b23b0409da340f1c811613047ce",
-      "bytes": 8636,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 35
-    },
     "src/renderer/src/assets/logo-versions/honor/honor-boxed.webp": {
       "sha256": "bfbdf475f42568e883c4d86050d28c53b3e733b97b55b79f3d1d0df39a19fed7",
       "bytes": 7094,
@@ -2637,14 +2172,6 @@
       "format": "webp",
       "variant": "VP8X",
       "w": 501,
-      "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/huawei/huawei-mono.webp": {
-      "sha256": "ac8f2518b2923cf07d09c281ccb5fbf8794eee7e02582d4f1856f5a6a7e98965",
-      "bytes": 27262,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 503,
       "h": 512
     },
     "src/renderer/src/assets/logo-versions/insta360/insta360-2020.webp": {
@@ -2743,22 +2270,6 @@
       "w": 512,
       "h": 69
     },
-    "src/renderer/src/assets/logo-versions/konica/konica-blue.webp": {
-      "sha256": "94d3e9eeb718a5352aacbda029f61219e971f9dc66e9d1bf66d14689235f5733",
-      "bytes": 11846,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 130
-    },
-    "src/renderer/src/assets/logo-versions/konica/konica-rainbow-arc.webp": {
-      "sha256": "0c697b8751ea943a1f9fb680c3b7541311cd1c37584743ac34aad2dd188eb267",
-      "bytes": 7162,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 82
-    },
     "src/renderer/src/assets/logo-versions/konica/konica-rainbow-box.webp": {
       "sha256": "5566e4c31585c6122e79ca4712f3ae8c6a8294e22ecd0a3d221b91b7edcc3cd2",
       "bytes": 9436,
@@ -2774,22 +2285,6 @@
       "variant": "VP8",
       "w": 512,
       "h": 262
-    },
-    "src/renderer/src/assets/logo-versions/konica_minolta/km-horizontal.webp": {
-      "sha256": "2571200b7814c55766043051b0ffd4a421a5a96ca1a09610e91086748fe4a84a",
-      "bytes": 9012,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 95
-    },
-    "src/renderer/src/assets/logo-versions/konica_minolta/km-stacked.webp": {
-      "sha256": "22b431d8b0b407b2c3874b8bd9dd4d84e95c01374621414fbcba211f8e1a0248",
-      "bytes": 19248,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 300
     },
     "src/renderer/src/assets/logo-versions/laika/leica-1932.webp": {
       "sha256": "6b4f192e55a7981523eeb9eed28b0e12b57f5b12f7c6e4a91b0fb2d1979ea409",
@@ -2815,22 +2310,6 @@
       "w": 512,
       "h": 330
     },
-    "src/renderer/src/assets/logo-versions/laika/leica-lockup.webp": {
-      "sha256": "889a75116774968a99781802a3eb2b314ef5d021d2994bc6ec215e8171b97f0f",
-      "bytes": 6422,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 89
-    },
-    "src/renderer/src/assets/logo-versions/laika/leica-script.webp": {
-      "sha256": "babb074f82a35e10e322a05c3e5ae273ca078402a90f9071e7f5ef91f99160ae",
-      "bytes": 11974,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 231
-    },
     "src/renderer/src/assets/logo-versions/linhof/linhof-red-script.webp": {
       "sha256": "0ecae59c2f4970078d5d1616cc2070e14c4aed5498755600d6b986978cd36849",
       "bytes": 34870,
@@ -2847,14 +2326,6 @@
       "w": 512,
       "h": 92
     },
-    "src/renderer/src/assets/logo-versions/mamiya/mamiya-script.webp": {
-      "sha256": "e6819cfbf614cfe07e2c3775feadf6930ead69c289d327a26c29a7c2516ed897",
-      "bytes": 10898,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 137
-    },
     "src/renderer/src/assets/logo-versions/minolta/minolta-1937.webp": {
       "sha256": "990badead1c200cf318b2d77f3e39ef01b2a70e57dca7c3a489432ae4ff9fb28",
       "bytes": 4314,
@@ -2870,14 +2341,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 100
-    },
-    "src/renderer/src/assets/logo-versions/minolta/minolta-blue-circle.webp": {
-      "sha256": "bec67eb3ff022932c233ac7be8accd6590d95c787437686bd8aefbda1470fd0a",
-      "bytes": 30060,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 467
     },
     "src/renderer/src/assets/logo-versions/minolta/minolta-dot.webp": {
       "sha256": "f6f8e2b0b6dbef6c4f51438906c265953cf4edafa38a4306c4a7b80c9e703517",
@@ -2943,14 +2406,6 @@
       "w": 512,
       "h": 344
     },
-    "src/renderer/src/assets/logo-versions/motorola/motorola-2016.webp": {
-      "sha256": "378ef19e4cfdb836e84ddf492c1a2239a2119682464afadb779e8aef98371b13",
-      "bytes": 7334,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 117
-    },
     "src/renderer/src/assets/logo-versions/motorola/motorola-3.webp": {
       "sha256": "fe2dfac6d6186cbba8543b37b57557f77a82e4eea8d2056de0e9d22742e0039d",
       "bytes": 4526,
@@ -2998,14 +2453,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 99
-    },
-    "src/renderer/src/assets/logo-versions/motorola/motorola-classic.webp": {
-      "sha256": "76b9fa7c542390db1c1e3329e76ff210102a788afe64d4ddb1f17fb3715e14ce",
-      "bytes": 20382,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 448,
-      "h": 512
     },
     "src/renderer/src/assets/logo-versions/motorola/motorola.webp": {
       "sha256": "22fb173b806ce267e419a78a29fa64bc1351cfabf402c7b1251d6ce5676e5516",
@@ -3055,30 +2502,6 @@
       "w": 512,
       "h": 143
     },
-    "src/renderer/src/assets/logo-versions/nikon/nikon-logo-1.webp": {
-      "sha256": "4738d14bc5de49170770fa2b8dc5e904527591a3a9a155598e1ae0ce231a885f",
-      "bytes": 23150,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 511
-    },
-    "src/renderer/src/assets/logo-versions/nikon/nikon-rays.webp": {
-      "sha256": "8d5e0233bf2f914c35ed6901b867c48f30ea120b2c33258fc5b986092d24a037",
-      "bytes": 20704,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/nikon/nikon-yellow-block.webp": {
-      "sha256": "bf5626265b82fe1171f04770c1b75f36099738404985769e6e45f9e3c5fbdd3e",
-      "bytes": 8850,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
-    },
     "src/renderer/src/assets/logo-versions/nokia/nokia-1.webp": {
       "sha256": "1ea2ccee75f596580cf323b588f09beac565ca5c5b68c1c90dc8819895dbf004",
       "bytes": 23402,
@@ -3094,14 +2517,6 @@
       "variant": "VP8X",
       "w": 510,
       "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/nokia/nokia-2023.webp": {
-      "sha256": "d6bffb781b8a4fd9ffca30b670d1aa53da5e165c81424e1d7c5d131dc3b525ff",
-      "bytes": 13056,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 120
     },
     "src/renderer/src/assets/logo-versions/nokia/nokia-3.webp": {
       "sha256": "d4649a5cc8fde893265db58889b37d614942571f4d0399761d810bbd7a559a7a",
@@ -3159,22 +2574,6 @@
       "w": 512,
       "h": 181
     },
-    "src/renderer/src/assets/logo-versions/panasionic/panasonic-black.webp": {
-      "sha256": "0c9d9c85f0261b40eb7d6ccd800a9a7416b95f5dff6f152a17643c228053a0c4",
-      "bytes": 6504,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 80
-    },
-    "src/renderer/src/assets/logo-versions/panasionic/panasonic-blue.webp": {
-      "sha256": "51ae6ab1bfce09746a21b23eb8c343ac742df3fbaa2ac91ad118b2e4a377d497",
-      "bytes": 12738,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 76
-    },
     "src/renderer/src/assets/logo-versions/panasionic/panasonic-box.webp": {
       "sha256": "8028630b59a0f2e51b6438d00b8a7f5ada717bcf336f5419f5f03f78fbc2d117",
       "bytes": 9206,
@@ -3215,22 +2614,6 @@
       "w": 512,
       "h": 102
     },
-    "src/renderer/src/assets/logo-versions/polaroid/polaroid-bars.webp": {
-      "sha256": "f1dafbeadde44cfdaa5fa27748eafbef3e5f8dae05f7cd585a3b8e28488a2d06",
-      "bytes": 5902,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 86
-    },
-    "src/renderer/src/assets/logo-versions/polaroid/polaroid-spectrum.webp": {
-      "sha256": "b8eccf6fa7c3329e6282a84b51957f299423cd47932809ad8cc685aa4c56941b",
-      "bytes": 8176,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 86
-    },
     "src/renderer/src/assets/logo-versions/ricoh/ricoh-1.webp": {
       "sha256": "8c48b3d2ac8179b095aad0e2cbe11fec250841325d5c77288591ba67ac741a2f",
       "bytes": 25590,
@@ -3246,14 +2629,6 @@
       "variant": "VP8",
       "w": 512,
       "h": 174
-    },
-    "src/renderer/src/assets/logo-versions/ricoh/ricoh-1986.webp": {
-      "sha256": "5353b4a25308e2a7043bd64ef86b68305f53721d27aa5a5601b9ae4526dd366c",
-      "bytes": 6558,
-      "format": "webp",
-      "variant": "VP8",
-      "w": 512,
-      "h": 197
     },
     "src/renderer/src/assets/logo-versions/ricoh/ricoh-2.webp": {
       "sha256": "619604507fc108150eda7b8e7637325a506d4eeee67e1fe19521a445d7461c74",
@@ -3271,14 +2646,6 @@
       "w": 512,
       "h": 143
     },
-    "src/renderer/src/assets/logo-versions/ricoh/ricoh-emblem.webp": {
-      "sha256": "55d069b9218395a793f98207bf7a7d710c774b82a4e56b9cd7edf2758c734e34",
-      "bytes": 11680,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 347,
-      "h": 512
-    },
     "src/renderer/src/assets/logo-versions/ricoh/ricoh.webp": {
       "sha256": "b2fd324aace23026293e44bc31a7d996981b7343114bd28288001b38c5573534",
       "bytes": 19988,
@@ -3286,14 +2653,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 193
-    },
-    "src/renderer/src/assets/logo-versions/rollei/rollei-logo-1.webp": {
-      "sha256": "cde68b367722bae0b7a7556fe466f2beb117131046193e578fd5b3dac256a116",
-      "bytes": 6608,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 141
     },
     "src/renderer/src/assets/logo-versions/rollei/rollei-white.webp": {
       "sha256": "1e42cfd1faa0d74cbe58a2a33d9fd3fb1f49ed3b762b6e54a0b102f838a92f69",
@@ -3399,14 +2758,6 @@
       "w": 512,
       "h": 164
     },
-    "src/renderer/src/assets/logo-versions/sigma/sigma-legacy-black.webp": {
-      "sha256": "4400290638749cde9f39564b070b211e9cad32727e30e6f06d542eb581c9f9b2",
-      "bytes": 7818,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 109
-    },
     "src/renderer/src/assets/logo-versions/sigma/sigma-legacy-red.webp": {
       "sha256": "dfecac4532f14870adaf2cf859875c55c5619799abdc99c9f317a48a930a9539",
       "bytes": 16780,
@@ -3439,14 +2790,6 @@
       "w": 369,
       "h": 512
     },
-    "src/renderer/src/assets/logo-versions/sony/sony-alpha.webp": {
-      "sha256": "d6d6df6b574c25425f76b44093c01919452e2ad54c3e0f8ed1d52c245bb8d945",
-      "bytes": 14142,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 489,
-      "h": 512
-    },
     "src/renderer/src/assets/logo-versions/sony/sony-classical.webp": {
       "sha256": "bb0d47c429533d366dd49dad08a59a079fd7ed5c65f8acda85038b4696d26b0d",
       "bytes": 18554,
@@ -3455,14 +2798,6 @@
       "w": 512,
       "h": 512
     },
-    "src/renderer/src/assets/logo-versions/sony/sony-wordmark.webp": {
-      "sha256": "e171f0c6fa29816697d6627cc650c63ad47eb401888b373099ad32670d3f0821",
-      "bytes": 6828,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 90
-    },
     "src/renderer/src/assets/logo-versions/sony/sony.webp": {
       "sha256": "814cdd2bcf96d67143e8914c1a99c727c6f493b7af8fbe4f5b04e86f6380af8f",
       "bytes": 15030,
@@ -3470,14 +2805,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 74
-    },
-    "src/renderer/src/assets/logo-versions/tamron/tamron-blue.webp": {
-      "sha256": "922d84cad5d8610f1c0fbe34424ac6ea8fe82d4149816ec4cc1bcf40656bd9a0",
-      "bytes": 9198,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 79
     },
     "src/renderer/src/assets/logo-versions/tamron/tamron-logo.webp": {
       "sha256": "e21eed5c1f21518447f27f799c232a1cc65d5ba282e6f25781c866efd3535480",
@@ -3494,14 +2821,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 138
-    },
-    "src/renderer/src/assets/logo-versions/tokina/tokina-blue.webp": {
-      "sha256": "cd64a75ded929ab30df3ffbdf24c0c8555706e2df32db510c3e92a17080d776f",
-      "bytes": 5208,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 77
     },
     "src/renderer/src/assets/logo-versions/vivo/vivo-1.webp": {
       "sha256": "08245d92d0682088f631119b3a182f87810cebd6a9c0dc7845b2aae7811f7f25",
@@ -3527,14 +2846,6 @@
       "w": 512,
       "h": 192
     },
-    "src/renderer/src/assets/logo-versions/vivo/vivo-blue.webp": {
-      "sha256": "81e49745f9e3c2e47acfe0b3eea1ffa6fc14ddf804807415ccb46347c05c9380",
-      "bytes": 13556,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 142
-    },
     "src/renderer/src/assets/logo-versions/vivo/vivo-logo-2019.webp": {
       "sha256": "fd4e10acacaac1946ebefb743f5b71a4f09d25d32ff63b41b46afd9c4f59b42e",
       "bytes": 11150,
@@ -3551,22 +2862,6 @@
       "w": 512,
       "h": 193
     },
-    "src/renderer/src/assets/logo-versions/xiaomi/xiaomi-2011.webp": {
-      "sha256": "0ba97891ccc27aaaaea47647b7db55b0721500a2f8df74f1f42efb03e4b0555d",
-      "bytes": 5468,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
-    },
-    "src/renderer/src/assets/logo-versions/xiaomi/xiaomi-2021.webp": {
-      "sha256": "6f6c26cd4f4c6205ac94cf7abfecac056980e6a67f9ebf659f46fcfbb16209ed",
-      "bytes": 12006,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 145
-    },
     "src/renderer/src/assets/logo-versions/yashica/yashica-serif.webp": {
       "sha256": "038105b9e10af4a67e6daa4b54973f5417c6c7761a8004782cf2d40ca57fb482",
       "bytes": 13390,
@@ -3574,14 +2869,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 93
-    },
-    "src/renderer/src/assets/logo-versions/yijia/oneplus-2014.webp": {
-      "sha256": "ad4e0e619465a3e2a672c1aff5bedde056cffe0a415d5d5df705b5d94671a319",
-      "bytes": 2874,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 512
     },
     "src/renderer/src/assets/logo-versions/yijia/oneplus-2020.webp": {
       "sha256": "b7f8bb52902da5772abb99aff8f23b5b120e0a282e467f49ab3089cd6faa736f",
@@ -3606,14 +2893,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 117
-    },
-    "src/renderer/src/assets/logo-versions/zenit/zenit-gap.webp": {
-      "sha256": "22d389b6c0b4d7f8b321db74775ec0638e06e467f820d6252f09c477ac4d0dae",
-      "bytes": 49252,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 489
     },
     "src/renderer/src/assets/logo-versions/laika/leica-dot-2006--light.webp": {
       "sha256": "67de3957d6624c21bd3d8c13c19199ff71e19a6c193d828a15bf6625710f5993",
@@ -5721,62 +5000,6 @@
       ]
     },
     {
-      "id": "leica-lockup",
-      "brandKey": "laika",
-      "name": "Leica dot + LEICA letters",
-      "era": "current",
-      "years": "2006–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "leica-lockup",
-      "cuts": [
-        {
-          "id": "leica-lockup",
-          "assetKey": "ver:laika:leica-lockup",
-          "file": "previews/laika/leica.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 644,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/laika/leica-lockup.webp",
-          "sha256": "889a75116774968a99781802a3eb2b314ef5d021d2994bc6ec215e8171b97f0f",
-          "actualWidth": 512,
-          "actualHeight": 89
-        }
-      ]
-    },
-    {
-      "id": "leica-script",
-      "brandKey": "laika",
-      "name": "Leica script wordmark",
-      "era": "classic",
-      "years": "1954–2006",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "leica-script",
-      "cuts": [
-        {
-          "id": "leica-script",
-          "assetKey": "ver:laika:leica-script",
-          "file": "previews/laika/leica-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 1288,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/laika/leica-script.webp",
-          "sha256": "babb074f82a35e10e322a05c3e5ae273ca078402a90f9071e7f5ef91f99160ae",
-          "actualWidth": 512,
-          "actualHeight": 231
-        }
-      ]
-    },
-    {
       "id": "canon-1953",
       "brandKey": "canon",
       "name": "Canon wordmark (first)",
@@ -6044,34 +5267,6 @@
       ]
     },
     {
-      "id": "canon-script",
-      "brandKey": "canon",
-      "name": "Canon red script",
-      "era": "current",
-      "years": "1956–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "canon-script",
-      "cuts": [
-        {
-          "id": "canon-script",
-          "assetKey": "canon_red",
-          "file": "canon_red.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 213,
-          "resolvedPath": "src/renderer/src/assets/logos/canon_red.webp",
-          "sha256": "36637573bd2c5a1d1704f6c6df873222780bf5e841b337eddbcda39b8a2fb378",
-          "actualWidth": 1024,
-          "actualHeight": 213
-        }
-      ]
-    },
-    {
       "id": "canoneos3",
       "brandKey": "canon",
       "name": "Canoneos3",
@@ -6311,90 +5506,6 @@
       ]
     },
     {
-      "id": "nikon-logo-1",
-      "brandKey": "nikon",
-      "name": "Nikon Logo 1",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "both",
-      "primaryCut": "nikon-logo-1",
-      "cuts": [
-        {
-          "id": "nikon-logo-1",
-          "assetKey": "ver:nikon:nikon-logo-1",
-          "file": "previews/nikon/nikon-logo-1.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/nikon/nikon-logo-1.webp",
-          "sha256": "4738d14bc5de49170770fa2b8dc5e904527591a3a9a155598e1ae0ce231a885f",
-          "actualWidth": 512,
-          "actualHeight": 511
-        }
-      ]
-    },
-    {
-      "id": "nikon-rays",
-      "brandKey": "nikon",
-      "name": "Nikon block with speed rays",
-      "era": "historical",
-      "years": "c. 1949–1988",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "nikon-rays",
-      "cuts": [
-        {
-          "id": "nikon-rays",
-          "assetKey": "ver:nikon:nikon-rays",
-          "file": "previews/nikon/nikon-2.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/nikon/nikon-rays.webp",
-          "sha256": "8d5e0233bf2f914c35ed6901b867c48f30ea120b2c33258fc5b986092d24a037",
-          "actualWidth": 512,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "nikon-yellow-block",
-      "brandKey": "nikon",
-      "name": "Nikon on yellow block",
-      "era": "current",
-      "years": "c. 1988–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "nikon-yellow-block",
-      "cuts": [
-        {
-          "id": "nikon-yellow-block",
-          "assetKey": "ver:nikon:nikon-yellow-block",
-          "file": "previews/nikon/nikon.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/nikon/nikon-yellow-block.webp",
-          "sha256": "bf5626265b82fe1171f04770c1b75f36099738404985769e6e45f9e3c5fbdd3e",
-          "actualWidth": 512,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
       "id": "sony",
       "brandKey": "sony",
       "name": "Sony",
@@ -6451,34 +5562,6 @@
       ]
     },
     {
-      "id": "sony-alpha",
-      "brandKey": "sony",
-      "name": "Sony α mount mark",
-      "era": "current",
-      "years": "2006–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "sony-alpha",
-      "cuts": [
-        {
-          "id": "sony-alpha",
-          "assetKey": "ver:sony:sony-alpha",
-          "file": "previews/sony/sony-alpha-logo.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1819,
-          "declaredHeight": 1716,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/sony/sony-alpha.webp",
-          "sha256": "d6d6df6b574c25425f76b44093c01919452e2ad54c3e0f8ed1d52c245bb8d945",
-          "actualWidth": 489,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
       "id": "sony-classical",
       "brandKey": "sony",
       "name": "Sony Classical",
@@ -6507,120 +5590,6 @@
       ]
     },
     {
-      "id": "sony-legacy-black",
-      "brandKey": "sony",
-      "name": "Sony Black",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "sony_black",
-      "cuts": [
-        {
-          "id": "sony_black",
-          "assetKey": "sony_black",
-          "file": "sony_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 173,
-          "resolvedPath": "src/renderer/src/assets/logos/sony_black.webp",
-          "sha256": "2fc8dda5a8478502b95de983569bf311c96227b73ae8d3f40b8e5a021facf0a2",
-          "actualWidth": 1024,
-          "actualHeight": 173
-        },
-        {
-          "id": "sony_white",
-          "assetKey": "sony_white",
-          "file": "sony_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 173,
-          "resolvedPath": "src/renderer/src/assets/logos/sony_white.webp",
-          "sha256": "2fdeb890155727538a12a2b5c879ec45fabe599e38aeadd9b73a8bbfaf41d15e",
-          "actualWidth": 1024,
-          "actualHeight": 173
-        }
-      ]
-    },
-    {
-      "id": "sony-wordmark",
-      "brandKey": "sony",
-      "name": "SONY wordmark",
-      "era": "current",
-      "years": "1975–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "sony-wordmark",
-      "cuts": [
-        {
-          "id": "sony-wordmark",
-          "assetKey": "ver:sony:sony-wordmark",
-          "file": "previews/sony/sony-2.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 649,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/sony/sony-wordmark.webp",
-          "sha256": "e171f0c6fa29816697d6627cc650c63ad47eb401888b373099ad32670d3f0821",
-          "actualWidth": 512,
-          "actualHeight": 90
-        }
-      ]
-    },
-    {
-      "id": "panasionic-legacy-black",
-      "brandKey": "panasionic",
-      "name": "Panasonic Panasionic Black",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "panasionic_black",
-      "cuts": [
-        {
-          "id": "panasionic_black",
-          "assetKey": "panasionic_black",
-          "file": "panasionic_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 157,
-          "resolvedPath": "src/renderer/src/assets/logos/panasionic_black.webp",
-          "sha256": "f12e6d7671835454951425c09a679d55497cd59c79f3b75c31ab4c003e7d8ee9",
-          "actualWidth": 1024,
-          "actualHeight": 157
-        },
-        {
-          "id": "panasionic_white",
-          "assetKey": "panasionic_white",
-          "file": "panasionic_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 157,
-          "resolvedPath": "src/renderer/src/assets/logos/panasionic_white.webp",
-          "sha256": "95d629e8764572b3afbc14063371b07f1e1eb6a01b0f73252d21886c526af816",
-          "actualWidth": 1024,
-          "actualHeight": 157
-        }
-      ]
-    },
-    {
       "id": "panasonic-2",
       "brandKey": "panasionic",
       "name": "Panasonic 2",
@@ -6645,62 +5614,6 @@
           "sha256": "2c079ce7a0880a00b04475994eb78c1288b2fd37ca600d4ef7f372dc225056b7",
           "actualWidth": 512,
           "actualHeight": 181
-        }
-      ]
-    },
-    {
-      "id": "panasonic-black",
-      "brandKey": "panasionic",
-      "name": "Panasonic black wordmark",
-      "era": "current",
-      "years": "2003–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "panasonic-black",
-      "cuts": [
-        {
-          "id": "panasonic-black",
-          "assetKey": "ver:panasionic:panasonic-black",
-          "file": "previews/panasionic/panasonic-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 604,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/panasionic/panasonic-black.webp",
-          "sha256": "0c9d9c85f0261b40eb7d6ccd800a9a7416b95f5dff6f152a17643c228053a0c4",
-          "actualWidth": 512,
-          "actualHeight": 80
-        }
-      ]
-    },
-    {
-      "id": "panasonic-blue",
-      "brandKey": "panasionic",
-      "name": "Panasonic blue wordmark",
-      "era": "current",
-      "years": "2003–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "panasonic-blue",
-      "cuts": [
-        {
-          "id": "panasonic-blue",
-          "assetKey": "ver:panasionic:panasonic-blue",
-          "file": "previews/panasionic/panasonic.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2380,
-          "declaredHeight": 550,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/panasionic/panasonic-blue.webp",
-          "sha256": "51ae6ab1bfce09746a21b23eb8c343ac742df3fbaa2ac91ad118b2e4a377d497",
-          "actualWidth": 512,
-          "actualHeight": 76
         }
       ]
     },
@@ -6761,49 +5674,6 @@
       ]
     },
     {
-      "id": "lumix-wordmark",
-      "brandKey": "lumix",
-      "name": "LUMIX wordmark",
-      "era": "current",
-      "years": "2001–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "lumix-wordmark",
-      "cuts": [
-        {
-          "id": "lumix-wordmark",
-          "assetKey": "lumix_black",
-          "file": "lumix_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 200,
-          "resolvedPath": "src/renderer/src/assets/logos/lumix_black.webp",
-          "sha256": "e5a5b012a38b294335fdc45f700b146f23b997c2b037e12b5efcb9cdfb8c0796",
-          "actualWidth": 1024,
-          "actualHeight": 200
-        },
-        {
-          "id": "lumix_white",
-          "assetKey": "lumix_white",
-          "file": "lumix_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 200,
-          "resolvedPath": "src/renderer/src/assets/logos/lumix_white.webp",
-          "sha256": "e7a5f4ae8458022a294c0270aeea2ad54020b069431b07c7b24bf05e54f7c24c",
-          "actualWidth": 1024,
-          "actualHeight": 200
-        }
-      ]
-    },
-    {
       "id": "fujifilm-1980",
       "brandKey": "fushi",
       "name": "Fujifilm square mark",
@@ -6828,34 +5698,6 @@
           "sha256": "8851610fcad896e4091a819cf7f0e58e38785c0f17aef487b40190d9d801c375",
           "actualWidth": 512,
           "actualHeight": 415
-        }
-      ]
-    },
-    {
-      "id": "fujifilm-diagonal",
-      "brandKey": "fushi",
-      "name": "Fujifilm diagonal green block",
-      "era": "historical",
-      "years": "1980s–2006",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "fujifilm-diagonal",
-      "cuts": [
-        {
-          "id": "fujifilm-diagonal",
-          "assetKey": "ver:fushi:fujifilm-diagonal",
-          "file": "previews/fushi/fujifilm-7.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 2400,
-          "declaredHeight": 1950,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/fushi/fujifilm-diagonal.webp",
-          "sha256": "e648f9c81a041612fe5cff0d3af9af45a72840a8ded30b8508965a6de932f6f9",
-          "actualWidth": 512,
-          "actualHeight": 376
         }
       ]
     },
@@ -6912,34 +5754,6 @@
           "sha256": "8a3f7a6d4da42a510b94c6e2b89b8b127e0a6188ff6c6333d423a042dc5d02e3",
           "actualWidth": 512,
           "actualHeight": 410
-        }
-      ]
-    },
-    {
-      "id": "fujifilm-green-strip",
-      "brandKey": "fushi",
-      "name": "Fujifilm green strip lockup",
-      "era": "historical",
-      "years": "1980s–2006",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "fujifilm-green-strip",
-      "cuts": [
-        {
-          "id": "fujifilm-green-strip",
-          "assetKey": "ver:fushi:fujifilm-green-strip",
-          "file": "previews/fushi/fujifilm-10.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 2400,
-          "declaredHeight": 443,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/fushi/fujifilm-green-strip.webp",
-          "sha256": "ef791c28246ea6aa6a058b8d3aa53d18b6bd3da54f6d36a32c72e15a5bcef22d",
-          "actualWidth": 512,
-          "actualHeight": 50
         }
       ]
     },
@@ -7028,34 +5842,6 @@
       ]
     },
     {
-      "id": "fujifilm-red-symbol",
-      "brandKey": "fushi",
-      "name": "Fujifilm symbol + FUJIFILM wordmark (stacked)",
-      "era": "current",
-      "years": "2006–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "fujifilm-red-symbol",
-      "cuts": [
-        {
-          "id": "fujifilm-red-symbol",
-          "assetKey": "ver:fushi:fujifilm-red-symbol",
-          "file": "previews/fushi/fujifilm.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 1372,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/fushi/fujifilm-red-symbol.webp",
-          "sha256": "112022121c37b49eaa2b78a602d41b8f057fcab371cdd61c52ea42ee020c1541",
-          "actualWidth": 512,
-          "actualHeight": 268
-        }
-      ]
-    },
-    {
       "id": "fujifilm-red-symbol-horizontal",
       "brandKey": "fushi",
       "name": "Fujifilm symbol + FUJIFILM wordmark (horizontal)",
@@ -7084,34 +5870,6 @@
       ]
     },
     {
-      "id": "fujifilm-rule",
-      "brandKey": "fushi",
-      "name": "Fujifilm wordmark with green rule",
-      "era": "current",
-      "years": "2006–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "fujifilm-rule",
-      "cuts": [
-        {
-          "id": "fujifilm-rule",
-          "assetKey": "ver:fushi:fujifilm-rule",
-          "file": "previews/fushi/fujifilm-8.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 774,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/fushi/fujifilm-rule.webp",
-          "sha256": "9fca7ce44425c3639935554d753178c38c98df1c431bd301b0bdad903f87adba",
-          "actualWidth": 512,
-          "actualHeight": 117
-        }
-      ]
-    },
-    {
       "id": "fujifilm-vertical",
       "brandKey": "fushi",
       "name": "Fujifilm vertical wordmark + symbol",
@@ -7136,120 +5894,6 @@
           "sha256": "b8f09f254e8261b547b1ff457c56821c50f5c2410c9ce7e3933e1fb54a81fb2b",
           "actualWidth": 103,
           "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "fujifilm-wordmark-legacy",
-      "brandKey": "fushi",
-      "name": "FUJIFILM wordmark (app baseline, red J)",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "fushi_black",
-      "cuts": [
-        {
-          "id": "fushi_black",
-          "assetKey": "fushi_black",
-          "file": "fushi_black.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 167,
-          "resolvedPath": "src/renderer/src/assets/logos/fushi_black.webp",
-          "sha256": "9ea7ad8880b1940694e16b47e22936ddd04640e317712026704d5f19d88635dd",
-          "actualWidth": 1024,
-          "actualHeight": 167
-        },
-        {
-          "id": "fushi_white",
-          "assetKey": "fushi_white",
-          "file": "fushi_white.webp",
-          "ink": "color",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 167,
-          "resolvedPath": "src/renderer/src/assets/logos/fushi_white.webp",
-          "sha256": "d08f0811180920c5d81a71ac71efb2db0a4d0c805a33e06b2575db58746dd605",
-          "actualWidth": 1024,
-          "actualHeight": 167
-        }
-      ]
-    },
-    {
-      "id": "hasselblad-black",
-      "brandKey": "hasu",
-      "name": "HASSELBLAD wordmark",
-      "era": "current",
-      "years": "2000s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "hasu_long_black",
-      "cuts": [
-        {
-          "id": "hasu_long_black",
-          "assetKey": "hasu_long_black",
-          "file": "hasu_long_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 70,
-          "resolvedPath": "src/renderer/src/assets/logos/hasu_long_black.webp",
-          "sha256": "b0a41e5176b624e780869eb03ce3e77f1f63b6f3c6b4d638eac2b8022848ed41",
-          "actualWidth": 1024,
-          "actualHeight": 70
-        },
-        {
-          "id": "hasu_long_white",
-          "assetKey": "hasu_long_white",
-          "file": "hasu_long_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 70,
-          "resolvedPath": "src/renderer/src/assets/logos/hasu_long_white.webp",
-          "sha256": "05332ad042091a57ce650b7c65b4587c269ac41236548eabf431fef52f7cf415",
-          "actualWidth": 1024,
-          "actualHeight": 70
-        }
-      ]
-    },
-    {
-      "id": "hasselblad-blue",
-      "brandKey": "hasu",
-      "name": "HASSELBLAD wordmark (navy)",
-      "era": "classic",
-      "years": "n.d.",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "hasselblad-blue",
-      "cuts": [
-        {
-          "id": "hasselblad-blue",
-          "assetKey": "ver:hasu:hasselblad-blue",
-          "file": "previews/hasu/hasselblad-1.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 2400,
-          "declaredHeight": 166,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/hasu/hasselblad-blue.webp",
-          "sha256": "e1344ab0a9ae64355700f1fc63963c3c4ed93b23b0409da340f1c811613047ce",
-          "actualWidth": 512,
-          "actualHeight": 35
         }
       ]
     },
@@ -7523,34 +6167,6 @@
       ]
     },
     {
-      "id": "olympus-wordmark",
-      "brandKey": "aolinbasi",
-      "name": "OLYMPUS wordmark",
-      "era": "classic",
-      "years": "c. 2001–2011",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "olympus-wordmark",
-      "cuts": [
-        {
-          "id": "olympus-wordmark",
-          "assetKey": "ver:aolinbasi:olympus-wordmark",
-          "file": "previews/aolinbasi/olympus-2.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 526,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/aolinbasi/olympus-wordmark.webp",
-          "sha256": "425bf9b2e13bada80097ccb8dfdae8d8fd95040c7bd20233d4bef9b5c5d62316",
-          "actualWidth": 512,
-          "actualHeight": 63
-        }
-      ]
-    },
-    {
       "id": "om-system",
       "brandKey": "aolinbasi",
       "name": "OM SYSTEM wordmark",
@@ -7575,34 +6191,6 @@
           "sha256": "776115facc78cc9f68b5e46f424ca0d0662521a38b161164847b12ebfd6958d5",
           "actualWidth": 512,
           "actualHeight": 59
-        }
-      ]
-    },
-    {
-      "id": "binde-legacy",
-      "brandKey": "binde",
-      "name": "PENTAX Binde",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "light",
-      "primaryCut": "binde",
-      "cuts": [
-        {
-          "id": "binde",
-          "assetKey": "binde",
-          "file": "binde.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 200,
-          "resolvedPath": "src/renderer/src/assets/logos/binde.webp",
-          "sha256": "ddfac35bc5c2a3400b813c47678f7bf362aeb603b40afa7669b344f5efd97472",
-          "actualWidth": 1024,
-          "actualHeight": 200
         }
       ]
     },
@@ -7674,34 +6262,6 @@
           "sha256": "afa3af18be1e3ca4b603c0dce2f5c99443739d61b8d773c4efa38b8a54f85cba",
           "actualWidth": 512,
           "actualHeight": 98
-        }
-      ]
-    },
-    {
-      "id": "pentax-black",
-      "brandKey": "binde",
-      "name": "PENTAX wordmark",
-      "era": "current",
-      "years": "2002–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "pentax-black",
-      "cuts": [
-        {
-          "id": "pentax-black",
-          "assetKey": "ver:binde:pentax-black",
-          "file": "previews/binde/pentax.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 654,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/binde/pentax-black.webp",
-          "sha256": "69a4d7d9b0e52d4a03d1a238bc8ec1abf647ddea58328821f05b1fa86d97dc58",
-          "actualWidth": 512,
-          "actualHeight": 91
         }
       ]
     },
@@ -7818,34 +6378,6 @@
       ]
     },
     {
-      "id": "ricoh-1986",
-      "brandKey": "ricoh",
-      "name": "RICOH outline wordmark",
-      "era": "historical",
-      "years": "1986–2005",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "ricoh-1986",
-      "cuts": [
-        {
-          "id": "ricoh-1986",
-          "assetKey": "ver:ricoh:ricoh-1986",
-          "file": "previews/ricoh/ricoh-1986.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 2331,
-          "declaredHeight": 897,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/ricoh/ricoh-1986.webp",
-          "sha256": "5353b4a25308e2a7043bd64ef86b68305f53721d27aa5a5601b9ae4526dd366c",
-          "actualWidth": 512,
-          "actualHeight": 197
-        }
-      ]
-    },
-    {
       "id": "ricoh-2",
       "brandKey": "ricoh",
       "name": "Ricoh 2",
@@ -7902,34 +6434,6 @@
       ]
     },
     {
-      "id": "ricoh-emblem",
-      "brandKey": "ricoh",
-      "name": "R emblem + RICOH",
-      "era": "current",
-      "years": "2005–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "ricoh-emblem",
-      "cuts": [
-        {
-          "id": "ricoh-emblem",
-          "assetKey": "ver:ricoh:ricoh-emblem",
-          "file": "previews/ricoh/ricoh-3.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1692,
-          "declaredHeight": 2392,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/ricoh/ricoh-emblem.webp",
-          "sha256": "55d069b9218395a793f98207bf7a7d710c774b82a4e56b9cd7edf2758c734e34",
-          "actualWidth": 347,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
       "id": "ricoh-legacy-black",
       "brandKey": "ricoh",
       "name": "Ricoh Black",
@@ -7967,34 +6471,6 @@
           "declaredHeight": 185,
           "resolvedPath": "src/renderer/src/assets/logos/ricoh_white.webp",
           "sha256": "a4180f9417a91a995bed7bcae8cf7b23a29da1fa9d37dc31d7b87855a09501df",
-          "actualWidth": 1024,
-          "actualHeight": 185
-        }
-      ]
-    },
-    {
-      "id": "ricoh-red-2005",
-      "brandKey": "ricoh",
-      "name": "RICOH red wordmark",
-      "era": "current",
-      "years": "2005–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "ricoh-red-2005",
-      "cuts": [
-        {
-          "id": "ricoh-red-2005",
-          "assetKey": "ricoh_red",
-          "file": "ricoh_red.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 185,
-          "resolvedPath": "src/renderer/src/assets/logos/ricoh_red.webp",
-          "sha256": "7397735951e373b4df6bc5482e1dd6d223ffd3c702fd246927cd52b7d1634504",
           "actualWidth": 1024,
           "actualHeight": 185
         }
@@ -8109,90 +6585,6 @@
           "sha256": "bf2ca93897aa978c4e96d0a1e3d3eab89c0ca7189a07b64ab951f17b8b973be4",
           "actualWidth": 375,
           "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "zeiss-lens-emblem",
-      "brandKey": "caisi",
-      "name": "ZEISS lens emblem",
-      "era": "current",
-      "years": "1995–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "zeiss-lens-emblem",
-      "cuts": [
-        {
-          "id": "zeiss-lens-emblem",
-          "assetKey": "ver:caisi:zeiss-lens-emblem",
-          "file": "previews/caisi/zeiss-2.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/caisi/zeiss-lens-emblem.webp",
-          "sha256": "cadb879884db57163964604b4d40f77449b544ae60271abf4635eb708b079351",
-          "actualWidth": 512,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "zeiss-mono",
-      "brandKey": "caisi",
-      "name": "ZEISS Germany (inverse)",
-      "era": "current",
-      "years": "1995–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "zeiss-mono",
-      "cuts": [
-        {
-          "id": "zeiss-mono",
-          "assetKey": "ver:caisi:zeiss-mono",
-          "file": "previews/caisi/zeiss-1.png",
-          "ink": "light",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2204,
-          "declaredHeight": 2204,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/caisi/zeiss-mono.webp",
-          "sha256": "c4fcb708705aec2f6f2065b36b50923c41cb6dba2cca6ee4b6d1517b38159e7b",
-          "actualWidth": 512,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "dji-2006",
-      "brandKey": "dji",
-      "name": "DJI mark (blue)",
-      "era": "historical",
-      "years": "2006–2016",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "dji-2006",
-      "cuts": [
-        {
-          "id": "dji-2006",
-          "assetKey": "ver:dji:dji-2006",
-          "file": "previews/dji/dji-1.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 1380,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/dji/dji-2006.webp",
-          "sha256": "6303278af09c8c3dd88b13defd3d3ac0a67c12379e314f9660d34adf1e9d987c",
-          "actualWidth": 512,
-          "actualHeight": 294
         }
       ]
     },
@@ -8326,49 +6718,6 @@
       ]
     },
     {
-      "id": "contax-wordmark",
-      "brandKey": "contax",
-      "name": "CONTAX wordmark",
-      "era": "classic",
-      "years": "1975–2005",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "contax-wordmark",
-      "cuts": [
-        {
-          "id": "contax-wordmark",
-          "assetKey": "contax_black",
-          "file": "contax_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1620,
-          "declaredHeight": 286,
-          "resolvedPath": "src/renderer/src/assets/logos/contax_black.webp",
-          "sha256": "38def40f250ab8cb868f0e81c6e0e1afb8a9eb224e6a0986bf1e2a63f3046961",
-          "actualWidth": 1620,
-          "actualHeight": 286
-        },
-        {
-          "id": "contax_white",
-          "assetKey": "contax_white",
-          "file": "contax_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1620,
-          "declaredHeight": 286,
-          "resolvedPath": "src/renderer/src/assets/logos/contax_white.webp",
-          "sha256": "04cd6d239b79bb095a5d8325be77208e362507c678f517c772dc3f853c0b72bc",
-          "actualWidth": 1620,
-          "actualHeight": 286
-        }
-      ]
-    },
-    {
       "id": "minolta-1937",
       "brandKey": "minolta",
       "name": "Minolta script (1937)",
@@ -8421,34 +6770,6 @@
           "sha256": "6b59ee5e720213898b44721331e7080b9d8f3ad4c4bdd5eb56d9cd1354f1628e",
           "actualWidth": 512,
           "actualHeight": 100
-        }
-      ]
-    },
-    {
-      "id": "minolta-blue-circle",
-      "brandKey": "minolta",
-      "name": "Minolta blue circle + wordmark",
-      "era": "classic",
-      "years": "1981–2003",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "minolta-blue-circle",
-      "cuts": [
-        {
-          "id": "minolta-blue-circle",
-          "assetKey": "ver:minolta:minolta-blue-circle",
-          "file": "previews/minolta/minolta.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2346,
-          "declaredHeight": 2160,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/minolta/minolta-blue-circle.webp",
-          "sha256": "bec67eb3ff022932c233ac7be8accd6590d95c787437686bd8aefbda1470fd0a",
-          "actualWidth": 512,
-          "actualHeight": 467
         }
       ]
     },
@@ -8608,34 +6929,6 @@
       ]
     },
     {
-      "id": "konica-blue",
-      "brandKey": "konica",
-      "name": "Konica blue wordmark",
-      "era": "classic",
-      "years": "n.d.",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "konica-blue",
-      "cuts": [
-        {
-          "id": "konica-blue",
-          "assetKey": "ver:konica:konica-blue",
-          "file": "previews/konica/konica-2.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 828,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/konica/konica-blue.webp",
-          "sha256": "94d3e9eeb718a5352aacbda029f61219e971f9dc66e9d1bf66d14689235f5733",
-          "actualWidth": 512,
-          "actualHeight": 130
-        }
-      ]
-    },
-    {
       "id": "konica-legacy-black",
       "brandKey": "konica",
       "name": "Konica Black",
@@ -8679,34 +6972,6 @@
       ]
     },
     {
-      "id": "konica-rainbow-arc",
-      "brandKey": "konica",
-      "name": "Rainbow arc + Konica",
-      "era": "classic",
-      "years": "n.d. (pre-2003)",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "konica-rainbow-arc",
-      "cuts": [
-        {
-          "id": "konica-rainbow-arc",
-          "assetKey": "ver:konica:konica-rainbow-arc",
-          "file": "previews/konica/konica-1.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 574,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/konica/konica-rainbow-arc.webp",
-          "sha256": "0c697b8751ea943a1f9fb680c3b7541311cd1c37584743ac34aad2dd188eb267",
-          "actualWidth": 512,
-          "actualHeight": 82
-        }
-      ]
-    },
-    {
       "id": "konica-rainbow-box",
       "brandKey": "konica",
       "name": "Konica blue block with fan",
@@ -8731,62 +6996,6 @@
           "sha256": "5566e4c31585c6122e79ca4712f3ae8c6a8294e22ecd0a3d221b91b7edcc3cd2",
           "actualWidth": 512,
           "actualHeight": 427
-        }
-      ]
-    },
-    {
-      "id": "km-horizontal",
-      "brandKey": "konica_minolta",
-      "name": "KONICA MINOLTA globe + wordmark",
-      "era": "current",
-      "years": "2003–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "km-horizontal",
-      "cuts": [
-        {
-          "id": "km-horizontal",
-          "assetKey": "ver:konica_minolta:km-horizontal",
-          "file": "previews/konica_minolta/konica-minolta.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 630,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/konica_minolta/km-horizontal.webp",
-          "sha256": "2571200b7814c55766043051b0ffd4a421a5a96ca1a09610e91086748fe4a84a",
-          "actualWidth": 512,
-          "actualHeight": 95
-        }
-      ]
-    },
-    {
-      "id": "km-stacked",
-      "brandKey": "konica_minolta",
-      "name": "KONICA MINOLTA stacked",
-      "era": "classic",
-      "years": "2003–2006",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "km-stacked",
-      "cuts": [
-        {
-          "id": "km-stacked",
-          "assetKey": "ver:konica_minolta:km-stacked",
-          "file": "previews/konica_minolta/konica-minolta-1.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 1508,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/konica_minolta/km-stacked.webp",
-          "sha256": "22b431d8b0b407b2c3874b8bd9dd4d84e95c01374621414fbcba211f8e1a0248",
-          "actualWidth": 512,
-          "actualHeight": 300
         }
       ]
     },
@@ -8905,34 +7114,6 @@
       ]
     },
     {
-      "id": "rollei-logo-1",
-      "brandKey": "rollei",
-      "name": "Rollei Logo 1",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "rollei-logo-1",
-      "cuts": [
-        {
-          "id": "rollei-logo-1",
-          "assetKey": "ver:rollei:rollei-logo-1",
-          "file": "previews/rollei/rollei-logo-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 661,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/rollei/rollei-logo-1.webp",
-          "sha256": "cde68b367722bae0b7a7556fe466f2beb117131046193e578fd5b3dac256a116",
-          "actualWidth": 512,
-          "actualHeight": 141
-        }
-      ]
-    },
-    {
       "id": "rollei-white",
       "brandKey": "rollei",
       "name": "Rollei wordmark (white)",
@@ -9030,21 +7211,6 @@
           "actualHeight": 231
         },
         {
-          "id": "voigtlander_white",
-          "assetKey": "voigtlander_white",
-          "file": "voigtlander_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1156,
-          "declaredHeight": 231,
-          "resolvedPath": "src/renderer/src/assets/logos/voigtlander_white.webp",
-          "sha256": "40b03836633e095c4737664c73cadffcb59d7169c770aba4ce4b350beb7679dd",
-          "actualWidth": 1156,
-          "actualHeight": 231
-        },
-        {
           "id": "voigtlander-script--light",
           "assetKey": "ver:voigtlander:voigtlander-script--light",
           "file": "previews/voigtlander/voigtlander-script--light.png",
@@ -9101,34 +7267,6 @@
           "sha256": "e59918e05fecce3beac64a0cc08fbb2253bb5f577bfc04730281bf148255728b",
           "actualWidth": 1620,
           "actualHeight": 447
-        }
-      ]
-    },
-    {
-      "id": "mamiya-script",
-      "brandKey": "mamiya",
-      "name": "Mamiya red script",
-      "era": "classic",
-      "years": "1970s–2013",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "mamiya-script",
-      "cuts": [
-        {
-          "id": "mamiya-script",
-          "assetKey": "ver:mamiya:mamiya-script",
-          "file": "previews/mamiya/mamiya-logo.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 729,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/mamiya/mamiya-script.webp",
-          "sha256": "e6819cfbf614cfe07e2c3775feadf6930ead69c289d327a26c29a7c2516ed897",
-          "actualWidth": 512,
-          "actualHeight": 137
         }
       ]
     },
@@ -9527,105 +7665,6 @@
       ]
     },
     {
-      "id": "polaroid-bars",
-      "brandKey": "polaroid",
-      "name": "Polaroid bars emblem",
-      "era": "classic",
-      "years": "1990s–2000s",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "polaroid-bars",
-      "cuts": [
-        {
-          "id": "polaroid-bars",
-          "assetKey": "ver:polaroid:polaroid-bars",
-          "file": "previews/polaroid/polaroid-2.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 630,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/polaroid/polaroid-bars.webp",
-          "sha256": "f1dafbeadde44cfdaa5fa27748eafbef3e5f8dae05f7cd585a3b8e28488a2d06",
-          "actualWidth": 512,
-          "actualHeight": 86
-        }
-      ]
-    },
-    {
-      "id": "polaroid-legacy-black",
-      "brandKey": "polaroid",
-      "name": "Polaroid Black",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "polaroid_black",
-      "cuts": [
-        {
-          "id": "polaroid_black",
-          "assetKey": "polaroid_black",
-          "file": "polaroid_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1620,
-          "declaredHeight": 287,
-          "resolvedPath": "src/renderer/src/assets/logos/polaroid_black.webp",
-          "sha256": "b41618f0ad972fdb7ddfe3eb2f89265dad49fdf44074728ab69a4bcaaf1ad9f7",
-          "actualWidth": 1620,
-          "actualHeight": 287
-        },
-        {
-          "id": "polaroid_white",
-          "assetKey": "polaroid_white",
-          "file": "polaroid_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1620,
-          "declaredHeight": 287,
-          "resolvedPath": "src/renderer/src/assets/logos/polaroid_white.webp",
-          "sha256": "073b10ea6b0b5096de283dcd242ae1d4e7e73155ffa9680955ab5b9fbee63182",
-          "actualWidth": 1620,
-          "actualHeight": 287
-        }
-      ]
-    },
-    {
-      "id": "polaroid-spectrum",
-      "brandKey": "polaroid",
-      "name": "Polaroid spectrum + wordmark",
-      "era": "current",
-      "years": "2020–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "polaroid-spectrum",
-      "cuts": [
-        {
-          "id": "polaroid-spectrum",
-          "assetKey": "ver:polaroid:polaroid-spectrum",
-          "file": "previews/polaroid/polaroid.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 608,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/polaroid/polaroid-spectrum.webp",
-          "sha256": "b8eccf6fa7c3329e6282a84b51957f299423cd47932809ad8cc685aa4c56941b",
-          "actualWidth": 512,
-          "actualHeight": 86
-        }
-      ]
-    },
-    {
       "id": "agfa-2",
       "brandKey": "agfa",
       "name": "Agfa 2",
@@ -9721,34 +7760,6 @@
           "sha256": "f4e97f828315404a7ae089152863b00d0eca08176042a73d1564b8a79e2b6604",
           "actualWidth": 1620,
           "actualHeight": 399
-        }
-      ]
-    },
-    {
-      "id": "agfa-mono",
-      "brandKey": "agfa",
-      "name": "AGFA + rhombus (mono)",
-      "era": "current",
-      "years": "2000s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "agfa-mono",
-      "cuts": [
-        {
-          "id": "agfa-mono",
-          "assetKey": "ver:agfa:agfa-mono",
-          "file": "previews/agfa/agfa-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 536,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/agfa/agfa-mono.webp",
-          "sha256": "754f61fe6cdcd7a83984da3343ed2d3d7bfddda8fe2c2cd9138b2f9e851a16f7",
-          "actualWidth": 512,
-          "actualHeight": 114
         }
       ]
     },
@@ -10181,34 +8192,6 @@
       ]
     },
     {
-      "id": "alpa-blue",
-      "brandKey": "alpa",
-      "name": "Alpa italic wordmark",
-      "era": "current",
-      "years": "1990s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "alpa-blue",
-      "cuts": [
-        {
-          "id": "alpa-blue",
-          "assetKey": "ver:alpa:alpa-blue",
-          "file": "previews/alpa/alpa.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 659,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/alpa/alpa-blue.webp",
-          "sha256": "08422a324777893775ceede662ee880e81666518d9e0f890280549abde66eff1",
-          "actualWidth": 512,
-          "actualHeight": 141
-        }
-      ]
-    },
-    {
       "id": "alpa-legacy-black",
       "brandKey": "alpa",
       "name": "Alpa Black",
@@ -10248,77 +8231,6 @@
           "sha256": "2312493423a352c4c8f5da66de0dbff7c6a5b555e25bba4f17fdde8e0bb689ea",
           "actualWidth": 1620,
           "actualHeight": 459
-        }
-      ]
-    },
-    {
-      "id": "zenit-gap",
-      "brandKey": "zenit",
-      "name": "Zenit",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "zenit-gap",
-      "cuts": [
-        {
-          "id": "zenit-gap",
-          "assetKey": "ver:zenit:zenit-gap",
-          "file": "previews/zenit/zenit.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 2294,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/zenit/zenit-gap.webp",
-          "sha256": "22d389b6c0b4d7f8b321db74775ec0638e06e467f820d6252f09c477ac4d0dae",
-          "actualWidth": 512,
-          "actualHeight": 489
-        }
-      ]
-    },
-    {
-      "id": "zenit-legacy-black",
-      "brandKey": "zenit",
-      "name": "Zenit Black",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "zenit_black",
-      "cuts": [
-        {
-          "id": "zenit_black",
-          "assetKey": "zenit_black",
-          "file": "zenit_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 857,
-          "declaredHeight": 820,
-          "resolvedPath": "src/renderer/src/assets/logos/zenit_black.webp",
-          "sha256": "88045faaeb58637260f0242ba3fe476635c0a65dd968b0b5b6063c67ab5c85aa",
-          "actualWidth": 857,
-          "actualHeight": 820
-        },
-        {
-          "id": "zenit_white",
-          "assetKey": "zenit_white",
-          "file": "zenit_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 857,
-          "declaredHeight": 820,
-          "resolvedPath": "src/renderer/src/assets/logos/zenit_white.webp",
-          "sha256": "cc4e80c8664c412279ea6e65665da8b68b3830c14099019e529f538801637538",
-          "actualWidth": 857,
-          "actualHeight": 820
         }
       ]
     },
@@ -10564,34 +8476,6 @@
       ]
     },
     {
-      "id": "casio-blue",
-      "brandKey": "casio",
-      "name": "CASIO blue wordmark",
-      "era": "current",
-      "years": "1990s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "casio-blue",
-      "cuts": [
-        {
-          "id": "casio-blue",
-          "assetKey": "ver:casio:casio-blue",
-          "file": "previews/casio/casio.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 638,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/casio/casio-blue.webp",
-          "sha256": "afe22c231400d6e7eda721de38e63db289444934b827112d1be09d0325087c27",
-          "actualWidth": 512,
-          "actualHeight": 97
-        }
-      ]
-    },
-    {
       "id": "casio-legacy-black",
       "brandKey": "casio",
       "name": "Casio Black",
@@ -10631,62 +8515,6 @@
           "sha256": "5bfd91995288a1f474d7843c6d6d2e65d037066ec54e8ec5e67263b2ab00ee1f",
           "actualWidth": 1620,
           "actualHeight": 321
-        }
-      ]
-    },
-    {
-      "id": "casio-mono",
-      "brandKey": "casio",
-      "name": "CASIO black wordmark",
-      "era": "current",
-      "years": "1990s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "casio-mono",
-      "cuts": [
-        {
-          "id": "casio-mono",
-          "assetKey": "ver:casio:casio-mono",
-          "file": "previews/casio/casio-logo.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 430,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/casio/casio-mono.webp",
-          "sha256": "55b6bfaa9d51efcb19c566a6510939df4162ebfe98e0f2995b950df60488183d",
-          "actualWidth": 512,
-          "actualHeight": 92
-        }
-      ]
-    },
-    {
-      "id": "cosina-blue",
-      "brandKey": "cosina",
-      "name": "COSINA + icon",
-      "era": "current",
-      "years": "2010s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "cosina-blue",
-      "cuts": [
-        {
-          "id": "cosina-blue",
-          "assetKey": "ver:cosina:cosina-blue",
-          "file": "previews/cosina/cosina-logo.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1298,
-          "declaredHeight": 298,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/cosina/cosina-blue.webp",
-          "sha256": "e01d0c189b02127a65674a546768e41d18cdcaacc5f8b93f78b7f5f07a4f0153",
-          "actualWidth": 512,
-          "actualHeight": 118
         }
       ]
     },
@@ -11046,34 +8874,6 @@
       ]
     },
     {
-      "id": "sigma-legacy-black",
-      "brandKey": "sigma",
-      "name": "SIGMA black wordmark (wide)",
-      "era": "historical",
-      "years": "pre-2025",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "sigma-legacy-black",
-      "cuts": [
-        {
-          "id": "sigma-legacy-black",
-          "assetKey": "ver:sigma:sigma-legacy-black",
-          "file": "previews/sigma/sigma-corporation.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 511,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/sigma/sigma-legacy-black.webp",
-          "sha256": "4400290638749cde9f39564b070b211e9cad32727e30e6f06d542eb581c9f9b2",
-          "actualWidth": 512,
-          "actualHeight": 109
-        }
-      ]
-    },
-    {
       "id": "sigma-legacy-red",
       "brandKey": "sigma",
       "name": "SIGMA red wordmark",
@@ -11173,34 +8973,6 @@
       ]
     },
     {
-      "id": "tamron-blue",
-      "brandKey": "tamron",
-      "name": "TAMRON blue wordmark",
-      "era": "current",
-      "years": "2019–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "tamron-blue",
-      "cuts": [
-        {
-          "id": "tamron-blue",
-          "assetKey": "ver:tamron:tamron-blue",
-          "file": "previews/tamron/tamron-logo-2019.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1966,
-          "declaredHeight": 274,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/tamron/tamron-blue.webp",
-          "sha256": "922d84cad5d8610f1c0fbe34424ac6ea8fe82d4149816ec4cc1bcf40656bd9a0",
-          "actualWidth": 512,
-          "actualHeight": 79
-        }
-      ]
-    },
-    {
       "id": "tamron-logo",
       "brandKey": "tamron",
       "name": "Tamron Logo",
@@ -11253,34 +9025,6 @@
           "sha256": "84fa354bf219ef49d975b2b128f1edad2a8ce0dd98c4dd72133d1b9480776add",
           "actualWidth": 512,
           "actualHeight": 138
-        }
-      ]
-    },
-    {
-      "id": "tokina-blue",
-      "brandKey": "tokina",
-      "name": "Tokina blue wordmark",
-      "era": "current",
-      "years": "2010s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "tokina-blue",
-      "cuts": [
-        {
-          "id": "tokina-blue",
-          "assetKey": "ver:tokina:tokina-blue",
-          "file": "previews/tokina/tokina-logo.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 360,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/tokina/tokina-blue.webp",
-          "sha256": "cd64a75ded929ab30df3ffbdf24c0c8555706e2df32db510c3e92a17080d776f",
-          "actualWidth": 512,
-          "actualHeight": 77
         }
       ]
     },
@@ -11498,105 +9242,6 @@
       ]
     },
     {
-      "id": "gopro-mono",
-      "brandKey": "gopro",
-      "name": "GoPro mono + squares",
-      "era": "current",
-      "years": "2018–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "gopro-mono",
-      "cuts": [
-        {
-          "id": "gopro-mono",
-          "assetKey": "gopro_black",
-          "file": "gopro_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1620,
-          "declaredHeight": 473,
-          "resolvedPath": "src/renderer/src/assets/logos/gopro_black.webp",
-          "sha256": "b9847cb3f09d4f63ffb220a96f94d9380a282223eaf38275613802d38dabb1af",
-          "actualWidth": 1620,
-          "actualHeight": 473
-        },
-        {
-          "id": "gopro_white",
-          "assetKey": "gopro_white",
-          "file": "gopro_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1620,
-          "declaredHeight": 473,
-          "resolvedPath": "src/renderer/src/assets/logos/gopro_white.webp",
-          "sha256": "72d99defee3c9d68f0c4ad8ac67a725fa478cb94cc9cde37a4139d58b615a89d",
-          "actualWidth": 1620,
-          "actualHeight": 473
-        }
-      ]
-    },
-    {
-      "id": "arri-62359",
-      "brandKey": "arri",
-      "name": "Arri 62359",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "arri-62359",
-      "cuts": [
-        {
-          "id": "arri-62359",
-          "assetKey": "ver:arri:arri-62359",
-          "file": "previews/arri/arri-62359.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 852,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/arri/arri-62359.webp",
-          "sha256": "b6e5618cf7826e7789da5828304efa450e1828a8eda838fbc3450e81d70dcf31",
-          "actualWidth": 512,
-          "actualHeight": 182
-        }
-      ]
-    },
-    {
-      "id": "arri-blue",
-      "brandKey": "arri",
-      "name": "ARRI blue wordmark",
-      "era": "current",
-      "years": "2010s–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "arri-blue",
-      "cuts": [
-        {
-          "id": "arri-blue",
-          "assetKey": "ver:arri:arri-blue",
-          "file": "previews/arri/arri.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 852,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/arri/arri-blue.webp",
-          "sha256": "76473ea22badc638998ba8996d47ed52f5e3ea71c3df46523f0fb0190e6616f6",
-          "actualWidth": 512,
-          "actualHeight": 147
-        }
-      ]
-    },
-    {
       "id": "arri-legacy-black",
       "brandKey": "arri",
       "name": "Arri Black",
@@ -11735,34 +9380,6 @@
           "sha256": "9c3371aac77ddf17d2c75312e40a0a1e17ee4dabd3c5d2914bee501c3029e046",
           "actualWidth": 510,
           "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "nokia-2023",
-      "brandKey": "nokia",
-      "name": "NOKIA 2023 wordmark",
-      "era": "current",
-      "years": "2023–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "nokia-2023",
-      "cuts": [
-        {
-          "id": "nokia-2023",
-          "assetKey": "ver:nokia:nokia-2023",
-          "file": "previews/nokia/official-nokia-2023.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1200,
-          "declaredHeight": 282,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/nokia/nokia-2023.webp",
-          "sha256": "d6bffb781b8a4fd9ffca30b670d1aa53da5e165c81424e1d7c5d131dc3b525ff",
-          "actualWidth": 512,
-          "actualHeight": 120
         }
       ]
     },
@@ -12118,34 +9735,6 @@
       ]
     },
     {
-      "id": "motorola-2016",
-      "brandKey": "motorola",
-      "name": "batwing + motorola lowercase",
-      "era": "current",
-      "years": "2016–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "motorola-2016",
-      "cuts": [
-        {
-          "id": "motorola-2016",
-          "assetKey": "ver:motorola:motorola-2016",
-          "file": "previews/motorola/motorola-new-logo.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 550,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/motorola/motorola-2016.webp",
-          "sha256": "378ef19e4cfdb836e84ddf492c1a2239a2119682464afadb779e8aef98371b13",
-          "actualWidth": 512,
-          "actualHeight": 117
-        }
-      ]
-    },
-    {
       "id": "motorola-3",
       "brandKey": "motorola",
       "name": "Motorola 3",
@@ -12310,34 +9899,6 @@
           "sha256": "d51d351f7fc0af27dc505ddff41cb201d212531a951bf7d40f8016ae505d4db0",
           "actualWidth": 512,
           "actualHeight": 99
-        }
-      ]
-    },
-    {
-      "id": "motorola-classic",
-      "brandKey": "motorola",
-      "name": "Circle batwing + MOTOROLA",
-      "era": "classic",
-      "years": "1955–2013",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "motorola-classic",
-      "cuts": [
-        {
-          "id": "motorola-classic",
-          "assetKey": "ver:motorola:motorola-classic",
-          "file": "previews/motorola/motorola-6.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2278,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/motorola/motorola-classic.webp",
-          "sha256": "76b9fa7c542390db1c1e3329e76ff210102a788afe64d4ddb1f17fb3715e14ce",
-          "actualWidth": 448,
-          "actualHeight": 512
         }
       ]
     },
@@ -12826,77 +10387,6 @@
       ]
     },
     {
-      "id": "apple-mono",
-      "brandKey": "apple",
-      "name": "Apple mono mark",
-      "era": "current",
-      "years": "1998–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "apple-mono",
-      "cuts": [
-        {
-          "id": "apple-mono",
-          "assetKey": "apple_black",
-          "file": "apple_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 840,
-          "declaredHeight": 1024,
-          "resolvedPath": "src/renderer/src/assets/logos/apple_black.webp",
-          "sha256": "05da1ffc16a8520fe4b06822a9bead40923c95f52739ca2bf779261c3945f304",
-          "actualWidth": 840,
-          "actualHeight": 1024
-        },
-        {
-          "id": "apple_white",
-          "assetKey": "apple_white",
-          "file": "apple_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 840,
-          "declaredHeight": 1024,
-          "resolvedPath": "src/renderer/src/assets/logos/apple_white.webp",
-          "sha256": "c2e28c91713ea90911bd3f1edbbb30002abc061346ba7a49d73161f90cc90778",
-          "actualWidth": 840,
-          "actualHeight": 1024
-        }
-      ]
-    },
-    {
-      "id": "apple-rainbow",
-      "brandKey": "apple",
-      "name": "Rainbow Apple",
-      "era": "historical",
-      "years": "1977–1998",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "apple-rainbow",
-      "cuts": [
-        {
-          "id": "apple-rainbow",
-          "assetKey": "ver:apple:apple-rainbow",
-          "file": "previews/apple/apple-computer-rainbow.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2668,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/apple/apple-rainbow.webp",
-          "sha256": "cce7d08e7d3e3a701e96833c3affdae165950b221bf62f8ea1251bc71c49f200",
-          "actualWidth": 461,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
       "id": "huawei-1",
       "brandKey": "huawei",
       "name": "Huawei 1",
@@ -13024,34 +10514,6 @@
       ]
     },
     {
-      "id": "huawei-mono",
-      "brandKey": "huawei",
-      "name": "Huawei mono",
-      "era": "current",
-      "years": "2006–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "huawei-mono",
-      "cuts": [
-        {
-          "id": "huawei-mono",
-          "assetKey": "ver:huawei:huawei-mono",
-          "file": "previews/huawei/huawei-black.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2445,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/huawei/huawei-mono.webp",
-          "sha256": "ac8f2518b2923cf07d09c281ccb5fbf8794eee7e02582d4f1856f5a6a7e98965",
-          "actualWidth": 503,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
       "id": "huawei-red",
       "brandKey": "huawei",
       "name": "Huawei petals + wordmark",
@@ -13119,62 +10581,6 @@
           "sha256": "7928a71817cd1bc0f56e8fa0b36a5d68246b83fd1fe485d29a441ae51513d3aa",
           "actualWidth": 1024,
           "actualHeight": 1024
-        }
-      ]
-    },
-    {
-      "id": "xiaomi-2011",
-      "brandKey": "xiaomi",
-      "name": "mi orange square",
-      "era": "historical",
-      "years": "2011–2021",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "xiaomi-2011",
-      "cuts": [
-        {
-          "id": "xiaomi-2011",
-          "assetKey": "ver:xiaomi:xiaomi-2011",
-          "file": "previews/xiaomi/xiaomi-logo-2.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/xiaomi/xiaomi-2011.webp",
-          "sha256": "0ba97891ccc27aaaaea47647b7db55b0721500a2f8df74f1f42efb03e4b0555d",
-          "actualWidth": 512,
-          "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "xiaomi-2021",
-      "brandKey": "xiaomi",
-      "name": "mi square + Xiaomi wordmark",
-      "era": "current",
-      "years": "2021–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "xiaomi-2021",
-      "cuts": [
-        {
-          "id": "xiaomi-2021",
-          "assetKey": "ver:xiaomi:xiaomi-2021",
-          "file": "previews/xiaomi/xiaomi-1.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 679,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/xiaomi/xiaomi-2021.webp",
-          "sha256": "6f6c26cd4f4c6205ac94cf7abfecac056980e6a67f9ebf659f46fcfbb16209ed",
-          "actualWidth": 512,
-          "actualHeight": 145
         }
       ]
     },
@@ -13362,34 +10768,6 @@
       ]
     },
     {
-      "id": "vivo-blue",
-      "brandKey": "vivo",
-      "name": "vivo blue wordmark",
-      "era": "current",
-      "years": "2019–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "vivo-blue",
-      "cuts": [
-        {
-          "id": "vivo-blue",
-          "assetKey": "ver:vivo:vivo-blue",
-          "file": "previews/vivo/vivo-2.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 666,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/vivo/vivo-blue.webp",
-          "sha256": "81e49745f9e3c2e47acfe0b3eea1ffa6fc14ddf804807415ccb46347c05c9380",
-          "actualWidth": 512,
-          "actualHeight": 142
-        }
-      ]
-    },
-    {
       "id": "vivo-legacy-black",
       "brandKey": "vivo",
       "name": "Vivo Black",
@@ -13573,49 +10951,6 @@
       ]
     },
     {
-      "id": "honor-uppercase",
-      "brandKey": "honor",
-      "name": "HONOR uppercase wordmark",
-      "era": "current",
-      "years": "2019–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "honor-uppercase",
-      "cuts": [
-        {
-          "id": "honor-uppercase",
-          "assetKey": "honor_black",
-          "file": "honor_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 198,
-          "resolvedPath": "src/renderer/src/assets/logos/honor_black.webp",
-          "sha256": "7c2497e9e3ab8a88d0aa8066037d43931bb128fe3ea4898d55f38af63bf13547",
-          "actualWidth": 1024,
-          "actualHeight": 198
-        },
-        {
-          "id": "honor_white",
-          "assetKey": "honor_white",
-          "file": "honor_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 198,
-          "resolvedPath": "src/renderer/src/assets/logos/honor_white.webp",
-          "sha256": "1b366607d657a8cbf100c06898aa7b62974bb885d38ee03739b1e9d5c0ac63d9",
-          "actualWidth": 1024,
-          "actualHeight": 198
-        }
-      ]
-    },
-    {
       "id": "samsung-2",
       "brandKey": "samsung",
       "name": "Samsung 2",
@@ -13728,77 +11063,6 @@
       ]
     },
     {
-      "id": "samsung-blue",
-      "brandKey": "samsung",
-      "name": "SAMSUNG blue wordmark",
-      "era": "current",
-      "years": "1993–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "samsung-blue",
-      "cuts": [
-        {
-          "id": "samsung-blue",
-          "assetKey": "samsung_blue",
-          "file": "samsung_blue.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 159,
-          "resolvedPath": "src/renderer/src/assets/logos/samsung_blue.webp",
-          "sha256": "372325f476b0c78f979cd3e3f4e5458ca7b0d42db609eaa7539b16fe97e8ebe4",
-          "actualWidth": 1024,
-          "actualHeight": 159
-        }
-      ]
-    },
-    {
-      "id": "samsung-mono",
-      "brandKey": "samsung",
-      "name": "SAMSUNG black wordmark",
-      "era": "current",
-      "years": "1993–",
-      "selected": true,
-      "status": "READY",
-      "surface": "both",
-      "primaryCut": "samsung-mono",
-      "cuts": [
-        {
-          "id": "samsung-mono",
-          "assetKey": "samsung_black",
-          "file": "samsung_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 159,
-          "resolvedPath": "src/renderer/src/assets/logos/samsung_black.webp",
-          "sha256": "8924abf0255002fceb551445a6e47aa0e9d6c4db98aaf2fced6aa7d690fff445",
-          "actualWidth": 1024,
-          "actualHeight": 159
-        },
-        {
-          "id": "samsung_white",
-          "assetKey": "samsung_white",
-          "file": "samsung_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 159,
-          "resolvedPath": "src/renderer/src/assets/logos/samsung_white.webp",
-          "sha256": "3eae0dacbd552951a512dd7e687af25ac8116e81ee243e3958aaf8c2dca6bcbd",
-          "actualWidth": 1024,
-          "actualHeight": 159
-        }
-      ]
-    },
-    {
       "id": "samsung-oval",
       "brandKey": "samsung",
       "name": "SAMSUNG oval 'no limit'",
@@ -13870,34 +11134,6 @@
       ]
     },
     {
-      "id": "meizu-cyan",
-      "brandKey": "meizu",
-      "name": "MEIZU cyan wordmark",
-      "era": "current",
-      "years": "2015–",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "meizu-cyan",
-      "cuts": [
-        {
-          "id": "meizu-cyan",
-          "assetKey": "meizu_blue",
-          "file": "meizu_blue.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 1024,
-          "declaredHeight": 188,
-          "resolvedPath": "src/renderer/src/assets/logos/meizu_blue.webp",
-          "sha256": "a10062cf6b8f935e770c43a532b1761fa7d7c7f9d89b52447540a7fcb0996163",
-          "actualWidth": 1024,
-          "actualHeight": 188
-        }
-      ]
-    },
-    {
       "id": "meizu-legacy-black",
       "brandKey": "meizu",
       "name": "Meizu Black",
@@ -13937,34 +11173,6 @@
           "sha256": "fbb799f0816da23ef1ff1d72942038d15f3a33699a4493a058474a11140eb4da",
           "actualWidth": 1024,
           "actualHeight": 194
-        }
-      ]
-    },
-    {
-      "id": "oneplus-2014",
-      "brandKey": "yijia",
-      "name": "1+ emblem (2014)",
-      "era": "historical",
-      "years": "2014–2020",
-      "selected": true,
-      "status": "READY",
-      "surface": "light",
-      "primaryCut": "oneplus-2014",
-      "cuts": [
-        {
-          "id": "oneplus-2014",
-          "assetKey": "ver:yijia:oneplus-2014",
-          "file": "previews/yijia/oneplus-2.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "READY",
-          "confidence": "high",
-          "declaredWidth": 2400,
-          "declaredHeight": 2400,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/yijia/oneplus-2014.webp",
-          "sha256": "ad4e0e619465a3e2a672c1aff5bedde056cffe0a415d5d5df705b5d94671a319",
-          "actualWidth": 512,
-          "actualHeight": 512
         }
       ]
     },
@@ -19652,14 +16860,6 @@
       ]
     }
   ],
-  "unreferencedAppLogoFiles": [
-    "src/renderer/src/assets/logos/apple.webp",
-    "src/renderer/src/assets/logos/hassel_h_white.webp",
-    "src/renderer/src/assets/logos/hassel_wordmark_white.webp",
-    "src/renderer/src/assets/logos/logo.webp",
-    "src/renderer/src/assets/logos/logo_empty.webp",
-    "src/renderer/src/assets/logos/xiaomi_loing_black.webp",
-    "src/renderer/src/assets/logos/xiaomi_loing_white.webp"
-  ],
+  "unreferencedAppLogoFiles": [],
   "selectedVersionsWithoutResolvableCut": []
 }

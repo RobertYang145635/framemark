@@ -23,6 +23,12 @@ data class EngineLogo(
  * Resolves a selected catalog cut through the runtime's exact asset map. Legacy
  * brand-only values keep the older `<data>/logos/<brand>_<cut>.png` behavior.
  *
+ * A catalog cut whose `assetKey` is a brand key (`laika`, `agfa_red`, …) is a
+ * legitimate legacy cut: the exact map normally carries it, but when a stale
+ * runtime map does not, the brand-level PNG is still a correct fallback. Only
+ * `ver:` keys are strictly version-specific — they have no brand-level copy, so
+ * a missing map entry there stays a hard error (`FM-E-LOGO-001`).
+ *
  * The cut choice is deterministic: the brand's `black` cut first, then `white`,
  * then `color`, then the alphabetically first file. Picking a different brand must
  * change the render, and the same brand must always render the same way.
@@ -48,8 +54,15 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
             }
             return mapped.engineKey
         }
-        if (exactAssetKey || key.startsWith("ver:")) {
+        if (key.startsWith("ver:")) {
             throw EngineConfigException("FM-E-LOGO-001", "所选 Logo 版本未包含在当前运行时中", expectedPath = versionMapFile.absolutePath)
+        }
+        if (exactAssetKey && legacyFiles(key).isEmpty()) {
+            throw EngineConfigException(
+                "FM-E-LOGO-002",
+                "所选 Logo 版本的运行时图片缺失或损坏",
+                expectedPath = File(dir, "$key.png").absolutePath,
+            )
         }
         return key
     }
@@ -57,7 +70,7 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
     fun resolve(brandKey: String?, exactAssetKey: Boolean = false): EngineLogo? {
         val key = brandKey?.trim()?.takeIf { it.isNotEmpty() && !it.equals("auto", ignoreCase = true) } ?: return null
         val mapped = versionMap[key]
-        if ((exactAssetKey || key.startsWith("ver:")) && mapped == null) {
+        if (key.startsWith("ver:") && mapped == null) {
             throw EngineConfigException("FM-E-LOGO-001", "所选 Logo 版本未包含在当前运行时中", expectedPath = versionMapFile.absolutePath)
         }
         if (cache.containsKey(key)) return cache[key]
@@ -68,7 +81,19 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
                 expectedPath = File(dir, "${mapped.engineKey}.png").absolutePath,
             )
         } else {
-            runCatching { load(key) }.getOrNull()
+            // Brand-key catalog cuts fall back to the staged brand baseline; a
+            // plain brand value keeps the older "no asset -> engine auto-match"
+            // behaviour (exactAssetKey = false), while an exact catalog cut must
+            // fail loudly instead of quietly drawing another mark.
+            runCatching { load(key) }.getOrNull().also { resolved ->
+                if (resolved == null && exactAssetKey) {
+                    throw EngineConfigException(
+                        "FM-E-LOGO-002",
+                        "所选 Logo 版本的运行时图片缺失或损坏",
+                        expectedPath = File(dir, "$key.png").absolutePath,
+                    )
+                }
+            }
         }
         cache[key] = logo
         return logo
@@ -130,11 +155,14 @@ class LogoLibrary(val dir: File = File(RuntimePaths.layout().dataRoot, "logos"))
         }
     }
 
+    /** Brand-level PNGs whose stem is [key] or starts with it (legacy baseline layout). */
+    private fun legacyFiles(key: String): List<File> = dir.listFiles { f ->
+        f.isFile && f.name.lowercase().endsWith(".png") &&
+            (f.name.substringBeforeLast('.') == key || f.name.startsWith("$key"))
+    }?.sortedBy { it.name }.orEmpty()
+
     private fun load(key: String): EngineLogo? {
-        val files = dir.listFiles { f ->
-            f.isFile && f.name.lowercase().endsWith(".png") &&
-                (f.name.substringBeforeLast('.') == key || f.name.startsWith("$key"))
-        }?.sortedBy { it.name }.orEmpty()
+        val files = legacyFiles(key)
         if (files.isEmpty()) return null
         fun bySuffix(suffix: String) = files.firstOrNull { it.nameWithoutExtension.lowercase() == "$key$suffix" }
         val pick = bySuffix("_black") ?: bySuffix("_white") ?: bySuffix("_color") ?: files.first()

@@ -64,6 +64,35 @@ class LogoLibraryTest {
     }
 
     @Test
+    fun brand_key_cut_falls_back_to_the_brand_baseline_when_the_version_map_is_stale() = withRuntime { root, logos ->
+        val png = pngFixture()
+        Files.write(logos.resolve("laika_black.png"), png)
+        // A stale runtime map: the catalog knows the cut, the map does not.
+        writeMap(root, listOf(mapEntry("ver:other-cut", engineKey("ver:other-cut"), sha256(png))))
+
+        val library = LogoLibrary(logos.toFile())
+        val resolved = assertNotNull(library.resolve("laika", exactAssetKey = true))
+
+        assertEquals("laika_black", resolved.name)
+        assertEquals("laika", library.engineKey("laika", exactAssetKey = true))
+    }
+
+    @Test
+    fun brand_key_cut_without_any_runtime_bytes_is_a_structured_error() = withRuntime { root, logos ->
+        writeMap(root, listOf(mapEntry("ver:other-cut", engineKey("ver:other-cut"), "00".repeat(32))))
+
+        val resolveError = assertFailsWith<EngineConfigException> {
+            LogoLibrary(logos.toFile()).resolve("laika", exactAssetKey = true)
+        }
+        assertEquals("FM-E-LOGO-002", resolveError.code)
+
+        val keyError = assertFailsWith<EngineConfigException> {
+            LogoLibrary(logos.toFile()).engineKey("laika", exactAssetKey = true)
+        }
+        assertEquals("FM-E-LOGO-002", keyError.code)
+    }
+
+    @Test
     fun malformed_version_map_fails_closed() = withRuntime { root, logos ->
         Files.writeString(root.resolve("data/registry/logo-versions.json"), "{\"schema\":\"wrong\",\"entries\":[]}")
 
