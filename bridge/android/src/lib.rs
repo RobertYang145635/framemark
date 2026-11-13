@@ -20,6 +20,9 @@ mod text;
 // X1-ANDROID7: the desktop TIFF decoder (Skia has none), read-only reuse.
 #[path = "../../../engine/e5/src/tiffsrc.rs"]
 pub mod tiffsrc;
+// Interactive source decode, shared with the hand bridge (same `#[path]` reuse).
+#[path = "../../../engine/shared/photo_source.rs"]
+mod photo_source;
 
 mod paint;
 

@@ -1,9 +1,5 @@
 package com.framemark.native.theme
 
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.foundation.border
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -786,49 +782,6 @@ object FmNav {
     val labelSize = 11.sp
 }
 
-/**
- * Motion tokens. Targets come from U1a measurements (position 250–330 ms,
- * width +28 % mid-travel then ~250 ms relax, content crossfade ~200 ms, ink
- * 50–100 ms). Easings were *not* measured on the reference; the curves below are
- * FrameMark choices and are documented as such in `_research/native/U1.md`.
- */
-object FmMotion {
-    const val navPositionMs = 265
-    const val navPositionEasingX = 0.2f
-    const val navPositionEasingY = 0.0f
-    const val navPositionEasingZ = 0.0f
-    const val navPositionEasingW = 1.0f
-
-    val navPositionEasing = CubicBezierEasing(
-        navPositionEasingX,
-        navPositionEasingY,
-        navPositionEasingZ,
-        navPositionEasingW,
-    )
-
-    /** Peak width multiplier mid-travel (+28 %). */
-    const val navStretchPeak = 1.28f
-
-    /** Peak sample time inside the 520 ms stretch envelope. */
-    const val navStretchPeakAtMs = 130
-
-    /** Width dips slightly past nominal when the position lands (U1a: 237 vs 247). */
-    const val navStretchDip = 0.96f
-    const val navStretchDipAtMs = navPositionMs
-
-    /** Width envelope total: 265 ms travel + ~250 ms relax ≈ 515 ms. */
-    const val navStretchEndMs = 520
-
-    /** Ink swap (50–100 ms target). */
-    const val navInkMs = 80
-    val navInkEasing = FastOutSlowInEasing
-
-    /** Content crossfade (~200 ms target). */
-    const val contentCrossfadeMs = 200
-    val contentEasing = FastOutSlowInEasing
-
-    /** Stretch envelope segment easings (chosen, not measured). */
-    val stretchAttack = FastOutSlowInEasing
-    val stretchDip = LinearOutSlowInEasing
-    val stretchRelax = LinearEasing
-}
+// Motion tokens used to live here (the U1a nav numbers). They moved to `Motion.kt`,
+// which is now the single home for animation tokens; `FmMotion` is still the same
+// `com.framemark.native.theme` symbol, so no call site or import changed.

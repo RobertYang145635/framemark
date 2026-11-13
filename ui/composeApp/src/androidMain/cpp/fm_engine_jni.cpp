@@ -153,7 +153,8 @@ char *fm_render_hand(const char *cards_path, const char *card_id, const char *ha
                      const char *photo_override,
                      const char *overlay_path, float overlay_x, float overlay_y,
                      float overlay_w, float overlay_h, float overlay_opacity, float overlay_angle,
-                     const char *design_json, const char *out_png, int max_edge);
+                     const char *design_json, const char *out_png, int max_edge,
+                     int preview_source_edge);
 struct FmHandRgbaHandle;
 struct FmHandRgbaHandle *fm_render_hand_rgba(
     const char *cards_path, const char *card_id, const char *hand_dir,
@@ -265,12 +266,13 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderHand(
     jstring photo_override,
     jstring overlay_path, jfloat overlay_x, jfloat overlay_y, jfloat overlay_w,
     jfloat overlay_h, jfloat overlay_opacity, jfloat overlay_angle, jstring design_json,
-    jstring out_png, jint max_edge) {
+    jstring out_png, jint max_edge, jint preview_source_edge) {
 #ifndef FM_HAND_LINKED
   (void)cards_path; (void)card_id; (void)hand_dir; (void)fonts_dir;
   (void)extra_fonts_dir; (void)fallback_cjk; (void)photo_path; (void)photo_override; (void)overlay_path;
   (void)overlay_x; (void)overlay_y; (void)overlay_w; (void)overlay_h; (void)overlay_opacity;
   (void)overlay_angle; (void)design_json; (void)out_png; (void)max_edge;
+  (void)preview_source_edge;
   return env->NewStringUTF("hand engine not linked for this ABI");
 #else
   JStringUtf cards(env, cards_path), card(env, card_id), hand(env, hand_dir);
@@ -284,7 +286,8 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderHand(
   char *err = fm_render_hand(cards.get(), card.get(), hand.get(), fonts.get(), extra.get(),
                              fallback.get(), photo.get(), photo_ovr.get(), overlay.get(),
                              overlay_x, overlay_y, overlay_w, overlay_h, overlay_opacity,
-                             overlay_angle, design.get(), out.get(), max_edge);
+                             overlay_angle, design.get(), out.get(), max_edge,
+                             preview_source_edge);
   if (err == nullptr) return nullptr;
   jstring msg = env->NewStringUTF(err);
   fm_hand_free_string(err);

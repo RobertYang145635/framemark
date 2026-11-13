@@ -1,5 +1,7 @@
 package com.framemark.native.shell
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,7 +82,11 @@ import com.framemark.native.shell.phone.phoneToolsFor
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
+import com.framemark.native.theme.FmSpring
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmOverlayEnter
+import com.framemark.native.theme.fmOverlayExit
+import com.framemark.native.theme.fmSpringSpec
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.PhotoTray
@@ -486,8 +492,31 @@ fun PhoneEditorScreen(
         val halfLevel = maxOf(heights.sheet, levels?.half ?: heights.sheet).dp
         val snapHeights = listOf(compactLevel, halfLevel, expandedLevel)
         val draggedH = if (fullParameterPage) null else sheetDragPx?.let { with(density) { it.toDp() } }
-        val sheetHeight = if (fullParameterPage) maxHeight else {
-            draggedH ?: snapHeights[sheetLevel.coerceIn(0, snapHeights.lastIndex)]
+        // Sheet motion (motion spec §1): the *resting* height is animated, the dragged
+        // height never is. While the finger is down `sheetDragPx` is the height — an
+        // animation on the same property would turn 1:1 tracking into lag — so the
+        // animatable is snapped to the finger on every drag frame instead. That makes the
+        // release point the start of the settle; without it the sheet would jump back to
+        // the old stop and then animate to the new one.
+        val restingPx = with(density) {
+            snapHeights[sheetLevel.coerceIn(0, snapHeights.lastIndex)].toPx()
+        }
+        val settleSpec = fmSpringSpec<Float>(FmSpring.settle)
+        val sheetPx = remember { Animatable(restingPx) }
+        var sheetEverSettled by remember { mutableStateOf(false) }
+        LaunchedEffect(sheetDragPx) { sheetDragPx?.let { sheetPx.snapTo(it) } }
+        LaunchedEffect(restingPx, fullParameterPage) {
+            if (fullParameterPage) return@LaunchedEffect
+            if (!sheetEverSettled) {
+                // First composition only: land on the current stop, never replay it.
+                sheetPx.snapTo(restingPx)
+                sheetEverSettled = true
+            } else {
+                sheetPx.animateTo(restingPx, settleSpec)
+            }
+        }
+        val sheetHeight = if (fullParameterPage) maxHeight else with(density) {
+            (sheetDragPx ?: sheetPx.value).toDp()
         }
         val stageEstimate = (maxHeight - topBarH - stripH - toolBarH - sheetHeight).coerceAtLeast(0.dp)
         LaunchedEffect(small, maxHeight, sheetLevel, draggedH == null, tool, photosOpen, fullParameterPage) {
@@ -695,33 +724,53 @@ fun PhoneEditorScreen(
         // 打开 / 关闭都不改工具、不移动底板档位，选完字标只是把 cut 键写进设计，
         // 关掉就精确回到进来之前的那一页。
         val logoBrandControl = model?.controls?.firstOrNull { it.type == ControlType.Brand }
-        if (!focusMode && logoPickerOpen && logoBrandControl != null) {
-            PhoneLogoPickerOverlay(
-                appliedAssetKey = session.value(logoBrandControl) as? String ?: "",
-                onDismiss = { logoPickerOpen = false },
-                onApply = { assetKey ->
-                    session.set(logoBrandControl, assetKey)
-                    logoPickerOpen = false
-                },
-            )
+        // Motion spec §4: the overlay fades its scrim in and lifts the panel, and the exit
+        // is shorter than the entrance. `AnimatedVisibility` keeps the layer composed while
+        // it leaves, so the content re-checks its own precondition instead of assuming the
+        // control is still there (switching tool closes the picker).
+        val overlayEnter = fmOverlayEnter()
+        val overlayExit = fmOverlayExit()
+        AnimatedVisibility(
+            visible = !focusMode && logoPickerOpen && logoBrandControl != null,
+            enter = overlayEnter,
+            exit = overlayExit,
+        ) {
+            val control = logoBrandControl
+            if (control != null) {
+                PhoneLogoPickerOverlay(
+                    appliedAssetKey = session.value(control) as? String ?: "",
+                    onDismiss = { logoPickerOpen = false },
+                    onApply = { assetKey ->
+                        session.set(control, assetKey)
+                        logoPickerOpen = false
+                    },
+                )
+            }
         }
         // 边框库覆盖层：和品牌选择器同一层、同一套呈现（遮罩 + 0.88 高的圆角底部面板）。
         // 点一张卡就是应用（走同一个 `pickBorder`）并关闭，所以回到的是面板——上面
         // 已经是新的那一张；遮罩 / 返回 / 系统返回是取消，什么都不改。
         val borderOverlayIndex = libraryIndex
-        if (!focusMode && borderLibraryOpen && borderOverlayIndex != null) {
-            PhoneBorderLibraryOverlay(
-                index = borderOverlayIndex,
-                appliedCard = card,
-                categoryKey = borderCategory,
-                onCategoryChange = { borderCategory = it },
-                query = borderQuery,
-                onQueryChange = { borderQuery = it },
-                inUse = inUseCardIds,
-                recent = recentFrames,
-                onApply = ::pickBorder,
-                onDismiss = { borderLibraryOpen = false },
-            )
+        AnimatedVisibility(
+            visible = !focusMode && borderLibraryOpen && borderOverlayIndex != null,
+            enter = overlayEnter,
+            exit = overlayExit,
+        ) {
+            val openIndex = borderOverlayIndex
+            if (openIndex != null) {
+                PhoneBorderLibraryOverlay(
+                    index = openIndex,
+                    appliedCard = card,
+                    categoryKey = borderCategory,
+                    onCategoryChange = { borderCategory = it },
+                    query = borderQuery,
+                    onQueryChange = { borderQuery = it },
+                    inUse = inUseCardIds,
+                    recent = recentFrames,
+                    onApply = ::pickBorder,
+                    onDismiss = { borderLibraryOpen = false },
+                )
+            }
         }
     }
 

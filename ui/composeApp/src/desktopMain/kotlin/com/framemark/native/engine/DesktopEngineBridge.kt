@@ -270,13 +270,15 @@ class DesktopEngineBridge(
                 // here avoids allocating and encoding a full-resolution raw canvas.
                 argv += listOf("--preview-max-edge", maxEdge.toString())
                 FmLog.info("FM_ENGINE_PREVIEW_SIZE") { "card=$cardId maxEdge=$maxEdge" }
-                // Interactive tier: the e2b worker decodes the photo at ~2x the
+                // Interactive tier: the engine decodes the photo at ~2x the
                 // preview canvas instead of full resolution. The canvas, layout,
                 // crop, logo and watermark geometry are unchanged (the engine
                 // keeps solving in full-resolution photo pixels); only the
-                // sampled pixels are smaller. Hand templates have their own
-                // canvas-scaled path and do not take this flag.
-                if (interactive && card.backend == "ir") {
+                // sampled pixels are smaller. Both backends take the flag: the IR
+                // renderer decodes the photo through the codec, the hand renderer
+                // decodes it and scales the canvas, so each one gets the same
+                // pure edge request.
+                if (interactive) {
                     val sourceEdge = PreviewTier.sourceEdge(maxEdge)
                     argv += listOf("--preview-source-edge", sourceEdge.toString())
                     FmLog.info("FM_ENGINE_PREVIEW_SIZE") {

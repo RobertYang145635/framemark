@@ -201,7 +201,10 @@ val fitNative = mode == "export" && longEdge == null
                 interactive = interactive && mode == "preview",
             )
         } else {
-            val hand = renderHand(cardId, design, edge, png, overlay, overridePhoto, fitNative)
+            val hand = renderHand(
+                cardId, design, edge, png, overlay, overridePhoto, fitNative,
+                interactive = interactive && mode == "preview",
+            )
             note = hand.note
             hand.ms
         }
@@ -738,6 +741,7 @@ val fitNative = mode == "export" && longEdge == null
         overlay: OverlaySpec?,
         overridePhoto: String?,
         fitNative: Boolean,
+        interactive: Boolean,
     ): HandResult {
         val cards = data.handCardsJson ?: error("hand cards bundle missing")
         val selectedLogo = design.logoBrand
@@ -756,6 +760,11 @@ val fitNative = mode == "export" && longEdge == null
         // (when present) wins inside the engine. Empty keeps the bundled sample.
         val userPhoto = currentUserPhoto().orEmpty()
         val started = SystemClock.elapsedRealtime()
+        // Interactive tier: the engine may decode the source photo at ~2x the
+        // preview canvas instead of full resolution. The canvas, layout, crop,
+        // logo and watermark geometry are unchanged (the engine keeps solving in
+        // full-resolution photo pixels); only the sampled pixels are smaller. The
+        // edge request is the same pure decision the IR tier uses.
         fun call(useNative: Boolean, maxEdge: Int): String? = NativeEngineProbe.renderHand(
             cardsPath = cards,
             cardId = cardId,
@@ -775,6 +784,7 @@ val fitNative = mode == "export" && longEdge == null
             designJson = designJsonOf(design, useNative, selectedLogo),
             outPng = out.absolutePath,
             maxEdge = maxEdge,
+            previewSourceEdge = if (interactive) PreviewTier.sourceEdge(maxEdge) else 0,
         )
         var useNative = fitNative
         var maxEdge = edge

@@ -3,6 +3,7 @@
 
 use std::cell::RefCell;
 use std::path::Path;
+use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 use serde_json::json;
@@ -14,8 +15,20 @@ use crate::canvas::{Ctx2D, OverlaySpec};
 use crate::draw::{Env, Images, LayoutEnv};
 use crate::fonts::HandFonts;
 use crate::hand::{self, Card, Exif};
+use crate::photo_source::{self, DecodeReport, PhotoSource};
 use crate::report::Report;
 use crate::text::TextEngine;
+
+/// One decoded interactive source photo is enough for the stage: it renders one
+/// photo at a time and a drag alternates only between that photo's interactive and
+/// full decodes. The slot is process-wide because the JNI render may run on a pool
+/// thread, and it lives next to the renderer for the same reason the IR bridge's
+/// does (see `bridge/android/src/paint.rs`).
+static PHOTO_CACHE: OnceLock<Mutex<photo_source::PhotoCache>> = OnceLock::new();
+
+fn photo_cache() -> &'static Mutex<photo_source::PhotoCache> {
+    PHOTO_CACHE.get_or_init(|| Mutex::new(photo_source::PhotoCache::new(1)))
+}
 
 pub struct HandGeom {
     pub canvas: [i32; 2],
@@ -169,6 +182,37 @@ pub(crate) fn load_overlay(path: &Path) -> Result<Image, String> {
     load_image(path).map_err(|_| format!("overlay image decode failed: {}", path.display()))
 }
 
+/// The source photo for one frame.
+///
+/// `preview_source_edge <= 0` is today's full decode, untouched (final frames,
+/// exports, evidence renders). A positive edge asks for a bounded decode; the
+/// shared cache key is (path, length, mtime, source edge), so a drag never decodes
+/// twice and the full frame after a release is a different entry rather than an
+/// eviction. Layout keeps reading the photo's logical pixels either way.
+fn load_photo_source(
+    path: &Path,
+    preview_source_edge: i32,
+) -> Result<(PhotoSource, Option<DecodeReport>), String> {
+    let edge = preview_source_edge.max(0) as u32;
+    if edge == 0 {
+        return Ok((PhotoSource::full(load_image(path)?), None));
+    }
+    let mut cache = photo_cache()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    // Skia has no TIFF codec: those photos keep the engine's own full decode
+    // (which applies the TIFF orientation) instead of a bounded one.
+    let (photo, report) = photo_source::load_cached_photo(&mut cache, path, edge, &|bytes| {
+        let is_tiff = bytes.len() >= 4 && (&bytes[..4] == b"II*\0" || &bytes[..4] == b"MM\0*");
+        if is_tiff {
+            load_image(path).ok()
+        } else {
+            None
+        }
+    })?;
+    Ok((photo, Some(report)))
+}
+
 fn text_engine() -> TextEngine {
     let mut te = TextEngine::new();
     te.subpixel = true;
@@ -210,14 +254,16 @@ struct PassOut {
 
 /// One render of the card. `snap` is the native-fit contract (same as the
 /// desktop `set_photo_1to1`): every photo draw box is forced onto exactly that
-/// size, so the source pixels land 1:1.
+/// size, so the source pixels land 1:1. `photo` carries the interactive tier's
+/// raster/logical ratio: the draws sample the (possibly reduced) raster while
+/// every box, crop and report entry stays in the photo's logical pixels.
 #[allow(clippy::too_many_arguments)]
 fn draw_pass(
     card: &Card,
     design: &hand::Design,
     params: &hand::Params,
     exif: &Exif,
-    photo: &Image,
+    photo: &PhotoSource,
     images: &Images,
     fonts: &HandFonts,
     te: &TextEngine,
@@ -258,6 +304,9 @@ fn draw_pass(
         canvas.scale((scale, scale));
         let mut ctx = Ctx2D::new(canvas, &report_cell);
         ctx.set_photo_1to1(snap);
+        // Interactive tier: photo draws map their source rect into the decoded
+        // raster; layout, crop and the draw report stay logical.
+        ctx.set_photo_source(photo.scale, photo.logical_size());
         // render-v1 photo crop: the photo draws read the user's region so a pan
         // moves the cover slice inside the template's window (see hand::cover_src).
         ctx.set_user_crop(hand::UserCrop::read(params));
@@ -269,7 +318,7 @@ fn draw_pass(
             pw,
             ph,
             crop,
-            photo,
+            photo: &photo.image,
             exif,
             params,
             text: &design.text,
@@ -318,6 +367,7 @@ pub fn render_card(
     app_design: Option<&serde_json::Value>,
     out_png: &str,
     max_edge: i32,
+    preview_source_edge: i32,
 ) -> Result<HandRender, String> {
     let geom_path = format!("{out_png}.geom.json");
     render_card_impl(
@@ -333,6 +383,7 @@ pub fn render_card(
         Some(out_png),
         &geom_path,
         max_edge,
+        preview_source_edge,
     )
     .map(|product| product.render)
 }
@@ -375,6 +426,8 @@ pub fn render_card_rgba(
         None,
         geom_path,
         max_edge,
+        // Raw RGBA is the export path: it always keeps the full decode.
+        0,
     )?;
     let rgba = product
         .rgba
@@ -402,6 +455,11 @@ fn render_card_impl(
     out_png: Option<&str>,
     geom_path: &str,
     max_edge: i32,
+    // Interactive preview tier: the source photo may be decoded no larger than
+    // this long edge. 0 keeps the full-resolution decode (final frames, exports,
+    // evidence renders), so the flag alone decides which frame may change its
+    // sampled resolution.
+    preview_source_edge: i32,
 ) -> Result<CardRenderProduct, String> {
     let started = Instant::now();
     let cards = hand::load_cards(Path::new(cards_path))?;
@@ -438,8 +496,14 @@ fn render_card_impl(
         .ok_or_else(|| format!("template '{}' not in hand/templates.json", card.template_id))?;
     let mut params = hand::merge_params(&def.defaults_map(), &design.params);
 
-    let photo = load_image(photo_override.unwrap_or(&card.photo.path))?;
-    let (iw, ih) = (photo.width() as f32, photo.height() as f32);
+    let (photo_source, decode_report) =
+        load_photo_source(photo_override.unwrap_or(&card.photo.path), preview_source_edge)?;
+    if let Some(report) = decode_report {
+        note(&format!("fm_hand.decode {}", report.fields()));
+    }
+    // Layout reads the photo's *logical* pixels: a bounded interactive decode
+    // changes how many pixels are sampled, never the geometry that is solved.
+    let (iw, ih) = photo_source.logical_size();
     // A2: same semantics as the desktop `--fit native`: the photo keeps every
     // pixel and the canvas grows around it. The template ratio only applies when
     // the design did not ask for native fit.
@@ -554,7 +618,7 @@ fn render_card_impl(
             &design,
             &params,
             &exif,
-            &photo,
+            &photo_source,
             &images,
             &fonts,
             &te,
@@ -618,7 +682,7 @@ fn render_card_impl(
             &design,
             &params,
             &exif,
-            &photo,
+            &photo_source,
             &images,
             &fonts,
             &te,
@@ -670,7 +734,7 @@ fn render_card_impl(
                 &design,
                 &params,
                 &exif,
-                &photo,
+                &photo_source,
                 &images,
                 &fonts,
                 &te,

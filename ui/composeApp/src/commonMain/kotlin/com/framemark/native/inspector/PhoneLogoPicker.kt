@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -53,6 +53,7 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmRevealOnEnter
 import com.framemark.native.workflow.PrimaryButton
 import kotlinx.coroutines.launch
 
@@ -309,10 +310,13 @@ private fun PickerBrandsPage(
                 horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
                 verticalArrangement = Arrangement.spacedBy(FmSpacing.sm),
             ) {
-                items(brands, key = { it.key }) { brand ->
+                // 首屏载入（motion spec §8）：前 12 个格子错开 28 ms 淡入上浮，之后直接
+                // 就位。错开是**上限**而不是每格都等：一屏 61 个品牌时最后一行不该等 1.7 s。
+                itemsIndexed(brands, key = { _, brand -> brand.key }) { index, brand ->
                     PickerBrandCell(
                         brand = brand,
                         applied = brand.key == appliedBrandKey,
+                        revealIndex = index,
                         onClick = { onBrand(brand) },
                     )
                 }
@@ -463,12 +467,19 @@ private fun PickerCategoryRow(
 
 /** 品牌格：标志位 + 名称（有中文名的品牌两行都显示）。 */
 @Composable
-private fun PickerBrandCell(brand: LogoBrand, applied: Boolean, onClick: () -> Unit) {
+private fun PickerBrandCell(
+    brand: LogoBrand,
+    applied: Boolean,
+    onClick: () -> Unit,
+    /** 在网格里的位置，只用于首屏错开淡入；超过上限的格子直接显示。 */
+    revealIndex: Int = 0,
+) {
     val preview = rememberLogoPreview(brand.preview)
     val shape = RoundedCornerShape(FmRadii.card)
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .fmRevealOnEnter(revealIndex)
             .clip(shape)
             .background(if (applied) FmPalette.primarySoft else FmPalette.surface)
             .border(

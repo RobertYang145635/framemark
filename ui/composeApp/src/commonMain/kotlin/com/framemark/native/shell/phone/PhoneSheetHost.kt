@@ -1,5 +1,7 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,6 +60,8 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmContentEnter
+import com.framemark.native.theme.fmContentExit
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.PhotoTray
 import com.framemark.native.workflow.TextSlot
@@ -224,66 +228,79 @@ internal fun ColumnScope.PhoneSheetHost(
                                 },
                             )
                         }
-                        if (card == null && tool != EditorTool.Border) {
-                            PanelRequiresBorder(
-                                onOpenBorder = { onToolChange(EditorTool.Border) },
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                            )
-                        } else if (tool == EditorTool.Border) {
-                            // 边框页的落地态就是这块面板：当前边框 + 一个动作。库是盖在
-                            // 画布上的覆盖层（外壳画的），只有点这个动作才出现。
-                            PhoneBorderPanel(
-                                index = libraryIndex,
-                                card = card,
-                                onRetry = onRetryLibrary,
-                                onOpenLibrary = onOpenBorderLibrary,
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                            )
-                        } else {
-                            // 水印页只画参数行（图层 + 外观两组）；九宫格在画布上（StageArea 画的
-                            // `PhoneWatermarkAnchorLayer`），这里一个字段都不存。
-                            val photoAspect = previewGeo?.photoRect
-                                ?.takeIf { it.h > 0 }
-                                ?.let { it.w.toFloat() / it.h }
-                                ?: watermark?.photoAspect
-                                ?: 1.5f
-                            PhoneParameterPage(
-                                tab = phoneToolTab(tool, tabModel),
-                                page = toolPage ?: InspectorPage.Style,
-                                model = model,
-                                session = session,
-                                inspectorState = inspectorState,
-                                onRetry = onRetryInspector,
-                                textSlots = textSlots,
-                                textOutputWidth = textOutputWidth,
-                                textOutputHeight = textOutputHeight,
-                                onTextSlotFocus = { key ->
-                                    FmLog.info("FM_TEXT_FOCUS") { "key=$key tool=$tool" }
-                                    onFocusedTextSlotChange(key)
-                                },
-                                watermark = watermark,
-                                photoAspect = photoAspect,
-                                onWatermarkWidth = { width ->
-                                    watermark?.let { onWatermarkChange(it.copy(width = width)) }
-                                },
-                                onWatermarkOpacity = { opacity ->
-                                    watermark?.let { onWatermarkChange(it.copy(opacity = opacity)) }
-                                },
-                                onWatermarkPosition = { dx, dy ->
-                                    watermark?.let { onWatermarkChange(it.copy(dx = dx, dy = dy)) }
-                                },
-                                // AU2 A-11：手机与桌面共用同一个入口。
-                                onWatermarkRotation = { degrees ->
-                                    watermark?.let { onWatermarkChange(it.copy(rotation = degrees)) }
-                                },
-                                onPickWatermark = onPickWatermark,
-                                onClearWatermark = { onWatermarkChange(null) },
-                                onOpenBrandPicker = onOpenBrandPicker,
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                                card = card,
-                                photoWidthPx = photoWidthPx,
-                                photoHeightPx = photoHeightPx,
-                            )
+                        // 换页过渡（motion spec §2）：参数行和边框页共用同一条槽位，就地换
+                        // 内容，所以只做短淡入 + 极小的上移；容器不动，长位移会读成"从别处
+                        // 飞来的页面"。换页期间两边各画一次，所以过渡本身只能动 alpha/offset，
+                        // 不能动任何尺寸。
+                        val pageEnter = fmContentEnter()
+                        val pageExit = fmContentExit()
+                        AnimatedContent(
+                            targetState = tool,
+                            transitionSpec = { pageEnter togetherWith pageExit },
+                            label = "fm.sheet.page",
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                        ) { targetTool ->
+                            if (card == null && targetTool != EditorTool.Border) {
+                                PanelRequiresBorder(
+                                    onOpenBorder = { onToolChange(EditorTool.Border) },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else if (targetTool == EditorTool.Border) {
+                                // 边框页的落地态就是这块面板：当前边框 + 一个动作。库是盖在
+                                // 画布上的覆盖层（外壳画的），只有点这个动作才出现。
+                                PhoneBorderPanel(
+                                    index = libraryIndex,
+                                    card = card,
+                                    onRetry = onRetryLibrary,
+                                    onOpenLibrary = onOpenBorderLibrary,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            } else {
+                                // 水印页只画参数行（图层 + 外观两组）；九宫格在画布上（StageArea 画的
+                                // `PhoneWatermarkAnchorLayer`），这里一个字段都不存。
+                                val photoAspect = previewGeo?.photoRect
+                                    ?.takeIf { it.h > 0 }
+                                    ?.let { it.w.toFloat() / it.h }
+                                    ?: watermark?.photoAspect
+                                    ?: 1.5f
+                                PhoneParameterPage(
+                                    tab = phoneToolTab(targetTool, tabModel),
+                                    page = phoneToolPage(targetTool) ?: InspectorPage.Style,
+                                    model = model,
+                                    session = session,
+                                    inspectorState = inspectorState,
+                                    onRetry = onRetryInspector,
+                                    textSlots = textSlots,
+                                    textOutputWidth = textOutputWidth,
+                                    textOutputHeight = textOutputHeight,
+                                    onTextSlotFocus = { key ->
+                                        FmLog.info("FM_TEXT_FOCUS") { "key=$key tool=$targetTool" }
+                                        onFocusedTextSlotChange(key)
+                                    },
+                                    watermark = watermark,
+                                    photoAspect = photoAspect,
+                                    onWatermarkWidth = { width ->
+                                        watermark?.let { onWatermarkChange(it.copy(width = width)) }
+                                    },
+                                    onWatermarkOpacity = { opacity ->
+                                        watermark?.let { onWatermarkChange(it.copy(opacity = opacity)) }
+                                    },
+                                    onWatermarkPosition = { dx, dy ->
+                                        watermark?.let { onWatermarkChange(it.copy(dx = dx, dy = dy)) }
+                                    },
+                                    // AU2 A-11：手机与桌面共用同一个入口。
+                                    onWatermarkRotation = { degrees ->
+                                        watermark?.let { onWatermarkChange(it.copy(rotation = degrees)) }
+                                    },
+                                    onPickWatermark = onPickWatermark,
+                                    onClearWatermark = { onWatermarkChange(null) },
+                                    onOpenBrandPicker = onOpenBrandPicker,
+                                    modifier = Modifier.fillMaxSize(),
+                                    card = card,
+                                    photoWidthPx = photoWidthPx,
+                                    photoHeightPx = photoHeightPx,
+                                )
+                            }
                         }
                     }
                 }

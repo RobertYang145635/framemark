@@ -19,6 +19,10 @@ mod gpu;
 mod hand;
 mod jsval;
 mod lines;
+// Interactive source decode, shared with the Android bridges (read-only reuse,
+// same `#[path]` convention as the hand modules below).
+#[path = "../../shared/photo_source.rs"]
+mod photo_source;
 mod report;
 mod templates;
 mod text;
@@ -29,7 +33,8 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 thread_local! {
-    static PREVIEW_PHOTO: RefCell<Option<(PathBuf, Image)>> = const { RefCell::new(None) };
+    static PREVIEW_PHOTO: RefCell<photo_source::PhotoCache> =
+        RefCell::new(photo_source::PhotoCache::new(2));
     static PREVIEW_GPU: RefCell<Option<gpu::Gpu>> = const { RefCell::new(None) };
     static PREVIEW_TABLES: RefCell<Option<(PathBuf, hand::HandTables)>> = const { RefCell::new(None) };
     static PREVIEW_FONTS: RefCell<Option<(PathBuf, PathBuf, HandFonts)>> = const { RefCell::new(None) };
@@ -62,18 +67,25 @@ fn load_image(p: &Path) -> Result<Image, String> {
     Image::from_encoded(data).ok_or_else(|| format!("decode failed {}", p.display()))
 }
 
-/// Worker mode keeps the one active source photo decoded between requests.
-fn load_cached_photo(p: &Path) -> Result<Image, String> {
+/// Worker mode keeps the active source photos decoded between requests. The key
+/// is (path, length, mtime, requested source edge), so a photo replaced on disk is
+/// decoded again, and the full-quality frame after a drag does not throw away the
+/// interactive decode (nor the other way round). Two entries are kept — one full
+/// and one interactive — so repeated drags never re-decode.
+///
+/// The second return value is the evidence line's data (`e4hand.decode`): what was
+/// asked for, what the codec produced, and whether the cache served it.
+fn load_cached_photo(
+    p: &Path,
+    source_edge: u32,
+) -> Result<(photo_source::PhotoSource, photo_source::DecodeReport), String> {
     PREVIEW_PHOTO.with(|cell| {
-        let mut slot = cell.borrow_mut();
-        if let Some((cached_path, image)) = slot.as_ref() {
-            if cached_path == p {
-                return Ok(image.clone());
-            }
-        }
-        let image = load_image(p)?;
-        *slot = Some((p.to_path_buf(), image.clone()));
-        Ok(image)
+        photo_source::load_cached_photo(&mut cell.borrow_mut(), p, source_edge, &|_| {
+            // The desktop hand engine has no decoder for formats Skia's `Image`
+            // cannot open (TIFF), so this only ever reaches an error — the same
+            // error the loader produced before the shared decode existed.
+            None
+        })
     })
 }
 
@@ -613,7 +625,9 @@ fn fonttest(args: &[String]) -> Result<(), String> {
 
 /// Everything a render pass needs that does not depend on the fitted size.
 struct PassShared<'a> {
-    photo: &'a Image,
+    /// The decoded source photo plus its raster/logical ratio: layout keeps
+    /// solving in the photo's own pixels, only the sampled raster may be smaller.
+    photo: &'a photo_source::PhotoSource,
     exif: &'a Exif,
     params: &'a hand::Params,
     text: &'a hand::TextSettings,
@@ -649,6 +663,11 @@ fn render_pass(
     let pal_w = 48usize;
     let pal_h = (pal_w as f64 * (ph as f64 / pw as f64)).round().max(24.0) as usize;
     let palette_buf = if std::env::var("E4H_PALETTE_GPU").ok().as_deref() == Some("1") {
+        // The crop window is in the photo's logical pixels; the sample rect moves
+        // into the decoded raster (a no-op at full resolution).
+        let palette_src = sh
+            .photo
+            .src_rect(skia_safe::Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh));
         gpu.render_rgba8(pal_w as i32, pal_h as i32, |canvas| {
             canvas.clear(skia_safe::Color::TRANSPARENT);
             let mut p = skia_safe::Paint::default();
@@ -656,8 +675,8 @@ fn render_pass(
             let mut samp = skia_safe::SamplingOptions::default();
             samp.filter = skia_safe::FilterMode::Linear;
             canvas.draw_image_rect_with_sampling_options(
-                sh.photo,
-                Some((&skia_safe::Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh), skia_safe::canvas::SrcRectConstraint::Strict)),
+                &sh.photo.image,
+                Some((&palette_src, skia_safe::canvas::SrcRectConstraint::Strict)),
                 &skia_safe::Rect::from_xywh(0.0, 0.0, pal_w as f32, pal_h as f32),
                 samp,
                 &p,
@@ -675,6 +694,9 @@ fn render_pass(
             let mut ctx = Ctx2D::new(sk_canvas, report_cell);
             ctx.set_overlay(sh.overlay.clone());
             ctx.set_photo_1to1(snap);
+            // Interactive tier: photo draws map their source rect into the
+            // decoded raster; layout, crop and the draw report stay logical.
+            ctx.set_photo_source(sh.photo.scale, sh.photo.logical_size());
             // render-v1 photo crop: the draws need the user's region themselves
             // (a pan has to move the cover slice inside the template's window).
             ctx.set_user_crop(hand::UserCrop::read(sh.params));
@@ -685,7 +707,7 @@ fn render_pass(
                 pw,
                 ph,
                 crop,
-                photo: sh.photo,
+                photo: &sh.photo.image,
                 exif: sh.exif,
                 params: sh.params,
                 text: sh.text,
@@ -784,8 +806,20 @@ fn render(args: &[String]) -> Result<(), String> {
         let overridden = arg(args, "photo", "");
         if overridden.is_empty() { card.photo.path.clone() } else { std::path::PathBuf::from(&overridden) }
     };
-    let photo = load_cached_photo(&photo_src)?;
-    let (iw, ih) = (photo.width() as f32, photo.height() as f32);
+    // Interactive tier: decode the source photo no larger than this long edge.
+    // Absent/0 keeps the full-resolution decode (final frames and exports), so the
+    // flag alone decides which frame may change its sampled resolution.
+    let preview_source_edge = match arg(args, "preview-source-edge", "").trim() {
+        "" | "0" => 0,
+        raw => raw
+            .parse::<u32>()
+            .ok()
+            .filter(|edge| *edge > 0)
+            .ok_or_else(|| format!("--preview-source-edge must be a positive integer, got '{raw}'"))?,
+    };
+    let (photo_source, decode_report) = load_cached_photo(&photo_src, preview_source_edge)?;
+    println!("e4hand.decode {}", decode_report.fields());
+    let (iw, ih) = photo_source.logical_size();
     let crop = match fit {
         hand::FitMode::Design => hand::compute_crop(iw, ih, &design.ratio),
         hand::FitMode::Native => hand::crop_full(iw, ih),
@@ -865,7 +899,7 @@ fn render(args: &[String]) -> Result<(), String> {
     };
     let worker_gpu_ms = gpu_started.elapsed().as_millis();
     let shared = PassShared {
-        photo: &photo,
+        photo: &photo_source,
         exif: &exif,
         params: &params,
         text: &design.text,

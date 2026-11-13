@@ -231,9 +231,11 @@ pub fn draw_photo(
     if radius > 0.0 {
         ctx.clip_round_rect(x, y, w, h, radius);
     }
-    ctx.draw_image(
+    // The template's crop window is in the photo's logical pixels; the draw maps
+    // it into the decoded raster and keeps the logical rect in the report.
+    ctx.draw_photo_image(
         photo,
-        Some(src),
+        src,
         dst,
         image_sampling_at(crop.sw, crop.sh, dst),
         "photo",
@@ -266,7 +268,11 @@ pub fn draw_photo_cover(
     // `cover` slice inside the window the template chose. A user crop moves the
     // slice to its own source point (clamped inside that window), which is what
     // makes a pan visible at zoom 1; at the defaults this is the centred rect.
-    let (iw, ih) = (photo.width() as f32, photo.height() as f32);
+    // The cover math reads the photo's *logical* size, so a bounded interactive
+    // decode cannot move the slice it samples.
+    let (iw, ih) = ctx
+        .photo_logical()
+        .unwrap_or((photo.width() as f32, photo.height() as f32));
     let user = ctx.user_crop().unwrap_or_default();
     let src = crate::hand::cover_src(*crop, user, iw, ih, w, h);
     let (sx, sy, sw, sh) = (src[0], src[1], src[2], src[3]);
@@ -287,9 +293,9 @@ pub fn draw_photo_cover(
     if radius > 0.0 {
         ctx.clip_round_rect(x, y, w, h, radius);
     }
-    ctx.draw_image(
+    ctx.draw_photo_image(
         photo,
-        Some(Rect::from_xywh(sx, sy, sw, sh)),
+        Rect::from_xywh(sx, sy, sw, sh),
         Rect::from_xywh(x, y, w, h),
         image_sampling_at(sw, sh, Rect::from_xywh(x, y, w, h)),
         "photo",
@@ -1613,9 +1619,9 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
     let sy = crop.sy + (crop.sh - sh) / 2.0;
     let over = 1.12;
     if no_blur {
-        env.ctx.draw_image(
+        env.ctx.draw_photo_image(
             env.photo,
-            Some(Rect::from_xywh(sx, sy, sw, sh)),
+            Rect::from_xywh(sx, sy, sw, sh),
             Rect::from_xywh(
                 -w * (over - 1.0) / 2.0,
                 -h * (over - 1.0) / 2.0,
@@ -1639,6 +1645,7 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
         // a CSS blur filter. Canvas `filter: blur(Npx)` uses sigma = N.
         let small_iw = small_w.max(1.0) as i32;
         let small_ih = small_h.max(1.0) as i32;
+        let backdrop_src = env.ctx.photo_src_rect(Rect::from_xywh(sx, sy, sw, sh));
         let mut surface = crate::gpu::raster_surface(small_iw, small_ih);
         {
             let canvas = surface.canvas();
@@ -1648,7 +1655,7 @@ pub fn draw_blurred_backdrop(env: &mut Env, w: f32, h: f32, theme: &Theme, tint_
             canvas.draw_image_rect_with_sampling_options(
                 env.photo,
                 Some((
-                    &Rect::from_xywh(sx, sy, sw, sh),
+                    &backdrop_src,
                     skia_safe::canvas::SrcRectConstraint::Strict,
                 )),
                 &Rect::from_xywh(0.0, 0.0, small_w, small_h),
@@ -1704,6 +1711,7 @@ pub fn cover_temp_image(env: &Env, tmp_w: usize) -> (skia_safe::Image, f32, f32)
     let sh = th as f32 / scale;
     let sx = crop.sx + (crop.sw - sw) / 2.0;
     let sy = crop.sy + (crop.sh - sh) / 2.0;
+    let cover_src = env.ctx.photo_src_rect(Rect::from_xywh(sx, sy, sw, sh));
     let mut surface = crate::gpu::raster_surface(tw as i32, th as i32);
     {
         let canvas = surface.canvas();
@@ -1713,7 +1721,7 @@ pub fn cover_temp_image(env: &Env, tmp_w: usize) -> (skia_safe::Image, f32, f32)
         canvas.draw_image_rect_with_sampling_options(
             env.photo,
             Some((
-                &Rect::from_xywh(sx, sy, sw, sh),
+                &cover_src,
                 skia_safe::canvas::SrcRectConstraint::Strict,
             )),
             &Rect::from_xywh(0.0, 0.0, tw as f32, th as f32),
@@ -2142,12 +2150,12 @@ pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
         } else {
             env.photo
         };
+        let palette_src = env
+            .ctx
+            .photo_src_rect(Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh));
         canvas.draw_image_rect_with_sampling_options(
             img,
-            Some((
-                &Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh),
-                skia_safe::canvas::SrcRectConstraint::Strict,
-            )),
+            Some((&palette_src, skia_safe::canvas::SrcRectConstraint::Strict)),
             &Rect::from_xywh(0.0, 0.0, w as f32, h as f32),
             samp,
             &p,

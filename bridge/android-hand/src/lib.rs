@@ -27,6 +27,9 @@ mod report;
 mod templates;
 #[path = "../../../engine/e4-hand/src/text.rs"]
 mod text;
+// Interactive source decode, shared with the desktop engine and the IR bridge.
+#[path = "../../../engine/shared/photo_source.rs"]
+mod photo_source;
 // X1-ANDROID8: same desktop TIFF decoder the IR bridge uses.
 mod gpu;
 mod render;
@@ -144,6 +147,10 @@ pub extern "C" fn fm_render_hand(
     design_json: *const c_char,
     out_png: *const c_char,
     max_edge: i32,
+    // Interactive preview tier: decode the source photo no larger than this long
+    // edge. 0 keeps the full-resolution decode (final frames and exports), so the
+    // caller alone decides which frame may change its sampled resolution.
+    preview_source_edge: i32,
 ) -> *mut c_char {
     let result = guard_render("fm_render_hand", || {
         (|| -> Result<HandRender, String> {
@@ -199,6 +206,7 @@ pub extern "C" fn fm_render_hand(
                 app_design.as_ref(),
                 out,
                 max_edge,
+                preview_source_edge,
             )
         })()
     });

@@ -121,11 +121,17 @@ object NativeEngineProbe {
         designJson: String = "",
         outPng: String,
         maxEdge: Int,
+        /**
+         * Interactive preview tier: the engine may decode the source photo no
+         * larger than this long edge. 0 keeps the full-resolution decode (final
+         * frames, exports and evidence renders never ask for a reduced one).
+         */
+        previewSourceEdge: Int = 0,
     ): String? = runCatching {
         nativeRenderHand(
             cardsPath, cardId, handDir, fontsDir, extraFontsDir, fallbackCjk, photoPath, photoOverride,
             overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, overlayAngle, designJson,
-            outPng, maxEdge,
+            outPng, maxEdge, previewSourceEdge,
         )
     }.getOrElse { "hand engine call failed: ${it.message}" }
 
@@ -148,6 +154,7 @@ object NativeEngineProbe {
         designJson: String,
         outPng: String,
         maxEdge: Int,
+        previewSourceEdge: Int,
     ): String?
 
     /** Render and encode JPEG/WebP from the same RGBA raster in one native call. */

@@ -1,8 +1,12 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,12 +23,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -45,9 +54,14 @@ import com.framemark.native.shell.PhoneProjectRuntime
 import com.framemark.native.shell.desktop.DesktopLibraryThumb
 import com.framemark.native.shell.desktop.desktopActivePhotoPath
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.FmDuration
+import com.framemark.native.theme.FmEasing
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
+import com.framemark.native.theme.FmSpring
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmSpringSpec
+import com.framemark.native.theme.fmTweenSpec
 
 /**
  * Strip card width (report §7.5: 104 → 128 dp). The number itself lives in
@@ -87,40 +101,51 @@ fun PhoneBorderCard(
     val shape = RoundedCornerShape(FmRadii.tile)
     val ring = FmPalette.primary
     val ringSoft = FmPalette.ring
-    val tile: Modifier = if (selected) {
-        Modifier.drawBehind {
-            val extra = 5.dp.toPx()
-            drawRoundRect(
-                color = ringSoft,
-                topLeft = androidx.compose.ui.geometry.Offset(-extra, -extra),
-                size = androidx.compose.ui.geometry.Size(
-                    size.width + extra * 2,
-                    size.height + extra * 2,
-                ),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
-                    FmRadii.tile.toPx() + extra,
-                    FmRadii.tile.toPx() + extra,
-                ),
-            )
-            drawRoundRect(
-                color = ring,
-                topLeft = androidx.compose.ui.geometry.Offset(-2.dp.toPx(), -2.dp.toPx()),
-                size = androidx.compose.ui.geometry.Size(
-                    size.width + 4.dp.toPx(),
-                    size.height + 4.dp.toPx(),
-                ),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
-                    FmRadii.tile.toPx() + 2.dp.toPx(),
-                    FmRadii.tile.toPx() + 2.dp.toPx(),
-                ),
-            )
-        }
-    } else {
-        Modifier
+    // Motion spec §3: press shrinks the card by 4 % and springs it back, the selection ring
+    // grows out of the card's edge instead of popping on. Both are draw/graphicsLayer only,
+    // so a row of cards never reflows while one of them is pressed.
+    val pressSource = remember { MutableInteractionSource() }
+    val pressed by pressSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = fmSpringSpec(FmSpring.press),
+        label = "fm.card.press",
+    )
+    val ringProgress by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = fmTweenSpec(FmDuration.fast, FmEasing.standard),
+        label = "fm.card.ring",
+    )
+    // `ringProgress` is read inside the draw lambda on purpose: the ring animates for
+    // 140 ms and the card must not recompose once per frame to paint it. Painting outside
+    // the tile's bounds is what the ring has always done, so nothing here adds a clip.
+    val tile: Modifier = Modifier.drawBehind {
+        val progress = ringProgress
+        if (progress <= 0.01f) return@drawBehind
+        val soft = 5.dp.toPx() * progress
+        drawRoundRect(
+            color = ringSoft,
+            topLeft = Offset(-soft, -soft),
+            size = Size(size.width + soft * 2, size.height + soft * 2),
+            cornerRadius = CornerRadius(FmRadii.tile.toPx() + soft, FmRadii.tile.toPx() + soft),
+            alpha = progress,
+        )
+        val inset = 2.dp.toPx()
+        drawRoundRect(
+            color = ring,
+            topLeft = Offset(-inset, -inset),
+            size = Size(size.width + inset * 2, size.height + inset * 2),
+            cornerRadius = CornerRadius(FmRadii.tile.toPx() + inset, FmRadii.tile.toPx() + inset),
+            alpha = progress,
+        )
     }
     Column(
         modifier = modifier
             .then(if (width != null) Modifier.width(width) else Modifier)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .semantics(mergeDescendants = true) {
                 contentDescription = if (card.badge.isNullOrBlank()) {
                     "边框：${card.name}"
@@ -131,7 +156,13 @@ fun PhoneBorderCard(
                 this.selected = selected
                 stateDescription = if (selected) "当前边框" else "未选中"
             }
-            .clickable(onClick = onClick),
+            // Same ripple as before (`LocalIndication`), plus the interaction source that
+            // drives the press scale — one detector, not a second `pointerInput` overlay.
+            .clickable(
+                interactionSource = pressSource,
+                indication = LocalIndication.current,
+                onClick = onClick,
+            ),
     ) {
         Box(
             modifier = Modifier

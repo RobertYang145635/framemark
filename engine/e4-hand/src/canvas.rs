@@ -25,6 +25,21 @@ struct State {
     matrix: Matrix,
 }
 
+/// Map a rect written in the photo's logical (full-resolution) pixels onto the
+/// raster Skia actually samples. `scale == 1.0` returns the same numbers, so the
+/// full decode keeps sampling exactly the rectangle it always did.
+pub fn photo_raster_rect(scale: f32, logical: Rect) -> Rect {
+    if scale == 1.0 {
+        return logical;
+    }
+    Rect::from_xywh(
+        logical.left() * scale,
+        logical.top() * scale,
+        logical.width() * scale,
+        logical.height() * scale,
+    )
+}
+
 /// Optional user watermark layer (render-v1 `overlay`). The rect is normalised
 /// to the photo draw box; the image is contained + centred inside it and
 /// clipped to the photo box.
@@ -48,6 +63,12 @@ pub struct Ctx2D<'a> {
     /// `--fit native`: force the photo's own draw box to integral pixels at
     /// exactly this size, so the source pixels land 1:1 (see `snap_photo`).
     photo_1to1: Option<(f32, f32)>,
+    /// Interactive tier: the source photo's raster is `photo_raster_scale` of its
+    /// logical pixels, and `photo_logical` is that logical size. Layout, crop math
+    /// and the draw report stay logical; only the sampled rect moves (see
+    /// [`Ctx2D::photo_src_rect`]).
+    photo_raster_scale: f32,
+    photo_logical: Option<(f32, f32)>,
     /// render-v1 photo crop: where the user's kept region sits in the source.
     /// The photo draws read it so a pan moves the sampled slice even when the
     /// template's window spans the whole photo (see `hand::cover_src`).
@@ -69,12 +90,48 @@ impl<'a> Ctx2D<'a> {
             overlay: None,
             overlay_done: false,
             photo_1to1: None,
+            photo_raster_scale: 1.0,
+            photo_logical: None,
             user_crop: crate::hand::UserCrop::default(),
         }
     }
 
     pub fn set_photo_1to1(&mut self, size: Option<(f32, f32)>) {
         self.photo_1to1 = size;
+    }
+
+    /// Declare the interactive source decode: `scale` is raster/logical pixels and
+    /// `logical` is the photo's full-resolution size. A ratio that is not a real
+    /// shrink is ignored — it could only move geometry, never sharpen a frame.
+    pub fn set_photo_source(&mut self, scale: f32, logical: (f32, f32)) {
+        let usable = scale.is_finite()
+            && scale > 0.0
+            && scale <= 1.0
+            && logical.0.is_finite()
+            && logical.1.is_finite()
+            && logical.0 > 0.0
+            && logical.1 > 0.0;
+        if usable {
+            self.photo_raster_scale = scale;
+            self.photo_logical = Some(logical);
+        }
+    }
+
+    /// Raster pixels per logical pixel of the source photo (1.0 = full decode).
+    pub fn photo_raster_scale(&self) -> f32 {
+        self.photo_raster_scale
+    }
+
+    /// The photo's logical size when a reduced raster is active, else `None`
+    /// (callers fall back to the image's own dimensions).
+    pub fn photo_logical(&self) -> Option<(f32, f32)> {
+        self.photo_logical
+    }
+
+    /// Move a source rect written in the photo's logical pixels onto the decoded
+    /// raster. This is the only place the interactive tier changes a draw.
+    pub fn photo_src_rect(&self, logical: Rect) -> Rect {
+        photo_raster_rect(self.photo_raster_scale, logical)
     }
 
     pub fn set_user_crop(&mut self, user: crate::hand::UserCrop) {
@@ -584,13 +641,44 @@ impl<'a> Ctx2D<'a> {
         sampling: SamplingOptions,
         key: &str,
     ) {
-        self.draw_image_filtered(img, src, dst, sampling, None, key);
+        self.draw_image_recorded(img, src, src, dst, sampling, None, key);
+    }
+
+    /// Draw the source photo. `src_logical` is written in the photo's logical
+    /// pixels and is what the draw report keeps (so `photo_src`, the layering
+    /// checks and the geometry report never see the interactive tier); the rect
+    /// handed to Skia is mapped into the decoded raster.
+    pub fn draw_photo_image(
+        &mut self,
+        img: &Image,
+        src_logical: Rect,
+        dst: Rect,
+        sampling: SamplingOptions,
+        key: &str,
+    ) {
+        let raster = photo_raster_rect(self.photo_raster_scale(), src_logical);
+        self.draw_image_recorded(img, Some(raster), Some(src_logical), dst, sampling, None, key);
     }
 
     pub fn draw_image_filtered(
         &mut self,
         img: &Image,
         src: Option<Rect>,
+        dst: Rect,
+        sampling: SamplingOptions,
+        filter: Option<ImageFilter>,
+        key: &str,
+    ) {
+        self.draw_image_recorded(img, src, src, dst, sampling, filter, key);
+    }
+
+    /// One image draw: `src_raster` is what Skia samples, `src_report` what the
+    /// report records (they differ only for a bounded interactive photo decode).
+    fn draw_image_recorded(
+        &mut self,
+        img: &Image,
+        src_raster: Option<Rect>,
+        src_report: Option<Rect>,
         dst: Rect,
         sampling: SamplingOptions,
         filter: Option<ImageFilter>,
@@ -612,7 +700,7 @@ impl<'a> Ctx2D<'a> {
         } else {
             img
         };
-        self.scoped(|c| match src {
+        self.scoped(|c| match src_raster {
             Some(s) => {
                 c.draw_image_rect_with_sampling_options(
                     img,
@@ -631,7 +719,7 @@ impl<'a> Ctx2D<'a> {
             seq,
             key: key.to_string(),
             dst: RectJson::from_skia(dst),
-            src: src.map(RectJson::from_skia),
+            src: src_report.map(RectJson::from_skia),
             sampling: format!("{sampling:?}"),
         });
         if key != "photo" && key != "logo" {
@@ -821,3 +909,141 @@ fn dash_effect(dash: &[f32]) -> Option<skia_safe::PathEffect> {
     }
     skia_safe::PathEffect::dash(dash, 0.0)
 }
+
+// Interactive source-decode tests that live next to the draws they change.
+//
+// The interactive tier decodes the photo at a smaller raster. Layout, crop and
+// the geometry report must not move: the same card must produce the same
+// `Report` (which *is* the engine's geometry report) whether the draw sampled the
+// full raster or a bounded one, and only the rectangle handed to Skia may differ.
+#[cfg(test)]
+mod photo_source_scale_tests {
+    use super::*;
+    use crate::draw::{draw_photo, Theme};
+    use crate::hand::Crop;
+    use skia_safe::{AlphaType, ColorType, ImageInfo};
+    use std::cell::RefCell;
+
+    fn theme() -> Theme {
+        Theme {
+            id: "paper".into(),
+            bg: "#f6f3ec".into(),
+            fg: "#151515".into(),
+            sub: "#777".into(),
+            line: "#ddd".into(),
+            accent: "#c33".into(),
+            paper: "#fff".into(),
+            shadow: "#000".into(),
+        }
+    }
+
+    fn flat_raster(w: i32, h: i32) -> Image {
+        let mut surface = skia_safe::surfaces::raster_n32_premul((w, h)).unwrap();
+        surface.canvas().clear(Color::from_argb(255, 30, 120, 200));
+        surface.image_snapshot()
+    }
+
+    /// Draw the same photo box twice, once from the full raster and once from a
+    /// half-size raster declared as the same logical photo, and return both draw
+    /// reports (the engine's geometry report) plus the sampled rects.
+    fn draw_both() -> (String, String, Rect, Rect) {
+        // 400x300 photo, 4:3 crop of the whole frame, drawn into a 480x320 canvas.
+        let crop = Crop {
+            sx: 0.0,
+            sy: 0.0,
+            sw: 400.0,
+            sh: 300.0,
+            pw: 400.0,
+            ph: 300.0,
+        };
+        let logical_src = Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh);
+        let info = ImageInfo::new((480, 320), ColorType::RGBA8888, AlphaType::Opaque, None);
+
+        let render = |photo: &Image, scale: f32| {
+            let mut surface = skia_safe::surfaces::raster(&info, None, None).unwrap();
+            surface.canvas().clear(Color::BLACK);
+            let report = RefCell::new(Report::default());
+            let sampled;
+            {
+                let mut ctx = Ctx2D::new(surface.canvas(), &report);
+                ctx.set_photo_source(scale, (400.0, 300.0));
+                sampled = ctx.photo_src_rect(logical_src);
+                draw_photo(
+                    &mut ctx,
+                    photo,
+                    &crop,
+                    20.0,
+                    18.0,
+                    440.0,
+                    280.0,
+                    0.0,
+                    0.0,
+                    &theme(),
+                    280.0,
+                );
+            }
+            let json = serde_json::to_string(&*report.borrow()).unwrap();
+            (json, sampled)
+        };
+
+        let full = flat_raster(400, 300);
+        let half = flat_raster(200, 150);
+        let (full_report, full_src) = render(&full, 1.0);
+        let (scaled_report, scaled_src) = render(&half, 0.5);
+        (full_report, scaled_report, full_src, scaled_src)
+    }
+
+    #[test]
+    fn scaled_source_decode_keeps_the_geometry_report_identical() {
+        let (full_report, scaled_report, full_src, scaled_src) = draw_both();
+        // The report is the geometry report: photo box, layers, text slots and the
+        // sampled `photo_src` entry all keep their logical numbers.
+        assert_eq!(full_report, scaled_report);
+        assert!(full_report.contains("\"key\":\"photo\""));
+        // The full decode hands Skia the rect it always did...
+        assert_eq!(full_src, Rect::from_xywh(0.0, 0.0, 400.0, 300.0));
+        // ...while the bounded one maps it into the smaller raster, so the draw is
+        // in bounds instead of reading past the image.
+        assert_eq!(scaled_src, Rect::from_xywh(0.0, 0.0, 200.0, 150.0));
+    }
+
+    #[test]
+    fn the_sampled_rect_is_inside_the_bounded_raster() {
+        let crop = Crop {
+            sx: 40.0,
+            sy: 30.0,
+            sw: 200.0,
+            sh: 150.0,
+            pw: 400.0,
+            ph: 300.0,
+        };
+        let info = ImageInfo::new((480, 320), ColorType::RGBA8888, AlphaType::Opaque, None);
+        let mut surface = skia_safe::surfaces::raster(&info, None, None).unwrap();
+        let report = RefCell::new(Report::default());
+        let mut ctx = Ctx2D::new(surface.canvas(), &report);
+        ctx.set_photo_source(0.25, (400.0, 300.0));
+        let mapped = ctx.photo_src_rect(Rect::from_xywh(crop.sx, crop.sy, crop.sw, crop.sh));
+        // 100x75 raster: the logical window only fits once it is mapped.
+        assert_eq!(mapped, Rect::from_xywh(10.0, 7.5, 50.0, 37.5));
+        assert!(mapped.right() <= 100.0 && mapped.bottom() <= 75.0);
+        // A ratio that is not a real shrink is ignored rather than applied.
+        ctx.set_photo_source(1.5, (400.0, 300.0));
+        assert_eq!(ctx.photo_raster_scale(), 0.25);
+        ctx.set_photo_source(0.5, (0.0, 0.0));
+        assert_eq!(ctx.photo_raster_scale(), 0.25);
+    }
+
+    #[test]
+    fn the_photo_box_cover_math_reads_the_logical_size() {
+        // `draw_photo_cover` derives its cover slice from the photo's size; with a
+        // bounded raster that must still be 400x300, not 200x150.
+        let mut ctx_canvas = skia_safe::surfaces::raster_n32_premul((8, 8)).unwrap();
+        let report = RefCell::new(Report::default());
+        let mut ctx = Ctx2D::new(ctx_canvas.canvas(), &report);
+        assert_eq!(ctx.photo_logical(), None);
+        ctx.set_photo_source(0.5, (400.0, 300.0));
+        assert_eq!(ctx.photo_logical(), Some((400.0, 300.0)));
+        assert_eq!(ctx.photo_raster_scale(), 0.5);
+    }
+}
+

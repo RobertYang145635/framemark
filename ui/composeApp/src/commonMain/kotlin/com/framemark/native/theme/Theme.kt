@@ -56,22 +56,29 @@ private val FmDarkColorScheme = fmColorScheme(FmColors.Dark, dark = true)
  * Root theme.
  *
  * Provides [LocalFmColors] / [LocalFmDark] (which every [FmPalette] read resolves
- * against) and a matching Material 3 scheme plus the FrameMark typography.
+ * against) and a matching Material 3 scheme plus the FrameMark typography, and
+ * [LocalFmMotionScale] so interaction animation can be dialled or switched off.
  *
  * @param dark the resolved appearance. The default `false` keeps every older
  *   no-argument call site compiling and rendering exactly the light palette;
  *   `App.kt` passes the value resolved from [AppearanceController] /
  *   [resolveDark].
+ * @param motionScale how much interaction motion to run: `1f` (default) is the full
+ *   motion spec, `0f` is the reduced-motion end state (every animation lands
+ *   immediately). It exists so a host that can read the OS "reduce motion" setting has
+ *   one place to put it; nothing in `theme/` invents a second switch.
  */
 @Composable
 fun FrameMarkTheme(
     dark: Boolean = false,
+    motionScale: Float = FmMotionRules.fullScale,
     content: @Composable () -> Unit,
 ) {
     val colors = if (dark) FmColors.Dark else FmColors.Light
     CompositionLocalProvider(
         LocalFmColors provides colors,
         LocalFmDark provides dark,
+        LocalFmMotionScale provides motionScale,
     ) {
         MaterialTheme(
             colorScheme = if (dark) FmDarkColorScheme else FmLightColorScheme,
