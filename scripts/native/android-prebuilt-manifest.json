@@ -3,13 +3,13 @@
   "targetAbi": "arm64-v8a",
   "sourceBuildReproduced": false,
   "provenanceStatus": "unverified",
-  "provenanceNote": "SHA-256 values were re-pinned from the real 2026-11-04 02:16-02:17 source build that added N4 overlay angle to both bridge crates; the prebuilt archives are those exact artifacts. Release builds still use the in-repository driver.",
+  "provenanceNote": "SHA-256 values were re-pinned from the 2026-11-13 performance build that added the interactive preview source decode (preview_source_edge) to the IR renderer; the hand/export archives are unchanged. Release builds still use the in-repository driver.",
   "libraries": [
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_engine.a",
       "crateManifest": "bridge/android/Cargo.toml",
       "cargoLock": "bridge/android/Cargo.lock",
-      "sha256": "da2bd753b93e17824424db0d1b680ddd45b73058b4d73b113b163637256c2056"
+      "sha256": "29598327f64a2590b07bab6fd16ea47969e1bf66bbad4d33e15354b1afd4589f"
     },
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_hand.a",

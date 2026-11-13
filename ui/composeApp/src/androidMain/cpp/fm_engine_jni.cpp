@@ -125,7 +125,7 @@ char *fm_render_design(const char *style_path, const char *photo_path,
                        const char *ratio, const char *design_json, const char *overlay_path,
                        float overlay_x, float overlay_y, float overlay_w,
                        float overlay_h, float overlay_opacity, float overlay_angle,
-                       const char *out_png, int max_edge);
+                       const char *out_png, int max_edge, int preview_source_edge);
 struct FmIrRgbaHandle;
 struct FmIrRgbaHandle *fm_render_design_rgba(
     const char *style_path, const char *photo_path, const char *photo_override,
@@ -226,13 +226,14 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderDesign(
     jstring assets_json, jstring fonts_dir, jstring brands_dir, jstring fallback_dir,
     jstring theme, jstring ratio, jstring design_json, jstring overlay_path, jfloat overlay_x, jfloat overlay_y,
     jfloat overlay_w, jfloat overlay_h, jfloat overlay_opacity, jfloat overlay_angle,
-    jstring out_png, jint max_edge) {
+    jstring out_png, jint max_edge, jint preview_source_edge) {
 #ifndef FM_ENGINE_LINKED
   (void)style_path; (void)photo_path; (void)photo_override; (void)exif_path; (void)assets_json;
   (void)fonts_dir; (void)brands_dir; (void)fallback_dir; (void)theme; (void)ratio;
   (void)design_json;
   (void)overlay_path; (void)overlay_x; (void)overlay_y; (void)overlay_w; (void)overlay_h;
   (void)overlay_opacity; (void)overlay_angle; (void)out_png; (void)max_edge;
+  (void)preview_source_edge;
   return env->NewStringUTF("IR engine not linked for this ABI");
 #else
   JStringUtf style(env, style_path), photo(env, photo_path), photo_ovr(env, photo_override);
@@ -249,7 +250,7 @@ Java_com_framemark_native_engine_NativeEngineProbe_nativeRenderDesign(
                                assets.get(), fonts.get(), brands.get(), fallback.get(),
                                theme_s.get(), ratio_s.get(), design.get(), overlay.get(),
                                overlay_x, overlay_y, overlay_w, overlay_h, overlay_opacity,
-                               overlay_angle, out.get(), max_edge);
+                               overlay_angle, out.get(), max_edge, preview_source_edge);
   if (err == nullptr) return nullptr;
   jstring msg = env->NewStringUTF(err);
   fm_free_string(err);

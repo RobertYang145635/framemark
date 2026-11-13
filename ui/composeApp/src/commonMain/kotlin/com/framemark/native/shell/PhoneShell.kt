@@ -93,6 +93,7 @@ import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.withNativeTextSlots
 import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 /** The legacy batch sheet is retained only for the explicit QA/demo launch path. */
 internal fun createPhoneBatchDemoRunner(
@@ -723,7 +724,9 @@ fun PhoneShell() {
 
     val quickSavePreset: (String) -> Unit = { name ->
         val saved = store.savePreset(name)
-        if (saved == null) watermarkError = store.presetError ?: "FM-E-PRESET-001 预设保存失败"
+        // Plain copy when the store reports nothing: a literal `FM-E-…` code in the
+        // user-facing fallback is the exact artefact this audit removes.
+        if (saved == null) watermarkError = store.presetError ?: "预设保存失败"
         hydrateToken++
     }
 
@@ -845,7 +848,7 @@ fun PhoneShell() {
             )
 
             PhonePage.Settings -> PhoneSettingsPage(
-                errorText = store.saveError,
+                errorText = NoticeText.human(store.saveError),
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.Settings) ?: PhonePage.Home
                     FmLog.info("FM_PHONE_PAGE") { "Settings->${page.name} viaClose" }
@@ -920,7 +923,10 @@ fun PhoneShell() {
         }
 
         watermarkError?.let { message ->
-            PhoneNotice(text = message, onClose = { watermarkError = null })
+            // Store errors carry an `FM-E-…` code; the pill shows the sentence only.
+            NoticeText.human(message)?.let { text ->
+                PhoneNotice(text = text, onClose = { watermarkError = null })
+            }
         }
 
         if (photoBatchOpen) {

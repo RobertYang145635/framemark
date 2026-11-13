@@ -64,6 +64,7 @@ class DesktopNativeRender(
         webpLossless: Boolean,
         overlay: OverlaySpec?,
         photoPath: String?,
+        interactive: Boolean,
     ): NativeImage {
         val backend = bridge.catalog.card(cardId)?.backend
         val requestedLogo = design.params["brandLogoFile"] as? String
@@ -113,6 +114,7 @@ class DesktopNativeRender(
                 photoPath = photoPath,
                 logo = logo,
                 brandPick = irLogoKey,
+                interactive = interactive,
             )
             FmLog.info("FM_ENGINE_RENDER") {
                 "card=$cardId mode=$mode ${result.width}x${result.height} " +

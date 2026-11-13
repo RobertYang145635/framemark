@@ -6,6 +6,7 @@ import com.framemark.native.library.jsonMap
 import com.framemark.native.library.jsonString
 import com.framemark.native.product.EngineArgs
 import com.framemark.native.workflow.OverlaySpec
+import com.framemark.native.product.PreviewTier
 import com.framemark.native.workflow.isWritableTextSlotKey
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -156,6 +157,12 @@ class DesktopEngineBridge(
         logo: EngineLogo? = null,
         /** Brand-picker key (`logos.json` brand key) for IR cards; e2b reads it as `params.brandLogoFile`. */
         brandPick: String? = null,
+        /**
+         * Stage preview tier that tracks a pointer. IR previews may decode the
+         * source photo at [previewSourceEdge] for this frame only; final frames,
+         * exports and every evidence render keep the full-resolution path.
+         */
+        interactive: Boolean = false,
     ): EngineRenderResult {
         require(mode == "preview" || mode == "export") { "mode must be preview|export, got $mode" }
         val card = catalog.card(cardId)
@@ -263,6 +270,19 @@ class DesktopEngineBridge(
                 // here avoids allocating and encoding a full-resolution raw canvas.
                 argv += listOf("--preview-max-edge", maxEdge.toString())
                 FmLog.info("FM_ENGINE_PREVIEW_SIZE") { "card=$cardId maxEdge=$maxEdge" }
+                // Interactive tier: the e2b worker decodes the photo at ~2x the
+                // preview canvas instead of full resolution. The canvas, layout,
+                // crop, logo and watermark geometry are unchanged (the engine
+                // keeps solving in full-resolution photo pixels); only the
+                // sampled pixels are smaller. Hand templates have their own
+                // canvas-scaled path and do not take this flag.
+                if (interactive && card.backend == "ir") {
+                    val sourceEdge = PreviewTier.sourceEdge(maxEdge)
+                    argv += listOf("--preview-source-edge", sourceEdge.toString())
+                    FmLog.info("FM_ENGINE_PREVIEW_SIZE") {
+                        "card=$cardId interactive=true edge=$maxEdge sourceEdge=$sourceEdge"
+                    }
+                }
             }
 
             val previewWorkerKey = if (mode == "preview") {

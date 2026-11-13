@@ -297,12 +297,60 @@ internal fun surfaceBadge(surface: String): String = when (surface) {
     else -> "仅浅底"
 }
 
+/**
+ * Era bucket of one logo version. `legacy` used to read 既有 — a catalogue word, not
+ * something a user says about an old mark; it is 沿革款 now, as the fourth step of
+ * 现行 → 经典 → 历史 (UI copy audit 2026-11-13, item 3). Display only: the stored `era`
+ * value stays `current` / `classic` / `historical` / `legacy`.
+ */
 internal fun eraLabel(era: String): String = when (era) {
     "current" -> "现行"
     "classic" -> "经典"
     "historical" -> "历史"
-    "legacy" -> "既有"
+    "legacy" -> "沿革款"
     else -> era
+}
+
+/**
+ * `years` values that mean "the catalogue does not know the year" rather than a
+ * year. `logos.json` uses a bare em dash on 110 versions and an empty string on the
+ * rest of the undated ones, so the raw field cannot be shown: `现行 · —` reads as a
+ * broken label.
+ */
+private val YEAR_PLACEHOLDERS: Set<String> = setOf("", "—", "–", "-", "?", "n/a", "null", "undefined")
+
+/** `n.d. (pre-2002)` — the only `n.d.` note that carries a year. */
+private val PRE_YEAR = Regex("^n\\.d\\.\\s*\\(pre-(\\d{4})\\)$", RegexOption.IGNORE_CASE)
+
+/**
+ * Display form of one catalogue `years` value, or null when there is nothing to
+ * say.
+ *
+ * `n.d.` (no date) covers three shipped spellings: `n.d.`, `n.d. (pre-2002)` and
+ * `n.d. (current site)`. Only the `pre-YYYY` note is information the user can use;
+ * the other notes are review-sheet comments about where the mark was found, so the
+ * line falls back to the era alone. Display only: the stored value is never
+ * rewritten.
+ */
+internal fun yearLabel(years: String): String? {
+    val raw = years.trim()
+    if (raw.lowercase() in YEAR_PLACEHOLDERS) return null
+    if (raw.lowercase().startsWith("n.d.")) {
+        return PRE_YEAR.find(raw)?.let { "${it.groupValues[1]} 年前" }
+    }
+    return raw
+}
+
+/**
+ * The `年代 · 年份` line under one logo version. A placeholder year collapses to the
+ * era alone so the line never ends in a separator or in a review-sheet dash;
+ * `n.d.` becomes Chinese instead of an English abbreviation. Callers render this
+ * instead of joining [eraLabel] and `years` by hand.
+ */
+internal fun versionSubtitle(era: String, years: String): String {
+    val eraText = eraLabel(era)
+    val yearText = yearLabel(years) ?: return eraText
+    return "$eraText · $yearText"
 }
 
 private val ERA_ORDER = listOf("current", "classic", "historical", "legacy")
@@ -668,7 +716,7 @@ private fun VersionRow(version: LogoVersion, selected: Boolean, onPick: (String)
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${eraLabel(version.era)} · ${version.years}",
+                    text = versionSubtitle(version.era, version.years),
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceMuted,
                 )

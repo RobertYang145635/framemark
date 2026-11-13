@@ -229,7 +229,7 @@ class InMemoryProjectHolder : ProjectHolder {
     override fun watermarkBytes(): ByteArray? = null
     override fun overlaySpec(): OverlaySpec? = null
     override suspend fun exportActive(cardName: String, settings: ExportSettings): ExportResult =
-        throw EngineFailure("FM-E-ENGINE-001", "当前平台没有桌面引擎")
+        throw EngineFailure("FM-E-ENGINE-001", "桌面渲染组件不可用，请检查安装是否完整")
 
     override val hydrationVersion: Int = 0
     override val presets: List<ProjectPreset> = emptyList()

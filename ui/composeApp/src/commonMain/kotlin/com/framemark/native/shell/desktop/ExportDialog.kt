@@ -67,6 +67,7 @@ import com.framemark.native.workflow.ExportResult
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.ExportSizeMode
+import com.framemark.native.product.NoticeText
 import com.framemark.native.workflow.ImageRect
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeStagePreview
@@ -344,7 +345,8 @@ fun DesktopExportDialog(
             } catch (t: Throwable) {
                 if (t is kotlinx.coroutines.CancellationException) throw t
                 val failure = t as? EngineFailure
-                error = failure?.let { "${it.userMessage}（${it.code}）" } ?: "导出没有成功，请重试。"
+                // The support code stays in the log line below, not in the sentence.
+                error = failure?.userMessage ?: "导出没有成功，请重试。"
                 FmLog.warn("FM_DESKTOP_EXPORT_FAIL") { "${failure?.code ?: "FM-E-INTERNAL-001"} ${t.message}" }
             } finally {
                 exporting = false
@@ -477,7 +479,13 @@ fun DesktopExportDialog(
                                             actionNote = "输出目录已记住，下次导出仍用它。"
                                         }
                                     }
-                                    .onFailure { error = "选择输出目录失败：${it.message}" }
+                                    .onFailure {
+                                        error = NoticeText.failure(
+                                            "FM_DESKTOP_EXPORT_FAIL",
+                                            it,
+                                            "选择输出目录失败，请重试。",
+                                        )
+                                    }
                             },
                         )
                     }
@@ -608,7 +616,7 @@ private fun ExportPreviewColumn(
                 val display = photo.displayPixels()
                 "原图 ${display.width} × ${display.height} px"
             } else {
-                "示例照片（引擎样张）"
+                "示例照片"
             },
             style = TextStyle(fontSize = 11.sp, lineHeight = 16.sp).withNumericDigits(),
             color = FmPalette.onSurfaceMuted,

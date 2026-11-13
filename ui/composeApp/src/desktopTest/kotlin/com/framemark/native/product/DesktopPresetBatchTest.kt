@@ -129,6 +129,7 @@ class DesktopPresetBatchTest {
             webpLossless: Boolean,
             overlay: OverlaySpec?,
             photoPath: String?,
+            interactive: Boolean,
         ): NativeImage {
             calls += Call(cardId, mode, longEdge, outputPath, photoPath, overlay, design)
             val path = outputPath ?: error("export must name its output")
@@ -155,6 +156,7 @@ class DesktopPresetBatchTest {
             webpLossless: Boolean,
             overlay: OverlaySpec?,
             photoPath: String?,
+            interactive: Boolean,
         ): NativeImage = throw kotlinx.coroutines.CancellationException("The coroutine scope left the composition")
     }
 

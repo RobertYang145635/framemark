@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** The export entry must fail with a structured error instead of a placeholder. */
@@ -69,6 +70,7 @@ class ExportFailureTest {
                 webpLossless: Boolean,
                 overlay: OverlaySpec?,
                 photoPath: String?,
+                interactive: Boolean,
             ): NativeImage = error("render must not be reached")
         }
 
@@ -106,6 +108,37 @@ class ExportFailureTest {
             }
         }
         assertEquals("FM-E-ENGINE-002", error.code)
+    }
+
+    /**
+     * UI copy audit 2026-11-13, leak 5: the export wrapper used to copy the throwable
+     * text straight into `EngineFailure.userMessage` — the field the export dialog and
+     * the phone notice print. An engine-side exception carries English diagnostics and
+     * can name the runtime binary (`IR 引擎缺失（bin/e2b.exe）`), so the sentence on
+     * screen could be a developer message. The user message is now fixed copy; the raw
+     * text stays in the cause and in the log.
+     */
+    @Test
+    fun a_raw_engine_exception_never_becomes_the_user_message() {
+        val error = withEnv(stubRender(supports = true)) {
+            assertFailsWith<EngineFailure> {
+                runBlocking { NativeEngine.export(card(), ExportSettings(), design) }
+            }
+        }
+        assertEquals("FM-E-ENGINE-002", error.code)
+        assertFalse(
+            error.userMessage.contains("render must not be reached"),
+            "the stub's own English text reached the user message: ${error.userMessage}",
+        )
+        assertTrue(
+            error.userMessage.any { it in '\u4e00'..'\u9fff' },
+            "the user message must be the Chinese sentence: ${error.userMessage}",
+        )
+        assertEquals(
+            error.cause?.message,
+            "render must not be reached",
+            "the raw text must stay reachable through the cause",
+        )
     }
 
     @Test

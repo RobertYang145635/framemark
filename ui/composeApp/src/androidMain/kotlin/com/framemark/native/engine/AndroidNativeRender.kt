@@ -16,6 +16,7 @@ import com.framemark.native.workflow.NativeImage
 import com.framemark.native.workflow.NativeRenderApi
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PhotoSelection
+import com.framemark.native.product.PreviewTier
 import com.framemark.native.workflow.ReportTextRow
 import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.TextSlot
@@ -98,6 +99,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
         webpLossless: Boolean,
         overlay: OverlaySpec?,
         photoPath: String?,
+        interactive: Boolean,
     ): NativeImage = withContext(Dispatchers.IO) {
         require(mode == "preview" || mode == "export") { "mode must be preview|export, got $mode" }
         val started = SystemClock.elapsedRealtime()
@@ -194,7 +196,10 @@ val fitNative = mode == "export" && longEdge == null
         try {
         var note: String? = null
         val renderMs = if (byUiCard.containsKey(cardId)) {
-            renderIr(cardId, design, edge, png, overlay, overridePhoto, fitNative)
+            renderIr(
+                cardId, design, edge, png, overlay, overridePhoto, fitNative,
+                interactive = interactive && mode == "preview",
+            )
         } else {
             val hand = renderHand(cardId, design, edge, png, overlay, overridePhoto, fitNative)
             note = hand.note
@@ -602,6 +607,7 @@ val fitNative = mode == "export" && longEdge == null
         overlay: OverlaySpec?,
         overridePhoto: String?,
         fitNative: Boolean,
+        interactive: Boolean = false,
     ): Long {
         val card = byUiCard.getValue(cardId)
         val requestedBrand = design.params["brandLogoFile"] as? String
@@ -650,6 +656,7 @@ val fitNative = mode == "export" && longEdge == null
             overlayAngle = overlay?.angle ?: 0f,
             outPng = out.absolutePath,
             maxEdge = edge,
+            previewSourceEdge = if (interactive) PreviewTier.sourceEdge(edge) else 0,
         )
         if (error != null) throw IllegalStateException(error)
         val ms = SystemClock.elapsedRealtime() - started

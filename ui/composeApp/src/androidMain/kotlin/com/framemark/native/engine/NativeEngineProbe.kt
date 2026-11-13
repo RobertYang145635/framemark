@@ -54,11 +54,17 @@ object NativeEngineProbe {
         overlayAngle: Float = 0f,
         outPng: String,
         maxEdge: Int,
+        /**
+         * Interactive preview tier: the engine may decode the photo no larger
+         * than this long edge. 0 keeps the full-resolution decode (final
+         * frames, exports, evidence renders).
+         */
+        previewSourceEdge: Int = 0,
     ): String? = runCatching {
         nativeRenderDesign(
             style, photo, photoOverride, exif, assetsJson, fontsDir, brandsDir, fallbackDir, theme, ratio,
             designJson, overlayPath, overlayX, overlayY, overlayW, overlayH, overlayOpacity, overlayAngle,
-            outPng, maxEdge,
+            outPng, maxEdge, previewSourceEdge,
         )
     }.getOrElse { "engine call failed: ${it.message}" }
 
@@ -83,6 +89,7 @@ object NativeEngineProbe {
         overlayAngle: Float,
         outPng: String,
         maxEdge: Int,
+        previewSourceEdge: Int,
     ): String?
 
     private external fun nativePing(): String

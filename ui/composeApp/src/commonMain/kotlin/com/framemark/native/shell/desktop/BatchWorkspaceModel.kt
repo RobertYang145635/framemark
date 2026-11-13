@@ -2,6 +2,8 @@ package com.framemark.native.shell.desktop
 
 import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobStatus
+import com.framemark.native.product.NoticeText
+import com.framemark.native.product.hasCjk
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.ExportSizeMode
@@ -151,11 +153,15 @@ object BatchQueueView {
 
     /**
      * 失败原因的人话版本。引擎/系统抛出的原文常常是英文 Java 异常（例如文件被占用、
-     * 拒绝访问），直接摆给用户没有信息量；认得的归成一类，认不得的原样保留。
+     * 拒绝访问），直接摆给用户没有信息量；认得的归成一类，认不得的给一句通用文案。
+     *
+     * 支撑码（`FM-E-…`）不进这句话：它已经在队列执行器的失败日志行和
+     * `BatchJobError.code` 里，用户看到的只是句子（审计 item 4）。
      */
     fun failureText(code: String?, message: String?): String {
-        val raw = message?.trim().orEmpty().ifBlank { return fallback(code) }
-        val stripped = stripCode(raw)
+        val raw = message?.trim().orEmpty()
+        if (raw.isBlank()) return "导出没有成功，原因未知。"
+        val stripped = NoticeText.human(stripCode(raw)).orEmpty()
         val reason = when {
             containsAny(stripped, "占用", "being used", "in use", "另一个程序") ->
                 "文件被占用：另一个程序正在使用它。"
@@ -165,14 +171,17 @@ object BatchQueueView {
                 "输出路径不存在或不可用。"
             containsAny(stripped, "磁盘空间", "not enough space", "disk full", "空间不足") ->
                 "磁盘空间不足。"
-            else -> stripped.ifBlank { fallback(code) }
+            stripped.isNotBlank() && stripped.none { it in '一'..'鿿' } ->
+                // An untranslatable English diagnostic is still not copy.
+                "导出没有成功，请重试。"
+            stripped.isNotBlank() -> stripped
+            else -> "导出没有成功，请重试。"
         }
-        val suffix = code?.takeIf { it.isNotBlank() && !reason.contains(it) }?.let { "（$it）" }.orEmpty()
-        return (reason + suffix).take(160)
+        // The code is the support handle, not the sentence: the queue runner already
+        // logs it where the item actually failed, and this mapper runs every frame, so
+        // it never logs (and never names the evidence tag) itself.
+        return reason.take(160)
     }
-
-    private fun fallback(code: String?): String =
-        if (code.isNullOrBlank()) "导出没有成功，原因未知。" else "导出没有成功（$code）。"
 
     private fun stripCode(message: String): String =
         message.replace(Regex("^FM-E-[A-Z0-9-]+\\s*"), "").trim()

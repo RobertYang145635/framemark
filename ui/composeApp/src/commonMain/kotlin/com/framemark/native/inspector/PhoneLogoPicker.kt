@@ -657,7 +657,7 @@ private fun PickerVersionBlock(
             )
             Spacer(Modifier.width(FmSpacing.sm))
             Text(
-                text = "${eraLabel(version.era)} · ${version.years}",
+                text = versionSubtitle(version.era, version.years),
                 style = CuratedNote,
                 color = FmPalette.onSurfaceMuted,
                 maxLines = 1,

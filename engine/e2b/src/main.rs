@@ -28,18 +28,24 @@ use std::path::{Path as FsPath, PathBuf};
 use std::time::Instant;
 
 thread_local! {
-    static PREVIEW_PHOTO: RefCell<Option<(PathBuf, Image)>> = const { RefCell::new(None) };
+    static PREVIEW_PHOTO: RefCell<Vec<CachedPhoto>> = const { RefCell::new(Vec::new()) };
     static PREVIEW_GPU: RefCell<Option<gpu::Gpu>> = const { RefCell::new(None) };
     static PREVIEW_STYLE: RefCell<Option<(PathBuf, ir::Style)>> = const { RefCell::new(None) };
     static PREVIEW_FONTS: RefCell<Option<(PathBuf, FontSet)>> = const { RefCell::new(None) };
     static PREVIEW_SERVER_ACTIVE: Cell<bool> = const { Cell::new(false) };
 }
 
+struct CachedPhoto {
+    key: PhotoKey,
+    decode: PhotoSource,
+}
+
 use serde_json::{json, Value};
 use skia_safe::{
-    canvas::SrcRectConstraint, Canvas, Color, Data, FilterMode, Image, MipmapMode, Paint, Rect,
-    SamplingOptions,
+    canvas::SrcRectConstraint, Canvas, Color, Data, FilterMode, Image, ImageInfo, MipmapMode,
+    Paint, Rect, SamplingOptions,
 };
+use skia_safe::codec::Codec;
 
 use text::{FontSet, HAlign, TextEngine, TextSpec, VBaseline};
 
@@ -568,19 +574,157 @@ fn load_image(p: &FsPath) -> Result<Image, String> {
     Image::from_encoded(data).ok_or_else(|| format!("decode failed {}", p.display()))
 }
 
-/// Worker mode keeps the one active source photo decoded between requests.
-fn load_cached_photo(p: &FsPath) -> Result<Image, String> {
-    PREVIEW_PHOTO.with(|cell| {
+/// A decoded source photo plus the ratio between its raster and the photo's
+/// logical (full-resolution) pixels. `scale < 1.0` means the image was decoded
+/// down for an interactive preview: geometry is still solved from
+/// `logical_w`/`logical_h`, so only the sampled resolution changes.
+#[derive(Clone)]
+struct PhotoSource {
+    image: Image,
+    scale: f32,
+    logical_w: i32,
+    logical_h: i32,
+    /// The requested preview source edge (0 = full-resolution decode).
+    source_edge: u32,
+    /// Decode-or-cache-hit microseconds, reported by `e2b.decode`.
+    decode_ms: u128,
+    cached: bool,
+}
+
+/// Identity of one decode: a photo replaced on disk (different length/mtime),
+/// a different photo, or a different interactive source edge is a cache miss.
+#[derive(Clone, PartialEq, Eq)]
+struct PhotoKey {
+    path: PathBuf,
+    len: u64,
+    modified: Option<std::time::SystemTime>,
+    source_edge: u32,
+}
+
+fn photo_key_matches(cached: &PhotoKey, wanted: &PhotoKey) -> bool {
+    cached == wanted
+}
+
+/// Worker mode keeps the active source photos decoded between requests. The key
+/// is (path, length, mtime, requested source edge): a file replaced on disk is
+/// decoded again, and the full-quality frame after a drag does not throw away
+/// the interactive decode (nor the other way round). At most two entries are
+/// kept — one full and one interactive — so repeated drags never re-decode.
+fn load_cached_photo(p: &FsPath, source_edge: Option<u32>) -> Result<PhotoSource, String> {
+    let started = Instant::now();
+    let meta = std::fs::metadata(p).map_err(|e| format!("photo missing: {}: {e}", p.display()))?;
+    let edge = source_edge.unwrap_or(0);
+    let wanted = PhotoKey {
+        path: p.to_path_buf(),
+        len: meta.len(),
+        modified: meta.modified().ok(),
+        source_edge: edge,
+    };
+    let hit = PREVIEW_PHOTO.with(|cell| {
         let mut slot = cell.borrow_mut();
-        if let Some((cached_path, image)) = slot.as_ref() {
-            if cached_path == p {
-                return Ok(image.clone());
+        let pos = slot.iter().position(|entry| photo_key_matches(&entry.key, &wanted));
+        pos.map(|i| {
+            let mut entry = slot.remove(i);
+            entry.decode.cached = true;
+            let out = entry.decode.clone();
+            slot.insert(0, entry);
+            out
+        })
+    });
+    if let Some(mut photo) = hit {
+        photo.cached = true;
+        photo.decode_ms = started.elapsed().as_micros();
+        println!(
+            "e2b.decode source={}x{} decoded={}x{} scale={:.6} edge={} cached={} ms={}",
+            photo.logical_w,
+            photo.logical_h,
+            photo.image.width(),
+            photo.image.height(),
+            photo.scale,
+            edge,
+            true,
+            photo.decode_ms / 1000
+        );
+        return Ok(photo);
+    }
+
+    let bytes = std::fs::read(p).map_err(|e| format!("photo missing: {}: {e}", p.display()))?;
+    let data = Data::new_copy(&bytes);
+    let full = Image::from_encoded(data).ok_or_else(|| format!("decode failed {}", p.display()))?;
+    let (lw, lh) = (full.width(), full.height());
+    let mut photo = PhotoSource {
+        image: full,
+        scale: 1.0,
+        logical_w: lw,
+        logical_h: lh,
+        source_edge: edge,
+        decode_ms: 0,
+        cached: false,
+    };
+    if edge > 0 && lw.max(lh) as u32 > edge {
+        // Skia's codec decodes JPEG/WebP at a native downscale (1/2, 1/4, 1/8)
+        // and applies the encoded EXIF origin, so the scaled frame has the same
+        // geometry as the full decode, only fewer sampled pixels.
+        if let Some(mut codec) = Codec::from_data(Data::new_copy(&bytes)) {
+            let full_info = codec.info();
+            let decoded_dims = codec.dimensions();
+            // `decoded_dims` are pre-orientation; `lw/lh` are what Skia's full
+            // decode produced. Both sides must agree on the orientation regime
+            // before their width ratio can describe the same raster.
+            let full_swapped = lw != decoded_dims.width;
+            let desired = edge as f32 / decoded_dims.width.max(decoded_dims.height).max(1) as f32;
+            let scaled = codec.get_scaled_dimensions(desired);
+            let usable = scaled.width > 0
+                && scaled.height > 0
+                && scaled.width < decoded_dims.width
+                && scaled.width.max(scaled.height) < lw.max(lh);
+            if usable {
+                let info = ImageInfo::new(
+                    (scaled.width, scaled.height),
+                    full_info.color_type(),
+                    full_info.alpha_type(),
+                    full_info.color_space(),
+                );
+                if let Ok(image) = codec.get_image(Some(info), None) {
+                    // `get_image` applies the EXIF origin. Accept the reduced
+                    // raster only when the full decode agrees on whether the
+                    // origin was applied; otherwise the scale below would mix
+                    // an oriented width with an unoriented one.
+                    let scaled_swapped = image.width() != scaled.width;
+                    let scale = image.width() as f32 / lw.max(1) as f32;
+                    if full_swapped == scaled_swapped && scale > 0.0 && scale < 1.0 {
+                        photo.image = image;
+                        photo.scale = scale;
+                    }
+                }
             }
         }
-        let image = load_image(p)?;
-        *slot = Some((p.to_path_buf(), image.clone()));
-        Ok(image)
-    })
+    }
+    photo.decode_ms = started.elapsed().as_micros();
+    println!(
+        "e2b.decode source={}x{} decoded={}x{} scale={:.6} edge={} cached={} ms={}",
+        photo.logical_w,
+        photo.logical_h,
+        photo.image.width(),
+        photo.image.height(),
+        photo.scale,
+        edge,
+        false,
+        photo.decode_ms / 1000
+    );
+    PREVIEW_PHOTO.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        // Keep the two most recent decodes (interactive + full for one photo).
+        slot.insert(
+            0,
+            CachedPhoto {
+                key: wanted,
+                decode: photo.clone(),
+            },
+        );
+        slot.truncate(2);
+    });
+    Ok(photo)
 }
 
 fn walk_basename(root: &FsPath, name: &str, depth: usize) -> Option<PathBuf> {
@@ -814,6 +958,18 @@ fn render_once(args: Vec<String>) {
                 .unwrap_or_else(|| panic!("--preview-max-edge must be a positive integer, got '{raw}'")),
         ),
     };
+    // Interactive tier: decode the source photo no larger than this long edge.
+    // Absent/0 keeps the full-resolution decode (final frames and exports), so
+    // the flag alone decides which frame may change its sampled resolution.
+    let preview_source_edge = match get("preview-source-edge", "").trim() {
+        "" | "0" => None,
+        raw => Some(
+            raw.parse::<u32>()
+                .ok()
+                .filter(|edge| *edge > 0)
+                .unwrap_or_else(|| panic!("--preview-source-edge must be a positive integer, got '{raw}'")),
+        ),
+    };
 
     println!("e2b.style={}", style_path.display());
     let style = match PREVIEW_STYLE.with(|cell| cell.borrow_mut().take()) {
@@ -866,8 +1022,9 @@ fn render_once(args: Vec<String>) {
         }
     };
 
-    let photo = load_cached_photo(&photo_path).expect("photo");
-    let (pw, ph) = (photo.width() as f32, photo.height() as f32);
+    let photo_source = load_cached_photo(&photo_path, preview_source_edge).expect("photo");
+    let photo = &photo_source.image;
+    let (pw, ph) = (photo_source.logical_w as f32, photo_source.logical_h as f32);
     println!("e2b.photo={}x{}", pw as i32, ph as i32);
 
     // render-v1 `overlay`: user watermark, above the photo and below the
@@ -1672,12 +1829,21 @@ fn render_once(args: Vec<String>) {
             // user's crop moves/zooms the very source rectangle that window
             // samples. At the defaults this is the whole raster — the draw the
             // engine always made — so an untouched design is pixel-identical.
-            let src = photo_src_rect(pw, ph, dst.width(), dst.height(), env.ov.photo_crop);
-            photo_src_out.set(src);
+            // Geometry stays in logical (full-resolution) pixels; an interactive
+            // source decode only multiplies the sampled rect into its own raster.
+            let src_logical = photo_src_rect(pw, ph, dst.width(), dst.height(), env.ov.photo_crop);
+            photo_src_out.set(src_logical);
+            let decode_scale = photo_source.scale;
+            let src = [
+                src_logical[0] * decode_scale,
+                src_logical[1] * decode_scale,
+                src_logical[2] * decode_scale,
+                src_logical[3] * decode_scale,
+            ];
             let src_rect = Rect::from_xywh(src[0], src[1], src[2], src[3]);
             draw_image_rect(
                 canvas,
-                &photo,
+                photo,
                 Some(src_rect),
                 dst,
                 photo_sampling,
@@ -1695,7 +1861,7 @@ fn render_once(args: Vec<String>) {
                 let fake = Rect::from_xywh(dst.left(), dst.top() + dst.height() * 0.35, dst.width(), dst.height());
                 draw_image_rect(
                     canvas,
-                    &photo,
+                    photo,
                     Some(src_rect),
                     fake,
                     photo_sampling,
@@ -1980,5 +2146,46 @@ mod photo_crop_tests {
         // A design without the keys is the default crop (no-op render).
         let none = parse_overrides(&json!({ "design": { "params": {} } }));
         assert!(none.photo_crop.is_default());
+    }
+}
+
+#[cfg(test)]
+mod photo_cache_tests {
+    use super::{photo_key_matches, PhotoKey};
+    use std::path::PathBuf;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+    fn key() -> PhotoKey {
+        PhotoKey {
+            path: PathBuf::from(r"D:\photos\hdr2.jpg"),
+            len: 40_135_193,
+            modified: Some(UNIX_EPOCH + Duration::from_secs(1_800)),
+            source_edge: 960,
+        }
+    }
+
+    /// One decode per (photo path, length, mtime, interactive source edge): a
+    /// drag on the same photo hits the cache, a replaced file or the final
+    /// frame's full decode is a miss.
+    #[test]
+    fn photo_cache_key_is_path_size_mtime_and_source_edge() {
+        let base = key();
+        assert!(photo_key_matches(&base, &base.clone()));
+
+        let mut other = base.clone();
+        other.path = PathBuf::from(r"D:\photos\other.jpg");
+        assert!(!photo_key_matches(&base, &other));
+
+        let mut other = base.clone();
+        other.len += 1;
+        assert!(!photo_key_matches(&base, &other));
+
+        let mut other = base.clone();
+        other.modified = Some(UNIX_EPOCH + Duration::from_secs(1_801));
+        assert!(!photo_key_matches(&base, &other));
+
+        let mut other = base.clone();
+        other.source_edge = 0;
+        assert!(!photo_key_matches(&base, &other));
     }
 }

@@ -56,6 +56,8 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.library.PreviewDiagnostics
+import com.framemark.native.product.PreviewQuality
+import com.framemark.native.product.PreviewTier
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmType
 import kotlinx.coroutines.CancellationException
@@ -73,10 +75,7 @@ import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import com.framemark.native.product.FmLog
 
-private const val PREVIEW_MAX_EDGE = 1280
-private const val PREVIEW_MIN_EDGE = 640
 private const val PREVIEW_SUPERSAMPLE = 1.25f
-private const val INTERACTIVE_MAX_EDGE = 480
 // The engine itself serializes frames. Keep only a short UI breathing gap so a
 // fast desktop renderer can track the pointer; slower devices are naturally
 // paced by their render time instead of an artificial fixed delay.
@@ -176,10 +175,10 @@ fun NativeStagePreview(
         val displayEdge = if (constraints.hasBoundedWidth && constraints.hasBoundedHeight) {
             max(constraints.maxWidth, constraints.maxHeight)
         } else {
-            PREVIEW_MAX_EDGE
+            PreviewTier.MAX_EDGE
         }
         val maxEdge = LaunchOptions.previewMaxEdge ?: adaptivePreviewEdge(displayEdge)
-        val interactiveMaxEdge = minOf(maxEdge, INTERACTIVE_MAX_EDGE)
+        val interactiveMaxEdge = PreviewTier.interactiveEdge(maxEdge)
         val selectedPhotoPath = PhotoSelection.path
         val photoSelectionVersion = PhotoSelection.version
         val launchPhotoPath = LaunchOptions.userPhotoPath
@@ -447,6 +446,7 @@ fun NativeStagePreview(
                         edge,
                         request.overlay,
                         request.photoPath,
+                        interactive = quality == PreviewQuality.Interactive.wire,
                     )
                 } finally {
                     if (gateHeld) previewGate.unlock()
@@ -535,11 +535,17 @@ fun NativeStagePreview(
                 val requestVersion = requestGate.version
                 val requestStarted = TimeSource.Monotonic.markNow()
                 fun current(): Boolean = isCurrentRequest(request, requestVersion)
+                // One pure tier decision drives every submit in this pass: the
+                // bounded interactive frame while input keeps changing, the final
+                // edge after the debounce. Both describe the same design.
+                val finalTier = PreviewTier.request(request.maxEdge, interactive = false)
+                val interactiveTier = PreviewTier.request(request.maxEdge, interactive = true)
 
                 busy = true
                 FmLog.info("FM_PREVIEW_REQUEST") {
                     "card=${request.card.id} version=$requestVersion phase=begin " +
-                        "interactiveEdge=${request.interactiveMaxEdge} finalEdge=${request.maxEdge} " +
+                        "interactiveEdge=${interactiveTier.edge} finalEdge=${finalTier.edge} " +
+                        "sourceEdge=${interactiveTier.sourceEdge} " +
                         "displayEdge=${request.displayEdge}"
                 }
 
@@ -550,8 +556,8 @@ fun NativeStagePreview(
                     if (applyCached(
                             request,
                             request.key,
-                            request.maxEdge,
-                            "final",
+                            finalTier.edge,
+                            finalTier.quality.wire,
                             requestVersion,
                             requestStarted,
                         )
@@ -568,8 +574,8 @@ fun NativeStagePreview(
                         renderEngine(
                             request,
                             request.key,
-                            request.maxEdge,
-                            "final",
+                            finalTier.edge,
+                            finalTier.quality.wire,
                             requestVersion,
                             requestStarted,
                         )
@@ -583,8 +589,8 @@ fun NativeStagePreview(
                     var interactiveReady = applyCached(
                         request,
                         request.interactiveKey,
-                        request.interactiveMaxEdge,
-                        "interactive",
+                        interactiveTier.edge,
+                        interactiveTier.quality.wire,
                         requestVersion,
                         requestStarted,
                     )
@@ -595,8 +601,8 @@ fun NativeStagePreview(
                         interactiveReady = renderEngine(
                             request,
                             request.interactiveKey,
-                            request.interactiveMaxEdge,
-                            "interactive",
+                            interactiveTier.edge,
+                            interactiveTier.quality.wire,
                             requestVersion,
                             requestStarted,
                         )
@@ -608,8 +614,8 @@ fun NativeStagePreview(
                     if (applyCached(
                             request,
                             request.key,
-                            request.maxEdge,
-                            "final",
+                            finalTier.edge,
+                            finalTier.quality.wire,
                             requestVersion,
                             requestStarted,
                         )
@@ -624,8 +630,8 @@ fun NativeStagePreview(
                     renderEngine(
                         request,
                         request.key,
-                        request.maxEdge,
-                        "final",
+                        finalTier.edge,
+                        finalTier.quality.wire,
                         requestVersion,
                         requestStarted,
                     )
@@ -1107,9 +1113,7 @@ private fun StageBusyBadge(phase: StageRenderPhase, modifier: Modifier = Modifie
 
 /** Keep preview pixels near the physical stage size, with a small zoom headroom. */
 private fun adaptivePreviewEdge(displayEdge: Int): Int =
-    (displayEdge.coerceAtLeast(1) * PREVIEW_SUPERSAMPLE)
-        .roundToInt()
-        .coerceIn(PREVIEW_MIN_EDGE, PREVIEW_MAX_EDGE)
+    PreviewTier.finalEdge(displayEdge, PREVIEW_SUPERSAMPLE)
 
 // ---------------------------------------------------------------------------
 // WP-C §4.5: stage geometry for the watermark drag handle

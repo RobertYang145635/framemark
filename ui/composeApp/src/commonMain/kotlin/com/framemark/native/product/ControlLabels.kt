@@ -336,6 +336,20 @@ internal object ControlLabels {
         return raw
     }
 
+    /**
+     * The legacy brand label for [value], or null when the table does not know it.
+     * [forBrand] answers 未设置 for an unknown key, which is right for a control that
+     * must never look empty but wrong for a display chain that has other resolvers
+     * (UI copy audit 2026-11-13, item 7).
+     */
+    fun knownBrandLabel(value: String): String? {
+        val raw = value.trim()
+        if (raw.isEmpty()) return null
+        brands[raw]?.let { return it }
+        if (raw.hasCjk()) return raw
+        return null
+    }
+
     /** Brand logos are asset keys in the frozen source; show the brand name only. */
     fun forBrand(value: String): String {
         val raw = value.trim()

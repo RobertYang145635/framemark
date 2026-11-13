@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.framemark.native.shell.HintCard
 import com.framemark.native.shell.PageList
 import com.framemark.native.shell.TitleBlock
+import com.framemark.native.product.NoticeText
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -34,6 +35,15 @@ import com.framemark.native.theme.FmType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.roundToInt
+
+/**
+ * Closing hint of the batch sheet. User copy only: it states the export properties
+ * (JPEG quality 100, 4:4:4) and says where files go. It must not name the internal
+ * work item of the export encoder (`E5`) — that tag used to be on screen, and
+ * `BatchScreenCopyTest` pins it out.
+ */
+internal const val BATCH_EXPORT_HINT: String =
+    "导出用本机渲染（JPEG 质量 100，4:4:4），文件写在导出目录；从队列移除任务不会删除已导出的文件。"
 
 /**
  * Batch queue page: real exports through the native engine, persisted to the app
@@ -55,7 +65,7 @@ fun BatchScreen(state: LazyListState, runner: BatchRunner, onClose: (() -> Unit)
                 Box(modifier = Modifier.weight(1f)) {
                     TitleBlock(
                         title = "批量",
-                        subtitle = "原生导出 · 队列保存在本机，重启后可从停下的位置继续",
+                        subtitle = "本机导出 · 队列保存在本机，重启后可从停下的位置继续",
                     )
                 }
                 if (onClose != null) {
@@ -67,7 +77,7 @@ fun BatchScreen(state: LazyListState, runner: BatchRunner, onClose: (() -> Unit)
         if (runner.items.isEmpty()) {
             item {
                 Text(
-                    text = "队列为空。点「添加一张」按当前照片与库内已接引擎的卡片建一条任务。",
+                    text = "队列为空。点「添加一张」，按当前照片和库里可导出的边框建一条任务。",
                     style = FmType.bodyMedium,
                     color = FmPalette.onSurfaceMuted,
                     modifier = Modifier
@@ -83,7 +93,9 @@ fun BatchScreen(state: LazyListState, runner: BatchRunner, onClose: (() -> Unit)
             }
         }
         item {
-            HintCard("导出走原生引擎（E5，JPEG q100 4:4:4），文件写在导出目录；从队列移除任务不会删除已导出的文件。")
+            // No milestone id (`E5`) and no "engine" vocabulary here: this card is
+            // user copy. The export properties it states are the real ones.
+            HintCard(BATCH_EXPORT_HINT)
         }
     }
 }
@@ -251,6 +263,6 @@ private fun itemStatusLabel(item: BatchItem, runState: BatchRunState): String = 
     BatchItemStatus.Queued -> if (item.attempts > 0) "等待重试" else "等待"
     BatchItemStatus.Running -> if (runState == BatchRunState.Paused) "已暂停" else "导出中"
     BatchItemStatus.Done -> item.outputPath?.substringAfterLast('/')?.substringAfterLast('\\') ?: "已完成"
-    BatchItemStatus.Failed -> "失败：" + (item.error ?: "未知原因")
+    BatchItemStatus.Failed -> "失败：" + (NoticeText.human(item.error) ?: "未知原因")
     BatchItemStatus.Cancelled -> "已取消"
 }

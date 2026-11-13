@@ -119,7 +119,7 @@ class IrSlotBinding private constructor(
  */
 object RegistryInspectorFactory {
 
-    const val DISABLED_REASON = "引擎暂不支持"
+    const val DISABLED_REASON = "当前版本暂不支持"
 
     /** What the factory decided per control, for the static "no dead control" gate. */
     data class Decision(

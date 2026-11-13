@@ -124,6 +124,12 @@ interface NativeRenderApi {
          * like a normally picked photo.
          */
         photoPath: String? = null,
+        /**
+         * True only for the bounded preview tier that tracks a pointer during a
+         * drag. Engines may decode/render that frame from a reduced source, so it
+         * must never be set for a final frame, an export or an evidence render.
+         */
+        interactive: Boolean = false,
     ): NativeImage
 }
 
@@ -155,10 +161,10 @@ object NativeEngine {
         if (platform == null) throw EngineFailure("FM-E-IO-003", "本地存储不可用，无法导出")
         if (api == null) throw EngineFailure("FM-E-ENGINE-001", "渲染组件未安装或无法启动，无法导出")
         if (!api.supportsExport(card.id)) {
-            throw EngineFailure("FM-E-ENGINE-002", "这张边框未接入桌面引擎，无法导出")
+            throw EngineFailure("FM-E-ENGINE-002", "这个边框暂时还不支持导出，请换一个边框试试")
         }
         if (settings.format == ExportFormat.WebP && !api.supportsWebpExport()) {
-            throw EngineFailure("FM-E-EXPORT-001", "当前引擎不支持 WebP 导出，请改用 JPEG 或 PNG")
+            throw EngineFailure("FM-E-EXPORT-001", "当前版本不支持 WebP 导出，请改用 JPEG 或 PNG")
         }
         return exportCard(
             cardId = card.id,
@@ -245,7 +251,13 @@ object NativeEngine {
             throw c
         } catch (t: Throwable) {
             if (t is EngineFailure) throw t
-            throw EngineFailure("FM-E-ENGINE-002", t.message ?: "渲染失败", t)
+            // `userMessage` is what the export dialog and the phone notice print, so it
+            // cannot be `t.message`: an engine-side throwable carries English text and
+            // can name the runtime binary (`IR 引擎缺失（bin/e2b.exe）`). The raw text
+            // goes to the log (existing tag — a new `FM_` literal is forbidden), and the
+            // cause keeps it for the stack trace.
+            FmLog.warn("FM_NATIVE_EXPORT") { "render failed ${t::class.simpleName}: ${t.message}" }
+            throw EngineFailure("FM-E-ENGINE-002", "这张照片没能渲染成功，请重试。", t)
         }
 
         try {
@@ -539,6 +551,7 @@ object NativeEngine {
         maxEdge: Int,
         overlay: OverlaySpec? = null,
         photoPath: String? = null,
+        interactive: Boolean = false,
     ): NativeImage? {
         val api = WorkflowEnv.nativeRender ?: return null
         if (!api.supports(card.id)) return null
@@ -553,6 +566,7 @@ object NativeEngine {
             outputPath = null,
             overlay = overlay,
             photoPath = photoPath,
+            interactive = interactive,
         )
     }
 

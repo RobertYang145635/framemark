@@ -63,6 +63,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 /**
  * Phone export sheet (report §7.6, demo `06-phone-export.png`).
@@ -139,7 +140,7 @@ fun PhoneExportSheet(
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                note = "分享没有成功：${failure.message ?: "请重试"}"
+                note = NoticeText.failure("FM_EXPORT_FAIL", failure, "分享没有成功，请重试。")
             } finally {
                 sharing = false
             }
@@ -175,8 +176,8 @@ fun PhoneExportSheet(
                 throw cancelled
             } catch (failure: Throwable) {
                 val engineFailure = failure as? EngineFailure
-                error = engineFailure?.let { "${it.userMessage}（${it.code}）" }
-                    ?: "导出没有成功，请重试。"
+                // Code in the log line below; the sheet shows the sentence only.
+                error = engineFailure?.userMessage ?: "导出没有成功，请重试。"
                 FmLog.warn("FM_EXPORT_FAIL") { "${engineFailure?.code ?: "FM-E-INTERNAL-001"} ${failure.message}" }
             } finally {
                 busy = false
@@ -201,7 +202,7 @@ fun PhoneExportSheet(
             } catch (cancelled: kotlinx.coroutines.CancellationException) {
                 throw cancelled
             } catch (failure: Exception) {
-                note = "相册写入没有成功：${failure.message ?: "请重试"}"
+                note = NoticeText.failure("FM_EXPORT_FAIL", failure, "相册写入没有成功，请重试。")
             } finally {
                 publishing = false
             }

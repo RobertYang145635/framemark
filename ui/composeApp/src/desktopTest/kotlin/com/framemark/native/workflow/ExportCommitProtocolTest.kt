@@ -28,7 +28,8 @@ class ExportCommitProtocolTest {
         override fun supports(cardId: String) = true
         override suspend fun render(cardId: String, design: DesignSnapshot, mode: String,
             maxEdge: Int?, format: SampleFormat?, quality: Int?, longEdge: Int?, outputPath: String?,
-            webpLossless: Boolean, overlay: OverlaySpec?, photoPath: String?): NativeImage {
+            webpLossless: Boolean, overlay: OverlaySpec?, photoPath: String?,
+            interactive: Boolean): NativeImage {
             val target = File(requireNotNull(outputPath))
             target.parentFile.mkdirs()
             target.writeBytes(byteArrayOf(1, 2, 3, 4))

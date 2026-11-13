@@ -149,7 +149,10 @@ sealed interface InspectorLoadState {
 
 data class InspectorLoadResult(
     val snapshot: InspectorSnapshot,
+    /** The sentence the panel shows; null when the bundle loaded. */
     val error: String? = null,
+    /** Raw exception text for support, never rendered (audit item 5). */
+    val diagnostic: String? = null,
 )
 
 // ---------------------------------------------------------------------------
@@ -228,6 +231,14 @@ data class InspectorSnapshot(
     val metaRecords: Int,
     val metaControls: Int,
     val brandOptions: List<ControlOption> = emptyList(),
+    /**
+     * Every logo value the UI can hold → the brand's display name: the brand keys
+     * (`laika`) and the exact cut keys (`fushi_white`, `hasu_long_black`). The
+     * persisted value of the Brand control is a cut key, which `ControlLabels.forBrand`
+     * (ten legacy brand keys) cannot resolve — the row then read 未设置 while a logo
+     * *was* set (UI copy audit 2026-11-13, item 7). Display only.
+     */
+    val brandNames: Map<String, String> = emptyMap(),
 )
 
 // ---------------------------------------------------------------------------
@@ -256,7 +267,8 @@ object InspectorDataSource {
         } catch (t: Throwable) {
             InspectorLoadResult(
                 snapshot = emptySnapshot(),
-                error = t.message ?: t::class.simpleName ?: "unknown error",
+                error = "可调参数数据读取失败，请重试。",
+                diagnostic = t.message ?: t::class.simpleName ?: "unknown error",
             )
         }
     }
@@ -373,7 +385,56 @@ object InspectorDataSource {
             metaRecords = handMeta.size,
             metaControls = handMeta.values.sumOf { it.size },
             brandOptions = parseBrandOptions(logosText),
+            brandNames = parseBrandNames(logosText),
         )
+    }
+
+    /**
+     * Every brand key *and* every cut asset key of `logos.json` → the brand's display
+     * name (`cn` when the catalogue has one, else `label`). The Brand control's value is
+     * either a brand key (`laika`) or a cut key (`fushi_white`); both must read as a
+     * brand, never as 未设置.
+     */
+    /**
+     * Brand display name for one logo value: an exact key from `logos.json` (brand key,
+     * legacy stem or `ver:<brand>:<version>` cut key), else the brand part of a
+     * `ver:` key the catalogue does not list. Never fabricates a name.
+     */
+    internal fun brandNameFor(value: String, brandNames: Map<String, String>): String? {
+        val raw = value.trim()
+        if (raw.isEmpty()) return null
+        brandNames[raw]?.let { return it }
+        if (raw.startsWith("ver:")) {
+            val brandKey = raw.removePrefix("ver:").substringBefore(':')
+            brandNames[brandKey]?.let { return it }
+        }
+        return null
+    }
+
+    internal fun parseBrandNames(logosText: String): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        runCatching {
+            val root = Json.parse(logosText).jsonMap()
+            val brands = root["brands"].jsonList().mapNotNull { raw ->
+                val brand = raw.jsonMap()
+                val key = brand.jsonString("key")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val label = brand.jsonString("cn")?.takeIf { it.isNotBlank() }
+                    ?: brand.jsonString("label")?.takeIf { it.isNotBlank() }
+                    ?: key
+                out[key] = label
+                key to label
+            }.toMap()
+            root["versions"].jsonList().forEach { rawVersion ->
+                val version = rawVersion.jsonMap()
+                val brandKey = version.jsonString("brandKey") ?: return@forEach
+                val label = brands[brandKey] ?: return@forEach
+                version["cuts"].jsonList().forEach { rawCut ->
+                    val cut = rawCut.jsonMap()
+                    cut.jsonString("assetKey")?.takeIf { it.isNotBlank() }?.let { out[it] = label }
+                }
+            }
+        }
+        return out
     }
 
     /** Mirrors ControlRegistry's rule and exposes only canonical brands[].key values. */
@@ -550,6 +611,7 @@ object InspectorModelFactory {
                 gated = false,
                 hiddenByFlag = entry.visibleFlag == false || entry.gatedFlag == true,
                 brandOptions = snapshot.brandOptions,
+                brandNames = snapshot.brandNames,
             )
         }
         val gatedControls = capability.gated.map { entry ->
@@ -573,6 +635,7 @@ object InspectorModelFactory {
                 gated = true,
                 hiddenByFlag = true,
                 brandOptions = snapshot.brandOptions,
+                brandNames = snapshot.brandNames,
             )
         }
         val all = controls + gatedControls
@@ -635,6 +698,7 @@ object InspectorModelFactory {
                 hiddenByFlag = row.visibleFlag == false || row.gatedFlag == true || consumer.isBlank(),
                 fallbackInitial = true,
                 brandOptions = snapshot.brandOptions,
+                brandNames = snapshot.brandNames,
             )
         }
         val visible = controls.filterNot { it.hidden }
@@ -714,6 +778,7 @@ object InspectorModelFactory {
         hiddenByFlag: Boolean,
         fallbackInitial: Boolean = false,
         brandOptions: List<ControlOption>,
+        brandNames: Map<String, String> = emptyMap(),
     ): InspectorControl {
         val type = when (kind) {
             "toggle" -> ControlType.Switch
@@ -726,7 +791,7 @@ object InspectorModelFactory {
         val options = if (kind == "brandPicker") brandOptions
         else parseOptions(optionsRaw, domain["options"].jsonList(), kind)
         val multiline = domain.jsonBool("multiline") ?: false
-        val initial = initialValue(type, currentValue, declaredDefault, min, max, step, fallbackInitial)
+        val initial = initialValue(type, currentValue, declaredDefault, min, max, step, fallbackInitial, brandNames)
         // WP-C §4.1: the field key wins over the source label so a field can only
         // have one name; `params.slots` (engine bookkeeping) resolves to null and
         // the control is hidden instead of shown as an identifier.
@@ -764,6 +829,7 @@ object InspectorModelFactory {
         max: Float?,
         step: Float?,
         fallbackInitial: Boolean,
+        brandNames: Map<String, String> = emptyMap(),
     ): ControlValue {
         return when (type) {
             ControlType.Switch -> {
@@ -802,7 +868,15 @@ object InspectorModelFactory {
                 val text = currentValue?.toString()
                     ?: declaredDefault?.toString()
                     ?: ""
-                ControlValue.Str(HumanLabels.forBrand(text))
+                // Cut keys (`fushi_white`) resolve through the catalogue; only a value
+                // the catalogue does not know reaches the legacy brand table.
+                // Catalogue first (`ver:<brand>:<version>` and the legacy stems that are
+                // real cut keys), then the ten legacy brand keys, then 未设置.
+                ControlValue.Str(
+                    InspectorDataSource.brandNameFor(text, brandNames)
+                        ?: ControlLabels.knownBrandLabel(text)
+                        ?: HumanLabels.forBrand(text),
+                )
             }
         }
     }

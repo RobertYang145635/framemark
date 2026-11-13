@@ -62,8 +62,13 @@ data class LibrarySnapshot(
 
 data class LibraryLoadResult(
     val snapshot: LibrarySnapshot,
-    /** `null` when the bundle loaded; otherwise the exception text for the error screen. */
+    /**
+     * `null` when the bundle loaded; otherwise the sentence the error screen shows.
+     * The exception text is not copy — it lives in [diagnostic] (audit item 5).
+     */
     val error: String? = null,
+    /** Raw exception text for support, never rendered. */
+    val diagnostic: String? = null,
 )
 
 sealed interface LibraryLoadState {
@@ -91,7 +96,8 @@ object LibraryDataSource {
         } catch (t: Throwable) {
             LibraryLoadResult(
                 snapshot = emptySnapshot(),
-                error = t.message ?: t::class.simpleName ?: "unknown error",
+                error = "边框库数据读取失败，请重试。",
+                diagnostic = t.message ?: t::class.simpleName ?: "unknown error",
             )
         }
     }

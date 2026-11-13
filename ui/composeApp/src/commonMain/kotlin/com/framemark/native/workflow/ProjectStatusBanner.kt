@@ -31,6 +31,7 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 /** Non-blocking status strip: load/save failures and per-file import errors. */
 @Composable
@@ -40,7 +41,8 @@ fun ProjectStatusBanner(
     notice: String? = null,
 ) {
     val projectBlocked = projects.projectWritesBlocked
-    val message = projects.loadError ?: projects.saveError
+    // A store error may carry an `FM-E-…` code; the banner is a user sentence.
+    val message = NoticeText.human(projects.loadError ?: projects.saveError)
     val failures = projects.importFailures
     if (message == null && failures.isEmpty() && notice == null) return
     val baseText = message

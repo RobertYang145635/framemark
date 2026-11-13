@@ -4691,7 +4691,7 @@
     {
       "id": "laika-legacy-2",
       "brandKey": "laika",
-      "name": "Leica Laika2",
+      "name": "Leica 徕卡字样 2",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -4719,7 +4719,7 @@
     {
       "id": "laika-legacy-long",
       "brandKey": "laika",
-      "name": "Leica Laika Long",
+      "name": "Leica 徕卡字样长标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -4775,7 +4775,7 @@
     {
       "id": "leica-2",
       "brandKey": "laika",
-      "name": "Leica 2",
+      "name": "Leica 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -4803,7 +4803,7 @@
     {
       "id": "leica-3",
       "brandKey": "laika",
-      "name": "Leica 3",
+      "name": "Leica 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -4902,7 +4902,7 @@
     {
       "id": "canon-4",
       "brandKey": "canon",
-      "name": "Canon 4",
+      "name": "Canon 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -4930,7 +4930,7 @@
     {
       "id": "canon-5",
       "brandKey": "canon",
-      "name": "Canon 5",
+      "name": "Canon 第 5 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5042,7 +5042,7 @@
     {
       "id": "canon-legacy-black",
       "brandKey": "canon",
-      "name": "Canon Black",
+      "name": "Canon 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5085,7 +5085,7 @@
     {
       "id": "nikon-10",
       "brandKey": "nikon",
-      "name": "Nikon 10",
+      "name": "Nikon 第 10 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5113,7 +5113,7 @@
     {
       "id": "nikon-13",
       "brandKey": "nikon",
-      "name": "Nikon 13",
+      "name": "Nikon 第 13 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5169,7 +5169,7 @@
     {
       "id": "nikon-4",
       "brandKey": "nikon",
-      "name": "Nikon 4",
+      "name": "Nikon 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5197,7 +5197,7 @@
     {
       "id": "nikon-5",
       "brandKey": "nikon",
-      "name": "Nikon 5",
+      "name": "Nikon 第 5 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5225,7 +5225,7 @@
     {
       "id": "nikon-legacy-black",
       "brandKey": "nikon",
-      "name": "Nikon Black",
+      "name": "Nikon 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5324,7 +5324,7 @@
     {
       "id": "sony-1",
       "brandKey": "sony",
-      "name": "Sony 1",
+      "name": "Sony 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5380,7 +5380,7 @@
     {
       "id": "panasonic-2",
       "brandKey": "panasionic",
-      "name": "Panasonic 2",
+      "name": "Panasonic 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5436,7 +5436,7 @@
     {
       "id": "panasonic-logo-blue",
       "brandKey": "panasionic",
-      "name": "Panasonic Logo Blue",
+      "name": "Panasonic 蓝色字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5492,7 +5492,7 @@
     {
       "id": "fujifilm-green-banner",
       "brandKey": "fushi",
-      "name": "Fujifilm green/white banner lockup",
+      "name": "Fujifilm 绿白横幅字标",
       "era": "historical",
       "years": "1980s–2006",
       "selected": true,
@@ -5774,7 +5774,7 @@
     {
       "id": "aolinbasi-legacy",
       "brandKey": "aolinbasi",
-      "name": "OLYMPUS Aolinbasi",
+      "name": "OLYMPUS 奥林巴斯字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5802,7 +5802,7 @@
     {
       "id": "aolinbasi-legacy-black",
       "brandKey": "aolinbasi",
-      "name": "OLYMPUS Aolinbasi Black",
+      "name": "OLYMPUS 奥林巴斯黑白字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5845,7 +5845,7 @@
     {
       "id": "olympus-1",
       "brandKey": "aolinbasi",
-      "name": "Olympus 1",
+      "name": "Olympus 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5901,7 +5901,7 @@
     {
       "id": "olympus-3",
       "brandKey": "aolinbasi",
-      "name": "Olympus 3",
+      "name": "Olympus 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -5985,7 +5985,7 @@
     {
       "id": "binde-legacy-black",
       "brandKey": "binde",
-      "name": "PENTAX Binde Black",
+      "name": "PENTAX 宾得字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6056,7 +6056,7 @@
     {
       "id": "ricoh-1",
       "brandKey": "ricoh",
-      "name": "Ricoh 1",
+      "name": "Ricoh 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6112,7 +6112,7 @@
     {
       "id": "ricoh-2",
       "brandKey": "ricoh",
-      "name": "Ricoh 2",
+      "name": "Ricoh 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6140,7 +6140,7 @@
     {
       "id": "ricoh-4",
       "brandKey": "ricoh",
-      "name": "Ricoh 4",
+      "name": "Ricoh 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6168,7 +6168,7 @@
     {
       "id": "ricoh-legacy-black",
       "brandKey": "ricoh",
-      "name": "Ricoh Black",
+      "name": "Ricoh 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6211,7 +6211,7 @@
     {
       "id": "caisi-legacy",
       "brandKey": "caisi",
-      "name": "ZEISS Caisi",
+      "name": "ZEISS 蔡司字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6409,7 +6409,7 @@
     {
       "id": "insta360-legacy-black",
       "brandKey": "insta360",
-      "name": "Insta360 Black",
+      "name": "Insta360 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6536,7 +6536,7 @@
     {
       "id": "minolta-legacy-black",
       "brandKey": "minolta",
-      "name": "Minolta Black",
+      "name": "Minolta 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6579,7 +6579,7 @@
     {
       "id": "konica-3",
       "brandKey": "konica",
-      "name": "Konica 3",
+      "name": "Konica 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6607,7 +6607,7 @@
     {
       "id": "konica-5",
       "brandKey": "konica",
-      "name": "Konica 5",
+      "name": "Konica 第 5 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6635,7 +6635,7 @@
     {
       "id": "konica-legacy-black",
       "brandKey": "konica",
-      "name": "Konica Black",
+      "name": "Konica 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6706,7 +6706,7 @@
     {
       "id": "konica_minolta-legacy-black",
       "brandKey": "konica_minolta",
-      "name": "Konica Minolta Black",
+      "name": "Konica Minolta 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -6820,7 +6820,7 @@
     {
       "id": "rollei-white",
       "brandKey": "rollei",
-      "name": "Rollei wordmark (white)",
+      "name": "Rollei 白色字标",
       "era": "current",
       "years": "2000s–",
       "selected": true,
@@ -6934,7 +6934,7 @@
     {
       "id": "mamiya-legacy-black",
       "brandKey": "mamiya",
-      "name": "Mamiya Black",
+      "name": "Mamiya 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7020,7 +7020,7 @@
     {
       "id": "kodak-1",
       "brandKey": "kodak",
-      "name": "Kodak 1",
+      "name": "Kodak 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7119,7 +7119,7 @@
     {
       "id": "kodak-2",
       "brandKey": "kodak",
-      "name": "Kodak 2",
+      "name": "Kodak 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7175,7 +7175,7 @@
     {
       "id": "kodak-4",
       "brandKey": "kodak",
-      "name": "Kodak 4",
+      "name": "Kodak 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7203,7 +7203,7 @@
     {
       "id": "kodak-5",
       "brandKey": "kodak",
-      "name": "Kodak 5",
+      "name": "Kodak 第 5 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7231,7 +7231,7 @@
     {
       "id": "kodak-7",
       "brandKey": "kodak",
-      "name": "Kodak 7",
+      "name": "Kodak 第 7 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7315,7 +7315,7 @@
     {
       "id": "polaroid-3",
       "brandKey": "polaroid",
-      "name": "Polaroid 3",
+      "name": "Polaroid 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7343,7 +7343,7 @@
     {
       "id": "agfa-legacy-black",
       "brandKey": "agfa",
-      "name": "Agfa Black",
+      "name": "Agfa 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7414,7 +7414,7 @@
     {
       "id": "agfacolour",
       "brandKey": "agfa",
-      "name": "Agfacolour",
+      "name": "Agfa 彩色字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7528,7 +7528,7 @@
     {
       "id": "minox-legacy-black",
       "brandKey": "minox",
-      "name": "Minox Black",
+      "name": "Minox 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7614,7 +7614,7 @@
     {
       "id": "sinar-legacy-black",
       "brandKey": "sinar",
-      "name": "Sinar Black",
+      "name": "Sinar 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7700,7 +7700,7 @@
     {
       "id": "linhof-legacy-black",
       "brandKey": "linhof",
-      "name": "Linhof Black",
+      "name": "Linhof 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7786,7 +7786,7 @@
     {
       "id": "alpa-14940",
       "brandKey": "alpa",
-      "name": "Alpa 14940",
+      "name": "ALPA 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -7814,7 +7814,7 @@
     {
       "id": "alpa-legacy-black",
       "brandKey": "alpa",
-      "name": "Alpa Black",
+      "name": "Alpa 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8042,7 +8042,7 @@
     {
       "id": "casio-2",
       "brandKey": "casio",
-      "name": "Casio 2",
+      "name": "Casio 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8070,7 +8070,7 @@
     {
       "id": "casio-legacy-black",
       "brandKey": "casio",
-      "name": "Casio Black",
+      "name": "Casio 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8113,7 +8113,7 @@
     {
       "id": "cosina-legacy-black",
       "brandKey": "cosina",
-      "name": "Cosina Black",
+      "name": "Cosina 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8242,7 +8242,7 @@
     {
       "id": "graflex-legacy-black",
       "brandKey": "graflex",
-      "name": "Graflex Black",
+      "name": "Graflex 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8285,7 +8285,7 @@
     {
       "id": "sigma-1",
       "brandKey": "sigma",
-      "name": "Sigma 1",
+      "name": "Sigma 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8313,7 +8313,7 @@
     {
       "id": "sigma-2",
       "brandKey": "sigma",
-      "name": "Sigma 2",
+      "name": "Sigma 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8341,7 +8341,7 @@
     {
       "id": "sigma-2025-lockup",
       "brandKey": "sigma",
-      "name": "SIGMA — Official VI announcement lockup 700x253",
+      "name": "SIGMA 官方 VI 发布字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8440,7 +8440,7 @@
     {
       "id": "sigma-4",
       "brandKey": "sigma",
-      "name": "Sigma 4",
+      "name": "Sigma 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8539,7 +8539,7 @@
     {
       "id": "tamron-logo",
       "brandKey": "tamron",
-      "name": "Tamron Logo",
+      "name": "Tamron 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8595,7 +8595,7 @@
     {
       "id": "tokina-classic",
       "brandKey": "tokina",
-      "name": "Tokina black + icon",
+      "name": "Tokina 黑色字标（含图标）",
       "era": "classic",
       "years": "1990s–2010s",
       "selected": true,
@@ -8681,7 +8681,7 @@
     {
       "id": "phase-one-logo",
       "brandKey": "phaseone",
-      "name": "Phase ONE Logo",
+      "name": "PHASE ONE 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8709,7 +8709,7 @@
     {
       "id": "phaseone-legacy-black",
       "brandKey": "phaseone",
-      "name": "PHASE ONE Phaseone Black",
+      "name": "PHASE ONE 黑白字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8808,7 +8808,7 @@
     {
       "id": "arri-legacy-black",
       "brandKey": "arri",
-      "name": "Arri Black",
+      "name": "Arri 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8879,7 +8879,7 @@
     {
       "id": "nokia-1",
       "brandKey": "nokia",
-      "name": "Nokia 1",
+      "name": "Nokia 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8935,7 +8935,7 @@
     {
       "id": "nokia-3",
       "brandKey": "nokia",
-      "name": "Nokia 3",
+      "name": "Nokia 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -8991,7 +8991,7 @@
     {
       "id": "nokia-legacy-black",
       "brandKey": "nokia",
-      "name": "Nokia Black",
+      "name": "Nokia 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9062,7 +9062,7 @@
     {
       "id": "nokia-new-logo-svg",
       "brandKey": "nokia",
-      "name": "Nokia NEW Logo SVG",
+      "name": "Nokia 新字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9090,7 +9090,7 @@
     {
       "id": "motorola-1",
       "brandKey": "motorola",
-      "name": "Motorola 1",
+      "name": "Motorola 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9118,7 +9118,7 @@
     {
       "id": "motorola-11",
       "brandKey": "motorola",
-      "name": "Motorola 11",
+      "name": "Motorola 第 11 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9146,7 +9146,7 @@
     {
       "id": "motorola-12",
       "brandKey": "motorola",
-      "name": "Motorola 12",
+      "name": "Motorola 第 12 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9174,7 +9174,7 @@
     {
       "id": "motorola-14",
       "brandKey": "motorola",
-      "name": "Motorola 14",
+      "name": "Motorola 第 14 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9230,7 +9230,7 @@
     {
       "id": "motorola-2",
       "brandKey": "motorola",
-      "name": "Motorola 2",
+      "name": "Motorola 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9258,7 +9258,7 @@
     {
       "id": "motorola-3",
       "brandKey": "motorola",
-      "name": "Motorola 3",
+      "name": "Motorola 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9286,7 +9286,7 @@
     {
       "id": "motorola-4",
       "brandKey": "motorola",
-      "name": "Motorola 4",
+      "name": "Motorola 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9314,7 +9314,7 @@
     {
       "id": "motorola-5",
       "brandKey": "motorola",
-      "name": "Motorola 5",
+      "name": "Motorola 第 5 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9342,7 +9342,7 @@
     {
       "id": "motorola-7",
       "brandKey": "motorola",
-      "name": "Motorola 7",
+      "name": "Motorola 第 7 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9370,7 +9370,7 @@
     {
       "id": "motorola-8",
       "brandKey": "motorola",
-      "name": "Motorola 8",
+      "name": "Motorola 第 8 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9426,7 +9426,7 @@
     {
       "id": "motorola-legacy-black",
       "brandKey": "motorola",
-      "name": "Motorola Black",
+      "name": "Motorola 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9568,7 +9568,7 @@
     {
       "id": "google-camera",
       "brandKey": "google",
-      "name": "Google Pixel Google Camera",
+      "name": "Google Pixel 相机字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9710,7 +9710,7 @@
     {
       "id": "nothing-legacy-black",
       "brandKey": "nothing",
-      "name": "Nothing Black",
+      "name": "Nothing 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9753,7 +9753,7 @@
     {
       "id": "nubia-legacy-black",
       "brandKey": "nubia",
-      "name": "Nubia Black",
+      "name": "nubia 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9839,7 +9839,7 @@
     {
       "id": "apple-1",
       "brandKey": "apple",
-      "name": "Apple 1",
+      "name": "Apple 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9867,7 +9867,7 @@
     {
       "id": "huawei-1",
       "brandKey": "huawei",
-      "name": "Huawei 1",
+      "name": "Huawei 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9895,7 +9895,7 @@
     {
       "id": "huawei-2",
       "brandKey": "huawei",
-      "name": "Huawei 2",
+      "name": "Huawei 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9923,7 +9923,7 @@
     {
       "id": "huawei-3",
       "brandKey": "huawei",
-      "name": "Huawei 3",
+      "name": "Huawei 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -9951,7 +9951,7 @@
     {
       "id": "huawei-legacy-huawe",
       "brandKey": "huawei",
-      "name": "HUAWEI Huawe Black",
+      "name": "HUAWEI 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10037,7 +10037,7 @@
     {
       "id": "xiao-mi",
       "brandKey": "xiaomi",
-      "name": "Xiaomi Xiao MI",
+      "name": "Xiaomi 小米字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10065,7 +10065,7 @@
     {
       "id": "xiaomi-legacy-loing",
       "brandKey": "xiaomi",
-      "name": "Xiaomi Loing",
+      "name": "Xiaomi 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10164,7 +10164,7 @@
     {
       "id": "vivo-1",
       "brandKey": "vivo",
-      "name": "Vivo 1",
+      "name": "Vivo 第 1 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10192,7 +10192,7 @@
     {
       "id": "vivo-3",
       "brandKey": "vivo",
-      "name": "Vivo 3",
+      "name": "Vivo 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10220,7 +10220,7 @@
     {
       "id": "vivo-4",
       "brandKey": "vivo",
-      "name": "Vivo 4",
+      "name": "Vivo 第 4 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10248,7 +10248,7 @@
     {
       "id": "vivo-legacy-black",
       "brandKey": "vivo",
-      "name": "Vivo Black",
+      "name": "Vivo 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10403,7 +10403,7 @@
     {
       "id": "samsung-2",
       "brandKey": "samsung",
-      "name": "Samsung 2",
+      "name": "Samsung 第 2 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10431,7 +10431,7 @@
     {
       "id": "samsung-3",
       "brandKey": "samsung",
-      "name": "Samsung 3",
+      "name": "Samsung 第 3 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10459,7 +10459,7 @@
     {
       "id": "samsung-6",
       "brandKey": "samsung",
-      "name": "Samsung 6",
+      "name": "Samsung 第 6 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10487,7 +10487,7 @@
     {
       "id": "samsung-7",
       "brandKey": "samsung",
-      "name": "Samsung 7",
+      "name": "Samsung 第 7 款",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10543,7 +10543,7 @@
     {
       "id": "iqoo-gap",
       "brandKey": "iqoo",
-      "name": "Iqoo Black",
+      "name": "iQOO 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10586,7 +10586,7 @@
     {
       "id": "meizu-legacy-black",
       "brandKey": "meizu",
-      "name": "Meizu Black",
+      "name": "Meizu 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10700,7 +10700,7 @@
     {
       "id": "oneplus-wordmark-4",
       "brandKey": "yijia",
-      "name": "Oneplus Wordmark 4",
+      "name": "OnePlus 字标 4",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10728,7 +10728,7 @@
     {
       "id": "yijia-legacy-black",
       "brandKey": "yijia",
-      "name": "OnePlus Yijia Black",
+      "name": "OnePlus 一加字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10771,7 +10771,7 @@
     {
       "id": "yijia-legacy-red",
       "brandKey": "yijia",
-      "name": "OnePlus Yijia RED",
+      "name": "OnePlus 一加红标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -10799,7 +10799,7 @@
     {
       "id": "lumo-legacy-black",
       "brandKey": "lumo",
-      "name": "Lumo Black",
+      "name": "LUMO 字标",
       "era": "legacy",
       "years": "—",
       "selected": true,
@@ -11279,7 +11279,7 @@
     {
       "id": "panasonic-1",
       "brandKey": "panasionic",
-      "name": "Panasonic black wordmark",
+      "name": "Panasonic 黑色字标",
       "era": "current",
       "years": "",
       "selected": true,
@@ -12325,7 +12325,7 @@
     {
       "id": "rollei-black-box",
       "brandKey": "rollei",
-      "name": "Rollei wordmark (black box)",
+      "name": "Rollei 黑框字标",
       "era": "current",
       "years": "",
       "selected": true,
@@ -12695,7 +12695,7 @@
     {
       "id": "casio-logo",
       "brandKey": "casio",
-      "name": "CASIO black wordmark",
+      "name": "CASIO 黑色字标",
       "era": "current",
       "years": "",
       "selected": true,
@@ -12964,7 +12964,7 @@
     {
       "id": "arri",
       "brandKey": "arri",
-      "name": "ARRI corporate logo",
+      "name": "ARRI 企业字标",
       "era": "current",
       "years": "",
       "selected": true,
@@ -13304,7 +13304,7 @@
     {
       "id": "apple-11",
       "brandKey": "apple",
-      "name": "Apple logo + Apple wordmark",
+      "name": "Apple 标志 + 字标",
       "era": "current",
       "years": "2000s–",
       "selected": true,
@@ -13937,7 +13937,7 @@
     {
       "id": "samsung-8",
       "brandKey": "samsung",
-      "name": "SAMSUNG black wordmark",
+      "name": "SAMSUNG 黑色字标",
       "era": "current",
       "years": "1993–",
       "selected": true,
@@ -15312,7 +15312,7 @@
     {
       "id": "vivitar-1",
       "brandKey": "vivitar",
-      "name": "Vivitar black wordmark",
+      "name": "Vivitar 黑色字标",
       "era": "classic",
       "years": "",
       "selected": true,
@@ -15383,7 +15383,7 @@
     {
       "id": "logo-wiko-white",
       "brandKey": "wiko",
-      "name": "WIKO black wordmark",
+      "name": "WIKO 黑色字标",
       "era": "current",
       "years": "",
       "selected": true,

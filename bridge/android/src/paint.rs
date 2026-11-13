@@ -8,12 +8,15 @@
 
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::SystemTime;
 
 use serde_json::Value;
 use skia_safe::{
     canvas::SrcRectConstraint, AlphaType, Canvas, ClipOp, Color, ColorSpace, ColorType, Data,
     EncodedImageFormat, FilterMode, Image, ImageInfo, Paint, Rect, SamplingOptions, Surface,
 };
+use skia_safe::codec::Codec;
 
 use crate::{brand, exif, ir, text};
 
@@ -235,6 +238,196 @@ fn load_photo(path: &str) -> Result<Image, String> {
     );
     skia_safe::images::raster_from_data(&info, Data::new_copy(&rgba), (w as usize) * 4)
         .ok_or_else(|| format!("tiff raster failed: {path}"))
+}
+
+// Per-render setup that does not depend on the design: parsing the style JSON
+// and loading the font families costs tens of milliseconds and was repeated for
+// every interactive frame. The JNI renders run on a pool thread, so these slots
+// are process-wide (thread locals would miss whenever the pool picks another
+// worker). One slot each; the app renders one style/photo at a time.
+static STYLE_CACHE: OnceLock<Mutex<Option<(String, Arc<ir::Style>)>>> = OnceLock::new();
+static FONT_CACHE: OnceLock<Mutex<Option<(String, Arc<text::FontSet>)>>> = OnceLock::new();
+
+fn cached_style(style_path: &str) -> Result<Arc<ir::Style>, String> {
+    let slot = STYLE_CACHE.get_or_init(|| Mutex::new(None));
+    if let Some(style) = slot
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .as_ref()
+        .filter(|(path, _)| path == style_path)
+        .map(|(_, style)| style.clone())
+    {
+        return Ok(style);
+    }
+    let raw = std::fs::read_to_string(style_path).map_err(|e| format!("read style: {e}"))?;
+    let style = Arc::new(ir::parse_style(&raw).map_err(|e| format!("parse style: {e}"))?);
+    *slot.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) =
+        Some((style_path.to_string(), style.clone()));
+    Ok(style)
+}
+
+fn cached_fonts(fonts_dir: &str) -> Result<Arc<text::FontSet>, String> {
+    let slot = FONT_CACHE.get_or_init(|| Mutex::new(None));
+    if let Some(fonts) = slot
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .as_ref()
+        .filter(|(dir, _)| dir == fonts_dir)
+        .map(|(_, fonts)| fonts.clone())
+    {
+        return Ok(fonts);
+    }
+    let fonts = Arc::new(text::FontSet::load(Path::new(fonts_dir))?);
+    *slot.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) =
+        Some((fonts_dir.to_string(), fonts.clone()));
+    Ok(fonts)
+}
+
+/// A source photo plus the ratio between its raster and the photo's logical
+/// (file-resolution) pixels. `scale < 1.0` is the interactive preview tier: the
+/// layout, crop and reported `photo_src` stay in file pixels, only the sampled
+/// raster is smaller.
+#[derive(Clone)]
+struct PhotoSource {
+    image: Image,
+    scale: f32,
+    logical_w: i32,
+    logical_h: i32,
+}
+
+/// Identity of one decode: a photo replaced on disk (different length/mtime), a
+/// different photo, or a different interactive source edge is a cache miss.
+#[derive(Clone, PartialEq, Eq)]
+struct PhotoKey {
+    path: String,
+    len: u64,
+    modified: Option<SystemTime>,
+    source_edge: i32,
+}
+
+fn photo_key_matches(cached: &PhotoKey, wanted: &PhotoKey) -> bool {
+    cached.path == wanted.path
+        && cached.len == wanted.len
+        && cached.modified == wanted.modified
+        && cached.source_edge == wanted.source_edge
+}
+
+struct CachedPhoto {
+    key: PhotoKey,
+    photo: PhotoSource,
+}
+
+// One decoded interactive source photo is enough for the stage: it renders one
+// photo at a time, and a drag alternates only between that photo's interactive
+// and full decodes (the full one is deliberately not retained on Android). The
+// slot is process-wide because the JNI render may run on a pool thread.
+static PHOTO_CACHE: OnceLock<Mutex<Option<CachedPhoto>>> = OnceLock::new();
+
+fn full_photo(path: &str) -> Result<PhotoSource, String> {
+    let image = load_photo(path)?;
+    let (w, h) = (image.width(), image.height());
+    Ok(PhotoSource { image, scale: 1.0, logical_w: w, logical_h: h })
+}
+
+/// Decode the photo at a reduced raster for the interactive tier. The codec
+/// natively downsamples JPEG/WebP (1/2, 1/4, 1/8) and applies the encoded EXIF
+/// orientation, so the drawn geometry is the full decode's, only cheaper.
+fn decode_scaled_photo(path: &str, edge: i32) -> Result<PhotoSource, String> {
+    let started = std::time::Instant::now();
+    let bytes = std::fs::read(path).map_err(|e| format!("photo missing: {path}: {e}"))?;
+    let is_tiff = bytes.len() >= 4 && (&bytes[..4] == b"II*\0" || &bytes[..4] == b"MM\0*");
+    if is_tiff {
+        return full_photo(path);
+    }
+    let full = Image::from_encoded(Data::new_copy(&bytes))
+        .ok_or_else(|| format!("photo decode failed: {path}"))?;
+    let (lw, lh) = (full.width(), full.height());
+    let mut out = PhotoSource { image: full, scale: 1.0, logical_w: lw, logical_h: lh };
+    let mut outcome = "full";
+    if lw.max(lh) > edge {
+        if let Some(mut codec) = Codec::from_data(Data::new_copy(&bytes)) {
+            let dims = codec.dimensions();
+            // `dims` are pre-orientation; `lw/lh` are what Skia's full decode
+            // produced. Both sides must agree on the orientation regime before
+            // their width ratio can describe the same raster.
+            let full_swapped = lw != dims.width;
+            let desired = edge as f32 / dims.width.max(dims.height).max(1) as f32;
+            let scaled = codec.get_scaled_dimensions(desired);
+            if scaled.width > 0 && scaled.height > 0 && scaled.width < dims.width {
+                let info0 = codec.info();
+                let info = ImageInfo::new(
+                    (scaled.width, scaled.height),
+                    info0.color_type(),
+                    info0.alpha_type(),
+                    info0.color_space(),
+                );
+                if let Ok(image) = codec.get_image(Some(info), None) {
+                    let scaled_swapped = image.width() != scaled.width;
+                    let scale = image.width() as f32 / lw.max(1) as f32;
+                    if full_swapped == scaled_swapped && scale > 0.0 && scale < 1.0 {
+                        out.image = image;
+                        out.scale = scale;
+                        outcome = "scaled";
+                    }
+                }
+            }
+        }
+    }
+    engine_note(&format!(
+        "fm_engine.decode source={}x{} decoded={}x{} scale={:.6} edge={} cached=false outcome={} ms={}",
+        out.logical_w,
+        out.logical_h,
+        out.image.width(),
+        out.image.height(),
+        out.scale,
+        edge,
+        outcome,
+        started.elapsed().as_millis()
+    ));
+    Ok(out)
+}
+
+/// Cached interactive decode. `preview_source_edge <= 0` keeps the historical
+/// full-resolution path untouched (final frames, exports, evidence renders).
+fn load_render_photo(path: &str, preview_source_edge: i32) -> Result<PhotoSource, String> {
+    let edge = preview_source_edge.max(0);
+    if edge == 0 {
+        return full_photo(path);
+    }
+    let wanted = (|| -> Result<PhotoKey, String> {
+        let meta = std::fs::metadata(path).map_err(|e| format!("photo missing: {path}: {e}"))?;
+        Ok(PhotoKey {
+            path: path.to_string(),
+            len: meta.len(),
+            modified: meta.modified().ok(),
+            source_edge: edge,
+        })
+    })()?;
+    let slot = PHOTO_CACHE.get_or_init(|| Mutex::new(None));
+    let hit = slot
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .as_ref()
+        .filter(|entry| photo_key_matches(&entry.key, &wanted))
+        .map(|entry| entry.photo.clone());
+    if let Some(photo) = hit {
+        engine_note(&format!(
+            "fm_engine.decode source={}x{} decoded={}x{} scale={:.6} edge={} cached=true outcome=scaled ms=0",
+            photo.logical_w,
+            photo.logical_h,
+            photo.image.width(),
+            photo.image.height(),
+            photo.scale,
+            edge
+        ));
+        return Ok(photo);
+    }
+    let photo = decode_scaled_photo(path, edge)?;
+    if photo.scale < 1.0 {
+        *slot.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) =
+            Some(CachedPhoto { key: wanted, photo: photo.clone() });
+    }
+    Ok(photo)
 }
 
 /// Engine-side notes. On Android a plain `println!` from an `.so` goes to a stdout
@@ -529,6 +722,7 @@ pub fn render_design(
     fonts_dir: &str,
     out_png: &str,
     max_edge: i32,
+    preview_source_edge: i32,
     options: &RenderOptions,
 ) -> Result<RenderStats, String> {
     let geom_path = format!("{out_png}.geom.json");
@@ -541,6 +735,7 @@ pub fn render_design(
         Some(out_png),
         &geom_path,
         max_edge,
+        preview_source_edge,
         options,
     )
     .map(|product| product.stats)
@@ -558,7 +753,7 @@ pub fn render_design_rgba(
     options: &RenderOptions,
 ) -> Result<RgbaRender, String> {
     let product = render_design_impl(
-        style_path, photo_path, exif_path, assets, fonts_dir, None, geom_path, max_edge, options,
+        style_path, photo_path, exif_path, assets, fonts_dir, None, geom_path, max_edge, 0, options,
     )?;
     let rgba = product
         .rgba
@@ -581,10 +776,11 @@ fn render_design_impl(
     out_png: Option<&str>,
     geom_path: &str,
     max_edge: i32,
+    preview_source_edge: i32,
     options: &RenderOptions,
 ) -> Result<RenderProduct, String> {
     let raw = std::fs::read_to_string(style_path).map_err(|e| format!("read style: {e}"))?;
-    let style = ir::parse_style(&raw).map_err(|e| format!("parse style: {e}"))?;
+    let style = cached_style(style_path)?;
     // P3e-b: absent/unreadable EXIF is a contract state, not a render error.
     // The shared e2b modules resolve every EXIF token to empty, so the affected
     // text nodes drop out by the normal empty-node rule. Never fall back to a
@@ -640,7 +836,19 @@ fn render_design_impl(
         max_edge,
     ));
 
-    let mut photo = load_photo(photo_path)?;
+    // Interactive tier: decode a reduced raster; `pw/ph` below stay in file
+    // pixels so the layout, the crop and the reported `photo_src` do not move.
+    // The ratio hint crops the photo before layout, so that branch keeps the
+    // full decode (it is not on the measured interactive path).
+    let photo_source = if options.ratio.is_some() {
+        full_photo(photo_path)?
+    } else {
+        load_render_photo(photo_path, preview_source_edge)?
+    };
+    let mut photo = photo_source.image.clone();
+    let mut photo_scale = photo_source.scale;
+    let mut logical_w = photo_source.logical_w;
+    let mut logical_h = photo_source.logical_h;
     // The ratio hint crops the photo before layout. Remember where that window
     // sits in the file so the reported `photo_src` stays in the file's pixels.
     let mut ratio_view: Option<RatioView> = None;
@@ -649,10 +857,13 @@ fn render_design_impl(
             crop_to_ratio(&photo, rw, rh).ok_or_else(|| "ratio crop failed".to_string())?;
         photo = cropped;
         ratio_view = Some(view);
+        photo_scale = 1.0;
+        logical_w = photo.width();
+        logical_h = photo.height();
     }
-    let (pw, ph) = (photo.width() as f32, photo.height() as f32);
+    let (pw, ph) = (logical_w as f32, logical_h as f32);
 
-    let fonts = text::FontSet::load(Path::new(fonts_dir))?;
+    let fonts = cached_fonts(fonts_dir)?;
     let mut te = text::TextEngine::new();
     te.subpixel = true;
     te.linear_metrics = true;
@@ -705,14 +916,14 @@ fn render_design_impl(
         show_date: bits.show_date,
         font_scale: bits.font_scale,
         te: &te,
-        fonts: &fonts,
+        fonts: fonts.as_ref(),
         theme_id: theme_id.clone(),
         foreground,
         ov: &bits.ov,
     };
     let mut gaps = ir::Gaps::default();
-    let layout = ir::solve(&style, &env, &mut gaps)?;
-    let text_slots = ir::text_slot_manifest(&style, &env, &layout, &mut gaps);
+    let layout = ir::solve(style.as_ref(), &env, &mut gaps)?;
+    let text_slots = ir::text_slot_manifest(style.as_ref(), &env, &layout, &mut gaps);
 
     let base_w = layout.photo.w;
     let k = pw / base_w;
@@ -777,7 +988,7 @@ fn render_design_impl(
             k,
             cw: cw as f32,
             ch: ch as f32,
-            fonts: &fonts,
+            fonts: fonts.as_ref(),
             te: &te,
             images: &images,
             brands: &mut brands,
@@ -834,14 +1045,16 @@ fn render_design_impl(
             Some(view) => view.to_source(photo_src),
             None => photo_src,
         });
+        // The reported rect is in file pixels; an interactive decode only moves
+        // the sampled rect into its own (scaled) raster.
         draw_image_rect(
             canvas,
             &photo,
             Some(Rect::from_xywh(
-                photo_src[0],
-                photo_src[1],
-                photo_src[2],
-                photo_src[3],
+                photo_src[0] * photo_scale,
+                photo_src[1] * photo_scale,
+                photo_src[2] * photo_scale,
+                photo_src[3] * photo_scale,
             )),
             photo_rect,
             photo_sampling,
@@ -1724,7 +1937,7 @@ fn draw_image_rect(
 /// mapping this bridge needs and the document reader at the other end.
 #[cfg(test)]
 mod photo_crop_tests {
-    use super::{parse_overrides, photo_src_rect, RatioView};
+    use super::{parse_overrides, photo_key_matches, photo_src_rect, PhotoKey, RatioView};
     use crate::ir::PhotoCrop;
     use serde_json::json;
 
@@ -1948,6 +2161,36 @@ mod photo_crop_tests {
         let mapped = rounded.to_source([0.0, 0.0, 2999.0, 2000.0]);
         assert!((mapped[2] - 3000.0).abs() < 1e-3);
         assert_eq!(mapped[3], 2000.0);
+    }
+
+    /// One decode per (photo path, length, mtime, interactive source edge): a
+    /// drag on the same photo must hit the cache, a replaced file must not.
+    #[test]
+    fn photo_cache_key_is_path_size_mtime_and_source_edge() {
+        let base = PhotoKey {
+            path: "/photos/a.jpg".into(),
+            len: 40_135_193,
+            modified: Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_800)),
+            source_edge: 960,
+        };
+        assert!(photo_key_matches(&base, &base.clone()));
+
+        let mut other = base.clone();
+        other.path = "/photos/b.jpg".into();
+        assert!(!photo_key_matches(&base, &other));
+
+        let mut other = base.clone();
+        other.len += 1;
+        assert!(!photo_key_matches(&base, &other));
+
+        let mut other = base.clone();
+        other.modified = Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_801));
+        assert!(!photo_key_matches(&base, &other));
+
+        // The final frame's full decode (edge 0) is a different cache entry.
+        let mut other = base.clone();
+        other.source_edge = 0;
+        assert!(!photo_key_matches(&base, &other));
     }
 }
 

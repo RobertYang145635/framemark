@@ -4,6 +4,7 @@ import com.framemark.native.product.BatchJob
 import com.framemark.native.product.BatchJobError
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.ExportSettings
+import com.framemark.native.product.FmLog
 import com.framemark.native.product.PhotoDesign
 import com.framemark.native.product.PhotoRef
 import com.framemark.native.shell.desktop.BatchPhotoRow
@@ -161,8 +162,14 @@ class DesktopBatchWorkspaceTest {
         assertNull(BatchQueueView.rows(listOf(done))[0].reason)
     }
 
+    /**
+     * UI copy audit 2026-11-13, item 4: the failure copy used to append the support code
+     * (`…（FM-E-EXPORT-001）`). The sentence on screen carries no code now; the code is
+     * logged under `FM_BATCH_ITEM_FAIL` and stays in the structured `BatchJobError`, so
+     * support can still match a screenshot to a run.
+     */
     @Test
-    fun failure_text_translates_the_system_message_but_keeps_the_code() {
+    fun failure_text_translates_the_system_message_and_drops_the_code() {
         assertTrue(
             BatchQueueView.failureText(null, "另一个程序正在使用此文件，进程无法访问。").contains("文件被占用"),
         )
@@ -171,12 +178,20 @@ class DesktopBatchWorkspaceTest {
                 .contains("没有写入权限"),
         )
         assertTrue(BatchQueueView.failureText(null, "Not a directory").contains("输出路径不存在"))
-        val input = BatchQueueView.failureText("FM-E-INPUT-001", "FM-E-INPUT-001 照片文件读不到：C:/x.jpg")
-        assertTrue(input.contains("照片文件读不到"), input)
-        assertTrue(input.contains("FM-E-INPUT-001"), input)
         assertTrue(BatchQueueView.failureText(null, "引擎返回了无法解析的返回码").contains("无法解析"))
-        assertTrue(BatchQueueView.failureText("FM-E-EXPORT-001", null).contains("FM-E-EXPORT-001"))
         assertTrue(BatchQueueView.failureText(null, null).contains("原因未知"))
+
+        // The code is the support handle: it stays in the structured failure and in the
+        // producer's log (`BatchRunner`, FM_BATCH_ITEM_FAIL), never in the sentence.
+        val job = doneJob(photo("p1", "IMG_1"), design("stock-a")).copy(
+            id = "failed",
+            status = BatchJobStatus.Failed,
+            error = BatchJobError("FM-E-INPUT-001", "FM-E-INPUT-001 照片文件读不到：C:/x.jpg"),
+        )
+        val row = BatchQueueView.rows(listOf(job)).single()
+        assertEquals("照片文件读不到：C:/x.jpg", row.reason)
+        assertFalse(row.reason.orEmpty().contains("FM-E"), row.reason.orEmpty())
+        assertEquals("FM-E-INPUT-001", job.error?.code)
     }
 
     @Test

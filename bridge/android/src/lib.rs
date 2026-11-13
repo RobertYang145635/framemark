@@ -167,6 +167,7 @@ pub extern "C" fn fm_render_design(
     overlay_angle: f32,
     out_png: *const c_char,
     max_edge: i32,
+    preview_source_edge: i32,
 ) -> *mut c_char {
     let result = (|| -> Result<RenderStats, String> {
         let style = unsafe { cstr(style_path, "style_path") }?;
@@ -242,6 +243,7 @@ pub extern "C" fn fm_render_design(
             fonts,
             out,
             max_edge,
+            preview_source_edge,
             &options,
         )
     })();

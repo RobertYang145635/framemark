@@ -280,9 +280,23 @@ object PhoneSettingsText {
         ThemeMode.Dark -> "深色"
     }
 
-    /** The version row: never blank, never the build's internal placeholder. */
+    /**
+     * The version row: never blank, never the build's internal placeholder.
+     *
+     * `appVersionLabel()` reads the installed package (`versionName`) and can come
+     * back empty on a build that carries no label, or as the literal `null` /
+     * `undefined` from a mis-encoded manifest. The old fallback here was the bare
+     * word `dev`, which is a developer marker on a user-visible row; the row now
+     * says 未知 instead. Anything else is the real label and is shown as is.
+     */
     fun versionLabel(raw: String?): String {
         val trimmed = raw?.trim().orEmpty()
-        return if (trimmed.isEmpty() || trimmed == "null") "dev" else trimmed
+        val unusable = trimmed.isEmpty() ||
+            trimmed.equals("null", ignoreCase = true) ||
+            trimmed.equals("undefined", ignoreCase = true)
+        return if (unusable) UNKNOWN_VERSION else trimmed
     }
+
+    /** Stands in for a missing build label — user copy, not a developer marker. */
+    const val UNKNOWN_VERSION: String = "未知"
 }

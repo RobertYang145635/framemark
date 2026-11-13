@@ -269,7 +269,7 @@ internal fun DesktopHelpOverlay(open: Boolean, onDismiss: () -> Unit) {
             HelpRow("Esc", "关闭弹层")
             Spacer(Modifier.height(FmSpacing.lg))
             Text(
-                "预览仍是静态边框图，参数只改本地值；导出与批量导出均走原生引擎，文件写入导出目录。",
+                "预览仍是静态边框图，参数只改本地值；导出与批量导出都用本机渲染，文件写入导出目录。",
                 style = FmType.labelSmall,
                 color = FmPalette.onSurfaceMuted,
             )

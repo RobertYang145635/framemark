@@ -333,7 +333,8 @@ internal fun UserLogoPanel(
 
     LaunchedEffect(repo, revision) {
         entries = runCatching { repo.list() }
-            .onFailure { loadError = it.message ?: "用户 Logo 库读取失败" }
+            // Raw `it.message` was shown verbatim; the library is user copy only.
+            .onFailure { loadError = "用户 Logo 库读取失败，请重试。" }
             .getOrElse { emptyList() }
     }
 
@@ -413,7 +414,7 @@ internal fun UserLogoPanel(
                                     if (current == entry.id) session.set(control, "")
                                 }
                                 .onFailure {
-                                    UserLogoImportStatus.fail("删除失败：${it.message ?: "用户 Logo 库写入失败"}")
+                                    UserLogoImportStatus.fail("删除失败，请重试。")
                                 }
                         }
                     },
@@ -709,7 +710,7 @@ private fun LogoCutRowItem(
                 )
             }
             Text(
-                text = "${eraLabel(row.version.era)} · ${row.version.years}",
+                text = versionSubtitle(row.version.era, row.version.years),
                 style = FmType.labelSmall,
                 color = FmPalette.onSurfaceMuted,
             )

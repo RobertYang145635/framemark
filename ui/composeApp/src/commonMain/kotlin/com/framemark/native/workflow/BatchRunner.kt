@@ -298,8 +298,11 @@ class BatchRunner(
                     } catch (t: Throwable) {
                         item.progress = 0f
                         item.status = BatchItemStatus.Failed
-                        item.error = (t.message ?: t::class.simpleName ?: "export failed").take(300)
-                        FmLog.warn("FM_BATCH_ITEM_FAIL") { "id=${item.id} card=${item.cardId} error=${item.error}" }
+                        // `EngineFailure.userMessage` is already the sentence; anything else
+                        // is a raw Java/engine message, so the copy is fixed and the text
+                        // goes to the log (audit items 4 and 5).
+                        item.error = (t as? EngineFailure)?.userMessage ?: "导出失败，请重试。"
+                        FmLog.warn("FM_BATCH_ITEM_FAIL") { "id=${item.id} card=${item.cardId} raw=${t.message}" }
                     }
                     persist()
                     delay(20)

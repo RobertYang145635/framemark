@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.library.LibraryLabels
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.shell.PHONE_FRAME_CARD_SIZE_DP
 import com.framemark.native.shell.PhoneProjectRuntime
@@ -238,10 +239,9 @@ private fun androidx.compose.foundation.layout.BoxScope.BadgeLabel(card: Library
  */
 internal fun phoneCardDescription(card: LibraryCard): String {
     if (card.category == "vendor") {
-        return listOfNotNull(
-            card.brand?.takeIf { it.isNotBlank() },
-            card.family?.takeIf { it.isNotBlank() },
-        ).joinToString(" · ")
+        // `OPPO · OPPO 相册` was the old copy: the family field already starts with
+        // the brand, so the helper keeps the distinguishing part only (audit item 2).
+        return LibraryLabels.vendorSource(card.brand, card.family)
     }
     return listOfNotNull(
         card.categoryName.takeIf { it.isNotBlank() },

@@ -449,7 +449,7 @@ internal fun CuratedStylePane(
                     if (disabledReason == null) {
                         val floor = photo?.let { footerPctFloor(it.widthPx, it.heightPx) }
                         if (floor != null && floor > (pct.min ?: 0f)) {
-                            CuratedSubNote("低于 ${FmUnits.formatNumber(floor, 2)}% 与地板等价：引擎按短边 8.5% 兜底，画布不再变矮。")
+                            CuratedSubNote("低于 ${FmUnits.formatNumber(floor, 2)}% 与地板等价：渲染按短边 8.5% 兜底，画布不再变矮。")
                         }
                     }
                 }

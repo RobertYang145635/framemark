@@ -1,0 +1,244 @@
+file	line	literal
+commonMain/kotlin/com/framemark/native/inspector/BrandLogoLibrary.kt	129	files/data/logos.json
+commonMain/kotlin/com/framemark/native/inspector/BrandLogoLibrary.kt	177	label
+commonMain/kotlin/com/framemark/native/inspector/BrandLogoLibrary.kt	178	cn
+commonMain/kotlin/com/framemark/native/inspector/BrandLogoLibrary.kt	593	${eraLabel(era)} · ${versions.size}
+commonMain/kotlin/com/framemark/native/inspector/BrandLogoLibrary.kt	671	${eraLabel(version.era)} · ${version.years}
+commonMain/kotlin/com/framemark/native/inspector/FmControls.kt	698	$label $eye
+commonMain/kotlin/com/framemark/native/inspector/FmControls.kt	892	· $hint
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	318	label
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	319	group
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	347	label
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	348	kind
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	348	text
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	385	cn
+commonMain/kotlin/com/framemark/native/inspector/InspectorData.kt	386	label
+commonMain/kotlin/com/framemark/native/inspector/InspectorTabs.kt	53	Logo
+commonMain/kotlin/com/framemark/native/inspector/InspectorTabs.kt	89	showLogo
+commonMain/kotlin/com/framemark/native/inspector/LogoBrandPanel.kt	531	${it.label} ${it.cn}
+commonMain/kotlin/com/framemark/native/inspector/LogoBrandPanel.kt	563	${brand.label} · ${brand.cn}
+commonMain/kotlin/com/framemark/native/inspector/LogoBrandPanel.kt	712	${eraLabel(row.version.era)} · ${row.version.years}
+commonMain/kotlin/com/framemark/native/inspector/LogoBrandPanel.kt	883	${brand.label} · ${brand.cn}
+commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt	316	${logoBrandTitle(brand)} · ${version.name}
+commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt	954	${rows.size} / ${brands.size}
+commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt	1187	${version.name} · $tone
+commonMain/kotlin/com/framemark/native/inspector/LogoPanes.kt	1194	${eraLabel(version.era)} · ${version.years}
+commonMain/kotlin/com/framemark/native/inspector/PhoneLogoPicker.kt	441	${category.label} ${category.count}
+commonMain/kotlin/com/framemark/native/inspector/PhoneLogoPicker.kt	660	${eraLabel(version.era)} · ${version.years}
+commonMain/kotlin/com/framemark/native/inspector/WatermarkPane.kt	214	PNG
+commonMain/kotlin/com/framemark/native/library/LibraryFilters.kt	102	$it / 
+commonMain/kotlin/com/framemark/native/library/LibraryIndex.kt	295	${vendor.label} · ${family.label}
+commonMain/kotlin/com/framemark/native/library/LibraryIndex.kt	318	$categoryLabel · $templateCategory
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	183	LABEL_TECHNICAL
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	204	OPTION_LABEL
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	233	text.
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	398	min
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	435	min
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	493	unlabeled
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	494	unknown-kind
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	495	no-consumer
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	629	label
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	771	label
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	772	kind
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	772	text
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	807	label
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	808	group
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	873	cn
+commonMain/kotlin/com/framemark/native/product/ControlRegistry.kt	874	label
+commonMain/kotlin/com/framemark/native/product/PhotoDesign.kt	40	text
+commonMain/kotlin/com/framemark/native/product/ProductCodec.kt	208	text
+commonMain/kotlin/com/framemark/native/product/ProductCodec.kt	208	$where.text
+commonMain/kotlin/com/framemark/native/product/ProductCodec.kt	209	overlay
+commonMain/kotlin/com/framemark/native/product/ProductCodec.kt	209	$where.overlay
+commonMain/kotlin/com/framemark/native/product/ProductCodec.kt	223	baseDesign
+commonMain/kotlin/com/framemark/native/product/SessionStore.kt	247	$message$note
+commonMain/kotlin/com/framemark/native/product/UltraHdrAssembler.kt	254	hdrgm:Version
+commonMain/kotlin/com/framemark/native/product/UltraHdrAssembler.kt	254	Container:Directory
+commonMain/kotlin/com/framemark/native/shell/BottomNav.kt	49	Logo
+commonMain/kotlin/com/framemark/native/shell/PhoneHome.kt	201	FRAMEMARK
+commonMain/kotlin/com/framemark/native/shell/desktop/BatchWorkspace.kt	790	${summary.percent}%
+commonMain/kotlin/com/framemark/native/shell/desktop/DesktopFilmstrip.kt	273	$selected / $total
+commonMain/kotlin/com/framemark/native/shell/desktop/DesktopLayout.kt	107	left
+commonMain/kotlin/com/framemark/native/shell/desktop/DesktopLayout.kt	108	left
+commonMain/kotlin/com/framemark/native/shell/desktop/DesktopLayout.kt	116	left
+commonMain/kotlin/com/framemark/native/shell/desktop/DesktopLibraryCards.kt	94	thumbScale
+commonMain/kotlin/com/framemark/native/shell/desktop/ExportDialog.kt	703	px
+commonMain/kotlin/com/framemark/native/shell/desktop/ExportDialog.kt	756	$qualityValue
+commonMain/kotlin/com/framemark/native/shell/desktop/ExportDialog.kt	778	{photo}-{index}
+commonMain/kotlin/com/framemark/native/shell/desktop/ExportDialog.kt	1021	${result.width} × ${result.height} px · 
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneControls.kt	112	$label：$text
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneControls.kt	238	$label：$value
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneEditorTopBar.kt	147	$photoIndex / $photoCount
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneExportSheet.kt	456	${result.width} × ${result.height} px · 
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneExportSheet.kt	587	$outputWidth × $outputHeight
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneHomeParts.kt	215	$title，$subtitle
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneParameterPages.kt	579	$pixels px
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneParamRows.kt	154	$label：$shownText
+commonMain/kotlin/com/framemark/native/shell/phone/PhoneStageOverlay.kt	177	· $hint
+commonMain/kotlin/com/framemark/native/theme/AppearanceController.kt	52	error
+commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt	106	$percent%
+commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt	220	$percent%
+commonMain/kotlin/com/framemark/native/workflow/OwnedControlOverrides.kt	30	text.
+commonMain/kotlin/com/framemark/native/workflow/PhotoBatch.kt	664	${sizeLabel(row.settings)} · ${row.settings.format.label}
+commonMain/kotlin/com/framemark/native/workflow/TextSlots.kt	234	native_text_slot
+androidMain/kotlin/com/framemark/native/MainActivity.kt	641	file
+androidMain/kotlin/com/framemark/native/MainActivity.kt	731	fmPerfCards
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	310	canvas
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	340	photo_src
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	369	canvas
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	385	text
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	395	raw
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	396	key
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	422	s
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	423	raw
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	423	s
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	450	raw
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	450	text
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	696	FM_DESIGN_OVERRIDE_FAIL
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	696	${it.message}
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	789	} design=${designJsonOf(design, useNative, selectedLogo).take(160)} 
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	790	overlay=${overlay?.path ?: 
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	1086	\n
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	1088	FM_ANDROID_EXPORT
+androidMain/kotlin/com/framemark/native/engine/AndroidNativeRender.kt	1088	$row
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	85	styles
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	225	styles
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	255	\n
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	285	\n
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	297	cards
+androidMain/kotlin/com/framemark/native/engine/EngineData.kt	323	cards
+androidMain/kotlin/com/framemark/native/engine/IrBatchRunner.kt	74	{"edge":$maxEdge,"ok":$ok,"fail":$fail,"totalMs":$total,"cards":[${indexRows.joinToString(",")}]}
+androidMain/kotlin/com/framemark/native/engine/IrBatchRunner.kt	136	{"edge":$maxEdge,"ok":$ok,"fail":$fail,"totalMs":$total,"styles":[${indexRows.joinToString(",")}]}
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	83	\n
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	84	FM_OVERLAY_ROW
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	84	$row
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	89	not an image
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	91	missing
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	91	no-such-overlay.png
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	106	\n
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	107	FM_OVERLAY_ROW
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	107	$row
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	130	\n
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	131	FM_OVERLAY_ROW
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	131	$row
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	146	overlay
+androidMain/kotlin/com/framemark/native/engine/OverlayAbRunner.kt	146	dst
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	131	\n
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	132	FM_P3_ROW
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	132	$row
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	188	\n
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	189	FM_P3_ROW
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	189	$json
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	231	\n
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	232	FM_P3_ROW
+androidMain/kotlin/com/framemark/native/engine/P3BatchRunner.kt	232	$json
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	52	kind
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	52	global_before
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	52	path
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	52	\n
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	94	\n
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	95	FM_PERPHOTO_ROW
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	95	$row
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	101	kind
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	101	global_after
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	101	path
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	102	unchanged
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	128	\n
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	129	FM_PERPHOTO_ROW
+androidMain/kotlin/com/framemark/native/engine/PerCallPhotoRunner.kt	129	$row
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	73	\n
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	74	FM_PERF50_ENV
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	74	$env
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	128	\n
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	129	FM_PERF50_ROW
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	129	$row
+androidMain/kotlin/com/framemark/native/engine/Perf50Runner.kt	155	file
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	57	kind
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	57	meta
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	58	model
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	65	\n
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	66	FM_MATRIX_META
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	66	$meta
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	116	\n
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	117	FM_MATRIX_ROW
+androidMain/kotlin/com/framemark/native/engine/WiredMatrixRunner.kt	117	$row
+androidMain/kotlin/com/framemark/native/shell/AndroidInspectorHints.kt	52	themeSwatches
+androidMain/kotlin/com/framemark/native/shell/AndroidInspectorHints.kt	74	modeSegment
+androidMain/kotlin/com/framemark/native/workflow/AndroidProjectIo.kt	140	$stage time=${System.currentTimeMillis()} pid=${android.os.Process.myPid()}
+androidMain/kotlin/com/framemark/native/workflow/AndroidProjectIo.kt	141	FM_CRASH_WINDOW
+androidMain/kotlin/com/framemark/native/workflow/AndroidWorkflowPlatform.kt	100	midwrite written=$totalWritten pid=${android.os.Process.myPid()}
+androidMain/kotlin/com/framemark/native/workflow/AndroidWorkflowPlatform.kt	101	FM_CRASH_WINDOW
+desktopMain/kotlin/com/framemark/native/main.kt	181	FrameMark
+desktopMain/kotlin/com/framemark/native/engine/BridgeMain.kt	30	text
+desktopMain/kotlin/com/framemark/native/engine/BridgeMain.kt	31	max-edge
+desktopMain/kotlin/com/framemark/native/engine/BridgeMain.kt	32	long-edge
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	634	UNCHECKED_CAST
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	635	design
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	658	cards
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	722	ir
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	723	canvas
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	765	kind
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	765	text
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	772	text
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	772	\n
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	773	path
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	798	text
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	799	key
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	838	s
+desktopMain/kotlin/com/framemark/native/engine/DesktopEngineBridge.kt	952	$tag.response.json
+desktopMain/kotlin/com/framemark/native/engine/E5Worker.kt	141	canvas
+desktopMain/kotlin/com/framemark/native/engine/E5Worker.kt	142	output
+desktopMain/kotlin/com/framemark/native/engine/EngineCatalog.kt	167	label
+desktopMain/kotlin/com/framemark/native/engine/EngineCatalog.kt	168	sampleText
+desktopMain/kotlin/com/framemark/native/engine/EngineCatalog.kt	189	FM-E-RES-001
+desktopMain/kotlin/com/framemark/native/engine/LogoLibrary.kt	129	schema
+desktopMain/kotlin/com/framemark/native/engine/LogoLibrary.kt	129	framemark-logo-version-map/v1
+desktopMain/kotlin/com/framemark/native/engine/LogoLibrary.kt	129	Unsupported logo version map schema
+desktopMain/kotlin/com/framemark/native/engine/RegistrySource.kt	128	FM_REGISTRY_FAIL
+desktopMain/kotlin/com/framemark/native/engine/RegistrySource.kt	128	${it.message}
+desktopMain/kotlin/com/framemark/native/engine/RegistrySource.kt	146	FM_IR_BINDING_FAIL
+desktopMain/kotlin/com/framemark/native/engine/RegistrySource.kt	146	${it.message}
+desktopMain/kotlin/com/framemark/native/theme/WindowsTheme.kt	71	FM_APPEARANCE_FAKE_READ_FAIL ${fake.absolutePath} ${t.message}
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	142	cards
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	161	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	203	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	232	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	272	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	303	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	318	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	334	preview
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	419	P1C_RESULT 
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	419	\n
+desktopMain/kotlin/com/framemark/native/verify/P1cWireVerify.kt	420	P1C_EVIDENCE ${File(out, 
+desktopMain/kotlin/com/framemark/native/verify/P2aVerify.kt	174	not an image
+desktopMain/kotlin/com/framemark/native/verify/P2aVerify.kt	226	journey.md
+desktopMain/kotlin/com/framemark/native/verify/P2aVerify.kt	242	\n
+desktopMain/kotlin/com/framemark/native/verify/P2aVerify.kt	243	P2A PASS
+desktopMain/kotlin/com/framemark/native/verify/P2aVerify.kt	243	P2A FAIL
+desktopMain/kotlin/com/framemark/native/verify/P2bLogoVerify.kt	42	brandPicker
+desktopMain/kotlin/com/framemark/native/verify/P2bLogoVerify.kt	141	{\n  \"engine\": ${jsonStr(engineExe ?: 
+desktopMain/kotlin/com/framemark/native/verify/P2bLogoVerify.kt	141	)},\n
+desktopMain/kotlin/com/framemark/native/verify/P2bLogoVerify.kt	142	  \"card\": ${jsonStr(cardId)},\n
+desktopMain/kotlin/com/framemark/native/verify/P2bVerify.kt	101	themeSwatches
+desktopMain/kotlin/com/framemark/native/verify/P2bVerify.kt	344	[A-Za-z]:\\\\|_research/native
+desktopMain/kotlin/com/framemark/native/verify/P2bVerify.kt	374	journey.md
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	37	footer
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	38	slider
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	77	presets.json
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	79	presets.json
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	82	legacyPresetsReadable
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	99	presetDocIsProduct
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	100	presetValuesFolded
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	111	batch-queue.json
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	117	batchDocIsProduct
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	155	migrated-batch-queue.json
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	156	presetDocHead
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	157	batchDocHead
+desktopMain/kotlin/com/framemark/native/verify/P2cVerify.kt	162	{\n  \"checks\": {
+desktopMain/kotlin/com/framemark/native/verify/P3fDiff.kt	20	pair
+desktopMain/kotlin/com/framemark/native/verify/P3fDiff.kt	21	cannot decode ${args[0]}
+desktopMain/kotlin/com/framemark/native/verify/P3fDiff.kt	59	changed=$changed changedPct=
+desktopMain/kotlin/com/framemark/native/verify/P3fDiff.kt	59	%.6f
+desktopMain/kotlin/com/framemark/native/verify/P3fStaticVerify.kt	130	artifactOnDiskReparseable
+desktopMain/kotlin/com/framemark/native/verify/P3fStaticVerify.kt	133	P3F_ARTIFACT_BAD ${probe.exceptionOrNull()?.message}
+desktopMain/kotlin/com/framemark/native/workflow/DesktopWorkflowPlatform.kt	150	\"label\"\\s*:\\s*\"([^\"]+)\"

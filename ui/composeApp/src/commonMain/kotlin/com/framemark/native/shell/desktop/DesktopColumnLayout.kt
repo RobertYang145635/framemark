@@ -148,7 +148,7 @@ internal fun DesktopColumnLayout(
             renderMode = when {
                 selectedCard == null -> "等待选择"
                 NativeEngine.supports(selectedCard.id) -> "实时渲染"
-                else -> "引擎样张"
+                else -> "示例图"
             },
             tags = listOfNotNull(selectedCard?.badge),
             tabModel = tabModel,

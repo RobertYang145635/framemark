@@ -66,6 +66,7 @@ import com.framemark.native.inspector.textSlotNavEntries
 import com.framemark.native.inspector.themeControlOf
 import com.framemark.native.inspector.vendorSpecNote
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.library.LibraryLabels
 import com.framemark.native.shell.PHONE_PARAM_LABEL_LINE_DP
 import com.framemark.native.shell.PHONE_PARAM_LABEL_SP
 import com.framemark.native.shell.PHONE_PARAM_ROW_GAP_DP
@@ -555,10 +556,8 @@ private fun SpecBlock(model: InspectorCardModel, tab: InspectorTabInfo, card: Li
                     "${model.controls.count { !it.hidden && it.type == ControlType.Text }} 行"
                 },
             )
-            val source = listOfNotNull(
-                card?.brand?.takeIf { it.isNotBlank() },
-                card?.family?.takeIf { it.isNotBlank() },
-            ).joinToString(" · ")
+            // Same wording as the card grid: the family already names the brand.
+            val source = LibraryLabels.vendorSource(card?.brand, card?.family)
             if (source.isNotBlank()) add("来源" to source)
         },
     )

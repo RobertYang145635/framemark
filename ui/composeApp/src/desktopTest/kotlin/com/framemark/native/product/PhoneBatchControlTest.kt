@@ -88,6 +88,7 @@ class PhoneBatchControlTest {
             webpLossless: Boolean,
             overlay: OverlaySpec?,
             photoPath: String?,
+            interactive: Boolean,
         ): NativeImage {
             photoPaths += photoPath
             entered.complete(photoPath)

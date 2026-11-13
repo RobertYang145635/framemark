@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.product.ProjectPreset
+import com.framemark.native.product.NoticeText
 import com.framemark.native.workflow.PresetTransfer
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -66,7 +67,7 @@ fun ProjectPresetSheet(
         AlertDialog(
             onDismissRequest = { projects.clearPresetError() },
             title = { Text("预设操作没有成功") },
-            text = { Text(failure) },
+            text = { Text(NoticeText.human(failure) ?: "预设操作没有成功，请重试。") },
             confirmButton = {
                 TextButton(onClick = {
                     projects.clearPresetError()

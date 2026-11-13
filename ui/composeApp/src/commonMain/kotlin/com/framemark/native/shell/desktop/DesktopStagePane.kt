@@ -348,7 +348,7 @@ internal fun EditStage(
                     previewed != null -> "悬停预览 · ${previewed.name}"
                     projects.activePhoto != null && activeDesign == null -> "未选边框"
                     native -> "实时预览"
-                    card != null -> "引擎样张"
+                    card != null -> "示例图"
                     else -> "未选边框"
                 },
                 kind = when {

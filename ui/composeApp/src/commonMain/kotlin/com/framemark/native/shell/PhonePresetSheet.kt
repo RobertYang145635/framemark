@@ -45,6 +45,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 private const val PHONE_JPEG_QUALITY = 100
 
@@ -85,7 +86,7 @@ fun PhonePresetSheet(
         } catch (error: Throwable) {
             transferBusy = false
             pendingImport = null
-            transferMessage = "无法导入预设：${error.message ?: "本机写入失败"}"
+            transferMessage = NoticeText.failure("FM_PRESET_SAVE_FAIL", error, "无法导入预设，请确认文件没有损坏。")
             return
         }
         transferBusy = false
@@ -131,20 +132,22 @@ fun PhonePresetSheet(
                                     if (store.presets.any { it.id == preset.id }) pendingImport = preset
                                     else importPreset(preset, replaceExisting = false)
                                 },
-                                onFailure = { transferMessage = "无法导入预设：${it.message ?: "文件格式无效"}" },
+                                onFailure = {
+                                    transferMessage = NoticeText.failure("FM_PRESET_SAVE_FAIL", it, "无法导入预设，文件格式不正确。")
+                                },
                             )
                         }
                     },
                     onFailure = {
                         transferBusy = false
-                        transferMessage = "读取预设文件失败：${it.message ?: "未知错误"}"
+                        transferMessage = NoticeText.failure("FM_PRESET_SAVE_FAIL", it, "读取预设文件失败，请重试。")
                     },
                 )
             }
         }
         started.onFailure {
             transferBusy = false
-            transferMessage = "无法打开预设文件选择器：${it.message ?: "未知错误"}"
+            transferMessage = NoticeText.failure("FM_PRESET_SAVE_FAIL", it, "无法打开文件选择器，请重试。")
         }
     }
 
@@ -162,7 +165,11 @@ fun PhonePresetSheet(
             }
             if (encoded.isFailure) {
                 transferBusy = false
-                transferMessage = "无法导出预设：${encoded.exceptionOrNull()?.message ?: "文档无效"}"
+                transferMessage = NoticeText.failure(
+                    "FM_PRESET_SAVE_FAIL",
+                    encoded.exceptionOrNull(),
+                    "无法导出预设，请重试。",
+                )
                 return@launch
             }
             val started = runCatching {
@@ -170,7 +177,9 @@ fun PhonePresetSheet(
                     transferBusy = false
                     result.fold(
                         onSuccess = { saved -> if (saved) transferMessage = "预设文件已保存" },
-                        onFailure = { transferMessage = "保存预设文件失败：${it.message ?: "未知错误"}" },
+                        onFailure = {
+                            transferMessage = NoticeText.failure("FM_PRESET_SAVE_FAIL", it, "保存预设文件失败，请重试。")
+                        },
                     )
                 }
             }
@@ -315,7 +324,7 @@ fun PhonePresetSheet(
             store.presetError?.let { message ->
                 Spacer(Modifier.height(FmSpacing.sm))
                 Text(
-                    text = "写入失败：$message",
+                    text = NoticeText.human(message)?.let { "写入失败：$it" } ?: "写入失败，请重试。",
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceSecondary,
                 )

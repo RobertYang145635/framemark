@@ -96,6 +96,7 @@ import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.workflow.withNativeTextSlots
 import kotlinx.coroutines.launch
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 /**
  * Desktop layout state, hoisted above the breakpoint by [FrameMarkApp] so a
@@ -817,7 +818,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 importNotice = if (saved != null) {
                     "已保存预设「${saved.name}」"
                 } else {
-                    projects.presetError ?: "保存预设失败"
+                    NoticeText.human(projects.presetError) ?: "保存预设失败"
                 }
                 FmLog.info("FM_DESIGN_PRESET_SAVE") { "name=$name ok=${saved != null}" }
             }

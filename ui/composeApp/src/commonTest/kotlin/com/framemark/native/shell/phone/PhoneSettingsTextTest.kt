@@ -6,6 +6,7 @@ import com.framemark.native.theme.AppearanceStore
 import com.framemark.native.theme.ThemeMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 /**
  * WP-P2 §4.2 设置页外观往返.
@@ -66,10 +67,27 @@ class PhoneSettingsTextTest {
 
     @Test
     fun versionNeverPrintsAnEmptyRow() {
-        assertEquals("dev", PhoneSettingsText.versionLabel(null))
-        assertEquals("dev", PhoneSettingsText.versionLabel(""))
-        assertEquals("dev", PhoneSettingsText.versionLabel("   "))
-        assertEquals("dev", PhoneSettingsText.versionLabel("null"))
+        assertEquals("未知", PhoneSettingsText.versionLabel(null))
+        assertEquals("未知", PhoneSettingsText.versionLabel(""))
+        assertEquals("未知", PhoneSettingsText.versionLabel("   "))
+        assertEquals("未知", PhoneSettingsText.versionLabel("null"))
+        assertEquals("未知", PhoneSettingsText.versionLabel("undefined"))
         assertEquals("0.9.0-rc3", PhoneSettingsText.versionLabel(" 0.9.0-rc3 "))
+    }
+
+    /**
+     * UI copy audit 2026-11-13, leak 3: the version row fell back to the bare word
+     * `dev` — a developer marker on a row the user reads. The fallback is now the
+     * Chinese 未知, and a real build label is still shown verbatim.
+     */
+    @Test
+    fun theVersionRowCarriesNoDeveloperMarker() {
+        val missing = listOf(null, "", "  ", "null", "undefined", "NULL")
+        missing.forEach { raw ->
+            val shown = PhoneSettingsText.versionLabel(raw)
+            assertEquals(PhoneSettingsText.UNKNOWN_VERSION, shown, "input=$raw")
+            assertFalse(shown.contains("dev", ignoreCase = true), "input=$raw -> $shown")
+        }
+        assertEquals("0.9.0-rc13", PhoneSettingsText.versionLabel("0.9.0-rc13"))
     }
 }

@@ -1,0 +1,1282 @@
+kind	path	key	value
+ASCII_LABEL	capabilities.json/source/note	note	Read-only differential: no control, template, default or inventory entry was modified.
+ASCII_LABEL	capabilities.json/cards/[0]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[1]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[2]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[3]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[4]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[5]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[6]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[7]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[8]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[9]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[10]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[11]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[12]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[13]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[14]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[15]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[16]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[17]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[18]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[19]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[20]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[21]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[22]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[23]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[24]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[25]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[26]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[27]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[28]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[29]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[30]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[31]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[32]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[33]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[34]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[35]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[36]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[37]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[38]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[39]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[40]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[41]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[42]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[43]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[44]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[45]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[46]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[47]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[48]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[49]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[50]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[51]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[52]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[53]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[54]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[55]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[56]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[57]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[58]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[59]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[60]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[61]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[62]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[63]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[64]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[65]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[66]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[67]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[68]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[69]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[70]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[71]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[72]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[73]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[74]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[75]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[76]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[77]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[78]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[79]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[80]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[81]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[82]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[83]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[84]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[85]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[86]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[87]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[88]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[89]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[90]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[91]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[92]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[93]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[94]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[95]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[96]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[97]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[98]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[99]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[100]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[101]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[102]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[103]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[105]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[106]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[108]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[109]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[150]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[173]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	capabilities.json/cards/[179]/note	note	no rows in control-audit (not audited; capabilities unknown, not zero)
+ASCII_LABEL	controls.json/sources/[0]/family	family	oppo
+ASCII_LABEL	controls.json/sources/[0]/doc/family	family	oppo
+ASCII_LABEL	controls.json/sources/[0]/doc/records/[9]/name	name	LUMO · 2
+ASCII_LABEL	controls.json/sources/[0]/doc/records/[10]/name	name	LUMO · 3
+ASCII_LABEL	controls.json/sources/[1]/family	family	xiaomi
+ASCII_LABEL	controls.json/sources/[1]/doc/family	family	xiaomi
+ASCII_LABEL	controls.json/sources/[2]/family	family	vivo
+ASCII_LABEL	controls.json/sources/[2]/doc/family	family	vivo
+ASCII_LABEL	controls.json/hand/panels/[0]/template	template	ratioMatte
+ASCII_LABEL	controls.json/hand/panels/[1]/template	template	ratioBlurSquare
+ASCII_LABEL	controls.json/hand/panels/[2]/template	template	movie
+ASCII_LABEL	controls.json/hand/panels/[3]/template	template	sideTicket
+ASCII_LABEL	controls.json/hand/panels/[4]/template	template	portraitTicket
+ASCII_LABEL	controls.json/hand/panels/[5]/template	template	locationCard
+ASCII_LABEL	controls.json/hand/panels/[6]/template	template	splitReveal
+ASCII_LABEL	controls.json/hand/panels/[7]/template	template	bareCover
+ASCII_LABEL	inspector-meta.json/records/[0]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[0]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[0]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[1]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[1]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[1]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[2]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[2]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[2]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[3]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[3]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[3]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[4]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[4]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[4]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[5]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[5]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[5]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[6]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[6]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[6]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[7]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[7]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[7]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[8]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[8]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[8]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[9]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[9]/controls/[10]/label	label	sidePadPct
+ASCII_LABEL	inspector-meta.json/records/[9]/controls/[11]/label	label	topPadPct
+ASCII_LABEL	inspector-meta.json/records/[12]/controls/[7]/label	label	borderPct
+ASCII_LABEL	inspector-meta.json/records/[12]/controls/[8]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[12]/controls/[9]/label	label	signature
+ASCII_LABEL	inspector-meta.json/records/[13]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[14]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[14]/controls/[13]/label	label	frame
+ASCII_LABEL	inspector-meta.json/records/[15]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[15]/controls/[13]/label	label	frame
+ASCII_LABEL	inspector-meta.json/records/[16]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[5]/label	label	brandXPct
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[6]/label	label	brandY
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[8]/label	label	exifY
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[10]/label	label	sticker
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[11]/label	label	stickerRightPct
+ASCII_LABEL	inspector-meta.json/records/[19]/controls/[12]/label	label	stickerScalePct
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[5]/label	label	brandXPct
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[6]/label	label	brandY
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[8]/label	label	exifY
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[10]/label	label	sticker
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[11]/label	label	stickerRightPct
+ASCII_LABEL	inspector-meta.json/records/[20]/controls/[12]/label	label	stickerScalePct
+ASCII_LABEL	inspector-meta.json/records/[25]/controls/[8]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[25]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[25]/controls/[11]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[25]/controls/[13]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[25]/controls/[14]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[26]/controls/[8]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[26]/controls/[9]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[26]/controls/[10]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[26]/controls/[12]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[26]/controls/[13]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[27]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[28]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[29]/controls/[12]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[29]/controls/[13]/label	label	frame
+ASCII_LABEL	inspector-meta.json/records/[30]/controls/[15]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[30]/controls/[20]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[31]/controls/[15]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[31]/controls/[20]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[32]/controls/[15]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[32]/controls/[20]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[33]/controls/[15]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[33]/controls/[20]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[38]/controls/[6]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[38]/controls/[7]/label	label	insetPct
+ASCII_LABEL	inspector-meta.json/records/[38]/controls/[8]/label	label	logoPct
+ASCII_LABEL	inspector-meta.json/records/[39]/controls/[6]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[39]/controls/[7]/label	label	insetPct
+ASCII_LABEL	inspector-meta.json/records/[39]/controls/[8]/label	label	logoPct
+ASCII_LABEL	inspector-meta.json/records/[40]/controls/[4]/label	label	brandTextSizePct
+ASCII_LABEL	inspector-meta.json/records/[40]/controls/[7]/label	label	footerOffsetPct
+ASCII_LABEL	inspector-meta.json/records/[40]/controls/[8]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[40]/controls/[9]/label	label	logoPct
+ASCII_LABEL	inspector-meta.json/records/[40]/controls/[10]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[41]/controls/[4]/label	label	brandTextSizePct
+ASCII_LABEL	inspector-meta.json/records/[41]/controls/[7]/label	label	footerOffsetPct
+ASCII_LABEL	inspector-meta.json/records/[41]/controls/[8]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[41]/controls/[9]/label	label	logoPct
+ASCII_LABEL	inspector-meta.json/records/[41]/controls/[10]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[42]/controls/[17]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[42]/controls/[20]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[42]/controls/[26]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[42]/controls/[27]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[43]/controls/[17]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[43]/controls/[20]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[43]/controls/[26]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[43]/controls/[27]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[44]/controls/[17]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[44]/controls/[20]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[44]/controls/[26]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[44]/controls/[27]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[45]/controls/[17]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[45]/controls/[20]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[45]/controls/[26]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[45]/controls/[27]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[46]/controls/[17]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[46]/controls/[20]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[46]/controls/[26]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[46]/controls/[27]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[47]/controls/[5]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[47]/controls/[6]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[47]/controls/[9]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[48]/controls/[5]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[48]/controls/[6]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[48]/controls/[9]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[49]/controls/[5]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[49]/controls/[6]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[49]/controls/[9]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[3]/label	label	contentW
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[4]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[5]/label	label	logoGap
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[6]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[7]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[8]/label	label	sepX
+ASCII_LABEL	inspector-meta.json/records/[50]/controls/[9]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[3]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[4]/label	label	brandHeightPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[5]/label	label	brandInsetPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[6]/label	label	brandTopPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[10]/label	label	cardHeightPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[11]/label	label	cardInsetPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[12]/label	label	cardMattePct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[13]/label	label	cardRadiusPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[15]/label	label	cardWidthPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[16]/label	label	contentSide
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[17]/label	label	rowBoxHPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[18]/label	label	rowBoxWPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[19]/label	label	rowLabelPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[20]/label	label	rowPitchPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[22]/label	label	rowValueGapPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[23]/label	label	rowValuePct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[24]/label	label	rowsTopPct
+ASCII_LABEL	inspector-meta.json/records/[51]/controls/[25]/label	label	textInsetPct
+ASCII_LABEL	inspector-meta.json/records/[52]/controls/[9]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[52]/controls/[10]/label	label	glassAlign
+ASCII_LABEL	inspector-meta.json/records/[52]/controls/[11]/label	label	glassLayout
+ASCII_LABEL	inspector-meta.json/records/[52]/controls/[13]/label	label	pillOrder
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[0]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[1]/label	label	gridFirstXPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[2]/label	label	gridFirstYPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[3]/label	label	gridPitchXPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[4]/label	label	gridPitchYPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[5]/label	label	labelPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[6]/label	label	panelBottomPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[7]/label	label	panelHeightPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[8]/label	label	panelRadiusPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[9]/label	label	panelWidthPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[10]/label	label	swatchCols
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[11]/label	label	swatchPct
+ASCII_LABEL	inspector-meta.json/records/[53]/controls/[12]/label	label	swatchRows
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[3]/label	label	blur
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[4]/label	label	brandHeightPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[5]/label	label	brandInsetPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[6]/label	label	brandTopPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[10]/label	label	cardHeightPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[11]/label	label	cardInsetPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[12]/label	label	cardMattePct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[13]/label	label	cardRadiusPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[15]/label	label	cardWidthPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[16]/label	label	contentSide
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[17]/label	label	rowBoxHPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[18]/label	label	rowBoxWPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[19]/label	label	rowLabelPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[20]/label	label	rowPitchPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[22]/label	label	rowValueGapPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[23]/label	label	rowValuePct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[24]/label	label	rowsTopPct
+ASCII_LABEL	inspector-meta.json/records/[54]/controls/[25]/label	label	textInsetPct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[1]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[2]/label	label	paletteGapPct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[3]/label	label	palettePct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[4]/label	label	paletteRowPct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[5]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[55]/controls/[6]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[1]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[2]/label	label	paletteGapPct
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[3]/label	label	palettePct
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[4]/label	label	paletteRowPct
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[5]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[56]/controls/[6]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[1]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[2]/label	label	paletteGapPct
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[3]/label	label	palettePct
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[4]/label	label	paletteRowPct
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[5]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[57]/controls/[6]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[62]/controls/[5]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[62]/controls/[7]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[62]/controls/[9]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[62]/controls/[10]/label	label	shadow
+ASCII_LABEL	inspector-meta.json/records/[63]/controls/[6]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[63]/controls/[7]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[64]/controls/[7]/label	label	footerPct
+ASCII_LABEL	inspector-meta.json/records/[64]/controls/[9]/label	label	marginPct
+ASCII_LABEL	inspector-meta.json/records/[64]/controls/[10]/label	label	radiusPct
+ASCII_LABEL	inspector-meta.json/records/[64]/controls/[11]/label	label	shadow
+ASCII_LABEL	logos.json/brands/[0]/label	label	Leica
+ASCII_LABEL	logos.json/brands/[0]/note	note	Red dot survives every redesign; script wordmark still used in lockups.
+ASCII_LABEL	logos.json/brands/[1]/label	label	Canon
+ASCII_LABEL	logos.json/brands/[2]/label	label	Nikon
+ASCII_LABEL	logos.json/brands/[3]/label	label	Sony
+ASCII_LABEL	logos.json/brands/[4]/label	label	Panasonic
+ASCII_LABEL	logos.json/brands/[5]/label	label	FUJIFILM
+ASCII_LABEL	logos.json/brands/[6]/label	label	Hasselblad
+ASCII_LABEL	logos.json/brands/[7]/label	label	OLYMPUS
+ASCII_LABEL	logos.json/brands/[7]/note	note	Imaging business sold to JIP in 2021; cameras now sold as OM SYSTEM.
+ASCII_LABEL	logos.json/brands/[8]/label	label	PENTAX
+ASCII_LABEL	logos.json/brands/[8]/note	note	Owned by Ricoh Imaging since 2011; brand retained.
+ASCII_LABEL	logos.json/brands/[9]/label	label	RICOH
+ASCII_LABEL	logos.json/brands/[10]/label	label	ZEISS
+ASCII_LABEL	logos.json/brands/[11]/label	label	DJI
+ASCII_LABEL	logos.json/brands/[12]/label	label	Insta360
+ASCII_LABEL	logos.json/brands/[13]/label	label	CONTAX
+ASCII_LABEL	logos.json/brands/[13]/note	note	Kyocera ended the Contax brand in 2005.
+ASCII_LABEL	logos.json/brands/[14]/label	label	MINOLTA
+ASCII_LABEL	logos.json/brands/[14]/note	note	Merged into Konica Minolta 2003; camera brand retired 2006.
+ASCII_LABEL	logos.json/brands/[15]/label	label	KONICA
+ASCII_LABEL	logos.json/brands/[15]/note	note	Merged with Minolta 2003; Konica camera brand retired.
+ASCII_LABEL	logos.json/brands/[16]/label	label	KONICA MINOLTA
+ASCII_LABEL	logos.json/brands/[16]/note	note	Company active; camera business sold to Sony in 2006.
+ASCII_LABEL	logos.json/brands/[17]/label	label	YASHICA
+ASCII_LABEL	logos.json/brands/[17]/note	note	Brand revived (Yashica International); official site uses a serif wordmark.
+ASCII_LABEL	logos.json/brands/[18]/label	label	ROLLEI
+ASCII_LABEL	logos.json/brands/[18]/note	note	Rollei GmbH & Co. KG (Braunschweig) still sells under the brand.
+ASCII_LABEL	logos.json/brands/[19]/label	label	Voigtländer
+ASCII_LABEL	logos.json/brands/[19]/note	note	Brand licensed to Cosina since 1999.
+ASCII_LABEL	logos.json/brands/[20]/label	label	MAMIYA
+ASCII_LABEL	logos.json/brands/[20]/note	note	Mamiya Digital Imaging absorbed by Phase One (2013+); name largely retired.
+ASCII_LABEL	logos.json/brands/[21]/label	label	BRONICA
+ASCII_LABEL	logos.json/brands/[21]/note	note	Tamron discontinued Bronica in 2005.
+ASCII_LABEL	logos.json/brands/[22]/label	label	Kodak
+ASCII_LABEL	logos.json/brands/[23]/label	label	POLAROID
+ASCII_LABEL	logos.json/brands/[23]/note	note	Polaroid brand operated by Polaroid International / licensees.
+ASCII_LABEL	logos.json/brands/[24]/label	label	AGFA
+ASCII_LABEL	logos.json/brands/[24]/note	note	Agfa-Gevaert (Belgium); consumer camera brand long gone.
+ASCII_LABEL	logos.json/brands/[25]/label	label	PRAKTICA
+ASCII_LABEL	logos.json/brands/[25]/note	note	Praktica GmbH still sells optics under the brand.
+ASCII_LABEL	logos.json/brands/[26]/label	label	EXAKTA
+ASCII_LABEL	logos.json/brands/[26]/note	note	Ihagee brand, defunct since the 1970s.
+ASCII_LABEL	logos.json/brands/[27]/label	label	MINOX
+ASCII_LABEL	logos.json/brands/[27]/note	note	Minox GmbH continues small-batch sales; ownership/licensing unclear.
+ASCII_LABEL	logos.json/brands/[28]/label	label	SINAR
+ASCII_LABEL	logos.json/brands/[28]/note	note	Sinar Photography AG (Switzerland) active in large format.
+ASCII_LABEL	logos.json/brands/[29]/label	label	LINHOF
+ASCII_LABEL	logos.json/brands/[29]/note	note	Linhof Präzisions-Systemtechnik, Munich.
+ASCII_LABEL	logos.json/brands/[30]/label	label	ALPA
+ASCII_LABEL	logos.json/brands/[30]/note	note	ALPA Capaul & Weber AG, Zurich.
+ASCII_LABEL	logos.json/brands/[31]/label	label	LOMO
+ASCII_LABEL	logos.json/brands/[31]/note	note	LOMO PLC (St Petersburg) plus Lomography (licensed) use different marks.
+ASCII_LABEL	logos.json/brands/[32]/label	label	SEAGULL
+ASCII_LABEL	logos.json/brands/[32]/note	note	Shanghai Seagull Camera; emblem and wordmark coexist.
+ASCII_LABEL	logos.json/brands/[33]/label	label	CASIO
+ASCII_LABEL	logos.json/brands/[34]/label	label	COSINA
+ASCII_LABEL	logos.json/brands/[35]/label	label	HORSEMAN
+ASCII_LABEL	logos.json/brands/[35]/note	note	Komamura Corporation; Horseman VCC/technical cameras.
+ASCII_LABEL	logos.json/brands/[36]/label	label	GRAFLEX
+ASCII_LABEL	logos.json/brands/[36]/note	note	Graflex Inc. folded 1973; brand later used sporadically.
+ASCII_LABEL	logos.json/brands/[37]/label	label	SIGMA
+ASCII_LABEL	logos.json/brands/[37]/note	note	New VI announced 24 Feb 2025: serif wordmark + circled sigma mark.
+ASCII_LABEL	logos.json/brands/[38]/label	label	TAMRON
+ASCII_LABEL	logos.json/brands/[39]/label	label	TOKINA
+ASCII_LABEL	logos.json/brands/[39]/note	note	Kenko Tokina; blue is the current corporate color.
+ASCII_LABEL	logos.json/brands/[40]/label	label	PHASE ONE
+ASCII_LABEL	logos.json/brands/[41]/label	label	GoPro
+ASCII_LABEL	logos.json/brands/[41]/cn	cn	GoPro
+ASCII_LABEL	logos.json/brands/[42]/label	label	ARRI
+ASCII_LABEL	logos.json/brands/[43]/label	label	RED
+ASCII_LABEL	logos.json/brands/[43]/cn	cn	RED
+ASCII_LABEL	logos.json/brands/[43]/note	note	Nikon acquired RED in 2024; brand retained.
+ASCII_LABEL	logos.json/brands/[44]/label	label	NOKIA
+ASCII_LABEL	logos.json/brands/[44]/note	note	Phones licensed to HMD Global; new logo unveiled Feb 2023.
+ASCII_LABEL	logos.json/brands/[45]/label	label	motorola
+ASCII_LABEL	logos.json/brands/[45]/note	note	Lenovo-owned; batwing + lowercase wordmark since 2016.
+ASCII_LABEL	logos.json/brands/[46]/label	label	Google Pixel
+ASCII_LABEL	logos.json/brands/[47]/label	label	realme
+ASCII_LABEL	logos.json/brands/[48]/label	label	Nothing
+ASCII_LABEL	logos.json/brands/[48]/cn	cn	Nothing
+ASCII_LABEL	logos.json/brands/[49]/label	label	nubia
+ASCII_LABEL	logos.json/brands/[49]/note	note	ZTE sub-brand.
+ASCII_LABEL	logos.json/brands/[50]/label	label	Apple
+ASCII_LABEL	logos.json/brands/[50]/note	note	Rainbow apple retired 1998; mono mark since.
+ASCII_LABEL	logos.json/brands/[51]/label	label	HUAWEI
+ASCII_LABEL	logos.json/brands/[52]/label	label	Xiaomi
+ASCII_LABEL	logos.json/brands/[52]/note	note	2021 identity: orange rounded-square 'mi' + wordmark.
+ASCII_LABEL	logos.json/brands/[53]/label	label	OPPO
+ASCII_LABEL	logos.json/brands/[53]/cn	cn	OPPO
+ASCII_LABEL	logos.json/brands/[53]/note	note	Black wordmark since 2022 refresh; green tone not captured.
+ASCII_LABEL	logos.json/brands/[54]/label	label	vivo
+ASCII_LABEL	logos.json/brands/[54]/cn	cn	vivo
+ASCII_LABEL	logos.json/brands/[55]/label	label	HONOR
+ASCII_LABEL	logos.json/brands/[55]/note	note	Uppercase wordmark since the 2019 independence from Huawei.
+ASCII_LABEL	logos.json/brands/[56]/label	label	SAMSUNG
+ASCII_LABEL	logos.json/brands/[56]/note	note	Blue #1428A0 wordmark since 1993.
+ASCII_LABEL	logos.json/brands/[57]/label	label	iQOO
+ASCII_LABEL	logos.json/brands/[57]/cn	cn	iQOO
+ASCII_LABEL	logos.json/brands/[57]/note	note	vivo sub-brand; official logo not captured from reachable sources.
+ASCII_LABEL	logos.json/brands/[58]/label	label	MEIZU
+ASCII_LABEL	logos.json/brands/[58]/note	note	Geely-owned since 2022.
+ASCII_LABEL	logos.json/brands/[59]/label	label	OnePlus
+ASCII_LABEL	logos.json/brands/[60]/label	label	LUMO
+ASCII_LABEL	logos.json/brands/[60]/cn	cn	LUMO
+ASCII_LABEL	logos.json/brands/[60]/note	note	App-only asset, no catalog row.
+ASCII_LABEL	logos.json/brands/[61]/label	label	Alcatel
+ASCII_LABEL	logos.json/brands/[62]/label	label	ASUS
+ASCII_LABEL	logos.json/brands/[63]/label	label	BlackBerry
+ASCII_LABEL	logos.json/brands/[64]/label	label	Blackmagic Design
+ASCII_LABEL	logos.json/brands/[65]/label	label	Ferrania
+ASCII_LABEL	logos.json/brands/[66]/label	label	Holga
+ASCII_LABEL	logos.json/brands/[67]/label	label	HTC
+ASCII_LABEL	logos.json/brands/[68]/label	label	ILFORD
+ASCII_LABEL	logos.json/brands/[69]/label	label	Infinix
+ASCII_LABEL	logos.json/brands/[69]/cn	cn	Infinix
+ASCII_LABEL	logos.json/brands/[70]/label	label	Kowa
+ASCII_LABEL	logos.json/brands/[71]/label	label	KYOCERA
+ASCII_LABEL	logos.json/brands/[72]/label	label	Lenovo
+ASCII_LABEL	logos.json/brands/[73]/label	label	LG
+ASCII_LABEL	logos.json/brands/[73]/cn	cn	LG
+ASCII_LABEL	logos.json/brands/[74]/label	label	Manfrotto
+ASCII_LABEL	logos.json/brands/[75]/label	label	Panavision
+ASCII_LABEL	logos.json/brands/[76]/label	label	Sirui
+ASCII_LABEL	logos.json/brands/[77]/label	label	TCL
+ASCII_LABEL	logos.json/brands/[77]/cn	cn	TCL
+ASCII_LABEL	logos.json/brands/[78]/label	label	Vivitar
+ASCII_LABEL	logos.json/brands/[79]/label	label	Wiko
+ASCII_LABEL	logos.json/brands/[79]/cn	cn	Wiko
+ASCII_LABEL	logos.json/brands/[80]/label	label	ZTE
+ASCII_LABEL	logos.json/brands/[81]/label	label	Viltrox
+ASCII_LABEL	logos.json/brands/[82]/label	label	Instax
+ASCII_LABEL	logos.json/brands/[83]/label	label	Angénieux
+ASCII_LABEL	logos.json/brands/[84]/label	label	Schneider-Kreuznach
+ASCII_LABEL	logos.json/brands/[85]/label	label	pentacon
+EMPTY	logos.json/brands/[85]/cn	cn	
+ASCII_LABEL	logos.json/brands/[86]/label	label	TTArtisan
+ASCII_LABEL	logos.json/brands/[87]/label	label	Godox
+ASCII_LABEL	logos.json/brands/[88]/label	label	broncolor
+ASCII_LABEL	logos.json/brands/[89]/label	label	Novoflex
+ASCII_LABEL	logos.json/brands/[90]/label	label	Lensbaby
+ASCII_LABEL	logos.json/brands/[91]/label	label	Meyer Optik
+ASCII_LABEL	logos.json/brands/[92]/label	label	ADOX
+ASCII_LABEL	logos.json/brands/[93]/label	label	CineStill
+ASCII_LABEL	logos.json/brands/[94]/label	label	REDMAGIC
+ASCII_LABEL	logos.json/brands/[95]/label	label	TECNO
+ASCII_LABEL	logos.json/brands/[96]/label	label	Sharp
+ASCII_LABEL	logos.json/brands/[97]/label	label	VERTU
+ASCII_LABEL	logos.json/brands/[98]/label	label	Meitu
+ASCII_LABEL	logos.json/brands/[99]/label	label	Autel
+ASCII_LABEL	logos.json/brands/[100]/label	label	Yuneec
+ASCII_LABEL	logos.json/brands/[101]/label	label	Kandao
+ASCII_LABEL	logos.json/versions/[0]/name	name	Leica Laika2
+SUSPECT	logos.json/versions/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[0]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[1]/name	name	Leica Laika Long
+SUSPECT	logos.json/versions/[1]/status	status	LEGACY
+SUSPECT	logos.json/versions/[1]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[2]/name	name	Leica script (pre-war)
+ASCII_LABEL	logos.json/versions/[3]/name	name	Leica 2
+SUSPECT	logos.json/versions/[3]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[3]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[4]/name	name	Leica 3
+SUSPECT	logos.json/versions/[4]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[4]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[5]/name	name	Leica red dot + script
+ASCII_LABEL	logos.json/versions/[6]/name	name	Canon wordmark (first)
+ASCII_LABEL	logos.json/versions/[7]/name	name	Canon 4
+SUSPECT	logos.json/versions/[7]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[7]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[8]/name	name	Canon 5
+SUSPECT	logos.json/versions/[8]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[8]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[9]/name	name	Canon 50th Anniversary
+SUSPECT	logos.json/versions/[9]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[9]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[10]/name	name	Canon EOS lockup
+ASCII_LABEL	logos.json/versions/[11]/name	name	Canon Global corporate lockup
+SUSPECT	logos.json/versions/[11]/years	years	n.d.
+ASCII_LABEL	logos.json/versions/[12]/name	name	Canon Black
+SUSPECT	logos.json/versions/[12]/status	status	LEGACY
+SUSPECT	logos.json/versions/[12]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[12]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[13]/name	name	Nikon 10
+SUSPECT	logos.json/versions/[13]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[13]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[14]/name	name	Nikon 13
+SUSPECT	logos.json/versions/[14]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[14]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[15]/name	name	Nippon Kogaku hexagon mark
+ASCII_LABEL	logos.json/versions/[16]/name	name	Nikon 4
+SUSPECT	logos.json/versions/[16]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[16]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[17]/name	name	Nikon 5
+SUSPECT	logos.json/versions/[17]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[17]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[18]/name	name	Nikon Black
+SUSPECT	logos.json/versions/[18]/status	status	LEGACY
+SUSPECT	logos.json/versions/[18]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[18]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[19]/name	name	Nikon Yellow
+SUSPECT	logos.json/versions/[19]/status	status	LEGACY
+SUSPECT	logos.json/versions/[19]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[20]/name	name	Sony
+SUSPECT	logos.json/versions/[20]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[20]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[21]/name	name	Sony 1
+SUSPECT	logos.json/versions/[21]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[21]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[22]/name	name	Sony Classical
+SUSPECT	logos.json/versions/[22]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[22]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[23]/name	name	Panasonic 2
+SUSPECT	logos.json/versions/[23]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[23]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[24]/name	name	Panasonic blue box
+ASCII_LABEL	logos.json/versions/[25]/name	name	Panasonic Logo Blue
+SUSPECT	logos.json/versions/[25]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[25]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[26]/name	name	Fujifilm square mark
+ASCII_LABEL	logos.json/versions/[27]/name	name	Fujifilm green/white banner lockup
+ASCII_LABEL	logos.json/versions/[28]/name	name	Fujifilm green block (square)
+ASCII_LABEL	logos.json/versions/[29]/name	name	Fujifilm green strip lockup (thin)
+ASCII_LABEL	logos.json/versions/[30]/name	name	Fujifilm vertical green banner
+ASCII_LABEL	logos.json/versions/[31]/name	name	Fujifilm symbol + FUJIFILM + I&I Imaging & Information
+ASCII_LABEL	logos.json/versions/[32]/name	name	Fujifilm symbol + FUJIFILM wordmark (horizontal)
+ASCII_LABEL	logos.json/versions/[33]/name	name	Fujifilm vertical wordmark + symbol
+ASCII_LABEL	logos.json/versions/[34]/name	name	H monogram
+SUSPECT	logos.json/versions/[34]/status	status	LEGACY
+SUSPECT	logos.json/versions/[34]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[34]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[35]/name	name	H monogram + HASSELBLAD wordmark lockup
+SUSPECT	logos.json/versions/[35]/status	status	LEGACY
+SUSPECT	logos.json/versions/[35]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[35]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[36]/name	name	OLYMPUS Aolinbasi
+SUSPECT	logos.json/versions/[36]/status	status	LEGACY
+SUSPECT	logos.json/versions/[36]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[37]/name	name	OLYMPUS Aolinbasi Black
+SUSPECT	logos.json/versions/[37]/status	status	LEGACY
+SUSPECT	logos.json/versions/[37]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[37]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[38]/name	name	Olympus 1
+SUSPECT	logos.json/versions/[38]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[38]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[39]/name	name	OLYMPUS wordmark (1970)
+ASCII_LABEL	logos.json/versions/[40]/name	name	Olympus 3
+SUSPECT	logos.json/versions/[40]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[40]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[41]/name	name	OLYMPUS + Focus on Life
+ASCII_LABEL	logos.json/versions/[42]/name	name	OM SYSTEM wordmark
+ASCII_LABEL	logos.json/versions/[43]/name	name	PENTAX Binde Black
+SUSPECT	logos.json/versions/[43]/status	status	LEGACY
+SUSPECT	logos.json/versions/[43]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[43]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[44]/name	name	PENTAX wordmark (red)
+SUSPECT	logos.json/versions/[44]/years	years	n.d. (pre-2002)
+ASCII_LABEL	logos.json/versions/[45]/name	name	Ricoh 1
+SUSPECT	logos.json/versions/[45]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[45]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[46]/name	name	RICOH oval wordmark
+ASCII_LABEL	logos.json/versions/[47]/name	name	Ricoh 2
+SUSPECT	logos.json/versions/[47]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[47]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[48]/name	name	Ricoh 4
+SUSPECT	logos.json/versions/[48]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[48]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[49]/name	name	Ricoh Black
+SUSPECT	logos.json/versions/[49]/status	status	LEGACY
+SUSPECT	logos.json/versions/[49]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[49]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[50]/name	name	ZEISS Caisi
+SUSPECT	logos.json/versions/[50]/status	status	LEGACY
+SUSPECT	logos.json/versions/[50]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[51]/name	name	Zeiss
+SUSPECT	logos.json/versions/[51]/status	status	LEGACY
+SUSPECT	logos.json/versions/[51]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[52]/name	name	Carl Zeiss Jena
+SUSPECT	logos.json/versions/[52]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[52]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[53]/name	name	Carl Zeiss Jena FC
+SUSPECT	logos.json/versions/[53]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[53]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[54]/name	name	DJI mark
+ASCII_LABEL	logos.json/versions/[55]/name	name	Insta360 wordmark + icon
+ASCII_LABEL	logos.json/versions/[56]/name	name	Insta360 Black
+SUSPECT	logos.json/versions/[56]/status	status	LEGACY
+SUSPECT	logos.json/versions/[56]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[56]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[57]/name	name	Minolta script (1937)
+ASCII_LABEL	logos.json/versions/[58]/name	name	minolta script
+ASCII_LABEL	logos.json/versions/[59]/name	name	MINOLTA dot wordmark
+ASCII_LABEL	logos.json/versions/[60]/name	name	Minolta Black
+SUSPECT	logos.json/versions/[60]/status	status	LEGACY
+SUSPECT	logos.json/versions/[60]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[60]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[61]/name	name	Konica 3
+SUSPECT	logos.json/versions/[61]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[61]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[62]/name	name	Konica 5
+SUSPECT	logos.json/versions/[62]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[62]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[63]/name	name	Konica Black
+SUSPECT	logos.json/versions/[63]/status	status	LEGACY
+SUSPECT	logos.json/versions/[63]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[63]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[64]/name	name	Konica blue block with fan
+SUSPECT	logos.json/versions/[64]/years	years	n.d.
+ASCII_LABEL	logos.json/versions/[65]/name	name	Konica Minolta Black
+SUSPECT	logos.json/versions/[65]/status	status	LEGACY
+SUSPECT	logos.json/versions/[65]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[65]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[66]/name	name	YASHICA sans wordmark
+SUSPECT	logos.json/versions/[66]/years	years	n.d.
+ASCII_LABEL	logos.json/versions/[67]/name	name	YASHICA serif wordmark
+SUSPECT	logos.json/versions/[67]/years	years	n.d. (current site)
+ASCII_LABEL	logos.json/versions/[68]/name	name	Rollei wordmark (white)
+ASCII_LABEL	logos.json/versions/[69]/name	name	Rollei wordmark
+ASCII_LABEL	logos.json/versions/[70]/name	name	Voigtländer script
+ASCII_LABEL	logos.json/versions/[71]/name	name	Mamiya Black
+SUSPECT	logos.json/versions/[71]/status	status	LEGACY
+SUSPECT	logos.json/versions/[71]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[71]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[72]/name	name	BRONICA serif with crosshair O
+ASCII_LABEL	logos.json/versions/[73]/name	name	Kodak 1
+SUSPECT	logos.json/versions/[73]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[73]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[74]/name	name	Kodak K + wordmark
+ASCII_LABEL	logos.json/versions/[75]/name	name	Kodak yellow/red K box
+ASCII_LABEL	logos.json/versions/[76]/name	name	Kodak 2
+SUSPECT	logos.json/versions/[76]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[76]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[77]/name	name	Kodak red wordmark
+ASCII_LABEL	logos.json/versions/[78]/name	name	Kodak 4
+SUSPECT	logos.json/versions/[78]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[78]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[79]/name	name	Kodak 5
+SUSPECT	logos.json/versions/[79]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[79]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[80]/name	name	Kodak 7
+SUSPECT	logos.json/versions/[80]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[80]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[81]/name	name	Kodak K mark
+ASCII_LABEL	logos.json/versions/[82]/name	name	Kodak Yellow
+SUSPECT	logos.json/versions/[82]/status	status	LEGACY
+SUSPECT	logos.json/versions/[82]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[83]/name	name	Polaroid 3
+SUSPECT	logos.json/versions/[83]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[83]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[84]/name	name	Agfa Black
+SUSPECT	logos.json/versions/[84]/status	status	LEGACY
+SUSPECT	logos.json/versions/[84]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[84]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[85]/name	name	AGFA + red rhombus
+ASCII_LABEL	logos.json/versions/[86]/name	name	Agfacolour
+SUSPECT	logos.json/versions/[86]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[86]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[87]/name	name	PRAKTICA wordmark
+ASCII_LABEL	logos.json/versions/[88]/name	name	Exakta script
+ASCII_LABEL	logos.json/versions/[89]/name	name	Minox Black
+SUSPECT	logos.json/versions/[89]/status	status	LEGACY
+SUSPECT	logos.json/versions/[89]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[89]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[90]/name	name	MINOX wordmark
+ASCII_LABEL	logos.json/versions/[91]/name	name	Sinar Black
+SUSPECT	logos.json/versions/[91]/status	status	LEGACY
+SUSPECT	logos.json/versions/[91]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[91]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[92]/name	name	Sinar wordmark
+ASCII_LABEL	logos.json/versions/[93]/name	name	Linhof Black
+SUSPECT	logos.json/versions/[93]/status	status	LEGACY
+SUSPECT	logos.json/versions/[93]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[93]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[94]/name	name	Linhof red script
+ASCII_LABEL	logos.json/versions/[95]/name	name	Alpa 14940
+SUSPECT	logos.json/versions/[95]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[95]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[96]/name	name	Alpa Black
+SUSPECT	logos.json/versions/[96]/status	status	LEGACY
+SUSPECT	logos.json/versions/[96]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[96]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[97]/name	name	LOMO block letters
+ASCII_LABEL	logos.json/versions/[98]/name	name	ЛОМО wordmark
+ASCII_LABEL	logos.json/versions/[99]/name	name	Seagull bird roundel
+ASCII_LABEL	logos.json/versions/[101]/name	name	SEAGULL + bird swoosh
+ASCII_LABEL	logos.json/versions/[102]/name	name	Casio 2
+SUSPECT	logos.json/versions/[102]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[102]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[103]/name	name	Casio Black
+SUSPECT	logos.json/versions/[103]/status	status	LEGACY
+SUSPECT	logos.json/versions/[103]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[103]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[104]/name	name	Cosina Black
+SUSPECT	logos.json/versions/[104]/status	status	LEGACY
+SUSPECT	logos.json/versions/[104]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[104]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[105]/name	name	HORSEMAN thin wordmark
+ASCII_LABEL	logos.json/versions/[106]/name	name	GRAFLEX italic wordmark
+ASCII_LABEL	logos.json/versions/[107]/name	name	Graflex Black
+SUSPECT	logos.json/versions/[107]/status	status	LEGACY
+SUSPECT	logos.json/versions/[107]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[107]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[108]/name	name	Sigma 1
+SUSPECT	logos.json/versions/[108]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[108]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[109]/name	name	Sigma 2
+SUSPECT	logos.json/versions/[109]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[109]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[110]/name	name	SIGMA — Official VI announcement lockup 700x253
+SUSPECT	logos.json/versions/[110]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[110]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[111]/name	name	SIGMA serif wordmark
+ASCII_LABEL	logos.json/versions/[112]/name	name	Circled Σ mark
+ASCII_LABEL	logos.json/versions/[113]/name	name	Sigma 4
+SUSPECT	logos.json/versions/[113]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[113]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[114]/name	name	SIGMA red wordmark
+ASCII_LABEL	logos.json/versions/[115]/name	name	Tamron wordmark
+ASCII_LABEL	logos.json/versions/[116]/name	name	Tamron Logo
+SUSPECT	logos.json/versions/[116]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[116]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[117]/name	name	TAMRON + Focus on the Future
+ASCII_LABEL	logos.json/versions/[118]/name	name	Tokina black + icon
+ASCII_LABEL	logos.json/versions/[119]/name	name	PHASE ONE grey/cyan
+ASCII_LABEL	logos.json/versions/[120]/name	name	Phase ONE Logo
+SUSPECT	logos.json/versions/[120]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[120]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[121]/name	name	PHASE ONE Phaseone Black
+SUSPECT	logos.json/versions/[121]/status	status	LEGACY
+SUSPECT	logos.json/versions/[121]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[121]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[122]/name	name	GoPro 'Be a HERO' color
+ASCII_LABEL	logos.json/versions/[123]/name	name	Gopro Hero
+SUSPECT	logos.json/versions/[123]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[123]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[124]/name	name	Arri Black
+SUSPECT	logos.json/versions/[124]/status	status	LEGACY
+SUSPECT	logos.json/versions/[124]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[124]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[125]/name	name	RED block letters
+ASCII_LABEL	logos.json/versions/[126]/name	name	Nokia 1
+SUSPECT	logos.json/versions/[126]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[126]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[127]/name	name	Nokia circle emblem
+ASCII_LABEL	logos.json/versions/[128]/name	name	Nokia 3
+SUSPECT	logos.json/versions/[128]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[128]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[129]/name	name	NOKIA + Connecting People arrows
+ASCII_LABEL	logos.json/versions/[130]/name	name	Nokia Black
+SUSPECT	logos.json/versions/[130]/status	status	LEGACY
+SUSPECT	logos.json/versions/[130]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[130]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[131]/name	name	Nokia Lumia
+SUSPECT	logos.json/versions/[131]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[131]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[132]/name	name	Nokia NEW Logo SVG
+SUSPECT	logos.json/versions/[132]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[132]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[133]/name	name	Motorola 1
+SUSPECT	logos.json/versions/[133]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[133]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[134]/name	name	Motorola 11
+SUSPECT	logos.json/versions/[134]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[134]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[135]/name	name	Motorola 12
+SUSPECT	logos.json/versions/[135]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[135]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[136]/name	name	Motorola 14
+SUSPECT	logos.json/versions/[136]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[136]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[137]/name	name	Motorola wordmark (1950)
+ASCII_LABEL	logos.json/versions/[138]/name	name	Motorola 2
+SUSPECT	logos.json/versions/[138]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[138]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[139]/name	name	Motorola 3
+SUSPECT	logos.json/versions/[139]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[139]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[140]/name	name	Motorola 4
+SUSPECT	logos.json/versions/[140]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[140]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[141]/name	name	Motorola 5
+SUSPECT	logos.json/versions/[141]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[141]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[142]/name	name	Motorola 7
+SUSPECT	logos.json/versions/[142]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[142]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[143]/name	name	Motorola 8
+SUSPECT	logos.json/versions/[143]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[143]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[144]/name	name	batwing + MOTOROLA (blue)
+ASCII_LABEL	logos.json/versions/[145]/name	name	Motorola Black
+SUSPECT	logos.json/versions/[145]/status	status	LEGACY
+SUSPECT	logos.json/versions/[145]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[145]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[146]/name	name	Google Pixel Google
+SUSPECT	logos.json/versions/[146]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[146]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[147]/name	name	Google wordmark (1998)
+ASCII_LABEL	logos.json/versions/[148]/name	name	Google color wordmark
+ASCII_LABEL	logos.json/versions/[149]/name	name	Google Pixel Google Camera
+SUSPECT	logos.json/versions/[149]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[149]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[150]/name	name	Google G icon
+ASCII_LABEL	logos.json/versions/[151]/name	name	realme wordmark
+ASCII_LABEL	logos.json/versions/[152]/name	name	NOTHING dotted wordmark
+ASCII_LABEL	logos.json/versions/[153]/name	name	Nothing Black
+SUSPECT	logos.json/versions/[153]/status	status	LEGACY
+SUSPECT	logos.json/versions/[153]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[153]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[154]/name	name	Nubia Black
+SUSPECT	logos.json/versions/[154]/status	status	LEGACY
+SUSPECT	logos.json/versions/[154]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[154]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[155]/name	name	nubia wordmark
+ASCII_LABEL	logos.json/versions/[156]/name	name	Apple 1
+SUSPECT	logos.json/versions/[156]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[156]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[157]/name	name	Huawei 1
+SUSPECT	logos.json/versions/[157]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[157]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[158]/name	name	Huawei 2
+SUSPECT	logos.json/versions/[158]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[158]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[159]/name	name	Huawei 3
+SUSPECT	logos.json/versions/[159]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[159]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[160]/name	name	HUAWEI Huawe Black
+SUSPECT	logos.json/versions/[160]/status	status	LEGACY
+SUSPECT	logos.json/versions/[160]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[160]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[161]/name	name	Huawei petals + wordmark
+ASCII_LABEL	logos.json/versions/[162]/name	name	Xiaomi Xiao MI
+SUSPECT	logos.json/versions/[162]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[162]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[163]/name	name	Xiaomi Loing
+SUSPECT	logos.json/versions/[163]/status	status	LEGACY
+SUSPECT	logos.json/versions/[163]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[164]/name	name	oppo wordmark
+ASCII_LABEL	logos.json/versions/[165]/name	name	Oppo Green
+SUSPECT	logos.json/versions/[165]/status	status	LEGACY
+SUSPECT	logos.json/versions/[165]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[166]/name	name	Vivo 1
+SUSPECT	logos.json/versions/[166]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[166]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[167]/name	name	Vivo 3
+SUSPECT	logos.json/versions/[167]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[167]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[168]/name	name	Vivo 4
+SUSPECT	logos.json/versions/[168]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[168]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[169]/name	name	Vivo Black
+SUSPECT	logos.json/versions/[169]/status	status	LEGACY
+SUSPECT	logos.json/versions/[169]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[169]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[170]/name	name	Vivo Blue
+SUSPECT	logos.json/versions/[170]/status	status	LEGACY
+SUSPECT	logos.json/versions/[170]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[171]/name	name	vivo red wordmark
+ASCII_LABEL	logos.json/versions/[172]/name	name	HONOR boxed wordmark
+ASCII_LABEL	logos.json/versions/[173]/name	name	Honor
+SUSPECT	logos.json/versions/[173]/status	status	LEGACY
+SUSPECT	logos.json/versions/[173]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[174]/name	name	Samsung 2
+SUSPECT	logos.json/versions/[174]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[174]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[175]/name	name	Samsung 3
+SUSPECT	logos.json/versions/[175]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[175]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[176]/name	name	Samsung 6
+SUSPECT	logos.json/versions/[176]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[176]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[177]/name	name	Samsung 7
+SUSPECT	logos.json/versions/[177]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[177]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[178]/name	name	SAMSUNG oval 'no limit'
+ASCII_LABEL	logos.json/versions/[179]/name	name	Iqoo Black
+SUSPECT	logos.json/versions/[179]/status	status	LEGACY
+SUSPECT	logos.json/versions/[179]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[179]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[180]/name	name	Meizu Black
+SUSPECT	logos.json/versions/[180]/status	status	LEGACY
+SUSPECT	logos.json/versions/[180]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[180]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[181]/name	name	1+ red emblem
+ASCII_LABEL	logos.json/versions/[182]/name	name	1+ + ONEPLUS
+ASCII_LABEL	logos.json/versions/[183]/name	name	Oneplus Wordmark 4
+SUSPECT	logos.json/versions/[183]/status	status	CANDIDATE
+SUSPECT	logos.json/versions/[183]/cuts/[0]/status	status	CANDIDATE
+ASCII_LABEL	logos.json/versions/[184]/name	name	OnePlus Yijia Black
+SUSPECT	logos.json/versions/[184]/status	status	LEGACY
+SUSPECT	logos.json/versions/[184]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[184]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[185]/name	name	OnePlus Yijia RED
+SUSPECT	logos.json/versions/[185]/status	status	LEGACY
+SUSPECT	logos.json/versions/[185]/cuts/[0]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[186]/name	name	Lumo Black
+SUSPECT	logos.json/versions/[186]/status	status	LEGACY
+SUSPECT	logos.json/versions/[186]/cuts/[0]/status	status	LEGACY
+SUSPECT	logos.json/versions/[186]/cuts/[1]/status	status	LEGACY
+ASCII_LABEL	logos.json/versions/[187]/name	name	Leica script wordmark
+ASCII_LABEL	logos.json/versions/[188]/name	name	Leica red dot + LEICA
+ASCII_LABEL	logos.json/versions/[189]/name	name	Leitz blue frame wordmark
+ASCII_LABEL	logos.json/versions/[190]/name	name	LEITZ wordmark (green mark)
+ASCII_LABEL	logos.json/versions/[191]/name	name	Canon red script
+ASCII_LABEL	logos.json/versions/[192]/name	name	EOS wordmark
+ASCII_LABEL	logos.json/versions/[193]/name	name	Nikon on yellow + rays
+ASCII_LABEL	logos.json/versions/[194]/name	name	Nikon yellow block
+ASCII_LABEL	logos.json/versions/[195]/name	name	Nikon on yellow with sunburst
+ASCII_LABEL	logos.json/versions/[196]/name	name	SONY wordmark
+EMPTY	logos.json/versions/[196]/years	years	
+ASCII_LABEL	logos.json/versions/[197]/name	name	Sony α (Alpha) mark
+ASCII_LABEL	logos.json/versions/[198]/name	name	Sony Ericsson orb
+ASCII_LABEL	logos.json/versions/[199]/name	name	LUMIX wordmark
+ASCII_LABEL	logos.json/versions/[200]/name	name	Panasonic blue wordmark
+EMPTY	logos.json/versions/[200]/years	years	
+ASCII_LABEL	logos.json/versions/[201]/name	name	Panasonic black wordmark
+EMPTY	logos.json/versions/[201]/years	years	
+ASCII_LABEL	logos.json/versions/[202]/name	name	FUJIFILM wordmark
+ASCII_LABEL	logos.json/versions/[203]/name	name	Fujifilm symbol + FUJIFILM (stacked)
+ASCII_LABEL	logos.json/versions/[204]/name	name	Fujifilm green/red square lockup
+ASCII_LABEL	logos.json/versions/[205]/name	name	Fujifilm symbol + FUJIFILM + green bar
+ASCII_LABEL	logos.json/versions/[206]/name	name	Fujifilm red symbol + FUJIFILM
+ASCII_LABEL	logos.json/versions/[207]/name	name	Fujifilm vertical green banner
+ASCII_LABEL	logos.json/versions/[208]/name	name	Fujifilm thin green strip
+ASCII_LABEL	logos.json/versions/[209]/name	name	HASSELBLAD wordmark
+EMPTY	logos.json/versions/[209]/years	years	
+ASCII_LABEL	logos.json/versions/[210]/name	name	HASSELBLAD wordmark (spaced)
+EMPTY	logos.json/versions/[210]/years	years	
+ASCII_LABEL	logos.json/versions/[211]/name	name	OLYMPUS wordmark
+ASCII_LABEL	logos.json/versions/[212]/name	name	OLYMPUS blue + yellow rule
+ASCII_LABEL	logos.json/versions/[213]/name	name	PENTAX wordmark
+ASCII_LABEL	logos.json/versions/[214]/name	name	PENTAX red wordmark
+ASCII_LABEL	logos.json/versions/[215]/name	name	RICOH red wordmark
+ASCII_LABEL	logos.json/versions/[216]/name	name	R emblem + RICOH
+ASCII_LABEL	logos.json/versions/[217]/name	name	ZEISS square mark (Germany)
+EMPTY	logos.json/versions/[217]/years	years	
+ASCII_LABEL	logos.json/versions/[218]/name	name	ZEISS on blue banner
+EMPTY	logos.json/versions/[218]/years	years	
+ASCII_LABEL	logos.json/versions/[219]/name	name	DJI blue wordmark
+EMPTY	logos.json/versions/[219]/years	years	
+ASCII_LABEL	logos.json/versions/[220]/name	name	DJI mono wordmark
+EMPTY	logos.json/versions/[220]/years	years	
+ASCII_LABEL	logos.json/versions/[221]/name	name	Insta360 yellow square
+ASCII_LABEL	logos.json/versions/[222]/name	name	CONTAX wordmark
+ASCII_LABEL	logos.json/versions/[223]/name	name	MINOLTA wordmark
+EMPTY	logos.json/versions/[223]/years	years	
+ASCII_LABEL	logos.json/versions/[224]/name	name	Minolta blue circle lockup
+ASCII_LABEL	logos.json/versions/[225]/name	name	Konica rainbow square
+ASCII_LABEL	logos.json/versions/[226]/name	name	Konica blue wordmark
+ASCII_LABEL	logos.json/versions/[227]/name	name	Konica + rainbow arc
+ASCII_LABEL	logos.json/versions/[228]/name	name	KONICA MINOLTA horizontal
+ASCII_LABEL	logos.json/versions/[229]/name	name	KONICA MINOLTA circle
+ASCII_LABEL	logos.json/versions/[230]/name	name	YASHICA wordmark
+EMPTY	logos.json/versions/[230]/years	years	
+ASCII_LABEL	logos.json/versions/[231]/name	name	Rollei wordmark
+EMPTY	logos.json/versions/[231]/years	years	
+ASCII_LABEL	logos.json/versions/[232]/name	name	Rollei red roundel
+EMPTY	logos.json/versions/[232]/years	years	
+ASCII_LABEL	logos.json/versions/[233]/name	name	Rollei wordmark (black box)
+EMPTY	logos.json/versions/[233]/years	years	
+ASCII_LABEL	logos.json/versions/[234]/name	name	Mamiya red wordmark
+EMPTY	logos.json/versions/[234]/years	years	
+ASCII_LABEL	logos.json/versions/[235]/name	name	Kodak retro block
+ASCII_LABEL	logos.json/versions/[236]/name	name	KODAK K block
+ASCII_LABEL	logos.json/versions/[237]/name	name	Polaroid wordmark + prism
+ASCII_LABEL	logos.json/versions/[238]/name	name	Polaroid bars
+ASCII_LABEL	logos.json/versions/[239]/name	name	AGFA + red rhombus
+ASCII_LABEL	logos.json/versions/[240]/name	name	Alpa script
+EMPTY	logos.json/versions/[240]/years	years	
+ASCII_LABEL	logos.json/versions/[241]/name	name	ЛОМО wordmark
+EMPTY	logos.json/versions/[241]/years	years	
+ASCII_LABEL	logos.json/versions/[242]/name	name	CASIO blue wordmark
+EMPTY	logos.json/versions/[242]/years	years	
+ASCII_LABEL	logos.json/versions/[243]/name	name	CASIO black wordmark
+EMPTY	logos.json/versions/[243]/years	years	
+ASCII_LABEL	logos.json/versions/[244]/name	name	COSINA wordmark
+EMPTY	logos.json/versions/[244]/years	years	
+ASCII_LABEL	logos.json/versions/[245]/name	name	SIGMA bold wordmark
+ASCII_LABEL	logos.json/versions/[246]/name	name	TAMRON wordmark
+EMPTY	logos.json/versions/[246]/years	years	
+ASCII_LABEL	logos.json/versions/[247]/name	name	TAMRON blue wordmark
+ASCII_LABEL	logos.json/versions/[248]/name	name	Tokina wordmark
+EMPTY	logos.json/versions/[248]/years	years	
+ASCII_LABEL	logos.json/versions/[249]/name	name	GoPro + Be a HERO
+ASCII_LABEL	logos.json/versions/[250]/name	name	GoPro wordmark + squares
+EMPTY	logos.json/versions/[250]/years	years	
+ASCII_LABEL	logos.json/versions/[251]/name	name	ARRI corporate logo
+EMPTY	logos.json/versions/[251]/years	years	
+ASCII_LABEL	logos.json/versions/[252]/name	name	RED wordmark
+EMPTY	logos.json/versions/[252]/years	years	
+ASCII_LABEL	logos.json/versions/[253]/name	name	SHOT ON RED badge
+EMPTY	logos.json/versions/[253]/years	years	
+ASCII_LABEL	logos.json/versions/[254]/name	name	NOKIA 2023 wordmark
+ASCII_LABEL	logos.json/versions/[255]/name	name	motorola wordmark + M
+ASCII_LABEL	logos.json/versions/[256]/name	name	Motorola circle M + wordmark
+ASCII_LABEL	logos.json/versions/[257]/name	name	motorola a Lenovo company
+ASCII_LABEL	logos.json/versions/[258]/name	name	Pixel wordmark
+ASCII_LABEL	logos.json/versions/[259]/name	name	Google Pixel stacked
+ASCII_LABEL	logos.json/versions/[260]/name	name	realme wordmark
+EMPTY	logos.json/versions/[260]/years	years	
+ASCII_LABEL	logos.json/versions/[261]/name	name	Apple logo + Apple wordmark
+ASCII_LABEL	logos.json/versions/[262]/name	name	Apple glyph
+ASCII_LABEL	logos.json/versions/[263]/name	name	Rainbow Apple (classic)
+ASCII_LABEL	logos.json/versions/[264]/name	name	Apple glyph + apple wordmark
+ASCII_LABEL	logos.json/versions/[265]/name	name	Apple Computer, Inc. (Garamond)
+ASCII_LABEL	logos.json/versions/[266]/name	name	Apple wordmark (Garamond)
+ASCII_LABEL	logos.json/versions/[267]/name	name	HUAWEI petal + wordmark
+ASCII_LABEL	logos.json/versions/[268]/name	name	HUAWEI mono lockup
+EMPTY	logos.json/versions/[268]/years	years	
+ASCII_LABEL	logos.json/versions/[271]/name	name	mi + xiaomi lockup
+ASCII_LABEL	logos.json/versions/[272]/name	name	mi orange rounded square
+ASCII_LABEL	logos.json/versions/[273]/name	name	mi + Xiaomi stacked
+ASCII_LABEL	logos.json/versions/[274]/name	name	REDMI wordmark
+ASCII_LABEL	logos.json/versions/[277]/name	name	oppo wordmark
+ASCII_LABEL	logos.json/versions/[278]/name	name	vivo blue wordmark
+EMPTY	logos.json/versions/[278]/years	years	
+ASCII_LABEL	logos.json/versions/[279]/name	name	vivo cyan wordmark
+ASCII_LABEL	logos.json/versions/[280]/name	name	HONOR uppercase wordmark
+ASCII_LABEL	logos.json/versions/[281]/name	name	HONOR ring lockup
+ASCII_LABEL	logos.json/versions/[282]/name	name	SAMSUNG black wordmark
+ASCII_LABEL	logos.json/versions/[283]/name	name	SAMSUNG blue wordmark
+ASCII_LABEL	logos.json/versions/[284]/name	name	MEIZU blue wordmark
+ASCII_LABEL	logos.json/versions/[285]/name	name	OnePlus 1+ red square
+ASCII_LABEL	logos.json/versions/[286]/name	name	alcatel blue wordmark
+ASCII_LABEL	logos.json/versions/[287]/name	name	ALCATEL wordmark + triangle
+ASCII_LABEL	logos.json/versions/[288]/name	name	Alcatel triangle emblem
+ASCII_LABEL	logos.json/versions/[289]/name	name	Alcatel boxed wordmark
+ASCII_LABEL	logos.json/versions/[290]/name	name	ALCATEL One Touch
+ASCII_LABEL	logos.json/versions/[291]/name	name	ASUS wordmark
+ASCII_LABEL	logos.json/versions/[292]/name	name	asus lowercase wordmark
+ASCII_LABEL	logos.json/versions/[293]/name	name	ASUS A emblem
+EMPTY	logos.json/versions/[293]/years	years	
+ASCII_LABEL	logos.json/versions/[294]/name	name	BlackBerry wordmark
+ASCII_LABEL	logos.json/versions/[295]/name	name	BlackBerry BB monogram
+ASCII_LABEL	logos.json/versions/[296]/name	name	Blackmagic Design wordmark
+EMPTY	logos.json/versions/[296]/years	years	
+EMPTY	logos.json/versions/[297]/years	years	
+EMPTY	logos.json/versions/[298]/years	years	
+EMPTY	logos.json/versions/[299]/years	years	
+EMPTY	logos.json/versions/[300]/years	years	
+EMPTY	logos.json/versions/[301]/years	years	
+ASCII_LABEL	logos.json/versions/[302]/name	name	Ferrania wordmark
+EMPTY	logos.json/versions/[302]/years	years	
+ASCII_LABEL	logos.json/versions/[303]/name	name	Holga wordmark
+EMPTY	logos.json/versions/[303]/years	years	
+ASCII_LABEL	logos.json/versions/[304]/name	name	htc green wordmark
+ASCII_LABEL	logos.json/versions/[305]/name	name	ILFORD wordmark
+EMPTY	logos.json/versions/[305]/years	years	
+ASCII_LABEL	logos.json/versions/[306]/name	name	Infinix wordmark
+EMPTY	logos.json/versions/[306]/years	years	
+ASCII_LABEL	logos.json/versions/[307]/name	name	Kowa red oval script
+EMPTY	logos.json/versions/[307]/years	years	
+ASCII_LABEL	logos.json/versions/[308]/name	name	KYOCERA wordmark + monogram
+EMPTY	logos.json/versions/[308]/years	years	
+ASCII_LABEL	logos.json/versions/[309]/name	name	Lenovo red box wordmark
+ASCII_LABEL	logos.json/versions/[310]/name	name	lenovo blue wordmark
+ASCII_LABEL	logos.json/versions/[311]/name	name	Lenovo red wordmark
+ASCII_LABEL	logos.json/versions/[312]/name	name	LG Electronics face mark
+ASCII_LABEL	logos.json/versions/[313]/name	name	Manfrotto wordmark + M
+EMPTY	logos.json/versions/[313]/years	years	
+ASCII_LABEL	logos.json/versions/[314]/name	name	Manfrotto boxed lockup
+EMPTY	logos.json/versions/[314]/years	years	
+ASCII_LABEL	logos.json/versions/[315]/name	name	PANAVISION Cameras & Lenses
+EMPTY	logos.json/versions/[315]/years	years	
+ASCII_LABEL	logos.json/versions/[316]/name	name	Filmed with PANAVISION
+EMPTY	logos.json/versions/[316]/years	years	
+ASCII_LABEL	logos.json/versions/[317]/name	name	PANAVISION wordmark
+EMPTY	logos.json/versions/[317]/years	years	
+ASCII_LABEL	logos.json/versions/[318]/name	name	SIRUI wordmark
+EMPTY	logos.json/versions/[318]/years	years	
+ASCII_LABEL	logos.json/versions/[319]/name	name	TCL red wordmark
+EMPTY	logos.json/versions/[319]/years	years	
+ASCII_LABEL	logos.json/versions/[320]/name	name	TCL red box
+EMPTY	logos.json/versions/[320]/years	years	
+ASCII_LABEL	logos.json/versions/[321]/name	name	Vivitar blue box
+EMPTY	logos.json/versions/[321]/years	years	
+ASCII_LABEL	logos.json/versions/[322]/name	name	Vivitar black wordmark
+EMPTY	logos.json/versions/[322]/years	years	
+ASCII_LABEL	logos.json/versions/[323]/name	name	WIKO blue wordmark
+EMPTY	logos.json/versions/[323]/years	years	
+ASCII_LABEL	logos.json/versions/[324]/name	name	WIKO black wordmark
+EMPTY	logos.json/versions/[324]/years	years	
+ASCII_LABEL	logos.json/versions/[325]/name	name	ZTE wordmark
+EMPTY	logos.json/versions/[325]/years	years	
+ASCII_LABEL	logos.json/versions/[326]/name	name	VILTROX wordmark (boxed)
+EMPTY	logos.json/versions/[326]/years	years	
+ASCII_LABEL	logos.json/versions/[327]/name	name	instax FUJIFILM lockup
+EMPTY	logos.json/versions/[327]/years	years	
+ASCII_LABEL	logos.json/versions/[328]/name	name	Angénieux wordmark
+EMPTY	logos.json/versions/[328]/years	years	
+ASCII_LABEL	logos.json/versions/[329]/name	name	Schneider KREUZNACH wordmark
+EMPTY	logos.json/versions/[329]/years	years	
+ASCII_LABEL	logos.json/versions/[330]/name	name	PENTACON mark
+ASCII_LABEL	logos.json/versions/[331]/name	name	TTARTISAN wordmark
+EMPTY	logos.json/versions/[331]/years	years	
+ASCII_LABEL	logos.json/versions/[332]/name	name	Godox wordmark
+EMPTY	logos.json/versions/[332]/years	years	
+ASCII_LABEL	logos.json/versions/[333]/name	name	broncolor wordmark
+EMPTY	logos.json/versions/[333]/years	years	
+ASCII_LABEL	logos.json/versions/[334]/name	name	NOVOFLEX wordmark
+EMPTY	logos.json/versions/[334]/years	years	
+ASCII_LABEL	logos.json/versions/[335]/name	name	LENSBABY wordmark
+EMPTY	logos.json/versions/[335]/years	years	
+ASCII_LABEL	logos.json/versions/[336]/name	name	Meyer Optik Görlitz
+EMPTY	logos.json/versions/[336]/years	years	
+ASCII_LABEL	logos.json/versions/[337]/name	name	ADOX wordmark
+EMPTY	logos.json/versions/[337]/years	years	
+ASCII_LABEL	logos.json/versions/[338]/name	name	CineStill Film
+EMPTY	logos.json/versions/[338]/years	years	
+ASCII_LABEL	logos.json/versions/[339]/name	name	REDMAGIC wordmark
+EMPTY	logos.json/versions/[339]/years	years	
+ASCII_LABEL	logos.json/versions/[340]/name	name	TECNO wordmark
+EMPTY	logos.json/versions/[340]/years	years	
+ASCII_LABEL	logos.json/versions/[341]/name	name	SHARP wordmark
+EMPTY	logos.json/versions/[341]/years	years	
+ASCII_LABEL	logos.json/versions/[342]/name	name	VERTU ENGLAND
+EMPTY	logos.json/versions/[342]/years	years	
+EMPTY	logos.json/versions/[343]/years	years	
+ASCII_LABEL	logos.json/versions/[344]/name	name	AUTEL ROBOTICS
+EMPTY	logos.json/versions/[344]/years	years	
+ASCII_LABEL	logos.json/versions/[345]/name	name	YUNEEC wordmark
+EMPTY	logos.json/versions/[345]/years	years	
+ASCII_LABEL	logos.json/versions/[346]/name	name	KANDAO wordmark
+EMPTY	logos.json/versions/[346]/years	years	
+ASCII_LABEL	taxonomy.json/categories/[0]/declaredBrands/[0]/name	name	OPPO
+ASCII_LABEL	taxonomy.json/categories/[0]/declaredBrands/[2]/name	name	vivo
+ASCII_LABEL	taxonomy.json/categories/[0]/actualBrands/[0]/name	name	OPPO
+ASCII_LABEL	taxonomy.json/categories/[0]/actualBrands/[2]/name	name	vivo
+SUSPECT	taxonomy.json/cards/[0]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[1]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[2]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[3]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[4]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[5]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[6]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[7]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[8]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[9]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[10]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[11]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[12]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[13]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[14]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[15]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[16]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[17]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[18]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[19]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[20]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[21]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[22]/implementationOrigin/kind	kind	firmware-shipped
+ASCII_LABEL	taxonomy.json/cards/[23]/name	name	LUMO · 1
+SUSPECT	taxonomy.json/cards/[23]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[24]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[25]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[26]/implementationOrigin/kind	kind	firmware-shipped
+ASCII_LABEL	taxonomy.json/cards/[27]/name	name	LUMO · 2
+SUSPECT	taxonomy.json/cards/[27]/implementationOrigin/kind	kind	firmware-shipped
+ASCII_LABEL	taxonomy.json/cards/[28]/name	name	LUMO · 3
+SUSPECT	taxonomy.json/cards/[28]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[29]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[30]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[31]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[32]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[33]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[34]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[35]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[36]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[37]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[38]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[39]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[40]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[41]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[42]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[43]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[44]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[45]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[46]/implementationOrigin/kind	kind	module-extracted
+SUSPECT	taxonomy.json/cards/[47]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[48]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[49]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[50]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[51]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[52]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[53]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[54]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[55]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[56]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[57]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[58]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[59]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[60]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[61]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[62]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[63]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[64]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[65]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[66]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[67]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[68]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[69]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[70]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[71]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[72]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[73]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[74]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[75]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[76]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[77]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[78]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[79]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[80]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[81]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[82]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[83]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[84]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[85]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[86]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[87]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[88]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[89]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[90]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[92]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[93]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[94]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[95]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[96]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[97]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[98]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[99]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[100]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[101]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[102]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[103]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[105]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[106]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[108]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[109]/implementationOrigin/kind	kind	firmware-shipped
+SUSPECT	taxonomy.json/cards/[150]/implementationOrigin/kind	kind	firmware-shipped
+ASCII_LABEL	taxonomy.json/cards/[166]/name	name	Polaroid · PLD
+ASCII_LABEL	taxonomy.json/cards/[172]/declaredText/title	title	Nature's poetry
+SUSPECT	taxonomy.json/cards/[173]/implementationOrigin/kind	kind	firmware-shipped
+ASCII_LABEL	taxonomy.json/cards/[174]/declaredText/subtitle	subtitle	Life is a wilderness,not a track
+ASCII_LABEL	taxonomy.json/cards/[176]/declaredText/subtitle	subtitle	Life is a wilderness,not a track
+SUSPECT	taxonomy.json/cards/[179]/implementationOrigin/kind	kind	firmware-shipped

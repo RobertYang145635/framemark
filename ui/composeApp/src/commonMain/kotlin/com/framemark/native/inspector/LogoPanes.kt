@@ -853,7 +853,7 @@ internal fun logoLeftHidesTextNote(siblings: List<InspectorControl>, session: De
     return if (rows.isEmpty()) {
         "居左时左侧不放 Logo。"
     } else {
-        "居左时左侧${rows.joinToString("、")}两行将不显示（引擎按版式实现，不是挪位）。"
+        "居左时左侧${rows.joinToString("、")}两行将不显示（按版式排，不是挪位）。"
     }
 }
 
@@ -1191,7 +1191,7 @@ private fun LogoVersionRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${eraLabel(version.era)} · ${version.years}",
+                text = versionSubtitle(version.era, version.years),
                 style = CuratedNote,
                 color = FmPalette.onSurfaceMuted,
                 maxLines = 1,

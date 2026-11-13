@@ -29,15 +29,37 @@ class TrayPhoto(val id: Int, val path: String?, displayName: String? = null) {
     private var displayName by mutableStateOf(displayName)
 
     val label: String
-        get() = if (path == null) {
-            "示例照片"
-        } else {
-            displayName?.takeIf { it.isNotBlank() }
-                ?: path.substringAfterLast('/').substringAfterLast('\\').ifBlank { "照片" }
-        }
+        get() = photoLabel(path, displayName)
 
     internal fun updateDisplayName(displayName: String?) {
         this.displayName = displayName
+    }
+}
+
+/**
+ * Names the app gives its **own copies** of an imported photo: Android rewrites every
+ * import to `<app data>/photos/user-<epoch>-<index>.jpg` and the engine keeps its
+ * `photo.png` / `exif.jpg` next to it. None of these is the file the user picked, so
+ * none of them may be used as a title or as a screen-reader label.
+ */
+private val internalCopyName = Regex("^(user-\\d+-\\d+|photo|exif)\\.(jpe?g|png|webp)$", RegexOption.IGNORE_CASE)
+
+/**
+ * Title for one photo in the tray and in the editor top bar.
+ *
+ * [displayName] is the picked file's own name and wins whenever it exists. The
+ * fallback never goes to an internal copy name: if there is no display name and the
+ * path is one of the app's own copies, the entry reads 照片. Display only — [path]
+ * stays the value that is persisted and rendered.
+ */
+internal fun photoLabel(path: String?, displayName: String?): String {
+    if (path == null) return "示例照片"
+    displayName?.takeIf { it.isNotBlank() }?.let { return it }
+    val base = path.substringAfterLast('/').substringAfterLast('\\')
+    return when {
+        base.isBlank() -> "照片"
+        internalCopyName.matches(base) -> "照片"
+        else -> base
     }
 }
 
@@ -149,6 +171,7 @@ fun PhotoThumbnail(
     maxEdge: Int = 256,
     cornerRadius: Dp = FmRadii.tile,
     contentScale: ContentScale = ContentScale.Crop,
+    contentDescription: String? = null,
 ) {
     val key = "$path@$maxEdge"
     val bitmap by produceState(initialValue = PhotoThumbCache.get(key), key) {
@@ -172,7 +195,9 @@ fun PhotoThumbnail(
         if (ready != null) {
             Image(
                 bitmap = ready,
-                contentDescription = path?.substringAfterLast('/'),
+                // Never the raw path: `path` is the import copy, whose name is the
+                // app's own (`user-<stamp>-<n>.jpg`). Callers pass the photo's label.
+                contentDescription = contentDescription,
                 contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
             )

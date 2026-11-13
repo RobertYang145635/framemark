@@ -51,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.NoticeText
 
 /**
  * One row of the photo batch, read off the persisted queue: the photo, its own
@@ -624,7 +625,9 @@ fun PhotoBatchScreen(
             }
         }
         queue.error?.let { message ->
-            Text(message, style = FmType.labelSmall, color = FmPalette.onSurfaceSecondary)
+            NoticeText.human(message)?.let { text ->
+                Text(text, style = FmType.labelSmall, color = FmPalette.onSurfaceSecondary)
+            }
         }
         if (queue.resumed > 0) {
             Text(
@@ -665,8 +668,10 @@ fun PhotoBatchScreen(
                             style = FmType.labelSmall,
                             color = FmPalette.onSurfaceMuted,
                         )
-                        row.error?.let {
-                            Text(it, style = FmType.labelSmall, color = FmPalette.onSurfaceSecondary)
+                        row.error?.let { message ->
+                            NoticeText.human(message)?.let { text ->
+                                Text(text, style = FmType.labelSmall, color = FmPalette.onSurfaceSecondary)
+                            }
                         }
                     }
                     Spacer(Modifier.width(FmSpacing.sm))
