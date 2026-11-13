@@ -19,22 +19,22 @@
   },
   "counts": {
     "brands": 102,
-    "versions": 358,
-    "selectedVersions": 358,
+    "versions": 347,
+    "selectedVersions": 347,
     "unselectedVersions": 0,
     "selectedIdsMissingFromCatalog": 0,
-    "cuts": 487,
-    "cutsResolved": 487,
+    "cuts": 474,
+    "cutsResolved": 474,
     "cutsMissing": 0,
     "appLogoFiles": 166,
-    "logoVersionFiles": 370,
+    "logoVersionFiles": 361,
     "logoVersionBrandDirs": 98,
-    "distinctFilesUsed": 487,
+    "distinctFilesUsed": 474,
     "usedByCardVendorLogo": 9,
     "unreferencedAppLogoFiles": 0,
     "selectedVersionsWithoutResolvableCut": [],
-    "declaredVsActualDimensionMismatches": 130,
-    "declaredVsActualDimensionMismatchesVersionCuts": 130,
+    "declaredVsActualDimensionMismatches": 121,
+    "declaredVsActualDimensionMismatchesVersionCuts": 121,
     "declaredVsActualDimensionMismatchesAppCuts": 0
   },
   "brands": [
@@ -1014,14 +1014,6 @@
       "w": 1024,
       "h": 1024
     },
-    "src/renderer/src/assets/logos/canon.webp": {
-      "sha256": "442ab8ee5c2478767ce519d28fecfcbe6136f4961049d17bf1aa80ac5a99d1db",
-      "bytes": 127992,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1024,
-      "h": 372
-    },
     "src/renderer/src/assets/logos/canon_black.webp": {
       "sha256": "f6e9d74b766ab57efa689e7b6eb31b1cb090d773527794e31d9bf031bb5201d7",
       "bytes": 14256,
@@ -1109,22 +1101,6 @@
       "variant": "VP8L",
       "w": 1620,
       "h": 508
-    },
-    "src/renderer/src/assets/logos/google_black.webp": {
-      "sha256": "6c41bfdfbca039978158a2608ae3d0e6eb6a648e4962c79b12136bc06f77bef9",
-      "bytes": 594,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 70,
-      "h": 70
-    },
-    "src/renderer/src/assets/logos/google_white.webp": {
-      "sha256": "02b96525a79d5bbf726c39b8d51bf44b1f6aab5878eb27df1c6252c1aa56036b",
-      "bytes": 580,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 70,
-      "h": 70
     },
     "src/renderer/src/assets/logos/graflex_black.webp": {
       "sha256": "6be6a674b4f935c53293eb4adee2b5776a5af8a954132b44ab5a5ea1d2fc17d2",
@@ -1614,14 +1590,6 @@
       "w": 1620,
       "h": 412
     },
-    "src/renderer/src/assets/logos/red_white.webp": {
-      "sha256": "7ffd973c9560699bcc6de70d7046344682a09d498f6796124ec49daa5bd9e3cf",
-      "bytes": 4614,
-      "format": "webp",
-      "variant": "VP8L",
-      "w": 1620,
-      "h": 412
-    },
     "src/renderer/src/assets/logos/ricoh_black.webp": {
       "sha256": "8508cc3c9d5c9ea8e117e2744b145e0d5f08eb046aa48630208d6c5ee85de0ef",
       "bytes": 10492,
@@ -1830,14 +1798,6 @@
       "w": 1023,
       "h": 1024
     },
-    "src/renderer/src/assets/logo-versions/agfa/agfa-51304.webp": {
-      "sha256": "49d86930d99eb30030de061f02dc0797892e70753aa77627374d904f7b85112f",
-      "bytes": 5880,
-      "format": "webp",
-      "variant": "VP8",
-      "w": 512,
-      "h": 175
-    },
     "src/renderer/src/assets/logo-versions/agfa/agfacolour.webp": {
       "sha256": "ec72ec393273992fee53e07c55859599f1b9b64162867c5e07c9edb601ad7425",
       "bytes": 43770,
@@ -1958,14 +1918,6 @@
       "w": 512,
       "h": 452
     },
-    "src/renderer/src/assets/logo-versions/canon/canon-eos-d30.webp": {
-      "sha256": "04475540f779937ce5a6a5724f2e36b1f7514e4e47efc797aa4a8b56f76a79e7",
-      "bytes": 9720,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 148
-    },
     "src/renderer/src/assets/logo-versions/canon/canon-global.webp": {
       "sha256": "407d5287a4b5dee4a2d83b21e8632bd763067922ef4310f490ef5df917f89909",
       "bytes": 10540,
@@ -1973,22 +1925,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 57
-    },
-    "src/renderer/src/assets/logo-versions/canon/canoneos3.webp": {
-      "sha256": "78f69bbfb9f92fed4a2e3ee2031ba4a11e54b02f1a9cef2303ff350d81eca39c",
-      "bytes": 11286,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 448
-    },
-    "src/renderer/src/assets/logo-versions/casio/casio-1.webp": {
-      "sha256": "3905f9c24fd528022b5bfe67ed3340ea717aa15552acaafb5920f6a4f3cca26f",
-      "bytes": 12938,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 161
     },
     "src/renderer/src/assets/logo-versions/casio/casio-2.webp": {
       "sha256": "02fefe5b6de430824ae32608c7563b1e8447d49e0119842e5954933596a3ef04",
@@ -2230,14 +2166,6 @@
       "w": 512,
       "h": 455
     },
-    "src/renderer/src/assets/logo-versions/kodak/kodak.webp": {
-      "sha256": "148ea3e97dc5f3298cbdc90e4846e1444c61433e813cc7760b3adf1916d14890",
-      "bytes": 10346,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 343
-    },
     "src/renderer/src/assets/logo-versions/konica/konica-3.webp": {
       "sha256": "492017692e65d8837bbcd5fda60bc5ec3c7f3df03e507fe076037801d7c3d6b2",
       "bytes": 10292,
@@ -2261,14 +2189,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 427
-    },
-    "src/renderer/src/assets/logo-versions/konica/konica.webp": {
-      "sha256": "94d06b356c9ddf1de456434dc688d9a1f42da03901f9878c724f4acd98c429c9",
-      "bytes": 13474,
-      "format": "webp",
-      "variant": "VP8",
-      "w": 512,
-      "h": 262
     },
     "src/renderer/src/assets/logo-versions/laika/leica-1932.webp": {
       "sha256": "6b4f192e55a7981523eeb9eed28b0e12b57f5b12f7c6e4a91b0fb2d1979ea409",
@@ -2437,14 +2357,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 99
-    },
-    "src/renderer/src/assets/logo-versions/motorola/motorola.webp": {
-      "sha256": "22fb173b806ce267e419a78a29fa64bc1351cfabf402c7b1251d6ce5676e5516",
-      "bytes": 18368,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 98
     },
     "src/renderer/src/assets/logo-versions/nikon/nikon-10.webp": {
       "sha256": "7bbc93f0258bca2f836c99d32ae19c14a7215b8226734b5b72e1c63cef00fae3",
@@ -2630,14 +2542,6 @@
       "w": 512,
       "h": 143
     },
-    "src/renderer/src/assets/logo-versions/ricoh/ricoh.webp": {
-      "sha256": "b2fd324aace23026293e44bc31a7d996981b7343114bd28288001b38c5573534",
-      "bytes": 19988,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 193
-    },
     "src/renderer/src/assets/logo-versions/rollei/rollei-white.webp": {
       "sha256": "1e42cfd1faa0d74cbe58a2a33d9fd3fb1f49ed3b762b6e54a0b102f838a92f69",
       "bytes": 7024,
@@ -2749,14 +2653,6 @@
       "variant": "VP8X",
       "w": 512,
       "h": 113
-    },
-    "src/renderer/src/assets/logo-versions/sigma/sigma-sd9.webp": {
-      "sha256": "216cdf6920187a69debcf453decd08e9c33c88bcd4728e984d8f948870ed6e96",
-      "bytes": 31122,
-      "format": "webp",
-      "variant": "VP8X",
-      "w": 512,
-      "h": 251
     },
     "src/renderer/src/assets/logo-versions/sinar/sinar-wordmark.webp": {
       "sha256": "4257ba5a7d6c21c6c54f4f1ad98bc729e825cc20023c1e0cc16160f22fc75c71",
@@ -5116,34 +5012,6 @@
       ]
     },
     {
-      "id": "canon-eos-d30",
-      "brandKey": "canon",
-      "name": "Canon EOS D30",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "canon-eos-d30",
-      "cuts": [
-        {
-          "id": "canon-eos-d30",
-          "assetKey": "ver:canon:canon-eos-d30",
-          "file": "previews/canon/canon-eos-d30.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 858,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/canon/canon-eos-d30.webp",
-          "sha256": "04475540f779937ce5a6a5724f2e36b1f7514e4e47efc797aa4a8b56f76a79e7",
-          "actualWidth": 512,
-          "actualHeight": 148
-        }
-      ]
-    },
-    {
       "id": "canon-global",
       "brandKey": "canon",
       "name": "Canon Global corporate lockup",
@@ -5168,34 +5036,6 @@
           "sha256": "407d5287a4b5dee4a2d83b21e8632bd763067922ef4310f490ef5df917f89909",
           "actualWidth": 512,
           "actualHeight": 57
-        }
-      ]
-    },
-    {
-      "id": "canon-legacy",
-      "brandKey": "canon",
-      "name": "Canon",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "light",
-      "primaryCut": "canon",
-      "cuts": [
-        {
-          "id": "canon",
-          "assetKey": "canon",
-          "file": "canon.webp",
-          "ink": "color",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 1024,
-          "declaredHeight": 372,
-          "resolvedPath": "src/renderer/src/assets/logos/canon.webp",
-          "sha256": "442ab8ee5c2478767ce519d28fecfcbe6136f4961049d17bf1aa80ac5a99d1db",
-          "actualWidth": 1024,
-          "actualHeight": 372
         }
       ]
     },
@@ -5239,34 +5079,6 @@
           "sha256": "d4a99d3d4a1f940279743e95f09f65d948331213259e7a77dbef6edc19e97ad6",
           "actualWidth": 1024,
           "actualHeight": 213
-        }
-      ]
-    },
-    {
-      "id": "canoneos3",
-      "brandKey": "canon",
-      "name": "Canoneos3",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "canoneos3",
-      "cuts": [
-        {
-          "id": "canoneos3",
-          "assetKey": "ver:canon:canoneos3",
-          "file": "previews/canon/canoneos3.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 1113,
-          "declaredHeight": 990,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/canon/canoneos3.webp",
-          "sha256": "78f69bbfb9f92fed4a2e3ee2031ba4a11e54b02f1a9cef2303ff350d81eca39c",
-          "actualWidth": 512,
-          "actualHeight": 448
         }
       ]
     },
@@ -6242,34 +6054,6 @@
       ]
     },
     {
-      "id": "ricoh",
-      "brandKey": "ricoh",
-      "name": "Ricoh",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "ricoh",
-      "cuts": [
-        {
-          "id": "ricoh",
-          "assetKey": "ver:ricoh:ricoh",
-          "file": "previews/ricoh/ricoh.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2337,
-          "declaredHeight": 1019,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/ricoh/ricoh.webp",
-          "sha256": "b2fd324aace23026293e44bc31a7d996981b7343114bd28288001b38c5573534",
-          "actualWidth": 512,
-          "actualHeight": 193
-        }
-      ]
-    },
-    {
       "id": "ricoh-1",
       "brandKey": "ricoh",
       "name": "Ricoh 1",
@@ -6793,34 +6577,6 @@
       ]
     },
     {
-      "id": "konica",
-      "brandKey": "konica",
-      "name": "Konica",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "both",
-      "primaryCut": "konica",
-      "cuts": [
-        {
-          "id": "konica",
-          "assetKey": "ver:konica:konica",
-          "file": "previews/konica/konica.png",
-          "ink": "color",
-          "surface": "both",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2306,
-          "declaredHeight": 1178,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/konica/konica.webp",
-          "sha256": "94d06b356c9ddf1de456434dc688d9a1f42da03901f9878c724f4acd98c429c9",
-          "actualWidth": 512,
-          "actualHeight": 262
-        }
-      ]
-    },
-    {
       "id": "konica-3",
       "brandKey": "konica",
       "name": "Konica 3",
@@ -7262,34 +7018,6 @@
       ]
     },
     {
-      "id": "kodak",
-      "brandKey": "kodak",
-      "name": "Kodak",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "kodak",
-      "cuts": [
-        {
-          "id": "kodak",
-          "assetKey": "ver:kodak:kodak",
-          "file": "previews/kodak/kodak.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 1798,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/kodak/kodak.webp",
-          "sha256": "148ea3e97dc5f3298cbdc90e4846e1444c61433e813cc7760b3adf1916d14890",
-          "actualWidth": 512,
-          "actualHeight": 343
-        }
-      ]
-    },
-    {
       "id": "kodak-1",
       "brandKey": "kodak",
       "name": "Kodak 1",
@@ -7609,34 +7337,6 @@
           "sha256": "77926c510682b1eb016c5afbe58d213edc1044fc8a7e17bc4686f28c36eeae5a",
           "actualWidth": 512,
           "actualHeight": 102
-        }
-      ]
-    },
-    {
-      "id": "agfa-51304",
-      "brandKey": "agfa",
-      "name": "Agfa 51304",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "agfa-51304",
-      "cuts": [
-        {
-          "id": "agfa-51304",
-          "assetKey": "ver:agfa:agfa-51304",
-          "file": "previews/agfa/agfa-51304.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 820,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/agfa/agfa-51304.webp",
-          "sha256": "49d86930d99eb30030de061f02dc0797892e70753aa77627374d904f7b85112f",
-          "actualWidth": 512,
-          "actualHeight": 175
         }
       ]
     },
@@ -8340,34 +8040,6 @@
       ]
     },
     {
-      "id": "casio-1",
-      "brandKey": "casio",
-      "name": "Casio 1",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "casio-1",
-      "cuts": [
-        {
-          "id": "casio-1",
-          "assetKey": "ver:casio:casio-1",
-          "file": "previews/casio/casio-1.png",
-          "ink": "dark",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 753,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/casio/casio-1.webp",
-          "sha256": "3905f9c24fd528022b5bfe67ed3340ea717aa15552acaafb5920f6a4f3cca26f",
-          "actualWidth": 512,
-          "actualHeight": 161
-        }
-      ]
-    },
-    {
       "id": "casio-2",
       "brandKey": "casio",
       "name": "Casio 2",
@@ -8822,34 +8494,6 @@
       ]
     },
     {
-      "id": "sigma-sd9",
-      "brandKey": "sigma",
-      "name": "Sigma Sd9",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "sigma-sd9",
-      "cuts": [
-        {
-          "id": "sigma-sd9",
-          "assetKey": "ver:sigma:sigma-sd9",
-          "file": "previews/sigma/sigma-sd9.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2400,
-          "declaredHeight": 1298,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/sigma/sigma-sd9.webp",
-          "sha256": "216cdf6920187a69debcf453decd08e9c33c88bcd4728e984d8f948870ed6e96",
-          "actualWidth": 512,
-          "actualHeight": 251
-        }
-      ]
-    },
-    {
       "id": "tamron-2019",
       "brandKey": "tamron",
       "name": "Tamron wordmark",
@@ -9213,23 +8857,8 @@
       "selected": true,
       "status": "READY",
       "surface": "both",
-      "primaryCut": "red-block",
+      "primaryCut": "red_black",
       "cuts": [
-        {
-          "id": "red-block",
-          "assetKey": "red_white",
-          "file": "red_white.webp",
-          "ink": "light",
-          "surface": "both",
-          "status": "READY",
-          "confidence": "medium",
-          "declaredWidth": 1620,
-          "declaredHeight": 412,
-          "resolvedPath": "src/renderer/src/assets/logos/red_white.webp",
-          "sha256": "7ffd973c9560699bcc6de70d7046344682a09d498f6796124ec49daa5bd9e3cf",
-          "actualWidth": 1620,
-          "actualHeight": 412
-        },
         {
           "id": "red_black",
           "assetKey": "red_black",
@@ -9455,34 +9084,6 @@
           "sha256": "5dbbd5ffc8c805769a9243f5773572b55efd7f91f97989470abfd04650f0861b",
           "actualWidth": 512,
           "actualHeight": 115
-        }
-      ]
-    },
-    {
-      "id": "motorola",
-      "brandKey": "motorola",
-      "name": "Motorola",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "CANDIDATE",
-      "surface": "light",
-      "primaryCut": "motorola",
-      "cuts": [
-        {
-          "id": "motorola",
-          "assetKey": "ver:motorola:motorola",
-          "file": "previews/motorola/motorola.png",
-          "ink": "color",
-          "surface": "light",
-          "status": "CANDIDATE",
-          "confidence": "low",
-          "declaredWidth": 2373,
-          "declaredHeight": 642,
-          "resolvedPath": "src/renderer/src/assets/logo-versions/motorola/motorola.webp",
-          "sha256": "22fb173b806ce267e419a78a29fa64bc1351cfabf402c7b1251d6ce5676e5516",
-          "actualWidth": 512,
-          "actualHeight": 98
         }
       ]
     },
@@ -10017,49 +9618,6 @@
           "sha256": "468b719ec304a17299d97dd1828a4a91430e43b2017f4a7e2b21d2df724583a6",
           "actualWidth": 511,
           "actualHeight": 512
-        }
-      ]
-    },
-    {
-      "id": "google-legacy-black",
-      "brandKey": "google",
-      "name": "Google Pixel Google Black",
-      "era": "legacy",
-      "years": "—",
-      "selected": true,
-      "status": "LEGACY",
-      "surface": "both",
-      "primaryCut": "google_black",
-      "cuts": [
-        {
-          "id": "google_black",
-          "assetKey": "google_black",
-          "file": "google_black.webp",
-          "ink": "dark",
-          "surface": "light",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 70,
-          "declaredHeight": 70,
-          "resolvedPath": "src/renderer/src/assets/logos/google_black.webp",
-          "sha256": "6c41bfdfbca039978158a2608ae3d0e6eb6a648e4962c79b12136bc06f77bef9",
-          "actualWidth": 70,
-          "actualHeight": 70
-        },
-        {
-          "id": "google_white",
-          "assetKey": "google_white",
-          "file": "google_white.webp",
-          "ink": "light",
-          "surface": "dark",
-          "status": "LEGACY",
-          "confidence": "medium",
-          "declaredWidth": 70,
-          "declaredHeight": 70,
-          "resolvedPath": "src/renderer/src/assets/logos/google_white.webp",
-          "sha256": "02b96525a79d5bbf726c39b8d51bf44b1f6aab5878eb27df1c6252c1aa56036b",
-          "actualWidth": 70,
-          "actualHeight": 70
         }
       ]
     },
