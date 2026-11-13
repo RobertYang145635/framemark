@@ -33,8 +33,10 @@ import com.framemark.native.engine.Perf50Runner
 import com.framemark.native.engine.WiredMatrixRunner
 import com.framemark.native.inspector.InspectorHints
 import com.framemark.native.theme.AndroidAppearanceStore
+import com.framemark.native.theme.AndroidMotionSettings
 import com.framemark.native.theme.AppearanceController
 import com.framemark.native.theme.AppearanceEnv
+import com.framemark.native.theme.FmPlatformMotionScale
 import com.framemark.native.theme.applySystemBarInk
 import com.framemark.native.theme.resolveDark
 import com.framemark.native.workflow.AndroidProductFileSystem
@@ -489,6 +491,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         installAppVersion(applicationContext)
+        // Motion (2026-11-14): the OS animation scale (which is also what the
+        // accessibility "remove animations" toggle writes) is read **before the first
+        // composition** and mapped to FrameMark's 0..1 motion scale, so the very first
+        // frame already animates (or does not) according to the system. `onResume`
+        // refreshes it: the user has to leave the app to change the setting.
+        FmPlatformMotionScale.install(AndroidMotionSettings.read(applicationContext))
         // WP-T: the appearance file lives next to project.json / presets.json in
         // the app's private files dir. Installed before the first composition so
         // the very first frame already renders in the stored appearance.
@@ -762,6 +770,14 @@ class MainActivity : ComponentActivity() {
             }
             FrameMarkApp()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Motion (2026-11-14): re-read the system "reduce motion" inputs on every
+        // return to the foreground. Changing them requires leaving the app (Settings /
+        // developer options), so this is the one moment the value can have changed.
+        FmPlatformMotionScale.install(AndroidMotionSettings.read(applicationContext))
     }
 
     override fun onPause() {

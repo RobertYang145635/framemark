@@ -1,5 +1,7 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,14 +39,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.theme.FmDuration
+import com.framemark.native.theme.FmEasing
+import com.framemark.native.theme.FmMotionRules
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.LocalFmMotionScale
+import com.framemark.native.theme.fmTweenSpec
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.EngineFailure
 import com.framemark.native.workflow.ExportResult
+import com.framemark.native.workflow.ExportStage
+import com.framemark.native.workflow.FmProgress
 import com.framemark.native.workflow.FmSheet
 import com.framemark.native.workflow.ChoiceChip
 import com.framemark.native.workflow.GhostButton
@@ -104,6 +114,16 @@ fun PhoneExportSheet(
     var busy by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
     var publishing by remember { mutableStateOf(false) }
+    // Motion batch 2 (2026-11-14): the export bar is **determinate** — it moves only
+    // when the pipeline really completes a stage (`ExportStage`, "stages completed /
+    // 4", never a time guess), and each move is a 200 ms linear tween. Failure leaves
+    // the bar and shows the error text; nothing shakes (spec §5.1).
+    var stage by remember { mutableStateOf(ExportStage.Started) }
+    val exportProgress by animateFloatAsState(
+        targetValue = if (busy) stage.fraction else 0f,
+        animationSpec = fmTweenSpec<Float>(FmDuration.standard, FmEasing.linear),
+        label = "fm.export.progress",
+    )
     val settings = PhoneExportOptions.normalized(session.export)
     val native = card != null && NativeEngine.supportsExport(card.id)
     val busyNow = busy || sharing || publishing
@@ -153,6 +173,7 @@ fun PhoneExportSheet(
         error = null
         note = null
         result = null
+        stage = ExportStage.Started
         busy = true
         session.exporting = true
         scope.launch {
@@ -167,6 +188,7 @@ fun PhoneExportSheet(
                     nameIndex = photoIndex,
                     photoDisplayName = photoDisplayName,
                     outputDirectory = platform?.exportDir,
+                    onStage = { next -> stage = next },
                 )
                 session.lastExport = exported
                 result = exported
@@ -259,6 +281,7 @@ fun PhoneExportSheet(
                 outputWidth = 0,
                 outputHeight = 0,
                 hdrGainMap = hdrGainMap,
+                progress = exportProgress,
                 canApplyToAll = canApplyToAll,
                 onApplyToAll = onApplyToAll,
                 onPreserveHdr = { update(PhoneExportOptions.applyPreserveHdr(settings, it)) },
@@ -425,9 +448,25 @@ private fun ColumnScope.ExportDoneContent(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(FmSpacing.xl))
+        // Motion batch 2: the success check scales up and fades in over 200 ms with
+        // no overshoot and no shake — the mark is a confirmation, not a celebration.
+        // At reduced motion it is drawn at its final state on the first frame, and a
+        // failed export never reaches this page (failures are text, spec §5.1).
+        val motionEnabled = FmMotionRules.motionEnabled(LocalFmMotionScale.current)
+        val checkSpec = fmTweenSpec<Float>(FmDuration.standard, FmEasing.enter)
+        val checkAppear = remember { Animatable(if (motionEnabled) 0f else 1f) }
+        LaunchedEffect(Unit) {
+            if (motionEnabled) checkAppear.animateTo(targetValue = 1f, animationSpec = checkSpec)
+        }
         Box(
             modifier = Modifier
                 .size(56.dp)
+                .graphicsLayer {
+                    alpha = checkAppear.value
+                    val scale = 0.86f + 0.14f * checkAppear.value
+                    scaleX = scale
+                    scaleY = scale
+                }
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .background(FmPalette.success.copy(alpha = 0.16f)),
             contentAlignment = Alignment.Center,
@@ -533,6 +572,12 @@ internal fun ColumnScope.ExportFormContent(
     outputHeight: Int,
     /** The active photo really carries an Ultra HDR gain map (read off the UI thread). */
     hdrGainMap: Boolean,
+    /**
+     * Determinate export progress in `0..1` ([ExportStage] fractions). One of the
+     * four pipeline stops at a time — the sheet animates the bar's width, it does not
+     * invent a percentage between stops.
+     */
+    progress: Float = 0f,
     canApplyToAll: Boolean,
     onApplyToAll: () -> Unit,
     onPreserveHdr: (Boolean) -> Unit,
@@ -666,6 +711,10 @@ internal fun ColumnScope.ExportFormContent(
                     style = FmType.bodyMedium,
                     color = FmPalette.onSurfaceSecondary,
                 )
+                // A determinate bar that only moves on a completed pipeline stage —
+                // 4 dp tall, `FmProgress` paints it in the shared tokens.
+                Spacer(Modifier.height(FmSpacing.xxs))
+                FmProgress(progress = progress, height = 4)
             }
         }
     }

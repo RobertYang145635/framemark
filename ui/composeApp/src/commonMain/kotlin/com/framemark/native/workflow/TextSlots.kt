@@ -42,6 +42,17 @@ data class TextSlot(
     val stable: Boolean = false,
     /** False when no trustworthy positive rectangle was reported. */
     val located: Boolean = false,
+    /**
+     * True when this row came from an **interactive-tier** preview render.
+     *
+     * The interactive tier (`product/PreviewTier.kt`) may decode the source photo at a
+     * bounded edge, so its report is progress feedback, not the frame the user keeps:
+     * the six hand "色卡" templates sample the photo and report slightly different hex
+     * labels. `NativeEngine.preview` marks such reports; [TextSlotRegistry] never lets
+     * one replace a final snapshot, and the 文字 page omits a provisional read-only
+     * value instead of presenting a mid-drag sample as the final palette.
+     */
+    val provisional: Boolean = false,
 )
 
 private val irTextSlotKey = Regex("^b\\d+(/g\\d+)*$")

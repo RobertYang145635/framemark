@@ -23,6 +23,36 @@ class EngineFailure(
 ) : Exception("[$code] $userMessage", cause)
 
 /**
+ * The pipeline stages one export really steps through, and the progress-bar value
+ * each **completion** means (motion batch 2, 2026-11-14).
+ *
+ * The engine renders a frame in a single blocking call and reports no byte-level
+ * progress, so a truthful determinate bar has exactly these stops — the fraction is
+ * "stages completed / 4", **not** a time estimate. The render dominates the wall
+ * clock; the bar refuses to invent motion inside it (motion spec §3.1 #8: an
+ * indeterminate shimmer is decoration on a value the user is waiting for).
+ *
+ * The stages are invoked from `NativeEngine.exportCard` on the caller's coroutine
+ * context, so a UI callback may write Compose state directly.
+ */
+enum class ExportStage(val fraction: Float) {
+    /** Export accepted: naming, the temp file and the engine call are ahead. */
+    Started(0f),
+
+    /** The engine finished writing the frame (fallback pre-crop / HDR wrap follow). */
+    Rendered(0.25f),
+
+    /** Bytes measured and fingerprinted; the commit gate is next. */
+    Prepared(0.5f),
+
+    /** The file is committed at its final name. */
+    Committed(0.75f),
+
+    /** Publication (share / album write) returned; the export is done. */
+    Published(1f),
+}
+
+/**
  * The design inputs the engine actually consumes (render-v1 `design` object).
  *
  * [logoBrand] is the brand-picker key, not image bytes: resolving it to a logo
@@ -144,6 +174,10 @@ object NativeEngine {
      * One export through the real engine. There is no placeholder fallback on any
      * platform: a missing engine, an unwired card or an unsupported format fails
      * with a structured [EngineFailure] the export sheet shows to the user.
+     *
+     * [onStage] reports the pipeline stages the export really completes ([ExportStage]);
+     * it is optional so the batch queue and the desktop dialog keep their existing
+     * single-call behaviour.
      */
     suspend fun export(
         card: LibraryCard,
@@ -155,6 +189,7 @@ object NativeEngine {
         photoDisplayName: String? = null,
         outputDirectory: String? = null,
         onOutputPrepared: ((path: String, size: Long, sha256: String) -> Boolean)? = null,
+        onStage: ((ExportStage) -> Unit)? = null,
     ): ExportResult {
         val api = WorkflowEnv.nativeRender
         val platform = WorkflowEnv.platform
@@ -178,6 +213,7 @@ object NativeEngine {
             photoDisplayName = photoDisplayName,
             outputDirectory = outputDirectory,
             onOutputPrepared = onOutputPrepared,
+            onStage = onStage,
         )
     }
 
@@ -199,6 +235,7 @@ object NativeEngine {
         photoDisplayName: String? = null,
         outputDirectory: String? = null,
         onOutputPrepared: ((path: String, size: Long, sha256: String) -> Boolean)? = null,
+        onStage: ((ExportStage) -> Unit)? = null,
     ): ExportResult {
         val api = WorkflowEnv.nativeRender
             ?: throw EngineFailure("FM-E-ENGINE-001", "渲染组件未安装或无法启动，无法导出")
@@ -207,6 +244,7 @@ object NativeEngine {
         if (!api.supportsExport(cardId)) {
             throw EngineFailure("FM-E-ENGINE-002", "这张边框未接入桌面引擎，无法导出")
         }
+        onStage?.invoke(ExportStage.Started)
         val initialPath = ExportNaming.exportPath(
             platform = platform,
             pattern = settings.filenamePattern,
@@ -320,6 +358,10 @@ object NativeEngine {
                 }
             }
 
+            // Stage marker: the engine has returned its frame (the fallback pre-crop,
+            // the HDR wrap and the commit are what remains).
+            onStage?.invoke(ExportStage.Rendered)
+
             // Ultra HDR: the engine has written the SDR rendition. When the settings ask
             // for HDR and the source photo carries a reusable gain map, the temporary
             // file is wrapped in place *before* it is committed, so the commit keeps its
@@ -393,6 +435,7 @@ object NativeEngine {
             if (onOutputPrepared != null && sha256.isNullOrBlank()) {
                 throw EngineFailure("FM-E-IO-003", "无法校验待提交成片，已停止导出")
             }
+            onStage?.invoke(ExportStage.Prepared)
 
             var collisionNumber = 1
             var candidate = initialPath
@@ -458,6 +501,7 @@ object NativeEngine {
                 )
             }
             val path = committedPath ?: throw EngineFailure("FM-E-IO-003", "可用文件名冲突过多，未覆盖任何已有文件")
+            onStage?.invoke(ExportStage.Committed)
             val publishNote = try {
                 api.exportCommitted(path)
             } catch (c: kotlin.coroutines.cancellation.CancellationException) {
@@ -465,6 +509,9 @@ object NativeEngine {
             } catch (t: Throwable) {
                 "本地文件已保存；后续发布失败：${t.message ?: "未知错误"}"
             }
+            // Published either way: the local file is committed and the export is done;
+            // a publication failure is a note, not a failed save.
+            onStage?.invoke(ExportStage.Published)
             val note = listOfNotNull(image.note, publishNote).filter { it.isNotBlank() }.joinToString("；").ifBlank { null }
             val outputBytes = withContext(Dispatchers.IO) { platform.fileSize(path) }
             FmLog.info("FM_NATIVE_EXPORT") {
@@ -555,7 +602,7 @@ object NativeEngine {
     ): NativeImage? {
         val api = WorkflowEnv.nativeRender ?: return null
         if (!api.supports(card.id)) return null
-        return api.render(
+        val image = api.render(
             cardId = card.id,
             design = design,
             mode = "preview",
@@ -568,6 +615,14 @@ object NativeEngine {
             photoPath = photoPath,
             interactive = interactive,
         )
+        if (!interactive) return image
+        // Decision 2026-11-14 (palette cards): the interactive tier may decode the
+        // source photo at a bounded edge, so its report is a *sample* — a 色卡
+        // template's hex labels differ from the final frame while every geometry
+        // field stays identical. Mark the whole report provisional at this one choke
+        // point; `TextSlotRegistry` then keeps the last final values, and the 文字
+        // page omits a read-only value that never became final.
+        return image.copy(textSlots = image.textSlots.map { it.copy(provisional = true) })
     }
 
     /**

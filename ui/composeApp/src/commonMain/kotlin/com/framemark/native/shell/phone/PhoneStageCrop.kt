@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -136,6 +137,14 @@ private const val CROP_PREVIEW_EDGE = 1536
 internal fun PhoneCropLayer(
     ui: PhoneCropUi,
     modifier: Modifier = Modifier,
+    /**
+     * Opacity of the crop **grid** (scrim + keep frame + thirds) while crop mode is
+     * entering, 0..1. Driven by the stage's single `cropEnter` progress so the grid
+     * and the chrome crossfade together (motion spec §3.1 #7). The photo below it is
+     * deliberately *not* scaled by this: the pixels and the crop rectangle are never
+     * animated, only the overlay is.
+     */
+    appearProgress: () -> Float = { 1f },
 ) {
     if (ui.box.w <= 0f || ui.box.h <= 0f) return
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -181,6 +190,10 @@ internal fun PhoneCropLayer(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                // Draw-phase read: the enter progress is an animated float, and an
+                // animated float must never be a composition input (it would
+                // recompose the whole crop layer every frame just to set an alpha).
+                .graphicsLayer { alpha = appearProgress().coerceIn(0f, 1f) }
                 .pointerInput(frame, ui.sourceWidth, ui.sourceHeight, ui.box) {
                     // One detector for both gestures: `detectTransformGestures` hides
                     // which finger count produced a sample, and the release snap has to

@@ -1,4 +1,4 @@
-# Interaction motion spec (batch 1)
+# Interaction motion spec
 
 Owner request: **「调研学习一下交互动画，我们要加一些交互动画在这个软件上面」**.
 
@@ -7,10 +7,13 @@ numbers serve. Tokens live in
 [`theme/Motion.kt`](../ui/composeApp/src/commonMain/kotlin/com/framemark/native/theme/Motion.kt)
 — this file may name a value, the code owns it.
 
-Scope of batch 1: **five** interaction families implemented (sheet, page switch, card
-press/selection, overlay enter/exit, first-load reveal). Four are specified here and
-**deliberately deferred** (§4). Motion is chrome only: it never touches the photo, the
-frame render, the project format or any persisted state.
+History: **batch 1** implemented five interaction families (sheet, page switch, card
+press/selection, overlay enter/exit, first-load reveal) and specified four more as
+deliberately deferred (§3.2 of that batch). **Batch 2 (2026-11-14)** wired the platform
+reduce-motion input and implemented the three deferred interaction families — slider
+drag bubble, crop-mode enter, export progress. Nothing else moved. Motion is chrome
+only: it never touches the photo, the frame render, the project format or any persisted
+state.
 
 ---
 
@@ -93,6 +96,36 @@ FrameMark supplies `LocalFmMotionScale` (0..1, same domain as `scaleFactor`), pr
 `FrameMarkTheme(motionScale = …)`, and every helper collapses to `snap()` /
 `EnterTransition.None` at 0.
 
+**Batch 2 wiring.** The platform value now comes from
+[`FmPlatformMotionScale`](../ui/composeApp/src/commonMain/kotlin/com/framemark/native/theme/MotionPlatform.kt):
+the OS state is read once by the platform entry point, mapped by the pure
+`FmMotionRules.scaleFromSystem`, and installed before the first composition.
+
+| System state | `ANIMATOR_DURATION_SCALE` | `isReduceMotionEnabled` | `LocalFmMotionScale` |
+|---|---|---|---|
+| Android: animations off / accessibility *Remove animations* | `0` | any | **0** — instant end state |
+| Android: a host that can query reduce motion | any | `true` | **0** |
+| Android: slower animations (0.5×, …) | `0 < s < 1` | `false`/unknown | **`s`** (proportional) |
+| Android: normal | `1` | `false`/unknown | **1** |
+| Android: faster than normal | `> 1` | any | **1** — the app only ever reduces |
+| Android: setting never written | negative sentinel | unknown | **1** — unknown is not "off" |
+| Desktop | — (no OS hook wired) | — | **1**, documented default |
+
+**What Android actually exposes (checked against the `android-36` platform jar).** The
+public SDK has no reduced-motion query: `AccessibilityManager` offers
+`isTouchExplorationEnabled` / `isHighContrastTextEnabled` / `isAudioDescriptionRequested`
+and no motion query, and no `Settings` key named reduce-motion exists. Android's
+accessibility *Remove animations* toggle **is** `ANIMATOR_DURATION_SCALE = 0`, which is
+what `AndroidMotionSettings` reads; the `reduceMotion` argument stays in the pure mapping
+so a host or a future API that can answer it plugs in without a second rule. The
+`isReduceMotionEnabled` column is therefore "not available on Android today", not an
+unimplemented branch.
+
+`MainActivity` installs the value before `setContent` and refreshes it in `onResume`
+(changing the setting requires leaving the app). Desktop has no hook yet, so it keeps
+the full-motion default; a Windows `SPI_GETCLIENTAREAANIMATION` / macOS
+`accessibilityDisplayOptions` reader is the follow-up (§4.1), not a guess at the setting.
+
 ---
 
 ## 2. Token set
@@ -141,12 +174,23 @@ transitions use duration + curve.
 `LocalFmMotionScale` — `1f` full, `0f` none, provided by `FrameMarkTheme(motionScale = …)`.
 Helpers `fmTweenSpec` / `fmSpringSpec` / `fmOverlayEnter` / `fmOverlayExit` /
 `fmContentEnter` / `fmContentExit` / `Modifier.fmRevealOnEnter` all short-circuit at 0.
+The platform value is installed by `FmPlatformMotionScale` (Android: the OS animation
+scale — the same setting the accessibility *Remove animations* toggle writes — mapped by
+the pure `FmMotionRules.scaleFromSystem`; desktop: the documented `1` default, no OS
+hook).
+
+Beyond the original helpers, batch 2's three families honour the scale in two places
+each: `fmTweenSpec` turns their alpha/width tweens into `snap()` at 0, and any *hold*
+duration (the bubble's 140 ms linger) is derived from
+`FmMotionRules.durationMs(FmDuration.fast, scale)`, so a reduced-motion run does not
+merely skip the animation and then wait anyway.
 
 ---
 
 ## 3. Interaction table
 
-Legend — **Implemented** = in this batch. **Deferred** = specified, not built (§4).
+Legend — **Implemented** = shipped (batch 1 rows #1–#5, batch 2 rows #6–#8).
+**Deferred** = specified, not built (§3.2).
 "drag-safe" means the animation never runs on a property the user is currently dragging.
 
 ### 3.1 Implemented
@@ -160,14 +204,17 @@ Legend — **Implemented** = in this batch. **Deferred** = specified, not built 
 | 3b | Border card selection | card becomes / stops being current | ring alpha + ring outset | 140 | `standard` | Ring grows out of the card edge instead of popping on. `ringProgress` is read **inside `drawBehind`** (draw phase), so the card does not recompose once per frame. The check dot, the name weight and the name colour still switch instantly — they are information, not motion. |
 | 4 | Brand picker overlay (and border library overlay) | open / dismiss / scrim tap / back | layer alpha + 1/12 height rise | 200 in / 180 out | `enter` + `emphasizedEnter` in, `exit` + `emphasizedExit` out | One `AnimatedVisibility` per overlay; exit is a shade under the entrance. **Known shortcut:** the whole layer rises, so the scrim travels the same 1/12 as the panel instead of staying pinned — see §4.1. Content re-checks its own precondition during the exit (switching tool closes the picker). |
 | 5 | First-load grid reveal | first composition of the brand grid | alpha + 6 dp rise | 200 + 28 ms/item stagger, capped 168 ms | `enter` | Only indices 0–11 animate; past that the entrance is **skipped, not shortened**, and scale 0 renders the final state on frame one. Stagger starts at 0 and is capped, so 61 brands do not imply a 1.7 s cascade. |
+| 6 | Slider drag bubble (phone 参数 sheet) | thumb grab / drag / release | bubble **opacity only** | 90 in / 140 linger / 90 out | `enter` in, `exit` out | **Batch 2.** Drag-safe **by construction**: the pill is placed by `sliderThumbCenterPx` / `sliderBubbleLeftPx` from the live fraction on every frame — a direct read, no animated offset — and the number is plain `Text`, never a count-up. The 140 ms linger is scaled by the motion scale (0 at scale 0). Lives in `PhoneSliderParamRow`; the desktop rail keeps its inline readout. |
+| 7 | Crop mode enter (裁切 tapped) | 裁切 chip | stage chrome alpha out, crop grid alpha in | 200 / 200 | `standard` | **Batch 2.** The normal pills fade out while the crop pill (裁切保留区域) and 重置/完成 fade in, and the crop **grid** (scrim + keep frame + thirds) fades in on the same `cropEnter` progress. The photo pixels swap instantly — no zoom, no crossfade — and the crop rectangle is drawn from the live value, never animated. Leaving crop mode is a cut (§4: the applied crop is the feedback). |
+| 8 | Export progress (phone 导出 sheet) | 保存到相册 / 分享 | determinate bar width (linear), success check scale+alpha | 200 per completed stage; 200 for the check | `linear`, `enter` | **Batch 2.** The bar is **determinate**: it moves only when the export pipeline completes a stage (`ExportStage`, "stages completed / 4" — a stage marker, not a time estimate, because the engine reports no byte-level progress). No indeterminate shimmer. The success check appears at scale 0.86→1 and alpha 0→1 with no overshoot. **Failure: no shake** — the error sentence carries it (spec §5.1). |
 
 ### 3.2 Deferred (specified, not built)
 
-| # | Interaction | Trigger | Property | Duration / spring | Curve | Notes |
-|---|---|---|---|---|---|---|
-| 6 | Slider drag bubble | thumb grab / drag / release | bubble alpha + scale, anchored to thumb | 90 / 140 / 90 | `enter` / `exit` | **drag-safe by construction**: the bubble's *position* must be a direct read of the value (no animation), only its appear/disappear is animated. The numeric **value text never animates** — a number that counts up is a number you cannot read mid-drag. |
-| 7 | Crop mode enter | 裁切 tapped | chrome alpha out, grid alpha in, photo *frame* only | 200 out / 200 in | `standard` | The **photo pixels are never animated** — no zoom, no crossfade. The crop rectangle itself is dragged, so it is drag-safe like #1. |
-| 8 | Export progress | export started / finished | bar width (linear), check scale+alpha, panel shake | linear for the bar; 200 for the check | `linear`, `standard` | Progress is **determinate** where the engine reports it; an indeterminate shimmer is decoration on a value the user is waiting for. Failure: no shake (§5.1) — the error message and the retry affordance carry it. |
+**Empty.** Batch 2 implemented the three interactions that used to live here (#6 slider
+drag bubble, #7 crop mode enter, #8 export progress). What remains is platform coverage
+and the batch-1 shortcuts listed in §4.1 (desktop slider bubble; Windows/macOS
+reduce-motion hooks; the overlay scrim shortcut), none of which is a missing animation
+family.
 
 ---
 
@@ -227,10 +274,24 @@ Honest list, all taken to keep the diff reviewable:
   the overlay and offsetting only the panel — a follow-up, not a rewrite.
 - The reveal (#5) re-runs if the first 12 grid items are scrolled out and back. Capped and
   short, so it is a minor twitch rather than a bug.
-- `FrameMarkTheme(motionScale = …)` accepts `0f` but **nothing reads the OS "reduce motion"
-  setting yet**. The hook exists and is tested; wiring it per platform (Android
-  `TRANSITION_ANIMATION_SCALE`, Windows/iOS equivalents) is a separate task.
-- No crop/export/slider animation yet — §3.2.
+- **Reduce motion is wired on Android only.** `FmPlatformMotionScale` is fed from
+  `ANIMATOR_DURATION_SCALE` before the first composition and on `onResume`; Android's
+  accessibility *Remove animations* toggle is that same setting, and the public SDK has
+  no separate reduced-motion query. Desktop keeps the documented `1` default because no
+  OS hook is wired there yet: the Windows `SPI_GETCLIENTAREAANIMATION` /
+  `SystemParametersInfo` pair and the macOS `accessibilityDisplayOptions` equivalent are
+  a separate task. Inventing a value from e.g. the theme would be a guess, not the
+  setting.
+- The slider bubble (#6) lives on the **phone** parameter rows only. The desktop rail keeps
+  its inline value readout (it sits in a 36 dp row where the pill would cover the label);
+  adding it there is a per-surface decision, not a missing token.
+- Crop enter (#7) leaves **chrome sets composed during the 200 ms crossfade**: the outgoing
+  pills sit at fading alpha. Their taps are neutralized (the crop entry and 按住看原图
+  handlers are no-ops while the crop editor is active) instead of removing them
+  mid-transition, which would cut the fade. Leaving crop mode is a cut by design.
+- Export progress (#8) reports the pipeline's **stage completions**, not a percentage of
+  time: the engine renders in one blocking call, so the bar has four stops
+  (`ExportStage`). The success check is the only "celebration"; failure is text.
 
 ---
 
@@ -250,6 +311,27 @@ properties the app relies on:
   list safe);
 - spring presets are distinct and reject impossible values;
 - the legacy U1a nav tokens survived the move from `Tokens.kt` with their values intact.
+
+Batch 2 added four pure test files next to it:
+
+- `theme/MotionPlatformTest.kt` — the whole `FmMotionRules.scaleFromSystem` table: animations
+  off → 0, accessibility reduce-motion → 0 over any scale, `0 < s < 1` proportional (and
+  still halving a 200 ms tween), normal → 1, desktop's two nulls → 1, the Android "never
+  written" sentinel / NaN → 1 (unknown is not "off"), `> 1` never amplifies, and a mapped 0
+  still collapses every duration. `clampScale` is pinned too.
+- `inspector/SliderBubbleGeometryTest.kt` — the bubble rides the same function the thumb is
+  painted with: both track ends, the exact middle, the fraction clamp, centred-on-thumb when
+  there is room, clamped at both ends, a bubble wider than the row, and a 0 px first
+  measurement (no NaN).
+- `workflow/ExportStageTest.kt` — the progress stops start at 0, end at 1, are strictly
+  monotonic and stay in the bar; the enum's declaration order is the pipeline order.
+- `workflow/StageReportAuthorityTest.kt` — the palette decision that rides the same
+  preview tiers: `NativeEngine.preview` marks an interactive frame's text report
+  `TextSlot.provisional`, `TextSlotRegistry` never lets a provisional report replace a
+  final one (so a drag keeps the last final values), the first provisional frame is held
+  but flagged, `clear()`/failure recovery still reset the snapshot, and the 文字 page's
+  read-only row omits a provisional sampled value (`readonlyTextSlotValue`). This is what
+  keeps an interactive-frame hex sample out of the UI as *data*.
 
 A pixel/timing test is deliberately absent: the timing belongs to Compose's animation core,
 which is not ours to re-verify. What is ours — that we hand it `snap()` at scale 0 — is a

@@ -1,5 +1,6 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +51,11 @@ import androidx.compose.ui.window.Dialog
 import com.framemark.native.inspector.ControlOption
 import com.framemark.native.inspector.ControlValue
 import com.framemark.native.inspector.FmSlider
+import com.framemark.native.inspector.FmSliderDragBubble
+import com.framemark.native.inspector.FmTouchBubbleGap
+import com.framemark.native.inspector.FmTouchBubbleHeight
 import com.framemark.native.inspector.InspectorControl
+import com.framemark.native.inspector.fractionOf
 import com.framemark.native.shell.PHONE_PANEL_TAB_ROW_DP
 import com.framemark.native.shell.PHONE_PARAM_LABEL_LINE_DP
 import com.framemark.native.shell.PHONE_PARAM_LABEL_SP
@@ -59,10 +65,16 @@ import com.framemark.native.shell.PHONE_PARAM_VALUE_SP
 import com.framemark.native.shell.PhoneParamGroup
 import com.framemark.native.shell.phoneParamOptionLabel
 import com.framemark.native.shell.phoneParamOptions
+import com.framemark.native.theme.FmDuration
+import com.framemark.native.theme.FmEasing
+import com.framemark.native.theme.FmMotionRules
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmRhythm
+import com.framemark.native.theme.LocalFmMotionScale
+import com.framemark.native.theme.fmTweenSpec
 import com.framemark.native.workflow.DesignSession
+import kotlinx.coroutines.delay
 
 /**
  * 固定画框里的参数行（2026-11-10，照 Lightroom 手机版量出来的两行结构）。
@@ -111,6 +123,25 @@ fun PhoneSliderParamRow(
     val commit = rememberDragCommit(clamped) { next -> onValueChange(next) }
     val shown = if (commit.dragging) commit.live else clamped
     val shownText = if (commit.dragging) phoneParamNumberText(shown, decimals, unit) else valueText
+    // 拖动气泡的外观（motion batch 2, 2026-11-14）：只动不透明度——气泡位置每帧由 `shown`
+    // 直接算（`FmSliderDragBubble` 是 direct read），数字本身从不做补间。90 ms 进、松手后
+    // 140 ms 停留、90 ms 出（motion spec §3.1 #6）；scale 0 时 `fmTweenSpec` 变 snap、停留
+    // 也按同一比例压到 0，所以「无动效」下气泡不会多挂 140 ms。
+    val bubbleAlpha = remember { Animatable(0f) }
+    var bubbleVisible by remember { mutableStateOf(false) }
+    val bubbleIn = fmTweenSpec<Float>(FmDuration.press, FmEasing.enter)
+    val bubbleOut = fmTweenSpec<Float>(FmDuration.press, FmEasing.exit)
+    val bubbleLingerMs = FmMotionRules.durationMs(FmDuration.fast, LocalFmMotionScale.current)
+    LaunchedEffect(commit.dragging) {
+        if (commit.dragging) {
+            bubbleVisible = true
+            bubbleAlpha.animateTo(1f, bubbleIn)
+        } else if (bubbleVisible) {
+            if (bubbleLingerMs > 0) delay(bubbleLingerMs.toLong())
+            bubbleAlpha.animateTo(0f, bubbleOut)
+            bubbleVisible = false
+        }
+    }
     Column(modifier = modifier.fillMaxWidth()) {
         // ---- 第一行：标签在左、数值在右 ----
         Row(
@@ -181,6 +212,19 @@ fun PhoneSliderParamRow(
                     if (commit.dragging) phoneParamNumberText(next, decimals, unit) else valueText
                 },
             )
+            // 气泡画在轨道上方（底边离轨道 2 dp，压在标签行的下半截）：位置是 `shown` 的
+            // 直接读数，只有不透明度走补间；数字本身从不做补间（motion spec §3.1 #6）。
+            // 向上越出行高是刻意的——Box 不裁剪，它才浮得起来。
+            if (bubbleVisible) {
+                FmSliderDragBubble(
+                    text = shownText,
+                    fraction = fractionOf(shown, min, max),
+                    alpha = { bubbleAlpha.value },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(y = -(FmTouchBubbleHeight + FmTouchBubbleGap)),
+                )
+            }
         }
         if (!enabled && !disabledReason.isNullOrBlank()) {
             Text(

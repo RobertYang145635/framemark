@@ -609,6 +609,16 @@ private fun TextSlotNavChip(
 }
 
 /**
+ * 只读行显示的值。`provisional` 行来自交互档预览（拖动中的 480 长边帧）：色卡模板的
+ * 十六进制色值是从照片采样的，交互档的缩放解码会给出与最终帧不同的色值，而几何逐项相同
+ * （decision 2026-11-14）。所以这一行不印采样值——位置/角色照旧，值用同一个缺失标记
+ * `—`，不把「下一帧就会变」的数字当成最终色板。（最终帧到达后 `TextSlotRegistry` 会把
+ * 整份报告换成最终值，行上立刻出现真实色值。）
+ */
+internal fun readonlyTextSlotValue(slot: TextSlot): String =
+    if (slot.provisional) ExifGapNotice.MISSING_FIELD else ExifGapNotice.rowSummary(slot.text, slot.raw)
+
+/**
  * 单卡：输入框（占位 = 原文）+「已改 / 恢复原文」+ 隐藏开关 + 位置示意。
  * 只读行不出输入框：给一段只读文字和一句「改不了」的说明，不假装可编辑。
  */
@@ -676,7 +686,7 @@ private fun TextSlotEditCard(
             Spacer(Modifier.width(FmRhythm.inlineLoose))
             if (textControl == null) {
                 Text(
-                    text = ExifGapNotice.rowSummary(slot.text, slot.raw),
+                    text = readonlyTextSlotValue(slot),
                     style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
                     color = FmPalette.onSurfaceSecondary,
                     maxLines = 1,
@@ -850,7 +860,7 @@ private fun TextSlotEditCard(
             Spacer(Modifier.width(FmRhythm.rowLoose))
             if (textControl == null) {
                 Text(
-                    text = ExifGapNotice.rowSummary(slot.text, slot.raw),
+                    text = readonlyTextSlotValue(slot),
                     style = TextStyle(
                         fontSize = if (dense) 15.sp else 13.sp,
                         lineHeight = if (dense) 22.sp else 18.sp,

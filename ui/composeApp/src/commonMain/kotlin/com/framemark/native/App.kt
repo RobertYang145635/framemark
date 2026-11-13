@@ -12,6 +12,7 @@ import com.framemark.native.shell.PhoneShell
 import com.framemark.native.theme.AppearanceController
 import com.framemark.native.theme.AppearanceEnv
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.FmPlatformMotionScale
 import com.framemark.native.theme.FrameMarkTheme
 import com.framemark.native.theme.LocalAppearance
 import com.framemark.native.theme.resolveDark
@@ -30,6 +31,10 @@ import com.framemark.native.workflow.WorkflowEnv
  * controller itself is published through [LocalAppearance] so `AppearancePicker`
  * needs no parameters. A target that forgets to install one gets a non-persisting
  * controller instead of a crash.
+ *
+ * Motion (2026-11-14): [FmPlatformMotionScale] is the OS "reduce motion" input,
+ * installed by the same entry points. Desktop has no OS hook wired, so it keeps the
+ * full-motion default; see the object's documentation and `docs/motion-spec.md`.
  */
 @Composable
 fun FrameMarkApp() {
@@ -40,8 +45,11 @@ fun FrameMarkApp() {
         AppearanceEnv.controller ?: AppearanceController().also { AppearanceEnv.controller = it }
     }
     val dark = resolveDark(appearance.settings.mode, appearance.systemDark)
+    // Read in composition on purpose: `scale` is Compose state, so a refreshed
+    // platform value (Android onResume) recomposes the theme with the new motion.
+    val motionScale = FmPlatformMotionScale.scale
     CompositionLocalProvider(LocalAppearance provides appearance) {
-        FrameMarkTheme(dark = dark) {
+        FrameMarkTheme(dark = dark, motionScale = motionScale) {
             Surface(modifier = Modifier.fillMaxSize(), color = FmPalette.canvas) {
                 if (WorkflowEnv.projectHolder != null) {
                     DesktopShell(layout = desktopLayout)

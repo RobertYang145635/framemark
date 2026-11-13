@@ -129,7 +129,19 @@ fn main() {
         overlay,
     };
     match fm_android_engine::render_design(
-        &args[1], &args[2], &args[3], &assets, &args[4], &args[5], max_edge, &options,
+        &args[1],
+        &args[2],
+        &args[3],
+        &assets,
+        &args[4],
+        &args[5],
+        max_edge,
+        // `preview_source_edge`: 0 = decode the source photo at full resolution.
+        // This host pre-flight renders a final-quality frame (the same value the
+        // export path passes); the bounded interactive decode is a preview-tier
+        // concern the .so's `fm_render_design` argument carries, not this bin.
+        0,
+        &options,
     ) {
         Ok(stats) => {
             println!(

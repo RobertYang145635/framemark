@@ -3,7 +3,7 @@
   "targetAbi": "arm64-v8a",
   "sourceBuildReproduced": false,
   "provenanceStatus": "unverified",
-  "provenanceNote": "SHA-256 values were re-pinned from the 2026-11-13 performance build that added the interactive preview source decode (preview_source_edge) to the IR renderer and then to the hand renderer; the export archive is unchanged. Release builds still use the in-repository driver.",
+  "provenanceNote": "SHA-256 values were re-pinned from the 2026-11-13 performance build that added the interactive preview source decode (preview_source_edge) to the IR renderer and then to the hand renderer; the export archive bytes are unchanged (its 2026-11-05 build predates the tier work) and only its recorded hash was corrected on 2026-11-14 to match the checked-in archive. Release builds still use the in-repository driver.",
   "libraries": [
     {
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_engine.a",
@@ -21,7 +21,7 @@
       "path": "ui/composeApp/src/androidMain/cpp/prebuilt/arm64-v8a/libfm_android_export.a",
       "crateManifest": "bridge/android-export/Cargo.toml",
       "cargoLock": "bridge/android-export/Cargo.lock",
-      "sha256": "aab3d416589d6c78a3810f34cd8931b5082922f3f6796036bce9f6e5291bb2a1"
+      "sha256": "70be3937c367d1deb09586275ad37db6afcf922900d60eb2264c5146552bdc05"
     }
   ]
 }

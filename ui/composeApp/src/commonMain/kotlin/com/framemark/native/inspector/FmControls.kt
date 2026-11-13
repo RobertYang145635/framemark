@@ -102,6 +102,17 @@ internal val FmTouchTrackThickness = 6.dp
 internal val FmDesktopThumbSize = 16.dp
 internal val FmDesktopTrackThickness = 4.dp
 
+/**
+ * Touch slider drag bubble (motion batch 2, 2026-11-14): a 20 dp pill that rides
+ * above the thumb while the row is being dragged, with 6 dp of side padding and a
+ * 2 dp gap over the track. Values only — the bubble paints in `FmPalette.stage`, the
+ * one neutral that is dark in both appearances, with `FmPalette.stageInk` glyphs, so
+ * it reads as the same floating chrome as the stage pills.
+ */
+internal val FmTouchBubbleHeight = 20.dp
+internal val FmTouchBubblePadX = 6.dp
+internal val FmTouchBubbleGap = 2.dp
+
 /** Minimum hit row of the −/+ buttons and of a desktop row. */
 internal val FmTouchButtonSize = 32.dp
 

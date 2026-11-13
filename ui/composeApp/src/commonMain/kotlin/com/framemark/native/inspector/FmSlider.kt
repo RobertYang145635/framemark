@@ -1,6 +1,7 @@
 package com.framemark.native.inspector
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -8,6 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +20,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
@@ -23,6 +28,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -32,12 +38,17 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.FmRadii
+import com.framemark.native.theme.FmType
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.time.TimeMark
@@ -201,7 +212,8 @@ fun FmSlider(
         contentAlignment = Alignment.CenterStart,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val thumbRadius = (if (touch) FmTouchThumbSize else FmDesktopThumbSize).toPx() / 2f
+            val thumbSizePx = (if (touch) FmTouchThumbSize else FmDesktopThumbSize).toPx()
+            val thumbRadius = thumbSizePx / 2f
             val usable = (size.width - thumbRadius * 2).coerceAtLeast(1f)
             val centerY = size.height / 2f
             val trackHeight = (if (touch) FmTouchTrackThickness else FmDesktopTrackThickness).toPx()
@@ -233,7 +245,7 @@ fun FmSlider(
                 )
             }
             // Thumb: white disc with a hairline edge, matching the reference.
-            val thumbCenter = Offset(left + usable * fraction, centerY)
+            val thumbCenter = Offset(sliderThumbCenterPx(size.width, thumbSizePx, fraction), centerY)
             drawCircle(color = thumbShadow, radius = thumbRadius + 1.dp.toPx(), center = thumbCenter)
             drawCircle(color = thumbFill, radius = thumbRadius, center = thumbCenter)
             drawCircle(
@@ -248,6 +260,103 @@ fun FmSlider(
 
 /** Kept for one caller that measured the old Material slider height. */
 internal val FmSliderRowHeight = 44.dp
+
+/**
+ * Horizontal centre of the thumb for [fraction] on a [trackWidthPx] track.
+ *
+ * Pure on purpose: the drag bubble ([FmSliderDragBubble]) has to land on exactly the
+ * thumb the painter drew, and the value must not be re-derived in two places with two
+ * roundings. The thumb keeps its radius of padding at both ends, so the usable track is
+ * `width - 2r` and the centre starts at `r` — the same geometry the painter uses.
+ */
+internal fun sliderThumbCenterPx(
+    trackWidthPx: Float,
+    thumbSizePx: Float,
+    fraction: Float,
+): Float {
+    val radius = thumbSizePx / 2f
+    val usable = (trackWidthPx - radius * 2f).coerceAtLeast(1f)
+    return radius + usable * fraction.coerceIn(0f, 1f)
+}
+
+/**
+ * Left edge of a [bubbleWidthPx] pill centred on the thumb, clamped into the track.
+ *
+ * The bubble is a **direct read** of the current value: no clock, no easing, one
+ * calculation per frame (motion spec §3.1 #6). Clamping means a bubble near either end
+ * stays inside the row instead of hanging off it.
+ */
+internal fun sliderBubbleLeftPx(
+    trackWidthPx: Float,
+    thumbSizePx: Float,
+    bubbleWidthPx: Float,
+    fraction: Float,
+): Float {
+    if (trackWidthPx <= 0f) return 0f
+    val centered = sliderThumbCenterPx(trackWidthPx, thumbSizePx, fraction) - bubbleWidthPx / 2f
+    val maxLeft = (trackWidthPx - bubbleWidthPx).coerceAtLeast(0f)
+    return centered.coerceIn(0f, maxLeft)
+}
+
+/**
+ * The drag bubble that rides above the thumb while a touch slider row is being
+ * dragged (motion spec §3.1 #6, implemented in batch 2).
+ *
+ * The rule that shapes this composable is the drag-safety one, and it is structural:
+ *
+ *  - **only opacity is animated.** [alpha] is a lambda because an animated float must
+ *    never be a composition input: the caller passes `{ anim.value }`, and the value is
+ *    read inside `graphicsLayer`, i.e. in the draw phase.
+ *  - **the position is a direct read.** The pill is placed from the same [fraction] the
+ *    painter used ([sliderBubbleLeftPx] on top of [sliderThumbCenterPx]); there is no
+ *    animated offset anywhere on this path, so the bubble can never lag the thumb.
+ *  - **the number never animates.** `text` is plain `Text`; a counting-up readout is a
+ *    number the user cannot read mid-drag (spec §4.3).
+ *
+ * The bubble is decoration for the eye only: it is cleared from semantics, because the
+ * row's value text and the slider's own `contentDescription` already carry the value.
+ */
+@Composable
+internal fun FmSliderDragBubble(
+    text: String,
+    fraction: Float,
+    alpha: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val ink = FmPalette.stageInk
+    val fill = FmPalette.stage.copy(alpha = 0.92f)
+    val shape = RoundedCornerShape(FmRadii.chip)
+    Layout(
+        content = {
+            Box(
+                modifier = Modifier
+                    .graphicsLayer { this.alpha = alpha().coerceIn(0f, 1f) }
+                    .height(FmTouchBubbleHeight)
+                    .clip(shape)
+                    .background(fill)
+                    .padding(horizontal = FmTouchBubblePadX)
+                    .clearAndSetSemantics {},
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = text, style = FmType.labelSmall, color = ink, maxLines = 1)
+            }
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val placeable = measurables.first().measure(Constraints(maxWidth = constraints.maxWidth))
+        layout(constraints.maxWidth, placeable.height) {
+            placeable.place(
+                sliderBubbleLeftPx(
+                    trackWidthPx = constraints.maxWidth.toFloat(),
+                    thumbSizePx = FmTouchThumbSize.toPx(),
+                    bubbleWidthPx = placeable.width.toFloat(),
+                    fraction = fraction,
+                ).roundToInt(),
+                0,
+            )
+        }
+    }
+}
 
 /** Rounds a value onto the 0.001 grid the display uses. */
 internal fun roundForDisplay(value: Float): Float = (value * 1000f).roundToInt() / 1000f

@@ -222,6 +222,46 @@ object FmMotionRules {
     fun motionEnabled(scale: Float): Boolean = scale > 0f
 
     /**
+     * Map the OS animation settings onto [LocalFmMotionScale]'s `0..1` domain.
+     *
+     * The platform reads two independent switches and hands them in nullable, because
+     * "unknown" is a real state (desktop has neither; Android's public SDK has no
+     * reduced-motion query, so it passes `null` for it and its animation scale alone
+     * decides):
+     *
+     * | system state | [animatorDurationScale] | [reduceMotion] | result |
+     * |---|---|---|---|
+     * | animations off | `0` | any | `0` (no motion) |
+     * | reduced motion on | any | `true` | `0` |
+     * | slower (0.5×, …) | `0 < s < 1` | `false`/null | `s` |
+     * | normal | `1` | `false`/null | `1` |
+     * | faster than normal | `> 1` | any | `1` — never amplify |
+     * | not reported | `null` / negative / NaN | `null` | `1` |
+     *
+     * A value above 1 is *not* "more motion": Material's `scaleFactor` domain ends at
+     * 1, and a system-wide 10× animation speed must not turn a press into a slideshow
+     * in an app that only ever reduces. Android's unset `ANIMATOR_DURATION_SCALE`
+     * arrives as a negative sentinel from the platform reader; it maps to "unknown",
+     * not to "no motion".
+     */
+    fun scaleFromSystem(animatorDurationScale: Float?, reduceMotion: Boolean?): Float {
+        if (reduceMotion == true) return FmDuration.instant.toFloat()
+        val reported = animatorDurationScale ?: return fullScale
+        if (!reported.isFinite() || reported < 0f) return fullScale
+        if (reported == 0f) return 0f
+        if (reported >= fullScale) return fullScale
+        return reported
+    }
+
+    /**
+     * Clamp a value into the `0..1` domain before it becomes [LocalFmMotionScale].
+     * Non-finite ("unknown") is full motion, the safe default: a broken read must not
+     * silently disable the app's motion.
+     */
+    fun clampScale(value: Float): Float =
+        if (!value.isFinite()) fullScale else value.coerceIn(0f, fullScale)
+
+    /**
      * Index of the stop nearest to [value]. Ties resolve to the **lower** index, which
      * is what `List.minByOrNull` did before this was extracted — a release halfway
      * between two stops settles towards the sheet being less open.

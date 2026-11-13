@@ -1,5 +1,6 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -73,10 +74,13 @@ import com.framemark.native.shell.phone.PhoneStageFallback
 import com.framemark.native.shell.phone.PhoneStageFallbackOverlay
 import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.phoneStageGestures
+import com.framemark.native.theme.FmDuration
+import com.framemark.native.theme.FmEasing
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
+import com.framemark.native.theme.fmTweenSpec
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.ImageRect
@@ -170,6 +174,29 @@ internal fun StageArea(
 ) {
     val activeCrop = crop?.takeIf { it.active }
     val cropActive = activeCrop != null
+    // Motion batch 2 (2026-11-14): entering the crop editor is a 200 ms crossfade of
+    // the stage **chrome** — the normal pills fade out, the crop pills and the crop
+    // grid fade in. The photo and the crop rectangle are never animated: the photo
+    // swaps instantly and the grid's frame is drawn from the live crop value every
+    // frame (motion spec §3.1 #7). Leaving crop mode is a cut on purpose — the user
+    // committed (完成/重置) and the result is the feedback (§4).
+    val cropEnter = remember { Animatable(0f) }
+    val cropEnterSpec = fmTweenSpec<Float>(FmDuration.standard, FmEasing.standard)
+    // Visibility is separate from alpha: an alpha-0 overlay must not stay composed
+    // (it would still be tap-targetable and would keep reporting semantics).
+    var chromeVisible by remember { mutableStateOf(!cropActive) }
+    var cropChromeVisible by remember { mutableStateOf(cropActive) }
+    LaunchedEffect(cropActive) {
+        if (cropActive) {
+            cropChromeVisible = true
+            cropEnter.animateTo(1f, cropEnterSpec)
+            chromeVisible = false
+        } else {
+            chromeVisible = true
+            cropEnter.snapTo(0f)
+            cropChromeVisible = false
+        }
+    }
     Box(
         modifier = modifier.background(FmPalette.stage),
     ) {
@@ -220,8 +247,14 @@ internal fun StageArea(
                 val comparePath = tray.selected?.path ?: WorkflowEnv.platform?.samplePhotoPath()
                 if (activeCrop != null) {
                     // The crop editor replaces the frame: it has to show the whole
-                    // photo, which the engine frame has already cut down.
-                    PhoneCropLayer(ui = activeCrop, modifier = Modifier.fillMaxSize())
+                    // photo, which the engine frame has already cut down. Only the
+                    // scrim/frame/thirds grid fades in (`appearProgress`); the photo
+                    // itself is composed at full opacity from the first frame.
+                    PhoneCropLayer(
+                        ui = activeCrop,
+                        appearProgress = { cropEnter.value },
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 } else if (compare && comparePath != null) {
                     // Hold-to-compare: the raw photo, no design frame, no fake overlay.
                     Box(
@@ -314,59 +347,78 @@ internal fun StageArea(
             onRedo = onRedo,
         )
         if (!focusMode) {
-            // `.pchip` says which border is applied (or 原图 while comparing) and,
-            // like the showcase, appends the one hint that explains what the stage
-            // can do right now. A non-native card and a failed render say so here
-            // instead of stacking another floating badge over the photo.
-            val hint = when {
-                cropActive -> "单指拖动 · 双指缩放"
-                compare -> null
-                renderFailure != null -> "预览失败 · 显示静态图"
-                card == null -> null
-                !NativeEngine.supports(card.id) -> "静态预览"
-                swipeEnabled -> "左右滑动换边框"
-                else -> null
-            }
-            PhoneStageChip(
-                text = when {
-                    cropActive -> "裁切保留区域"
-                    compare -> "原图"
-                    else -> borderName ?: "未选边框"
-                },
-                description = if (cropActive) "裁切保留区域" else "当前边框",
-                hint = hint,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
-            )
-            if (activeCrop != null) {
-                // 重置 restores the frame to the engine's own region; 完成 is the one
-                // exit that writes the crop into the design (and thus the export).
-                PhoneCropActionRow(
-                    onReset = activeCrop.onReset,
-                    onDone = activeCrop.onDone,
+            // Two chrome sets overlap for exactly the length of the enter transition:
+            // the normal pills fade out and the crop pills fade in, both driven by the
+            // one `cropEnter` progress. `.pchip` says which border is applied (or 原图
+            // while comparing) and, like the showcase, appends the one hint that
+            // explains what the stage can do right now. A non-native card and a failed
+            // render say so here instead of stacking another floating badge.
+            if (chromeVisible) {
+                val hint = when {
+                    compare -> null
+                    renderFailure != null -> "预览失败 · 显示静态图"
+                    card == null -> null
+                    !NativeEngine.supports(card.id) -> "静态预览"
+                    swipeEnabled -> "左右滑动换边框"
+                    else -> null
+                }
+                PhoneStageChip(
+                    text = when {
+                        compare -> "原图"
+                        else -> borderName ?: "未选边框"
+                    },
+                    description = "当前边框",
+                    hint = hint,
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
+                        .align(Alignment.BottomStart)
+                        .padding(start = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset)
+                        .graphicsLayer { alpha = 1f - cropEnter.value },
                 )
-            } else if (card != null) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset),
-                    horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // A small, always-visible entry — not a long-press and not a menu.
-                    if (crop != null) {
-                        PhoneCropEntryChip(
-                            onClick = crop.onEnter,
-                            marked = !crop.crop.isDefault,
+                if (card != null) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset)
+                            .graphicsLayer { alpha = 1f - cropEnter.value },
+                        horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // A small, always-visible entry — not a long-press and not a menu.
+                        // While the group is fading out (crop already active) the taps are
+                        // dropped instead of entering crop mode twice.
+                        if (crop != null) {
+                            PhoneCropEntryChip(
+                                onClick = { if (!cropActive) crop.onEnter() },
+                                marked = !crop.crop.isDefault,
+                            )
+                        }
+                        PhoneHoldCompareChip(
+                            comparing = compare,
+                            onCompareChange = { if (!cropActive) onCompareChange(it) },
                         )
                     }
-                    PhoneHoldCompareChip(
-                        comparing = compare,
-                        onCompareChange = onCompareChange,
+                }
+            }
+            if (cropChromeVisible) {
+                PhoneStageChip(
+                    text = "裁切保留区域",
+                    description = "裁切保留区域",
+                    hint = "单指拖动 · 双指缩放",
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset)
+                        .graphicsLayer { alpha = cropEnter.value },
+                )
+                if (activeCrop != null) {
+                    // 重置 restores the frame to the engine's own region; 完成 is the one
+                    // exit that writes the crop into the design (and thus the export).
+                    PhoneCropActionRow(
+                        onReset = activeCrop.onReset,
+                        onDone = activeCrop.onDone,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = PhoneStageBands.PillInset, bottom = PhoneStageBands.PillInset)
+                            .graphicsLayer { alpha = cropEnter.value },
                     )
                 }
             }
