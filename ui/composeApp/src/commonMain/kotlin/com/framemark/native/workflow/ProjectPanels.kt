@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.product.PhotoDesign
+import com.framemark.native.product.ProjectWatermarkSpec
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -160,10 +162,16 @@ private fun PhotoWithWatermark(projects: ProjectHolder, modifier: Modifier) {
                             x = (displayW.value * (rect.x - box.x)).dp,
                             y = (displayH.value * (rect.y - box.y)).dp,
                         )
-                        .size(markW, markH)
+                        // `requiredSize`: the rotated mark must keep the rect's
+                        // size even though the clip box (the AABB) is the
+                        // parent — a plain size would be coerced to it.
+                        .requiredSize(markW, markH)
                         .graphicsLayer {
                             alpha = spec.opacity.coerceIn(0f, 1f)
-                            rotationZ = spec.rotation
+                            rotationZ = spec.rotation.coerceIn(
+                                -ProjectWatermarkSpec.MAX_ROTATION,
+                                ProjectWatermarkSpec.MAX_ROTATION,
+                            )
                         },
                 ) {
                     Image(

@@ -1,11 +1,8 @@
 package com.framemark.native.workflow
 
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.min
-import kotlin.math.sin
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.OverlayRect
+import com.framemark.native.product.WatermarkGeometry
 
 /**
  * A user watermark attached to one tray photo. [anchor] is a 3x3 slot
@@ -30,74 +27,18 @@ data class WatermarkSpec(
      * follows the asset aspect and the photo aspect so the engine's "contain"
      * step has nothing to letterbox. With rotation the rect is shrunk around
      * its centre until its rotated AABB stays inside the photo.
+     *
+     * The maths live in [WatermarkGeometry] (product), shared with the export
+     * spec, so the live overlay and the engine can never disagree.
      */
-    fun rect(photoAspect: Float): FloatArray {
-        val aspect = photoAspectSafe(photoAspect)
-        var w = width.coerceIn(MIN_WIDTH, MAX_WIDTH)
-        var h = (w * aspect / this.aspect.coerceAtLeast(0.01f)).coerceIn(0.02f, 1f)
-        val col = (anchor.coerceIn(0, 8)) % 3
-        val row = (anchor.coerceIn(0, 8)) / 3
-        val baseX = when (col) {
-            0 -> MARGIN
-            2 -> 1f - w - MARGIN
-            else -> (1f - w) / 2f
-        }
-        val baseY = when (row) {
-            0 -> MARGIN
-            2 -> 1f - h - MARGIN
-            else -> (1f - h) / 2f
-        }
-        var x = baseX + dx
-        var y = baseY + dy
-        val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
-        if (abs(angle) < 0.0001f) return clampUnrotated(x, y, w, h)
-        val rad = angle * PI.toFloat() / 180f
-        val cx0 = x + w / 2f
-        val cy0 = y + h / 2f
-        var bw = abs(w * cos(rad)) + abs(h * aspect * sin(rad))
-        var bh = (abs(w * sin(rad)) + abs(h * aspect * cos(rad))) / aspect
-        val k = min(1f, min(1f / bw.coerceAtLeast(0.0001f), 1f / bh.coerceAtLeast(0.0001f)))
-        if (k < 1f) {
-            w *= k
-            h *= k
-            bw *= k
-            bh *= k
-        }
-        val cx = cx0.coerceIn(bw / 2f, (1f - bw / 2f).coerceAtLeast(bw / 2f))
-        val cy = cy0.coerceIn(bh / 2f, (1f - bh / 2f).coerceAtLeast(bh / 2f))
-        return floatArrayOf(cx - w / 2f, cy - h / 2f, w, h)
-    }
+    fun rect(photoAspect: Float): FloatArray = WatermarkGeometry
+        .rect(anchor, width, dx, dy, rotation, aspect, photoAspect)
+        .toFloatArray()
 
     /** Bounding box of the rotated image; equals [rect] at 0°. */
     fun aabb(photoAspect: Float): FloatArray {
         val r = rect(photoAspect)
-        val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
-        if (abs(angle) < 0.0001f) return r
-        val aspect = photoAspectSafe(photoAspect)
-        val rad = angle * PI.toFloat() / 180f
-        val bw = abs(r[2] * cos(rad)) + abs(r[3] * aspect * sin(rad))
-        val bh = (abs(r[2] * sin(rad)) + abs(r[3] * aspect * cos(rad))) / aspect
-        val cx = r[0] + r[2] / 2f
-        val cy = r[1] + r[3] / 2f
-        return floatArrayOf(cx - bw / 2f, cy - bh / 2f, bw, bh)
-    }
-
-    private fun clampUnrotated(xIn: Float, yIn: Float, wIn: Float, hIn: Float): FloatArray {
-        var x = xIn
-        var y = yIn
-        var w = wIn
-        var h = hIn
-        if (x + w > 1f || y + h > 1f || x < 0f || y < 0f) {
-            val k = minOf(
-                ((1f - x.coerceIn(0f, 1f)) / w),
-                ((1f - y.coerceIn(0f, 1f)) / h),
-                1f,
-            ).coerceIn(0.01f, 1f)
-            if (x + w > 1f || y + h > 1f) { w *= k; h *= k }
-            x = x.coerceIn(0f, (1f - w).coerceAtLeast(0f))
-            y = y.coerceIn(0f, (1f - h).coerceAtLeast(0f))
-        }
-        return floatArrayOf(x, y, w, h)
+        return WatermarkGeometry.aabb(r[0], r[1], r[2], r[3], rotation, photoAspect).toFloatArray()
     }
 
     fun toOverlay(photoAspect: Float): OverlaySpec {
@@ -123,16 +64,16 @@ data class WatermarkSpec(
     }
 
     companion object {
-        const val MARGIN = 0.05f
-        const val MIN_WIDTH = 0.05f
-        const val MAX_WIDTH = 0.60f
+        const val MARGIN = WatermarkGeometry.MARGIN
+        const val MIN_WIDTH = WatermarkGeometry.MIN_WIDTH
+        const val MAX_WIDTH = WatermarkGeometry.MAX_WIDTH
         const val MIN_OPACITY = 0.10f
         const val MAX_OPACITY = 1f
-        const val MAX_ROTATION = 180f
-
-        private fun photoAspectSafe(a: Float): Float = if (a.isFinite() && a > 0.01f) a else 1.5f
+        const val MAX_ROTATION = WatermarkGeometry.MAX_ROTATION
     }
 }
+
+private fun OverlayRect.toFloatArray(): FloatArray = floatArrayOf(x, y, w, h)
 
 /** Result of the system document picker after the platform normalised it to PNG. */
 object WatermarkSelection {

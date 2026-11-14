@@ -75,26 +75,44 @@ class WatermarkAsset(
 data class OverlayRect(val x: Float, val y: Float, val w: Float, val h: Float)
 
 /**
- * Position/size/opacity of the embedded watermark. The rect maths are the same
- * 3×3 anchor + nudge model the current editor uses, so preview and export keep
- * matching once this state feeds both.
+ * The single implementation of the watermark's normalised geometry. Both the
+ * product spec (export / batch) and the workflow spec (live preview) delegate
+ * here, so the two cannot drift apart.
+ *
+ * Space: x runs 0..1 across the photo draw box, y runs 0..1 down it. Measured in
+ * **width units** the box is `1 × 1/aspect` tall: a normalised height of 1 is
+ * `1/aspect` width units, **not** `aspect`. Treating it as `aspect` is what used
+ * to under-size the rotated AABB (it mixed `h·aspect` into the width and divided
+ * the width back out of the height), so the live overlay clipped its own top and
+ * bottom off as soon as the watermark was rotated. The pixel-space derivation:
+ *
+ *   W = w·photoW, H = h·photoH          (the draw rect in pixels)
+ *   bw = (|W·cos| + |H·sin|) / photoW   = |w·cos| + |h·sin|/aspect
+ *   bh = (|W·sin| + |H·cos|) / photoH   = aspect·|w·sin| + |h·cos|
  */
-data class ProjectWatermarkSpec(
-    val asset: WatermarkAsset,
-    val anchor: Int = 8,
-    val width: Float = 0.25f,
-    val opacity: Float = 0.8f,
-    val dx: Float = 0f,
-    val dy: Float = 0f,
-    /** Degrees, clockwise, around the final dst centre; default 0. */
-    val rotation: Float = 0f,
-    /** Photo draw-box aspect (w/h) used to derive the height; persisted for export. */
-    val photoAspect: Float = 1.5f,
-) {
-    fun rect(photoAspect: Float): OverlayRect {
+internal object WatermarkGeometry {
+    const val MARGIN = 0.05f
+    const val MIN_WIDTH = 0.05f
+    const val MAX_WIDTH = 0.60f
+    const val MAX_ROTATION = 180f
+
+    /**
+     * Normalised draw rect for the anchor + nudge. With rotation the rect is
+     * shrunk around its centre until its rotated AABB stays inside the photo
+     * (the export and the preview both read this one value).
+     */
+    fun rect(
+        anchor: Int,
+        width: Float,
+        dx: Float,
+        dy: Float,
+        rotation: Float,
+        assetAspect: Float,
+        photoAspect: Float,
+    ): OverlayRect {
         val aspect = photoAspectSafe(photoAspect)
         var w = width.coerceIn(MIN_WIDTH, MAX_WIDTH)
-        var h = (w * aspect / asset.aspect.coerceAtLeast(0.01f)).coerceIn(0.02f, 1f)
+        var h = (w * aspect / assetAspect.coerceAtLeast(0.01f)).coerceIn(0.02f, 1f)
         val col = (anchor.coerceIn(0, 8)) % 3
         val row = (anchor.coerceIn(0, 8)) / 3
         val baseX = when (col) {
@@ -107,17 +125,15 @@ data class ProjectWatermarkSpec(
             2 -> 1f - h - MARGIN
             else -> (1f - h) / 2f
         }
-        var x = baseX + dx
-        var y = baseY + dy
+        val x = baseX + dx
+        val y = baseY + dy
         val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
         if (abs(angle) < 0.0001f) return clampUnrotated(x, y, w, h)
-        // Work in square pixel units (width = 1, height = aspect) so the AABB
-        // is a real rotation, then map the height back to normalised y.
         val rad = angle * PI.toFloat() / 180f
         val cx0 = x + w / 2f
         val cy0 = y + h / 2f
-        var bw = abs(w * cos(rad)) + abs(h * aspect * sin(rad))
-        var bh = (abs(w * sin(rad)) + abs(h * aspect * cos(rad))) / aspect
+        var bw = abs(w * cos(rad)) + abs(h * sin(rad)) / aspect
+        var bh = abs(w * sin(rad)) * aspect + abs(h * cos(rad))
         val k = min(1f, min(1f / bw.coerceAtLeast(0.0001f), 1f / bh.coerceAtLeast(0.0001f)))
         if (k < 1f) {
             w *= k
@@ -131,22 +147,24 @@ data class ProjectWatermarkSpec(
     }
 
     /**
-     * Bounding box of the rotated image in the same normalised photo space.
-     * At 0° it equals [rect]; the UI clips the live overlay to this box so the
-     * rotated corners are never cut by the unrotated draw rect.
+     * Axis-aligned bounding box of the rotated draw rect, in the same space.
+     * At 0° it is the rect itself. The live overlay clips to exactly this box
+     * (never to the unrotated rect), so the rotated corners are never cut.
      */
-    fun aabb(photoAspect: Float): OverlayRect {
-        val r = rect(photoAspect)
+    fun aabb(x: Float, y: Float, w: Float, h: Float, rotation: Float, photoAspect: Float): OverlayRect {
         val angle = rotation.coerceIn(-MAX_ROTATION, MAX_ROTATION)
-        if (abs(angle) < 0.0001f) return r
+        if (abs(angle) < 0.0001f) return OverlayRect(x, y, w, h)
         val aspect = photoAspectSafe(photoAspect)
         val rad = angle * PI.toFloat() / 180f
-        val bw = abs(r.w * cos(rad)) + abs(r.h * aspect * sin(rad))
-        val bh = (abs(r.w * sin(rad)) + abs(r.h * aspect * cos(rad))) / aspect
-        val cx = r.x + r.w / 2f
-        val cy = r.y + r.h / 2f
+        val bw = abs(w * cos(rad)) + abs(h * sin(rad)) / aspect
+        val bh = abs(w * sin(rad)) * aspect + abs(h * cos(rad))
+        val cx = x + w / 2f
+        val cy = y + h / 2f
         return OverlayRect(cx - bw / 2f, cy - bh / 2f, bw, bh)
     }
+
+    fun photoAspectSafe(aspect: Float): Float =
+        if (aspect.isFinite() && aspect > 0.01f) aspect else 1.5f
 
     private fun clampUnrotated(xIn: Float, yIn: Float, wIn: Float, hIn: Float): OverlayRect {
         var x = xIn
@@ -170,6 +188,33 @@ data class ProjectWatermarkSpec(
         }
         return OverlayRect(x, y, w, h)
     }
+}
+
+/**
+ * Position/size/opacity of the embedded watermark. The rect maths are the same
+ * 3×3 anchor + nudge model the current editor uses, so preview and export keep
+ * matching once this state feeds both.
+ */
+data class ProjectWatermarkSpec(
+    val asset: WatermarkAsset,
+    val anchor: Int = 8,
+    val width: Float = 0.25f,
+    val opacity: Float = 0.8f,
+    val dx: Float = 0f,
+    val dy: Float = 0f,
+    /** Degrees, clockwise, around the final dst centre; default 0. */
+    val rotation: Float = 0f,
+    /** Photo draw-box aspect (w/h) used to derive the height; persisted for export. */
+    val photoAspect: Float = 1.5f,
+) {
+    fun rect(photoAspect: Float): OverlayRect =
+        WatermarkGeometry.rect(anchor, width, dx, dy, rotation, asset.aspect, photoAspect)
+
+    /** Bounding box of the rotated image in the same normalised photo space. */
+    fun aabb(photoAspect: Float): OverlayRect {
+        val r = rect(photoAspect)
+        return WatermarkGeometry.aabb(r.x, r.y, r.w, r.h, rotation, photoAspect)
+    }
 
     fun nudged(dxNorm: Float, dyNorm: Float, photoAspect: Float): ProjectWatermarkSpec {
         val box = aabb(photoAspect)
@@ -181,12 +226,9 @@ data class ProjectWatermarkSpec(
     }
 
     companion object {
-        const val MARGIN = 0.05f
-        const val MIN_WIDTH = 0.05f
-        const val MAX_WIDTH = 0.60f
-        const val MAX_ROTATION = 180f
-
-        private fun photoAspectSafe(aspect: Float): Float =
-            if (aspect.isFinite() && aspect > 0.01f) aspect else 1.5f
+        const val MARGIN = WatermarkGeometry.MARGIN
+        const val MIN_WIDTH = WatermarkGeometry.MIN_WIDTH
+        const val MAX_WIDTH = WatermarkGeometry.MAX_WIDTH
+        const val MAX_ROTATION = WatermarkGeometry.MAX_ROTATION
     }
 }

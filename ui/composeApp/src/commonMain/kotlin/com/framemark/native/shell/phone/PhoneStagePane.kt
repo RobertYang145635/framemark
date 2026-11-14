@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -93,7 +94,6 @@ import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowEnv
 import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -496,15 +496,23 @@ private fun BoxScope.WatermarkOverlay(
 
     val r = liveSpec.rect(aspect)
     val box = liveSpec.aabb(aspect)
+    // Draw and clip with the angle the geometry (and the engine) actually use.
+    val rotation = liveSpec.rotation.coerceIn(-WatermarkSpec.MAX_ROTATION, WatermarkSpec.MAX_ROTATION)
 
     // The rotated image is clipped to its AABB, not to the unrotated draw rect;
-    // otherwise the four corners would be cut off at 45°/90°.
-    val ow = r[2] * photoW
-    val oh = r[3] * photoH
-    val ox = (r[0] - box[0]) * photoW
-    val oy = (r[1] - box[1]) * photoH
-    val aw = box[2] * photoW
-    val ah = box[3] * photoH
+    // otherwise the corners would be cut off at 45°/90°. The box is rounded
+    // outward in pixels, so the rotated layer can never be cropped by its own
+    // box, and the inner box is `requiredSize` — a plain `size` would be coerced
+    // by the clip box's constraints and squash the PNG (visible at 90°).
+    val layer = watermarkLayerPx(
+        rect = r,
+        aabb = box,
+        photoLeft = left + pr.x * scale,
+        photoTop = top + pr.y * scale,
+        photoWidth = photoW,
+        photoHeight = photoH,
+        rotation = rotation,
+    )
 
     LaunchedEffect(aspect, liveSpec.photoAspect) {
         if (abs(aspect - liveSpec.photoAspect) > 0.01f) {
@@ -518,20 +526,21 @@ private fun BoxScope.WatermarkOverlay(
             // offset would be added to the centered position and the watermark
             // would drift down onto the border/footer.
             .align(Alignment.TopStart)
-            .offset {
-                IntOffset(
-                    (left + (pr.x + box[0] * pr.w) * scale).roundToInt(),
-                    (top + (pr.y + box[1] * pr.h) * scale).roundToInt(),
-                )
-            }
-            .size(with(density) { aw.toDp() }, with(density) { ah.toDp() })
+            .offset { IntOffset(layer.clipLeft, layer.clipTop) }
+            .size(
+                with(density) { layer.clipWidth.toFloat().toDp() },
+                with(density) { layer.clipHeight.toFloat().toDp() },
+            )
             .clipToBounds(),
     ) {
         Box(
             modifier = Modifier
-                .offset { IntOffset(ox.roundToInt(), oy.roundToInt()) }
-                .size(with(density) { ow.toDp() }, with(density) { oh.toDp() })
-                .graphicsLayer { rotationZ = liveSpec.rotation }
+                .offset { IntOffset(layer.imageLeft - layer.clipLeft, layer.imageTop - layer.clipTop) }
+                .requiredSize(
+                    with(density) { layer.imageWidth.toFloat().toDp() },
+                    with(density) { layer.imageHeight.toFloat().toDp() },
+                )
+                .graphicsLayer { rotationZ = rotation }
                 .pointerInput(liveSpec.path, aspect) {
                     detectDragGestures(
                         onDragStart = { commit.sample(latestSpec) },
