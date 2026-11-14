@@ -1,7 +1,5 @@
 package com.framemark.native.shell.phone
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -60,8 +58,6 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import com.framemark.native.theme.fmContentEnter
-import com.framemark.native.theme.fmContentExit
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.PhotoTray
 import com.framemark.native.workflow.TextSlot
@@ -228,16 +224,13 @@ internal fun ColumnScope.PhoneSheetHost(
                                 },
                             )
                         }
-                        // 换页过渡（motion spec §2）：参数行和边框页共用同一条槽位，就地换
-                        // 内容，所以只做短淡入 + 极小的上移；容器不动，长位移会读成"从别处
-                        // 飞来的页面"。换页期间两边各画一次，所以过渡本身只能动 alpha/offset，
-                        // 不能动任何尺寸。
-                        val pageEnter = fmContentEnter()
-                        val pageExit = fmContentExit()
-                        AnimatedContent(
-                            targetState = tool,
-                            transitionSpec = { pageEnter togetherWith pageExit },
-                            label = "fm.sheet.page",
+                        // 换页过渡（motion spec §3.1 #2）：整页左右推，不是交叉淡出。
+                        // 两页同向平移一个整宽，所以中途是"左右相邻"而不是叠在一起；
+                        // 出页与入页共用同一条 220 ms 的 standard 曲线，这才让两页始终
+                        // 首尾相接。容器（底板高度、页头、工具条）一概不动。
+                        PhoneSheetPagePager(
+                            tool = tool,
+                            tools = tools,
                             modifier = Modifier.fillMaxWidth().weight(1f),
                         ) { targetTool ->
                             if (card == null && targetTool != EditorTool.Border) {

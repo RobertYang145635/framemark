@@ -86,6 +86,17 @@ object FmDuration {
     /** Content crossfade, a row settling in, a card revealing. */
     const val standard = 200
 
+    /**
+     * The sheet's page-to-page slide (tool bar 边框 / 样式 / 文字 / Logo / 水印).
+     *
+     * Longer than [standard] on purpose: the page travels its whole width, and a
+     * full-width travel on a 200 ms curve reads as a teleport at the far end. Both the
+     * entering and the leaving page use this one number — they are two halves of the
+     * same movement, so an asymmetric in/out (the old 200/180 crossfade) would make
+     * them overlap instead of abut.
+     */
+    const val pageSlide = 220
+
     /** A panel travelling most of the screen: sheet snap, overlay slide. */
     const val emphasized = 320
 
@@ -337,32 +348,6 @@ fun fmOverlayExit(): ExitTransition {
         tween(ms, easing = FmEasing.emphasizedExit),
         targetOffsetY = { it / 12 },
     )
-}
-
-/**
- * Enter for content that swaps **in place** — a sheet page, a tab's rows. A short fade
- * with the smallest perceptible rise.
- *
- * The travel is a fortieth of the height, not a screenful: the container does not move,
- * so a long slide would read as a page arriving from somewhere it did not come from.
- * Nothing here animates a value inside the content; the page's own sliders and text are
- * untouched.
- */
-@Composable
-fun fmContentEnter(): EnterTransition {
-    val scale = LocalFmMotionScale.current
-    if (!FmMotionRules.motionEnabled(scale)) return EnterTransition.None
-    val ms = FmMotionRules.durationMs(FmDuration.standard, scale)
-    return fadeIn(tween(ms, easing = FmEasing.enter)) +
-        slideInVertically(tween(ms, easing = FmEasing.emphasizedEnter)) { it / 40 }
-}
-
-/** Exit for in-place swapped content: shorter than the entrance, fade only. */
-@Composable
-fun fmContentExit(): ExitTransition {
-    val scale = LocalFmMotionScale.current
-    if (!FmMotionRules.motionEnabled(scale)) return ExitTransition.None
-    return fadeOut(tween(FmMotionRules.durationMs(FmDuration.exit, scale), easing = FmEasing.exit))
 }
 
 /**

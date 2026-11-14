@@ -15,6 +15,11 @@ drag bubble, crop-mode enter, export progress. Nothing else moved. Motion is chr
 only: it never touches the photo, the frame render, the project format or any persisted
 state.
 
+**Batch 2 page fix (owner: 「切页这个渐变动画很垃圾啊」, then 「你做成左右切换不就好了」)**:
+the batch-1 page switch was an enter+exit crossfade — both pages in one rectangle at partial
+alpha, with a 1/40 height rise on top. It is replaced by a full-width pager slide (§3.1 row 2),
+and that is the only row that changed.
+
 ---
 
 ## 1. What the good ones do
@@ -173,7 +178,9 @@ transitions use duration + curve.
 
 `LocalFmMotionScale` — `1f` full, `0f` none, provided by `FrameMarkTheme(motionScale = …)`.
 Helpers `fmTweenSpec` / `fmSpringSpec` / `fmOverlayEnter` / `fmOverlayExit` /
-`fmContentEnter` / `fmContentExit` / `Modifier.fmRevealOnEnter` all short-circuit at 0.
+`Modifier.fmRevealOnEnter` all short-circuit at 0; the sheet's page slide does the same
+through the pure `SheetPageTransitionRules.transition(...)`, which returns `animate = false`
+at 0 so the slot is a plain swap.
 The platform value is installed by `FmPlatformMotionScale` (Android: the OS animation
 scale — the same setting the accessibility *Remove animations* toggle writes — mapped by
 the pure `FmMotionRules.scaleFromSystem`; desktop: the documented `1` default, no OS
@@ -198,7 +205,7 @@ Legend — **Implemented** = shipped (batch 1 rows #1–#5, batch 2 rows #6–#8
 | # | Interaction | Trigger | Property | Duration / spring | Curve | Notes |
 |---|---|---|---|---|---|---|
 | 1 | Tool sheet level change (收起 ↔ 半开 ↔ 展开) | grabber tap, head chevron, drag release, back | sheet height | spring `settle` (0.85 / 380) | — | **drag-safe**: while the finger is down `sheetDragPx` *is* the height; the animatable is `snapTo`'d to the finger every drag frame so the **release point is the start of the settle**. Without that the sheet jumps back to the old stop before animating. First composition and window re-measure `snapTo`, never replay. |
-| 2 | Tool page switch (边框 / 样式 / 文字 / Logo / 水印) | tool cell tap | page content alpha + 1/40 height rise | 200 in / 180 out | `enter` + `emphasizedEnter` in, `exit` out | `AnimatedContent` keyed on the tool. Travel is 1/40 of height, not a screenful: the container does not move, so a long slide would read as a page arriving from elsewhere. Both pages are composed during the swap, so only alpha/offset may animate — never size. |
+| 2 | Tool page switch (边框 / 样式 / 文字 / Logo / 水印) | tool cell tap | both pages translate one panel width horizontally | 220 in **and** 220 out (one tween) | `standard` | **Replaced the crossfade (batch 2 fix, owner: 「切页这个渐变动画很垃圾啊」→「你做成左右切换不就好了」).** A pager, not a fade: the outgoing page leaves towards the side the selection came from and the incoming page follows in from the opposite edge, each travelling one panel width, so at progress `p` they occupy `[-w·p, w·(1-p)]` and `[w·(1-p), w·(2-p)]` — **they abut, never overlap, never blend**. One duration *and* one curve for both halves is what keeps them adjacent; the old asymmetric 200 in / 180 out is exactly what made two pages share one rectangle. Direction is the visible tool-bar index (`SheetPageTransitionRules`): cell moved right ⇒ the pair travels right. Same cell, first composition, an index the bar does not list (Logo dropped for a card without the capability), and `motionScale == 0` all swap instantly. The slot is clipped to the parameter area, so a page in flight cannot paint over the header or the tool bar, and a page taller than the area is cut, not spilled. The sheet height, the header, the tab row and its ink bar do not move. **No rise, no scale, no stagger inside the page.** |
 | 2b | Desktop tab ink bar | tab tap | ink x + width | existing `FmTabInk.Spring` | existing | **Already shipped** (`DesktopInspectorRail`); reused as-is, not re-created. The desktop ink bar was the precedent for "spring on an index, not on pixels". |
 | 3 | Border card press | pointer down / up on a card | scale 1.0 → 0.96 → 1.0 | spring `press` (0.55 / 1200) | — | `graphicsLayer` only, so a row of cards never reflows while one is pressed. |
 | 3b | Border card selection | card becomes / stops being current | ring alpha + ring outset | 140 | `standard` | Ring grows out of the card edge instead of popping on. `ringProgress` is read **inside `drawBehind`** (draw phase), so the card does not recompose once per frame. The check dot, the name weight and the name colour still switch instantly — they are information, not motion. |
@@ -251,8 +258,12 @@ omission.
 
 **Judgement calls worth recording:**
 
-- **No page-slide navigation.** The editor is one screen with a swapping panel; a push/slide
-  transition would imply a back stack that does not exist. Hence fog-in-place (#2).
+- **No page-slide *navigation*.** The editor is one screen; a screen-level push/slide
+  transition would imply a back stack that does not exist. The sheet's page deck is the one
+  place a horizontal slide is honest (#2), because the tool bar *is* an ordered index — one
+  cell to the right is one page to the left — and the two pages are the same size, so they
+  abut instead of one arriving from nowhere. Everything that is not that deck (overlays,
+  screens) still fades in place.
 - **No bounce anywhere except a released sheet.** The visual language is a flat, hard-edged
   showcase (hairlines, `FmRadii` from the demo); a wobbly card grid would contradict it.
 - **No press-scale on tool cells.** They already have a ripple, they are small, and five of
@@ -340,14 +351,38 @@ pure function and is tested as one.
 What we *do* capture is a **frame strip** (`MotionStripRenderTest`, `desktopTest`): the real
 `PhoneSheetHost` rendered headlessly with an explicit `nanoTime` per frame, so "what does
 this look like 90 ms in" is reproducible and does not depend on how fast the machine is.
-Two rows — sheet open under `FmSpring.settle`, and a Border→Params switch under
-`fmContentEnter`/`fmContentExit` — sampled at `before / +30 / +60 / +90 / +120 / +160 /
-+240 ms`. The test fails if the frames come out frozen, which is what catches a transition
-that silently stopped animating.
+Two rows — sheet open under `FmSpring.settle`, and a Border→Params switch (which, since the
+batch 2 page fix, is the real full-width slide) — sampled at `before / +30 / +60 / +90 /
++120 / +160 / +240 ms`. The test fails if the frames come out frozen, which is what catches a
+transition that silently stopped animating. This sampler counts from the state flip, and an
+`AnimatedContent` transition needs a few frames before it starts, so the first column or two
+of row 2 can still be pre-movement: the row is proof of *life*, not of timing.
 
-- Written to `ui/composeApp/build/motion-strip/` (contact sheet + each frame).
+`SheetPageSlideRenderTest` adds the frame-level proof for the page transition alone, on
+`PhoneSheetPagePager` (the production slot) with coloured stand-in pages, so the geometry is
+read off the rendered pixels instead of off the animation values. Three rows — right move,
+left move, reduced motion — at `0 / +55 / +110 / +165 / +220 / +280 ms`. It asserts
+that mid-flight **both** pages are present, that the outgoing page's drawn bounds end
+strictly on one side of the incoming page's and are at most 3 px apart (adjacent, not
+stacked), that the pair's advance is monotonic in one direction, and that from `+220 ms` on
+the outgoing page has no pixels left while the incoming page sits at exactly offset 0. A
+second scene makes the page overflow the parameter area by 90 dp (70 dp below it, 20 dp
+above it) and requires the header band and the tool bar band to stay pure colour, which is
+the clip.
+
+- Written to `ui/composeApp/build/motion-strip/` (contact sheets + each frame).
 - Archived at [`evidence/motion-batch1/`](../evidence/motion-batch1/) —
   `motion-batch1-strip.png` is the strip, `sheet-*.png` / `switch-*.png` the raw frames.
+- The page slide is archived at [`evidence/motion-batch2/`](../evidence/motion-batch2/):
+  `motion-batch2-strip.png` is the asserted geometry strip (right / left / reduced motion),
+  `motion-batch2-sheet-strip.png` is the same move on the real `PhoneSheetHost`, and
+  `page-*.png` / `sheet-slide-*.png` are the raw frames.
+- `SheetPageSlideRenderTest` does **not** trust the harness clock: `AnimatedContent` needs a
+  few frames before its transition's clock is pinned, so the test probes frames until the
+  incoming page is measurably moving and back-solves the start time from the progress through
+  the production `FmEasing.standard`. The column labels are therefore real elapsed times, and
+  a platform change that shifts the boot shows up as a red assertion, not as a mislabelled
+  strip.
 
 The row-1 panel height is driven in the harness by the same `FmSpring.settle` token the
 production sheet uses; the surrounding panel (grabber, head, tab row, parameter rows, tool

@@ -50,8 +50,9 @@ import kotlin.test.assertTrue
  * 两行帧带：
  *  1. **底板升起**：`FmSpring.settle` 驱动底板高度（307.7 dp → 507.7 dp），第 40/80/120/
  *     160/260 ms 各一帧 —— 收尾帧必须到位，中间帧必须彼此不同。
- *  2. **换页**：`Border → Params`，真实的 `AnimatedContent` +
- *     `fmContentEnter/fmContentExit`，同样取 5 个中间时刻。
+ *  2. **换页**：`Border → Params`，真实的 `PhoneSheetPagePager`（整页左右推，220 ms
+ *     `FmEasing.standard`），同样取 5 个中间时刻。这一行只证明"换页在动"；几何与时序的
+ *     硬断言在 `SheetPageSlideRenderTest`。
  *
  * 底板高度在**生产代码里是 `PhoneEditorScreen` 的内联动画**（`Animatable` + 同一条
  * spring），所以这一行用同一个 token 复刻那一小段；面板内部（把手、页头、tab 行、参数行、
@@ -233,7 +234,7 @@ class MotionStripRenderTest {
         }
     }
 
-    /** 第 2 行：换页（边框 → 调整），真实 `AnimatedContent` + 内容过渡 token。 */
+    /** 第 2 行：换页（边框 → 调整），真实 `PhoneSheetPagePager`（左右推页）。 */
     @OptIn(ExperimentalComposeUiApi::class)
     private fun toolSwitchFrameStrip(): List<BufferedImage> {
         val model = model()
@@ -289,7 +290,9 @@ class MotionStripRenderTest {
             val frames = mutableListOf<BufferedImage>()
             frames += scene.renderFrame(t0)
             tool = EditorTool.Params
-            // 同第 1 行：翻转后的第一帧只负责启动过渡，不采样。
+            // 换页是 `AnimatedContent` 的过渡：它要先建过渡、钉动画起点、再丢一帧零进度的
+            // 启动帧，所以要几帧才起跑，`+30/+60/+90` 可能落在起跑之前（这一行只证明
+            // "换页在动"；精确到毫秒的时序与几何断言在 `SheetPageSlideRenderTest`）。
             val tStart = t0 + 16_000_000L
             scene.renderFrame(tStart)
             for (ms in frameOffsetsMs) {
@@ -299,6 +302,20 @@ class MotionStripRenderTest {
         } finally {
             scene.close()
         }
+    }
+
+    /** 整图粗扫（不是某一条线）：换页动的是面板中部的参数行。 */
+    private fun differs(a: BufferedImage, b: BufferedImage): Boolean {
+        var y = 0
+        while (y < a.height) {
+            var x = 0
+            while (x < a.width) {
+                if (a.getRGB(x, y) != b.getRGB(x, y)) return true
+                x += 8
+            }
+            y += 16
+        }
+        return false
     }
 
     /** 一行的帧宽（接触表里统一缩到 300 px 宽）。 */
@@ -357,21 +374,6 @@ class MotionStripRenderTest {
         assertTrue(sheetFrames.size == 7, "expected 7 sheet frames, got ${sheetFrames.size}")
         assertTrue(switchFrames.size == 7, "expected 7 switch frames, got ${switchFrames.size}")
 
-        fun differs(a: BufferedImage, b: BufferedImage): Boolean {
-            // 整图粗扫（不是某一条线）：换页动的是面板中部的参数行，光扫中线会落在
-            // 画布白底上，于是「六帧全同」——那是采样位置的问题，不是动画没跑。
-            var y = 0
-            while (y < a.height) {
-                var x = 0
-                while (x < a.width) {
-                    if (a.getRGB(x, y) != b.getRGB(x, y)) return true
-                    x += 8
-                }
-                y += 16
-            }
-            return false
-        }
-
         val sheetMoved = sheetFrames.zipWithNext().count { (a, b) -> differs(a, b) }
         val switchMoved = switchFrames.zipWithNext().count { (a, b) -> differs(a, b) }
         // 六段相邻帧里至少要动三段：弹簧和换页都是渐变，只动一两段说明采样落空。
@@ -393,7 +395,7 @@ class MotionStripRenderTest {
             listOf(
                 "sheet open — FmSpring.settle (before / +30 / +60 / +90 / +120 / +160 / +240 ms)" to
                     sheetFrames,
-                "tool switch Border→Params — fmContentEnter / fmContentExit " +
+                "tool switch Border→Params — PhoneSheetPagePager (full-width slide) " +
                     "(before / +30 / +60 / +90 / +120 / +160 / +240 ms)" to switchFrames,
             ),
         )

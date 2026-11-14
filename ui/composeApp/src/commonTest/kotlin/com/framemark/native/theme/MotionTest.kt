@@ -68,6 +68,7 @@ class MotionTest {
             FmDuration.press,
             FmDuration.fast,
             FmDuration.standard,
+            FmDuration.pageSlide,
             FmDuration.emphasized,
             FmDuration.exit,
         )
@@ -91,6 +92,7 @@ class MotionTest {
             FmDuration.press,
             FmDuration.fast,
             FmDuration.standard,
+            FmDuration.pageSlide,
             FmDuration.emphasized,
             FmDuration.exit,
         )) {
