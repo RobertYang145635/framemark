@@ -270,7 +270,7 @@ fun PhonePresetSheet(
         )
     }
 
-    FmSheet(onDismiss = onDismiss) {
+    FmSheet(onDismiss = onDismiss, wrapContent = true) {
         SheetTitle(
             title = "预设",
             subtitle = "保存整套边框、参数与水印（水印图片存在预设文件里）。",
@@ -354,7 +354,11 @@ fun PhonePresetSheet(
         Spacer(Modifier.height(FmSpacing.sm))
 
         if (presets.isEmpty()) {
-            SheetNote("还没有保存的预设。填好名称后点「${PhonePresetEntryPolicy.SAVE_LABEL}」，它会出现在这里。")
+            FmEmptyState(
+                title = "还没有保存的预设",
+                body = "填好名称后点「${PhonePresetEntryPolicy.SAVE_LABEL}」，它会出现在这里。",
+                modifier = Modifier.fillMaxWidth(),
+            )
             return@FmSheet
         }
 

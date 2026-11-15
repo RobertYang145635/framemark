@@ -12,7 +12,7 @@ import kotlin.test.assertFalse
  * WP-P2 §4.2 设置页外观往返.
  *
  * The settings page prints [PhoneSettingsText.themeLabel] of the controller the
- * `AppearancePicker` writes to, so the round-trip is: pick a mode (the same call
+ * `AppearancePanel` writes to, so the round-trip is: pick a mode (the same call
  * the picker makes) → the row follows → a fresh controller over the same file
  * still reports the choice.
  */
@@ -37,7 +37,7 @@ class PhoneSettingsTextTest {
         val first = AppearanceController(store)
         assertEquals("跟随系统", PhoneSettingsText.themeLabel(first.settings.mode))
 
-        // What `AppearancePicker`'s onSelect does for 深色.
+        // What `AppearancePanel`'s onSelect does for 深色.
         first.setMode(ThemeMode.Dark)
         assertEquals("深色", PhoneSettingsText.themeLabel(first.settings.mode))
         assertEquals(1, store.writes, "a change is written through exactly once")

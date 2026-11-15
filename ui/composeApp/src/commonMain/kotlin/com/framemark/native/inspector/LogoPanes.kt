@@ -51,6 +51,7 @@ import com.framemark.native.workflow.UserLogoEnv
 import com.framemark.native.workflow.UserLogoLibrary
 import com.framemark.native.workflow.UserLogoSupport
 import com.framemark.native.product.FmLog
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * Logo 页（演示稿 `logo.js` 的 `lgPaneLive`，按 UI-v2 复测的反馈重排）。
@@ -1016,7 +1017,8 @@ private fun LogoSearchField(query: String, onQueryChange: (String) -> Unit) {
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, color = FmPalette.onSurface),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(FmPalette.primary),
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "搜索品牌" },
+                modifier = Modifier.fillMaxWidth().trackTextEditing()
+                    .semantics { contentDescription = "搜索品牌" },
             )
         }
     }

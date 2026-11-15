@@ -28,11 +28,12 @@ class AppearanceControllerTest {
     }
 
     @Test
-    fun missingStoreMeansSystemAndDarkStage() {
+    fun missingStoreMeansSystemDarkStageAndTheDefaultPalette() {
         val controller = AppearanceController(FakeStore())
         assertEquals(AppearanceSettings.DEFAULT, controller.settings)
         assertEquals(ThemeMode.System, controller.settings.mode)
         assertEquals(StageTone.Dark, controller.settings.stageTone)
+        assertEquals(PaletteId.Forest, controller.settings.palette)
         assertEquals("missing", controller.loadStatus)
     }
 
@@ -66,7 +67,7 @@ class AppearanceControllerTest {
         assertEquals(ThemeMode.Light, controller.settings.mode)
         assertEquals(1, store.saves)
         assertEquals(
-            "{\"version\":1,\"mode\":\"light\",\"stageTone\":\"dark\"}",
+            "{\"version\":2,\"palette\":\"forest\",\"mode\":\"light\",\"stageTone\":\"dark\"}",
             store.lastWritten,
         )
         // Repeating the same mode is not a change and must not touch the disk.
@@ -82,6 +83,25 @@ class AppearanceControllerTest {
         assertEquals(StageTone.Light, controller.settings.stageTone)
         assertEquals(1, store.saves)
         assertTrue(controller.settings.mode == ThemeMode.System, "tone change must not alter the mode")
+    }
+
+    @Test
+    fun setPaletteWritesThrough() {
+        val store = FakeStore()
+        val controller = AppearanceController(store)
+        controller.setPalette(PaletteId.Clay)
+        assertEquals(PaletteId.Clay, controller.settings.palette)
+        assertEquals(1, store.saves)
+        assertEquals(
+            "{\"version\":2,\"palette\":\"clay\",\"mode\":\"system\",\"stageTone\":\"dark\"}",
+            store.lastWritten,
+        )
+        // Same palette again is not a change.
+        controller.setPalette(PaletteId.Clay)
+        assertEquals(1, store.saves)
+        // 换配色不动明暗 / 舞台：三件事互相独立。
+        assertEquals(ThemeMode.System, controller.settings.mode)
+        assertEquals(StageTone.Dark, controller.settings.stageTone)
     }
 
     @Test
@@ -112,7 +132,7 @@ class AppearanceControllerTest {
         controller.setStageTone(StageTone.Mid)
         assertEquals(1, store.saves)
         assertEquals(
-            "{\"version\":1,\"mode\":\"system\",\"stageTone\":\"mid\"}",
+            "{\"version\":2,\"palette\":\"forest\",\"mode\":\"system\",\"stageTone\":\"mid\"}",
             store.lastWritten,
         )
         assertEquals(ThemeMode.Dark, controller.settings.mode, "the override still wins for the UI")

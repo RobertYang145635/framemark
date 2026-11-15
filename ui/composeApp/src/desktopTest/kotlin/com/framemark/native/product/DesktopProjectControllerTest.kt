@@ -335,4 +335,44 @@ class DesktopProjectControllerTest {
             dir.toFile().deleteRecursively()
         }
     }
+
+    // ---- W-02: the close decision depends on this result -------------------
+
+    @Test
+    fun flush_reports_the_result_of_the_write_it_performs() {
+        val fs = FakeFs("/fm-exit")
+        val controller = newController(Path.of("unused"), fs)
+        controller.load()
+        controller.setExportSettings(ExportSettings(format = ExportFormat.Png))
+        assertTrue(controller.flush(), "a durable write must let the window close")
+
+        fs.failWritePath = "${fs.projectPath}.tmp"
+        controller.setExportSettings(ExportSettings(format = ExportFormat.WebP))
+        assertFalse(controller.flush(), "a failed write must keep the window open")
+        assertNotNull(controller.saveError, "the refusal needs a reason the dialog can show")
+        controller.dispose()
+    }
+
+    @Test
+    fun a_project_copy_keeps_the_edits_the_document_could_not_take() {
+        val fs = FakeFs("/fm-exit-copy")
+        val controller = newController(Path.of("unused"), fs)
+        controller.load()
+        controller.setExportSettings(ExportSettings(format = ExportFormat.Png))
+        assertTrue(controller.flush())
+
+        // The canonical document becomes unwritable, the copy target does not.
+        fs.failWritePath = "${fs.projectPath}.tmp"
+        controller.setExportSettings(ExportSettings(format = ExportFormat.WebP))
+        assertFalse(controller.flush())
+
+        val copyPath = "/fm-exit-copy/backup.json"
+        assertTrue(controller.saveProjectCopy(copyPath))
+        val copied = ProjectCodec.decode(ProductJson.parseRoot(fs.files.getValue(copyPath).decodeToString()))
+        assertEquals(ExportFormat.WebP, copied.exportSettings.format, "the copy carries the unsaved edit")
+        // The failed write must not have replaced the previous document with a stub.
+        val document = ProjectCodec.decode(ProductJson.parseRoot(fs.files.getValue(fs.projectPath).decodeToString()))
+        assertEquals(ExportFormat.Png, document.exportSettings.format)
+        controller.dispose()
+    }
 }

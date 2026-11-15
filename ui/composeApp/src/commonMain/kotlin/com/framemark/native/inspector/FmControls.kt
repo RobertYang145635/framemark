@@ -68,6 +68,7 @@ import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.DesignSession
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * WP-C §4.2 shared controls: slider maths, the desktop/touch slider rows, the
@@ -546,6 +547,7 @@ internal fun FmNumberBox(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit() }),
         modifier = modifier
+            .trackTextEditing()
             .heightIn(min = 30.dp)
             .clip(RoundedCornerShape(FmRadii.input))
             .background(FmPalette.surfaceMuted)
@@ -720,6 +722,7 @@ internal fun FmTextRow(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             modifier = Modifier
                 .fillMaxWidth()
+                .trackTextEditing()
                 .heightIn(min = if (touch) 44.dp else 34.dp)
                 .clip(RoundedCornerShape(FmRadii.input))
                 .background(FmPalette.surfaceMuted)
@@ -1017,6 +1020,7 @@ internal fun FmSliderValueBox(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit() }),
         modifier = modifier
+            .trackTextEditing()
             .height(26.dp)
             .width(ValueBoxWidth)
             .clip(RoundedCornerShape(6.dp))

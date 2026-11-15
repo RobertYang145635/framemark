@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-      WP-T: the launch window background matches the resolved light canvas
-      (#F0F2F5 = FmColors.Light.canvas) so the first frame does not flash white
-      while Compose starts. values-night\themes.xml overrides the same name with
-      the dark tokens (#121316 = FmColors.Dark.canvas) and a dark Material base so
-      the status-bar icons start out light.
+      WP-T: the launch window background matches the default palette's light canvas
+      (#F2F1ED = FmPalettes.of(PaletteId.Forest, dark = false).canvas, 配色方案 §6.1 暖灰墨绿) so the first frame
+      does not flash white while Compose starts. values-night\themes.xml overrides
+      the same name with the dark tokens (#181C19 = FmPalettes.of(PaletteId.Forest, dark = true).canvas) and a dark
+      Material base so the status-bar icons start out light.
 
       WP-X3 §3 (WP-F2 D2): the pair above follows the **system** night mode, but the
       in-app 外观 setting can be 深色 while the system is 浅色. In that case the
@@ -16,18 +16,22 @@
       resolved appearance. They are declared in values/ (no -night variant) on
       purpose: an explicit `setTheme` must not be re-resolved against the system
       night mode.
+
+      配色方案 §6：这两支样式只能编码默认配色的画布。四套配色各自的画布见
+      `Palette.kt`；MainActivity 读到用户选的配色后会用 `window.setBackgroundDrawable`
+      覆盖这里的底色，所以非默认配色也不会闪一帧暖灰。
     -->
     <style name="Theme.FrameMark" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#F0F2F5</item>
+        <item name="android:windowBackground">#F2F1ED</item>
     </style>
 
     <!-- Light appearance, forced regardless of the system night mode. -->
     <style name="Theme.FrameMark.Light" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#F0F2F5</item>
+        <item name="android:windowBackground">#F2F1ED</item>
     </style>
 
     <!-- Dark appearance, forced regardless of the system night mode. -->
     <style name="Theme.FrameMark.Dark" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowBackground">#121316</item>
+        <item name="android:windowBackground">#181C19</item>
     </style>
 </resources>

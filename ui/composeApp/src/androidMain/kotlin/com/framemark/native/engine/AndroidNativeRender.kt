@@ -17,6 +17,7 @@ import com.framemark.native.workflow.NativeRenderApi
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PhotoSelection
 import com.framemark.native.product.PreviewTier
+import com.framemark.native.product.PreviewHandoff
 import com.framemark.native.workflow.ReportTextRow
 import com.framemark.native.workflow.SampleFormat
 import com.framemark.native.workflow.TextSlot
@@ -100,210 +101,241 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
         overlay: OverlaySpec?,
         photoPath: String?,
         interactive: Boolean,
-    ): NativeImage = withContext(Dispatchers.IO) {
-        require(mode == "preview" || mode == "export") { "mode must be preview|export, got $mode" }
-        val started = SystemClock.elapsedRealtime()
-        val overridePhoto = requireReadablePhotoOverride(photoPath) { path ->
-            File(path).let { it.isFile && it.canRead() }
-        }
-        // 原尺寸 (no long edge asked for) means the photo's own pixels, not a fixed
-        // cap: the canvas follows the source that is actually being rendered.
-        // A2: an export without a long edge is the user's "原尺寸" — the whole photo,
-// no template-ratio centre crop. The engine grows the canvas instead of
-// resampling; templates that cannot hold the photo report E4H-FIT-NATIVE-*
-// and fall back to the template ratio with a visible note.
-val fitNative = mode == "export" && longEdge == null
-        val edge = when {
-            mode == "preview" -> maxEdge ?: 1280
-            // Native canvas is photo + border, usually larger than the photo's
-            // long edge; any max edge here would downscale the 1:1 photo.
-            fitNative -> 0
-            else -> longEdge ?: nativeLongEdge(overridePhoto, mode)
-        }
-        if (mode == "export" && (format == SampleFormat.Jpeg || format == SampleFormat.WebP)) {
+    ): NativeImage = PreviewHandoff.withPreviewHandoff(
+        // P2 (audit): a blocking JNI render can be cancelled while it runs. When
+        // that happens withContext completes the block (PNG + geom already written)
+        // and then throws; the preview consumer never receives a NativeImage to
+        // release. Offering the path for the duration of the call makes cancellation
+        // delete both files. On the normal path the handoff is cleared, so the
+        // consumer still owns them. Export targets are never offered.
+        release = { path ->
+            File(path).delete()
+            File("$path.geom.json").delete()
+        },
+    ) { offer ->
+        withContext(Dispatchers.IO) {
+            require(mode == "preview" || mode == "export") { "mode must be preview|export, got $mode" }
+            val started = SystemClock.elapsedRealtime()
+            val overridePhoto = requireReadablePhotoOverride(photoPath) { path ->
+                File(path).let { it.isFile && it.canRead() }
+            }
+            // 原尺寸 (no long edge asked for) means the photo's own pixels, not a fixed
+            // cap: the canvas follows the source that is actually being rendered.
+            // A2: an export without a long edge is the user's "原尺寸" — the whole photo,
+            // no template-ratio centre crop. The engine grows the canvas instead of
+            // resampling; templates that cannot hold the photo report E4H-FIT-NATIVE-*
+            // and fall back to the template ratio with a visible note.
+            val fitNative = mode == "export" && longEdge == null
+            val edge = when {
+                mode == "preview" -> maxEdge ?: 1280
+                // Native canvas is photo + border, usually larger than the photo's
+                // long edge; any max edge here would downscale the 1:1 photo.
+                fitNative -> 0
+                else -> longEdge ?: nativeLongEdge(overridePhoto, mode)
+            }
+            if (mode == "export" && (format == SampleFormat.Jpeg || format == SampleFormat.WebP)) {
+                if (LaunchOptions.batchFailCard == cardId) {
+                    LaunchOptions.batchFailCard = null
+                    throw IllegalStateException("injected export failure (evidence hook)")
+                }
+                val target = File(outputPath ?: defaultExportPath(cardId, format))
+                target.parentFile?.mkdirs()
+                val scratchDir = File(app.cacheDir, "x1").apply { mkdirs() }
+                val scratch = File.createTempFile("export-", "", scratchDir)
+                val reportFile = File("${scratch.absolutePath}.report.json")
+                val geom = File("${scratch.absolutePath}.geom.json")
+                try {
+                    val direct = renderDirectExport(
+                    cardId, design, edge, target, reportFile, geom, overlay, overridePhoto,
+                    fitNative, format, quality ?: 100, webpLossless,
+                )
+                val doc = JSONObject(direct.envelope)
+                require(doc.optBoolean("ok")) { "native export failed: ${doc.optString("error")}" }
+                val report = doc.optJSONObject("report")
+                val imageW = report?.optInt("w", 0) ?: 0
+                val imageH = report?.optInt("h", 0) ?: 0
+                require(imageW > 0 && imageH > 0 && target.isFile && target.length() > 0L) {
+                    "native export produced no image: ${target.absolutePath}"
+                }
+                val photoRect = photoRectOf(geom, imageW, imageH)
+                // The engine applied `photoCropX/Y/Zoom` itself: report the source
+                // region it sampled so the export never pre-crops a second time.
+                val photoSrc = photoSrcOf(geom)
+                val textSlots = textSlotsOf(
+                    geom = geom,
+                    imageW = imageW,
+                    imageH = imageH,
+                    backend = if (byUiCard.containsKey(cardId)) "ir" else "hand",
+                )
+                val totalMs = SystemClock.elapsedRealtime() - started
+                if (!skipGalleryPublish) evidence(
+                    JSONObject()
+                        .put("card", cardId)
+                        .put("mode", mode)
+                        .put("png", JSONObject.NULL)
+                        .put("path", target.absolutePath)
+                        .put("galleryUri", JSONObject.NULL)
+                        .put("width", imageW)
+                        .put("height", imageH)
+                        .put("renderMs", report?.optLong("renderMs", -1L) ?: -1L)
+                        .put("encodeMs", report?.optLong("msEncode", -1L) ?: -1L)
+                        .put("totalMs", totalMs)
+                        .put("report", report)
+                        .put("photoRect", photoRect?.let { listOf(it.x, it.y, it.w, it.h) })
+                        .put("peakRssKb", peakRssKb()),
+                )
+                return@withContext NativeImage(
+                    target.absolutePath,
+                    imageW,
+                    imageH,
+                    totalMs,
+                    photoRect,
+                    direct.note,
+                    textSlots,
+                    photoSrc = photoSrc,
+                )
+                } finally {
+                    geom.delete()
+                    reportFile.delete()
+                    scratch.delete()
+                }
+            }
+            val exportTarget = if (mode == "export") {
+                File(outputPath ?: defaultExportPath(cardId, format)).also { it.parentFile?.mkdirs() }
+            } else null
+            val png = exportTarget ?: File(app.cacheDir, "x1/${mode}-$cardId-${System.nanoTime()}.png")
+            png.parentFile?.mkdirs()
+            val geom = File("${png.absolutePath}.geom.json")
+            try {
+            var note: String? = null
+            val renderMs = if (byUiCard.containsKey(cardId)) {
+                renderIr(
+                    cardId, design, edge, png, overlay, overridePhoto, fitNative,
+                    interactive = interactive && mode == "preview",
+                )
+            } else {
+                val hand = renderHand(
+                    cardId, design, edge, png, overlay, overridePhoto, fitNative,
+                    interactive = interactive && mode == "preview",
+                )
+                note = hand.note
+                hand.ms
+            }
+
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(png.absolutePath, bounds)
+            require(bounds.outWidth > 0 && bounds.outHeight > 0) { "engine wrote an unreadable PNG: ${png.absolutePath}" }
+            // Engine photo draw box, rescaled to this image's pixels (overlay anchor).
+            val photoRect = photoRectOf(geom, bounds.outWidth, bounds.outHeight)
+            // Source pixels the engine sampled — already in the photo's **display**
+            // (EXIF-applied) frame, the same space the crop params use.
+            val photoSrc = photoSrcOf(geom)
+            // Renderer-reported text rows, bound exactly like the desktop path so the
+            // 文字 tab can group this render by canvas position.
+            val textSlots = textSlotsOf(
+                geom = geom,
+                imageW = bounds.outWidth,
+                imageH = bounds.outHeight,
+                backend = if (byUiCard.containsKey(cardId)) "ir" else "hand",
+            )
+
+            if (mode == "preview") {
+                FmLog.info("FM_PHOTO_RECT") { "card=$cardId rect=${photoRect ?: "<none>"} ${bounds.outWidth}x${bounds.outHeight}" }
+                FmLog.info("FM_TEXT_SLOTS") { "card=$cardId rows=${textSlots.size}" }
+                // Hand the already-written pair to the cancellation guard.
+                // Reaching this line means both files exist; if the coroutine is
+                // cancelled after withContext finishes the block, the guard
+                // deletes them instead of leaving an owner-less pair.
+                offer(png.absolutePath)
+                return@withContext NativeImage(
+                    png.absolutePath,
+                    bounds.outWidth,
+                    bounds.outHeight,
+                    renderMs,
+                    photoRect,
+                    textSlots = textSlots,
+                    photoSrc = photoSrc,
+                )
+            }
+
+            // Evidence-only fault injection so the batch retry path can be exercised.
             if (LaunchOptions.batchFailCard == cardId) {
                 LaunchOptions.batchFailCard = null
                 throw IllegalStateException("injected export failure (evidence hook)")
             }
-            val target = File(outputPath ?: defaultExportPath(cardId, format))
+
+            val target = exportTarget ?: error("export result has no target")
             target.parentFile?.mkdirs()
-            val scratchDir = File(app.cacheDir, "x1").apply { mkdirs() }
-            val scratch = File.createTempFile("export-", "", scratchDir)
-            val reportFile = File("${scratch.absolutePath}.report.json")
-            val geom = File("${scratch.absolutePath}.geom.json")
-            try {
-                val direct = renderDirectExport(
-                cardId, design, edge, target, reportFile, geom, overlay, overridePhoto,
-                fitNative, format, quality ?: 100, webpLossless,
-            )
-            val doc = JSONObject(direct.envelope)
-            require(doc.optBoolean("ok")) { "native export failed: ${doc.optString("error")}" }
-            val report = doc.optJSONObject("report")
-            val imageW = report?.optInt("w", 0) ?: 0
-            val imageH = report?.optInt("h", 0) ?: 0
-            require(imageW > 0 && imageH > 0 && target.isFile && target.length() > 0L) {
-                "native export produced no image: ${target.absolutePath}"
+            val encodeMs: Long
+            val report: JSONObject?
+            if (format == SampleFormat.Png) {
+                if (png.absolutePath != target.absolutePath) png.copyTo(target, overwrite = true)
+                encodeMs = 0
+                report = null
+            } else {
+                val exifSrc = exifSource(overridePhoto)
+                val reportFile = File(target.parentFile, "${target.name}.report.json").absolutePath
+                val startedEncode = SystemClock.elapsedRealtime()
+                val envelope = if (format == SampleFormat.WebP) {
+                    NativeEngineProbe.exportWebp(
+                        pngPath = png.absolutePath,
+                        iccPath = data.icc.orEmpty(),
+                        exifSrc = exifSrc,
+                        outWebp = target.absolutePath,
+                        reportJson = reportFile,
+                        lossless = webpLossless,
+                        quality = quality ?: 100,
+                    )
+                } else {
+                    NativeEngineProbe.exportPng(
+                        pngPath = png.absolutePath,
+                        iccPath = data.icc.orEmpty(),
+                        exifSrc = exifSrc,
+                        outJpeg = target.absolutePath,
+                        reportJson = reportFile,
+                    )
+                }
+                encodeMs = SystemClock.elapsedRealtime() - startedEncode
+                val doc = JSONObject(envelope)
+                require(doc.optBoolean("ok")) { "native export failed: ${doc.optString("error")}" }
+                report = doc.optJSONObject("report")
             }
-            val photoRect = photoRectOf(geom, imageW, imageH)
-            // The engine applied `photoCropX/Y/Zoom` itself: report the source
-            // region it sampled so the export never pre-crops a second time.
-            val photoSrc = photoSrcOf(geom)
-            val textSlots = textSlotsOf(
-                geom = geom,
-                imageW = imageW,
-                imageH = imageH,
-                backend = if (byUiCard.containsKey(cardId)) "ir" else "hand",
-            )
             val totalMs = SystemClock.elapsedRealtime() - started
+            // NativeEngine publishes only after its no-clobber file commit succeeds.
+            val galleryUri: String? = null
+
             if (!skipGalleryPublish) evidence(
                 JSONObject()
                     .put("card", cardId)
                     .put("mode", mode)
-                    .put("png", JSONObject.NULL)
+                    .put("png", png.absolutePath)
                     .put("path", target.absolutePath)
-                    .put("galleryUri", JSONObject.NULL)
-                    .put("width", imageW)
-                    .put("height", imageH)
-                    .put("renderMs", report?.optLong("renderMs", -1L) ?: -1L)
-                    .put("encodeMs", report?.optLong("msEncode", -1L) ?: -1L)
+                    .put("galleryUri", galleryUri)
+                    .put("width", bounds.outWidth)
+                    .put("height", bounds.outHeight)
+                    .put("renderMs", renderMs)
+                    .put("encodeMs", encodeMs)
                     .put("totalMs", totalMs)
                     .put("report", report)
                     .put("photoRect", photoRect?.let { listOf(it.x, it.y, it.w, it.h) })
                     .put("peakRssKb", peakRssKb()),
             )
-            return@withContext NativeImage(
-                target.absolutePath,
-                imageW,
-                imageH,
-                totalMs,
-                photoRect,
-                direct.note,
-                textSlots,
-                photoSrc = photoSrc,
-            )
+            NativeImage(target.absolutePath, bounds.outWidth, bounds.outHeight, totalMs, photoRect, note, textSlots, photoSrc = photoSrc)
+            } catch (t: Throwable) {
+                // A-02: a preview render that threw never reaches its consumer, so the
+                // per-request PNG and its geom sidecar have no owner — delete them here.
+                // Export targets are left in place: the commit/retry path owns those.
+                if (exportTarget == null) {
+                    png.delete()
+                    geom.delete()
+                }
+                throw t
             } finally {
-                geom.delete()
-                reportFile.delete()
-                scratch.delete()
+                // The geom of a *successful* preview stays: the QA evidence runners call
+                // the renderer directly and read the newest sidecar after the call. The
+                // production consumer deletes it together with the PNG (PreviewScratch).
+                if (exportTarget != null) geom.delete()
             }
-        }
-        val exportTarget = if (mode == "export") {
-            File(outputPath ?: defaultExportPath(cardId, format)).also { it.parentFile?.mkdirs() }
-        } else null
-        val png = exportTarget ?: File(app.cacheDir, "x1/${mode}-$cardId-${System.nanoTime()}.png")
-        png.parentFile?.mkdirs()
-        val geom = File("${png.absolutePath}.geom.json")
-        try {
-        var note: String? = null
-        val renderMs = if (byUiCard.containsKey(cardId)) {
-            renderIr(
-                cardId, design, edge, png, overlay, overridePhoto, fitNative,
-                interactive = interactive && mode == "preview",
-            )
-        } else {
-            val hand = renderHand(
-                cardId, design, edge, png, overlay, overridePhoto, fitNative,
-                interactive = interactive && mode == "preview",
-            )
-            note = hand.note
-            hand.ms
-        }
-
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(png.absolutePath, bounds)
-        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "engine wrote an unreadable PNG: ${png.absolutePath}" }
-        // Engine photo draw box, rescaled to this image's pixels (overlay anchor).
-        val photoRect = photoRectOf(geom, bounds.outWidth, bounds.outHeight)
-        // Source pixels the engine sampled — already in the photo file's space.
-        val photoSrc = photoSrcOf(geom)
-        // Renderer-reported text rows, bound exactly like the desktop path so the
-        // 文字 tab can group this render by canvas position.
-        val textSlots = textSlotsOf(
-            geom = geom,
-            imageW = bounds.outWidth,
-            imageH = bounds.outHeight,
-            backend = if (byUiCard.containsKey(cardId)) "ir" else "hand",
-        )
-
-        if (mode == "preview") {
-            FmLog.info("FM_PHOTO_RECT") { "card=$cardId rect=${photoRect ?: "<none>"} ${bounds.outWidth}x${bounds.outHeight}" }
-            FmLog.info("FM_TEXT_SLOTS") { "card=$cardId rows=${textSlots.size}" }
-            return@withContext NativeImage(
-                png.absolutePath,
-                bounds.outWidth,
-                bounds.outHeight,
-                renderMs,
-                photoRect,
-                textSlots = textSlots,
-                photoSrc = photoSrc,
-            )
-        }
-
-        // Evidence-only fault injection so the batch retry path can be exercised.
-        if (LaunchOptions.batchFailCard == cardId) {
-            LaunchOptions.batchFailCard = null
-            throw IllegalStateException("injected export failure (evidence hook)")
-        }
-
-        val target = exportTarget ?: error("export result has no target")
-        target.parentFile?.mkdirs()
-        val encodeMs: Long
-        val report: JSONObject?
-        if (format == SampleFormat.Png) {
-            if (png.absolutePath != target.absolutePath) png.copyTo(target, overwrite = true)
-            encodeMs = 0
-            report = null
-        } else {
-            val exifSrc = exifSource(overridePhoto)
-            val reportFile = File(target.parentFile, "${target.name}.report.json").absolutePath
-            val startedEncode = SystemClock.elapsedRealtime()
-            val envelope = if (format == SampleFormat.WebP) {
-                NativeEngineProbe.exportWebp(
-                    pngPath = png.absolutePath,
-                    iccPath = data.icc.orEmpty(),
-                    exifSrc = exifSrc,
-                    outWebp = target.absolutePath,
-                    reportJson = reportFile,
-                    lossless = webpLossless,
-                    quality = quality ?: 100,
-                )
-            } else {
-                NativeEngineProbe.exportPng(
-                    pngPath = png.absolutePath,
-                    iccPath = data.icc.orEmpty(),
-                    exifSrc = exifSrc,
-                    outJpeg = target.absolutePath,
-                    reportJson = reportFile,
-                )
-            }
-            encodeMs = SystemClock.elapsedRealtime() - startedEncode
-            val doc = JSONObject(envelope)
-            require(doc.optBoolean("ok")) { "native export failed: ${doc.optString("error")}" }
-            report = doc.optJSONObject("report")
-        }
-        val totalMs = SystemClock.elapsedRealtime() - started
-        // NativeEngine publishes only after its no-clobber file commit succeeds.
-        val galleryUri: String? = null
-
-        if (!skipGalleryPublish) evidence(
-            JSONObject()
-                .put("card", cardId)
-                .put("mode", mode)
-                .put("png", png.absolutePath)
-                .put("path", target.absolutePath)
-                .put("galleryUri", galleryUri)
-                .put("width", bounds.outWidth)
-                .put("height", bounds.outHeight)
-                .put("renderMs", renderMs)
-                .put("encodeMs", encodeMs)
-                .put("totalMs", totalMs)
-                .put("report", report)
-                .put("photoRect", photoRect?.let { listOf(it.x, it.y, it.w, it.h) })
-                .put("peakRssKb", peakRssKb()),
-        )
-        NativeImage(target.absolutePath, bounds.outWidth, bounds.outHeight, totalMs, photoRect, note, textSlots, photoSrc = photoSrc)
-        } finally {
-            if (exportTarget != null) geom.delete()
         }
     }
 
@@ -332,16 +364,17 @@ val fitNative = mode == "export" && longEdge == null
     }.getOrNull()
 
     /**
-     * Reads the engine geom's `photo_src`: the region of the **source photo file**
-     * the renderer really sampled, `[x, y, w, h]` in source pixels.
+     * Reads the engine geom's `photo_src`: the region of the **source photo** the
+     * renderer really sampled, `[x, y, w, h]` in display (EXIF-applied) pixels —
+     * the frame `PhotoOrientation.displaySize` reports, not the stored raster.
      *
-     * Unlike [photoRectOf] this must not be rescaled: it already lives in the
-     * photo file's own raster space, not in this image's canvas. Both bridges
-     * write it at the geom root next to the photo box (`bridge/android`'s IR
-     * renderer from its own crop maths, `bridge/android-hand` from the draw
-     * report), and it is what tells the export that the engine — not Kotlin —
-     * applied `photoCropX/Y/Zoom`, so no second pre-crop may be added on top.
-     * Null when the running engine binary predates the field.
+     * Unlike [photoRectOf] this must not be rescaled: it lives in the photo's own
+     * display frame, not in this image's canvas. Both bridges write it at the geom
+     * root next to the photo box (`bridge/android`'s IR renderer from its own crop
+     * maths, `bridge/android-hand` from the draw report), and it is what tells the
+     * export that the engine — not Kotlin — applied `photoCropX/Y/Zoom`, so no
+     * second pre-crop may be added on top. Null when the running engine binary
+     * predates the field.
      */
     private fun photoSrcOf(geom: File): ImageRect? = runCatching {
         if (!geom.isFile) return null
@@ -1035,8 +1068,26 @@ val fitNative = mode == "export" && longEdge == null
         if (File(photoPath).absolutePath == File(data.photo).absolutePath) return data.exif
         val file = File(photoPath)
         val own = ExifProbe.isJpeg(file) && ExifProbe.hasApp1(file)
-        FmLog.info("FM_EXIF_SOURCE") { "photo=${file.name} ownApp1=$own src=${if (own) file.name else "<absent>"}" }
-        return if (own) photoPath else ""
+        if (own) {
+            FmLog.info("FM_EXIF_SOURCE") { "photo=${file.name} ownApp1=true src=${file.name}" }
+            return photoPath
+        }
+        // HEIC 导入时像素被烤成 PNG，容器里的 Exif 项改写成了同名的侧车 JPEG
+        // （`files/exif/<photo>.jpg`，只含 APP1）。引擎只认 JPEG APP1，就交给它。
+        val sidecar = exifSidecarFor(file)
+        val usable = sidecar != null && ExifProbe.isJpeg(sidecar) && ExifProbe.hasApp1(sidecar)
+        FmLog.info("FM_EXIF_SOURCE") {
+            "photo=${file.name} ownApp1=false sidecar=${sidecar?.name ?: "-"} usable=$usable " +
+                "src=${if (usable) sidecar?.name else "<absent>"}"
+        }
+        return if (usable) sidecar!!.absolutePath else ""
+    }
+
+    /** `files/photos/user-x.png` → `files/exif/user-x.jpg`；不存在时 null。 */
+    private fun exifSidecarFor(photo: File): File? {
+        val filesDir = photo.parentFile?.parentFile ?: return null
+        val candidate = File(File(filesDir, "exif"), photo.nameWithoutExtension + ".jpg")
+        return candidate.takeIf { it.isFile && it.length() > 0 }
     }
 
     private fun defaultExportPath(cardId: String, format: SampleFormat?): String {

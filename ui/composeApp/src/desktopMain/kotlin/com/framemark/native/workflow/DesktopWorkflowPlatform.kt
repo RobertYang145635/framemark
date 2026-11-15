@@ -155,6 +155,9 @@ class DesktopWorkflowPlatform(
 
     override fun readBytes(path: String): ByteArray? = runCatching { File(path).readBytes() }.getOrNull()
 
+    override fun photoOrientation(path: String): Int =
+        runCatching { PhotoMetadata.orientation(File(path)) }.getOrDefault(1)
+
     /**
      * Opens Explorer with the exported file selected. Explorer exits non-zero even
      * when it succeeded, so only a launch failure counts as a failure here.
@@ -174,6 +177,12 @@ class DesktopWorkflowPlatform(
             null
         }.getOrElse { "打开所在目录失败：${it.message}" }
     }
+
+    /**
+     * 桌面没有「系统相册」：查看成片就是打开资源管理器并选中刚导出的文件。
+     * 这条覆盖让手机导出的完成页在桌面构建里也有确定的行为，而不是回一句「不支持」。
+     */
+    override fun openGallery(path: String): String? = revealInFolder(path)
 
     override fun thumbnail(path: String, maxEdge: Int): ByteArray? = runCatching {
         if (maxEdge <= 0) return null

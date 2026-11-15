@@ -68,7 +68,11 @@ internal data class PhoneCropUi(
     val active: Boolean,
     /** The pending value: the saved crop when entering, the gesture's result after. */
     val crop: PhotoCrop,
-    /** Source photo size in the frame the renderer draws, in pixels. */
+    /**
+     * Source photo size in the frame the renderer draws, in **display** pixels
+     * (EXIF applied) — the same frame the preview bitmap below is drawn in and the
+     * same frame `photoCropX/Y/Zoom` is interpreted in.
+     */
     val sourceWidth: Int,
     val sourceHeight: Int,
     /** Engine-reported photo box (canvas pixels); only its aspect is used here. */

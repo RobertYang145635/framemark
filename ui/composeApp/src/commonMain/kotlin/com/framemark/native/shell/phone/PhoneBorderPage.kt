@@ -58,6 +58,7 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import kotlinx.coroutines.launch
+import com.framemark.native.workflow.trackTextEditing
 
 /** 覆盖层底部面板占窗口可用高度的比例：与品牌选择器同一个数字（产品决定：85–90 %）。 */
 internal const val PHONE_BORDER_LIBRARY_PANEL_FRACTION = 0.88f
@@ -198,7 +199,12 @@ private fun BorderLibraryPanel(
     onDismiss: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        LibraryHead(appliedCard = appliedCard, onBack = onDismiss)
+        LibraryHead(
+            appliedCard = appliedCard,
+            categoryCount = index.categories().size,
+            cardCount = index.cards.size,
+            onBack = onDismiss,
+        )
         CategoryPagerRow(
             categories = categories,
             categoryKey = categoryKey,
@@ -238,9 +244,14 @@ private fun BorderLibraryPanel(
     }
 }
 
-/** 固定标题行：库名 + 当前边框 + 回到面板。 */
+/** 固定标题行：库名 + 库规模 / 当前边框 + 回到面板。 */
 @Composable
-private fun LibraryHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
+private fun LibraryHead(
+    appliedCard: LibraryCard?,
+    categoryCount: Int,
+    cardCount: Int,
+    onBack: () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth().background(FmPalette.surface)) {
         Row(
             modifier = Modifier
@@ -256,7 +267,8 @@ private fun LibraryHead(appliedCard: LibraryCard?, onBack: () -> Unit) {
                 )
                 Spacer(Modifier.height(FmSpacing.xxs))
                 Text(
-                    text = "当前：${PhoneBorderPageState.currentName(appliedCard)}",
+                    text = PhoneBorderPageState.librarySummary(categoryCount, cardCount) +
+                        " · 当前：" + PhoneBorderPageState.currentName(appliedCard),
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceMuted,
                     maxLines = 1,
@@ -364,7 +376,8 @@ private fun BorderSearchRow(query: String, onQueryChange: (String) -> Unit) {
                     singleLine = true,
                     textStyle = FmType.labelMedium.copy(color = FmPalette.onSurface),
                     cursorBrush = SolidColor(FmPalette.primary),
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "搜索边框" },
+                    modifier = Modifier.fillMaxWidth().trackTextEditing()
+                        .semantics { contentDescription = "搜索边框" },
                 )
             }
             if (query.isNotEmpty()) {

@@ -13,7 +13,7 @@
       `setTheme()` in MainActivity cannot fix the splash itself (WP-X3-REPORT §3).
     -->
     <style name="Theme.FrameMark" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#F0F2F5</item>
-        <item name="android:windowSplashScreenBackground">#F0F2F5</item>
+        <item name="android:windowBackground">#F2F1ED</item>
+        <item name="android:windowSplashScreenBackground">#F2F1ED</item>
     </style>
 </resources>

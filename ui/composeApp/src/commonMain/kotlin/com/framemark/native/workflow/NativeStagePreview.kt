@@ -451,6 +451,12 @@ fun NativeStagePreview(
                 } finally {
                     if (gateHeld) previewGate.unlock()
                 }
+                // A-02: the engine wrote this preview to a per-request PNG (and a
+                // geom sidecar on Android). The bytes above are the only thing the
+                // stage needs, so every exit — published, stale-drop, publish-gate,
+                // exception — must release those files, or the cache grows without
+                // bound (the audit found 5,324 files / 1.94 GiB on a device).
+                try {
                 val currentOnCompletion = isCurrentRequest(request, version)
                 if (quality != "interactive" && !currentOnCompletion) {
                     FmLog.info("FM_PREVIEW_REQUEST") {
@@ -523,6 +529,9 @@ fun NativeStagePreview(
                     }
                 }
                 return published
+                } finally {
+                    PreviewScratch.release(WorkflowEnv.platform, image?.path)
+                }
             }
 
             while (true) {

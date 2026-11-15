@@ -22,7 +22,11 @@ import kotlin.math.roundToInt
 internal actual object GainMapComposer {
 
     actual fun compose(job: GainMapJob): ByteArray? = runCatching {
-        val source = ImageIO.read(ByteArrayInputStream(job.source, job.offset, job.size)) ?: return null
+        val decoded = ImageIO.read(ByteArrayInputStream(job.source, job.offset, job.size)) ?: return null
+        // The gain map is stored in the raw raster; the canvas it is pasted into is
+        // display oriented. Rotate first, then cut — the other order would sample
+        // the wrong pixels for every rotated photo.
+        val source = decoded.orientedImage(job.orientation)
         val divisor = job.divisor.coerceAtLeast(1)
         val width = (job.canvasWidth / divisor).coerceAtLeast(1)
         val height = (job.canvasHeight / divisor).coerceAtLeast(1)

@@ -357,21 +357,25 @@ private fun AnchorReset(
     dense: Boolean,
     paddingTop: androidx.compose.ui.unit.Dp,
 ) {
-    Text(
-        text = "恢复默认",
-        style = if (dense) {
-            LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 16.sp)
-        } else {
-            CuratedNote
-        },
-        color = FmPalette.primaryStrong,
+    Box(
         modifier = Modifier
             .padding(top = paddingTop)
             .heightIn(min = 32.dp)
             .clip(RoundedCornerShape(FmRadii.chip))
             .clickable(role = Role.Button) { session.resetControl(control) }
             .padding(horizontal = 4.dp),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "恢复默认",
+            style = if (dense) {
+                LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 16.sp)
+            } else {
+                CuratedNote
+            },
+            color = FmPalette.primaryStrong,
+        )
+    }
 }
 
 /**

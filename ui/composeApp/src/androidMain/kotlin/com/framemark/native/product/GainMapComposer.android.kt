@@ -21,7 +21,10 @@ import java.io.ByteArrayOutputStream
 internal actual object GainMapComposer {
 
     actual fun compose(job: GainMapJob): ByteArray? = runCatching {
-        val source = BitmapFactory.decodeByteArray(job.source, job.offset, job.size) ?: return null
+        val decoded = BitmapFactory.decodeByteArray(job.source, job.offset, job.size) ?: return null
+        // Raw-aligned gain map → display-oriented canvas: rotate before cropping.
+        val source = decoded.orientedImage(job.orientation)
+        if (source !== decoded) decoded.recycle()
         val divisor = job.divisor.coerceAtLeast(1)
         val width = (job.canvasWidth / divisor).coerceAtLeast(1)
         val height = (job.canvasHeight / divisor).coerceAtLeast(1)

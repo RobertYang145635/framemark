@@ -17,10 +17,11 @@ import androidx.compose.ui.unit.dp
  * The other four live inside the compact sheet's 28–36 dp horizontal bands, and there
  * the platform forbids the obvious fixes:
  *  - `Modifier.heightIn(min = 44.dp)` / `minimumInteractiveComponentSize()` grow the
- *    *layout*, which the six-tier sheet budget
- *    ([com.framemark.native.shell.PhoneCompactSheetMetrics], pinned by
- *    `PhoneEditorCompactSheetTest`) does not have room for: the 128 dp card and its
- *    name would fall below the fold on 390×844 — the defect WP-P1-2 closed.
+ *    *layout*, which the sheet budget
+ *    ([com.framemark.native.shell.phone.PhoneBorderPageState.panelHeight] plus the
+ *    16 + 44 dp chrome from `phoneSheetChrome`, pinned by
+ *    `PhoneEditorCompactSheetTest`) does not have room for: the current-border row and
+ *    its name would fall below the fold on 390×844 — the defect WP-P1-2 closed.
  *  - a taller *hit* box (`Modifier.layout` reporting 44 dp, measured 2026-11-07) does
  *    not help: Compose gates the pointer at the band's own bounds, so the extra dp are
  *    dead. Measured on `8267fe3e`: a tap 6 dp above `展开参数` reached the sheet grabber

@@ -325,6 +325,7 @@ fun SheetTextField(
         textStyle = FmType.bodyMedium.copy(color = FmPalette.onSurface),
         cursorBrush = SolidColor(FmPalette.primary),
         modifier = modifier
+            .trackTextEditing()
             .fillMaxWidth()
             .heightIn(min = 40.dp)
             .clip(RoundedCornerShape(FmRadii.input))

@@ -44,6 +44,7 @@ import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.isCurrentTextSlot
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * WP-V3 curated page dispatcher — the desktop rail's body.
@@ -431,6 +432,7 @@ internal fun CuratedTextRow(control: InspectorControl, session: DesignSession) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
             modifier = Modifier
                 .fillMaxWidth()
+                .trackTextEditing()
                 .heightIn(min = 26.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(FmPalette.surface)

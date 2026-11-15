@@ -56,6 +56,7 @@ import com.framemark.native.resources.Res
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.decodeToImageBitmap
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * Brand Logo library (port of the webview `BrandPicker`).
@@ -498,6 +499,7 @@ private fun Toolbar(
             textStyle = FmType.bodyMedium.copy(color = FmPalette.onSurface),
             modifier = Modifier
                 .fillMaxWidth()
+                .trackTextEditing()
                 .heightIn(min = 40.dp)
                 .clip(RoundedCornerShape(FmRadii.input))
                 .background(FmPalette.surfaceMuted)

@@ -77,6 +77,7 @@ import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.workflow.DesignSnapshot
 import kotlinx.coroutines.launch
 import com.framemark.native.product.FmLog
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * WP-D2 导出对话框的公共外观件。桌面弹窗里的按钮/分段控件比手机薄一档
@@ -193,6 +194,7 @@ internal fun DlgTextField(
             .copy(color = if (enabled) FmPalette.onSurface else FmPalette.onSurfaceFaint),
         cursorBrush = SolidColor(FmPalette.primary),
         modifier = modifier
+            .trackTextEditing()
             .fillMaxWidth()
             .heightIn(min = 32.dp)
             .clip(shape)

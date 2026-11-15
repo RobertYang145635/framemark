@@ -2,6 +2,7 @@ package com.framemark.native
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.content.res.Configuration
@@ -17,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.lifecycleScope
 import android.util.Log
 import com.framemark.BuildConfig
@@ -36,6 +38,7 @@ import com.framemark.native.theme.AndroidAppearanceStore
 import com.framemark.native.theme.AndroidMotionSettings
 import com.framemark.native.theme.AppearanceController
 import com.framemark.native.theme.AppearanceEnv
+import com.framemark.native.theme.FmPalettes
 import com.framemark.native.theme.FmPlatformMotionScale
 import com.framemark.native.theme.applySystemBarInk
 import com.framemark.native.theme.resolveDark
@@ -66,6 +69,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.framemark.native.product.FmLog
+import com.framemark.native.product.Heif
 
 class MainActivity : ComponentActivity() {
 
@@ -417,6 +421,40 @@ class MainActivity : ComponentActivity() {
                     File(dir, "user-$stamp-$index.tif").also { keepFile(tmp, it) }
                 }
             }
+            "heif" -> {
+                // HEIC/HEIF：BitmapFactory 能解码，但不带出容器里的 Exif 项。先把 Exif
+                // 项读出来（旋转用它的 Orientation），再写一张只含 APP1 的侧车 JPEG，
+                // 引擎就能用现有的 JPEG APP1 解析器读到机型/参数/时间。
+                val bytes = runCatching { tmp.readBytes() }.getOrNull()
+                val exif = bytes?.let { Heif.exifBlock(it) }
+                val hdr = bytes?.let { Heif.hdrInfo(it) }
+                val bitmap = BitmapFactory.decodeFile(tmp.absolutePath) ?: run {
+                    tmp.delete()
+                    return null
+                }
+                val png = File(dir, "user-$stamp-$index.png")
+                val orientation = exif?.orientation ?: 1
+                val oriented = ExifProbe.rotate(bitmap, orientation)
+                png.outputStream().use { output -> oriented.compress(Bitmap.CompressFormat.PNG, 100, output) }
+                oriented.recycle()
+                if (exif != null) {
+                    val exifDir = File(dir.parentFile, "exif").apply { mkdirs() }
+                    val sidecar = File(exifDir, "user-$stamp-$index.jpg")
+                    runCatching {
+                        sidecar.writeBytes(Heif.exifSidecarJpeg(exif.tiff, orientation = 1))
+                    }.onFailure {
+                        FmLog.warn("HEIF_EXIF_SIDECAR_FAIL") { "${it.message}" }
+                    }
+                }
+                FmLog.info("HEIF_IMPORT") {
+                    "exif=${exif != null} orientation=$orientation hdr=${hdr?.isHdr == true} " +
+                        "bitDepth=${hdr?.bitDepth ?: 0} transfer=${hdr?.transfer ?: -1} " +
+                        "gainMap=${hdr?.gainMapUrn ?: "-"} toneMap=${hdr?.hasToneMap == true} " +
+                        "png=${png.length()}"
+                }
+                tmp.delete()
+                png
+            }
             else -> {
                 // WebP/HEIC/etc: BitmapFactory can decode them but ignores EXIF
                 // orientation, so bake the rotation into the PNG.
@@ -436,9 +474,9 @@ class MainActivity : ComponentActivity() {
         return out.absolutePath
     }
 
-    /** Magic bytes win over the provider MIME; returns jpeg/png/tiff/other. */
+    /** Magic bytes win over the provider MIME; returns jpeg/png/tiff/heif/other. */
     private fun sniffKind(file: File): String {
-        val head = ByteArray(4)
+        val head = ByteArray(64)
         val read = FileInputStream(file).use { it.read(head) }
         if (read < 4) return "other"
         val b = head.map { it.toInt() and 0xFF }
@@ -447,6 +485,7 @@ class MainActivity : ComponentActivity() {
             b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47 -> "png"
             b[0] == 0x49 && b[1] == 0x49 && b[2] == 0x2A && b[3] == 0x00 -> "tiff"
             b[0] == 0x4D && b[1] == 0x4D && b[2] == 0x00 && b[3] == 0x2A -> "tiff"
+            Heif.isHeif(head.copyOf(read)) -> "heif"
             else -> "other"
         }
     }
@@ -475,10 +514,16 @@ class MainActivity : ComponentActivity() {
         setTheme(
             if (launchAppearance.dark) R.style.Theme_FrameMark_Dark else R.style.Theme_FrameMark_Light,
         )
+        // 配色方案 §6：两支启动样式只编码默认配色的画布，而四套配色的画布不一样
+        // （暖灰 / 冷白 / 靛白 / 纸白）。这里按用户选中的配色覆盖窗口底色，非默认配色
+        // 也不会在首帧前闪一帧暖灰。必须在 super.onCreate 之前调用才作用在这一扇窗上。
+        window.setBackgroundDrawable(
+            ColorDrawable(FmPalettes.of(launchAppearance.settings.palette, launchAppearance.dark).canvas.toArgb()),
+        )
         // Evidence: printed before the first frame, so a burst capture can be paired
         // with the theme the launch window actually used.
         FmLog.info("FM_LAUNCH_THEME") {
-            "dark=${launchAppearance.dark} " +
+            "palette=${launchAppearance.settings.palette.wire} dark=${launchAppearance.dark} " +
                 "mode=${launchAppearance.settings.mode.wire} systemDark=$initialSystemDark " +
                 "theme=${if (launchAppearance.dark) "Theme.FrameMark.Dark" else "Theme.FrameMark.Light"}"
         }
@@ -521,6 +566,12 @@ class MainActivity : ComponentActivity() {
         // release-intent-source-guard gate requires the DEBUG block's closing
         // brace to sit immediately before `setContent {`, with nothing between.
         RecentFramesEnv.store = AndroidRecentFramesStore.forContext(applicationContext)
+        // A-02: per-request render scratch (PNG + geom sidecar) is released by its
+        // consumer; this sweeps what a crash/kill left behind. IO off the main thread,
+        // before the first composition so it cannot compete with the first preview.
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.framemark.native.engine.RenderScratch.sweep(cacheDir)
+        }
         // W3 crash/migration controls have to be configured before the phone
         // project loads: preset migration is synchronous during installed.load().
         // This entire block is absent from the release behavior by design.

@@ -66,6 +66,7 @@ import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryTraversal
 import com.framemark.native.product.PhotoCrop
 import com.framemark.native.product.PhotoCropParams
+import com.framemark.native.product.PhotoOrientation
 import com.framemark.native.product.photoSourceSize
 import com.framemark.native.shell.phone.PhoneBorderLibraryOverlay
 import com.framemark.native.shell.phone.PhoneCropUi
@@ -93,6 +94,7 @@ import com.framemark.native.workflow.PhotoTray
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSpec
+import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -238,12 +240,22 @@ fun PhoneEditorScreen(
     var undoNotice by remember { mutableStateOf(false) }
     val density = LocalDensity.current
 
-    // 裁切: the source size is probed from the file, never from the EXIF-oriented
-    // project metadata — the renderer draws the raw raster and the export pre-crop
-    // computes its rectangle in exactly those pixels, so both sides must agree.
+    // 裁切: everything below works in the **display** frame. The preview bitmap the
+    // crop layer draws is the platform thumbnail, which already has EXIF orientation
+    // applied; the engine lays the photo out in that same frame and reads
+    // `photoCropX/Y/Zoom` in it. Probing the file's stored raster here (the old bug,
+    // A-01) made a portrait JPEG's crop frame and gestures disagree with the photo
+    // underneath by one whole rotation.
     val cropSourcePath = tray.selected?.path?.takeIf { it.isNotBlank() }
     val cropSourceSize by produceState<IntArray?>(initialValue = null, key1 = cropSourcePath) {
-        value = withContext(Dispatchers.IO) { cropSourcePath?.let { photoSourceSize(it) } }
+        value = withContext(Dispatchers.IO) {
+            val path = cropSourcePath ?: return@withContext null
+            val raw = photoSourceSize(path) ?: return@withContext null
+            if (raw.size < 2 || raw[0] <= 0 || raw[1] <= 0) return@withContext null
+            val orientation = WorkflowEnv.platform?.photoOrientation(path) ?: 1
+            val display = PhotoOrientation.displaySize(raw[0], raw[1], orientation)
+            intArrayOf(display.width, display.height)
+        }
     }
     val cropSourceWidth = cropSourceSize?.getOrNull(0) ?: 0
     val cropSourceHeight = cropSourceSize?.getOrNull(1) ?: 0
@@ -455,11 +467,11 @@ fun PhoneEditorScreen(
         val topBarH = heights.topBar.dp
         val stripH = heights.strip.dp
         val toolBarH = heights.toolBar.dp
-        // 底板顶部的两行（把手 + 标题行）。边框页仍读卡片阶梯（`phoneCompactSheetMetrics`
-        // 的 128 dp 卡片那一摞），参数页读自己的 chrome 阶梯（`phoneParameterSheetChrome`）：
-        // 参数页只画这两行，用卡片阶梯会凭空多要 100+ dp，那正是「开太高、还是放不下」
-        // 的一半原因。预算与绘制读同一个函数，所以两边的数字不可能分叉。
-        val chrome = phoneSheetChrome(heights.sheet, density.fontScale, tool)
+        // 底板顶部的两行（把手 + 标题行）。边框页与参数页都读 `phoneSheetChrome`
+        // （`PhonePanelLayout.kt`）：边框页固定 16 + 44 dp，参数页按字体缩放走自己的阶梯。
+        // 参数页只画这两行，若按边框页的固定值算会凭空多要几十 dp，那正是「开太高、
+        // 还是放不下」的一半原因。预算与绘制读同一个函数，所以两边的数字不可能分叉。
+        val chrome = phoneSheetChrome(density.fontScale, tool)
         val fullHeaderH = (52f * density.fontScale.coerceIn(1f, 1.5f)).dp
         val keyboardController = LocalSoftwareKeyboardController.current
         fun closeFullParametersOrHideKeyboard() {

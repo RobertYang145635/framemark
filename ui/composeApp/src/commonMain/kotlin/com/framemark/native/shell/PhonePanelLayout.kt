@@ -109,13 +109,24 @@ fun phoneParameterSheetChrome(fontScale: Float = 1f): PhoneSheetChrome {
 }
 
 /**
- * 任意工具的把手行 + 标题行。边框页仍读它自己的卡片阶梯
- * （`phoneCompactSheetMetrics`：128 dp 卡片那一摞），四个参数工具读固定 chrome。
+ * 边框落地板的固定 chrome：16 dp 把手 + 44 dp 标题行。
+ *
+ * 2026-11-15（配色方案 §4.1）：边框页收成一行「当前项」，不再需要旧卡片堆叠的
+ * 22/30/38/42 四段 chrome；标题行取 44 dp 保证「调整样式 / 展开」仍有触控地板。
  */
-fun phoneSheetChrome(levelDp: Float, fontScale: Float, tool: EditorTool): PhoneSheetChrome =
+const val PHONE_BORDER_SHEET_GRABBER_DP = 16f
+const val PHONE_BORDER_SHEET_HEAD_DP = 44f
+
+/**
+ * 任意工具的把手行 + 标题行。边框页用固定 chrome（[PHONE_BORDER_SHEET_GRABBER_DP] /
+ * [PHONE_BORDER_SHEET_HEAD_DP]），四个参数工具读 [phoneParameterSheetChrome]。
+ */
+fun phoneSheetChrome(fontScale: Float, tool: EditorTool): PhoneSheetChrome =
     if (tool == EditorTool.Border) {
-        val metrics = phoneCompactSheetMetrics(levelDp, fontScale)
-        PhoneSheetChrome(grabberDp = metrics.grabber, headDp = metrics.head)
+        PhoneSheetChrome(
+            grabberDp = PHONE_BORDER_SHEET_GRABBER_DP,
+            headDp = PHONE_BORDER_SHEET_HEAD_DP,
+        )
     } else {
         phoneParameterSheetChrome(fontScale)
     }
@@ -644,6 +655,9 @@ private fun styleGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
  * 面板下面空一大片。两条合成一组正好 2 行；没有报告时声明出来的 7 条文字行
  * （5 个开关 + 自定义行 + 字号）是一页本来就超过三条的情形，那一组就是一个会滚动的
  * 尾巴 —— 面板高度仍然是固定的那个数。
+ *
+ * 只有一组 ⇒ 页面不画组 tab 行（`phoneGroupTabRowVisible`），页头的「文字」下面
+ * 不会再多一个点了没反应的「文字」。
  */
 private fun textGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
     val controls = spec.controls.filterNot { it.type == ControlType.Brand }
@@ -789,6 +803,16 @@ fun phonePanelGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
 
 /** 这一页所有组 tab 的标签（按顺序）。 */
 fun phoneGroupTabLabels(spec: PhonePageSpec): List<String> = phonePanelGroups(spec).map { it.label }
+
+/**
+ * 组 tab 行该不该画：**至少两组才画**。
+ *
+ * 只有一组时那一行是一个不可能切换的 tab：点它没有任何反应，而页头已经写着同一个
+ * 名字（文字页的「文字」、没有图层时水印页的「图层」、只有一组参数时的「规格」/
+ * 「留白」），用户读到的就是"页头下面又多了一个没用的东西"。组的行本身照常画，
+ * 隐藏的只是这一行导航。
+ */
+fun phoneGroupTabRowVisible(groupCount: Int): Boolean = groupCount >= 2
 
 /** 这一页要画的全部行（按 tab 顺序展开）——测试用它断言「每个控件恰好一次」。 */
 fun phonePanelRows(spec: PhonePageSpec): List<PhoneParamRow> = phonePanelGroups(spec).flatMap { it.rows }

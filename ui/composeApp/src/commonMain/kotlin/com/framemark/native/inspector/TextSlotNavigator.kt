@@ -8,6 +8,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -64,6 +66,7 @@ import com.framemark.native.workflow.isCurrentTextSlot
 import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.textSlotControls
 import com.framemark.native.product.FmLog
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * 文字页的选择式控件（用户 2026-11-07 口径）：
@@ -499,7 +502,12 @@ private fun slotVisibilityControls(
  * 导航带：**一个文本框一个 chip**（用户原话「三个文本框就做三个导航」），一条可换行
  * 的横带，放不下整条横向滚动（不折成两条，避免高度抖动）。顺序仍是版面阅读顺序
  * （`TextSlotPosition.row/column` 再按 `y/x`），由 [textSlotNavRows] 给出。
+ *
+ * 手机（[dense]）：固定面板高度只够一条带子，仍然是横向滚动，不换行。
+ * 桌面右栏：把一条会切掉半个 chip 的滚动带改成 [FlowRow] —— 四枚放得下时仍然一行，
+ * 第五/六枚整枚换到第二行（同一枚 chip 不会在右边缘被裁成「待定」）。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TextSlotNavBar(
     entries: List<TextSlotNavEntry>,
@@ -509,15 +517,8 @@ private fun TextSlotNavBar(
     onSelect: (TextSlotNavEntry) -> Unit,
 ) {
     val ordered = remember(entries) { textSlotNavRows(entries).flatten() }
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        // 桌面 4 个 chip 一条带子刚好放得下；chip↔chip 走 FmRhythm.inlineWide（TY1 定义
-        // 就是「两个可点元素之间的最小间隙」），手机再用一档触控间距。
-        horizontalArrangement = Arrangement.spacedBy(
-            if (dense) FmRhythm.inlineLoose else FmRhythm.inlineWide,
-        ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    val gap = if (dense) FmRhythm.inlineLoose else FmRhythm.inlineWide
+    val chips: @Composable () -> Unit = {
         ordered.forEach { entry ->
             TextSlotNavChip(
                 entry = entry,
@@ -527,6 +528,20 @@ private fun TextSlotNavBar(
                 onSelect = { onSelect(entry) },
             )
         }
+    }
+    if (dense) {
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            // 手机再用一档触控间距。
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) { chips() }
+    } else {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalArrangement = Arrangement.spacedBy(FmRhythm.inlineWide),
+        ) { chips() }
     }
 }
 
@@ -685,23 +700,26 @@ private fun TextSlotEditCard(
             }
             Spacer(Modifier.width(FmRhythm.inlineLoose))
             if (textControl == null) {
-                Text(
-                    text = readonlyTextSlotValue(slot),
-                    style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
-                    color = FmPalette.onSurfaceSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                // The frame is the Box; centring the Text inside it keeps the value
+                // vertically centred in the 34 dp field instead of rising to the top.
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = 34.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(FmPalette.surfaceMuted)
                         .semantics { contentDescription = "${entry.fullLabel}，只读" }
-                        .padding(
-                            horizontal = FmRhythm.inlineLoose,
-                            vertical = FmRhythm.inlineLoose,
-                        ),
-                )
+                        .padding(horizontal = FmRhythm.inlineLoose),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = readonlyTextSlotValue(slot),
+                        style = TextStyle(fontSize = 15.sp, lineHeight = 22.sp),
+                        color = FmPalette.onSurfaceSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             } else {
                 BasicTextField(
                     value = text,
@@ -720,9 +738,11 @@ private fun TextSlotEditCard(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                     modifier = Modifier
                         .weight(1f)
+                        .trackTextEditing()
                         .heightIn(min = 34.dp)
                         .clip(RoundedCornerShape(5.dp))
-                        .background(FmPalette.surface)
+                        .background(FmPalette.surfaceMuted)
+                        .border(1.dp, FmPalette.outline, RoundedCornerShape(5.dp))
                         .semantics { contentDescription = entry.fullLabel }
                         .padding(
                             horizontal = FmRhythm.inlineLoose,
@@ -859,15 +879,7 @@ private fun TextSlotEditCard(
             TextSlotDiagram(boxes = boxes, current = slot, canvas = canvas)
             Spacer(Modifier.width(FmRhythm.rowLoose))
             if (textControl == null) {
-                Text(
-                    text = readonlyTextSlotValue(slot),
-                    style = TextStyle(
-                        fontSize = if (dense) 15.sp else 13.sp,
-                        lineHeight = if (dense) 22.sp else 18.sp,
-                    ),
-                    color = FmPalette.onSurfaceSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = if (dense) 34.dp else 28.dp)
@@ -878,7 +890,19 @@ private fun TextSlotEditCard(
                             horizontal = FmRhythm.inlineLoose,
                             vertical = if (dense) FmRhythm.inlineLoose else FmRhythm.inline,
                         ),
-                )
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = readonlyTextSlotValue(slot),
+                        style = TextStyle(
+                            fontSize = if (dense) 15.sp else 13.sp,
+                            lineHeight = if (dense) 22.sp else 18.sp,
+                        ),
+                        color = FmPalette.onSurfaceSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             } else {
                 BasicTextField(
                     value = text,
@@ -898,9 +922,11 @@ private fun TextSlotEditCard(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                     modifier = Modifier
                         .weight(1f)
+                        .trackTextEditing()
                         .heightIn(min = if (dense) 34.dp else 26.dp)
                         .clip(RoundedCornerShape(5.dp))
-                        .background(FmPalette.surface)
+                        .background(FmPalette.surfaceMuted)
+                        .border(1.dp, FmPalette.outline, RoundedCornerShape(5.dp))
                         .semantics { contentDescription = entry.fullLabel }
                         .padding(
                             horizontal = FmRhythm.inlineLoose,

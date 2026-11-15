@@ -37,4 +37,20 @@ class DesktopResultActionsTest {
             dir.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun openGallery_on_desktop_reveals_the_file_and_reports_a_missing_one() {
+        // 桌面没有系统相册：查看成片 = 在资源管理器里选中文件。同样只断言失败那一侧，
+        // 成功那一侧会弹出一个资源管理器窗口。
+        val dir = Files.createTempDirectory("fm-view-gallery-")
+        try {
+            val platform = DesktopWorkflowPlatform(dataDir = dir.toString(), exportDir = dir.toString())
+            assertNotNull(
+                platform.openGallery(dir.resolve("nope.jpg").toString()),
+                "文件不存在时必须回话，不能假装打开了相册",
+            )
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
 }

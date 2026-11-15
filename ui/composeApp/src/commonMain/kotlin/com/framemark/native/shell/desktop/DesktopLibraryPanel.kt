@@ -62,6 +62,7 @@ import com.framemark.native.library.LibraryCategory
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.PreviewDiagnostics
 import com.framemark.native.product.ProjectPreset
+import com.framemark.native.shell.FmEmptyState
 import com.framemark.native.theme.FmElevation
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -71,6 +72,7 @@ import com.framemark.native.theme.FmType
 import com.framemark.native.theme.columnRule
 import com.framemark.native.theme.fmElevated
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.workflow.trackTextEditing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -99,7 +101,6 @@ fun DesktopLibraryPanel(
     onApplyPreset: (String) -> Unit,
     onOpenPresetSheet: () -> Unit,
     onCollapse: () -> Unit,
-    onSearchFocusChanged: (Boolean) -> Unit = {},
 ) {
     val categories = remember(index, inUseIds, recentIds) { index.categories(inUseIds, recentIds) }
     val view = remember(index, filters.query, filters.categoryKey, filters.vendorKey, filters.familyKey, inUseIds, recentIds) {
@@ -198,12 +199,27 @@ fun DesktopLibraryPanel(
                 onCollapse = onCollapse,
             )
             if (filters.tab == DesktopLibraryTab.Borders) {
+                // 层级提示条：左边说清「边框套到哪张照片」，右边是 类别 › 厂商 › 系列
+                // 的当前位置。左栏原来只有一排页签和锚点，用户得自己拼出「我在哪」
+                // 和「选了会作用到谁」（InkFrame 复盘第 2、7 条）。
+                val project = WorkflowEnv.projectHolder?.project
+                LibraryScopeHint(
+                    photoLabel = project?.activePhoto?.displayName,
+                    photoCount = project?.photos?.size ?: 0,
+                    categoryName = if (filters.isSearching) {
+                        null
+                    } else {
+                        categories.firstOrNull { it.key == filters.categoryKey }?.name
+                    },
+                    vendor = filters.vendorKey,
+                    family = filters.familyKey,
+                    query = if (filters.isSearching) filters.query else null,
+                )
                 LibraryFilterZone(
                     categories = categories,
                     filters = filters,
                     anchors = anchors,
                     activeAnchorId = activeAnchorId,
-                    onSearchFocusChanged = onSearchFocusChanged,
                     onJump = ::jumpTo,
                     onRepeatCategory = { scope.launch { listState.scrollToItem(0) } },
                     onOpenSeries = { seriesMenuOpen = true },
@@ -253,6 +269,66 @@ fun DesktopLibraryPanel(
                     onOpenPresetSheet = onOpenPresetSheet,
                 )
             }
+        }
+    }
+}
+
+/**
+ * 左栏的范围提示条（2026-11-15）：一行 28 dp，左边是「边框套到哪张照片」，右边是
+ * 当前筛选层级 `类别 › 厂商 › 系列`（搜索时换成 `搜索「关键词」`）。
+ *
+ * 没有照片时明确写「尚未添加照片」——在空工程里点边框只会得到一个不会生效的选择，
+ * 这条提示把因果关系说在前头。
+ */
+@Composable
+private fun LibraryScopeHint(
+    photoLabel: String?,
+    photoCount: Int,
+    categoryName: String?,
+    vendor: String?,
+    family: String?,
+    query: String?,
+) {
+    val scope = when {
+        query != null -> "搜索「$query」"
+        else -> listOfNotNull(categoryName, vendor, family)
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(" › ")
+    }
+    val photoText = when {
+        photoLabel != null && photoCount > 1 -> "套用到当前照片：$photoLabel（共 $photoCount 张）"
+        photoLabel != null -> "套用到当前照片：$photoLabel"
+        else -> "尚未添加照片 · 导入后才能套用边框"
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 14.dp, end = 12.dp, top = 6.dp)
+            .height(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = photoText,
+            style = FmType.labelSmall.copy(fontSize = 11.sp),
+            color = if (photoLabel == null) FmPalette.onSurfaceMuted else FmPalette.onSurfaceSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .semantics { contentDescription = photoText },
+        )
+        if (scope != null) {
+            Spacer(Modifier.weight(1f, fill = false))
+            Text(
+                text = scope,
+                style = FmType.labelSmall.copy(fontSize = 11.sp),
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .semantics { contentDescription = "当前筛选：$scope" },
+            )
         }
     }
 }
@@ -364,7 +440,6 @@ private fun LibraryFilterZone(
     filters: DesktopLibraryFilters,
     anchors: List<DesktopLibraryAnchor>,
     activeAnchorId: String?,
-    onSearchFocusChanged: (Boolean) -> Unit,
     onJump: (String) -> Unit,
     onRepeatCategory: () -> Unit,
     onOpenSeries: () -> Unit,
@@ -375,7 +450,6 @@ private fun LibraryFilterZone(
             DesktopSearchField(
                 value = filters.query,
                 onValueChange = { filters.query = it },
-                onFocusChanged = onSearchFocusChanged,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -602,7 +676,6 @@ private fun DesktopSeriesButton(onClick: () -> Unit) {
 private fun DesktopSearchField(
     value: String,
     onValueChange: (String) -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -649,9 +722,9 @@ private fun DesktopSearchField(
                 cursorBrush = SolidColor(FmPalette.primary),
                 modifier = Modifier
                     .weight(1f)
+                    .trackTextEditing()
                     .onFocusChanged {
                         focused = it.isFocused
-                        onFocusChanged(it.isFocused)
                     },
                 decorationBox = { inner ->
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
@@ -743,19 +816,12 @@ private fun LibraryGroupList(
     onHoveredChange: (String?) -> Unit,
 ) {
     if (groups.isEmpty()) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("没有匹配的边框", style = FmType.titleSmall, color = FmPalette.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "换个关键词，或清除搜索。",
-                style = FmType.labelSmall,
-                color = FmPalette.onSurfaceMuted,
-            )
-        }
+        // 与预设页、手机底板共用同一个空态组件（`shell/FmEmptyState.kt`）。
+        FmEmptyState(
+            title = "没有匹配的边框",
+            body = "换个关键词，或清除搜索。",
+            modifier = Modifier.fillMaxSize(),
+        )
         return
     }
     LazyColumn(
@@ -949,19 +1015,11 @@ private fun PresetList(
         // 规则 1：预设表的标题/说明与列表之间是通栏发线。
         Box(Modifier.columnRule())
         if (presets.isEmpty()) {
-            Column(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("还没有预设", style = FmType.titleSmall, color = FmPalette.onSurface)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "在舞台或右栏保存当前设计，之后可一键套用。",
-                    style = FmType.labelSmall,
-                    color = FmPalette.onSurfaceMuted,
-                )
-            }
+            FmEmptyState(
+                title = "还没有预设",
+                body = "在舞台或右栏保存当前设计，之后可一键套用。",
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            )
         } else {
             LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
                 items(presets.size, key = { presets[it].id }) { i ->

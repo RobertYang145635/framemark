@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -26,6 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.framemark.native.LaunchOptions
+import com.framemark.native.appVersionLabel
+import com.framemark.native.shell.AboutContent
+import com.framemark.native.shell.AboutText
 import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.PhotoRef
@@ -38,6 +44,7 @@ import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.ProjectHolder
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * The modals whose content the desktop shell authors itself, and the argument
@@ -82,7 +89,7 @@ internal fun DesktopSavePresetDialog(
                     onValueChange = onNameChange,
                     singleLine = true,
                     label = { Text("预设名称") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().trackTextEditing(),
                 )
             }
         },
@@ -197,6 +204,67 @@ internal fun DesktopExportSheet(
         autoRun = LaunchOptions.runSampleExport,
         onDismiss = onDismiss,
     )
+}
+
+// ---------------------------------------------------------------------------
+// 关于（版本 / 隐私 / 权限 / 许可）
+// ---------------------------------------------------------------------------
+
+/**
+ * 桌面「关于 FrameMark」：与手机设置页的 `PhoneAboutPage` 共用 [AboutContent]。
+ *
+ * 做成整窗遮罩而不是 Material `AlertDialog`：桌面弹窗是独立窗口，在自动化/截图里
+ * 不好定位，而帮助面板本来就是这个形状 —— 两处浮层保持一致。
+ */
+@Composable
+internal fun DesktopAboutOverlay(open: Boolean, onDismiss: () -> Unit) {
+    if (!open) return
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FmPalette.scrim)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 560.dp)
+                .fillMaxWidth(0.86f)
+                .clip(RoundedCornerShape(FmRadii.panel))
+                .background(FmPalette.surface)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+                .padding(FmSpacing.xxl),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(AboutText.TITLE, style = FmType.titleLarge, color = FmPalette.onSurface)
+                Spacer(Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(FmRadii.pill))
+                        .clickable(onClick = onDismiss)
+                        .padding(horizontal = FmSpacing.sm, vertical = 4.dp),
+                ) {
+                    Text("关闭", style = FmType.labelMedium, color = FmPalette.primaryStrong)
+                }
+            }
+            Spacer(Modifier.height(FmSpacing.md))
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 620.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                AboutContent(version = appVersionLabel())
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

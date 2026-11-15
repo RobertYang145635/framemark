@@ -152,6 +152,7 @@ class UltraHdrExportSourceRectTest {
             sourceRect = doubleArrayOf(0.0, 2202.0, 6485.0, 6485.0),
             sourceWidth = 6485,
             sourceHeight = 10889,
+            orientation = 1,
             sentinel = listOf(97, 93, 92),
             divisor = 2,
         )
@@ -197,8 +198,55 @@ class UltraHdrExportSourceRectTest {
     }
 
     @Test
-    fun a_reported_rect_is_clamped_into_the_frame() {
-        // The engine works in float pixels of the raster; the frame is integral.
+    fun an_engine_rect_in_display_pixels_is_not_clipped_by_the_raw_sof_size() {
+        // B-02 regression, exactly the audit's case: an 8192x6144 camera JPEG stored
+        // landscape with Orientation=6 displays (and is rendered) as 6144x8192. The
+        // engine reports the whole display frame; clamping that against the raw SOF
+        // trimmed it to 6144x6144 and dropped one fifth of the photo.
+        val rawWidth = 8192
+        val rawHeight = 6144
+        val source = withExifOrientation(minimalUltraHdrJpeg(rawWidth, rawHeight), 6)
+        val engineRect = doubleArrayOf(0.0, 0.0, rawHeight.toDouble(), rawWidth.toDouble())
+        val display = PhotoOrientation.displaySize(rawWidth, rawHeight, 6)
+        assertEquals(6144, display.width)
+        assertEquals(8192, display.height)
+
+        val eligible = assertNotNull(
+            UltraHdrExport.eligible(
+                source = source,
+                photoRect = doubleArrayOf(0.0, 0.0, 600.0, 800.0),
+                photoSrc = engineRect,
+                orientation = 6,
+            ),
+            "an orientation-6 source must still export Ultra HDR",
+        )
+        assertContentEquals(engineRect, eligible.sourceRect, "the whole display frame must survive unclipped")
+        // The reported display frame, not the stored raster.
+        assertEquals(6144, eligible.sourceWidth)
+        assertEquals(8192, eligible.sourceHeight)
+        assertEquals(6, eligible.orientation)
+    }
+
+    @Test
+    fun an_unreported_rect_is_derived_in_the_display_frame() {
+        val rawWidth = 8192
+        val rawHeight = 6144
+        val source = withExifOrientation(minimalUltraHdrJpeg(rawWidth, rawHeight), 6)
+        // A photo box with the display aspect keeps the whole display image. Computing
+        // this against the raw size would have returned 8192x6144 — a region that does
+        // not exist in the file the renderer sampled.
+        val eligible = assertNotNull(
+            UltraHdrExport.eligible(
+                source = source,
+                photoRect = doubleArrayOf(0.0, 0.0, 6144.0, 8192.0),
+                orientation = 6,
+            ),
+        )
+        assertContentEquals(doubleArrayOf(0.0, 0.0, 6144.0, 8192.0), eligible.sourceRect)
+    }
+
+    @Test
+    fun a_reported_rect_is_clamped_into_the_frame() {        // The engine works in float pixels of the raster; the frame is integral.
         assertContentEquals(
             doubleArrayOf(0.0, 0.0, 6000.0, 4000.0),
             assertNotNull(UltraHdrExport.reportedSourceRect(doubleArrayOf(-0.4, -0.2, 6000.4, 4000.2), 6000, 4000)),
@@ -299,6 +347,34 @@ class UltraHdrExportSourceRectTest {
         out[2] = (length ushr 8).toByte(); out[3] = length.toByte()
         body.copyInto(out, 4)
         return out
+    }
+
+    /** Insert an EXIF APP1 with [orientation] right after the SOI. */
+    private fun withExifOrientation(jpeg: ByteArray, orientation: Int): ByteArray {
+        val tiff = ByteArray(26)
+        tiff[0] = 'I'.code.toByte(); tiff[1] = 'I'.code.toByte()
+        putLe16(tiff, 2, 42)
+        putLe32(tiff, 4, 8)
+        putLe16(tiff, 8, 1)
+        putLe16(tiff, 10, 0x0112)
+        putLe16(tiff, 12, 3)
+        putLe32(tiff, 14, 1)
+        putLe16(tiff, 18, orientation)
+        val payload = "Exif".encodeToByteArray() + byteArrayOf(0, 0) + tiff
+        val segment = ByteArray(4 + payload.size)
+        segment[0] = 0xFF.toByte(); segment[1] = 0xE1.toByte()
+        put16(segment, 2, payload.size + 2)
+        payload.copyInto(segment, 4)
+        return byteArrayOf(jpeg[0], jpeg[1]) + segment + jpeg.copyOfRange(2, jpeg.size)
+    }
+
+    private fun putLe16(b: ByteArray, at: Int, v: Int) {
+        b[at] = v.toByte(); b[at + 1] = (v ushr 8).toByte()
+    }
+
+    private fun putLe32(b: ByteArray, at: Int, v: Int) {
+        b[at] = v.toByte(); b[at + 1] = (v ushr 8).toByte()
+        b[at + 2] = (v ushr 16).toByte(); b[at + 3] = (v ushr 24).toByte()
     }
 
     private fun put16(b: ByteArray, at: Int, v: Int) {

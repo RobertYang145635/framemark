@@ -422,7 +422,6 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/product/EngineBridge.kt
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/product/EngineBridge.kt:layer-direction:4:com.framemark.native.workflow.EngineFailure
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/product/EngineBridge.kt:layer-direction:5:com.framemark.native.workflow.OverlaySpec
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/product/SessionStore.kt:layer-direction:3:com.framemark.native.workflow.WorkflowPlatform
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/theme/AppearancePicker.kt:layer-direction:5:com.framemark.native.inspector.FmSegmented
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchRunner.kt:layer-direction:10:com.framemark.native.library.LibraryCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt:layer-direction:27:com.framemark.native.shell.HintCard
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/BatchScreen.kt:layer-direction:28:com.framemark.native.shell.PageList

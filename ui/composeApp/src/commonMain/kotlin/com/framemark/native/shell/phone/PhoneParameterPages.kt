@@ -1,5 +1,7 @@
 package com.framemark.native.shell.phone
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalTextStyle
@@ -24,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,6 +90,7 @@ import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.isNativeTextSlotControl
 import com.framemark.native.workflow.isUsableStaticTextControl
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * The phone's parameter panel for one WP-C tab — **fixed-frame** version (2026-11-10).
@@ -96,6 +101,8 @@ import com.framemark.native.workflow.isUsableStaticTextControl
  *     `[外观｜位置｜留白｜规格]`（空组不出现）、文字 `[文字]`、Logo `[显示｜调整]`、
  *     水印 `[图层｜外观]`。每个组 2..3 行（`PhonePanelLayout.kt` 的分组规则），所以
  *     固定画框下面不会空出一大片。组不是横滑分页：点一个 tab 就换下面的行，面板高度不变。
+ *     **只有一组时这一行不画**（`phoneGroupTabRowVisible`）：单 tab 没有可切换的对象，
+ *     页头已经写着同样的名字，点了只会让人以为坏了。
  *  2. **参数区** —— tab 行下面、面板底边上面，**只有它在行放不下时竖向滚动**。
  *     一行是两行的两行组：标签 15 sp 在左、数值 15 sp 在右，下面一条整宽轨道
  *     （[PhoneSliderParamRow]）。没有「两条滑杆并排」这种形态。
@@ -524,7 +531,14 @@ private fun TextParamRow(control: InspectorControl, session: DesignSession, labe
         singleLine = true,
         textStyle = LocalTextStyle.current.copy(fontSize = 15.sp, lineHeight = 22.sp, color = FmPalette.onSurface),
         cursorBrush = SolidColor(FmPalette.primary),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .trackTextEditing()
+            .height(34.dp)
+            .clip(RoundedCornerShape(FmRadii.chip))
+            .background(FmPalette.surfaceMuted)
+            .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.chip))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
     )
     if (modified) {
         Text(

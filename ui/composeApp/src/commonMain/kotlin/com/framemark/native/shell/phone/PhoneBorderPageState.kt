@@ -3,21 +3,20 @@ package com.framemark.native.shell.phone
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
-import com.framemark.native.shell.PHONE_FRAME_CARD_SIZE_DP
 
 /**
  * 手机端边框工具的纯决策（无 Compose、无资源读取、无持久化；`PhoneBorderPageStateTest`
  * 直接测这一层）。
  *
  * 和 Logo 页同一套做法：**边框页本身不是库**。工具落地时是一个矮面板
- * （[PhoneBorderPageBody.Panel]）：当前边框 + 一个主按钮 + 一句说明，全部固定，
- * 一屏放得下。库是一层盖在画布上的覆盖层（[PhoneBorderPageBody.Library]），
- * 只有用户点面板上的动作才会出现；点一张卡就是应用并关闭，返回 / 遮罩 / 系统返回
- * 都是取消（什么都不改，回到面板）。
+ * （[PhoneBorderPageBody.Panel]）：当前项（小缩略图 + 名称/来源 + 更换）+（没有
+ * 边框时的）全宽主按钮，全部固定，一屏放得下。库是一层盖在画布上的覆盖层
+ * （[PhoneBorderPageBody.Library]），只有用户点面板上的动作才会出现；点一张卡就是
+ * 应用并关闭，返回 / 遮罩 / 系统返回都是取消（什么都不改，回到面板）。
  *
  * 这一层只回答五件事，全部是纯函数：
  *  1. 落地 / 覆盖层这两块 body 的状态与只允许的转换（库只能由动作打开）；
- *  2. 面板文案与竖向预算：缩略图多大、说明行还要不要，保证面板永远不滚动；
+ *  2. 面板文案与竖向预算：缩略图多大，保证面板永远不滚动；
  *  3. 分类行 / pager 的页码与分类键之间的换算；
  *  4. 选中态（哪张卡是当前选中的）；
  *  5. 网格条目下标（分组标题 / 卡片在扁平条目列表里的位置），用于跳转。
@@ -96,13 +95,13 @@ internal object PhoneBorderPageState {
     /** 没有已应用的边框时，面板主按钮的文案。 */
     const val CHOOSE_LABEL = "选择一个边框"
 
-    /** 已经有一个边框时，面板主按钮的文案。 */
-    const val CHANGE_LABEL = "换一个边框"
+    /** 面板上当前项右侧的次级动作文案（配色方案 §4.1：更换不再是全宽主按钮）。 */
+    const val CHANGE_LABEL = "更换"
 
     /** 面板上「当前边框」的名字：没有已应用的边框时用它，而不是空白。 */
     const val NO_CURRENT_LABEL = "未选边框"
 
-    /** 面板主按钮的文案：选过就是「换一个边框」，没选过就是「选择一个边框」。 */
+    /** 面板动作的文案：选过是「更换」，没选过是「选择一个边框」。 */
     fun actionLabel(card: LibraryCard?): String =
         if (card == null) CHOOSE_LABEL else CHANGE_LABEL
 
@@ -117,104 +116,112 @@ internal object PhoneBorderPageState {
         if (card == null) "选一个边框后，样式 / 文字 / Logo / 水印才会出现。"
         else description?.takeIf { it.isNotBlank() } ?: NO_CURRENT_LABEL
 
-    /** 面板第三行（预算允许时才有）：库有多少内容，仍然来自目录，不写死。 */
-    fun libraryNote(categoryCount: Int, cardCount: Int): String =
-        "边框库：$categoryCount 个分类，共 $cardCount 个边框。"
+    /**
+     * 库页头那一行：分类数 / 边框数。**不再占用面板**（配色方案 §4.1：库信息只在
+     * 浏览边框库时出现），所以在库的固定标题行与「当前：…」同行展示。
+     */
+    fun librarySummary(categoryCount: Int, cardCount: Int): String =
+        "$categoryCount 个分类 · $cardCount 个边框"
 
     // ------------------------------------------------------------------ 面板竖向预算
     //
     // 面板不是滚动容器（owner 第 5 条），所以它的高度必须是**算出来的**而不是「大概
-    // 放得下」。下面每个数字都来自 token：上下内边距各 8（`FmSpacing.sm`）、缩略图与
-    // 动作之间 8（`FmSpacing.sm`）、动作 48（`PrimaryButton` 的最小高度）、说明行上方
-    // 4（`FmSpacing.xs`）、一行 `labelSmall` 的 14 sp 行高。
-    //
-    // 「缩略图阶梯」替代滚动：窗口矮就换小一号的图，按钮、名称、说明都不会被推到
-    // 屏幕外面去。
+    // 放得下」。配色方案 §4.1 把面板收成一行「当前项」：
+    //   - 有边框：8（上内边距）+ max(72 缩略图, 两行文字, 44「更换」)+ 8；
+    //   - 没有边框：8 + max(72, 两行文字) + 8 + 48（全宽主按钮）+ 8。
+    // 名称/来源两行分别是 `titleSmall` 21 sp 与 `labelSmall` 14 sp；字号放大时两行
+    // 文字可能高过缩略图，预算跟着长大。矮窗换小一档缩略图，仍然不引入滚动容器。
 
     /** 面板上下内边距（`FmSpacing.sm`，进预算）。 */
     const val PANEL_PADDING_DP = 8f
 
-    /** 缩略图与动作之间的间距（`FmSpacing.sm`）。 */
+    /** 当前项那一行的小缩略图边长（最大一档，配色方案 §4.1「小缩略图」）。 */
+    const val PANEL_TILE_DP = 72f
+
+    /** 矮窗里允许再小一档，但不引入滚动容器。 */
+    const val PANEL_TILE_MIN_DP = 56f
+
+    /** 缩略图边长阶梯，从大到小；只用于极矮窗口的兜底。 */
+    val PANEL_TILE_LADDER_DP: List<Float> = listOf(PANEL_TILE_DP, 64f, PANEL_TILE_MIN_DP)
+
+    /** 「更换」次级按钮的最小高度（触控地板，`GhostButton` 传 44）。 */
+    const val PANEL_CHANGE_ACTION_HEIGHT_DP = 44f
+
+    /** 没有边框时的全宽主按钮高度（`PrimaryButton` 默认）。 */
+    const val PANEL_PRIMARY_ACTION_HEIGHT_DP = 48f
+
+    /** 当前项与下方主按钮之间的间距（只在没有边框时才有主按钮）。 */
     const val PANEL_ACTION_GAP_DP = 8f
-
-    /** 主按钮的高度：`PrimaryButton` 的 `heightIn(min = 48.dp)`。 */
-    const val PANEL_ACTION_HEIGHT_DP = 48f
-
-    /** 说明行上方的间距（`FmSpacing.xs`）。 */
-    const val PANEL_NOTE_GAP_DP = 4f
-
-    /** 一行 `FmType.labelSmall` 的行高（14 sp），再乘字号缩放。 */
-    const val PANEL_NOTE_LINE_SP = 14f
 
     /** 缩略图右侧名称行的行高（`FmType.titleSmall` 的 15 sp / 21 sp 行高）。 */
     const val PANEL_NAME_LINE_SP = 21f
 
-    /** 名称与说明之间的间距（`FmSpacing.xs`）。 */
-    const val PANEL_NAME_GAP_DP = 4f
+    /** 来源 / 类别行的行高（`FmType.labelSmall` 的 14 sp 行高）。 */
+    const val PANEL_SOURCE_LINE_SP = 14f
 
-    /**
-     * 缩略图边长阶梯，从大到小。第一档就是库里那张卡自己的尺寸
-     * （[PHONE_FRAME_CARD_SIZE_DP]）：面板上的「当前边框」和网格里的同一张卡同样大，
-     * 用户一眼能对上号。往下每档只为了在更矮的窗口里仍然没有滚动条。
-     */
-    val PANEL_TILE_LADDER_DP: List<Float> =
-        listOf(PHONE_FRAME_CARD_SIZE_DP, 112f, 96f, 84f, 72f, 60f, 48f)
+    /** 名称与来源之间的间距（`FmSpacing.xs`）。 */
+    const val PANEL_NAME_GAP_DP = 4f
 
     /** 面板上缩略图右边那两行文字的高度；字号放大时它可能高过缩略图，也要进预算。 */
     fun textColumnHeight(fontScale: Float = 1f): Float {
         val scale = fontScale.coerceIn(1f, 1.5f)
-        return (PANEL_NAME_LINE_SP + PANEL_NOTE_LINE_SP) * scale + PANEL_NAME_GAP_DP
+        return (PANEL_NAME_LINE_SP + PANEL_SOURCE_LINE_SP) * scale + PANEL_NAME_GAP_DP
     }
 
     /**
-     * 面板总高度（dp）：上下内边距 + 缩略图那一行 + 间距 + 主按钮 +
-     * （说明行：间距 + 一行）+ 下内边距。缩略图那一行取「缩略图」和「两行文字」的较大者。
+     * 面板总高度（dp）。
+     *
+     * 有边框时「更换」在行内，不再有第二条全宽动作；没有边框时才出现全宽主按钮。
      */
     fun panelHeight(
         tileDp: Float,
-        showsNote: Boolean = true,
+        hasCard: Boolean,
         fontScale: Float = 1f,
     ): Float {
-        val row = maxOf(tileDp.coerceAtLeast(0f), textColumnHeight(fontScale))
-        val note = if (showsNote) PANEL_NOTE_GAP_DP + PANEL_NOTE_LINE_SP * fontScale.coerceIn(1f, 1.5f) else 0f
-        return PANEL_PADDING_DP + row + PANEL_ACTION_GAP_DP + PANEL_ACTION_HEIGHT_DP + note +
-            PANEL_PADDING_DP
+        val row = maxOf(
+            tileDp.coerceAtLeast(0f),
+            textColumnHeight(fontScale),
+            if (hasCard) PANEL_CHANGE_ACTION_HEIGHT_DP else 0f,
+        )
+        val action = if (hasCard) {
+            0f
+        } else {
+            PANEL_ACTION_GAP_DP + PANEL_PRIMARY_ACTION_HEIGHT_DP
+        }
+        return PANEL_PADDING_DP + row + action + PANEL_PADDING_DP
     }
 
     /**
      * 给定面板可用高度（底板高度减掉把手行与标题行）时，这块面板该怎么排。
      *
-     * 规则只有一条：**最大的**能放下的缩略图。都放不下时先丢掉说明行（它只是帮助
-     * 文字），缩略图退到最小一档——仍然不引入滚动容器。
+     * 规则只有一条：**最大的**能放下的缩略图；都放不下时退到最小一档（56 dp），
+     * 仍然不引入滚动容器。
      */
-    fun panelLayout(availableHeightDp: Float, fontScale: Float = 1f): PhoneBorderPanelLayout {
+    fun panelLayout(
+        availableHeightDp: Float,
+        hasCard: Boolean,
+        fontScale: Float = 1f,
+    ): PhoneBorderPanelLayout {
         val available = if (availableHeightDp.isFinite()) availableHeightDp.coerceAtLeast(0f) else 0f
         val roomy = PANEL_TILE_LADDER_DP.firstOrNull { tile ->
-            panelHeight(tile, showsNote = true, fontScale = fontScale) <= available
+            panelHeight(tile, hasCard, fontScale = fontScale) <= available
         }
-        if (roomy != null) {
-            return PhoneBorderPanelLayout(
-                tileDp = roomy,
-                showsNote = true,
-                heightDp = panelHeight(roomy, showsNote = true, fontScale = fontScale),
-            )
-        }
-        val tightest = PANEL_TILE_LADDER_DP.last()
+        val tile = roomy ?: PANEL_TILE_MIN_DP
         return PhoneBorderPanelLayout(
-            tileDp = tightest,
-            showsNote = false,
-            heightDp = panelHeight(tightest, showsNote = false, fontScale = fontScale),
+            tileDp = tile,
+            hasCard = hasCard,
+            heightDp = panelHeight(tile, hasCard, fontScale = fontScale),
         )
     }
 
-    /** 面板放得下这两块（缩略图 + 动作）用的最小高度：最小一档缩略图、没有说明行。 */
-    fun panelFloorHeight(fontScale: Float = 1f): Float =
-        panelHeight(PANEL_TILE_LADDER_DP.last(), showsNote = false, fontScale = fontScale)
+    /** 面板的最小高度：最小一档缩略图 + 对应动作。 */
+    fun panelFloorHeight(hasCard: Boolean, fontScale: Float = 1f): Float =
+        panelHeight(PANEL_TILE_MIN_DP, hasCard, fontScale = fontScale)
 
-    /** 这块面板排成什么：缩略图边长、有没有说明行、总高度。 */
+    /** 这块面板排成什么：缩略图边长、有没有已应用的边框、总高度。 */
     data class PhoneBorderPanelLayout(
         val tileDp: Float,
-        val showsNote: Boolean,
+        val hasCard: Boolean,
         val heightDp: Float,
     )
 

@@ -1,25 +1,29 @@
 package com.framemark.native.shell.phone
 
+import com.framemark.native.theme.AppearancePanelText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * WP-PV1 §4.2 设置页文案：`phone.js buildSettings()` 的组标题、说明与页脚。
- * 与 `PhoneSettingsTextTest` 分开，避免在同一个文件里既改断言又加断言。
+ * 设置页文案（WP-PV1 §4.2 + 配色方案 §8）：组标题、外观三段的用词与顺序、
+ * 版本行与页脚。外观面板本身是双端共用的，所以标签直接从
+ * [AppearancePanelText] 读，设置页不再自存一份。
  */
 class PhoneSettingsCopyTest {
 
     @Test
-    fun theSettingsCopyIsTheDemoCopy() {
+    fun theSettingsPageKeepsItsTwoGroupTitles() {
         assertEquals("设置", PhoneSettingsText.PAGE_TITLE)
         assertEquals("外观", PhoneSettingsText.GROUP_APPEARANCE)
-        assertEquals("主题", PhoneSettingsText.ROW_THEME)
-        assertEquals(
-            "跟随系统时，系统切换到深色模式后立即跟着变，不用刷新；" +
-                "手动选择浅色或深色后不再跟随系统。",
-            PhoneSettingsText.THEME_NOTE,
-        )
         assertEquals("版本", PhoneSettingsText.ROW_VERSION)
+    }
+
+    @Test
+    fun theAppearanceSectionsAreTheDocumentedThree() {
+        assertEquals("界面配色", AppearancePanelText.PALETTE_SECTION)
+        assertEquals("明暗模式", AppearancePanelText.MODE_SECTION)
+        assertEquals("画布背景", AppearancePanelText.STAGE_SECTION)
+        assertEquals("恢复默认外观", AppearancePanelText.RESET)
     }
 
     @Test
@@ -34,6 +38,30 @@ class PhoneSettingsCopyTest {
         assertEquals(
             listOf("跟随系统", "浅色", "深色"),
             PhoneSettingsText.MODE_ORDER.map { PhoneSettingsText.themeLabel(it) },
+        )
+        assertEquals(
+            listOf("跟随系统", "浅色", "深色"),
+            AppearancePanelText.MODE_ORDER.map { AppearancePanelText.modeLabel(it) },
+        )
+    }
+
+    @Test
+    fun theThreeStageTonesAreDarkMidLight() {
+        assertEquals(
+            listOf("深灰", "中灰", "浅灰"),
+            AppearancePanelText.TONE_ORDER.map { AppearancePanelText.toneLabel(it) },
+        )
+    }
+
+    @Test
+    fun eachPaletteHasItsDocumentedNameAndTagline() {
+        assertEquals(
+            listOf("暖灰墨绿", "石墨琥珀", "瓷白靛青", "纸白陶土", "经典蓝"),
+            com.framemark.native.theme.PaletteId.entries.map { it.label },
+        )
+        assertEquals(
+            listOf("自然安静", "沉稳精确", "清爽有序", "温暖手作", "经典直接"),
+            com.framemark.native.theme.PaletteId.entries.map { AppearancePanelText.tagline(it) },
         )
     }
 }

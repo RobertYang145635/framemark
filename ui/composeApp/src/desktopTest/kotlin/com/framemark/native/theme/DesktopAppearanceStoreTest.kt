@@ -40,7 +40,7 @@ class DesktopAppearanceStoreTest {
         assertTrue(store.save(AppearanceSettingsCodec.encode(settings)))
         assertEquals(settings, AppearanceSettingsCodec.decode(store.load()))
         assertEquals(
-            "{\"version\":1,\"mode\":\"dark\",\"stageTone\":\"light\"}",
+            "{\"version\":2,\"palette\":\"forest\",\"mode\":\"dark\",\"stageTone\":\"light\"}",
             store.load(),
         )
     }
@@ -67,7 +67,7 @@ class DesktopAppearanceStoreTest {
         )
         // The second write replaced the first instead of appending to it.
         assertEquals(
-            "{\"version\":1,\"mode\":\"dark\",\"stageTone\":\"mid\"}",
+            "{\"version\":2,\"palette\":\"forest\",\"mode\":\"dark\",\"stageTone\":\"mid\"}",
             store.load(),
         )
     }
@@ -87,7 +87,7 @@ class DesktopAppearanceStoreTest {
         // ... and the next real change replaces it.
         assertTrue(store.save(AppearanceSettingsCodec.encode(AppearanceSettings(ThemeMode.Light))))
         assertEquals(
-            "{\"version\":1,\"mode\":\"light\",\"stageTone\":\"dark\"}",
+            "{\"version\":2,\"palette\":\"forest\",\"mode\":\"light\",\"stageTone\":\"dark\"}",
             file.readText(),
         )
     }

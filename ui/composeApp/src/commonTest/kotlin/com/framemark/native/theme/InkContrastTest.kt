@@ -26,8 +26,8 @@ import kotlin.test.assertTrue
  */
 class InkContrastTest {
 
-    private val light = FmColors.Light
-    private val dark = FmColors.Dark
+    private val light = FmPalettes.of(PaletteId.Forest, dark = false)
+    private val dark = FmPalettes.of(PaletteId.Forest, dark = true)
 
     @Test
     fun mutedInkPassesAaOnEveryLightSurface() {

@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -33,16 +32,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.appVersionLabel
+import com.framemark.native.theme.AppearancePanel
+import com.framemark.native.theme.AppearancePanelText
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
-import com.framemark.native.theme.LocalAppearance
 import com.framemark.native.theme.ThemeMode
 import com.framemark.native.theme.fmElevated
 
 /**
  * 设置页，逐条对齐演示稿 `phone.js buildSettings()`（53-73 行）与
- * `07-phone-settings.png`：52 高的返回条、外观卡（外观 / 主题 / 三选一段控 /
- * 跟随系统说明）、版本卡、居中页脚。演示稿没有「状态」分组，原来的诊断行
+ * `07-phone-settings.png`：52 高的返回条、外观卡（配色方案 §8 的配色 / 明暗 /
+ * 画布三段）、版本卡、居中页脚。演示稿没有「状态」分组，原来的诊断行
  * 随之离场；写入错误仍然在这页最后一行露出，不吞掉失败。
  *
  * 它是一页而不是弹层：页面状态由 [com.framemark.native.shell.PhoneShell] 管，
@@ -52,15 +52,15 @@ import com.framemark.native.theme.fmElevated
 fun PhoneSettingsPage(
     errorText: String? = null,
     onClose: () -> Unit,
+    onOpenAbout: () -> Unit = {},
 ) {
-    val controller = LocalAppearance.current
     val version = PhoneSettingsText.versionLabel(appVersionLabel())
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(FmPalette.canvas),
     ) {
-        SettingsTopBar(onBack = onClose)
+        PhoneSubPageTopBar(title = PhoneSettingsText.PAGE_TITLE, onBack = onClose)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -68,7 +68,7 @@ fun PhoneSettingsPage(
                 .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // `.set-grp`（外观）：组标题在卡里，下面是 主题 → 段控 → 说明。
+            // `.set-grp`（外观）：组标题在卡里，下面是配色 / 明暗 / 画布三段。
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,56 +82,70 @@ fun PhoneSettingsPage(
                     color = FmPalette.onSurfaceMuted,
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp),
                 )
-                Column(
+                // 配色方案 §8：界面配色（四张预览卡）→ 明暗模式 → 画布背景 → 恢复默认。
+                // 面板与桌面齿轮弹层是同一个组合件，所以两端文案、顺序和交互一致。
+                AppearancePanel(
+                    columns = 2,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = PhoneSettingsText.ROW_THEME,
-                        style = TextStyle(
-                            fontSize = 14.5.sp,
-                            lineHeight = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        color = FmPalette.onSurface,
-                    )
-                    SettingsAppearanceSegment(
-                        selected = controller.settings.mode,
-                        onSelect = { controller.setMode(it) },
-                    )
-                    Text(
-                        text = PhoneSettingsText.THEME_NOTE,
-                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 20.sp),
-                        color = FmPalette.onSurfaceMuted,
-                    )
-                }
+                )
             }
-            // `.set-grp > .set-row.kv`（版本）。
-            Row(
+            // `.set-grp > .set-row.kv`（关于）：版本 + 隐私 / 权限 / 许可入口。
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(SettingsGroupShape)
                     .background(FmPalette.surface)
-                    .fmElevated(shape = SettingsGroupShape)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .fmElevated(shape = SettingsGroupShape),
             ) {
-                Text(
-                    text = PhoneSettingsText.ROW_VERSION,
-                    style = TextStyle(
-                        fontSize = 14.5.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                    color = FmPalette.onSurface,
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = PhoneSettingsText.ROW_VERSION,
+                        style = TextStyle(
+                            fontSize = 14.5.sp,
+                            lineHeight = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        color = FmPalette.onSurface,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = version,
+                        style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(FmPalette.outline),
                 )
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = version,
-                    style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
-                    color = FmPalette.onSurfaceMuted,
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button, onClick = onOpenAbout)
+                        .semantics { contentDescription = PhoneSettingsText.ABOUT_ROW }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = PhoneSettingsText.ABOUT_ROW,
+                        style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+                        color = FmPalette.onSurface,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "›",
+                        style = TextStyle(fontSize = 16.sp, lineHeight = 20.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
             }
             Text(
                 text = PhoneSettingsText.FOOT_NOTE,
@@ -158,12 +172,13 @@ fun PhoneSettingsPage(
 /** `.set-grp`：16 圆角 + sh-1（深色换成 1dp 描边，见 [fmElevated]）。 */
 private val SettingsGroupShape = RoundedCornerShape(16.dp)
 
-/** `.seg` 药丸的 8 圆角（`.seg.touch .thumb`）。 */
-private val SegmentPillShape = RoundedCornerShape(FmRadii.chip)
-
-/** `.set-top`：52 高、左上返回箭头（32×32）+ 17/700「设置」。 */
+/** `.set-top`：52 高、左上返回箭头（32×32）+ 17/700 标题；设置页与关于页共用。 */
 @Composable
-private fun SettingsTopBar(onBack: () -> Unit) {
+internal fun PhoneSubPageTopBar(
+    title: String,
+    onBack: () -> Unit,
+    backLabel: String = PhoneSettingsText.BACK_LABEL,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -177,13 +192,13 @@ private fun SettingsTopBar(onBack: () -> Unit) {
                 .size(32.dp)
                 .clip(RoundedCornerShape(FmRadii.chip))
                 .clickable(role = Role.Button, onClick = onBack)
-                .semantics { contentDescription = PhoneSettingsText.BACK_LABEL },
+                .semantics { contentDescription = backLabel },
             contentAlignment = Alignment.Center,
         ) {
             PhoneBackGlyph(tint = FmPalette.onSurfaceSecondary)
         }
         Text(
-            text = PhoneSettingsText.PAGE_TITLE,
+            text = title,
             style = TextStyle(
                 fontSize = 17.sp,
                 lineHeight = 24.sp,
@@ -194,72 +209,14 @@ private fun SettingsTopBar(onBack: () -> Unit) {
     }
 }
 
-/**
- * 主题三选一（演示稿 `.seg.touch`：底槽 #E9ECF0 / 10 圆角 / 内边距 3、
- * 药丸 36 高 8 圆角底 `--surface`、14 号字）。
- *
- * 这里没有直接用 `AppearancePicker`：它内部是 `inspector/FmSegmented`，选中态是
- * accent-soft 底色 + accent-strong 文字，和演示稿的白药丸不是一套（那两处文件
- * 本包不许改）。段控与 [AppearancePicker] 写的是同一个 `AppearanceController`，
- * 所以行为完全一致，只是画法照演示稿。登记见报告 §3。
- */
-@Composable
-private fun SettingsAppearanceSegment(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(FmRadii.input))
-            .background(FmPalette.outline)
-            .padding(3.dp),
-    ) {
-        PhoneSettingsText.MODE_ORDER.forEach { mode ->
-            val active = mode == selected
-            val label = PhoneSettingsText.themeLabel(mode)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(36.dp)
-                    .then(if (active) Modifier.fmElevated(shape = SegmentPillShape) else Modifier)
-                    .clip(SegmentPillShape)
-                    .background(if (active) FmPalette.surface else Color.Transparent)
-                    .clickable(role = Role.RadioButton) { if (!active) onSelect(mode) }
-                    .semantics {
-                        contentDescription = label
-                        role = Role.RadioButton
-                        stateDescription = if (active) "已选" else "未选"
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    ),
-                    color = if (active) FmPalette.onSurface else FmPalette.onSurfaceMuted,
-                )
-            }
-        }
-    }
-}
-
-/**
- * 设置页的文案与格式化。纯函数，所以页面接线和外观往返都能测（见
- * `PhoneSettingsTextTest`），不用起模拟器。
- */
 object PhoneSettingsText {
     const val PAGE_TITLE: String = "设置"
     const val BACK_LABEL: String = "返回首页"
+    const val BACK_TO_SETTINGS: String = "返回设置"
+    const val ABOUT_ROW: String = "隐私、权限与许可"
 
-    /** 第一组的组标题（`.set-h`）与行标题（`.sr-h b`）。 */
+    /** 第一组的组标题（`.set-h`）。 */
     const val GROUP_APPEARANCE: String = "外观"
-    const val ROW_THEME: String = "主题"
-
-    /** `.sr-n`：跟随系统时立即跟随、手动选择后不再跟随。 */
-    const val THEME_NOTE: String =
-        "跟随系统时，系统切换到深色模式后立即跟着变，不用刷新；" +
-            "手动选择浅色或深色后不再跟随系统。"
 
     /** 第二组：`.set-row.kv`。 */
     const val ROW_VERSION: String = "版本"
@@ -271,14 +228,13 @@ object PhoneSettingsText {
      */
     const val FOOT_NOTE: String = "外观只保存在这台设备，不写入项目和预设。"
 
-    /** The demo's three labels, in on-screen order. */
-    val MODE_ORDER: List<ThemeMode> = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
+    /**
+     * 明暗三档的顺序与用词：设置页不再自己维护一份，直接读外观面板的文案表，
+     * 免得两处标签慢慢分叉（配色方案 §8.1 的顺序是 跟随系统 / 浅色 / 深色）。
+     */
+    val MODE_ORDER: List<ThemeMode> get() = AppearancePanelText.MODE_ORDER
 
-    fun themeLabel(mode: ThemeMode): String = when (mode) {
-        ThemeMode.System -> "跟随系统"
-        ThemeMode.Light -> "浅色"
-        ThemeMode.Dark -> "深色"
-    }
+    fun themeLabel(mode: ThemeMode): String = AppearancePanelText.modeLabel(mode)
 
     /**
      * The version row: never blank, never the build's internal placeholder.

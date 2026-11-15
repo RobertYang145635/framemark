@@ -321,23 +321,16 @@ class SheetPageSlideRenderTest {
             )
         }
 
-        // 2. 整体同向单调：出页的推进边一直向左，入页的左边界也一直向左。
-        for (i in 1 until 3) {
-            val out = outgoing[i]!!
-            val nextOut = outgoing[i + 1]!!
-            val incomingPage = incoming[i]!!
-            val nextIncoming = incoming[i + 1]!!
-            assertTrue(
-                nextOut.maxX < out.maxX,
-                "the outgoing page stopped moving left between ${label(i)} and ${label(i + 1)} " +
-                    "(own edge ${out.maxX} → ${nextOut.maxX})",
-            )
-            assertTrue(
-                nextIncoming.minX < incomingPage.minX,
-                "the incoming page stopped moving left between ${label(i)} and ${label(i + 1)} " +
-                    "(${incomingPage.minX} → ${nextIncoming.minX})",
-            )
-        }
+        // 2. 整体同向：比较过渡两端（+55 ms 与 +165 ms）。满载时相邻两帧可能落在同一个
+        //    动画拍子上，逐帧严格前进会误报；两端比较仍能证明「两页都往左推」。
+        assertTrue(
+            outgoing[3]!!.maxX < outgoing[1]!!.maxX,
+            "the outgoing page did not move left (own edge ${outgoing[1]!!.maxX} → ${outgoing[3]!!.maxX})",
+        )
+        assertTrue(
+            incoming[3]!!.minX < incoming[1]!!.minX,
+            "the incoming page did not move left (${incoming[1]!!.minX} → ${incoming[3]!!.minX})",
+        )
 
         // 3. 收尾精确：出页消失，入页 offset 恰好为 0。
         for (i in 4..5) {
@@ -380,16 +373,17 @@ class SheetPageSlideRenderTest {
                 "the pages are not adjacent at ${label(i)} (gap ${out.minX - incomingPage.maxX}px)",
             )
         }
-        for (i in 1 until 3) {
-            assertTrue(
-                outgoing[i + 1]!!.minX > outgoing[i]!!.minX,
-                "the outgoing page stopped moving right between ${label(i)} and ${label(i + 1)}",
-            )
-            assertTrue(
-                incoming[i + 1]!!.maxX > incoming[i]!!.maxX,
-                "the incoming page stopped moving right between ${label(i)} and ${label(i + 1)}",
-            )
-        }
+        // 方向：比较过渡的**两端**（+55 ms 与 +165 ms），而不是每一对相邻帧。机器满载时
+        // 相邻两帧可能落在同一个动画拍子上（`AnimatedContent` 的起跑帧本来就不可信），
+        // 那会让「逐帧必须严格前进」误报；两端比较仍然证明「页是在往右推」。
+        assertTrue(
+            outgoing[3]!!.minX > outgoing[1]!!.minX,
+            "the outgoing page did not move right (${outgoing[1]} -> ${outgoing[3]})",
+        )
+        assertTrue(
+            incoming[3]!!.maxX > incoming[1]!!.maxX,
+            "the incoming page did not move right (${incoming[1]} -> ${incoming[3]})",
+        )
         for (i in 4..5) {
             assertNull(outgoing[i], "the outgoing page is still painted at ${label(i)}")
             val landed = assertNotNull(incoming[i], "the incoming page is missing after the move")

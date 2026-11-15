@@ -41,8 +41,8 @@ class AppearanceController(
     /** Absolute settings path, or `<none>` when nothing is persisted. */
     val settingsPath: String get() = store?.settingsPath ?: NoPersistenceAppearanceStore.settingsPath
 
-    /** Result of the last save, for the logs. */
-    var lastSaveOk: Boolean = true
+    /** Result of the last save, for the logs. Observable so a failed save can show a note. */
+    var lastSaveOk: Boolean by mutableStateOf(true)
         private set
 
     init {
@@ -78,9 +78,31 @@ class AppearanceController(
         persist()
     }
 
+    /**
+     * 切换界面配色（配色方案 §6）。只改界面令牌：照片像素、边框参数、文字、水印和
+     * Logo 都不参与，所以切换后同一设计导出的作品一模一样（文档 §7.2）。
+     */
+    fun setPalette(palette: PaletteId) {
+        if (base.palette == palette) return
+        base = base.copy(palette = palette)
+        settings = withForced(base)
+        persist()
+    }
+
     fun setStageTone(tone: StageTone) {
         if (base.stageTone == tone) return
         base = base.copy(stageTone = tone)
+        settings = withForced(base)
+        persist()
+    }
+
+    /**
+     * 「恢复默认外观」（配色方案 §8.3）：配色回到暖灰墨绿、明暗跟随系统、画布深灰。
+     * 只动外观偏好，不碰当前照片、参数、工具页或编辑会话；一次写盘，不是三次。
+     */
+    fun resetToDefault() {
+        if (base == AppearanceSettings.DEFAULT) return
+        base = AppearanceSettings.DEFAULT
         settings = withForced(base)
         persist()
     }
@@ -107,7 +129,8 @@ class AppearanceController(
 
     /** Human-readable one-liner for the launch log. */
     fun describe(): String = buildString {
-        append("mode=").append(settings.mode.wire)
+        append("palette=").append(settings.palette.wire)
+        append(" mode=").append(settings.mode.wire)
         append(" stageTone=").append(settings.stageTone.wire)
         append(" systemDark=").append(systemDark)
         append(" dark=").append(dark)
@@ -129,7 +152,7 @@ object AppearanceEnv {
 /**
  * The active [AppearanceController]. Provided by `FrameMarkApp`; the default is a
  * shared non-persisting instance so a `@Preview` or a test composable that reads
- * `AppearancePicker` still renders.
+ * `AppearancePanel` still renders.
  */
 val LocalAppearance = staticCompositionLocalOf { DefaultAppearanceController }
 

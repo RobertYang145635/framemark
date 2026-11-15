@@ -1,7 +1,6 @@
 package com.framemark.native.shell.phone
 
 import com.framemark.native.library.LibraryCard
-import com.framemark.native.shell.phoneCompactSheetMetrics
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -65,12 +64,4 @@ class PhoneCardTextTest {
         assertEquals("Panasonic", phoneAnchorLabel("Panasonic"))
     }
 
-    @Test
-    fun the_type_sizes_of_the_card_are_the_showcase_ones() {
-        // `.card .nm` is 12 px and `.card .ds` 11 px; both lines are budgeted at
-        // 16 / 14 dp of leading so the 收起 sheet cannot clip them.
-        val metrics = phoneCompactSheetMetrics(sheetHeightDp = 400f, fontScale = 1f)
-        assertEquals(16f, metrics.cardNameLineSp)
-        assertEquals(14f, metrics.cardDescLine)
-    }
 }

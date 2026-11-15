@@ -13,9 +13,12 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.framemark.native.theme.FmPalettes
+import com.framemark.native.theme.PaletteId
 import java.awt.image.BufferedImage
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -111,13 +114,14 @@ class SegmentedThumbRenderTest {
 
     /** 纯白填充的包围盒；一个纯白像素都没有就是 null（= 没画白条）。 */
     private fun fill(image: BufferedImage): Fill? {
+        val surfaceRgb = FmPalettes.of(PaletteId.Forest, dark = false).surface.toArgb() and 0xFFFFFF
         var minX = Int.MAX_VALUE
         var maxX = Int.MIN_VALUE
         var minY = Int.MAX_VALUE
         var maxY = Int.MIN_VALUE
         for (y in 0 until image.height) {
             for (x in 0 until image.width) {
-                if ((image.getRGB(x, y) and 0xFFFFFF) == 0xFFFFFF) {
+                if ((image.getRGB(x, y) and 0xFFFFFF) == surfaceRgb) {
                     if (x < minX) minX = x
                     if (x > maxX) maxX = x
                     if (y < minY) minY = y

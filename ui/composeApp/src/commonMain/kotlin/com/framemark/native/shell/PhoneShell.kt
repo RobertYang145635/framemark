@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -59,6 +60,7 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.product.toDesignSnapshot
+import com.framemark.native.shell.phone.PhoneAboutPage
 import com.framemark.native.shell.phone.PhoneExportSheet
 import com.framemark.native.shell.phone.PhoneHomeDestination
 import com.framemark.native.shell.phone.PhoneHomePolicy
@@ -86,6 +88,8 @@ import com.framemark.native.workflow.PhotoTray
 import com.framemark.native.workflow.PresetStore
 import com.framemark.native.workflow.PreviewGeometry
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
+import com.framemark.native.workflow.LocalTextEditFocus
+import com.framemark.native.workflow.TextEditFocus
 import com.framemark.native.workflow.TextSlotRegistry
 import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSelection
@@ -152,6 +156,9 @@ fun PhoneShell() {
         }
     }
     val shortcutFocus = remember { FocusRequester() }
+    // W-01: text fields register here while focused so Ctrl+Z/Y stay inside the
+    // editor instead of undoing the design behind it.
+    val textEditFocus = remember { TextEditFocus() }
     // Bumped when something replaced the active design wholesale (a preset, an
     // apply-to-all), so the editor re-reads it even though the card and photo are
     // the same object identity-wise.
@@ -774,6 +781,7 @@ fun PhoneShell() {
         FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name} inPanel=true" }
     }
 
+    CompositionLocalProvider(LocalTextEditFocus provides textEditFocus) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -783,6 +791,13 @@ fun PhoneShell() {
             .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown || !event.isCtrlPressed) return@onPreviewKeyEvent false
+                if (textEditFocus.isEditing &&
+                    TextEditKeys.belongsToTextEditor(event.key, ctrl = true, keyDown = true)
+                ) {
+                    // A focused text input owns undo/redo; the design history must not
+                    // fire from inside a field.
+                    return@onPreviewKeyEvent false
+                }
                 when (event.key) {
                     Key.Z -> {
                         val handled = if (event.isShiftPressed) session.redo() else session.undo()
@@ -852,6 +867,17 @@ fun PhoneShell() {
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.Settings) ?: PhonePage.Home
                     FmLog.info("FM_PHONE_PAGE") { "Settings->${page.name} viaClose" }
+                },
+                onOpenAbout = {
+                    page = PhonePage.About
+                    FmLog.info("FM_PHONE_PAGE") { "Settings->About" }
+                },
+            )
+
+            PhonePage.About -> PhoneAboutPage(
+                onClose = {
+                    page = PhonePagePolicy.back(PhonePage.About) ?: PhonePage.Settings
+                    FmLog.info("FM_PHONE_PAGE") { "About->${page.name} viaClose" }
                 },
             )
 
@@ -1046,6 +1072,7 @@ fun PhoneShell() {
                 onDismiss = { exportSheetOpen = false },
             )
         }
+    }
     }
 }
 

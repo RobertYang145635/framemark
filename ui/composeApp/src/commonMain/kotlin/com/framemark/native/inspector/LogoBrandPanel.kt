@@ -770,18 +770,22 @@ private fun LogoBrandPage(
                 .padding(FmSpacing.md),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "‹ 返回 Logo",
-                    style = FmType.labelMedium,
-                    color = FmPalette.onSurfaceSecondary,
+                Box(
                     modifier = Modifier
                         .heightIn(min = 40.dp)
                         .clip(RoundedCornerShape(FmRadii.pill))
                         .background(FmPalette.surfaceMuted)
                         .clickable(onClick = onBack)
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        .padding(horizontal = 12.dp)
                         .semantics { contentDescription = "返回 Logo 页面" },
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "‹ 返回 Logo",
+                        style = FmType.labelMedium,
+                        color = FmPalette.onSurfaceSecondary,
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 Text(
                     text = currentBrand?.let { "当前浏览：${it.label}" } ?: "未选择品牌",

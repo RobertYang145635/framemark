@@ -70,15 +70,23 @@ class PhonePagePolicyTest {
         assertFalse(PhonePagePolicy.handlesBack(PhonePage.Home))
         assertEquals(PhonePage.Home, PhonePagePolicy.back(PhonePage.Editor))
         assertEquals(PhonePage.Home, PhonePagePolicy.back(PhonePage.Settings))
+        assertEquals(PhonePage.Settings, PhonePagePolicy.back(PhonePage.About))
         assertTrue(PhonePagePolicy.handlesBack(PhonePage.Editor))
         assertTrue(PhonePagePolicy.handlesBack(PhonePage.Settings))
+        assertTrue(PhonePagePolicy.handlesBack(PhonePage.About))
     }
 
     @Test
-    fun thereAreExactlyThreeTopLevelPages() {
-        assertEquals(3, PhonePage.entries.size)
+    fun theAboutPageGoesBackToSettings() {
+        // 关于页是从设置页进来的子页：返回落到设置，而不是一路退回首页。
+        assertEquals(PhonePage.Settings, PhonePagePolicy.back(PhonePage.About))
+    }
+
+    @Test
+    fun thereAreExactlyFourTopLevelPages() {
+        assertEquals(4, PhonePage.entries.size)
         assertEquals(
-            listOf(PhonePage.Home, PhonePage.Editor, PhonePage.Settings),
+            listOf(PhonePage.Home, PhonePage.Editor, PhonePage.Settings, PhonePage.About),
             PhonePage.entries.toList(),
         )
     }

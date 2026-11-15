@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.ExportFormat
@@ -15,6 +16,8 @@ import com.framemark.native.shell.phone.ExportFormContent
 import com.framemark.native.shell.phone.PhoneExportOptions
 import com.framemark.native.shell.phone.PhoneExportSize
 import com.framemark.native.theme.FmPalette
+import com.framemark.native.theme.FmPalettes
+import com.framemark.native.theme.PaletteId
 import com.framemark.native.theme.FrameMarkTheme
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -58,6 +61,11 @@ import org.jetbrains.skia.EncodedImageFormat
 class PhoneExportSheetRenderTest {
 
     private val density = Density(3.5f)
+
+    // 渲染用的是默认配色（暖灰墨绿）浅色：面板不再是纯白，主按钮也不再是品牌蓝。
+    private val colors = FmPalettes.of(PaletteId.Forest, dark = false)
+    private val surfaceRgb = colors.surface.toArgb() and 0xFFFFFF
+    private val primaryRgb = colors.primary.toArgb() and 0xFFFFFF
 
     private val card = LibraryCard(
         id = "card::demo",
@@ -157,7 +165,7 @@ class PhoneExportSheetRenderTest {
     // Measurements over the rendered pixels
     // -----------------------------------------------------------------------
 
-    private fun isSurfaceWhite(rgb: Int): Boolean = (rgb and 0xFFFFFF) == 0xFFFFFF
+    private fun isSheetSurface(rgb: Int): Boolean = (rgb and 0xFFFFFF) == surfaceRgb
 
     /** Top row of the white sheet: more than half the row is the `surface` white. */
     private fun sheetTopRow(frame: Frame): Int {
@@ -165,7 +173,7 @@ class PhoneExportSheetRenderTest {
         for (y in 0 until image.height) {
             var white = 0
             for (x in 0 until image.width) {
-                if (isSurfaceWhite(image.getRGB(x, y))) white++
+                if (isSheetSurface(image.getRGB(x, y))) white++
             }
             if (white > image.width / 2) return y
         }
@@ -180,7 +188,7 @@ class PhoneExportSheetRenderTest {
 
     /** Top-most row of the primary-filled action button (`保存到相册`). */
     private fun saveButtonTop(frame: Frame): Int {
-        val primary = 0x2F75E5
+        val primary = primaryRgb
         val image = frame.image
         for (y in 0 until image.height) {
             for (x in 0 until image.width) {
@@ -192,7 +200,7 @@ class PhoneExportSheetRenderTest {
 
     /** Bottom-most row of the primary-filled action button. */
     private fun saveButtonBottom(frame: Frame): Int {
-        val primary = 0x2F75E5
+        val primary = primaryRgb
         val image = frame.image
         for (y in image.height - 1 downTo 0) {
             for (x in 0 until image.width) {
@@ -211,7 +219,7 @@ class PhoneExportSheetRenderTest {
         val image = frame.image
         for (y in buttonTop - 1 downTo sheetTop) {
             for (x in 0 until image.width) {
-                if (!isSurfaceWhite(image.getRGB(x, y))) return y
+                if (!isSheetSurface(image.getRGB(x, y))) return y
             }
         }
         return sheetTop
@@ -253,12 +261,12 @@ class PhoneExportSheetRenderTest {
         )
         // Content is anchored at the bottom of the window, and the stage is visible.
         assertTrue(
-            isSurfaceWhite(frame.image.getRGB(frame.image.width / 2, frame.image.height - 1)),
+            isSheetSurface(frame.image.getRGB(frame.image.width / 2, frame.image.height - 1)),
             "the sheet is not anchored to the window's bottom edge",
         )
         assertTrue(sheetTop > 0, "no stage above the sheet")
         assertTrue(
-            !isSurfaceWhite(frame.image.getRGB(frame.image.width / 2, 0)),
+            !isSheetSurface(frame.image.getRGB(frame.image.width / 2, 0)),
             "the window's first row is already sheet surface",
         )
         // Both actions are painted, inside the sheet.

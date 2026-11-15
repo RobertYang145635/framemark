@@ -117,12 +117,13 @@ fun PhoneSheetGrabber(
 }
 
 /**
- * Sheet head (demo `.psh`: padding `0 12 6 18`, gap 8): 16/700 page name, the
- * 12.5 sp ink-3 subtitle (`当前：经典双行` on the border sheet, the card name on a
- * parameter page), then the accent actions — `恢复默认 N` (`.rst`, 32 dp, 13 sp)
+ * Sheet head (demo `.psh`: padding `0 12 6 18`, gap 8): 16/700 page name, an
+ * optional 12.5 sp ink-3 subtitle (the card name on a parameter page; **null on
+ * the 边框 tool** because the current border lives in the panel's current-item row
+ * — 配色方案 §4.1), then the accent actions — `恢复默认 N` (`.rst`, 32 dp, 13 sp)
  * and `调整样式 ›` (`.adj`, 32 dp, 13 sp, gap 2) — and the 36 dp expand chevron.
  *
- * **AU4 §A2 / WP-TY1：页头固定 4 个元素，与演示稿一致。**
+ * **AU4 §A2 / WP-TY1：参数页头固定 4 个元素，与演示稿一致。**
  *
  * 改前小米底板页头一行塞 5 个：`边框  当前：经典双行  调整样式 ›  预设  ⌄`，
  * 演示稿只有 4 个（`边框  当前：经典双行  调整样式 ›  ⌄`）。多出来的「预设」把
@@ -140,7 +141,12 @@ fun PhoneSheetGrabber(
 @Composable
 fun PhoneSheetHead(
     title: String,
-    subtitle: String,
+    /**
+     * One short line after the title. Null on the 边框 tool: the applied border's
+     * name now has one primary home — the panel's current-item row (配色方案 §4.1) —
+     * so repeating it in the header would be the third place on one screen.
+     */
+    subtitle: String?,
     modified: Int,
     expanded: Boolean,
     height: Dp,
@@ -165,17 +171,21 @@ fun PhoneSheetHead(
             color = FmPalette.onSurface,
             maxLines = 1,
         )
-        // `.psh { gap: 8px }` —— 标题与副题之间是演示稿的 8 dp（= FmRhythm.row），
-        // 不要为了"看起来更紧"改成 6：那会离基线 2 dp，而这里正是最挤的一行。
-        Spacer(Modifier.width(FmRhythm.row))
-        Text(
-            text = subtitle,
-            style = FmType.labelSmall.copy(fontSize = 12.5.sp),
-            color = FmPalette.onSurfaceMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        if (!subtitle.isNullOrBlank()) {
+            // `.psh { gap: 8px }` —— 标题与副题之间是演示稿的 8 dp（= FmRhythm.row），
+            // 不要为了"看起来更紧"改成 6：那会离基线 2 dp，而这里正是最挤的一行。
+            Spacer(Modifier.width(FmRhythm.row))
+            Text(
+                text = subtitle,
+                style = FmType.labelSmall.copy(fontSize = 12.5.sp),
+                color = FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
         if (onReset != null && modified > 0) {
             HeadAction(
                 label = "恢复默认 $modified",

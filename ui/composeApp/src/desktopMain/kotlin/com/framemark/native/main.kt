@@ -20,14 +20,17 @@ import com.framemark.native.theme.AppearanceController
 import com.framemark.native.theme.AppearanceEnv
 import com.framemark.native.theme.DesktopAppearanceEffects
 import com.framemark.native.theme.DesktopAppearanceStore
-import com.framemark.native.theme.FmColors
+import com.framemark.native.theme.FmPalettes
 import com.framemark.native.theme.NoPersistenceAppearanceStore
+import com.framemark.native.theme.PaletteId
 import com.framemark.native.theme.ThemeMode
 import com.framemark.native.theme.WindowsSystemTheme
+import com.framemark.native.workflow.AppExitGate
 import com.framemark.native.workflow.DesktopProjectController
 import com.framemark.native.workflow.DesktopProjectRuntime
 import com.framemark.native.workflow.DesktopWorkflowPlatform
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.workflow.decideExit
 import java.awt.GraphicsEnvironment
 import com.framemark.native.product.FmLog
 
@@ -58,6 +61,12 @@ fun main() = application {
         ProcessHandle.current().info().startInstant()
             .map { System.currentTimeMillis() - it.toEpochMilli() }
             .orElse(-1L)
+
+    // W-02: the exit gate must know how to leave the application before the window
+    // exists, or a refused close on the first frame would leave the dialog with no
+    // way to finish. Assignment is idempotent, so the recomposing application body
+    // re-installing the same lambda is harmless.
+    AppExitGate.exit = { exitApplication() }
 
     // V06: a window opened larger than the work area put the right inspector off
     // screen (external report). The initial size is fitted to the AWT work area
@@ -175,8 +184,18 @@ fun main() = application {
 
     Window(
         onCloseRequest = {
-            DesktopProjectRuntime.flush()
-            exitApplication()
+            // W-02: never exit on a failed (or skipped) save. The decision is pure
+            // and the dialog lives in the shell; this handler only reports what the
+            // synchronous flush actually achieved.
+            val project = DesktopProjectRuntime.current
+            val saved = DesktopProjectRuntime.flush()
+            AppExitGate.requestClose(
+                decideExit(
+                    saved = saved,
+                    saveError = project?.saveError,
+                    writesBlocked = project?.projectWritesBlocked == true,
+                ),
+            )
         },
         title = "FrameMark",
         state = rememberWindowState(
@@ -190,7 +209,7 @@ fun main() = application {
         // the canvas the resolved appearance is about to render; this call happens
         // while the window content is composed, which is before Compose Desktop
         // makes the window visible.
-        applyWindowBackground(window, dark = appearance.dark)
+        applyWindowBackground(window, dark = appearance.dark, palette = appearance.settings.palette)
         DesktopAppearanceEffects(appearance, window, systemTheme)
         FrameMarkApp()
     }
@@ -201,16 +220,22 @@ fun main() = application {
  * appearance, so the gap between "window visible" and "first Compose frame"
  * cannot show the light `JFrame` default. It is a no-op when the colour already
  * matches, so a live theme switch only repaints once.
+ *
+ * 底色按**当前配色**取（`FmPalettes.of(palette, dark).canvas`），不是只分明暗：
+ * 四套配色的画布色不一样（暖灰 / 冷白 / 靛白 / 纸白），只读明暗会在切换配色时闪一帧
+ * 默认配色的底色。
  */
-private fun applyWindowBackground(window: ComposeWindow, dark: Boolean) {
-    val canvas = if (dark) FmColors.Dark.canvas else FmColors.Light.canvas
+private fun applyWindowBackground(window: ComposeWindow, dark: Boolean, palette: PaletteId) {
+    val canvas = FmPalettes.of(palette, dark).canvas
     val awt = java.awt.Color(canvas.toArgb() and 0xFFFFFF)
     if (window.background == awt) return
     runCatching {
         window.background = awt
         window.contentPane?.background = awt
         window.repaint()
-        FmLog.info("FM_APPEARANCE_WINDOW_BG") { "dark=$dark argb=#%06X".format(canvas.toArgb() and 0xFFFFFF)}
+        FmLog.info("FM_APPEARANCE_WINDOW_BG") {
+            "palette=${palette.wire} dark=$dark argb=#%06X".format(canvas.toArgb() and 0xFFFFFF)
+        }
     }.onFailure { FmLog.warn("FM_APPEARANCE_WINDOW_BG_FAIL") { "${it.message}"} }
 }
 

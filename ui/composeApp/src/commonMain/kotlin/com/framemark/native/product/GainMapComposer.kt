@@ -23,9 +23,16 @@ internal data class GainMapJob(
     val photoRect: DoubleArray,
     /** Piece of the source the renderer used: x, y, w, h in source pixels. */
     val sourceRect: DoubleArray,
-    /** Source frame size, in source pixels. */
+    /** Display frame size, in display (EXIF-applied) pixels. */
     val sourceWidth: Int,
     val sourceHeight: Int,
+    /**
+     * EXIF orientation of the source photo. The appended gain map is stored
+     * aligned with the raw raster, while the exported SDR canvas is display
+     * oriented; the compositor must rotate/mirror the decoded gain map by this
+     * value before it can be cropped with [sourceRect].
+     */
+    val orientation: Int,
     /** Per-RGB-channel encoded value that means 0 dB (the border fill). */
     val sentinel: List<Int>,
     /** Gain map downscale factor relative to the canvas (2 = half size). */

@@ -122,10 +122,12 @@ data class PhotoCrop(
 /**
  * Geometry of a [PhotoCrop] against one box.
  *
- * Everything here is aspect-driven and pixel-exact in the **source frame** — the
- * same space the renderer's own crop lives in (`UltraHdrExport.sourceRect`). A
- * platform may report the photo's EXIF-oriented size elsewhere; the engine draws
- * the raw raster, so the crop lives in the raw raster too.
+ * Everything here is aspect-driven and pixel-exact in the **display frame** — the
+ * EXIF-applied pixels the renderer lays the photo out in (`photo_src`,
+ * `photoCropX/Y/Zoom`) and the frame the crop editor draws. Callers pass
+ * `PhotoOrientation.displaySize(...)` for the source; passing the stored raster
+ * size instead would compute the whole crop one rotation away for orientations
+ * 5..8.
  */
 object CropGeometry {
 
@@ -138,7 +140,8 @@ object CropGeometry {
 
     /**
      * The part of a [sourceWidth] x [sourceHeight] photo [crop] keeps for a
-     * [boxWidth] x [boxHeight] box, as x, y, w, h in source pixels.
+     * [boxWidth] x [boxHeight] box, as x, y, w, h in **display** pixels — pass
+     * `PhotoOrientation.displaySize(raw, orientation)` as the source size.
      *
      * At the defaults this **is** [UltraHdrExport.sourceRect] — it delegates to it,
      * so an export with no crop cannot drift from the engine by a single pixel.

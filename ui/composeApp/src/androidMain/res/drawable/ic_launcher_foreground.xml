@@ -22,5 +22,5 @@
     <!-- the watermark line under the window -->
     <path
         android:pathData="M36,82h26a3,3 0 0,1 0,6h-26a3,3 0 0,1 0,-6z"
-        android:fillColor="#2F75E5" />
+        android:fillColor="#31634F" />
 </vector>

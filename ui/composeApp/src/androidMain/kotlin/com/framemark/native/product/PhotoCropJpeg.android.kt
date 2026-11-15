@@ -34,7 +34,12 @@ internal actual fun photoSourceSize(path: String): IntArray? = runCatching {
  * 50 MP JPEG, which is exactly what the export path cannot afford on a phone.
  */
 @Suppress("DEPRECATION")
-internal actual fun cropJpegTo(sourcePath: String, rect: DoubleArray, outPath: String): Boolean =
+internal actual fun cropJpegTo(
+    sourcePath: String,
+    rect: DoubleArray,
+    outPath: String,
+    orientation: Int,
+): Boolean =
     runCatching {
         if (rect.size < 4) return@runCatching false
         val decoder = BitmapRegionDecoder.newInstance(sourcePath, false)
@@ -48,15 +53,20 @@ internal actual fun cropJpegTo(sourcePath: String, rect: DoubleArray, outPath: S
 
             val region = decoder.decodeRegion(Rect(x, y, x + width, y + height), BitmapFactory.Options())
                 ?: return@runCatching false
+            // Rotate after the region decode (they commute): the copy handed to the
+            // renderer is upright and carries no EXIF tag, so nothing downstream can
+            // apply the orientation a second time.
+            val oriented = region.orientedImage(orientation)
             try {
                 val target = File(outPath)
                 target.parentFile?.mkdirs()
                 val written = target.outputStream().use { stream ->
-                    region.compress(Bitmap.CompressFormat.JPEG, CROP_QUALITY, stream)
+                    oriented.compress(Bitmap.CompressFormat.JPEG, CROP_QUALITY, stream)
                 }
                 written && target.isFile && target.length() > 0L
             } finally {
-                region.recycle()
+                oriented.recycle()
+                if (oriented !== region) region.recycle()
             }
         } finally {
             decoder.recycle()

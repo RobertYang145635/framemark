@@ -1,7 +1,7 @@
 package com.framemark.native.shell.phone
 
 /**
- * The phone's three top-level pages.
+ * The phone's four top-level pages.
  *
  * Before this existed the shell chose `if (tray.isEmpty) 首页 else 编辑页`, so a
  * project with any photo could never leave the editor: the top bar's 返回 had no
@@ -14,6 +14,9 @@ enum class PhonePage {
     Home,
     Editor,
     Settings,
+
+    /** 设置 → 关于 FrameMark（版本 / 隐私 / 权限 / 许可）。 */
+    About,
 }
 
 object PhonePagePolicy {
@@ -32,12 +35,13 @@ object PhonePagePolicy {
      * parameter page, focus view, expanded sheet, open sheets) have declined it.
      *
      * `null` means there is nothing left to close, so the platform leaves the app —
-     * that is only true on 首页. Both 编辑页 and 设置页 go back to 首页.
+     * that is only true on 首页. 编辑页与设置页回到首页，关于页回到设置页。
      */
     fun back(page: PhonePage): PhonePage? = when (page) {
         PhonePage.Home -> null
         PhonePage.Editor -> PhonePage.Home
         PhonePage.Settings -> PhonePage.Home
+        PhonePage.About -> PhonePage.Settings
     }
 
     /** True when this page must intercept Back instead of letting the app exit. */

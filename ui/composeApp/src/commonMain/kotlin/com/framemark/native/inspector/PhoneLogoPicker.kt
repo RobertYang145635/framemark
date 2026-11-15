@@ -56,6 +56,7 @@ import com.framemark.native.theme.FmType
 import com.framemark.native.theme.fmRevealOnEnter
 import com.framemark.native.workflow.PrimaryButton
 import kotlinx.coroutines.launch
+import com.framemark.native.workflow.trackTextEditing
 
 /** 面板高度占编辑器可用高度的比例（产品决定：85–90 %）。 */
 internal const val PHONE_LOGO_PICKER_PANEL_FRACTION = 0.88f
@@ -246,18 +247,25 @@ private fun PickerHeader(onClose: () -> Unit) {
                 )
             }
             Spacer(Modifier.width(FmSpacing.sm))
-            Text(
-                text = "关闭",
-                style = FmType.labelMedium,
-                color = FmPalette.onSurfaceSecondary,
+            // The pill is the Box, not the Text: a Text with heightIn(min) paints its
+            // background at 40 dp while the glyphs stay at the top — "关闭" looked
+            // 6–8 dp high inside its pill. Box + contentAlignment keeps it centred.
+            Box(
                 modifier = Modifier
                     .heightIn(min = 40.dp)
                     .clip(RoundedCornerShape(FmRadii.pill))
                     .background(FmPalette.surfaceMuted)
                     .clickable(role = Role.Button, onClick = onClose)
                     .semantics { contentDescription = "关闭品牌选择" }
-                    .padding(horizontal = FmSpacing.md, vertical = FmSpacing.sm),
-            )
+                    .padding(horizontal = FmSpacing.md),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "关闭",
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurfaceSecondary,
+                )
+            }
         }
         ColumnRule()
     }
@@ -356,22 +364,27 @@ private fun PickerSearchField(query: String, onQueryChange: (String) -> Unit) {
                 singleLine = true,
                 textStyle = FmType.bodyMedium.copy(color = FmPalette.onSurface),
                 cursorBrush = SolidColor(FmPalette.primary),
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "搜索品牌" },
+                modifier = Modifier.fillMaxWidth().trackTextEditing()
+                    .semantics { contentDescription = "搜索品牌" },
             )
         }
         if (query.isNotEmpty()) {
             Spacer(Modifier.width(FmSpacing.xs))
-            Text(
-                text = "清除",
-                style = FmType.labelSmall,
-                color = FmPalette.primaryStrong,
+            Box(
                 modifier = Modifier
                     .heightIn(min = 32.dp)
                     .clip(RoundedCornerShape(FmRadii.chip))
                     .clickable(role = Role.Button) { onQueryChange("") }
                     .semantics { contentDescription = "清除搜索" }
-                    .padding(horizontal = FmSpacing.xs, vertical = FmSpacing.xs),
-            )
+                    .padding(horizontal = FmSpacing.xs),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "清除",
+                    style = FmType.labelSmall,
+                    color = FmPalette.primaryStrong,
+                )
+            }
         }
     }
 }
@@ -575,18 +588,22 @@ private fun PickerStylesPage(
                 )
             }
             Spacer(Modifier.width(FmSpacing.sm))
-            Text(
-                text = "‹ 品牌",
-                style = FmType.labelMedium,
-                color = FmPalette.primaryStrong,
+            Box(
                 modifier = Modifier
                     .heightIn(min = 40.dp)
                     .clip(RoundedCornerShape(FmRadii.pill))
                     .background(FmPalette.primarySoft)
                     .clickable(role = Role.Button, onClick = onBack)
                     .semantics { contentDescription = "返回品牌列表" }
-                    .padding(horizontal = FmSpacing.md, vertical = FmSpacing.xs),
-            )
+                    .padding(horizontal = FmSpacing.md),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "‹ 品牌",
+                    style = FmType.labelMedium,
+                    color = FmPalette.primaryStrong,
+                )
+            }
         }
         ColumnRule()
         LazyColumn(

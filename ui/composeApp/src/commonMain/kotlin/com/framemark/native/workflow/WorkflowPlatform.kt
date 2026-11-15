@@ -59,6 +59,16 @@ interface WorkflowPlatform {
     fun thumbnail(path: String, maxEdge: Int): ByteArray? = null
 
     /**
+     * EXIF Orientation (IFD0 tag 0x0112) of a photo file: 1..8, or 1 when the tag
+     * is absent/unreadable. This is the *only* orientation seam the shared code
+     * uses (see `product.PhotoOrientation`): the kernel knows the pixel format
+     * (JPEG APP1, WebP EXIF chunk, TIFF IFD0) and the shared geometry converts
+     * sizes, rectangles and gain maps with the returned value. Header reads only —
+     * never decode the image to answer this.
+     */
+    fun photoOrientation(path: String): Int = 1
+
+    /**
      * Draws the sample placeholder at [width]×[height] and encodes it.
      * Returns `null` when the platform cannot encode [format]; the caller then
      * falls back to a copy of the border preview and says so.
@@ -123,6 +133,13 @@ interface WorkflowPlatform {
      * never look like it did.
      */
     fun shareFile(path: String): String? = "当前平台没有系统分享入口"
+
+    /**
+     * 打开系统相册 / 图片查看器并定位到刚导出的 [path]。返回 null 表示已经打开，
+     * 否则返回给用户看的一句话 —— 「已保存」页上的「查看相册」按这个结果说话，
+     * 不能在相册没打开时假装打开了（配色方案 §4.4 / InkFrame 复盘第 9 条）。
+     */
+    fun openGallery(path: String): String? = "当前平台没有系统相册入口"
 }
 
 /** The image formats the export path can produce. */

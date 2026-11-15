@@ -68,6 +68,7 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import kotlin.math.roundToInt
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * Control list of one editor tab (Logo / 文字 / 布局 / 主题) for the phone editor's
@@ -851,7 +852,8 @@ private fun PreciseNumberDialog(
                         .background(FmPalette.surfaceMuted)
                         .border(1.dp, FmPalette.outline, RoundedCornerShape(FmRadii.input))
                         .padding(horizontal = FmSpacing.md, vertical = 12.dp)
-                        .semantics { contentDescription = "精确输入：${control.label}" },
+                        .semantics { contentDescription = "精确输入：${control.label}" }
+                        .trackTextEditing(),
                     decorationBox = { inner ->
                         Box {
                             if (raw.isEmpty()) {
@@ -993,7 +995,8 @@ private fun TextControl(
                     }
                 }
                 .semantics { contentDescription = control.label }
-                .padding(horizontal = FmSpacing.md, vertical = 10.dp),
+                .padding(horizontal = FmSpacing.md, vertical = 10.dp)
+                .trackTextEditing(),
             decorationBox = { inner ->
                 Box {
                     if (text.isEmpty()) {
@@ -1037,6 +1040,7 @@ private fun ColorControl(control: InspectorControl, session: DesignSession, dens
                 cursorBrush = SolidColor(FmPalette.primary),
                 modifier = Modifier
                     .weight(1f)
+                    .trackTextEditing()
                     .heightIn(min = if (dense) 48.dp else 40.dp)
                     .clip(RoundedCornerShape(FmRadii.input))
                     .background(FmPalette.surfaceMuted)

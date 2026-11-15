@@ -1,7 +1,7 @@
 package com.framemark.native.engine
 
 import android.graphics.Bitmap
-import android.graphics.Matrix
+import com.framemark.native.product.orientedImage
 import java.io.File
 import java.io.FileInputStream
 
@@ -56,26 +56,16 @@ object ExifProbe {
         }
     }.getOrDefault(1)
 
-    /** Rotate/mirror a decoded bitmap so it shows with the EXIF orientation applied. */
+    /**
+     * Rotate/mirror a decoded bitmap so it shows with the EXIF orientation applied.
+     *
+     * Delegates to `product.orientedImage`, the single transform table shared with
+     * the export's gain-map composition (`PhotoOrientation.rowSource`); keeping a
+     * second Matrix table here is what let the thumbnail and the export disagree.
+     */
     fun rotate(bitmap: Bitmap, orientation: Int): Bitmap {
         if (orientation <= 1 || orientation > 8) return bitmap
-        val matrix = Matrix()
-        when (orientation) {
-            2 -> matrix.setScale(-1f, 1f)
-            3 -> matrix.setRotate(180f)
-            4 -> matrix.setScale(1f, -1f)
-            5 -> {
-                matrix.setRotate(90f)
-                matrix.postScale(-1f, 1f)
-            }
-            6 -> matrix.setRotate(90f)
-            7 -> {
-                matrix.setRotate(-90f)
-                matrix.postScale(-1f, 1f)
-            }
-            8 -> matrix.setRotate(-90f)
-        }
-        val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        val rotated = bitmap.orientedImage(orientation)
         if (rotated !== bitmap) bitmap.recycle()
         return rotated
     }

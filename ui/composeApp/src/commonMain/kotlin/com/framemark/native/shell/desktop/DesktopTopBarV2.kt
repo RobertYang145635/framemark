@@ -10,14 +10,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +40,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.framemark.native.theme.AppearancePanel
+import com.framemark.native.appVersionLabel
+import com.framemark.native.product.FmLog
+import com.framemark.native.shell.AboutContent
+import com.framemark.native.shell.AboutText
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmType
-import com.framemark.native.theme.LocalAppearance
-import com.framemark.native.theme.ThemeMode
 
 /**
  * 顶栏（`styles.css` 98-108 `.appbar`；PARITY-SPEC §2A）。
@@ -52,7 +60,7 @@ import com.framemark.native.theme.ThemeMode
  * 因此永远在窗口正中，与两侧按钮数量无关（演示稿正是靠这个 grid 把 220 px 的
  * 模式段控钉在中间的）。
  *
- * 齿轮弹层里放 WP-T 的 [AppearancePicker]（WP-C 合并后会替换它内部实现，签名不变）；
+ * 齿轮弹层里放配色方案 §8 的 [AppearancePanel]（与手机设置页共用同一支面板）；
  * 项目卡的下拉是演示稿 `.proj` 上那个 chevron 的真实去处 —— 保存预设、恢复当前设计、
  * 帮助与两侧栏开关都收在里面，所以顶栏本身不再有演示稿没有的 `⋯` 按钮。
  */
@@ -81,6 +89,7 @@ fun DesktopTopBarV2(
     onSavePreset: () -> Unit,
     onResetDesign: () -> Unit,
     onOpenHelp: () -> Unit,
+    onOpenAbout: () -> Unit = {},
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
 ) {
@@ -166,7 +175,7 @@ fun DesktopTopBarV2(
                 kbd = if (compact) null else "Ctrl E",
                 onClick = onOpenExport,
             )
-            AppearanceGear()
+            AppearanceGear(onOpenAbout = onOpenAbout)
         }
     }
 }
@@ -199,6 +208,7 @@ private fun ProjectChip(
     onSavePreset: () -> Unit,
     onResetDesign: () -> Unit,
     onOpenHelp: () -> Unit,
+    onOpenAbout: () -> Unit = {},
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
     modifier: Modifier = Modifier,
@@ -296,12 +306,10 @@ private fun ChevronDown(tint: androidx.compose.ui.graphics.Color) {
     }
 }
 
-/** 顶栏右端的齿轮：弹层里是外观三选一（演示稿 `08-desktop-gear.png`）。 */
+/** 顶栏右端的齿轮：弹层里是配色方案 §8 的外观面板（配色 / 明暗 / 画布）。 */
 @Composable
-private fun AppearanceGear() {
+private fun AppearanceGear(onOpenAbout: () -> Unit) {
     var open by remember { mutableStateOf(false) }
-    val controller = LocalAppearance.current
-    val selected = controller.settings.mode
     Box {
         DeskIconButton(
             description = "外观设置",
@@ -309,61 +317,38 @@ private fun AppearanceGear() {
             onClick = { open = true },
         ) { DeskGearGlyph(tint = FmPalette.onSurfaceSecondary) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            // WP-R D5：演示稿是紧凑勾选菜单（appearance.css:13-18）——
-            // 11px 大写小节标题 + 三条 34dp 菜单项，勾选态显示 accent 的 ✓ 并加粗，
-            // 不是带说明文字的分段控件卡片。
-            Column(Modifier.width(200.dp).padding(6.dp)) {
-                Text(
-                    text = "外观",
-                    style = TextStyle(
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        letterSpacing = 0.08.sp,
-                    ),
-                    color = FmPalette.onSurfaceMuted,
-                    modifier = Modifier.padding(start = 8.dp, top = 6.dp, bottom = 4.dp),
-                )
-                AppearanceMenuOrder.forEach { mode ->
-                    val on = mode == selected
-                    Row(
+            // 手机设置页与这里共用同一支 `AppearancePanel`：四张预览卡 + 明暗段控 +
+            // 画布三档 + 恢复默认。弹层不因选择而关闭，改配色时能立即对照（§8.3）。
+            Column(Modifier.width(360.dp).padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "外观",
+                        style = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
+                        color = FmPalette.onSurface,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    // 关于放在标题行而不是菜单底部：底部那一行会被 DropdownMenu 的
+                    // 高度/滚动区域吃掉点击（2026-11-15 在打包后的桌面 App 上复现），
+                    // 标题行与配色卡同一片区域，点击可靠。
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(FmRadii.pill))
                             .clickable(role = Role.Button) {
-                                controller.setMode(mode)
                                 open = false
+                                onOpenAbout()
                             }
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "✓",
-                            style = TextStyle(fontSize = 13.sp, lineHeight = 16.sp),
-                            color = if (on) FmPalette.primary else FmPalette.onSurfaceFaint.copy(alpha = 0f),
-                        )
-                        Text(
-                            text = appearanceMenuLabel(mode),
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp,
-                                fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                            ),
-                            color = FmPalette.onSurface,
+                            text = "关于 FrameMark",
+                            style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                            color = FmPalette.primaryStrong,
                         )
                     }
                 }
+                Spacer(Modifier.height(10.dp))
+                AppearancePanel()
             }
         }
     }
-}
-
-/** `appearance.js` 的 `A.opts` 顺序：跟随系统 / 浅色 / 深色。 */
-private val AppearanceMenuOrder = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
-
-private fun appearanceMenuLabel(mode: ThemeMode): String = when (mode) {
-    ThemeMode.System -> "跟随系统"
-    ThemeMode.Light -> "浅色"
-    ThemeMode.Dark -> "深色"
 }

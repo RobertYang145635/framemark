@@ -267,11 +267,14 @@ object UltraHdr {
     }
 
     /**
-     * Frame size of the primary image, from its SOF.
+     * Frame size of the primary image **as stored**, from its SOF.
      *
-     * The caller needs it twice: to derive the source rectangle the renderer's
-     * centre-anchored crop kept (`UltraHdrExport.sourceRect`) and to rescale that
-     * rectangle when the appended gain map is stored at a different resolution.
+     * This is the raster the file contains, *not* the frame the renderer lays out:
+     * Skia applies the encoded EXIF origin, so a portrait phone shot stores
+     * 8192x6144 and displays as 6144x8192. Callers that need pixels the rest of the
+     * app can agree on convert with `PhotoOrientation.displaySize`; the gain-map
+     * source rectangle (`UltraHdrExport.sourceRect`) is defined in that display
+     * frame and the rectangle is rescaled to the gain map's own resolution.
      */
     fun frameSize(bytes: ByteArray): Pair<Int, Int>? {
         for (s in segments(bytes, 0, bytes.size)) {

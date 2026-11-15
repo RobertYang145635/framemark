@@ -60,22 +60,21 @@ class PhoneEditorSheetHeightsTest {
     }
 
     @Test
-    fun the_border_sheet_is_exactly_as_tall_as_its_card_stack() {
-        // WP-PV2 re-derived the stack from the showcase: grabber 22, title row 30, 14 px
-        // tab row 38, 30 dp chip row 42, a `12 / 10` strip around the 128 dp tile, then
-        // the 12 sp name **and** its 11 sp description (`.card .nm` + `.card .ds`).
-        // Tier 1 is 300 dp, so 844 - 52 - 62 - 300 = 430 dp of stage: the stage still
-        // keeps more than half the window and the sheet carries no dead band.
+    fun the_border_sheet_is_the_compact_panel_plus_its_fixed_chrome() {
+        // 2026-11-15（配色方案 §4.1）：16（把手）+ 44（标题）+ 144（无边框面板）
+        // = 204 dp；844 - 52 - 62 - 204 = 526 dp of stage. The sheet carries the
+        // current-item row, not the retired 128 dp card stack.
         val h = computePhoneEditorHeights(844f, 1f, false, EditorTool.Border, false)
-        assertEquals(300f, h.sheet, 0.01f)
-        assertEquals(430f, h.stage, 0.01f)
-        assertTrue(
-            phoneCompactSheetMetrics(h.sheet).contentHeight <= h.sheet + 0.01f,
-            "the sheet must hold the 128 dp card, its name and its description",
-        )
+        val expectedSheet = PHONE_BORDER_SHEET_GRABBER_DP + PHONE_BORDER_SHEET_HEAD_DP +
+            com.framemark.native.shell.phone.PhoneBorderPageState.panelHeight(
+                tileDp = com.framemark.native.shell.phone.PhoneBorderPageState.PANEL_TILE_DP,
+                hasCard = false,
+            )
+        assertEquals(expectedSheet, h.sheet, 0.01f)
+        assertEquals(844f - 52f - 62f - expectedSheet, h.stage, 0.01f)
 
         val levels = assertNotNull(phoneSheetLevels(844f, EditorTool.Border, false))
-        assertEquals(300f, levels.compact, 0.01f)
+        assertEquals(expectedSheet, levels.compact, 0.01f)
         assertTrue(levels.expanded > levels.compact, "expanded=${levels.expanded} compact=${levels.compact}")
         val expandedStage = 844f - 52f - 62f - levels.expanded
         assertTrue(expandedStage >= 844f * 0.26f - 0.01f, "expanded stage=$expandedStage")

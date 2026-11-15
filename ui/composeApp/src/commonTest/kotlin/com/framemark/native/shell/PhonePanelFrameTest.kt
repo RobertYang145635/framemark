@@ -352,6 +352,51 @@ class PhonePanelFrameTest {
     }
 
     @Test
+    fun aSingleGroupPageDrawsNoGroupTabRow() {
+        // 一个 tab 没有可切换的对象，点它什么也不会发生；页头已经写着同一个名字。
+        // 用户 2026-11-15 报告："每一页都有一个点了没任何用处的东西" —— 文字页的
+        // 「文字」、空水印页的「图层」、只有一组参数时的「规格 / 留白」都是这个。
+        assertFalse(phoneGroupTabRowVisible(0))
+        assertFalse(phoneGroupTabRowVisible(1))
+        assertTrue(phoneGroupTabRowVisible(2))
+        assertTrue(phoneGroupTabRowVisible(3))
+
+        // 单组页：文字（「文字」）、没有图层的水印（「图层」）、只有一组参数的样式。
+        assertFalse(
+            phoneGroupTabRowVisible(
+                phoneGroupTabLabels(
+                    PhonePageSpec(EditorTool.Text, PhoneTestControls.textControls(), hasTextReport = true),
+                ).size,
+            ),
+        )
+        assertFalse(
+            phoneGroupTabRowVisible(
+                phoneGroupTabLabels(
+                    PhonePageSpec(EditorTool.Watermark, emptyList(), hasWatermarkLayer = false),
+                ).size,
+            ),
+        )
+        assertFalse(
+            phoneGroupTabRowVisible(
+                phoneGroupTabLabels(
+                    PhonePageSpec(EditorTool.Params, PhoneTestControls.lightStyleControls()),
+                ).size,
+            ),
+        )
+        // 多组页保持 tab 行：水印 图层/外观、Logo 显示/调整。
+        assertTrue(
+            phoneGroupTabRowVisible(
+                phoneGroupTabLabels(PhonePageSpec(EditorTool.Watermark, emptyList())).size,
+            ),
+        )
+        assertTrue(
+            phoneGroupTabRowVisible(
+                phoneGroupTabLabels(PhonePageSpec(EditorTool.Logo, PhoneTestControls.logoControls())).size,
+            ),
+        )
+    }
+
+    @Test
     fun theGroupTabsCoverEveryControlExactlyOnce() {
         fun rows(spec: PhonePageSpec) = phonePanelGroups(spec).flatMap { it.rows }
 
@@ -551,13 +596,19 @@ class PhonePanelFrameTest {
     }
 
     @Test
-    fun theBorderLandingPanelKeepsItsCardStack() {
-        // 边框工具没有被固定画框接管：它的落地面板仍然是 128 dp 卡片那一摞。
+    fun theBorderLandingPanelUsesTheCompactCurrentItemSheet() {
+        // 2026-11-15（配色方案 §4.1）：边框落地板 = 16 把手 + 44 标题 + 144 面板 = 204 dp，
+        // 不再是旧的 128 dp 卡片堆叠（300 dp）。
+        val expected = PHONE_BORDER_SHEET_GRABBER_DP + PHONE_BORDER_SHEET_HEAD_DP +
+            com.framemark.native.shell.phone.PhoneBorderPageState.panelHeight(
+                tileDp = com.framemark.native.shell.phone.PhoneBorderPageState.PANEL_TILE_DP,
+                hasCard = false,
+            )
         val levels = assertNotNull(phoneSheetLevels(844f, EditorTool.Border, photosOpen = false))
-        assertEquals(300f, levels.compact, 0.01f)
+        assertEquals(expected, levels.compact, 0.01f)
         assertTrue(levels.expanded > levels.compact)
         val heights = computePhoneEditorHeights(844f, 1f, false, EditorTool.Border, false)
-        assertEquals(300f, heights.sheet, 0.01f)
+        assertEquals(expected, heights.sheet, 0.01f)
         assertTrue(heights.stage >= 844f * STAGE_MIN_FRACTION - 0.01f)
     }
 }

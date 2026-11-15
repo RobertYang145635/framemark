@@ -35,7 +35,12 @@ internal actual fun photoSourceSize(path: String): IntArray? = runCatching {
     }
 }.getOrNull()
 
-internal actual fun cropJpegTo(sourcePath: String, rect: DoubleArray, outPath: String): Boolean =
+internal actual fun cropJpegTo(
+    sourcePath: String,
+    rect: DoubleArray,
+    outPath: String,
+    orientation: Int,
+): Boolean =
     runCatching {
         if (rect.size < 4) return@runCatching false
         val source = ImageIO.read(File(sourcePath)) ?: return@runCatching false
@@ -46,10 +51,11 @@ internal actual fun cropJpegTo(sourcePath: String, rect: DoubleArray, outPath: S
         val width = rect[2].roundToInt().coerceIn(1, source.width - x)
         val height = rect[3].roundToInt().coerceIn(1, source.height - y)
 
-        // `getSubimage` shares the source raster; copy it so the encoder and the
-        // source decode are independent and the crop is a plain RGB surface.
-        val region = source.getSubimage(x, y, width, height)
-        val canvas = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+        // `getSubimage` shares the source raster; the rotation (when any) returns a
+        // detached surface, and the RGB canvas below detaches the orientation-1
+        // path too, so the encoder and the source decode stay independent.
+        val region = source.getSubimage(x, y, width, height).orientedImage(orientation)
+        val canvas = BufferedImage(region.width, region.height, BufferedImage.TYPE_INT_RGB)
         val graphics = canvas.createGraphics()
         try {
             graphics.drawImage(region, 0, 0, null)

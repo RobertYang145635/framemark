@@ -13,6 +13,7 @@ import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.NativeEngine
+import com.framemark.native.workflow.PreviewScratch
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -91,6 +92,7 @@ internal object DesktopLibraryPhotoThumbs {
                 FmLog.warn("FM_LIB_THUMB_FAIL") { "card=${card.id} reason=${t.message}" }
                 null
             } ?: return@withPermit null
+            try {
             val bytes = try {
                 WorkflowEnv.platform?.readBytes(rendered.path)
             } catch (t: Throwable) {
@@ -113,6 +115,11 @@ internal object DesktopLibraryPhotoThumbs {
                 synchronized(cache) { cache[key(card.id, photoPath)] = bitmap }
             }
             bitmap
+            } finally {
+                // A-02: the hover preview owns this file only until its bytes are
+                // decoded; leaving it behind is what let the phone's cache grow.
+                PreviewScratch.release(WorkflowEnv.platform, rendered.path)
+            }
         }
     }
 

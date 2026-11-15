@@ -40,8 +40,32 @@ interface ProjectHolder {
     fun load()
     /** Re-reads after a failed load; true means the project is writable again. */
     fun retryProjectLoad(): Boolean = false
-    fun flush()
+
+    /**
+     * Writes whatever is pending **synchronously** and reports whether the project
+     * is durable now. The window close handler is the decisive caller: a `false`
+     * result must keep the window open (see [AppExitGate]), because the in-memory
+     * project still holds edits no file contains.
+     *
+     * Targets that cannot fail (an in-memory holder) return true.
+     */
+    fun flush(): Boolean
     fun saveNow(): Boolean
+
+    /**
+     * Path of the persisted project document, for the exit dialog's 「打开工程文件夹」.
+     * Null when the target has no project file.
+     */
+    fun projectFilePath(): String? = null
+
+    /**
+     * SAVE dialog for a project copy; null when cancelled or unsupported. Used only
+     * after the canonical write failed, so the edits can still leave the process.
+     */
+    fun pickProjectCopyPath(): String? = null
+
+    /** Writes the current project to [path] (an explicit copy, not the document). */
+    fun saveProjectCopy(path: String): Boolean = false
 
     fun selectPhoto(id: String)
     fun removePhoto(id: String)
@@ -205,7 +229,7 @@ class InMemoryProjectHolder : ProjectHolder {
 
     override fun load() = Unit
     override fun retryProjectLoad(): Boolean = true
-    override fun flush() = Unit
+    override fun flush(): Boolean = true
     override fun saveNow(): Boolean = true
     override fun selectPhoto(id: String) = Unit
     override fun removePhoto(id: String) = Unit

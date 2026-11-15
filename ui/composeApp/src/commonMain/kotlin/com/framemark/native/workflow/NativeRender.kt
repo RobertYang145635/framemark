@@ -8,6 +8,7 @@ import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.CropGeometry
 import com.framemark.native.product.PhotoCrop
 import com.framemark.native.product.PhotoCropParams
+import com.framemark.native.product.PhotoOrientation
 import com.framemark.native.product.cropJpegTo
 import com.framemark.native.product.photoSourceSize
 import kotlinx.coroutines.Dispatchers
@@ -83,12 +84,13 @@ data class ImageRect(
  * place an overlay relative to the photo without knowing the canvas scale.
  * Null when the platform/engine did not report it (desktop today).
  *
- * [photoSrc] is the region of the **source photo file** the engine really
- * sampled, x/y/w/h in source pixels (top-left origin). It is the engine's own
- * answer to "which part of the photo survived the crop", so no caller has to
- * re-derive the crop and a pre-crop in Kotlin can never compound with it. Null
- * when the engine did not report it (an older binary); the export then falls
- * back to the Kotlin crop computation.
+ * [photoSrc] is the region of the **source photo** the engine really sampled,
+ * x/y/w/h in **display pixels** (the EXIF-applied frame the renderer lays the
+ * photo out in, not the file's stored raster). It is the engine's own answer to
+ * "which part of the photo survived the crop", so no caller has to re-derive the
+ * crop and a pre-crop in Kotlin can never compound with it. Null when the engine
+ * did not report it (an older binary); the export then falls back to the Kotlin
+ * crop computation.
  */
 data class NativeImage(
     val path: String,
@@ -100,7 +102,7 @@ data class NativeImage(
     val note: String? = null,
     /** Renderer-reported text rows in this image's pixel coordinate space. */
     val textSlots: List<TextSlot> = emptyList(),
-    /** Source pixels the renderer sampled for the photo; see [NativeImage.photoSrc]. */
+    /** Source pixels the renderer sampled for the photo; see [NativeImage]'s class doc. */
     val photoSrc: ImageRect? = null,
 )
 
@@ -320,16 +322,24 @@ object NativeEngine {
                 cropRect = null
                 if (crop.isDefault) return false
                 val source = photoPath?.takeIf { it.isNotBlank() } ?: return false
-                val size = withContext(Dispatchers.IO) { photoSourceSize(source) } ?: return false
-                if (size.size < 2 || size[0] <= 0 || size[1] <= 0) return false
-                if (!CropGeometry.cropsSource(size[0], size[1], boxWidth, boxHeight)) return false
-                val rect = CropGeometry.region(size[0], size[1], boxWidth, boxHeight, crop)
+                val raw = withContext(Dispatchers.IO) { photoSourceSize(source) } ?: return false
+                if (raw.size < 2 || raw[0] <= 0 || raw[1] <= 0) return false
+                // The engine lays the photo out with EXIF applied, so the crop region is
+                // display-space. The raw JPEG cannot be cut in that space directly: map
+                // the rectangle back, then let the crop bake the orientation into the
+                // copy it hands to the renderer.
+                val orientation = withContext(Dispatchers.IO) { platform.photoOrientation(source) }
+                val display = PhotoOrientation.displaySize(raw[0], raw[1], orientation)
+                if (!CropGeometry.cropsSource(display.width, display.height, boxWidth, boxHeight)) return false
+                val displayRect = CropGeometry.region(display.width, display.height, boxWidth, boxHeight, crop)
+                    ?: return false
+                val rect = PhotoOrientation.displayRectToRaw(displayRect, orientation, raw[0], raw[1])
                     ?: return false
                 val croppedPath = withContext(Dispatchers.IO) { cropTemporaryPath(platform, initialPath) }
                 // Registered before the write so a cancelled or failed write is cleaned
                 // up by the same `finally` that would have deleted a finished copy.
                 scratchPaths += croppedPath
-                if (!withContext(Dispatchers.IO) { cropJpegTo(source, rect, croppedPath) }) return false
+                if (!withContext(Dispatchers.IO) { cropJpegTo(source, rect, croppedPath, orientation) }) return false
                 renderPhotoPath = croppedPath
                 cropRect = rect
                 return true
@@ -363,9 +373,12 @@ object NativeEngine {
             onStage?.invoke(ExportStage.Rendered)
 
             // Ultra HDR: the engine has written the SDR rendition. When the settings ask
-            // for HDR and the source photo carries a reusable gain map, the temporary
-            // file is wrapped in place *before* it is committed, so the commit keeps its
-            // atomic semantics and any failure below simply leaves the SDR bytes.
+            // for HDR and the source photo carries a reusable gain map, the wrapped file
+            // is written to a *second* temporary and only replaces the SDR one after its
+            // bytes were verified on disk. Writing over the SDR file would truncate it
+            // first (both platforms' `writeBytes` do), so a disk-full or short write
+            // would leave a 32-byte "successful" export behind; the commit below must
+            // therefore only ever see a fully written file.
             if (settings.preserveHdr &&
                 settings.format == com.framemark.native.product.ExportFormat.Jpeg
             ) {
@@ -374,6 +387,10 @@ object NativeEngine {
                     withContext(Dispatchers.IO) {
                         val source = runCatching { platform.readBytes(photoPath) }.getOrNull()
                         val sdr = runCatching { platform.readBytes(temporaryPath) }.getOrNull()
+                        // The SDR rendition is written from the EXIF-applied raster, so the
+                        // appended gain map has to be rotated into that same display frame.
+                        val sourceOrientation = runCatching { platform.photoOrientation(photoPath) }
+                            .getOrDefault(1)
                         val wrapped = if (source != null && sdr != null) {
                             runCatching {
                                 com.framemark.native.product.UltraHdrExport.wrap(
@@ -403,6 +420,7 @@ object NativeEngine {
                                     } else {
                                         null
                                     },
+                                    orientation = sourceOrientation,
                                 )
                             }.getOrNull()
                         } else {
@@ -412,11 +430,44 @@ object NativeEngine {
                             wrapped == null -> FmLog.info("FM_ULTRA_HDR_SKIP") {
                                 "card=$cardId reason=no-reusable-gain-map"
                             }
-                            !platform.writeBytes(temporaryPath, wrapped) -> FmLog.warn("FM_ULTRA_HDR_WRITE_FAIL") {
-                                "card=$cardId kept as SDR"
+                            // The wrapper must have appended the gain map: a payload no
+                            // larger than the SDR bytes is not a wrapped file, whatever an
+                            // encoder claims.
+                            wrapped.size <= (sdr?.size ?: Int.MAX_VALUE) -> FmLog.warn("FM_ULTRA_HDR_WRITE_FAIL") {
+                                "card=$cardId kept as SDR reason=no-gain-map-appended " +
+                                    "sdr=${sdr?.size ?: -1} wrapped=${wrapped.size}"
                             }
-                            else -> FmLog.info("FM_ULTRA_HDR_READY") {
-                                "card=$cardId bytes=${wrapped.size} canvas=${image.width}x${image.height}"
+                            else -> {
+                                val hdrPath = temporaryPath(
+                                    platform, initialPath, settings.format.extension,
+                                )
+                                // Registered before the write so a partial file is swept by
+                                // the same `finally` that cleans every other temporary.
+                                scratchPaths += hdrPath
+                                val attempted = runCatching {
+                                    platform.writeBytes(hdrPath, wrapped)
+                                }.getOrDefault(false)
+                                // A `true` return only means "no exception": the file on disk
+                                // is the truth. Comparing its length catches a short write,
+                                // a zero-byte write and a writer that lied.
+                                val writtenBytes = runCatching { platform.fileSize(hdrPath) }
+                                    .getOrDefault(-1L)
+                                val complete = attempted && writtenBytes == wrapped.size.toLong()
+                                if (complete) {
+                                    // Only now may the SDR temporary stop being the commit
+                                    // candidate: it is still intact for the failure path.
+                                    scratchPaths += temporaryPath
+                                    temporaryPath = hdrPath
+                                    FmLog.info("FM_ULTRA_HDR_READY") {
+                                        "card=$cardId bytes=${wrapped.size} canvas=${image.width}x${image.height}"
+                                    }
+                                } else {
+                                    platform.deleteExportTemporary(hdrPath)
+                                    FmLog.warn("FM_ULTRA_HDR_WRITE_FAIL") {
+                                        "card=$cardId kept as SDR reason=short-write " +
+                                            "expected=${wrapped.size} actual=$writtenBytes"
+                                    }
+                                }
                             }
                         }
                     }

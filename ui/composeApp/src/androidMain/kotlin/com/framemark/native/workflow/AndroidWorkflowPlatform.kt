@@ -3,6 +3,7 @@ package com.framemark.native.workflow
 import android.content.Context
 import android.content.Intent
 import android.content.ClipData
+import android.content.ContentUris
 import androidx.core.content.FileProvider
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -13,7 +14,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import com.framemark.native.engine.ExifProbe
 import com.framemark.native.engine.NativeEngineProbe
 import java.io.ByteArrayOutputStream
@@ -68,6 +71,57 @@ class AndroidWorkflowPlatform(private val context: Context) : WorkflowPlatform {
         null
     }.getOrElse { "打开分享面板失败：${it.message}" }
 
+    /**
+     * 打开系统相册并定位到刚导出的照片（配色方案 §4.4「查看成片」）。
+     *
+     * 导出时 `AndroidNativeRender.publishToGallery` 已经把文件写进 MediaStore 的
+     * `Pictures/FrameMark`。这里按「显示名 + 相对路径」把它查回来，再把 content Uri
+     * 交给系统相册（ACTION_VIEW）。查不到（用户关掉了相册发布、或文件被移走）就退回到
+     * 分享用的缓存快照，至少能看这张照片；两条路都失败时返回一句话，不静默。
+     */
+    override fun openGallery(path: String): String? = runCatching {
+        val source = File(path).canonicalFile
+        if (!source.isFile || source.length() <= 0L) return "这张照片还不存在，请重试写入相册。"
+        val mime = when (source.extension.lowercase(Locale.ROOT)) {
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "webp" -> "image/webp"
+            else -> "image/*"
+        }
+        val uri = findInMediaStore(source.name) ?: fileProviderSnapshot(source)
+            ?: return "相册里找不到这张照片，请重试写入相册。"
+        val view = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mime)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(view)
+        FmLog.info("OPEN_GALLERY") { "file=${source.name} uri=$uri" }
+        null
+    }.getOrElse { "打开相册失败：${it.message}" }
+
+    /** MediaStore 里按文件名找刚发布的照片；API 26–28 没有 RELATIVE_PATH 列。 */
+    private fun findInMediaStore(name: String): android.net.Uri? = runCatching {
+        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(MediaStore.Images.Media._ID)
+        val (selection, args) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            "${MediaStore.Images.Media.DISPLAY_NAME}=? AND ${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?" to
+                arrayOf(name, "%${Environment.DIRECTORY_PICTURES}/FrameMark%")
+        } else {
+            "${MediaStore.Images.Media.DISPLAY_NAME}=?" to arrayOf(name)
+        }
+        context.contentResolver.query(collection, projection, selection, args, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return null
+            ContentUris.withAppendedId(collection, cursor.getLong(0))
+        }
+    }.getOrNull()
+
+    /** 相册里没有时，把文件复制成 FileProvider 可读的快照再交给查看器。 */
+    private fun fileProviderSnapshot(source: File): android.net.Uri? = runCatching {
+        val shareDir = File(context.cacheDir, "shared-exports").apply { mkdirs() }
+        val snapshot = File(shareDir, "view-${source.name}")
+        source.copyTo(snapshot, overwrite = true)
+        FileProvider.getUriForFile(context, "${context.packageName}.exports", snapshot)
+    }.getOrNull()
 
     override fun commitExport(temporaryPath: String, finalPath: String): Boolean {
         val temporary = File(temporaryPath).canonicalFile
@@ -138,6 +192,9 @@ class AndroidWorkflowPlatform(private val context: Context) : WorkflowPlatform {
     override fun fileSize(path: String): Long = File(path).length()
 
     override fun readBytes(path: String): ByteArray? = runCatching { File(path).readBytes() }.getOrNull()
+
+    override fun photoOrientation(path: String): Int =
+        runCatching { ExifProbe.orientation(File(path)) }.getOrDefault(1)
 
     override fun thumbnail(path: String, maxEdge: Int): ByteArray? = runCatching {
         if (maxEdge <= 0) return null

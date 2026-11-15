@@ -19,21 +19,17 @@ import androidx.compose.ui.unit.sp
 /**
  * FrameMark design tokens (UI V2, theme-aware).
  *
- * Sources (read-only, never copied at runtime):
- *  - Light values: the V2 showcase `E:\FrameMark\design\ui-v2-showcase\src\styles.css`
- *    `:root` block (canvas/surface/ink/line/accent/stage intent). The shipped
- *    accent stays `--accent: #2F75E5` / `--accent-strong: #1D5FC6`.
- *  - Dark values: HANDOFF part 2 §3 table (the "深色（新）" column).
- *
- * U1F correction (kept verbatim from the light-only revision): earlier revisions
- * used `#0C668D`, the accent of the retired liquid-glass light block
- * (styles.css L3712). The shipped `index.html` selects `data-skin="hyperos"`,
- * whose block wins at equal specificity, so `#0C668D` is never painted. It must
- * not be described as "shipped"; `#2F75E5` / `#1D5FC6` are.
+ * Sources:
+ *  - 界面配色（canvas / surface / ink / line / accent / soft）：`Palette.kt`，逐字取自
+ *    `deliverables/FrameMark-UI布局与配色优化方案-20261115.md` §6 的四套方案。
+ *    默认方案（暖灰墨绿）的浅色 / 深色快照由 `FmPalettes.of(PaletteId.Forest, dark)` 提供。
+ *  - 舞台、状态色、阴影：V2 showcase `styles.css` 与 HANDOFF part 2 §3 的原值，
+ *    不随配色切换（配色方案 §7.2）。
  *
  * Structure (WP-T):
- *  - [FmColors] is an immutable snapshot of one appearance (Light or Dark) and
- *    owns every derived colour, so a derived value can never mix the two themes.
+ *  - [FmColors] is an immutable snapshot of one appearance (one palette × one
+ *    light/dark mode) and owns every derived colour, so a derived value can never
+ *    mix two palettes.
  *  - [LocalFmColors] supplies the current snapshot; [FrameMarkTheme] provides it.
  *  - [FmPalette] keeps its historical member names but is now a thin
  *    `@Composable @ReadOnlyComposable` reader over [LocalFmColors]. Reading it
@@ -46,11 +42,12 @@ import androidx.compose.ui.unit.sp
  */
 
 /**
- * One immutable appearance snapshot.
+ * One immutable appearance snapshot: one palette × one light/dark mode.
  *
- * Use [Light] or [Dark] (or `LocalFmColors.current` inside a composable) instead
- * of constructing a third one. Derived roles ([navSurface], [primarySoft],
- * [ring], [indicator]) are computed from **this** snapshot's own base colours.
+ * Build it with [FmPalettes.of] (or read `LocalFmColors.current` inside a
+ * composable) instead of calling the constructor. Derived roles ([navSurface],
+ * [primarySoft], [ring], [indicator]) are computed from **this** snapshot's own
+ * base colours.
  */
 class FmColors(
     val canvas: Color,
@@ -88,6 +85,12 @@ class FmColors(
     val primarySoftAlpha: Float,
     /** Primary opacity used by [ring] (28 % light / 40 % dark). */
     val ringAlpha: Float,
+    /**
+     * 配色方案给的「柔和选中背景」。为 null 时 [primarySoft] 用主色按
+     * [primarySoftAlpha] 叠在 [surface] 上算；四套内置配色都显式给值——墨绿的柔和
+     * 底本来就带绿调，透明叠加只会得到一块灰绿。
+     */
+    val softBase: Color? = null,
 ) {
     /**
      * Floating nav capsule: surface at high alpha (D-012: no backdrop blur in v1).
@@ -97,8 +100,8 @@ class FmColors(
      */
     val navSurface: Color = surface.copy(alpha = 0.985f)
 
-    /** Primary at [primarySoftAlpha] over [surface] — selected chip / soft highlight. */
-    val primarySoft: Color = primary.copy(alpha = primarySoftAlpha).compositeOver(surface)
+    /** Explicit soft-selection background when the palette has one, else primary over surface. */
+    val primarySoft: Color = softBase ?: primary.copy(alpha = primarySoftAlpha).compositeOver(surface)
 
     /** Focus ring: primary at [ringAlpha]. Translucent on purpose, draw it over the surface. */
     val ring: Color = primary.copy(alpha = ringAlpha)
@@ -118,126 +121,17 @@ class FmColors(
         StageTone.Mid -> stageMid
         StageTone.Light -> stageLight
     }
-
-    companion object {
-        /**
-         * FrameMark accent (`--accent`, styles.css `:root`). Identical in both
-         * appearances. Fill role only: solid buttons, rail tile, cursor,
-         * hairlines. 4.38:1 on white, i.e. below AA for 11–13 sp text, so all
-         * small ink uses [primaryStrong] (5.99:1 on white) — the old app's own
-         * split. Single definition (the user may still switch it to `#2B6FD8`).
-         */
-        private val PRIMARY = Color(0xFF2F75E5)
-
-        /** Single definition of the light slider idle grey (may become `#8A95A4`). */
-        private val SLIDER_IDLE_LIGHT = Color(0xFF9AA4B1)
-
-        /**
-         * Light slider idle for the **dark** appearance.
-         *
-         * WCAG relative luminance of `#1D1E22` (dark surface): 0.01306.
-         * `#6B7688` → L = 0.17863; contrast = (0.17863 + 0.05) / (0.01306 + 0.05)
-         * = 0.22863 / 0.06306 = **3.63 : 1** (requirement: ≥ 3 : 1). The value
-         * stays in the cool-grey family of the light token and sits 3.6× brighter
-         * than the surface, so the untouched part of a slider still reads.
-         */
-        private val SLIDER_IDLE_DARK = Color(0xFF6B7688)
-
-        private val STAGE_DARK = Color(0xFF2B2C2F)
-        private val STAGE_MID = Color(0xFF5A5C61)
-        private val STAGE_LIGHT = Color(0xFFD9DADD)
-
-        /** Light appearance — the V2 showcase `:root` values. */
-        val Light: FmColors = FmColors(
-            canvas = Color(0xFFF0F2F5),
-            surface = Color(0xFFFFFFFF),
-            surfaceMuted = Color(0xFFF6F8FB),
-            onSurface = Color(0xFF14181F),
-            onSurfaceSecondary = Color(0xFF3E4753),
-            onSurfaceMuted = Color(0xFF5C6673),
-            onSurfaceFaint = Color(0xFF7F8A97),
-            outline = Color(0xFFE3E7EC),
-            outlineStrong = Color(0xFFD5DBE2),
-            primary = PRIMARY,
-            primaryStrong = Color(0xFF1D5FC6),
-            onPrimary = Color(0xFFFFFFFF),
-            error = Color(0xFFD2453B),
-            warning = Color(0xFFC27A0E),
-            success = Color(0xFF1E9E5A),
-            scrim = Color(0x52101828),
-            hover = Color(0x0B14181F),
-            press = Color(0x1414181F),
-            track = Color(0xFFDCE1E7),
-            sliderIdle = SLIDER_IDLE_LIGHT,
-            stage = STAGE_DARK,
-            stageDark = STAGE_DARK,
-            stageMid = STAGE_MID,
-            stageLight = STAGE_LIGHT,
-            stageLine = Color(0xFF3A3F47),
-            stageInk = Color(0xFFD4DAE3),
-            stageMuted = Color(0xFF969AA4),
-            shadowNavAmbient = Color(0x0D101828),
-            shadowNavSpot = Color(0x1A101828),
-            shadowCardAmbient = Color(0x08101828),
-            shadowCardSpot = Color(0x0F101828),
-            primarySoftAlpha = 0.10f,
-            ringAlpha = 0.28f,
-        )
-
-        /**
-         * Dark appearance — HANDOFF part 2 §3 "深色（新）" column.
-         *
-         * The photo stage stays `#2B2C2F` in both appearances (hand-off decision
-         * 2: the photo area is always dark), and the shadow colours move to
-         * `#000` at a higher alpha because a `#101828` tint is invisible on
-         * `#121316`.
-         */
-        val Dark: FmColors = FmColors(
-            canvas = Color(0xFF121316),
-            surface = Color(0xFF1D1E22),
-            surfaceMuted = Color(0xFF26282D),
-            onSurface = Color(0xFFEDEFF3),
-            onSurfaceSecondary = Color(0xFFC3C8D0),
-            onSurfaceMuted = Color(0xFF9AA1AC),
-            onSurfaceFaint = Color(0xFF7D8490),
-            outline = Color(0xFF2E3036),
-            outlineStrong = Color(0xFF3A3D44),
-            primary = PRIMARY,
-            primaryStrong = Color(0xFF7FB0FF),
-            onPrimary = Color(0xFFFFFFFF),
-            error = Color(0xFFF06A5F),
-            warning = Color(0xFFE0A23A),
-            success = Color(0xFF3CC07A),
-            // 60 % black: the light scrim's 32 % `#101828` only dims `#121316`
-            // to `#0C0D0E`, which no longer separates a sheet from the canvas.
-            scrim = Color(0x99000000),
-            hover = Color(0x0FFFFFFF),
-            press = Color(0x1AFFFFFF),
-            track = Color(0xFF3A3D44),
-            sliderIdle = SLIDER_IDLE_DARK,
-            stage = STAGE_DARK,
-            stageDark = STAGE_DARK,
-            stageMid = STAGE_MID,
-            stageLight = STAGE_LIGHT,
-            stageLine = Color(0xFF3A3F47),
-            stageInk = Color(0xFFD4DAE3),
-            stageMuted = Color(0xFF969AA4),
-            shadowNavAmbient = Color(0x1F000000),
-            shadowNavSpot = Color(0x40000000),
-            shadowCardAmbient = Color(0x14000000),
-            shadowCardSpot = Color(0x24000000),
-            primarySoftAlpha = 0.18f,
-            ringAlpha = 0.40f,
-        )
-    }
 }
 
 /**
  * The appearance every `FmPalette` read resolves against. Provided by
- * [FrameMarkTheme]; defaults to [FmColors.Light] so a preview or a test that
- * never wraps its content still gets the light palette.
+ * [FrameMarkTheme]; defaults to the default palette's light snapshot so a preview
+ * or a test that never wraps its content still gets a valid appearance.
+ *
+ * The lambda is lazy on purpose: it runs on the first read, never during static
+ * initialization, so [FmPalettes] and [FmColors] cannot initialize each other.
  */
-val LocalFmColors = staticCompositionLocalOf { FmColors.Light }
+val LocalFmColors = staticCompositionLocalOf { FmPalettes.of(PaletteId.Default, dark = false) }
 
 /**
  * Whether the resolved appearance is dark. Provided by [FrameMarkTheme]; read it
@@ -390,7 +284,8 @@ object FmPalette {
 
     /**
      * Slider idle part only (unmodified state), see the usage note above.
-     * Light `#9AA4B1`; dark `#6B7688` (3.63:1 on the dark surface).
+     * 由配色的次要文字往面板方向混出来（浅色 38 %、深色 30 %），深色下保证相对
+     * 面板 ≥ 3:1；具体值见 `Palette.kt` 的派生注释。
      */
     val sliderIdle: Color
         @Composable @ReadOnlyComposable get() = LocalFmColors.current.sliderIdle
@@ -589,7 +484,8 @@ object FmElevation {
  *
  * Light: the classic soft shadow (`ambientColor`/`spotColor` from [FmColors]).
  * Dark: the same shadow, deeper, **plus** a 1 dp [FmPalette.outlineStrong]
- * hairline — a shadow alone does not separate `#1D1E22` from `#121316`.
+ * hairline — a shadow alone does not separate the dark surface from the dark
+ * canvas (e.g. `#222923` from `#181C19` in the default palette).
  *
  * @param level [FmElevation.card] (default) or [FmElevation.nav]; anything below
  *   [FmElevation.nav] uses the card shadow colours and anything at or above it
@@ -619,8 +515,9 @@ object FmBreakpoints {
  * U5 desktop three-column geometry.
  *
  * Reference: the P3 Electron baseline at 1280×800 has a 248 dp library panel, a
- * 320 dp inspector panel, 12 dp canvas gaps and rounded white panels on the
- * `#F0F2F5` canvas. Those are layout/spacing references only — the panels are
+ * 320 dp inspector panel, 12 dp canvas gaps and rounded white panels on a light
+ * `#F0F2F5` canvas (the retired showcase baseline; the shipped canvas now comes
+ * from `Palette.kt`). Those are layout/spacing references only — the panels are
  * native Compose, not a copy of the web DOM.
  */
 object FmDesktop {
@@ -747,19 +644,25 @@ object FmStageChrome {
 
     /** 选中圆点的白环 `0 0 0 3.5px #fff`。 */
     val toneSelected: Color
-        @Composable @ReadOnlyComposable get() = FmPalette.onPrimary
+        @Composable @ReadOnlyComposable get() = STAGE_WHITE
 
     /**
      * 「原图 · 松开恢复」提示：`background: rgba(255,255,255,.92); color: var(--ink)`
      * —— 白底深字。文字色取 [FmColors.stageDark] 而不是 `onSurface`：这块白片不管
      * 外观如何都画在舞台的深色底上，深色模式下 `onSurface` 是浅色，会在白片上消失。
+     *
+     * 选中环与白片都用**固定白**而不是 [FmPalette.onPrimary]：深色外观的
+     * `onPrimary` 是深色字（墨绿深色是 `#182A20`），拿它画环会让选中点变深。
      */
     val flagSurface: Color
-        @Composable @ReadOnlyComposable get() = FmPalette.onPrimary.copy(alpha = 0.92f)
+        @Composable @ReadOnlyComposable get() = STAGE_WHITE.copy(alpha = 0.92f)
 
     val flagInk: Color
         @Composable @ReadOnlyComposable get() = FmPalette.stage
 }
+
+/** 舞台上的固定白：舞台在四套配色 / 两种外观下都是同一个中性深灰。 */
+private val STAGE_WHITE = Color(0xFFFFFFFF)
 
 /** 舞台底色按比例压暗：`stageDark × factor`，alpha 交给调用点（叠在舞台上）。 */
 private fun FmColors.dimmedStage(factor: Float): Color =

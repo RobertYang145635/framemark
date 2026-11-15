@@ -7,9 +7,7 @@ import com.framemark.native.library.LibraryCategory
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibrarySnapshot
 import com.framemark.native.shell.EditorTool
-import com.framemark.native.shell.PHONE_FRAME_CARD_SIZE_DP
 import com.framemark.native.shell.computePhoneEditorHeights
-import com.framemark.native.shell.phoneCompactSheetMetrics
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -149,11 +147,10 @@ class PhoneBorderPageStateTest {
         assertEquals(PhoneBorderPageState.CHOOSE_LABEL, PhoneBorderPageState.actionLabel(null))
         assertEquals("未选边框", PhoneBorderPageState.currentName(null))
         assertEquals(PhoneBorderPageState.NO_CURRENT_LABEL, PhoneBorderPageState.currentName(null))
-        // 选过：主按钮变成「换一个边框」。
-        assertEquals("换一个边框", PhoneBorderPageState.actionLabel(oppo))
+        // 选过：行内次级动作是「更换」，不再占一整行主按钮（配色方案 §4.1）。
+        assertEquals("更换", PhoneBorderPageState.actionLabel(oppo))
         assertEquals(PhoneBorderPageState.CHANGE_LABEL, PhoneBorderPageState.actionLabel(oppo))
         assertEquals("OPPO 经典", PhoneBorderPageState.currentName(oppo))
-        // 两个文案不能是同一句：用户要能一眼看出「这是第一次选」还是「换掉现在这张」。
         assertTrue(PhoneBorderPageState.CHOOSE_LABEL != PhoneBorderPageState.CHANGE_LABEL)
     }
 
@@ -174,89 +171,63 @@ class PhoneBorderPageStateTest {
     }
 
     @Test
-    fun thePanelNoteStatesHowBigTheLibraryIsFromTheCatalogItself() {
-        // 8 个分类 / 180 张卡是目录给的数字，不写死在文案里。
-        val note = PhoneBorderPageState.libraryNote(categoryCount = 8, cardCount = 180)
-        assertTrue(note.contains("8"), "note=$note")
-        assertTrue(note.contains("180"), "note=$note")
-        assertEquals(note, PhoneBorderPageState.libraryNote(8, 180), "说明必须稳定，不能每次拼出不同的话")
+    fun theLibrarySummaryLivesInTheLibraryHeaderNotInThePanel() {
+        // 库规模只在浏览库时出现；面板不再有第三行说明（配色方案 §4.1）。
+        assertEquals("8 个分类 · 180 个边框", PhoneBorderPageState.librarySummary(8, 180))
+        assertEquals(
+            PhoneBorderPageState.librarySummary(8, 180),
+            PhoneBorderPageState.librarySummary(8, 180),
+            "说明必须稳定，不能每次拼出不同的话",
+        )
     }
 
     // -- 面板竖向预算：不留滚动容器 -------------------------------------------
 
     @Test
-    fun thePanelHeightIsTheSumOfItsBandsAndNothingElse() {
-        // 8（上内边距）+ 128（缩略图：库里那张卡自己的尺寸）+ 8（到按钮的间距）+
-        // 48（主按钮）+ 4 + 14（说明）+ 8（下内边距）= 218 dp。
-        assertEquals(218f, PhoneBorderPageState.panelHeight(tileDp = PHONE_FRAME_CARD_SIZE_DP), 0.01f)
-        // 阶梯中段：96 dp 的缩略图是 186 dp。
-        assertEquals(186f, PhoneBorderPageState.panelHeight(tileDp = 96f), 0.01f)
-        // 说明行拿掉就是 120 dp：这是面板的绝对下限（缩略图最小一档 + 主按钮）。
-        assertEquals(120f, PhoneBorderPageState.panelHeight(tileDp = 48f, showsNote = false), 0.01f)
-        assertEquals(138f, PhoneBorderPageState.panelHeight(tileDp = 48f, showsNote = true), 0.01f)
-        // 字号放大时两行文字（21 sp 名称 + 14 sp 说明）也可能高过缩略图，预算跟着长大，
-        // 缩略图不缩文字：(21 + 14) × 1.5 + 4 = 56.5 dp 的那一行。
-        val scaled = PhoneBorderPageState.panelHeight(tileDp = 48f, showsNote = false, fontScale = 1.5f)
-        assertEquals(8f + 56.5f + 8f + 48f + 8f, scaled, 0.01f)
-        // 阶梯的第一档就是库里的卡片尺寸：面板上的「当前边框」和网格里的同一张卡同大。
-        assertEquals(PHONE_FRAME_CARD_SIZE_DP, PhoneBorderPageState.PANEL_TILE_LADDER_DP.first())
-        assertEquals(
-            PhoneBorderPageState.PANEL_TILE_LADDER_DP.size,
-            PhoneBorderPageState.PANEL_TILE_LADDER_DP.distinct().size,
-        )
+    fun thePanelHeightIsTheCompactCurrentRowPlusThePrimaryOnlyWhenEmpty() {
+        // 有边框：8（上）+ 72（缩略图/行）+ 8（下）= 88；行内「更换」44 不单独占高。
+        assertEquals(88f, PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = true), 0.01f)
+        // 没有边框：8 + 72 + 8（间距）+ 48（全宽主按钮）+ 8 = 144。
+        assertEquals(144f, PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = false), 0.01f)
+        assertEquals(listOf(72f, 64f, 56f), PhoneBorderPageState.PANEL_TILE_LADDER_DP)
+        // 字号 1.5×：(21 + 14) × 1.5 + 4 = 56.5 < 72，行高仍由缩略图决定。
+        assertEquals(88f, PhoneBorderPageState.panelHeight(72f, hasCard = true, fontScale = 1.5f), 0.01f)
+        assertEquals(144f, PhoneBorderPageState.panelHeight(72f, hasCard = false, fontScale = 1.5f), 0.01f)
     }
 
     @Test
     fun theLayoutPicksTheBiggestTileThatFitsInsteadOfScrolling() {
-        // 218 装得下 128；再矮一档降到 112（202），说明行保留。
-        assertEquals(128f, PhoneBorderPageState.panelLayout(236f).tileDp)
-        assertTrue(PhoneBorderPageState.panelLayout(236f).showsNote)
-        assertEquals(218f, PhoneBorderPageState.panelLayout(236f).heightDp, 0.01f)
-        assertEquals(128f, PhoneBorderPageState.panelLayout(218f).tileDp)
-        assertEquals(112f, PhoneBorderPageState.panelLayout(217f).tileDp)
-        assertEquals(112f, PhoneBorderPageState.panelLayout(202f).tileDp)
-        val tighter = PhoneBorderPageState.panelLayout(180f)
-        assertEquals(84f, tighter.tileDp)
-        assertTrue(tighter.showsNote, "说明行还能放下时不该先丢掉它")
-        assertEquals(174f, tighter.heightDp, 0.01f)
-        // 都放不下：先丢说明行，缩略图退到最小一档——仍然不是滚动容器。
-        val floor = PhoneBorderPageState.panelLayout(130f)
-        assertEquals(48f, floor.tileDp)
-        assertFalse(floor.showsNote)
-        assertEquals(PhoneBorderPageState.panelFloorHeight(), floor.heightDp, 0.01f)
-        assertEquals(120f, floor.heightDp, 0.01f)
-        // 阶梯是单调的：窗口越矮，图不会变大。
-        PhoneBorderPageState.PANEL_TILE_LADDER_DP.zipWithNext().forEach { (roomy, tight) ->
-            assertTrue(roomy > tight, "ladder=$roomy -> $tight")
-        }
-        // 高度没有约束时（非有限值）按 0 处理，取最小一档：与
-        // `phoneCompactSheetMetrics` 对非有限入参的约定一致，绝不返回一个「看起来
-        // 很宽裕」的假数字。
-        assertEquals(48f, PhoneBorderPageState.panelLayout(Float.POSITIVE_INFINITY).tileDp)
-        assertEquals(48f, PhoneBorderPageState.panelLayout(Float.NaN).tileDp)
-        assertEquals(48f, PhoneBorderPageState.panelLayout(0f).tileDp)
+        // 有边框：72 → 88，64 → 80，56 → 72。
+        assertEquals(72f, PhoneBorderPageState.panelLayout(200f, hasCard = true).tileDp)
+        assertEquals(72f, PhoneBorderPageState.panelLayout(88f, hasCard = true).tileDp)
+        assertEquals(64f, PhoneBorderPageState.panelLayout(87f, hasCard = true).tileDp)
+        assertEquals(56f, PhoneBorderPageState.panelLayout(79f, hasCard = true).tileDp)
+        assertEquals(56f, PhoneBorderPageState.panelLayout(0f, hasCard = true).tileDp)
+        assertEquals(56f, PhoneBorderPageState.panelLayout(Float.NaN, hasCard = true).tileDp)
+        // 无边框：72 → 144，64 → 136，56 → 128。
+        assertEquals(72f, PhoneBorderPageState.panelLayout(144f, hasCard = false).tileDp)
+        assertEquals(64f, PhoneBorderPageState.panelLayout(143f, hasCard = false).tileDp)
+        assertEquals(56f, PhoneBorderPageState.panelLayout(127f, hasCard = false).tileDp)
+        assertEquals(
+            PhoneBorderPageState.panelFloorHeight(hasCard = false),
+            PhoneBorderPageState.panelLayout(0f, hasCard = false).heightDp,
+            0.01f,
+        )
+        assertFalse(PhoneBorderPageState.panelLayout(144f, hasCard = false).hasCard)
     }
 
     @Test
     fun thePanelFitsTheDefaultBorderSheetOnEveryCarriedScreen() {
         // 底板高度由 `computePhoneEditorHeights` 决定（`PhoneEditorCompactSheetTest` 钉住
         // 390×844 / 360×800 / 412×915 的具体值），面板拿到的是「底板 − 把手行 − 标题行」。
-        // 这里把整条链算一遍：面板必须在这块高度里放得下，否则就会裁掉按钮。
-        data class Case(
-            val width: Float,
-            val height: Float,
-            val status: Float,
-            val nav: Float,
-            /** 这块面板应该拿到的缩略图边长。 */
-            val tile: Float,
-        )
+        data class Case(val width: Float, val height: Float, val status: Float, val nav: Float)
 
         val cases = listOf(
-            Case(390f, 844f, 32f, 24f, tile = 128f),
-            Case(360f, 800f, 24f, 16f, tile = 128f),
-            Case(412f, 915f, 24f, 16f, tile = 128f),
-            // 三键导航条最矮的那一档（目录里已登记的 residual）：面板降一档。
-            Case(360f, 800f, 48f, 48f, tile = 112f),
+            Case(390f, 844f, 32f, 24f),
+            Case(360f, 800f, 24f, 16f),
+            Case(412f, 915f, 24f, 16f),
+            // 三键导航条最矮的那一档（目录里已登记的 residual）。
+            Case(360f, 800f, 48f, 48f),
         )
         cases.forEach { case ->
             val available = case.height - case.status - case.nav
@@ -268,30 +239,33 @@ class PhoneBorderPageStateTest {
                 photosOpen = false,
             )
             assertFalse(heights.fullPage, "边框工具在 ${case.width}x${case.height} 应留在底板里")
-            val metrics = phoneCompactSheetMetrics(heights.sheet)
-            val panelAvailable = heights.sheet - metrics.grabber - metrics.head
-            val layout = PhoneBorderPageState.panelLayout(panelAvailable)
-            assertTrue(
-                layout.heightDp <= panelAvailable + 0.01f,
-                "panel=${layout.heightDp} > available=$panelAvailable on " +
-                    "${case.width}x${case.height} (sheet=${heights.sheet})",
+            // 2026-11-15：边框 sheet = 16 把手 + 44 标题 + 144 面板（无边框上界）。
+            val chrome = com.framemark.native.shell.PHONE_BORDER_SHEET_GRABBER_DP +
+                com.framemark.native.shell.PHONE_BORDER_SHEET_HEAD_DP
+            val expectedSheet = chrome + PhoneBorderPageState.panelHeight(
+                tileDp = PhoneBorderPageState.PANEL_TILE_DP,
+                hasCard = false,
             )
-            // 常规窗口里缩略图是最大一档（= 库里那张卡的尺寸），不是被挤小的那一档。
-            assertEquals(
-                case.tile,
-                layout.tileDp,
-                "screen=${case.width}x${case.height} available=$panelAvailable",
-            )
-            assertTrue(layout.showsNote, "屏幕 ${case.width}x${case.height} 上说明行应当还在")
-            // 面板占底板的比例落在 owner 给的 34–38 % 区间里（这里是整块面板，含说明行）。
-            assertTrue(heights.sheet / available in 0.33f..0.39f, "sheet%=${heights.sheet / available}")
+            assertEquals(expectedSheet, heights.sheet, 0.01f, "sheet on ${case.width}x${case.height}")
+            val panelAvailable = heights.sheet - chrome
+            listOf(true, false).forEach { hasCard ->
+                val layout = PhoneBorderPageState.panelLayout(panelAvailable, hasCard)
+                assertTrue(
+                    layout.heightDp <= panelAvailable + 0.01f,
+                    "hasCard=$hasCard panel=${layout.heightDp} > available=$panelAvailable " +
+                        "on ${case.width}x${case.height} (sheet=${heights.sheet})",
+                )
+                assertTrue(
+                    layout.tileDp >= PhoneBorderPageState.PANEL_TILE_MIN_DP,
+                    "缩略图不应小于最小一档：${layout.tileDp}",
+                )
+            }
         }
     }
 
     @Test
-    fun thePanelStillFitsWithThePhotoStripOpenAndDropsTheNoteOnlyWhenItHasTo() {
-        // 照片条打开会从底板里拿走 64 dp（`PhoneEditorCompactSheetTest` 里那条 residual）：
-        // 面板这时候降一档缩略图，说明行仍在。
+    fun thePanelStillFitsWithThePhotoStripOpen() {
+        // 照片条只从舞台拿 64 dp；边框 sheet 与面板高度不变。
         val available = 844f - 32f - 24f
         val heights = computePhoneEditorHeights(
             availableHeightDp = available,
@@ -300,13 +274,17 @@ class PhoneBorderPageStateTest {
             tool = EditorTool.Border,
             photosOpen = true,
         )
-        assertEquals(216f, heights.sheet, 0.01f)
-        val metrics = phoneCompactSheetMetrics(heights.sheet)
-        val panelAvailable = heights.sheet - metrics.grabber - metrics.head
-        val layout = PhoneBorderPageState.panelLayout(panelAvailable)
-        assertEquals(84f, layout.tileDp)
-        assertTrue(layout.showsNote)
+        val chrome = com.framemark.native.shell.PHONE_BORDER_SHEET_GRABBER_DP +
+            com.framemark.native.shell.PHONE_BORDER_SHEET_HEAD_DP
+        val expectedSheet = chrome + PhoneBorderPageState.panelHeight(
+            tileDp = PhoneBorderPageState.PANEL_TILE_DP,
+            hasCard = false,
+        )
+        assertEquals(expectedSheet, heights.sheet, 0.01f)
+        val panelAvailable = heights.sheet - chrome
+        val layout = PhoneBorderPageState.panelLayout(panelAvailable, hasCard = true)
         assertTrue(layout.heightDp <= panelAvailable + 0.01f, "layout=${layout.heightDp}")
+        assertTrue(layout.tileDp >= PhoneBorderPageState.PANEL_TILE_MIN_DP)
     }
 
     // -- 覆盖层的分区：只有一个滚动区 -----------------------------------------

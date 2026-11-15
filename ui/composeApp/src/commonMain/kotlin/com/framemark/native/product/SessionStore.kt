@@ -217,6 +217,17 @@ class SessionStore(
     fun saveProject(project: Project): StoreResult<Unit> =
         saveAt(documentPath(DocumentKind.Project), { ProjectCodec.encode(project) })
 
+    /**
+     * Writes the project to an explicit [path] instead of the canonical document.
+     *
+     * Exists for the window-close guard: when the canonical write fails (a locked
+     * or unwritable data directory), the user may still be able to keep the edits
+     * by saving a copy somewhere else. Same atomic staged write, same size bound —
+     * a copy that would be refused as a document is refused here too.
+     */
+    fun saveProjectCopy(project: Project, path: String): StoreResult<Unit> =
+        saveAt(path, { ProjectCodec.encode(project) })
+
     fun loadProject(): StoreResult<Project> =
         loadAt(documentPath(DocumentKind.Project), DocumentKind.Project, ProjectCodec::decode)
 

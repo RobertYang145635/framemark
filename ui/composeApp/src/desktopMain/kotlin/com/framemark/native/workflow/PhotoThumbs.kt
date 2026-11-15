@@ -1,5 +1,6 @@
 package com.framemark.native.workflow
 
+import com.framemark.native.product.orientedImage
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -33,7 +34,7 @@ object PhotoThumbs {
                 val param: ImageReadParam = reader.defaultReadParam
                 if (sample > 1) param.setSourceSubsampling(sample, sample, 0, 0)
                 val raw = reader.read(0, param) ?: return@runCatching null
-                val source = applyOrientation(raw, PhotoMetadata.orientation(file))
+                val source = raw.orientedImage(PhotoMetadata.orientation(file))
                 val scale = if (max(source.width, source.height) > maxEdge) {
                     maxEdge.toDouble() / max(source.width, source.height)
                 } else {
@@ -67,29 +68,4 @@ object PhotoThumbs {
             }
         }
     }.getOrNull()
-}
-
-
-private fun applyOrientation(source: BufferedImage, orientation: Int): BufferedImage {
-    if (orientation !in 2..8 || orientation == 1) return source
-    val swap = orientation in 5..8
-    val w = if (swap) source.height else source.width
-    val h = if (swap) source.width else source.height
-    val out = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
-    val g = out.createGraphics()
-    try {
-        when (orientation) {
-            2 -> { g.translate(w.toDouble(), 0.0); g.scale(-1.0, 1.0) }
-            3 -> { g.translate(w.toDouble(), h.toDouble()); g.rotate(Math.PI) }
-            4 -> { g.translate(0.0, h.toDouble()); g.scale(1.0, -1.0) }
-            5 -> { g.rotate(Math.PI / 2); g.scale(1.0, -1.0) }
-            6 -> { g.translate(w.toDouble(), 0.0); g.rotate(Math.PI / 2) }
-            7 -> { g.rotate(-Math.PI / 2); g.scale(1.0, -1.0) }
-            8 -> { g.translate(0.0, h.toDouble()); g.rotate(-Math.PI / 2) }
-        }
-        g.drawImage(source, 0, 0, null)
-    } finally {
-        g.dispose()
-    }
-    return out
 }

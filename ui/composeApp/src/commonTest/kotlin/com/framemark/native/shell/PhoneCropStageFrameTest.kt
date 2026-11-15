@@ -1,6 +1,7 @@
 package com.framemark.native.shell
 
 import com.framemark.native.product.PhotoCrop
+import com.framemark.native.product.PhotoOrientation
 import com.framemark.native.shell.phone.cropApplies
 import com.framemark.native.shell.phone.cropFrameBounds
 import com.framemark.native.shell.phone.cropStageFrame
@@ -96,5 +97,34 @@ class PhoneCropStageFrameTest {
         assertEquals(0f, frame.top, 1e-3f)
         assertEquals(400f, frame.width, 1e-3f)
         assertEquals(300f, frame.height, 1e-3f)
+    }
+
+    @Test
+    fun a_rotated_photo_is_judged_in_its_display_frame() {
+        // A-01 regression: a 6000x4000 JPEG stored landscape with Orientation=6 is
+        // displayed (and rendered) as 4000x6000. The crop UI used the stored size, so
+        // it drew a landscape frame under a portrait bitmap and offered a crop the
+        // engine does not perform — or hid one it does.
+        val rawWidth = 6000
+        val rawHeight = 4000
+        val display = PhotoOrientation.displaySize(rawWidth, rawHeight, 6)
+        assertEquals(4000, display.width)
+        assertEquals(6000, display.height)
+
+        // A 2:3 box matches the display aspect exactly: nothing to choose.
+        val portraitBox = ImageRect(0f, 0f, 400f, 600f)
+        assertFalse(
+            cropApplies(display.width, display.height, portraitBox),
+            "the rendered frame keeps the whole photo, so no crop UI",
+        )
+        assertTrue(
+            cropApplies(rawWidth, rawHeight, portraitBox),
+            "the old stored-raster judgement was wrong for this photo",
+        )
+
+        // The fitted frame follows the display aspect (portrait), not the raw one.
+        val frame = cropStageFrame(400f, 400f, display.width, display.height)
+        assertEquals(400f, frame.height, 1e-3f)
+        assertEquals(400f * 2f / 3f, frame.width, 1e-3f)
     }
 }

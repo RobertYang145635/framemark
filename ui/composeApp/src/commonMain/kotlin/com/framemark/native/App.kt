@@ -28,7 +28,7 @@ import com.framemark.native.workflow.WorkflowEnv
  * WP-T: the appearance comes from [AppearanceEnv], installed by the platform entry
  * point before the first composition (`main.kt` on desktop, `MainActivity` on
  * Android). The resolved `dark` boolean is handed to [FrameMarkTheme]; the
- * controller itself is published through [LocalAppearance] so `AppearancePicker`
+ * controller itself is published through [LocalAppearance] so `AppearancePanel`
  * needs no parameters. A target that forgets to install one gets a non-persisting
  * controller instead of a crash.
  *
@@ -49,7 +49,11 @@ fun FrameMarkApp() {
     // platform value (Android onResume) recomposes the theme with the new motion.
     val motionScale = FmPlatformMotionScale.scale
     CompositionLocalProvider(LocalAppearance provides appearance) {
-        FrameMarkTheme(dark = dark, motionScale = motionScale) {
+        FrameMarkTheme(
+            dark = dark,
+            motionScale = motionScale,
+            palette = appearance.settings.palette,
+        ) {
             Surface(modifier = Modifier.fillMaxSize(), color = FmPalette.canvas) {
                 if (WorkflowEnv.projectHolder != null) {
                     DesktopShell(layout = desktopLayout)

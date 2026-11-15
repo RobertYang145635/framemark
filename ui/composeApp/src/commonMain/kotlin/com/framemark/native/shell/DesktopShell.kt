@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -70,6 +71,7 @@ import com.framemark.native.shell.desktop.DesktopTrial
 import com.framemark.native.shell.desktop.desktopPageForLaunchTab
 import com.framemark.native.shell.desktop.desktopWorkflowWatermark
 import com.framemark.native.shell.desktop.BatchWorkspace
+import com.framemark.native.shell.desktop.DesktopAboutOverlay
 import com.framemark.native.shell.desktop.DesktopApplyDesignDialog
 import com.framemark.native.shell.desktop.DesktopColumnLayout
 import com.framemark.native.shell.desktop.DesktopExportSheet
@@ -77,6 +79,7 @@ import com.framemark.native.shell.desktop.DesktopHelpOverlay
 import com.framemark.native.shell.desktop.DesktopRemovePhotoDialog
 import com.framemark.native.shell.desktop.DesktopResetDesignDialog
 import com.framemark.native.shell.desktop.DesktopSavePresetDialog
+import com.framemark.native.shell.desktop.DesktopExitBlockedDialog
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -84,6 +87,7 @@ import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.product.BatchJobStatus
 import com.framemark.native.product.PhotoRef
+import com.framemark.native.workflow.AppExitGate
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.workflow.InMemoryProjectHolder
@@ -91,6 +95,8 @@ import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.ProjectStatusBanner
 import com.framemark.native.workflow.ProjectPresetSheet
+import com.framemark.native.workflow.LocalTextEditFocus
+import com.framemark.native.workflow.TextEditFocus
 import com.framemark.native.workflow.TextSlotRegistry
 import com.framemark.native.workflow.WorkflowEnv
 import com.framemark.native.workflow.withNativeTextSlots
@@ -177,7 +183,14 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     var trialState by remember { mutableStateOf(DesktopTrial.UndoStep.Empty) }
     var trialNotice by remember { mutableStateOf<String?>(null) }
     var holdOriginal by remember { mutableStateOf(false) }
-    var librarySearchFocused by remember { mutableStateOf(false) }
+    // W-01: every editable field joins this registry while focused, so the root
+    // key handler can yield the keys that belong to text editing.
+    val textEditFocus = remember { TextEditFocus() }
+    // A 按住看原图 hold that started before the user clicked into a field must not
+    // stay latched: once editing begins, the Backslash KeyUp is yielded to the field.
+    LaunchedEffect(textEditFocus.isEditing) {
+        if (textEditFocus.isEditing) holdOriginal = false
+    }
     var sampleImportAttempted by remember { mutableStateOf(false) }
 
     // §4.6：FM_SAMPLE_PHOTO=1 且项目里还没有照片时，导入平台自带的示例照片。
@@ -220,6 +233,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     var presetSheetOpen by remember { mutableStateOf(false) }
     var exportSheetOpen by remember { mutableStateOf(false) }
     var helpOpen by remember { mutableStateOf(false) }
+    var aboutOpen by remember { mutableStateOf(false) }
     var applyDesignOpen by remember { mutableStateOf(false) }
 
     val libraryIndex = remember(libraryState) {
@@ -519,8 +533,9 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
     }
 
-    BackHandler(enabled = presetSheetOpen || exportSheetOpen || helpOpen) {
+    BackHandler(enabled = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen) {
         when {
+            aboutOpen -> aboutOpen = false
             helpOpen -> helpOpen = false
             exportSheetOpen -> exportSheetOpen = false
             presetSheetOpen -> presetSheetOpen = false
@@ -669,7 +684,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     },
                     onOpenPresetSheet = { presetSheetOpen = true },
                     onCollapse = ::collapseLeft,
-                    onSearchFocusChanged = { librarySearchFocused = it },
                 )
             }
         }
@@ -690,12 +704,25 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         FeelProbe.ColdStart(libraryState is LibraryLoadState.Ready)
         StartupFrameProbe()
 
+        CompositionLocalProvider(LocalTextEditFocus provides textEditFocus) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .focusRequester(focusRequester)
                 .focusable()
                 .onPreviewKeyEvent { event ->
+                    // W-01: the root receives preview keys before the focused text field.
+                    // Yield the three key families an editor owns (backslash, arrows,
+                    // undo/redo); continue consuming everything else as before.
+                    if (textEditFocus.isEditing &&
+                        TextEditKeys.belongsToTextEditor(
+                            key = event.key,
+                            ctrl = event.isCtrlPressed,
+                            keyDown = event.type == KeyEventType.KeyDown,
+                        )
+                    ) {
+                        return@onPreviewKeyEvent false
+                    }
                     if (projects.projectWritesBlocked) return@onPreviewKeyEvent true
                     if (event.key == Key.Backslash) {
                         // 按住 `\` 看原图（报告 §6）：按下显示原图，松开恢复。
@@ -703,9 +730,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         return@onPreviewKeyEvent true
                     }
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                    val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen
+                    val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen
                     if (event.key == Key.Escape) {
                         when {
+                            aboutOpen -> aboutOpen = false
                             helpOpen -> helpOpen = false
                             exportSheetOpen -> exportSheetOpen = false
                             presetSheetOpen -> presetSheetOpen = false
@@ -716,8 +744,8 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     if (sheetOpen) return@onPreviewKeyEvent false
 
                     // ← → 逐个试（报告 §6）：顺序来自 LibraryIndex.traversal。
-                    // 搜索框有焦点时把方向键让给文字编辑。
-                    if (!librarySearchFocused && !event.isCtrlPressed && !event.isShiftPressed &&
+                    // 文本编辑的让位在处理器顶部统一完成（TextEditKeys），这里只管舞台。
+                    if (!event.isCtrlPressed && !event.isShiftPressed &&
                         stageMode == StageMode.Edit
                     ) {
                         when (event.key) {
@@ -859,6 +887,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     onSavePreset = ::openSavePreset,
                     onResetDesign = { resetConfirmOpen = true },
                     onOpenHelp = { helpOpen = true },
+                    onOpenAbout = { aboutOpen = true },
                     onToggleLeft = ::toggleLeft,
                     // 宽窗口是"折叠/展开右栏"，窄窗口（compact）下退化成"切到参数面板"，
                     // 这样去掉顶栏那个演示稿没有的「参数」按钮之后，窄窗口仍然进得去。
@@ -974,6 +1003,28 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             }
 
             DesktopHelpOverlay(open = helpOpen, onDismiss = { helpOpen = false })
+            DesktopAboutOverlay(open = aboutOpen, onDismiss = { aboutOpen = false })
+            // W-02: the window close handler refused to exit; this is the only place
+            // that can retry, save a copy, or leave with the edits knowingly dropped.
+            DesktopExitBlockedDialog(
+                block = AppExitGate.block,
+                onRetry = { AppExitGate.retry(projects.flush(), projects.saveError) },
+                onSaveCopy = {
+                    val path = projects.pickProjectCopyPath()
+                    if (path != null) {
+                        if (projects.saveProjectCopy(path)) {
+                            AppExitGate.copySaved(path)
+                        } else {
+                            AppExitGate.copyFailed(projects.saveError)
+                        }
+                    }
+                },
+                onRevealFolder = projects.projectFilePath()?.let { path ->
+                    { WorkflowEnv.platform?.revealInFolder(path) }
+                },
+                onDiscard = { AppExitGate.discardAndExit() },
+                onDismiss = { AppExitGate.dismiss() },
+            )
             DesktopSavePresetDialog(
                 open = savePresetOpen,
                 name = savePresetName,
@@ -1041,6 +1092,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     },
                 )
             }
+        }
         }
     }
 }

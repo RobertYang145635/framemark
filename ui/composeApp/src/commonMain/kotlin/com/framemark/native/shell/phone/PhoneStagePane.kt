@@ -365,9 +365,14 @@ internal fun StageArea(
                 PhoneStageChip(
                     text = when {
                         compare -> "原图"
-                        else -> borderName ?: "未选边框"
+                        borderName == null -> "未选边框"
+                        // 配色方案 §4.1：已应用边框的名称只在底板「当前项」一处；
+                        // 画布 chip 只承担定位/手势提示。专注模式收起底板时例外，
+                        // 那时名称只能靠这块 chip 传达。
+                        focusMode -> borderName
+                        else -> "边框"
                     },
-                    description = "当前边框",
+                    description = borderName?.let { "当前边框：$it" } ?: "当前边框",
                     hint = hint,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -435,10 +440,7 @@ private fun StagePlaceholder(tray: PhotoTray, onOpenBorder: () -> Unit) {
             cornerRadius = 0.dp,
             modifier = Modifier.fillMaxSize(),
         )
-        Text(
-            text = "选择边框",
-            style = FmType.labelMedium,
-            color = FmPalette.onPrimary,
+        Box(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
@@ -448,8 +450,15 @@ private fun StagePlaceholder(tray: PhotoTray, onOpenBorder: () -> Unit) {
                     role = Role.Button
                 }
                 .clickable(onClick = onOpenBorder)
-                .padding(horizontal = FmSpacing.xl, vertical = FmSpacing.md),
-        )
+                .padding(horizontal = FmSpacing.xl),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "选择边框",
+                style = FmType.labelMedium,
+                color = FmPalette.onPrimary,
+            )
+        }
     }
 }
 

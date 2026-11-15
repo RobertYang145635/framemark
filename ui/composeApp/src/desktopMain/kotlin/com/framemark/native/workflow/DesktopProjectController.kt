@@ -671,9 +671,13 @@ class DesktopProjectController(
 
     override fun pickPresetExportPath(suggestedName: String): String? {
         val dialog = FileDialog(null as Frame?, "导出预设", FileDialog.SAVE)
+        runCatching {
+            File(store.documentPath(com.framemark.native.product.DocumentKind.PresetLibrary))
+                .absoluteFile.parentFile?.path
+        }.getOrNull()?.let { dialog.directory = it }
         dialog.file = suggestedName.ifBlank { "framemark-preset" } + ".json"
         dialog.isVisible = true
-        return dialog.file?.let { File(it).absolutePath }
+        return resolveSaveDialogPath(dialog.directory, dialog.file)
     }
 
     override fun pickPresetImportPath(): String? {
@@ -1119,8 +1123,41 @@ class DesktopProjectController(
         }
     }
 
-    override fun flush() {
-        saveNow()
+    override fun flush(): Boolean = saveNow()
+
+    /** Path of the persisted project document (the exit dialog reveals its folder). */
+    override fun projectFilePath(): String =
+        store.documentPath(com.framemark.native.product.DocumentKind.Project)
+
+    override fun pickProjectCopyPath(): String? {
+        val dialog = FileDialog(null as Frame?, "另存工程副本", FileDialog.SAVE)
+        // AWT splits the user's choice into directory + file. Start in the project
+        // folder so the dialog's first location is writable even on a read-only
+        // install dir.
+        runCatching {
+            File(projectFilePath()).absoluteFile.parentFile?.path
+        }.getOrNull()?.let { dialog.directory = it }
+        dialog.file = "framemark-project-copy.json"
+        dialog.isVisible = true
+        return resolveSaveDialogPath(dialog.directory, dialog.file)
+    }
+
+    override fun saveProjectCopy(path: String): Boolean = synchronized(projectSaveLock) {
+        when (val result = store.saveProjectCopy(project, path)) {
+            is StoreResult.Ok -> {
+                // Non-`FM_` tags on purpose: the arch gate treats new `FM_*` literals
+                // as evidence-hook leakage and its allowlist only shrinks.
+                FmLog.info("PROJECT_COPY_SAVED") { "path=$path" }
+                true
+            }
+            is StoreResult.Failed -> {
+                FmLog.warn("PROJECT_COPY_FAILED") {
+                    "path=$path code=${result.error.code} reason=${result.error.message}"
+                }
+                false
+            }
+            StoreResult.Missing -> false
+        }
     }
 
     fun dispose() {
@@ -1186,12 +1223,31 @@ class DesktopProjectController(
     )
 }
 
+/**
+ * Path of a native SAVE dialog's choice.
+ *
+ * AWT [FileDialog] reports the chosen folder in [FileDialog.directory] and the
+ * typed/selected name in [FileDialog.file]; on Windows the name is relative even
+ * when the user navigated elsewhere. Reading only [FileDialog.file] resolves
+ * against the process working directory, so "另存工程副本" saved next to the
+ * executable instead of the picked folder (audit P2) — and choosing a writable
+ * folder could not bypass a read-only install directory. Compose both halves;
+ * a name that already is absolute wins (some Linux/macOS launchers report the
+ * full path in `file`).
+ */
+internal fun resolveSaveDialogPath(directory: String?, file: String?): String? {
+    val name = file?.takeIf { it.isNotBlank() } ?: return null
+    val direct = File(name)
+    if (direct.isAbsolute) return direct.path
+    val dir = directory?.takeIf { it.isNotBlank() } ?: return direct.absolutePath
+    return File(dir, name).path
+}
+
 /** Entry point for app shutdown: flush whatever project the shell has open. */
 object DesktopProjectRuntime {
     var current: DesktopProjectController? = null
         internal set
 
-    fun flush() {
-        current?.flush()
-    }
+    /** True when there is no project to lose, or the last synchronous write succeeded. */
+    fun flush(): Boolean = current?.flush() ?: true
 }

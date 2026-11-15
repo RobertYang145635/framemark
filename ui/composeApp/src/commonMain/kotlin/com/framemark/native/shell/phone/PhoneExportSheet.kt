@@ -167,6 +167,18 @@ fun PhoneExportSheet(
         }
     }
 
+    /**
+     * 「查看相册」= 打开系统相册并定位到这张导出图。平台返回一句话时写进 [note]，
+     * 所以相册没打开时不会假装打开（配色方案 §4.4）。
+     */
+    fun openGallery(path: String) {
+        val store = platform ?: run {
+            note = "存储不可用"
+            return
+        }
+        note = store.openGallery(path)
+    }
+
     fun generate(shareAfter: Boolean) {
         if (busyNow) return
         val target = card ?: return
@@ -261,6 +273,7 @@ fun PhoneExportSheet(
                 sharing = sharing,
                 publishing = publishing,
                 onShare = { share(current.path) },
+                onOpenGallery = { openGallery(current.path) },
                 onRetryPublish = { retryPublish(current.path) },
                 onDone = onDismiss,
             )
@@ -434,6 +447,7 @@ private fun ColumnScope.ExportDoneContent(
     sharing: Boolean,
     publishing: Boolean,
     onShare: () -> Unit,
+    onOpenGallery: () -> Unit,
     onRetryPublish: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -519,16 +533,20 @@ private fun ColumnScope.ExportDoneContent(
             )
         }
         Spacer(Modifier.height(FmSpacing.lg))
-        Text(
-            text = if (publishing) "正在重试写入相册…" else "相册里没看到？重试写入相册",
-            style = FmType.labelSmall.copy(fontSize = 12.sp),
-            color = FmPalette.primaryStrong,
+        Box(
             modifier = Modifier
                 .heightIn(min = 44.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .clickable(enabled = !busy, onClick = onRetryPublish)
-                .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
-        )
+                .padding(horizontal = FmSpacing.lg),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = if (publishing) "正在重试写入相册…" else "相册里没看到？重试写入相册",
+                style = FmType.labelSmall.copy(fontSize = 12.sp),
+                color = FmPalette.primaryStrong,
+            )
+        }
     }
     Spacer(Modifier.height(FmSpacing.md))
     Row(horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm)) {
@@ -537,6 +555,14 @@ private fun ColumnScope.ExportDoneContent(
             enabled = !busy,
             modifier = Modifier.weight(1f),
             onClick = onShare,
+        )
+        // 配色方案 §4.4 / InkFrame 复盘第 9 条：导出完成页同时给出「看成片」和
+        // 「分享」，不是只有一句「已保存」。相册打不开时由 note 说话。
+        GhostButton(
+            text = "查看相册",
+            enabled = !busy,
+            modifier = Modifier.weight(1f),
+            onClick = onOpenGallery,
         )
         PrimaryButton(
             text = "完成",
@@ -689,15 +715,19 @@ internal fun ColumnScope.ExportFormContent(
             )
             if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")
             if (canApplyToAll) {
-                Text(
-                    text = "把当前设计用到全部照片",
-                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
-                    color = FmPalette.primaryStrong,
+                Box(
                     modifier = Modifier
                         .heightIn(min = 32.dp)
                         .clickable(enabled = !busy, onClick = onApplyToAll)
                         .padding(vertical = 6.dp),
-                )
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = "把当前设计用到全部照片",
+                        style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.5.sp, lineHeight = 18.sp),
+                        color = FmPalette.primaryStrong,
+                    )
+                }
             }
             if (error != null) {
                 Text(text = error, style = FmType.bodyMedium, color = FmPalette.error)

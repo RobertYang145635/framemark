@@ -57,6 +57,7 @@ import com.framemark.native.inspector.FmTouchBubbleHeight
 import com.framemark.native.inspector.InspectorControl
 import com.framemark.native.inspector.fractionOf
 import com.framemark.native.shell.PHONE_PANEL_TAB_ROW_DP
+import com.framemark.native.shell.phoneGroupTabRowVisible
 import com.framemark.native.shell.PHONE_PARAM_LABEL_LINE_DP
 import com.framemark.native.shell.PHONE_PARAM_LABEL_SP
 import com.framemark.native.shell.PHONE_PARAM_ROW_MIN_TOUCH_DP
@@ -75,6 +76,7 @@ import com.framemark.native.theme.LocalFmMotionScale
 import com.framemark.native.theme.fmTweenSpec
 import com.framemark.native.workflow.DesignSession
 import kotlinx.coroutines.delay
+import com.framemark.native.workflow.trackTextEditing
 
 /**
  * 固定画框里的参数行（2026-11-10，照 Lightroom 手机版量出来的两行结构）。
@@ -319,7 +321,7 @@ private fun PhoneParamValueDialog(
                     ),
                     keyboardActions = KeyboardActions(onDone = { onConfirm(text) }),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(FmPalette.primary),
-                    modifier = Modifier.weight(1f).focusRequester(focus),
+                    modifier = Modifier.weight(1f).trackTextEditing().focusRequester(focus),
                 )
                 if (!unit.isNullOrBlank()) {
                     Text(
@@ -437,6 +439,11 @@ private fun PhoneSwitchTrack(checked: Boolean) {
 /**
  * 组 tab 行（钉在页头下面，**不跟参数滚**）：横滑只在放不下时才有必要，所以它永远
  * 包在 `horizontalScroll` 里 —— 裁字 / 换行都不是选项。
+ *
+ * **只有 0 或 1 组时不画这一行。** 一个 tab 没有可切换的对象，点它什么也不会发生；
+ * 而页头已经写着同一个名字（文字页的「文字」、空水印页的「图层」、只有一组参数时的
+ * 「规格 / 留白」），于是看起来像"页头下面又多了一个点了没用的东西"。多组页面的 tab
+ * 行保持原样——那里的点击是真的会换下面的参数。
  */
 @Composable
 fun PhoneGroupTabRow(
@@ -445,7 +452,7 @@ fun PhoneGroupTabRow(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (groups.isEmpty()) return
+    if (!phoneGroupTabRowVisible(groups.size)) return
     Row(
         modifier = modifier
             .fillMaxWidth()

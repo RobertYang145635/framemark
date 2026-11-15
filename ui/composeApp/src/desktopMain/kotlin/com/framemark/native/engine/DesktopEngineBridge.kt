@@ -37,8 +37,10 @@ data class EngineRenderResult(
     val responseJson: String,
     /**
      * Engine-reported `photo_src`: the source-photo pixels the render sampled
-     * (x, y, w, h), never rescaled with the output. Null when the engine did not
-     * report it, which is the signal that the Kotlin crop fallback must run.
+     * (x, y, w, h) in the photo's **display** (EXIF-applied) frame — the same frame
+     * `PhotoOrientation.displaySize` reports, never rescaled with the output. Null
+     * when the engine did not report it, which is the signal that the Kotlin crop
+     * fallback must run.
      */
     val photoSrc: DoubleArray? = null,
 )
@@ -719,12 +721,12 @@ class DesktopEngineBridge(
         val photoRect: DoubleArray,
         val texts: List<RawText>,
         val requiredResourceErrors: List<String> = emptyList(),
-        /** Engine-reported `photo_src` in source pixels; null when absent. */
+        /** Engine-reported `photo_src` in display (EXIF-applied) pixels; null when absent. */
         val photoSrc: DoubleArray? = null,
     )
 
     /**
-     * `photo_src` (`[x, y, w, h]` in the photo file's pixels) from either report
+     * `photo_src` (`[x, y, w, h]` in the photo's display frame) from either report
      * shape. Absent or unusable values are null, never an error: an older engine
      * simply does not report it, and the caller then re-derives the crop.
      */

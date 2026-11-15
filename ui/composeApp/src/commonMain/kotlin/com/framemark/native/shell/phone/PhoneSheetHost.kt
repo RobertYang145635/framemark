@@ -177,8 +177,10 @@ internal fun ColumnScope.PhoneSheetHost(
                             )
                             PhoneSheetHead(
                                 title = phoneToolLabel(tool),
+                                // 边框页不再重复当前名称（配色方案 §4.1）：名称只在
+                                // 面板的当前项一行出现；其它工具页保留卡片名作副题。
                                 subtitle = if (tool == EditorTool.Border) {
-                                    "当前：${card?.name ?: "未选择"}"
+                                    null
                                 } else {
                                     card?.name.orEmpty()
                                 },
@@ -339,10 +341,7 @@ private fun PanelRequiresBorder(onOpenBorder: () -> Unit, modifier: Modifier = M
             color = FmPalette.onSurfaceMuted,
         )
         Spacer(Modifier.height(FmSpacing.md))
-        Text(
-            text = "去选边框",
-            style = FmType.labelMedium,
-            color = FmPalette.onPrimary,
+        Box(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
@@ -352,8 +351,15 @@ private fun PanelRequiresBorder(onOpenBorder: () -> Unit, modifier: Modifier = M
                     role = Role.Button
                 }
                 .clickable(onClick = onOpenBorder)
-                .padding(horizontal = FmSpacing.xl, vertical = FmSpacing.md),
-        )
+                .padding(horizontal = FmSpacing.xl),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "去选边框",
+                style = FmType.labelMedium,
+                color = FmPalette.onPrimary,
+            )
+        }
     }
 }
 
@@ -381,16 +387,20 @@ internal fun ParameterPageHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            text = closeLabel,
-            style = FmType.labelMedium,
-            color = FmPalette.primaryStrong,
+        Box(
             modifier = Modifier
                 .heightIn(min = 48.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .clickable(onClick = onClose)
-                .padding(horizontal = FmSpacing.md, vertical = FmSpacing.md),
-        )
+                .padding(horizontal = FmSpacing.md),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = closeLabel,
+                style = FmType.labelMedium,
+                color = FmPalette.primaryStrong,
+            )
+        }
     }
 }
 
