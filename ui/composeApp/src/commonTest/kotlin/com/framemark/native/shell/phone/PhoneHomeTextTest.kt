@@ -21,7 +21,7 @@ class PhoneHomeTextTest {
         assertEquals("多张照片一起加边框", PhoneHomeText.BATCH_SUBTITLE)
         assertEquals("预设", PhoneHomeText.PRESETS_TITLE)
         assertEquals("最近编辑", PhoneHomeText.RECENT_TITLE)
-        assertEquals("全部", PhoneHomeText.RECENT_ALL)
+        assertEquals("继续最近编辑", PhoneHomeText.RECENT_ALL)
         assertEquals("设置", PhoneHomeText.SETTINGS_LABEL)
     }
 

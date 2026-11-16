@@ -198,6 +198,7 @@ fun PhoneSliderParamRow(
         ) {
             FmSlider(
                 value = shown,
+                label = label,
                 onValueChange = { next ->
                     commit.sample(if (next.isFinite()) next.coerceIn(min, max) else min)
                 },

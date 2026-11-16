@@ -745,6 +745,7 @@ private fun ExportFormColumn(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FmSlider(
                             value = qualityValue.toFloat(),
+                            label = "质量",
                             onValueChange = { onQualityText(it.toInt().toString()) },
                             valueRange = ExportRules.QUALITY_MIN.toFloat()..ExportRules.QUALITY_MAX.toFloat(),
                             step = 1f,

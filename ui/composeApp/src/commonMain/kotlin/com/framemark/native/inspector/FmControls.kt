@@ -312,6 +312,7 @@ internal fun FmDesktopSliderRow(
         }
         FmSlider(
             value = value,
+            label = label,
             onValueChange = onValueChange,
             valueRange = min..max,
             modifier = Modifier
@@ -400,6 +401,7 @@ internal fun FmTouchSliderRow(
             Spacer(Modifier.width(FmRhythm.inlineLoose))
             FmSlider(
                 value = value,
+                label = label,
                 onValueChange = onValueChange,
                 valueRange = min..max,
                 modifier = Modifier.weight(1f),
@@ -458,6 +460,7 @@ internal fun FmTouchSliderRow(
             Box(modifier = Modifier.weight(1f).padding(horizontal = FmSpacing.xs)) {
                 FmSlider(
                     value = value,
+                    label = label,
                     onValueChange = onValueChange,
                     valueRange = min..max,
                     modifier = Modifier.fillMaxWidth(),
@@ -854,6 +857,7 @@ internal fun CuratedSliderRow(
             Spacer(Modifier.width(FmRhythm.inlineLoose))
             FmSlider(
                 value = value,
+                label = label,
                 onValueChange = { session.set(control, it) },
                 valueRange = min..max,
                 step = control.step,
@@ -942,6 +946,7 @@ internal fun CuratedSliderRow(
         }
         FmSlider(
             value = value,
+            label = label,
             onValueChange = { session.set(control, it) },
             valueRange = min..max,
             step = control.step,

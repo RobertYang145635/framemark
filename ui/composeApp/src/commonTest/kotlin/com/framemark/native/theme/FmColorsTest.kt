@@ -68,6 +68,17 @@ class FmColorsTest {
     }
 
     @Test
+    fun stageInkStaysReadableOnTheStage() {
+        // 品牌标 / 舞台文字用 stageInk；它必须比 3:1 高得多（品牌标窗口是实心块）。
+        for ((id, light, dark) in FmPalettes.all()) {
+            for (colors in listOf(light, dark)) {
+                val ratio = contrastRatio(colors.stageInk, colors.stage)
+                assertTrue(ratio >= 4.5, "palette=$id stageInk on stage is $ratio:1")
+            }
+        }
+    }
+
+    @Test
     fun stageColorMapsEveryTone() {
         assertEquals(light.stageDark, light.stageColor(StageTone.Dark))
         assertEquals(light.stageMid, light.stageColor(StageTone.Mid))

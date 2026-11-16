@@ -24,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.product.ProjectPreset
@@ -319,6 +322,7 @@ fun PhonePresetSheet(
                     text = message,
                     style = FmType.labelSmall,
                     color = FmPalette.success,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
             store.presetError?.let { message ->
@@ -327,6 +331,7 @@ fun PhonePresetSheet(
                     text = NoticeText.human(message)?.let { "写入失败：$it" } ?: "写入失败，请重试。",
                     style = FmType.labelSmall,
                     color = FmPalette.onSurfaceSecondary,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
                 )
             }
         }

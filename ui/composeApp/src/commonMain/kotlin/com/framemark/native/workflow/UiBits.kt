@@ -30,7 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
@@ -348,17 +351,25 @@ fun FmProgress(
     progress: Float,
     modifier: Modifier = Modifier,
     height: Int = 6,
+    /** 读屏名称：导出页传「导出进度」（UI 评审 P0-2）。 */
+    label: String = "进度",
 ) {
+    val fraction = progress.coerceIn(0f, 1f)
+    val percent = (fraction * 100f).toInt()
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(height.dp)
             .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.outline),
+            .background(FmPalette.outline)
+            .semantics {
+                contentDescription = "$label，已完成 $percent%"
+                progressBarRangeInfo = ProgressBarRangeInfo(fraction, 0f..1f)
+            },
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(progress.coerceIn(0f, 1f))
+                .fillMaxWidth(fraction)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .background(FmPalette.primary),

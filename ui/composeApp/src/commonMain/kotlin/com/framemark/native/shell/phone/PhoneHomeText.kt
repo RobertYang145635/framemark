@@ -25,9 +25,9 @@ object PhoneHomeText {
     const val BATCH_SUBTITLE: String = "多张照片一起加边框"
     const val PRESETS_TITLE: String = "预设"
 
-    /** 最近编辑卡：标题与右上「全部」链接 */
+    /** 最近编辑卡：标题与右上「继续最近编辑」链接（该链接只打开最近一张，见 PhoneShell）。 */
     const val RECENT_TITLE: String = "最近编辑"
-    const val RECENT_ALL: String = "全部"
+    const val RECENT_ALL: String = "继续最近编辑"
 
     /** 首页齿轮的无障碍名（演示稿 `aria-label="设置"`）。 */
     const val SETTINGS_LABEL: String = "设置"

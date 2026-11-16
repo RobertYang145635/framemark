@@ -41,9 +41,13 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.framemark.native.theme.FmPalette
@@ -95,6 +99,8 @@ fun FmSlider(
     touch: Boolean = false,
     /** Number formatting for the semantics description. */
     valueText: (Float) -> String = { FmUnits.formatNumber(it) },
+    /** 参数名：读屏先读它、再读当前值（UI 评审 P0-2）。为空时退化为「滑块」。 */
+    label: String? = null,
 ) {
     val min = valueRange.start
     val max = valueRange.endInclusive
@@ -207,7 +213,25 @@ fun FmSlider(
             }
             .onSizeChanged { trackWidthPx = it.width }
             .semantics {
-                contentDescription = "滑块 ${valueText(value)}"
+                progressBarRangeInfo = ProgressBarRangeInfo(
+                    current = value.coerceIn(min, max),
+                    range = min..max,
+                    steps = step?.takeIf { it > 0f }
+                        ?.let { ((max - min) / it).toInt().coerceAtLeast(0) }
+                        ?: 0,
+                )
+                contentDescription = if (label.isNullOrBlank()) {
+                    "滑块 ${valueText(value)}"
+                } else {
+                    "$label，${valueText(value)}"
+                }
+                if (!enabled) disabled()
+                if (enabled) {
+                    setProgress { target ->
+                        onValueChange(target.coerceIn(min, max))
+                        true
+                    }
+                }
             },
         contentAlignment = Alignment.CenterStart,
     ) {

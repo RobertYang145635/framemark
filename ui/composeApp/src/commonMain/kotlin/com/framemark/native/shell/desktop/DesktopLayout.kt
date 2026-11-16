@@ -5,7 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -169,8 +171,13 @@ fun DeskIconButton(
     content: @Composable () -> Unit,
 ) {
     val (source, hovered) = rememberDeskHover(enabled)
+    // 按下 / 键盘焦点反馈（UI 评审 P1-1）：indication 关掉后，这两态必须自己画，
+    // 否则鼠标按下没有回弹、Tab 到按钮也看不出焦点在哪。
+    val pressed by source.collectIsPressedAsState()
+    val focused by source.collectIsFocusedAsState()
     val background = when {
         !enabled -> Color.Transparent
+        pressed -> FmPalette.press
         active -> FmPalette.surfaceMuted
         hovered -> FmPalette.hover
         else -> Color.Transparent
@@ -180,6 +187,13 @@ fun DeskIconButton(
             .size(size)
             .clip(RoundedCornerShape(FmRadii.chip))
             .background(background)
+            .then(
+                if (focused) {
+                    Modifier.border(2.dp, FmPalette.ring, RoundedCornerShape(FmRadii.chip))
+                } else {
+                    Modifier
+                },
+            )
             .hoverable(source, enabled)
             .clickable(
                 interactionSource = source,
@@ -215,11 +229,16 @@ fun DeskButton(
     onClick: () -> Unit,
 ) {
     val (source, hovered) = rememberDeskHover(enabled)
+    val pressed by source.collectIsPressedAsState()
+    val focused by source.collectIsFocusedAsState()
     val shape = RoundedCornerShape(FmRadii.chip)
     val background = when (style) {
-        DeskButtonStyle.Primary -> if (hovered) FmPalette.primaryStrong else FmPalette.primary
-        DeskButtonStyle.Line -> if (hovered) FmPalette.surfaceMuted else FmPalette.surface
-        DeskButtonStyle.Ghost -> if (hovered) FmPalette.hover else Color.Transparent
+        DeskButtonStyle.Primary ->
+            if (pressed || hovered) FmPalette.primaryStrong else FmPalette.primary
+        DeskButtonStyle.Line ->
+            if (pressed) FmPalette.press else if (hovered) FmPalette.surfaceMuted else FmPalette.surface
+        DeskButtonStyle.Ghost ->
+            if (pressed) FmPalette.press else if (hovered) FmPalette.hover else Color.Transparent
     }
     val ink = when (style) {
         DeskButtonStyle.Primary -> FmPalette.onPrimary
@@ -234,6 +253,9 @@ fun DeskButton(
             .background(background)
             .then(
                 if (style == DeskButtonStyle.Line) Modifier.border(1.dp, FmPalette.outlineStrong, shape) else Modifier,
+            )
+            .then(
+                if (focused) Modifier.border(2.dp, FmPalette.ring, shape) else Modifier,
             )
             .hoverable(source, enabled)
             .clickable(
@@ -354,15 +376,19 @@ fun DeskVsep(height: Dp = FmDesktop.topBarSeparatorHeight) {
 }
 
 /**
- * 品牌 mark：26×26、圆角 7，深色底 + 浅色"窗口" + 底部一道浅蓝（`styles.css` 50-52）。
+ * 品牌 mark：26×26、圆角 7，深色底 + 浅色"窗口" + 底部一道强调色（`styles.css` 50-52）。
  *
  * 深色外观下演示稿把底换成 `#2B2C2F`、窗口换成 `#EDEFF3`（`theme-dark.css` 42-43）；
- * 这里底一律用 [FmPalette.stage]（两套外观都是 `#2B2C2F`），窗口用白色
- * （`onPrimary`），所以浅色外观里底比演示稿的 `#14181F` 浅一点点，深色外观完全一致。
+ * 这里底一律用 [FmPalette.stage]（两套外观都是 `#2B2C2F`）。
+ *
+ * 窗口用 [FmPalette.stageInk]（固定在舞台上的浅色墨）而**不是** `onPrimary`：
+ * 深色配色的 `onPrimary` 是深色字（墨绿 `#182A20`、陶土 `#34221C`），画在深灰舞台上
+ * 就是「深灰上的深色块」，5 套配色里只有浅色外观的经典蓝能看清（UI 评审 P1-2）。
  */
 @Composable
 fun DeskBrandMark(size: Dp = FmDesktop.topBarMarkSize) {
     val radius = size * (FmDesktop.topBarMarkRadius.value / FmDesktop.topBarMarkSize.value)
+    val windowInk = FmPalette.stageInk
     Box(
         modifier = Modifier
             .size(size)
@@ -377,7 +403,7 @@ fun DeskBrandMark(size: Dp = FmDesktop.topBarMarkSize) {
                 .fillMaxHeight()
                 .width(size - (12 * unit).dp)
                 .clip(RoundedCornerShape((2 * unit).dp))
-                .background(FmPalette.onPrimary),
+                .background(windowInk),
         )
         // .mark::after — left 9、bottom 5.5、8×1.5、圆角 1
         Box(

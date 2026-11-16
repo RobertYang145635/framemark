@@ -84,12 +84,12 @@ private val TextStyle14Medium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, 
 private val TextStyle12Half = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp)
 private val TextStyle12 = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
 
-/** 首页右上角的齿轮（演示稿 `.htop .ibtn`：32×32 命中区，图标 22）。 */
+/** 首页右上角的齿轮：图标 22，命中区 48（UI 评审 P0-3；视觉仍按演示稿大小）。 */
 @Composable
 fun PhoneHomeGear(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(FmRadii.chip))
             .semantics {
                 contentDescription = PhoneHomeText.SETTINGS_LABEL
@@ -273,14 +273,22 @@ internal fun PhoneHomeRecentCard(
                 color = FmPalette.onSurface,
             )
             Spacer(Modifier.weight(1f))
-            Text(
-                text = PhoneHomeText.RECENT_ALL,
-                style = TextStyle12Half.copy(fontWeight = FontWeight.Medium),
-                color = FmPalette.primary,
+            // 文案写明「继续最近编辑」：这个链接只打开最近一张，不做全量列表。
+            // 命中区撑到 44 dp，文字本身不用变大。
+            Box(
                 modifier = Modifier
+                    .heightIn(min = 44.dp)
                     .clip(RoundedCornerShape(FmRadii.badge))
-                    .clickable(role = Role.Button, onClick = onOpenAll),
-            )
+                    .clickable(role = Role.Button, onClick = onOpenAll)
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = PhoneHomeText.RECENT_ALL,
+                    style = TextStyle12Half.copy(fontWeight = FontWeight.Medium),
+                    color = FmPalette.primary,
+                )
+            }
         }
         entries.forEachIndexed { index, entry ->
             if (index > 0) {

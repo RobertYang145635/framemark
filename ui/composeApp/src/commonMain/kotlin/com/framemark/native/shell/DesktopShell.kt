@@ -41,6 +41,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
@@ -710,6 +711,24 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 .fillMaxSize()
                 .focusRequester(focusRequester)
                 .focusable()
+                // 方向键切换对象只在**没有子控件先消费**时才发生（UI 评审 P0-1）：
+                // `onKeyEvent` 从焦点节点向父级冒泡，参数滑杆会在自己的 preview 里先
+                // 吃掉 ←/→/↑/↓；焦点在舞台上时才会落到这里。快捷键其余部分仍用
+                // preview（要抢在文本框之前）。
+                .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    val direction = DesktopArrowKeys.navigate(
+                        key = event.key,
+                        ctrl = event.isCtrlPressed,
+                        shift = event.isShiftPressed,
+                        textEditing = textEditFocus.isEditing,
+                        sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen,
+                        editStage = stageMode == StageMode.Edit,
+                    )
+                    if (direction == 0) return@onKeyEvent false
+                    stepCard(forward = direction > 0)
+                    true
+                }
                 .onPreviewKeyEvent { event ->
                     // W-01: the root receives preview keys before the focused text field.
                     // Yield the three key families an editor owns (backslash, arrows,
@@ -743,31 +762,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     }
                     if (sheetOpen) return@onPreviewKeyEvent false
 
-                    // ← → 逐个试（报告 §6）：顺序来自 LibraryIndex.traversal。
-                    // 文本编辑的让位在处理器顶部统一完成（TextEditKeys），这里只管舞台。
-                    if (!event.isCtrlPressed && !event.isShiftPressed &&
-                        stageMode == StageMode.Edit
-                    ) {
-                        when (event.key) {
-                            Key.DirectionLeft -> {
-                                stepCard(forward = false)
-                                return@onPreviewKeyEvent true
-                            }
-                            Key.DirectionRight -> {
-                                stepCard(forward = true)
-                                return@onPreviewKeyEvent true
-                            }
-                            Key.DirectionUp -> {
-                                stepCard(forward = false)
-                                return@onPreviewKeyEvent true
-                            }
-                            Key.DirectionDown -> {
-                                stepCard(forward = true)
-                                return@onPreviewKeyEvent true
-                            }
-                            else -> Unit
-                        }
-                    }
 
                     if (event.key == Key.F1) {
                         helpOpen = true

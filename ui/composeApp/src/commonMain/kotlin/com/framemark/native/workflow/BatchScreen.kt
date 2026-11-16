@@ -118,7 +118,7 @@ private fun BatchSummary(runner: BatchRunner) {
             Text("$percent%", style = FmType.labelMedium, color = FmPalette.onSurfaceSecondary)
         }
         Spacer(Modifier.height(FmSpacing.sm))
-        FmProgress(progress = runner.overallProgress, height = 8)
+        FmProgress(progress = runner.overallProgress, height = 8, label = "批量导出进度")
 
         Spacer(Modifier.height(FmSpacing.sm))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -247,7 +247,7 @@ private fun BatchRow(item: BatchItem, runner: BatchRunner, onRemove: () -> Unit)
             )
         }
         Spacer(Modifier.height(FmSpacing.sm))
-        FmProgress(progress = item.progress, height = 4)
+        FmProgress(progress = item.progress, height = 4, label = "任务进度")
     }
 }
 

@@ -16,6 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -349,11 +355,17 @@ private fun ExportSheetHeader(onClose: () -> Unit) {
             color = FmPalette.onSurface,
             modifier = Modifier.weight(1f),
         )
+        // 命中区 48 dp（图标仍由 PhoneCloseGlyph 自己决定大小）；此前只有 36 dp 且
+        // 没有可读名称，读屏会读成一个无名按钮（UI 评审 P0-3）。
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(48.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
-                .clickable(onClick = onClose),
+                .clickable(role = Role.Button, onClick = onClose)
+                .semantics {
+                    contentDescription = "关闭导出"
+                    role = Role.Button
+                },
             contentAlignment = Alignment.Center,
         ) {
             PhoneCloseGlyph(tint = FmPalette.onSurfaceSecondary)
@@ -730,7 +742,12 @@ internal fun ColumnScope.ExportFormContent(
                 }
             }
             if (error != null) {
-                Text(text = error, style = FmType.bodyMedium, color = FmPalette.error)
+                Text(
+                    text = error,
+                    style = FmType.bodyMedium,
+                    color = FmPalette.error,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
             }
             if (note != null) {
                 Text(text = note, style = FmType.labelSmall, color = FmPalette.onSurfaceMuted)
@@ -744,7 +761,7 @@ internal fun ColumnScope.ExportFormContent(
                 // A determinate bar that only moves on a completed pipeline stage —
                 // 4 dp tall, `FmProgress` paints it in the shared tokens.
                 Spacer(Modifier.height(FmSpacing.xxs))
-                FmProgress(progress = progress, height = 4)
+                FmProgress(progress = progress, height = 4, label = "导出进度")
             }
         }
     }

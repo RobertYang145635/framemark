@@ -20,7 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -88,6 +90,7 @@ fun AppearancePanel(
                 text = AppearancePanelText.SAVE_FAILED,
                 style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp),
                 color = FmPalette.error,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         ResetRow(
