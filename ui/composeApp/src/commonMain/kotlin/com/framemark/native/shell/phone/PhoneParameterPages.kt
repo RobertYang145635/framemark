@@ -882,6 +882,8 @@ internal fun phoneParamValueLabel(control: InspectorControl, session: DesignSess
  * 厂商枚举里的 `bottomHorCenter` 是第 10 个值，矩阵只画 9 格；当前值落在它上面时
  * 不点亮任何格，并在下面补一行说明，避免静默改值。
  */
+private val GRAVITY_GLYPHS = listOf("↖", "↑", "↗", "←", "·", "→", "↙", "↓", "↘")
+
 @Composable
 private fun SlotGravityRow(control: InspectorControl, session: DesignSession) {
     val order = listOf(
@@ -902,7 +904,7 @@ private fun SlotGravityRow(control: InspectorControl, session: DesignSession) {
             selectedIndex = index,
             dense = true,
             onPick = { picked -> session.set(control, order[picked]) },
-            glyphOf = { picked -> labels[picked].take(1) },
+            glyphOf = { picked -> GRAVITY_GLYPHS[picked] },
             descriptionOf = { picked -> "文字位置：${labels[picked]}" },
         )
         if (selected == "bottomHorCenter") {

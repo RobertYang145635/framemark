@@ -91,6 +91,9 @@ fun Modifier.phoneStageGestures(
         var totalY = 0f
         var claimed = false     // the swipe owns this gesture
         var multiTouch = false
+        var lastStepAt = 0L
+        val stepThreshold = SwipeThreshold.toPx()
+        val stepCooldownMs = 320L
         do {
             val event = awaitPointerEvent()
             val pressed = event.changes.count { it.pressed }
@@ -107,6 +110,15 @@ fun Modifier.phoneStageGestures(
                 val delta = event.changes.firstOrNull()?.positionChange() ?: Offset.Zero
                 if (claimed) {
                     totalX += delta.x
+                    // 跟手切换：越过阈值立即发一步，而不是等松手；冷却避免一次手势
+                    // 连翻好几张（渲染跟不上时用户会以为滑了很远）。
+                    val now = System.currentTimeMillis()
+                    while (abs(totalX) >= stepThreshold && now - lastStepAt >= stepCooldownMs) {
+                        val direction = if (totalX < 0f) 1 else -1
+                        onStep(direction)
+                        totalX -= if (totalX < 0f) -stepThreshold else stepThreshold
+                        lastStepAt = now
+                    }
                     event.changes.forEach { it.consume() }
                 } else if (swipeEnabled) {
                     totalX += delta.x
@@ -123,9 +135,6 @@ fun Modifier.phoneStageGestures(
                 }
             }
         } while (event.changes.any { it.pressed })
-        if (claimed && abs(totalX) > SwipeThreshold.toPx()) {
-            onStep(if (totalX < 0f) 1 else -1)
-        }
     }
 }
 
