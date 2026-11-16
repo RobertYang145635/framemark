@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.framemark.native.product.FmLog
 import com.framemark.native.product.Heif
+import com.framemark.native.product.update.installUpdateContext
 
 class MainActivity : ComponentActivity() {
 
@@ -536,6 +537,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         installAppVersion(applicationContext)
+        installUpdateContext(applicationContext)
         // Motion (2026-11-14): the OS animation scale (which is also what the
         // accessibility "remove animations" toggle writes) is read **before the first
         // composition** and mapped to FrameMark's 0..1 motion scale, so the very first

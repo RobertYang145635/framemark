@@ -23,6 +23,10 @@ enum class UpdateSource(val label: String) {
 object UpdateUrls {
     const val REPO = "RobertYang145635/framemark"
     const val API_DIRECT = "https://api.github.com/repos/$REPO/releases?per_page=10"
+
+    /** 随分支发布的更新清单；稳定 URL，国内镜像只需代理同一个文件。 */
+    const val MANIFEST_DIRECT =
+        "https://raw.githubusercontent.com/$REPO/ui-v2/main/updates/latest.json"
     const val RELEASE_PAGE = "https://github.com/$REPO/releases"
 
     /** 常用的 GitHub 加速前缀；只做前缀拼接，不改变路径。 */
@@ -38,6 +42,14 @@ object UpdateUrls {
             MIRRORS.map { it + API_DIRECT } + API_DIRECT
         } else {
             listOf(API_DIRECT) + MIRRORS.map { it + API_DIRECT }
+        }
+
+    /** 清单候选：镜像源先镜像后直连；直连源相反。 */
+    fun manifestCandidates(source: UpdateSource): List<String> =
+        if (source == UpdateSource.Mirror) {
+            MIRRORS.map { it + MANIFEST_DIRECT } + MANIFEST_DIRECT
+        } else {
+            listOf(MANIFEST_DIRECT) + MIRRORS.map { it + MANIFEST_DIRECT }
         }
 
     /** 发布页地址：镜像源用镜像前缀打开，直连源用原地址。 */

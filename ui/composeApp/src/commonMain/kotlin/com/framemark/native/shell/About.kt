@@ -29,7 +29,12 @@ import androidx.compose.ui.unit.sp
 import com.framemark.native.product.FmLog
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.fmElevated
+import com.framemark.native.product.update.UpdateAsset
 import com.framemark.native.product.update.UpdateJson
+import com.framemark.native.product.update.UpdateManifest
+import com.framemark.native.product.update.UpdateManifestJson
+import com.framemark.native.product.update.installUpdate
+import com.framemark.native.product.update.updatePlatform
 import com.framemark.native.product.update.UpdateRelease
 import com.framemark.native.product.update.UpdateSource
 import com.framemark.native.product.update.UpdateUrls
@@ -116,7 +121,10 @@ private sealed interface UpdateState {
     data object Checking : UpdateState
     data object Latest : UpdateState
     data object Failed : UpdateState
+    data object Downloading : UpdateState
+    data class Result(val message: String, val error: Boolean) : UpdateState
     data class Available(val release: UpdateRelease) : UpdateState
+    data class AvailableManifest(val manifest: UpdateManifest, val asset: UpdateAsset?) : UpdateState
 }
 
 @Composable
@@ -130,6 +138,22 @@ private fun UpdateCard(currentVersion: String) {
         if (state == UpdateState.Checking) return
         state = UpdateState.Checking
         scope.launch {
+            val manifest = withContext(Dispatchers.IO) {
+                UpdateUrls.manifestCandidates(source).firstNotNullOfOrNull { url ->
+                    fetchUrlText(url)?.let { UpdateManifestJson.parse(it) }
+                }
+            }
+            val platform = updatePlatform()
+            val manifestNewer = manifest?.takeIf {
+                UpdateVersion.isNewer(currentVersion, it.versionName)
+            }
+            if (manifestNewer != null) {
+                state = UpdateState.AvailableManifest(manifest = manifestNewer, asset = manifestNewer.assetFor(platform))
+                FmLog.info("UPDATE_CHECK") {
+                    "source=${source.name} manifest=${manifestNewer.versionCode} asset=${manifestNewer.assetFor(platform) != null}"
+                }
+                return@launch
+            }
             val candidates = UpdateUrls.apiCandidates(source)
             val releases = withContext(Dispatchers.IO) {
                 candidates.firstNotNullOfOrNull { url ->
@@ -190,6 +214,51 @@ private fun UpdateCard(currentVersion: String) {
             UpdateState.Checking -> AboutUpdateLine(AboutText.UPDATE_CHECKING)
             UpdateState.Latest -> AboutUpdateLine("${AboutText.UPDATE_LATEST}（$currentVersion）")
             UpdateState.Failed -> AboutUpdateLine(AboutText.UPDATE_FAILED, error = true)
+            UpdateState.Downloading -> AboutUpdateLine(AboutText.UPDATE_DOWNLOADING)
+            is UpdateState.Result -> AboutUpdateLine(value.message, error = value.error)
+            is UpdateState.AvailableManifest -> {
+                Text(
+                    text = "${AboutText.UPDATE_AVAILABLE} ${value.manifest.versionName}" +
+                        if (value.manifest.isPrerelease) AboutText.UPDATE_PRERELEASE else "",
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                    color = FmPalette.onSurface,
+                )
+                val notes = value.manifest.notes.lineSequence().firstOrNull { it.isNotBlank() }
+                if (!notes.isNullOrBlank()) AboutUpdateLine(notes)
+                if (value.asset != null) {
+                    Text(
+                        text = AboutText.UPDATE_INSTALL,
+                        style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                        color = FmPalette.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                if (state != UpdateState.Downloading) {
+                                    state = UpdateState.Downloading
+                                    scope.launch {
+                                        val error = withContext(Dispatchers.IO) {
+                                            installUpdate(value.asset, value.manifest.versionName)
+                                        }
+                                        state = UpdateState.Result(
+                                            message = error ?: AboutText.UPDATE_INSTALL_STARTED,
+                                            error = error != null,
+                                        )
+                                    }
+                                }
+                            }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                    )
+                }
+                Text(
+                    text = AboutText.UPDATE_OPEN,
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                    color = FmPalette.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { uriHandler.openUri(UpdateUrls.releasePage(UpdateUrls.RELEASE_PAGE, source)) }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
             is UpdateState.Available -> {
                 val tag = value.release.tag
                 val suffix = if (value.release.prerelease) AboutText.UPDATE_PRERELEASE else ""
@@ -287,6 +356,9 @@ object AboutText {
     const val UPDATE_PRERELEASE: String = "（预发布）"
     const val UPDATE_OPEN: String = "打开发布页"
     const val UPDATE_FAILED: String = "检查失败：连不上更新源，稍后再试或切换更新源。"
+    const val UPDATE_DOWNLOADING: String = "正在下载更新…"
+    const val UPDATE_INSTALL: String = "下载并安装"
+    const val UPDATE_INSTALL_STARTED: String = "已开始安装；完成后按系统提示重启应用。"
     const val UPDATE_NOTE: String = "联网只用于读取发布版本号，不上传照片或工程。"
     const val PRIVACY_TITLE: String = "隐私"
     const val PERMISSIONS_TITLE: String = "权限"

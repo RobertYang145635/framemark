@@ -1,0 +1,21 @@
+{
+  "versionName": "0.9.0-rc13",
+  "versionCode": 12,
+  "channel": "rc",
+  "minSupportedVersionCode": 0,
+  "publishedAt": "2026-11-16T00:00:00Z",
+  "notes": "UI 修复：色卡溢出、玻璃面板、按住看原图背景、文字位置矩阵、滑动切换。",
+  "assets": {
+    "android": {
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-arm64.apk",
+      "sha256": "b831730acf058891bc7c4b86bcfc775ed3630264ca35ed545780b2d7052ac224",
+      "size": 130957623
+    },
+    "windows": {
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-win64.msi",
+      "sha256": "d5fb89ade31adba4569c04315d496740ad3fb3f4851ebf8a78aa0c491651fd63",
+      "size": 237662424
+    }
+  },
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc13"
+}
