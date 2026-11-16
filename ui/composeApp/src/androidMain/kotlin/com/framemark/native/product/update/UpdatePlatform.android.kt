@@ -70,19 +70,28 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
     // 直接下载：OPPO 的 DownloadManager 会把文件写成 .oplusdownload 且不更新系统
     // 状态列，轮询永远等不到完成；自己下载 + 按清单大小判断更可控。
     return runCatching {
-        val connection = java.net.URL(asset.url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 15_000
-        connection.readTimeout = 60_000
-        connection.instanceFollowRedirects = true
-        connection.setRequestProperty("User-Agent", "FrameMark-Update")
-        try {
-            if (connection.responseCode !in 200..299) return "下载失败（HTTP ${connection.responseCode}）"
-            connection.inputStream.use { input ->
-                part.outputStream().use { output -> input.copyTo(output) }
-            }
-        } finally {
-            connection.disconnect()
+        var downloaded = false
+        var lastError = "下载失败"
+        for (candidate in UpdateUrls.assetCandidates(asset.url)) {
+            downloaded = runCatching {
+                val connection = java.net.URL(candidate).openConnection() as HttpURLConnection
+                connection.connectTimeout = 15_000
+                connection.readTimeout = 60_000
+                connection.instanceFollowRedirects = true
+                connection.setRequestProperty("User-Agent", "FrameMark-Update")
+                try {
+                    if (connection.responseCode !in 200..299) return@runCatching false
+                    connection.inputStream.use { input ->
+                        part.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    true
+                } finally {
+                    connection.disconnect()
+                }
+            }.getOrElse { lastError = it.message ?: "下载失败"; false }
+            if (downloaded) break
         }
+        if (!downloaded) return lastError
         if (asset.size > 0 && part.length() != asset.size) {
             part.delete()
             return "下载文件大小不符（${part.length()} != ${asset.size}）"

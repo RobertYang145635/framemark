@@ -52,6 +52,14 @@ object UpdateUrls {
             listOf(MANIFEST_DIRECT) + MIRRORS.map { it + MANIFEST_DIRECT }
         }
 
+    /** 资产下载候选：镜像优先，直连兜底（GitHub 资产域名在国内常被阻断）。 */
+    fun assetCandidates(url: String): List<String> =
+        if (url.startsWith("https://github.com/") || url.startsWith("https://objects.githubusercontent.com/")) {
+            MIRRORS.map { it + url } + url
+        } else {
+            listOf(url)
+        }
+
     /** 发布页地址：镜像源用镜像前缀打开，直连源用原地址。 */
     fun releasePage(url: String, source: UpdateSource): String =
         if (source == UpdateSource.Mirror) MIRRORS.first() + url else url
