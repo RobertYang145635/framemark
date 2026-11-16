@@ -284,6 +284,9 @@ enum class PhoneRowKind {
     /** 厂商 `stockAnchor` 的「按规格」+ 说明。 */
     AnchorFooter,
 
+    /** 单行文字方位（`slotGravity`）：3×3 矩阵，不是十项色片。 */
+    SlotGravity,
+
     /** 只读边框规格。 */
     Spec,
 
@@ -521,6 +524,14 @@ private fun declaredRow(control: InspectorControl): PhoneParamRow? = when (contr
         control = control,
     )
     ControlType.Select -> when {
+        // 单行文字方位（slotGravity）也是九宫格：10 个厂商枚举值不能排成一条色片。
+        isSlotGravity(control) -> row(
+            key = control.key,
+            kind = PhoneRowKind.SlotGravity,
+            heightDp = PhoneRowHeights.ANCHOR_GRID,
+            label = phoneParamLabel(control),
+            control = control,
+        )
         // 厂商水印位置用九宫格，不用十项下拉 / 色片。
         StockWatermarkControls.isAnchorParam(control.param) -> row(
             key = control.key,
@@ -566,6 +577,21 @@ private fun declaredRow(control: InspectorControl): PhoneParamRow? = when (contr
  *  - **规格**：厂商规格卡（`isIr`）的只读规格 + 导出尺寸，单独 2 行；只有一行时
  *    [balancedParamGroups] 会把它并回留白，不会留一个单行 tab。
  */
+/** 单行文字方位：`slotGravity` 或 9 个方位值里至少 8 个的 Select（`stockAnchor` 除外）。 */
+internal fun isSlotGravity(control: InspectorControl): Boolean =
+    !StockWatermarkControls.isAnchorParam(control.param) &&
+        control.param != "stockAnchor" &&
+        (
+            control.param.equals("slotGravity", ignoreCase = true) ||
+                control.options.count { it.value in SLOT_GRAVITY_CELLS } >= 8
+            )
+
+private val SLOT_GRAVITY_CELLS = listOf(
+    "leftTop", "centerTop", "rightTop",
+    "leftCenter", "center", "rightCenter",
+    "leftBottom", "centerBottom", "rightBottom",
+)
+
 private fun styleGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
     val controls = spec.controls.filterNot { it.type == ControlType.Brand }
     val specOnly = phoneStylePageBody(spec.isIr, controls) == StylePageBody.SpecOnly
@@ -583,10 +609,12 @@ private fun styleGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
     val mode = footerModeControlOf(controls)
     val footerPct = footerPctControlOf(controls)
     val anchor = controls.firstOrNull { StockWatermarkControls.isAnchorParam(it.param) }
+    val gravity = controls.filter { isSlotGravity(it) }
     val footerSwitch = controls.firstOrNull {
         it.type == ControlType.Switch && it.param.contains("footer", ignoreCase = true)
     }
-    val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key, footerSwitch?.key, anchor?.key)
+    val handled = setOfNotNull(theme?.key, mode?.key, footerPct?.key, footerSwitch?.key, anchor?.key) +
+        gravity.map { it.key }
     val rest = withoutDuplicateStockAnchors(controls.filterNot { it.key in handled })
 
     // 外观：底色 + 版式（旧版的两个单行 tab 合成一组）。
@@ -594,8 +622,9 @@ private fun styleGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
         theme?.let { declaredRow(it) },
         mode?.let { declaredRow(it) },
     )
-    // 位置：厂商卡的水印九宫格 +「按规格」（同一个控件，一行一块）。
+    // 位置：厂商卡的水印九宫格 +「按规格」；单行文字方位也放这一组。
     val positionRows = buildList {
+        gravity.forEach { control -> add(declaredRow(control)!!) }
         anchor?.let { control ->
             add(
                 row(

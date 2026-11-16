@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.framemark.native.inspector.AnchorCellsGrid
 import com.framemark.native.inspector.ControlType
 import com.framemark.native.inspector.ControlValue
 import com.framemark.native.inspector.CuratedPhotoSize
@@ -76,6 +77,7 @@ import com.framemark.native.shell.PHONE_PARAM_LABEL_SP
 import com.framemark.native.shell.PHONE_PARAM_ROW_GAP_DP
 import com.framemark.native.shell.PHONE_PARAM_VALUE_SP
 import com.framemark.native.shell.PhonePageSpec
+import com.framemark.native.shell.phoneParamLabel
 import com.framemark.native.shell.PhoneParamRow
 import com.framemark.native.shell.PhoneRowKeys
 import com.framemark.native.shell.PhoneRowKind
@@ -374,6 +376,9 @@ private fun PhoneParamRowView(
         )
         PhoneRowKind.AnchorGrid -> row.control?.let { control ->
             StockAnchorBlock(control = control, session = session, dense = true, part = StockAnchorPart.Grid)
+        }
+        PhoneRowKind.SlotGravity -> row.control?.let { control ->
+            SlotGravityRow(control = control, session = session)
         }
         PhoneRowKind.AnchorFooter -> row.control?.let { control ->
             StockAnchorBlock(control = control, session = session, dense = true, part = StockAnchorPart.Footer)
@@ -870,3 +875,42 @@ internal fun phoneParamValueLabel(control: InspectorControl, session: DesignSess
         ControlType.Text -> session.value(control)?.toString().orEmpty()
         ControlType.Brand -> ""
     }
+
+
+/**
+ * 单行文字方位（`slotGravity`）：3×3 矩阵，复用 `AnchorCellsGrid` 的格子语言。
+ * 厂商枚举里的 `bottomHorCenter` 是第 10 个值，矩阵只画 9 格；当前值落在它上面时
+ * 不点亮任何格，并在下面补一行说明，避免静默改值。
+ */
+@Composable
+private fun SlotGravityRow(control: InspectorControl, session: DesignSession) {
+    val order = listOf(
+        "leftTop", "centerTop", "rightTop",
+        "leftCenter", "center", "rightCenter",
+        "leftBottom", "centerBottom", "rightBottom",
+    )
+    val labels = listOf("左上", "上中", "右上", "左中", "中", "右中", "左下", "下中", "右下")
+    val selected = session.value(control)?.toString().orEmpty()
+    val index = order.indexOf(selected).takeIf { it >= 0 }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = phoneParamLabel(control),
+            style = FmType.labelSmall,
+            color = FmPalette.onSurfaceSecondary,
+        )
+        AnchorCellsGrid(
+            selectedIndex = index,
+            dense = true,
+            onPick = { picked -> session.set(control, order[picked]) },
+            glyphOf = { picked -> labels[picked].take(1) },
+            descriptionOf = { picked -> "文字位置：${labels[picked]}" },
+        )
+        if (selected == "bottomHorCenter") {
+            Text(
+                text = "当前：下中（底部居中）",
+                style = FmType.labelSmall,
+                color = FmPalette.onSurfaceMuted,
+            )
+        }
+    }
+}
