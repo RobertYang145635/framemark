@@ -1757,6 +1757,9 @@ pub fn draw_glass_panel(
 ) {
     let s = env.pw.min(env.ph);
     let panel = Rect::from_xywh(x, y, w, h);
+    // The tint must be inside the rounded clip: filling it first left a square
+    // dark rectangle behind the glass panel (the "dark frame" around the card).
+    env.ctx.clip_round_rect(x, y, w, h, radius);
     env.ctx.fill_linear_gradient(
         x,
         y,
@@ -1765,7 +1768,6 @@ pub fn draw_glass_panel(
         &[(0.0, tint_top), (1.0, tint_bottom)],
         panel,
     );
-    env.ctx.clip_round_rect(x, y, w, h, radius);
     let (img, tw, th) = cover_temp_image(env, 360);
     let src = Rect::from_xywh(
         (x / env.w) * tw,
@@ -2056,7 +2058,7 @@ pub fn draw_swatches(
             let slot = format!("{slot_prefix}.{cell_slot}");
             draw_text_exact_slot(
                 env,
-                &c.replace('#', "").to_uppercase(),
+                &c.to_uppercase(),
                 cx,
                 y + size + size * 0.22,
                 size * 0.3,
@@ -2078,7 +2080,7 @@ pub fn draw_swatches(
             ));
             draw_text_exact(
                 env,
-                &c.replace('#', "").to_uppercase(),
+                &c.to_uppercase(),
                 cx,
                 y + size + size * 0.22,
                 size * 0.3,

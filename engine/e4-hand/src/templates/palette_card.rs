@@ -48,12 +48,21 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         m + ph + m + (palette - block).max(0.0) / 2.0
     };
     let spread = row_pct.is_finite() && row_pct > 0.0;
-    let row_w = if spread {
+    // A spread row may ask for >100% of the short side (color-3: 115.4%), which
+    // used to push the first/last swatch and their hex labels outside the canvas.
+    // Clamp to the canvas and leave room for the label's half-width at both ends.
+    let label_pad = (size * 0.62).min(w * 0.08);
+    let mut row_w = if spread {
         w.min((s * row_pct as f32) / 100.0)
     } else {
         w - 2.0 * m
     };
-    let row_x = if spread { (w - row_w) / 2.0 } else { m };
+    row_w = row_w.min(w - 2.0 * label_pad);
+    let row_x = if spread {
+        (w - row_w) / 2.0
+    } else {
+        m.max(label_pad)
+    };
     draw_swatches(
         env,
         &colors,

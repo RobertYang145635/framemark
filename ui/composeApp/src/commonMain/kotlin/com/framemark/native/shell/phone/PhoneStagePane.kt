@@ -267,6 +267,9 @@ internal fun StageArea(
                             cornerRadius = 0.dp,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize(),
+                            // 深色舞台上原图按 Fit 显示时，信箱区必须是舞台底色；
+                            // 缩略图默认的占位渐变是浅色，会在两侧/上下露白边。
+                            showBackdrop = false,
                         )
                     }
                 } else when {

@@ -172,6 +172,8 @@ fun PhotoThumbnail(
     cornerRadius: Dp = FmRadii.tile,
     contentScale: ContentScale = ContentScale.Crop,
     contentDescription: String? = null,
+    /** 缩略图占位底；按住看原图时传 false，让信箱留白露出舞台底色而不是白底。 */
+    showBackdrop: Boolean = true,
 ) {
     val key = "$path@$maxEdge"
     val bitmap by produceState(initialValue = PhotoThumbCache.get(key), key) {
@@ -190,7 +192,11 @@ fun PhotoThumbnail(
     val placeholder = Brush.linearGradient(
         listOf(FmPalette.surfaceMuted, FmPalette.track),
     )
-    Box(modifier = modifier.clip(shape).background(placeholder)) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .then(if (showBackdrop) Modifier.background(placeholder) else Modifier),
+    ) {
         val ready = bitmap
         if (ready != null) {
             Image(
