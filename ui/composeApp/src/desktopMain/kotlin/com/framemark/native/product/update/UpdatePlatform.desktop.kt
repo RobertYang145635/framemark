@@ -29,7 +29,7 @@ actual fun updatePlatform(): UpdatePlatform = UpdatePlatform.Windows
  * 下载 MSI -> SHA-256 -> msiexec /passive。返回 null 表示安装器已启动；
  * 否则返回原因（UI 显示并保留打开发布页兜底）。
  */
-actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
+actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (Long, Long) -> Unit): String? {
     val dir = java.io.File(System.getProperty("java.io.tmpdir"), "framemark-update")
     dir.mkdirs()
     val target = java.io.File(dir, "FrameMark-$versionName-win64.msi")
@@ -39,7 +39,18 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
             readTimeout = 60_000
             setRequestProperty("User-Agent", "FrameMark-Update")
         }.getInputStream().use { input ->
-            target.outputStream().use { output -> input.copyTo(output) }
+            val total = asset.size.takeIf { it > 0 } ?: input.available().toLong()
+            var done = 0L
+            target.outputStream().use { output ->
+                val buffer = ByteArray(1 shl 16)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    output.write(buffer, 0, read)
+                    done += read
+                    onProgress(done, total)
+                }
+            }
         }
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         target.inputStream().use { input ->

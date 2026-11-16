@@ -132,4 +132,5 @@ expect fun updatePlatform(): UpdatePlatform
 expect fun installUpdate(
     asset: UpdateAsset,
     versionName: String,
+    onProgress: (downloaded: Long, total: Long) -> Unit = { _, _ -> },
 ): String?

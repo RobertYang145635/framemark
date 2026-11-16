@@ -45,7 +45,7 @@ actual fun updatePlatform(): UpdatePlatform = UpdatePlatform.Android
  * 下载 -> SHA-256 -> 签名比对 -> PackageInstaller。返回 null 表示系统安装确认页已拉起；
  * 否则返回一条可读原因，由 UI 显示并保留「打开发布页」兜底。
  */
-actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
+actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (Long, Long) -> Unit): String? {
     val context = updateContext ?: return "当前无法获取应用上下文"
     if (!context.packageManager.canRequestPackageInstalls()) {
         android.os.Handler(android.os.Looper.getMainLooper()).post {
@@ -74,15 +74,28 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
         var lastError = "下载失败"
         for (candidate in UpdateUrls.assetCandidates(asset.url)) {
             downloaded = runCatching {
+                val existing = if (part.isFile) part.length() else 0L
                 val connection = java.net.URL(candidate).openConnection() as HttpURLConnection
                 connection.connectTimeout = 15_000
                 connection.readTimeout = 60_000
                 connection.instanceFollowRedirects = true
                 connection.setRequestProperty("User-Agent", "FrameMark-Update")
+                if (existing > 0) connection.setRequestProperty("Range", "bytes=$existing-")
                 try {
                     if (connection.responseCode !in 200..299) return@runCatching false
+                    val total = asset.size.takeIf { it > 0 } ?: connection.contentLengthLong
+                    var done = existing
                     connection.inputStream.use { input ->
-                        part.outputStream().use { output -> input.copyTo(output) }
+                        java.io.FileOutputStream(part, existing > 0).use { output ->
+                            val buffer = ByteArray(1 shl 16)
+                            while (true) {
+                                val read = input.read(buffer)
+                                if (read <= 0) break
+                                output.write(buffer, 0, read)
+                                done += read
+                                onProgress(done, total)
+                            }
+                        }
                     }
                     true
                 } finally {

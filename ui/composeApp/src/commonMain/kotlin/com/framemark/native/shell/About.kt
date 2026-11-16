@@ -121,7 +121,7 @@ private sealed interface UpdateState {
     data object Checking : UpdateState
     data object Latest : UpdateState
     data object Failed : UpdateState
-    data object Downloading : UpdateState
+    data class Downloading(val fraction: Float = 0f) : UpdateState
     data class Result(val message: String, val error: Boolean) : UpdateState
     data class Available(val release: UpdateRelease) : UpdateState
     data class AvailableManifest(val manifest: UpdateManifest, val asset: UpdateAsset?) : UpdateState
@@ -214,7 +214,9 @@ private fun UpdateCard(currentVersion: String) {
             UpdateState.Checking -> AboutUpdateLine(AboutText.UPDATE_CHECKING)
             UpdateState.Latest -> AboutUpdateLine("${AboutText.UPDATE_LATEST}（$currentVersion）")
             UpdateState.Failed -> AboutUpdateLine(AboutText.UPDATE_FAILED, error = true)
-            UpdateState.Downloading -> AboutUpdateLine(AboutText.UPDATE_DOWNLOADING)
+            is UpdateState.Downloading -> AboutUpdateLine(
+                AboutText.UPDATE_DOWNLOADING + " " + (value.fraction * 100).toInt() + "%",
+            )
             is UpdateState.Result -> AboutUpdateLine(value.message, error = value.error)
             is UpdateState.AvailableManifest -> {
                 Text(
@@ -233,11 +235,16 @@ private fun UpdateCard(currentVersion: String) {
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .clickable {
-                                if (state != UpdateState.Downloading) {
-                                    state = UpdateState.Downloading
+                                if (state !is UpdateState.Downloading) {
+                                    state = UpdateState.Downloading(0f)
                                     scope.launch {
                                         val error = withContext(Dispatchers.IO) {
-                                            installUpdate(value.asset, value.manifest.versionName)
+                                            installUpdate(value.asset, value.manifest.versionName) { done, total ->
+                                                if (total > 0) {
+                                                    val fraction = (done.toFloat() / total).coerceIn(0f, 1f)
+                                                    scope.launch { state = UpdateState.Downloading(fraction) }
+                                                }
+                                            }
                                         }
                                         state = UpdateState.Result(
                                             message = error ?: AboutText.UPDATE_INSTALL_STARTED,
