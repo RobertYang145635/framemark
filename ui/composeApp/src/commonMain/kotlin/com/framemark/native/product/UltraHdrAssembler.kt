@@ -22,7 +22,7 @@ package com.framemark.native.product
  */
 object UltraHdrAssembler {
 
-    private const val XMP_PREFIX = "http://ns.adobe.com/xap/1.0/"
+    private const val XMP_PREFIX = "http://ns.adobe.com/xap/1.0/\u0000"
 
     /** Fixed size of the MPF TIFF block: header(8) + IFD(26) + two entries(32). */
     private const val TIFF_SIZE = 66
@@ -38,6 +38,8 @@ object UltraHdrAssembler {
         sdrJpeg: ByteArray,
         gainMapJpeg: ByteArray,
         metadata: UltraHdr.Metadata,
+        /** 源照片的 ICC 配置；有则写进成片，保住 Display P3 等宽色域。 */
+        icc: ByteArray? = null,
     ): ByteArray? {
         if (!isJpeg(gainMapJpeg)) return null
         if (metadata.xmp.isBlank()) return null
@@ -45,7 +47,12 @@ object UltraHdrAssembler {
         // the SDR input, or a re-wrap of an export) would end up with two MPF
         // indexes and two XMP packets, and a decoder reads whichever comes first —
         // pointing at the previous gain map. Strip ours before inserting.
-        val base = stripHdrMetadata(sdrJpeg) ?: return null
+        var base = stripHdrMetadata(sdrJpeg) ?: return null
+        val iccSegments = icc?.takeIf { it.isNotEmpty() }?.let { profile ->
+            stripIcc(base)?.also { base = it }
+            iccSegments(profile) ?: return null
+        } ?: emptyList()
+        val iccSize = iccSegments.sumOf { it.size }
 
         // Gain map first: its final length goes into both the primary's GContainer
         // entry and the MPF entry, and it does not depend on the primary.
@@ -66,10 +73,10 @@ object UltraHdrAssembler {
         // and "how long is the primary (which contains the answer)".
         val mpfSize = 2 + 2 + 4 + TIFF_SIZE
         val insertAt = insertPoint(base)
-        val primarySize = base.size + primaryXmp.size + mpfSize + primaryIso.size
+        val primarySize = base.size + iccSize + primaryXmp.size + mpfSize + primaryIso.size
         val gainMapOffset = primarySize
         // marker(2) + length(2) + "MPF\0"(4) before the TIFF header.
-        val tiffStart = insertAt + primaryXmp.size + 8
+        val tiffStart = insertAt + iccSize + primaryXmp.size + 8
         val mpf = app2(
             "MPF".encodeToByteArray() + byteArrayOf(0) +
                 tiff(primarySize, gainMapOffset - tiffStart, gainMapSize),
@@ -79,6 +86,7 @@ object UltraHdrAssembler {
         var at = 0
         base.copyInto(out, at, 0, insertAt)
         at += insertAt
+        iccSegments.forEach { segment -> segment.copyInto(out, at); at += segment.size }
         primaryXmp.copyInto(out, at); at += primaryXmp.size
         mpf.copyInto(out, at); at += mpf.size
         primaryIso.copyInto(out, at); at += primaryIso.size
@@ -198,6 +206,69 @@ object UltraHdrAssembler {
     }
 
     private fun isJpeg(b: ByteArray): Boolean = b.size >= 4 && u8(b, 0) == 0xFF && u8(b, 1) == 0xD8
+
+    /** APP2 ICC chunks, split at the 64 KiB segment limit like every ICC writer. */
+    private val ICC_PREFIX = "ICC_PROFILE\u0000".encodeToByteArray()
+
+    private fun iccSegments(profile: ByteArray): List<ByteArray>? {
+        val chunkMax = 0xFFFF - 2 - (ICC_PREFIX.size + 2)
+        if (chunkMax <= 0 || profile.isEmpty()) return null
+        val total = (profile.size + chunkMax - 1) / chunkMax
+        if (total > 255) return null
+        val out = ArrayList<ByteArray>(total)
+        var offset = 0
+        var sequence = 1
+        while (offset < profile.size) {
+            val count = minOf(chunkMax, profile.size - offset)
+            val payload = ByteArray(ICC_PREFIX.size + 2 + count)
+            ICC_PREFIX.copyInto(payload, 0)
+            payload[ICC_PREFIX.size] = sequence.toByte()
+            payload[ICC_PREFIX.size + 1] = total.toByte()
+            profile.copyInto(payload, ICC_PREFIX.size + 2, offset, offset + count)
+            out += segment(0xE2, payload) ?: return null
+            offset += count
+            sequence++
+        }
+        return out
+    }
+
+    /** The base without any ICC frame; the stored profile is the engine's sRGB one. */
+    private fun stripIcc(jpeg: ByteArray): ByteArray? {
+        if (!isJpeg(jpeg)) return null
+        val out = ArrayList<Byte>(jpeg.size)
+        out.add(jpeg[0])
+        out.add(jpeg[1])
+        var i = 2
+        while (i + 1 < jpeg.size) {
+            if (u8(jpeg, i) != 0xFF) {
+                for (k in i until jpeg.size) out.add(jpeg[k])
+                return out.toByteArray()
+            }
+            val marker = u8(jpeg, i + 1)
+            if (marker == 0xD8 || marker == 0xD9 || marker == 0xDA) {
+                for (k in i until jpeg.size) out.add(jpeg[k])
+                return out.toByteArray()
+            }
+            if (marker == 0x01 || marker in 0xD0..0xD7) {
+                out.add(jpeg[i]); out.add(jpeg[i + 1]); i += 2; continue
+            }
+            if (i + 3 >= jpeg.size) return null
+            val length = (u8(jpeg, i + 2) shl 8) or u8(jpeg, i + 3)
+            if (length < 2 || i + 2 + length > jpeg.size) return null
+            val payloadStart = i + 4
+            val payloadEnd = i + 2 + length
+            var isIcc = false
+            if (marker == 0xE2 && payloadStart + ICC_PREFIX.size <= payloadEnd) {
+                isIcc = true
+                for (k in ICC_PREFIX.indices) {
+                    if (jpeg[payloadStart + k] != ICC_PREFIX[k]) { isIcc = false; break }
+                }
+            }
+            if (!isIcc) for (k in i until payloadEnd) out.add(jpeg[k])
+            i = payloadEnd
+        }
+        return out.toByteArray()
+    }
 
     /**
      * The base without any Ultra HDR metadata it may already carry: an existing MPF

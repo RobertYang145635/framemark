@@ -125,7 +125,38 @@ class UltraHdrTest {
         assertNull(UltraHdr.locate(truncated), "a truncated appended image must not be trusted")
     }
 
+    @Test
+    fun the_assembler_terminates_xmp_and_carries_the_source_icc () {
+        // XMP APP1 must be "ns.adobe.com/xap/1.0/\0" + packet; OPPO's reader ignores
+        // a missing NUL. The source ICC (Display P3) must survive the re-wrap.
+        val icc = byteArrayOf(0x00, 0x01, 0x02, 0x7F, 0x10, 0x20, 0x30, 0x40)
+        val source = jpeg(listOf(iccSegment(icc)))
+        val sdr = jpeg(emptyList())
+        val gain = jpeg(emptyList())
+        val metadata = UltraHdr.Metadata(xmp = OPPO_GAIN_MAP_XMP, isoPayload = null)
+        val out = assertNotNull(
+            UltraHdrAssembler.assemble(sdr, gain, metadata, UltraHdr.iccProfile(source)),
+        )
+        val xmpPrefix = "http://ns.adobe.com/xap/1.0/\u0000".encodeToByteArray()
+        assertTrue(
+            out.toList().windowed(xmpPrefix.size).any { it == xmpPrefix.toList() },
+            "primary XMP must start with the NUL-terminated namespace",
+        )
+        assertEquals(icc.toList(), UltraHdr.iccProfile(out)?.toList(), "source ICC must be copied")
+    }
+
     // ------------------------------------------------------------------ builders
+
+    /** APP2 ICC chunk with the standard `ICC_PROFILE\0` + sequence/count header. */
+    private fun iccSegment(profile: ByteArray): ByteArray {
+        val payload = "ICC_PROFILE\u0000".encodeToByteArray() + byteArrayOf(1, 1) + profile
+        val length = payload.size + 2
+        val out = ByteArray(4 + payload.size)
+        out[0] = 0xFF.toByte(); out[1] = 0xE2.toByte()
+        out[2] = (length ushr 8).toByte(); out[3] = length.toByte()
+        payload.copyInto(out, 4)
+        return out
+    }
 
     /** `FFD8` + [segments] + `FFD9` — a valid-enough JPEG for the segment reader. */
     private fun jpeg(segments: List<ByteArray>): ByteArray {

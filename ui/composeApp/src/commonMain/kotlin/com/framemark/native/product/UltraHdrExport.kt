@@ -231,6 +231,12 @@ object UltraHdrExport {
             ),
         ) ?: return null
 
-        return UltraHdrAssembler.assemble(sdrJpeg, gainMapJpeg, eligible.metadata)
+        return UltraHdrAssembler.assemble(
+            sdrJpeg = sdrJpeg,
+            gainMapJpeg = gainMapJpeg,
+            metadata = eligible.metadata,
+            // 源图的 ICC（Display P3 等）随成片走，否则宽色域会被读成 sRGB。
+            icc = UltraHdr.iccProfile(source),
+        )
     }
 }

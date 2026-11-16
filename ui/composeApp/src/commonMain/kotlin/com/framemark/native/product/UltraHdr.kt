@@ -104,6 +104,34 @@ object UltraHdr {
         return bytes.decodeToString(from, seg.payloadEnd)
     }
 
+    // ------------------------------------------------------------- ICC profile
+
+    /**
+     * The file's ICC profile, reassembled from its APP2 chunks; null when the
+     * file carries none. Used to keep Display P3 (or any wide-gamut profile)
+     * through the Ultra HDR re-wrap: the engine's SDR JPEG carries sRGB, but the
+     * pixels it decoded still describe the source profile.
+     */
+    fun iccProfile(bytes: ByteArray): ByteArray? {
+        val segs = segments(bytes, 0, bytes.size)
+        val chunks = segs.filter { it.marker == 0xE2 && hasPrefix(bytes, it, "ICC_PROFILE\u0000") }
+        if (chunks.isEmpty()) return null
+        val parts = chunks.mapNotNull { seg ->
+            val header = seg.payloadStart + 12
+            if (header + 2 > seg.payloadEnd) return@mapNotNull null
+            Triple(u8(bytes, header), u8(bytes, header + 1), bytes.copyOfRange(header + 2, seg.payloadEnd))
+        }.sortedBy { it.first }
+        if (parts.isEmpty()) return null
+        if (parts.any { it.second != parts.size }) return null
+        val out = ByteArray(parts.sumOf { it.third.size })
+        var at = 0
+        for (part in parts) {
+            part.third.copyInto(out, at)
+            at += part.third.size
+        }
+        return out
+    }
+
     // -------------------------------------------------------------- MPF index
 
     private data class MpfEntry(val size: Long, val absolute: Long)
