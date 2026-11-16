@@ -4,17 +4,17 @@
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-16T00:00:00Z",
-  "notes": "UI 修复：色卡溢出、玻璃面板、按住看原图背景、文字位置矩阵、滑动切换。",
+  "notes": "应用内检查更新与下载安装：Android 校验签名+哈希后调系统安装器，Windows 校验哈希后运行 MSI。",
   "assets": {
     "android": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-arm64.apk",
-      "sha256": "b831730acf058891bc7c4b86bcfc775ed3630264ca35ed545780b2d7052ac224",
-      "size": 130957623
+      "sha256": "be636022d4d754a2604cbfbac3700cdaf2f48678da50f715ecf40cff337aceaf",
+      "size": 130957659
     },
     "windows": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-win64.msi",
-      "sha256": "d5fb89ade31adba4569c04315d496740ad3fb3f4851ebf8a78aa0c491651fd63",
-      "size": 237662424
+      "sha256": "b2f118b6214eb67f491a035eed07ba132224c012660fca57ba10986458c716e2",
+      "size": 237683080
     }
   },
   "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc13"
