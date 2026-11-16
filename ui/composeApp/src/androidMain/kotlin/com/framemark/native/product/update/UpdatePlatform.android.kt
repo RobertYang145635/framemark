@@ -48,67 +48,76 @@ actual fun updatePlatform(): UpdatePlatform = UpdatePlatform.Android
 actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
     val context = updateContext ?: return "当前无法获取应用上下文"
     if (!context.packageManager.canRequestPackageInstalls()) {
-        return "请先允许 FrameMark 安装未知应用（设置 → 安装未知应用）"
-    }
-    val name = "FrameMark-$versionName.apk"
-    val file = File(context.externalCacheDir ?: context.cacheDir, "updates/$name")
-    file.parentFile?.mkdirs()
-    if (file.exists() && !file.delete()) return "无法清理旧的下载文件"
-
-    val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    val request = DownloadManager.Request(Uri.parse(asset.url))
-        .setTitle("FrameMark $versionName")
-        .setDescription("正在下载更新")
-        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-        .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "updates/$name")
-    val id = runCatching { manager.enqueue(request) }.getOrNull() ?: return "无法开始下载"
-    val deadline = System.currentTimeMillis() + 5 * 60_000
-    var local: File? = null
-    while (System.currentTimeMillis() < deadline) {
-        val cursor = manager.query(DownloadManager.Query().setFilterById(id))
-        cursor.use { c ->
-            if (c != null && c.moveToFirst()) {
-                val status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                when (status) {
-                    DownloadManager.STATUS_FAILED -> return "下载失败"
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        val uri = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
-                        local = uri?.let { File(Uri.parse(it).path ?: return@let null) }
-                    }
-                }
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:${context.packageName}"),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
             }
         }
-        if (local != null) break
-        Thread.sleep(400)
+        return "已打开「安装未知应用」设置，允许后回来再点一次「下载并安装」"
     }
-    val apk = local ?: return "下载超时，请稍后重试"
-    if (!apk.isFile) return "下载文件不存在"
-    if (asset.size > 0 && apk.length() != asset.size) return "下载文件大小不符"
-    val digest = java.security.MessageDigest.getInstance("SHA-256")
-    apk.inputStream().use { input ->
-        val buffer = ByteArray(1 shl 16)
-        while (true) {
-            val read = input.read(buffer)
-            if (read <= 0) break
-            digest.update(buffer, 0, read)
-        }
-    }
-    val actual = digest.digest().joinToString("") { "%02x".format(it) }
-    if (!actual.equals(asset.sha256, ignoreCase = true)) return "更新包校验失败（SHA-256 不符）"
+    val name = "FrameMark-$versionName.apk"
+    val apk = File(context.cacheDir, "updates/$name")
+    val part = File(apk.path + ".part")
+    part.parentFile?.mkdirs()
+    part.delete()
+    apk.delete()
 
-    // 签名必须与当前安装包一致；镜像可以换文件，但换不了签名。
-    val pm = context.packageManager
-    @Suppress("DEPRECATION")
-    val installed = pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES).signatures
-    @Suppress("DEPRECATION")
-    val archive = pm.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_SIGNATURES)?.signatures
-    if (!installed.isNullOrEmpty() && !archive.isNullOrEmpty()) {
-        val current = installed.map { it.toCharsString() }.toSet()
-        val next = archive.map { it.toCharsString() }.toSet()
-        if (current != next) return "更新包签名与当前版本不一致，已拒绝安装"
-    }
-
+    // 直接下载：OPPO 的 DownloadManager 会把文件写成 .oplusdownload 且不更新系统
+    // 状态列，轮询永远等不到完成；自己下载 + 按清单大小判断更可控。
     return runCatching {
+        val connection = java.net.URL(asset.url).openConnection() as HttpURLConnection
+        connection.connectTimeout = 15_000
+        connection.readTimeout = 60_000
+        connection.instanceFollowRedirects = true
+        connection.setRequestProperty("User-Agent", "FrameMark-Update")
+        try {
+            if (connection.responseCode !in 200..299) return "下载失败（HTTP ${connection.responseCode}）"
+            connection.inputStream.use { input ->
+                part.outputStream().use { output -> input.copyTo(output) }
+            }
+        } finally {
+            connection.disconnect()
+        }
+        if (asset.size > 0 && part.length() != asset.size) {
+            part.delete()
+            return "下载文件大小不符（${part.length()} != ${asset.size}）"
+        }
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        part.inputStream().use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) {
+                val read = input.read(buffer)
+                if (read <= 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it) }
+        if (!actual.equals(asset.sha256, ignoreCase = true)) {
+            part.delete()
+            return "更新包校验失败（SHA-256 不符）"
+        }
+        if (!part.renameTo(apk)) {
+            part.copyTo(apk, overwrite = true)
+            part.delete()
+        }
+
+        // 签名必须与当前安装包一致；镜像可以换文件，但换不了签名。
+        val pm = context.packageManager
+        @Suppress("DEPRECATION")
+        val installed = pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES).signatures
+        @Suppress("DEPRECATION")
+        val archive = pm.getPackageArchiveInfo(apk.absolutePath, PackageManager.GET_SIGNATURES)?.signatures
+        if (!installed.isNullOrEmpty() && !archive.isNullOrEmpty()) {
+            val current = installed.map { it.toCharsString() }.toSet()
+            val next = archive.map { it.toCharsString() }.toSet()
+            if (current != next) return "更新包签名与当前版本不一致，已拒绝安装"
+        }
+
         val installer = pm.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
@@ -126,5 +135,6 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String): String? {
             session.commit(pending.intentSender)
         }
         null
-    }.getOrElse { "无法启动安装器：${it.message ?: "未知错误"}" }
+    }.getOrElse { "下载或安装失败：${it.message ?: it::class.simpleName ?: "未知错误"}" }
 }
+
