@@ -28,3 +28,11 @@
 本轮执行记录位于 `../_research/acceptance-dual-20261101/execution-20261102/`。各结论关联具体源码和工件，历史通过结果不能代替最新版本验收。Windows 真实界面操作仍处于停止状态，命令行渲染与自动测试不计为完整界面通过。尚未正式放行。
 
 [UI 说明](ui/README.md)描述当前调用与本地验证方式；[历史根说明](docs/native-history/README-before-execution-20261102.md)保留整改前的阶段记录，里面的旧计数、路径和构建规则不再作为当前指引。
+
+## 开源协议
+
+本项目以 [MIT License](LICENSE) 开源。第三方组件与素材的许可见应用内「关于 → 许可与版权」；Windows 便携包的 `runtime/legal` 目录保留完整许可原文。
+
+## 更新检查
+
+应用内「关于 FrameMark → 检查更新」读取本仓库的 GitHub Releases 版本信息，可在直连与国内镜像之间切换；只读取版本元数据，不上传照片、工程或使用数据。
