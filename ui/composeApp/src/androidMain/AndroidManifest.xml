@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- 仅用于「检查更新」读取 GitHub Releases 的版本信息；不访问其它地址。 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
       WP-X3 §7: android:allowBackup was left at the platform default (true). The app's
       private files dir holds the user's project document (project.json: photos,

@@ -1,6 +1,7 @@
 package com.framemark.native.shell
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,15 +13,31 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.framemark.native.product.FmLog
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.fmElevated
+import com.framemark.native.product.update.UpdateJson
+import com.framemark.native.product.update.UpdateRelease
+import com.framemark.native.product.update.UpdateSource
+import com.framemark.native.product.update.UpdateUrls
+import com.framemark.native.product.update.UpdateVersion
+import com.framemark.native.product.update.fetchUrlText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** 一条开源许可：库名 + 许可名（+ 一句用途，可选）。 */
 data class LicenseEntry(val name: String, val license: String, val purpose: String)
@@ -57,6 +74,7 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
                 )
             }
         }
+        UpdateCard(currentVersion = version)
         AboutSection(title = AboutText.PRIVACY_TITLE) {
             AboutParagraph(AboutText.PRIVACY)
         }
@@ -87,6 +105,136 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
             AboutParagraph(AboutText.LICENSE_NOTE)
         }
     }
+}
+
+/**
+ * 「检查更新」卡片（2026-11-16）：手动检查 GitHub Releases（含预发布），
+ * 可选直连或国内镜像。只读取版本元数据，不上传任何本机内容。
+ */
+private sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object Latest : UpdateState
+    data object Failed : UpdateState
+    data class Available(val release: UpdateRelease) : UpdateState
+}
+
+@Composable
+private fun UpdateCard(currentVersion: String) {
+    var source by remember { mutableStateOf(UpdateSource.Mirror) }
+    var state by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    fun check() {
+        if (state == UpdateState.Checking) return
+        state = UpdateState.Checking
+        scope.launch {
+            val candidates = UpdateUrls.apiCandidates(source)
+            val releases = withContext(Dispatchers.IO) {
+                candidates.firstNotNullOfOrNull { url ->
+                    fetchUrlText(url)?.let { body -> UpdateJson.releases(body) }
+                }
+            }
+            state = when {
+                releases == null -> UpdateState.Failed
+                else -> UpdateVersion.newestAvailable(currentVersion, releases)
+                    ?.let { UpdateState.Available(it) }
+                    ?: UpdateState.Latest
+            }
+            FmLog.info("UPDATE_CHECK") {
+                "source=${source.name} candidates=${candidates.size} state=$state"
+            }
+        }
+    }
+
+    AboutCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = AboutText.UPDATE_TITLE,
+                style = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
+                color = FmPalette.onSurface,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = AboutText.UPDATE_CHECK,
+                style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                color = if (state == UpdateState.Checking) FmPalette.onSurfaceMuted else FmPalette.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = state != UpdateState.Checking) { check() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = AboutText.UPDATE_SOURCE,
+                style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp),
+                color = FmPalette.onSurfaceMuted,
+            )
+            Spacer(Modifier.weight(1f))
+            UpdateSourceChip(
+                label = UpdateSource.GitHub.label,
+                selected = source == UpdateSource.GitHub,
+                onClick = { source = UpdateSource.GitHub },
+            )
+            Spacer(Modifier.padding(horizontal = 4.dp))
+            UpdateSourceChip(
+                label = UpdateSource.Mirror.label,
+                selected = source == UpdateSource.Mirror,
+                onClick = { source = UpdateSource.Mirror },
+            )
+        }
+        when (val value = state) {
+            UpdateState.Idle -> AboutUpdateLine(AboutText.UPDATE_NOTE)
+            UpdateState.Checking -> AboutUpdateLine(AboutText.UPDATE_CHECKING)
+            UpdateState.Latest -> AboutUpdateLine("${AboutText.UPDATE_LATEST}（$currentVersion）")
+            UpdateState.Failed -> AboutUpdateLine(AboutText.UPDATE_FAILED, error = true)
+            is UpdateState.Available -> {
+                val tag = value.release.tag
+                val suffix = if (value.release.prerelease) AboutText.UPDATE_PRERELEASE else ""
+                Text(
+                    text = "${AboutText.UPDATE_AVAILABLE} $tag$suffix",
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                    color = FmPalette.onSurface,
+                )
+                Text(
+                    text = AboutText.UPDATE_OPEN,
+                    style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                    color = FmPalette.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            uriHandler.openUri(UpdateUrls.releasePage(value.release.url, source))
+                        }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpdateSourceChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+        color = if (selected) FmPalette.primary else FmPalette.onSurfaceSecondary,
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (selected) FmPalette.primary.copy(alpha = 0.12f) else FmPalette.surfaceMuted)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+private fun AboutUpdateLine(text: String, error: Boolean = false) {
+    Text(
+        text = text,
+        style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp),
+        color = if (error) FmPalette.error else FmPalette.onSurfaceMuted,
+    )
 }
 
 @Composable
@@ -130,22 +278,34 @@ private fun AboutParagraph(text: String) {
 object AboutText {
     const val TITLE: String = "关于 FrameMark"
     const val VERSION_ROW: String = "版本"
+    const val UPDATE_TITLE: String = "检查更新"
+    const val UPDATE_SOURCE: String = "更新源"
+    const val UPDATE_CHECK: String = "检查"
+    const val UPDATE_CHECKING: String = "正在检查…"
+    const val UPDATE_LATEST: String = "已是最新版本"
+    const val UPDATE_AVAILABLE: String = "发现新版本"
+    const val UPDATE_PRERELEASE: String = "（预发布）"
+    const val UPDATE_OPEN: String = "打开发布页"
+    const val UPDATE_FAILED: String = "检查失败：连不上更新源，稍后再试或切换更新源。"
+    const val UPDATE_NOTE: String = "联网只用于读取发布版本号，不上传照片或工程。"
     const val PRIVACY_TITLE: String = "隐私"
     const val PERMISSIONS_TITLE: String = "权限"
     const val LICENSE_TITLE: String = "许可与版权"
 
     /**
-     * 只陈述能在安装包 / 代码里核对的事实：没有网络权限、不申请相册权限、
+     * 只陈述能在安装包 / 代码里核对的事实：联网权限仅用于检查更新；不申请相册权限；
      * 项目与外观只存本机。
      */
     const val PRIVACY: String =
-        "照片、边框参数、文字、水印与 Logo 都只在这台设备上处理，应用没有联网权限，" +
-            "不会上传任何内容。工程、预设和外观设置保存在本机应用目录；导出的照片写入系统相册" +
+        "照片、边框参数、文字、水印与 Logo 都只在这台设备上处理；联网只用于「检查更新」读取 " +
+            "GitHub Releases 的版本信息（可切换国内镜像），不会上传任何照片、工程或使用数据。" +
+            "工程、预设和外观设置保存在本机应用目录；导出的照片写入系统相册" +
             "（桌面端写入你选择的目录）。卸载应用会删除本机工程与预设，已导出的照片不受影响。"
 
     const val PERMISSIONS: String =
         "FrameMark 不申请相册、存储或相机权限：选照片使用系统照片选择器，只读取你选中的文件；" +
-            "导出通过系统媒体库写入「相册 / FrameMark」。桌面端只读写你明确选择的工程、预设与导出目录。"
+            "导出通过系统媒体库写入「相册 / FrameMark」。唯一的网络权限用于检查更新，只请求发布版本信息，" +
+            "不访问其它地址。桌面端只读写你明确选择的工程、预设与导出目录。"
 
     /** 桌面便携包 `runtime/legal` 目录里有完整的第三方许可原文。 */
     const val LICENSE_NOTE: String =

@@ -27,10 +27,11 @@ class AboutTextTest {
 
     @Test
     fun privacyAndPermissionsStateTheActualBehaviour() {
-        // 清单里没有 INTERNET，也没有 READ_MEDIA_*/READ_EXTERNAL_STORAGE。
-        assertTrue("没有联网权限" in AboutText.PRIVACY, AboutText.PRIVACY)
+        // 清单只有 INTERNET（检查更新），没有 READ_MEDIA_*/READ_EXTERNAL_STORAGE。
+        assertTrue("检查更新" in AboutText.PRIVACY, AboutText.PRIVACY)
         assertTrue("不会上传" in AboutText.PRIVACY, AboutText.PRIVACY)
         assertTrue("系统照片选择器" in AboutText.PERMISSIONS, AboutText.PERMISSIONS)
+        assertTrue("网络权限" in AboutText.PERMISSIONS, AboutText.PERMISSIONS)
         assertTrue("不申请相册" in AboutText.PERMISSIONS, AboutText.PERMISSIONS)
     }
 
