@@ -1,6 +1,21 @@
-# FrameMark 原生双端工程
+# FrameMark（框印）
 
-当前产品为 Compose Multiplatform 界面与 Rust 渲染/导出实现。Windows 和 Android 共享部分模型、布局与文字代码；Windows 通过子进程绘制/编码，Android 通过 JNI 原生库调用，成片一致性需要分别验证。
+给照片加上相机风格的边框与参数水印 —— 本地处理，Windows 与 Android 共用一套边框与排版。
+
+FrameMark 把照片装进「相机边框」：厂商字标、机型 / 曝光参数 / 拍摄时间按模板排版，可再叠加自定义文字、图片水印与 Logo，导出 JPEG / PNG / WebP。照片、工程与预设都只留在本机，不上传。
+
+![License: MIT](https://img.shields.io/badge/license-MIT-31634F)
+![Release](https://img.shields.io/github/v/release/RobertYang145635/framemark?include_prereleases&color=31634F)
+
+- **平台**：Windows 便携版；Android arm64（8.0+）
+- **边框**：8 个分类、180 个边框（厂商 / 文字 / 白边 / 卡片 / 印象 / 色彩 / 简约）
+- **工作流**：批量、预设、裁切、图片水印、Logo；Ultra HDR 增益图（源文件带增益图时）
+- **技术**：Compose Multiplatform + Kotlin 界面，Rust 渲染与导出
+- **开源**：MIT
+
+下载与更新日志见 [Releases](https://github.com/RobertYang145635/framemark/releases)；应用内「关于 → 检查更新」支持直连与国内镜像。
+
+Windows 和 Android 共享部分模型、布局与文字代码；Windows 通过子进程绘制/编码，Android 通过 JNI 原生库调用，成片一致性需要分别验证。
 
 ## 当前范围
 
