@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc13",
-  "versionCode": 12,
+  "versionName": "0.9.0-rc14",
+  "versionCode": 13,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-16T00:00:00Z",
-  "notes": "应用内检查更新与下载安装：Android 校验签名+哈希后调系统安装器，Windows 校验哈希后运行 MSI。",
+  "notes": "应用内更新测试版本：修复色卡溢出、玻璃面板、按住看原图背景、文字位置矩阵、滑动切换。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-arm64.apk",
-      "sha256": "be636022d4d754a2604cbfbac3700cdaf2f48678da50f715ecf40cff337aceaf",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc14/FrameMark-0.9.0-rc14-arm64.apk",
+      "sha256": "afad9162a66162b61cddf9c02ef1e0c75b3fac6b70b96d17c34635488724eeea",
       "size": 130957659
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc13/FrameMark-0.9.0-rc13-win64.msi",
-      "sha256": "b2f118b6214eb67f491a035eed07ba132224c012660fca57ba10986458c716e2",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc14/FrameMark-0.9.0-rc14-win64.msi",
+      "sha256": "2ee1634310f0e61d156aa9e2d38bea881e5f71e1fec9393a43132f758f951aaf",
       "size": 237683080
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc13"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc14"
 }
