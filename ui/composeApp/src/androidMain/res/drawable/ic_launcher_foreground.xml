@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  FrameMark launcher icon, foreground layer: the app's own brand mark
-  (`DeskBrandMark` in DesktopLayout.kt) — a light "window" (the photo) sitting on the
-  dark stage, with the accent bar under it (the watermark line).
-
-  Geometry is centred in the 72 dp adaptive-icon safe zone (18..90 of the 108 box).
+  FrameMark 启动图标前景层（2026-11-16 重做，暖纸/炭黑/鼠尾草配色）：
+  一张带相机式边框的照片 —— 暖纸卡纸 + 炭黑照片（渐变）+ 底部参数/水印线。
+  不含文字；词标另作品牌资产。内容落在自适应图标 72 dp 可见区内。
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- the photo window -->
-    <path
-        android:pathData="M32,32h44a6,6 0 0,1 6,6v28a6,6 0 0,1 -6,6h-44a6,6 0 0,1 -6,-6v-28a6,6 0 0,1 6,-6z"
-        android:fillColor="#F2F4F7" />
-    <!-- inner mat: the dark band that makes it read as a print, not a white blob -->
-    <path
-        android:pathData="M32,32h44a6,6 0 0,1 6,6v4h-56v-4a6,6 0 0,1 6,-6z"
-        android:fillColor="#DCE1E7" />
-    <!-- the watermark line under the window -->
-    <path
-        android:pathData="M36,82h26a3,3 0 0,1 0,6h-26a3,3 0 0,1 0,-6z"
-        android:fillColor="#31634F" />
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <path android:pathData="M152.0,146.0 L360.0,146.0 Q376.0,146.0 376.0,162.0 L376.0,350.0 Q376.0,366.0 360.0,366.0 L152.0,366.0 Q136.0,366.0 136.0,350.0 L136.0,162.0 Q136.0,146.0 152.0,146.0 Z" android:fillColor="#F6F1E6" />
+    <path android:pathData="M158.0,160.0 L354.0,160.0 Q362.0,160.0 362.0,168.0 L362.0,296.0 Q362.0,304.0 354.0,304.0 L158.0,304.0 Q150.0,304.0 150.0,296.0 L150.0,168.0 Q150.0,160.0 158.0,160.0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear"
+                android:startX="0" android:startY="160"
+                android:endX="0" android:endY="304"
+                android:startColor="#5E5A52" android:endColor="#33312C" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M158.0,160.0 L354.0,160.0 Q362.0,160.0 362.0,168.0 L362.0,176.0 Q362.0,184.0 354.0,184.0 L158.0,184.0 Q150.0,184.0 150.0,176.0 L150.0,168.0 Q150.0,160.0 158.0,160.0 Z" android:fillColor="#6C675E" />
+    <path android:pathData="M172.0,332.0 L292.0,332.0 Q298.0,332.0 298.0,338.0 L298.0,338.0 Q298.0,344.0 292.0,344.0 L172.0,344.0 Q166.0,344.0 166.0,338.0 L166.0,338.0 Q166.0,332.0 172.0,332.0 Z" android:fillColor="#6F8F79" />
 </vector>
