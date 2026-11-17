@@ -143,15 +143,43 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (L
         val installer = pm.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
+            setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
         }
         val sessionId = installer.createSession(params)
         installer.openSession(sessionId).use { session ->
             apk.inputStream().use { input ->
                 session.openWrite("base.apk", 0, apk.length()).use { output -> input.copyTo(output) }
             }
-            val intent = Intent(context, com.framemark.native.MainActivity::class.java)
-            val pending = android.app.PendingIntent.getActivity(
-                context, sessionId, intent,
+            val action = "${context.packageName}.INSTALL_COMMIT"
+            val receiver = object : android.content.BroadcastReceiver() {
+                override fun onReceive(ctx: Context?, intent: Intent?) {
+                    if (intent?.action != action) return
+                    when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)) {
+                        PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                            // 系统要求用户确认：把安装器 UI 拉起来。
+                            @Suppress("DEPRECATION")
+                            val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                            confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            runCatching { ctx?.startActivity(confirm) }
+                        }
+                        PackageInstaller.STATUS_SUCCESS, PackageInstaller.STATUS_FAILURE,
+                        PackageInstaller.STATUS_FAILURE_ABORTED, PackageInstaller.STATUS_FAILURE_BLOCKED,
+                        PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE,
+                        PackageInstaller.STATUS_FAILURE_INVALID, PackageInstaller.STATUS_FAILURE_STORAGE -> {
+                            runCatching { ctx?.unregisterReceiver(this) }
+                        }
+                    }
+                }
+            }
+            val filter = android.content.IntentFilter(action)
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("DEPRECATION")
+                context.registerReceiver(receiver, filter)
+            }
+            val pending = android.app.PendingIntent.getBroadcast(
+                context, sessionId, Intent(action).setPackage(context.packageName),
                 android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE,
             )
             session.commit(pending.intentSender)
