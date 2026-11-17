@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc16",
-  "versionCode": 15,
+  "versionName": "0.9.0-rc17",
+  "versionCode": 16,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-16T00:00:00Z",
-  "notes": "更新链路：系统安装器",
+  "publishedAt": "2026-11-17T00:00:00Z",
+  "notes": "发布前完整校验：720 帧边框导出、手机/桌面 UI 矩阵、引擎边界全部通过；修复地理叠加、桌面 WebP/TIFF 导入、横屏参数页退出与坏输入崩溃。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc16/FrameMark-0.9.0-rc16-arm64.apk",
-      "sha256": "355507849d33d46e4d69eb1508c9db8203f02d582a8cac02cdd93cf71ec07b86",
-      "size": 130957699
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc17/FrameMark-0.9.0-rc17-arm64.apk",
+      "sha256": "db3b1d70d02816f3604cbf0773b533178e0b3c8f8e2f8277793e8028f852e271",
+      "size": 131187323
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc16/FrameMark-0.9.0-rc16-win64.msi",
-      "sha256": "e2018ed20c81ade71f6043c96d38341015790b442de116e7ab48db3088ff5461",
-      "size": 238055832
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc17/FrameMark-0.9.0-rc17-win64.msi",
+      "sha256": "7a267fa858d4bfbdf274bd03d6c0d4d74cba8dcc0e89226fdc1dc6a65a6d355c",
+      "size": 238059928
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc16"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc17"
 }
