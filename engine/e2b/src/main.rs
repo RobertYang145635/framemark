@@ -56,6 +56,14 @@ fn envf(name: &str, dflt: f32) -> f32 {
         .unwrap_or(dflt)
 }
 
+/// A bad input is a reported failure, never a Rust panic: the packaged app runs
+/// this binary as a worker, and a panic loses the engine process without a
+/// message the UI can show. `exit(2)` is the same contract e4hand already uses.
+fn fatal(message: impl std::fmt::Display) -> ! {
+    eprintln!("e2b.error={message}");
+    std::process::exit(2)
+}
+
 /// P3c: read `design.params` (render-v1 control surface). Keys absent, empty or
 /// at their default value are dropped, so an untouched design is a strict no-op.
 fn parse_overrides(doc: &Value) -> ir::Overrides {
@@ -826,7 +834,23 @@ fn preview_server_loop() -> Result<(), String> {
     Ok(())
 }
 
+
+/// Engine processes are rendering children, not the product UI. A native GPU
+/// abort inside Skia must not put a modal "e4hand.exe 停止工作" dialog on the
+/// user's desktop: the parent already restarts the worker / falls back. Keep the
+/// crash invisible and let the app report the preview failure.
+fn suppress_windows_crash_ui() {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::Diagnostics::Debug::{
+            SetErrorMode, SEM_FAILCRITICALERRORS, SEM_NOGPFAULTERRORBOX,
+        };
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    }
+}
+
 fn main() {
+    suppress_windows_crash_ui();
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("preview-server") {
         if let Err(e) = preview_server_loop() {
@@ -955,7 +979,7 @@ fn render_once(args: Vec<String>) {
             raw.parse::<i32>()
                 .ok()
                 .filter(|edge| *edge > 0)
-                .unwrap_or_else(|| panic!("--preview-max-edge must be a positive integer, got '{raw}'")),
+                .unwrap_or_else(|| fatal(format!("--preview-max-edge must be a positive integer, got '{raw}'"))),
         ),
     };
     // Interactive tier: decode the source photo no larger than this long edge.
@@ -967,7 +991,7 @@ fn render_once(args: Vec<String>) {
             raw.parse::<u32>()
                 .ok()
                 .filter(|edge| *edge > 0)
-                .unwrap_or_else(|| panic!("--preview-source-edge must be a positive integer, got '{raw}'")),
+                .unwrap_or_else(|| fatal(format!("--preview-source-edge must be a positive integer, got '{raw}'"))),
         ),
     };
 
@@ -975,8 +999,10 @@ fn render_once(args: Vec<String>) {
     let style = match PREVIEW_STYLE.with(|cell| cell.borrow_mut().take()) {
         Some((cached_path, style)) if cached_path == style_path => style,
         _ => {
-            let raw = std::fs::read_to_string(&style_path).expect("read style");
-            ir::parse_style(&raw).expect("parse style")
+            let raw = std::fs::read_to_string(&style_path)
+                .unwrap_or_else(|e| fatal(format!("read style {}: {e}", style_path.display())));
+            ir::parse_style(&raw)
+                .unwrap_or_else(|e| fatal(format!("parse style {}: {e}", style_path.display())))
         }
     };
     println!("e2b.style_id={} bands={}", style.id, style.bands.len());
@@ -1022,7 +1048,8 @@ fn render_once(args: Vec<String>) {
         }
     };
 
-    let photo_source = load_cached_photo(&photo_path, preview_source_edge).expect("photo");
+    let photo_source =
+        load_cached_photo(&photo_path, preview_source_edge).unwrap_or_else(|e| fatal(format!("photo: {e}")));
     let photo = &photo_source.image;
     let (pw, ph) = (photo_source.logical_w as f32, photo_source.logical_h as f32);
     println!("e2b.photo={}x{}", pw as i32, ph as i32);
@@ -1135,9 +1162,36 @@ fn render_once(args: Vec<String>) {
     );
     gaps.add("rule: isBrandLogo substitutes the EXIF brand wordmark (matchBrand/chooseBrandSlot/brandSlotRect from core/system/assets.ts+paint.ts); baked vendor bitmap only supplies the box/ink");
 
+    // Cross-brand typography for vendor frames: a Xiaomi frame on an OPPO photo
+    // keeps the photo's real brand (never pretends it was shot on a Xiaomi), but
+    // the substituted wordmark is scaled to the model line and OPPO's own sans is
+    // used, so the line reads as one design instead of a foreign logo dropped
+    // into a slot tuned for the Xiaomi mark.
+    let frame_vendor = style.id.split('-').next().unwrap_or("").to_string();
+    let brand_family = |b: &str| -> &'static str {
+        match b {
+            "xiaomi" | "redmi" | "poco" => "xiaomi",
+            "oppo" | "realme" | "oneplus" => "oppo",
+            "vivo" | "iqoo" => "vivo",
+            _ => "other",
+        }
+    };
+    let foreign_brand = brand_key
+        .as_deref()
+        .map(|b| brand_family(b) != brand_family(&frame_vendor))
+        .unwrap_or(false);
+    let brand_text_face: Option<&str> = if foreign_brand
+        && brand_family(&frame_vendor) == "xiaomi"
+        && brand_key.as_deref().map(brand_family) == Some("oppo")
+    {
+        Some("sys")
+    } else {
+        None
+    };
+
     let fonts = match PREVIEW_FONTS.with(|cell| cell.borrow_mut().take()) {
         Some((cached_root, fonts)) if cached_root == fonts_root => fonts,
-        _ => FontSet::load(&fonts_root).expect("fonts"),
+        _ => FontSet::load(&fonts_root).unwrap_or_else(|e| fatal(format!("fonts: {e}"))),
     };
     let worker_prep_ms = stage_started.elapsed().as_millis();
     let gpu_started = Instant::now();
@@ -1183,7 +1237,7 @@ fn render_once(args: Vec<String>) {
         foreground: foreground.clone(),
         ov: &overrides,
     };
-    let layout = ir::solve(&style, &env, &mut gaps).expect("layout");
+    let layout = ir::solve(&style, &env, &mut gaps).unwrap_or_else(|e| fatal(format!("layout: {e}")));
     let text_slots = ir::text_slot_manifest(&style, &env, &layout, &mut gaps);
     let base_w = layout.photo.w;
     let full_k = pw / base_w;
@@ -1223,9 +1277,9 @@ fn render_once(args: Vec<String>) {
                 });
                 let mode = std::env::var("T1C_EGLMODE").unwrap_or_else(|_| "device".to_string());
                 let want = std::env::var("T1C_ADAPTER").unwrap_or_else(|_| adapter.clone());
-                gpu::Gpu::new_angle(&dir, &want, &mode).expect("ANGLE context")
+                gpu::Gpu::new_angle(&dir, &want, &mode).unwrap_or_else(|e| fatal(format!("ANGLE context: {e}")))
             }
-            _ => gpu::Gpu::new_d3d12(&adapter).expect("D3D12 context"),
+            _ => gpu::Gpu::new_d3d12(&adapter).unwrap_or_else(|e| fatal(format!("D3D12 context: {e}"))),
         },
     };
     let worker_gpu_ms = gpu_started.elapsed().as_millis();
@@ -1456,7 +1510,7 @@ fn render_once(args: Vec<String>) {
                                     pad_px,
                                 };
                                 let free = im.brand_free.map(|f| [f[0] * k, f[1] * k, f[2] * k, f[3] * k]);
-                                let rect = brand::brand_slot_rect(
+                                let mut rect = brand::brand_slot_rect(
                                     logo.w,
                                     logo.h,
                                     ir::Rect { x: b.left, y: b.top, w: b.width(), h: b.height() },
@@ -1464,6 +1518,17 @@ fn render_once(args: Vec<String>) {
                                     free,
                                     &metrics,
                                 );
+                                if foreign_brand {
+                                    // Optical size of a foreign wordmark: match the
+                                    // model line's cap height instead of filling the
+                                    // Xiaomi mark's box. Shrinking from the right also
+                                    // opens the gap to the model text.
+                                    let target_h = rect.h * 0.78;
+                                    let scale = target_h / rect.h.max(1.0);
+                                    rect.w *= scale;
+                                    rect.h = target_h;
+                                    rect.y += (b.height() - target_h) * 0.5;
+                                }
                                 let canvas_tint = std::env::var("E3_SLOT_TINT").ok().as_deref() == Some("canvas");
                                 let tinted = im.tint.as_deref().and_then(|t| {
                                     if canvas_tint { tinted_image(&logo.image, t) } else { None }
@@ -1637,7 +1702,14 @@ fn render_once(args: Vec<String>) {
                                 })
                             });
                             let tracking = t.tracking * k * fit;
-                            let tf = fonts.resolve(&t.font_key, t.weight).clone();
+                            // Only the default Xiaomi face is swapped for the photo
+                            // brand's face; Leica's LG1056 / Oxanium are part of the
+                            // frame's identity and must never be replaced.
+                            let effective_face = match (brand_text_face, t.font_key.as_str()) {
+                                (Some(face), "misans") => face,
+                                _ => t.font_key.as_str(),
+                            };
+                            let tf = fonts.resolve(effective_face, t.weight).clone();
                             let cjk_em = std::env::var("E2B_D021_CJK")
                                 .ok()
                                 .and_then(|v| v.parse::<f32>().ok())
@@ -1653,7 +1725,7 @@ fn render_once(args: Vec<String>) {
                                 // MiSans），取不到才落系统 CJK。它与 Thai script face 同层，
                                 // 但基线常数按该厂商族的标定值走。
                                 let cjk_tf = if script_tf.is_none() {
-                                    fonts.cjk_face_for(&t.font_key, line, t.weight)
+                                    fonts.cjk_face_for(effective_face, line, t.weight)
                                 } else {
                                     None
                                 };
@@ -1876,9 +1948,9 @@ fn render_once(args: Vec<String>) {
                 draw_band(band);
             }
         })
-        .expect("render");
+        .unwrap_or_else(|e| fatal(format!("render: {e}")));
     drop(env);
-    gpu::encode_png(&pixels, cw, ch, &out).expect("png");
+    gpu::encode_png(&pixels, cw, ch, &out).unwrap_or_else(|e| fatal(format!("png: {e}")));
 
     println!(
         "e2b.adapter=#{} {} backend={} feature_level={} max_texture={}",

@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc20",
-  "versionCode": 19,
+  "versionName": "0.9.0-rc21",
+  "versionCode": 20,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-17T00:00:00Z",
-  "notes": "修复圆角面板外的直角色块；边框库新增常驻「系列」入口。",
+  "notes": "小米边框套用非小米照片时，品牌字标按机型文字高度缩放并留出间距，机型行使用品牌自有字体；徕卡特殊字体（LG1056/Oxanium）保持不变。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc20/FrameMark-0.9.0-rc20-arm64.apk",
-      "sha256": "2874903e49a1dd642f6c5960414da2b06598144eed7011c57ad20bb873c2b642",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc21/FrameMark-0.9.0-rc21-arm64.apk",
+      "sha256": "93af593dabed9e565e9261a942b7fc13433811f89cf463a7e1a7325d03fab9f2",
       "size": 131187323
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc20/FrameMark-0.9.0-rc20-win64.msi",
-      "sha256": "aab48faf6f0a7469079fa61ecb0ae3f26e41389369ea8313637bd610031d3f7c",
-      "size": 238043496
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc21/FrameMark-0.9.0-rc21-win64.msi",
+      "sha256": "5c669dcd1620c69d046b948bb2782a6d277363c0db771843857e0b9eb6f62c07",
+      "size": 237678952
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc20"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc21"
 }
