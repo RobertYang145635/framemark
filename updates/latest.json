@@ -8,13 +8,13 @@
   "assets": {
     "android": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc15/FrameMark-0.9.0-rc15-arm64.apk",
-      "sha256": "28b543da4fff009fa62f022c919942f9922b3c14f1701eb7e11576cdff56389d",
-      "size": 130957659
+      "sha256": "e6932c2d69b278dcc239e252ae8f346172b0024272f70778c8e2b802aee1f7e0",
+      "size": 130957699
     },
     "windows": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc15/FrameMark-0.9.0-rc15-win64.msi",
-      "sha256": "27570b4e2b99d90093f6b08ad6c198cf4fb6e43b12cbeb2d2049452245a4b659",
-      "size": 237691288
+      "sha256": "28aa20d2763cb5b40f087203b6dc5a72e391fff203e36639b839756a731091d2",
+      "size": 238055832
     }
   },
   "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc15"
