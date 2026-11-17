@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc19",
-  "versionCode": 18,
+  "versionName": "0.9.0-rc20",
+  "versionCode": 19,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-17T00:00:00Z",
-  "notes": "引擎子进程不再弹 Windows 停止工作对话框；D3D12 崩溃后由主程序重启/回退。其余与 rc18 相同。",
+  "notes": "修复圆角面板外的直角色块；边框库新增常驻「系列」入口。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc19/FrameMark-0.9.0-rc19-arm64.apk",
-      "sha256": "d546ca6ae4e7145640b5307c4e51dd91285094a978bbfc12761c8a0333aad8a4",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc20/FrameMark-0.9.0-rc20-arm64.apk",
+      "sha256": "2874903e49a1dd642f6c5960414da2b06598144eed7011c57ad20bb873c2b642",
       "size": 131187323
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc19/FrameMark-0.9.0-rc19-win64.msi",
-      "sha256": "d636e10afe70d5ec9071bc936832346947b610e41c1b5af5c172bdf563ff39e4",
-      "size": 237674856
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc20/FrameMark-0.9.0-rc20-win64.msi",
+      "sha256": "aab48faf6f0a7469079fa61ecb0ae3f26e41389369ea8313637bd610031d3f7c",
+      "size": 238043496
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc19"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc20"
 }
