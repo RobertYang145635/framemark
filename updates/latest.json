@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc18",
-  "versionCode": 17,
+  "versionName": "0.9.0-rc19",
+  "versionCode": 18,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-17T00:00:00Z",
-  "notes": "移除预览区左右滑动换边框手势（只在当前分类内切换且不循环，容易误以为卡住）；边框只能从面板/列表切换。",
+  "notes": "引擎子进程不再弹 Windows 停止工作对话框；D3D12 崩溃后由主程序重启/回退。其余与 rc18 相同。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc18/FrameMark-0.9.0-rc18-arm64.apk",
-      "sha256": "78f1f12d85e0774bd1f6e05dfef03e97f8e329d06b6de7a9d28989b8d443599a",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc19/FrameMark-0.9.0-rc19-arm64.apk",
+      "sha256": "d546ca6ae4e7145640b5307c4e51dd91285094a978bbfc12761c8a0333aad8a4",
       "size": 131187323
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc18/FrameMark-0.9.0-rc18-win64.msi",
-      "sha256": "730dcef79ae3332d698aa55671e2e7e6f845942e55d69a3c3470f504b0cce60d",
-      "size": 238039400
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc19/FrameMark-0.9.0-rc19-win64.msi",
+      "sha256": "d636e10afe70d5ec9071bc936832346947b610e41c1b5af5c172bdf563ff39e4",
+      "size": 237674856
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc18"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc19"
 }
