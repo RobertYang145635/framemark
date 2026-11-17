@@ -97,7 +97,7 @@
                       "size": 36,
                       "weight": 500,
                       "colorIndex": 0,
-                      "tracking": 0.01,
+                      "tracking": 0,
                       "lineHeight": 43.199999999999996,
                       "align": "left",
                       "gravity": "leftVerticalCenter",

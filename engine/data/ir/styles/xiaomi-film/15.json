@@ -78,7 +78,7 @@
               "size": 17,
               "weight": 500,
               "color": "#CE9238",
-              "tracking": 0.03,
+              "tracking": 0,
               "lineHeight": 20,
               "gravity": "leftVerticalCenter"
             },
@@ -148,7 +148,7 @@
               "size": 17,
               "weight": 500,
               "color": "#CE9238",
-              "tracking": 0.03,
+              "tracking": 0,
               "lineHeight": 20,
               "gravity": "rightVerticalCenter"
             }

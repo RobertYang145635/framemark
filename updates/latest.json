@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc21",
-  "versionCode": 20,
+  "versionName": "0.9.0-rc22",
+  "versionCode": 21,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-17T00:00:00Z",
-  "notes": "小米边框套用非小米照片时，品牌字标按机型文字高度缩放并留出间距，机型行使用品牌自有字体；徕卡特殊字体（LG1056/Oxanium）保持不变。",
+  "notes": "按小米原包 config 回填可变量字重与字距：经典/胶片/徕卡/标准/标签 25 个样式；修复胶片15、经典22/99字距与徕卡次级文字。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc21/FrameMark-0.9.0-rc21-arm64.apk",
-      "sha256": "93af593dabed9e565e9261a942b7fc13433811f89cf463a7e1a7325d03fab9f2",
-      "size": 131187323
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc22/FrameMark-0.9.0-rc22-arm64.apk",
+      "sha256": "4c55a15f3fc02e52138849ec226fa04e2dde89357ef19bec6a7d3f4af1bd3d6f",
+      "size": 131187539
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc21/FrameMark-0.9.0-rc21-win64.msi",
-      "sha256": "5c669dcd1620c69d046b948bb2782a6d277363c0db771843857e0b9eb6f62c07",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc22/FrameMark-0.9.0-rc22-win64.msi",
+      "sha256": "2fc2c99da3e2dbfc009bb86b14e4a17bd9ae7dfcfeb93ec7f9f8f0477fade6f0",
       "size": 237678952
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc21"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc22"
 }

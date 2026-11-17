@@ -120,7 +120,7 @@
                           "weight": 400,
                           "color": "#FFFFFFFF",
                           "alpha": 1,
-                          "tracking": 0.028,
+                          "tracking": 0.032,
                           "align": "center",
                           "outline": {
                             "paddingX": 5,
