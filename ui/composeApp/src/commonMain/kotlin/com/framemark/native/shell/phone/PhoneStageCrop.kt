@@ -224,9 +224,9 @@ internal fun PhoneCropLayer(
                                     )
                                 }
                             } else if (pan != Offset.Zero) {
-                                // Dragging the photo to the right reveals its left
-                                // side, so the keep window moves left with the same
-                                // sign `panned` applies.
+                                // 裁切框是画在整张照片上、跟着手指走的那一层：手指往右，
+                                // 框就往右（`panned` 内部是 centerX - dx，所以这里取反）。
+                                // 旧实现按「照片跟手指、框反向」处理，手感是反的。
                                 changeNow(
                                     CropGeometry.clamped(
                                         ui.sourceWidth,
@@ -234,8 +234,8 @@ internal fun PhoneCropLayer(
                                         ui.box.w.toDouble(),
                                         ui.box.h.toDouble(),
                                         cropNow.panned(
-                                            (pan.x / frame.width).toDouble(),
-                                            (pan.y / frame.height).toDouble(),
+                                            (-pan.x / frame.width).toDouble(),
+                                            (-pan.y / frame.height).toDouble(),
                                         ),
                                     ),
                                 )

@@ -429,6 +429,25 @@ impl<'a> Ctx2D<'a> {
         });
     }
 
+    /// 用给定的 Skia shader 直接铺一个矩形（运行时着色器 / 图案都走这里）。
+    pub fn fill_rect_with_shader(&mut self, rect: Rect, shader: skia_safe::Shader, kind: &str) {
+        let mut p = Paint::default();
+        p.set_anti_alias(true);
+        p.set_shader(shader);
+        p.set_alpha_f(self.st.alpha);
+        self.scoped(|c| {
+            c.draw_rect(rect, &p);
+        });
+        let seq = self.next_seq();
+        self.report.borrow_mut().decor.push(ShapeDraw {
+            seq,
+            underlay: false,
+            kind: kind.into(),
+            rect: RectJson::from_skia(rect),
+            color: None,
+        });
+    }
+
     /// 圆角矩形里的线性渐变填充。
     ///
     /// 玻璃面板的色调必须**沿圆角路径**落色：早先用 `clip_round_rect` +

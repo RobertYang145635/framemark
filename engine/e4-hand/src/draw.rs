@@ -1148,6 +1148,16 @@ pub fn draw_brand_logo(env: &mut Env, x: f32, y: f32, w: f32, h: f32, color: &st
     if !env.text.show_logo {
         return false;
     }
+    // 字标大小可调：非厂商边框统一读 `logoSizePct`（100 = 模板原尺寸），围绕原盒子
+    // 中心缩放，所以放大缩小都不会把字标挤到别的元素上。
+    let scale = (pct(env.params, "logoSizePct", 100.0) as f32 / 100.0).clamp(0.3, 2.5);
+    let (x, y, w, h) = if (scale - 1.0).abs() > f32::EPSILON {
+        let cx = x + w / 2.0;
+        let cy = y + h / 2.0;
+        (cx - w * scale / 2.0, cy - h * scale / 2.0, w * scale, h * scale)
+    } else {
+        (x, y, w, h)
+    };
     if let Some(logo) = env.images.logo.clone() {
         let iw = logo.width() as f32;
         let ih = logo.height() as f32;
@@ -1841,6 +1851,215 @@ fn glass_grain() -> &'static skia_safe::Image {
     })
 }
 
+/// 把背衬先模糊成一张贴图：运行时着色器要在**模糊后的画面**上做折射，
+/// 采样点被推来推去时不会把锐利的细节带进玻璃里。
+fn blur_image(env: &Env, img: &Image, blur_px: f32, w: f32, h: f32) -> Option<Image> {
+    let tw = img.width().max(1);
+    let th = img.height().max(1);
+    let mut surface = crate::gpu::raster_surface(tw, th);
+    let filter = image_filters::blur(
+        (blur_px.max(1.0), blur_px.max(1.0)),
+        TileMode::Clamp,
+        None,
+        None,
+    );
+    {
+        let canvas = surface.canvas();
+        canvas.clear(Color::TRANSPARENT);
+        let mut paint = skia_safe::Paint::default();
+        paint.set_anti_alias(true);
+        if let Some(f) = filter.clone() {
+            paint.set_image_filter(f);
+        }
+        let mut samp = SamplingOptions::default();
+        samp.filter = FilterMode::Linear;
+        canvas.draw_image_rect_with_sampling_options(
+            img,
+            None,
+            &Rect::from_xywh(0.0, 0.0, tw as f32, th as f32),
+            samp,
+            &paint,
+        );
+    }
+    let _ = (env, w, h);
+    Some(surface.image_snapshot())
+}
+
+/// 液态玻璃的片段着色器（SkSL）。
+///
+/// 形状/折射/色散/边缘打光的数学取自 `fletchmckee/liquid`（Apache-2.0，
+/// Compose Multiplatform 的 RuntimeShader 实现）与 `OverShifted/LiquidGlass`
+/// （MIT，超椭圆 SDF + 折射曲线）。做法是**按到边缘的距离把背衬采样点往内推**：
+/// 玻璃是有厚度的，边缘那圈会把后面的画面压扁，这就是「像玻璃」而不是「糊一层」
+/// 的关键；只加模糊永远做不出这个。
+///
+/// uniform 顺序必须与 [liquid_glass_uniforms] 的打包顺序一致。
+const LIQUID_GLASS_SKSL: &str = r#"
+uniform shader uContent;
+uniform float2 uOrigin;
+uniform float2 uSize;
+uniform float4 uCornerRadii;
+uniform float uRefraction;
+uniform float uCurve;
+uniform float uEdge;
+uniform half4 uTint;
+uniform float uSaturation;
+uniform float uDispersion;
+uniform float uContrast;
+
+const float AA_WIDTH_PX = 1.5;
+
+float computeSdf(in float2 p, in float2 b, in half4 r) {
+  r.xy = (p.x > 0.0) ? r.xy : r.zw;
+  r.x = (p.y > 0.0) ? r.x : r.y;
+  float2 q = abs(p) - b + r.x;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
+}
+
+// iquilezles.org/articles/distgradfunctions2d/ —— SDF 的梯度即表面法线。
+float2 computeSdfNormal(float2 pos, float2 shapeSize, half4 vr) {
+  vr.xy = (pos.x > 0.0) ? vr.xy : vr.zw;
+  vr.x = (pos.y > 0.0) ? vr.x : vr.y;
+  float r = vr.x;
+  float2 w = abs(pos) - (shapeSize - r);
+  float2 s = float2(pos.x < 0.0 ? -1.0 : 1.0, pos.y < 0.0 ? -1.0 : 1.0);
+  float g = max(w.x, w.y);
+  float2 q = max(w, 0.0);
+  float l = length(q);
+  return s * ((g > 0.0) ? q / l : ((w.x > w.y) ? float2(1.0, 0.0) : float2(0.0, 1.0)));
+}
+
+half3 applyColorAdjustments(half3 color) {
+  float lum = dot(color, half3(0.2126, 0.7152, 0.0722));
+  color = saturate(mix(half3(lum), color, uSaturation));
+  return saturate((color - 0.5) * uContrast + 0.5);
+}
+
+half4 main(float2 fragCoord) {
+  float2 local = fragCoord - uOrigin;
+  float minDimension = min(uSize.x, uSize.y);
+  float2 center = uSize * 0.5;
+  float2 shapeCoord = (local - center) / minDimension;
+  float2 shapeSize = uSize / minDimension;
+  float2 halfShapeSize = shapeSize * 0.5;
+  half4 shapeVr = half4(uCornerRadii) / minDimension;
+  float shapeSdf = computeSdf(shapeCoord, halfShapeSize, shapeVr);
+
+  float aaWidth = AA_WIDTH_PX / minDimension;
+  if (shapeSdf > aaWidth) {
+    return half4(0.0);
+  }
+
+  half4 lensVr = min(shapeVr * 1.5, half4(min(shapeSize.x, shapeSize.y) * 0.5));
+  float2 sdfNormal = computeSdfNormal(shapeCoord, halfShapeSize, lensVr);
+
+  half4 fragColor;
+  float2 baseCoord = fragCoord;
+  if (uRefraction > 0.0 && uCurve > 0.0) {
+    float lensDepth = 1.0 - saturate(-shapeSdf / (uRefraction / minDimension));
+    float distortion = 1.0 - sqrt(1.0 - lensDepth * lensDepth);
+    float normalDisplacement = distortion * -uCurve * minDimension;
+    baseCoord = fragCoord + normalDisplacement * sdfNormal;
+  }
+
+  if (uDispersion > 0.0) {
+    float2 distFromCenter = (local - center) / uSize;
+    float2 aberration = uDispersion * distFromCenter * distFromCenter * distFromCenter * minDimension;
+    float2 coordR = baseCoord - aberration;
+    float2 coordB = baseCoord + aberration;
+    float2 shapeCoordR = (coordR - uOrigin - center) / minDimension;
+    float2 shapeCoordB = (coordB - uOrigin - center) / minDimension;
+    bool validR = computeSdf(shapeCoordR, halfShapeSize, shapeVr) <= 0.0;
+    bool validB = computeSdf(shapeCoordB, halfShapeSize, shapeVr) <= 0.0;
+    half4 colorG = uContent.eval(baseCoord);
+    half4 colorR = validR ? uContent.eval(coordR) : colorG;
+    half4 colorB = validB ? uContent.eval(coordB) : colorG;
+    fragColor = half4(colorR.r, colorG.g, colorB.b, colorG.a);
+  } else {
+    fragColor = uContent.eval(baseCoord);
+  }
+
+  if (fragColor.a <= 0.0) {
+    fragColor = uContent.eval(fragCoord);
+  }
+
+  fragColor.rgb = applyColorAdjustments(fragColor.rgb);
+  fragColor.rgb = mix(fragColor.rgb, uTint.rgb, uTint.a);
+
+  // 边缘打光：法线朝向光源的那一段亮起来，就是玻璃的高光边。
+  float edgeSmooth = smoothstep(-uEdge / minDimension, 0.0, shapeSdf);
+  float2 lightDirection = float2(-0.15, -0.15);
+  float nDotL = abs(dot(sdfNormal, lightDirection));
+  fragColor.rgb += edgeSmooth * nDotL * 0.9;
+
+  float aaAlpha = 1.0 - smoothstep(-aaWidth * 0.5, aaWidth * 0.5, shapeSdf);
+  return fragColor * aaAlpha;
+}
+"#;
+
+/// 编译一次，进程内复用。编译失败返回 None（调用方退回旧的模糊面板）。
+fn liquid_glass_effect() -> Option<skia_safe::RuntimeEffect> {
+    // SkRuntimeEffect 不是 Sync，不能放全局 OnceLock；引擎每个渲染线程各编译一份即可。
+    thread_local! {
+        static EFFECT: std::cell::RefCell<Option<skia_safe::RuntimeEffect>> =
+            const { std::cell::RefCell::new(None) };
+    }
+    EFFECT.with(|cell| {
+        let mut slot = cell.borrow_mut();
+        if slot.is_none() {
+            *slot = skia_safe::RuntimeEffect::make_for_shader(LIQUID_GLASS_SKSL, None).ok();
+        }
+        slot.clone()
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn liquid_glass_shader(
+    backdrop: &Image,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    radius: f32,
+    refraction_px: f32,
+    curve: f32,
+    tint: skia_safe::Color,
+    saturation: f32,
+    dispersion: f32,
+) -> Option<skia_safe::Shader> {
+    let effect = liquid_glass_effect()?;
+    let (_bw, _bh) = (backdrop.width() as f32, backdrop.height() as f32);
+    // 子 shader 把「舞台坐标」映射到背衬贴图坐标：先平移掉面板左上角，再缩放到贴图尺寸。
+    let mut m = skia_safe::Matrix::translate((-x, -y));
+    m.post_scale(
+        (
+            backdrop.width() as f32 / w.max(1.0),
+            backdrop.height() as f32 / h.max(1.0),
+        ),
+        None,
+    );
+    let mut samp = SamplingOptions::default();
+    samp.filter = FilterMode::Linear;
+    let content = backdrop.to_shader((TileMode::Clamp, TileMode::Clamp), samp, Some(&m))?;
+    let uniforms: Vec<f32> = vec![
+        x, y, // uOrigin
+        w, h, // uSize
+        radius, radius, radius, radius, // uCornerRadii
+        refraction_px,          // uRefraction
+        curve,                  // uCurve
+        (h * 0.02).max(1.0),    // uEdge
+        tint.a() as f32 / 255.0,
+        tint.r() as f32 / 255.0,
+        tint.g() as f32 / 255.0,
+        tint.b() as f32 / 255.0,
+        saturation,
+        dispersion,
+        1.0,
+    ];
+    let bytes: Vec<u8> = uniforms.iter().flat_map(|v| v.to_ne_bytes()).collect();
+    effect.make_shader(skia_safe::Data::new_copy(&bytes), &[content.into()], None)
+}
+
 /// 磨砂玻璃面板：照片背衬（模糊）→ 色调 → 白雾 → 顶部高光 → 内阴影 → 边缘。
 ///
 /// 三处相对旧实现的行为修正：
@@ -1867,7 +2086,15 @@ pub fn draw_glass_panel(
     let s = env.pw.min(env.ph);
     let panel = Rect::from_xywh(x, y, w, h);
     let r = radius.max(0.0).min(w.min(h) / 2.0);
-    // 0. 投影：玻璃浮在照片上，先落一层柔和阴影（iOS 材质都有这一层）。
+    // 边带：内区做压暗/白雾，边带保留原始折射，读起来才有玻璃厚度。
+    let rim = (h * 0.055).min(w * 0.020).max(stroke_px * 2.0);
+    let ix = x + rim;
+    let iy = y + rim;
+    let iw = (w - 2.0 * rim).max(1.0);
+    let ih = (h - 2.0 * rim).max(1.0);
+    let ir = (r - rim).max(0.0);
+
+    // 0. 投影：玻璃浮在照片上。
     env.ctx.draw_round_rect_shadow(
         x,
         y,
@@ -1878,51 +2105,60 @@ pub fn draw_glass_panel(
         blur_px.max(6.0),
         h * 0.06,
     );
-    let (img, _tw, _th) = panel_backdrop(env, x, y, w, h);
-    let mut samp = SamplingOptions::default();
-    samp.filter = FilterMode::Linear;
-    let blur_filter = image_filters::blur(
-        (blur_px.max(1.0), blur_px.max(1.0)),
-        TileMode::Clamp,
-        None,
-        None,
-    );
-    // 1. 玻璃边带：把同一块模糊背衬按 1.06 倍围绕中心放大再铺进面板。
-    //    先铺这一层，后面用「内缩一个边带」的区域盖住中间，只在边缘留下被放大的
-    //    背衬 —— 这就是 iOS 玻璃边缘的折射（内容在边缘被压缩，看得见一圈亮带）。
-    let rim = (h * 0.055).min(w * 0.020).max(stroke_px * 2.0);
-    env.ctx.clip_round_rect(x, y, w, h, r);
-    let lens_w = w * 1.06;
-    let lens_h = h * 1.12;
-    let lens = Rect::from_xywh(
-        x + w / 2.0 - lens_w / 2.0,
-        y + h / 2.0 - lens_h / 2.0,
-        lens_w,
-        lens_h,
-    );
-    match &blur_filter {
-        Some(f) => env
-            .ctx
-            .draw_image_layer_filtered(&img, None, lens, samp, f.clone(), "glass.lens"),
-        None => env.ctx.draw_image(&img, None, lens, samp, "glass.lens"),
+
+    // 1. 玻璃本体。优先走运行时着色器：SDF + 位移折射 + 色散 + 边缘打光 + 彩度；
+    //    编译不出来（老 Skia / 语法变更）时才退回「模糊背衬 + 边带放大」的手工近似。
+    let (backdrop, _tw, _th) = panel_backdrop(env, x, y, w, h);
+    let blurred = blur_image(env, &backdrop, blur_px, w, h);
+    let mut tint_color = skia_safe::Color::from_argb(0, 0, 0, 0);
+    if let Some(parsed) = crate::css::parse(tint_bottom) {
+        tint_color = parsed.to_color(1.0);
     }
-    env.ctx.restore_clip();
-    // 2. 内区：常规背衬 + 色调 + 白雾 + 高光（边带保持未压暗，读起来像玻璃的厚边）
-    let ix = x + rim;
-    let iy = y + rim;
-    let iw = (w - 2.0 * rim).max(1.0);
-    let ih = (h - 2.0 * rim).max(1.0);
-    let ir = (r - rim).max(0.0);
+    let shader = blurred.as_ref().and_then(|b| {
+        liquid_glass_shader(
+            b,
+            x,
+            y,
+            w,
+            h,
+            r,
+            (h * 0.34).max(10.0),
+            0.62,
+            tint_color,
+            1.35,
+            0.015,
+        )
+    });
+    let mut used_shader = false;
+    if let Some(shader) = shader {
+        env.ctx.fill_rect_with_shader(panel, shader, "glass.liquid");
+        used_shader = true;
+    }
+    if !used_shader {
+        let mut samp = SamplingOptions::default();
+        samp.filter = FilterMode::Linear;
+        let blur_filter = image_filters::blur(
+            (blur_px.max(1.0), blur_px.max(1.0)),
+            TileMode::Clamp,
+            None,
+            None,
+        );
+        // 背衬铺满面板（边带也要有内容），内容由后面的内区压暗拉开层次。
+        env.ctx.clip_round_rect(x, y, w, h, r);
+        match &blur_filter {
+            Some(f) => env
+                .ctx
+                .draw_image_layer_filtered(&backdrop, None, panel, samp, f.clone(), "glass.backdrop"),
+            None => env
+                .ctx
+                .draw_image(&backdrop, None, panel, samp, "glass.backdrop"),
+        }
+        env.ctx.restore_clip();
+    }
+
+    // 2. 内区：色调 + 白雾 + 顶部高光 + 底部内阴影（两条路径都叠这一层，
+    //    色调决定文字对比，和用不用着色器无关）。
     env.ctx.clip_round_rect(ix, iy, iw, ih, ir);
-    match &blur_filter {
-        Some(f) => env
-            .ctx
-            .draw_image_layer_filtered(&img, None, Rect::from_xywh(ix, iy, iw, ih), samp, f.clone(), "glass.backdrop"),
-        None => env
-            .ctx
-            .draw_image(&img, None, Rect::from_xywh(ix, iy, iw, ih), samp, "glass.backdrop"),
-    }
-    // 2b. 色调（压暗，给玻璃深度）
     env.ctx.fill_round_rect_gradient(
         ix,
         iy,
@@ -1935,7 +2171,6 @@ pub fn draw_glass_panel(
         iy + ih,
         &[(0.0, tint_top), (1.0, tint_bottom)],
     );
-    // 2c. 白雾 + 顶部高光，让文字始终有对比
     env.ctx.fill_round_rect(
         ix,
         iy,
@@ -1960,7 +2195,6 @@ pub fn draw_glass_panel(
             (1.0, "rgba(255,255,255,0)"),
         ],
     );
-    // 2d. 底部内阴影：玻璃下半部分压暗，才有厚度
     env.ctx.fill_round_rect_gradient(
         ix,
         iy,
@@ -1978,6 +2212,7 @@ pub fn draw_glass_panel(
         ],
     );
     env.ctx.restore_clip();
+
     // 3. 磨砂颗粒：iOS 的玻璃不是镜面，有一层很轻的颗粒；没有它就显得像塑料。
     env.ctx
         .fill_image_pattern_overlay(glass_grain(), panel, 0.055);
@@ -2016,41 +2251,7 @@ pub fn draw_glass_panel(
             (1.0, "rgba(0,0,0,0.18)"),
         ],
     );
-    env.ctx.fill_round_rect_gradient(
-        x,
-        y,
-        w,
-        h,
-        r,
-        x,
-        y,
-        x + w,
-        y + h,
-        &[
-            (0.0, "rgba(255,255,255,0.10)"),
-            (0.45, "rgba(255,255,255,0.0)"),
-            (1.0, "rgba(255,255,255,0.05)"),
-        ],
-    );
-    // 5. 统一色调：边缘那圈折射带没有压暗过，最后用一层很轻的全幅渐变把它和
-    //    内区拉回同一个明度，避免出现「双描边」的观感。
-    env.ctx.fill_round_rect_gradient(
-        x,
-        y,
-        w,
-        h,
-        r,
-        x,
-        y,
-        x,
-        y + h,
-        &[
-            (0.0, "rgba(0,0,0,0.04)"),
-            (0.55, "rgba(0,0,0,0.10)"),
-            (1.0, "rgba(0,0,0,0.18)"),
-        ],
-    );
-    // 5. 边缘：上半圈更亮、下半圈更暗，玻璃边才有方向感（iOS 液态玻璃的做法）；
+    // 6. 边缘：上半圈更亮、下半圈更暗，玻璃边才有方向感（iOS 液态玻璃的做法）；
     //    再补一条内侧亮线，读起来像有厚度。
     if h > s * 0.02 {
         env.ctx.clip_rect(x, y - stroke_px, w, h * 0.5 + stroke_px);
@@ -2113,7 +2314,6 @@ pub fn draw_glass_panel(
     );
     env.ctx.record_shape("glass-panel", panel, None, true);
 }
-
 // ── sprockets / barcode / grain (draw.ts:627/650/600) ───────────────────────
 pub fn draw_barcode(ctx: &mut Ctx2D, x: f32, y: f32, w: f32, h: f32, color: &str, seed_text: &str) {
     let mut seed: u32 = 0;

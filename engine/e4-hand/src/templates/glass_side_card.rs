@@ -40,7 +40,18 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 "left".into()
             }
         });
-    let aspect = (pct(env.params, "cardAspect", 4.0 / 3.0) as f32).max(0.2);
+    // 卡片画幅：cardFit=photo 时跟照片自身比例走（玻璃卡片/玻璃 05 要能放任意比例的
+    // 照片，旧版把照片 cover 裁进固定 4:3 / 0.69 的窗口里）；否则用声明的 cardAspect。
+    let card_fit = env
+        .params
+        .get("cardFit")
+        .map(|v| crate::jsval::js_string(Some(v)))
+        .unwrap_or_default();
+    let aspect = if card_fit == "photo" {
+        (env.pw / env.ph.max(1.0)).max(0.05)
+    } else {
+        (pct(env.params, "cardAspect", 4.0 / 3.0) as f32).max(0.2)
+    };
     let inset = (w * (pct(env.params, "cardInsetPct", 6.35) as f32)) / 100.0;
     let avail_w = (w - 2.0 * inset).max(1.0);
     let avail_h = (h - 2.0 * inset).max(1.0);

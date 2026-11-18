@@ -440,6 +440,18 @@ private fun BorderSearchRow(query: String, onQueryChange: (String) -> Unit) {
     }
 }
 
+/**
+ * 每个分类自己的网格滚动位置。
+ *
+ * 覆盖层一关就整棵销毁，`rememberLazyGridState()` 会重置到顶部 —— 用户「选完退出去、
+ * 再点回来」看到的是列表最上面，而不是刚才停的地方。这里按分类键缓存状态，跨开关复用。
+ */
+private object BorderGridStates {
+    private val states = mutableMapOf<String, LazyGridState>()
+
+    fun of(categoryKey: String): LazyGridState = states.getOrPut(categoryKey) { LazyGridState() }
+}
+
 /** 一个分类页：本分类的分组 → **唯一**的 2 列网格（厂商页多一个「系列目录」入口）。 */
 @Composable
 private fun BorderCategoryPage(
@@ -456,7 +468,7 @@ private fun BorderCategoryPage(
     // 厂商 = 品牌 × 系列，分组多，所以这一页最前面放一个系列目录入口。
     val vendorsOnly = categoryKey == LibraryIndex.CATEGORY_VENDOR
     var seriesOpen by remember { mutableStateOf(false) }
-    val gridState = rememberLazyGridState()
+    val gridState = BorderGridStates.of(categoryKey)
     val scope = rememberCoroutineScope()
 
     if (groups.isEmpty()) {
