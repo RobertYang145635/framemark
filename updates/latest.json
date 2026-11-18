@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc26",
-  "versionCode": 25,
+  "versionName": "0.9.0-rc27",
+  "versionCode": 26,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-18T00:00:00Z",
-  "notes": "液态玻璃加入边缘折射、磨砂颗粒与更强模糊（对齐参考实现观感）；QA 签名固定，rc24 起版本之间可正常覆盖升级。从 rc23 及更早版本升级需要一次性卸载重装。",
+  "notes": "边框库缩略图按卡片实际像素渲染（原来固定 168px 被放大 3.8 倍，品牌与参数糊成一片）；液态玻璃加入边缘折射与磨砂颗粒；QA 签名固定。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc26/FrameMark-0.9.0-rc26-arm64.apk",
-      "sha256": "8d5b98d0314253e031e3d534e3219d70415b8f93d65e797d14a20ad4379e61e7",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc27/FrameMark-0.9.0-rc27-arm64.apk",
+      "sha256": "e7b0c9cbc6dd29047f4aa939a65d57cc3485efd2ec2fb41c88b6a39ff6b93308",
       "size": 131202751
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc26/FrameMark-0.9.0-rc26-win64.msi",
-      "sha256": "4f1723e448e10f33f6e672ea049c5407e2e1c2c58eb91b49ef89e077c08dac26",
-      "size": 237920680
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc27/FrameMark-0.9.0-rc27-win64.msi",
+      "sha256": "f3b55b066f5ef0e79b017d1ac29a6110d8c74b52e25a09afd6b8d584f0450a21",
+      "size": 237916568
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc26"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc27"
 }
