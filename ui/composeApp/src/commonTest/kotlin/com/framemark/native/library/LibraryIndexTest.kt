@@ -220,6 +220,52 @@ class LibraryIndexTest {
         assertEquals(1, index.families(LibraryIndex.VENDOR_OTHER).single().count)
     }
 
+    @Test
+    fun series_directory_keys_are_the_same_keys_the_vendor_page_groups_by() {
+        // 「点系列」要能定位到分组，靠的是目录和列表用同一个键公式；靠显示名去搜，
+        // 没有正式系列的组（vivo）标签是「未在固件中证实」，和任何卡都对不上。
+        val index = index()
+        val vendorPage = index.groups(LibraryIndexView(categoryKey = LibraryIndex.CATEGORY_VENDOR))
+        val realKeys = vendorPage.map { it.key }.toSet()
+        for (vendor in index.vendors) {
+            for (family in index.families(vendor.key)) {
+                val key = LibraryIndex.vendorGroupKey(vendor.key, family.key)
+                assertTrue(key in realKeys, "目录给的键必须是厂商页里的真实分组键：$key")
+                assertEquals(key, vendorPage.first { it.key == key }.key)
+            }
+        }
+
+        val vivo = index.families("brand:vivo").single()
+        val vivoKey = LibraryIndex.vendorGroupKey("brand:vivo", vivo.key)
+        assertEquals("vendor|brand:vivo|no-formal-family", vivoKey)
+        assertTrue(vivoKey in realKeys, "vivo 的落点是品牌下唯一的分组，不是显示名")
+        // 旧路径把组标签当搜索词：这句话不在任何卡的名称 / 厂商 / 系列里，只会「未匹配」。
+        assertEquals(LibraryGroups.NO_FIRMWARE_LABEL, vivo.label)
+        assertTrue(index.search(vivo.label).isEmpty())
+    }
+
+    @Test
+    fun a_group_key_says_which_category_page_it_belongs_to() {
+        assertEquals(
+            LibraryIndex.CATEGORY_VENDOR,
+            LibraryIndex.categoryKeyOfGroup("vendor|brand:vivo|no-formal-family"),
+        )
+        assertEquals("impression", LibraryIndex.categoryKeyOfGroup("template|impression|国风"))
+        assertEquals(
+            "template|text|厂商水印",
+            LibraryIndex.templateGroupKey("text", "厂商水印"),
+        )
+        assertEquals("text", LibraryIndex.categoryKeyOfGroup(LibraryIndex.templateGroupKey("text", "厂商水印")))
+        // 认不出的前缀 / 不在分类行里的分类 / 缺分类段 / 空键一律不猜。
+        assertNull(LibraryIndex.categoryKeyOfGroup(null))
+        assertNull(LibraryIndex.categoryKeyOfGroup(""))
+        assertNull(LibraryIndex.categoryKeyOfGroup("   "))
+        assertNull(LibraryIndex.categoryKeyOfGroup("vendor"))
+        assertNull(LibraryIndex.categoryKeyOfGroup("brand:vivo"))
+        assertNull(LibraryIndex.categoryKeyOfGroup("template|video|短剧"))
+        assertNull(LibraryIndex.categoryKeyOfGroup("group|text|厂商水印"))
+    }
+
     // ------------------------------------------------------------------ 搜索
 
     @Test

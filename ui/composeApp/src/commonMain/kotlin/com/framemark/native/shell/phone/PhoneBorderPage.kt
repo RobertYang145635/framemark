@@ -85,6 +85,12 @@ internal const val PHONE_BORDER_LIBRARY_PANEL_FRACTION = 0.88f
  * [query] 非空时，网格换成跨全部边框的搜索结果（与面板上的搜索同一条
  * `LibraryIndex.search`）；分类行始终可见，点分类即清空搜索词回到该分类页。
  *
+ * 「系列」目录（标题行右边 / 厂商页第一项）**不是搜索**：点一个系列 = 记住那个
+ * 真实分组键、必要时切到它所在的分类页，然后把这个分类页的网格滚到该系列分组头
+ * （第一张卡就在下一行）。落地后这一页没有被过滤，接着上下滑就是相邻系列 ——
+ * 不满意可以就近换一个，而不是再退回目录重新挑。跳转时搜索框会被清空：系列是
+ * 「定位」不是「筛选」，否则网格还被搜索结果占着，跳过去也看不见。
+ *
  * 宿主：外壳（`PhoneEditorScreen`）把它画在整个编辑器之上，`borderLibraryOpen` 归
  * 外壳所有，所以打开 / 关闭都不移动底板档位、不改工具。
  */
@@ -110,6 +116,9 @@ internal fun PhoneBorderLibraryOverlay(
     val pagerState = rememberPagerState(
         initialPage = PhoneBorderPageState.pageForCategory(categories, categoryKey),
     ) { PhoneBorderPageState.pageCount(categories).coerceAtLeast(1) }
+    // 系列目录点中后要滚到的分组（真实组键）。跳转可能跨分类：先切页，等目标分类页
+    // 组合出来、并且它的分组列表里确实有这个键，才滚过去；滚到了就清掉，下次重开不重跳。
+    var pendingSeries by remember { mutableStateOf<String?>(null) }
 
     fun showCategory(key: String) {
         // 点分类 = 离开搜索、回到该分类页。
@@ -118,6 +127,15 @@ internal fun PhoneBorderLibraryOverlay(
         scope.launch {
             pagerState.animateScrollToPage(PhoneBorderPageState.pageForCategory(categories, key))
         }
+    }
+
+    fun jumpToSeries(groupKey: String) {
+        // 目录给的键必须是数据里的真实分组键；认不出来就什么都不做，绝不退化成搜索词。
+        val landing = PhoneBorderPageState.seriesLanding(categories, groupKey) ?: return
+        if (PhoneBorderPageState.SERIES_CLEARS_SEARCH && query.isNotBlank()) onQueryChange("")
+        onCategoryChange(landing.categoryKey)
+        pendingSeries = landing.groupKey
+        scope.launch { pagerState.animateScrollToPage(landing.page) }
     }
 
     // 页码是分类的唯一事实来源：左右滑过去分类跟着走，关掉再打开还是这一页。
@@ -171,6 +189,9 @@ internal fun PhoneBorderLibraryOverlay(
                     recent = recent,
                     appliedCard = appliedCard,
                     pagerState = pagerState,
+                    pendingSeries = pendingSeries,
+                    onSeriesConsumed = { pendingSeries = null },
+                    onPickSeries = ::jumpToSeries,
                     // 点一张卡 = 应用 + 关闭：面板上马上就是新的那一张。
                     onPick = { picked ->
                         onApply(picked)
@@ -186,6 +207,9 @@ internal fun PhoneBorderLibraryOverlay(
 /**
  * 面板内容：固定标题行 + 分类行 + 搜索行 + 唯一的滚动区。高度由
  * [PhoneBorderLibraryOverlay] 决定，内容本身不假设塞满整块屏幕。
+ *
+ * 系列目录只有一个（这里），标题行的「系列」和厂商页第一项都开它；点一项只把
+ * 真实组键交回覆盖层（`onPickSeries`），由覆盖层负责切分类 + 滚动定位。
  */
 @Composable
 private fun BorderLibraryPanel(
@@ -199,6 +223,10 @@ private fun BorderLibraryPanel(
     recent: List<String>,
     appliedCard: LibraryCard?,
     pagerState: PagerState,
+    /** 系列目录点中后等目标分类页滚过去的真实组键；`null` = 没有待办跳转。 */
+    pendingSeries: String?,
+    onSeriesConsumed: () -> Unit,
+    onPickSeries: (String) -> Unit,
     onPick: (LibraryCard) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -242,6 +270,9 @@ private fun BorderLibraryPanel(
                             inUse = inUse,
                             recent = recent,
                             onPick = onPick,
+                            onOpenSeries = { seriesOpen = true },
+                            pendingSeries = pendingSeries,
+                            onSeriesConsumed = onSeriesConsumed,
                         )
                     }
                 }
@@ -254,14 +285,8 @@ private fun BorderLibraryPanel(
             onDismiss = { seriesOpen = false },
             onPick = { groupKey ->
                 seriesOpen = false
-                // Series pick == the same global search the field already supports;
-                // the label comes from the real family table, never a guess.
-                val parts = groupKey.split('|')
-                val vendorKey = parts.getOrNull(1)
-                val label = vendorKey
-                    ?.let { index.families(it).firstOrNull { family -> family.key == parts.getOrNull(2) } }
-                    ?.label
-                if (!label.isNullOrBlank()) onQueryChange(label)
+                // 目录给的是真实分组键：交给覆盖层去定位，不写搜索词。
+                onPickSeries(groupKey)
             },
         )
     }
@@ -452,7 +477,13 @@ private object BorderGridStates {
     fun of(categoryKey: String): LazyGridState = states.getOrPut(categoryKey) { LazyGridState() }
 }
 
-/** 一个分类页：本分类的分组 → **唯一**的 2 列网格（厂商页多一个「系列目录」入口）。 */
+/**
+ * 一个分类页：本分类的分组 → **唯一**的 2 列网格（厂商页多一个「系列目录」入口）。
+ *
+ * 系列目录的落地在这里完成：等 `pendingSeries` 变成这一页能认出来的真实组键，就滚到
+ * 那个分组标题。滚完才算消费掉 —— 目标在别的分类页时这里什么都不做，把 pending 留给
+ * 那一页（跨分类系列就是这么落地的）。
+ */
 @Composable
 private fun BorderCategoryPage(
     index: LibraryIndex,
@@ -461,15 +492,33 @@ private fun BorderCategoryPage(
     inUse: List<String>,
     recent: List<String>,
     onPick: (LibraryCard) -> Unit,
+    onOpenSeries: () -> Unit,
+    pendingSeries: String?,
+    onSeriesConsumed: () -> Unit,
 ) {
     val groups = remember(index, categoryKey, inUse, recent) {
         index.groups(LibraryIndexView(categoryKey = categoryKey, inUse = inUse, recent = recent))
     }
     // 厂商 = 品牌 × 系列，分组多，所以这一页最前面放一个系列目录入口。
     val vendorsOnly = categoryKey == LibraryIndex.CATEGORY_VENDOR
-    var seriesOpen by remember { mutableStateOf(false) }
     val gridState = BorderGridStates.of(categoryKey)
     val scope = rememberCoroutineScope()
+
+    // leading = 1：厂商页最前面是「系列目录」入口，分组标题整体后移一项。
+    LaunchedEffect(groups, pendingSeries) {
+        val key = pendingSeries ?: return@LaunchedEffect
+        val target = PhoneBorderPageState.seriesScrollTarget(
+            groups = groups,
+            groupKey = key,
+            leadingItems = if (vendorsOnly) 1 else 0,
+        )
+        // 键不在这页的分组里 = 目标在别的分类页；保留 pending，不要在这里吞掉。
+        if (target < 0) return@LaunchedEffect
+        onSeriesConsumed()
+        // 清 pending 会让本 effect 的 key 变化、重启并取消当前协程；滚动因此另起一个
+        // job，否则动画会在第一帧之后被自己取消。滚到标题 = 第一排卡同屏可见。
+        scope.launch { gridState.animateScrollToItem(target) }
+    }
 
     if (groups.isEmpty()) {
         PhoneLibraryNote(PhoneBorderPageState.emptyNote(""))
@@ -481,24 +530,8 @@ private fun BorderCategoryPage(
         onPick = onPick,
         state = gridState,
         seriesCount = if (vendorsOnly) index.vendors.size else null,
-        onOpenSeries = if (vendorsOnly) ({ seriesOpen = true }) else null,
+        onOpenSeries = if (vendorsOnly) onOpenSeries else null,
     )
-    if (seriesOpen) {
-        PhoneSeriesDirectory(
-            index = index,
-            onDismiss = { seriesOpen = false },
-            onPick = { groupKey ->
-                seriesOpen = false
-                // leading = 1：系列目录入口占了网格的第 0 项。
-                val target = PhoneBorderPageState.groupItemIndex(
-                    groups = groups,
-                    groupKey = groupKey,
-                    leadingItems = 1,
-                )
-                if (target >= 0) scope.launch { gridState.animateScrollToItem(target) }
-            },
-        )
-    }
 }
 
 /** 搜索结果页：同一个网格，分类提示换成结果分组。 */

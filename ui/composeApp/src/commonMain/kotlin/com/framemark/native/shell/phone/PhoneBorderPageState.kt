@@ -3,6 +3,7 @@ package com.framemark.native.shell.phone
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
+import com.framemark.native.library.LibraryIndex
 
 /**
  * 手机端边框工具的纯决策（无 Compose、无资源读取、无持久化；`PhoneBorderPageStateTest`
@@ -19,7 +20,8 @@ import com.framemark.native.library.LibraryCategory
  *  2. 面板文案与竖向预算：缩略图多大，保证面板永远不滚动；
  *  3. 分类行 / pager 的页码与分类键之间的换算；
  *  4. 选中态（哪张卡是当前选中的）；
- *  5. 网格条目下标（分组标题 / 卡片在扁平条目列表里的位置），用于跳转。
+ *  5. 网格条目下标（分组标题 / 卡片在扁平条目列表里的位置），用于跳转；
+ *  6. 系列目录里点一项之后落到哪一页、哪一个真实分组（不是搜索词）。
  *
  * 分类一律来自 WP-L 的 `LibraryIndex.categories`（`LibraryIndex.CATEGORY_ORDER` 的 8 项），
  * 本对象不造分类、不改顺序、不猜名称。
@@ -280,6 +282,61 @@ internal object PhoneBorderPageState {
         }
         return -1
     }
+
+    // ------------------------------------------------------------------ 系列目录 → 分组
+
+    /**
+     * 从系列目录落地时清空搜索框：是。
+     *
+     * 系列跳转是「定位」不是「筛选」。词不清掉的话网格仍被搜索结果占着，分类页的
+     * pager 根本不渲染，滚过去也看不见；两套状态还会互相覆盖（选完系列又冒出一个
+     * 搜索词，用户想改还得先清空）。搜索框本身保持独立，照样能自己输入。
+     */
+    const val SERIES_CLEARS_SEARCH = true
+
+    /**
+     * 系列目录点中一项之后的落点。
+     *
+     * [groupKey] 是 `LibraryIndex.groups` 给出的**真实分组键**（`vendor|<品牌键>|<系列键>`），
+     * 不是显示名：拿显示名拼搜索词，vivo 那种没有正式系列的组标签是「未在固件中证实」，
+     * 和任何一张卡都对不上，于是永远显示「未匹配」。
+     */
+    data class PhoneSeriesLanding(
+        val categoryKey: String,
+        val groupKey: String,
+        val page: Int,
+    )
+
+    /**
+     * 组键 → 落点：分类键、真实分组键、pager 页码。
+     *
+     * 空键、认不出的键、分类行里没有的分类一律返回 `null` —— 调用方保持现状，绝不拿
+     * 显示名退化成搜索词（那正是「点 vivo 显示未匹配」的来源）。
+     */
+    fun seriesLanding(categories: List<LibraryCategory>, groupKey: String?): PhoneSeriesLanding? {
+        val key = groupKey?.trim().orEmpty()
+        if (key.isEmpty()) return null
+        val categoryKey = LibraryIndex.categoryKeyOfGroup(key) ?: return null
+        if (categories.none { it.key == categoryKey }) return null
+        return PhoneSeriesLanding(
+            categoryKey = categoryKey,
+            groupKey = key,
+            page = pageForCategory(categories, categoryKey),
+        )
+    }
+
+    /**
+     * 系列跳转的滚动落点：该分组的**标题**条目，第一张卡就在下一行、同屏可见。
+     *
+     * 滚到标题而不是滚过标题，是因为落地后要能看见「这是哪个系列」；标题只占一行，
+     * 卡片不会被裁掉，用户接着上下滑就是相邻系列（这一页不做任何过滤）。
+     * 不是这一页的分组、空键返回 `-1`：目标在别的分类页时调用方保留 pending。
+     */
+    fun seriesScrollTarget(
+        groups: List<LibraryCardGroup>,
+        groupKey: String?,
+        leadingItems: Int = 0,
+    ): Int = groupItemIndex(groups, groupKey, leadingItems)
 
     // ------------------------------------------------------------------ 空态
 

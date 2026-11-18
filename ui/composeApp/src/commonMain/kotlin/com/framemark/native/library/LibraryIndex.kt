@@ -68,7 +68,42 @@ class LibraryIndex(val snapshot: LibrarySnapshot) {
 
         private val WHITESPACE = Regex("\\s+")
 
+        /** 分组键里表达分类的那一段：`vendor|…` / `template|<分类>|…`。 */
+        private const val GROUP_KIND_VENDOR = "vendor"
+        private const val GROUP_KIND_TEMPLATE = "template"
+
         fun of(snapshot: LibrarySnapshot): LibraryIndex = LibraryIndex(snapshot)
+
+        /**
+         * 厂商分组键：`vendor|<品牌键>|<系列键>`。
+         *
+         * 系列目录和列表分组必须用**同一个公式**：目录给的键要能在 [groups] 的结果里
+         * 逐字找到，否则点一个系列就只能退化成拿显示名去搜（vivo 那一组标签是
+         * 「未在固件中证实」，和任何一张卡都对不上，于是永远「未匹配」）。
+         */
+        fun vendorGroupKey(vendorKey: String, familyKey: String): String =
+            "$GROUP_KIND_VENDOR|$vendorKey|$familyKey"
+
+        /** 非厂商类别的子类分组键：`template|<分类键>|<子类>`。 */
+        fun templateGroupKey(categoryKey: String, templateCategory: String): String =
+            "$GROUP_KIND_TEMPLATE|$categoryKey|$templateCategory"
+
+        /**
+         * 一个分组键属于哪个分类页：`vendor|…` 是厂商页，`template|<分类>|…` 是那个分类页。
+         *
+         * 认不出的前缀、空键、以及 [CATEGORY_ORDER] 之外的分类一律返回 `null`：调用方保持
+         * 现状，绝不拿键去猜一个分类（`"vendor"` 与 `"template"` 之外没有第三种前缀）。
+         */
+        fun categoryKeyOfGroup(groupKey: String?): String? {
+            val key = groupKey?.trim().orEmpty()
+            if (key.isEmpty() || '|' !in key) return null
+            val categoryKey = when (key.substringBefore('|')) {
+                GROUP_KIND_VENDOR -> CATEGORY_VENDOR
+                GROUP_KIND_TEMPLATE -> key.removePrefix("$GROUP_KIND_TEMPLATE|").substringBefore('|')
+                else -> return null
+            }
+            return categoryKey.takeIf { it.isNotBlank() && it in CATEGORY_ORDER }
+        }
 
         /**
          * 全角转半角 + 小写，用于搜索。只做“同一个字的不同写法和大小写”的折叠，
@@ -295,7 +330,7 @@ class LibraryIndex(val snapshot: LibrarySnapshot) {
                 val label = if (view.vendorKey == null) "${vendor.label} · ${family.label}" else family.label
                 out.add(
                     LibraryCardGroup(
-                        key = "vendor|${vendor.key}|${family.key}",
+                        key = vendorGroupKey(vendor.key, family.key),
                         label = label,
                         note = family.note,
                         cards = family.cards,
@@ -319,7 +354,7 @@ class LibraryIndex(val snapshot: LibrarySnapshot) {
                 else -> templateCategory
             }
             LibraryCardGroup(
-                key = "template|$categoryKey|$templateCategory",
+                key = templateGroupKey(categoryKey, templateCategory),
                 label = label,
                 note = null,
                 cards = group,

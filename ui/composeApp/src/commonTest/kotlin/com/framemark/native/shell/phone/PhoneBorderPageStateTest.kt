@@ -4,6 +4,8 @@ import com.framemark.native.inspector.PHONE_LOGO_PICKER_PANEL_FRACTION
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
+import com.framemark.native.library.LibraryFamilyGroup
+import com.framemark.native.library.LibraryGroups
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibrarySnapshot
 import com.framemark.native.shell.EditorTool
@@ -68,6 +70,27 @@ class PhoneBorderPageStateTest {
     private val groups = listOf(
         group("template|vendor|经典", listOf(oppo), label = "经典"),
         group("template|vendor|标准", listOf(vivo, white), label = "标准"),
+    )
+
+    /**
+     * vivo 在固件里没有族：厂商页里唯一的组是 `no-formal-family` 桶，标签是那句
+     * 「未在固件中证实」。拿这个标签去搜索永远没有结果，所以系列跳转必须靠组键。
+     */
+    private val vivoFamily = LibraryFamilyGroup(
+        key = LibraryIndex.NO_FORMAL_FAMILY,
+        label = LibraryGroups.NO_FIRMWARE_LABEL,
+        note = "no-family-by-design",
+        styleFamily = null,
+        cards = listOf(vivo),
+    )
+
+    /** 厂商页：最前面是「系列目录」入口，然后是 vivo 这一个分组。 */
+    private val vendorPageGroups = listOf(
+        group(
+            key = phoneFamilyGroupKey("brand:vivo", vivoFamily),
+            cards = vivoFamily.cards,
+            label = vivoFamily.label,
+        ),
     )
 
     /** 分类行的一项一格；顺序就是 taxonomy 的顺序（这里只取前四项）。 */
@@ -446,6 +469,63 @@ class PhoneBorderPageStateTest {
         assertEquals(-1, PhoneBorderPageState.groupItemIndex(emptyList(), groups[0].key))
         assertEquals(-1, PhoneBorderPageState.groupItemIndex(groups, groups[0].key, leadingItems = -1))
         assertEquals(0, PhoneBorderPageState.groupItemIndex(groups, groups[0].key))
+    }
+
+    // -- 系列目录 → 分组定位（不是搜索）----------------------------------------
+
+    @Test
+    fun a_series_pick_lands_on_the_real_group_key_not_on_a_search_word() {
+        // 目录给的是厂商页里的真实分组键；vivo 的桶键是 no-formal-family，不是显示名。
+        val key = phoneFamilyGroupKey("brand:vivo", vivoFamily)
+        assertEquals(LibraryIndex.vendorGroupKey("brand:vivo", LibraryIndex.NO_FORMAL_FAMILY), key)
+        assertEquals("vendor|brand:vivo|no-formal-family", key)
+
+        val landing = assertNotNull(PhoneBorderPageState.seriesLanding(categories, key))
+        assertEquals(LibraryIndex.CATEGORY_VENDOR, landing.categoryKey)
+        assertEquals(1, landing.page, "厂商是分类行里的第二页")
+        assertEquals(key, landing.groupKey)
+
+        // 厂商页最前面是「系列目录」入口：第 1 项是 vivo 分组标题，第一张卡紧跟其后。
+        assertEquals(
+            1,
+            PhoneBorderPageState.seriesScrollTarget(vendorPageGroups, landing.groupKey, leadingItems = 1),
+        )
+        // 系列跳转不把词写进搜索框；已输入的词也会被清掉（跳转是定位，不是筛选）。
+        assertTrue(PhoneBorderPageState.SERIES_CLEARS_SEARCH)
+    }
+
+    @Test
+    fun a_series_living_in_another_category_switches_to_that_page_first() {
+        // 目录现在只列厂商系列，但键里带着分类；别的类别若有了系列，落地先切页再定位。
+        val key = LibraryIndex.templateGroupKey("white", "细")
+        val landing = assertNotNull(PhoneBorderPageState.seriesLanding(categories, key))
+        assertEquals("white", landing.categoryKey)
+        assertEquals(3, landing.page)
+        assertEquals(key, landing.groupKey)
+
+        // 白边页：第一组「留白」1 张卡 = 标题 + 卡片（2 项），「细」组的标题因此是第 2 项。
+        val whiteGroups = listOf(
+            group(LibraryIndex.templateGroupKey("white", "留白"), listOf(white)),
+            group(key, listOf(white)),
+        )
+        assertEquals(2, PhoneBorderPageState.seriesScrollTarget(whiteGroups, landing.groupKey))
+    }
+
+    @Test
+    fun an_unrecognisable_series_key_never_falls_back_to_searching_a_name() {
+        // 空键 / 认不出的键 / 分类行里没有的分类：不落地，更不拼搜索词。
+        assertNull(PhoneBorderPageState.seriesLanding(categories, null))
+        assertNull(PhoneBorderPageState.seriesLanding(categories, ""))
+        assertNull(PhoneBorderPageState.seriesLanding(categories, "   "))
+        assertNull(PhoneBorderPageState.seriesLanding(categories, vivoFamily.label))
+        assertNull(PhoneBorderPageState.seriesLanding(categories, "brand:vivo"))
+        assertNull(PhoneBorderPageState.seriesLanding(categories, "template|video|短剧"))
+        assertNull(PhoneBorderPageState.seriesLanding(emptyList(), LibraryIndex.vendorGroupKey("brand:vivo", "x")))
+        // 目标分组不在这页的网格里时，滚动下标是 -1：调用方保留 pending，等目标分类页。
+        assertEquals(
+            -1,
+            PhoneBorderPageState.seriesScrollTarget(groups, "vendor|brand:vivo|no-formal-family", leadingItems = 1),
+        )
     }
 
     // -- 空态 ----------------------------------------------------------------

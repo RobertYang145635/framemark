@@ -37,15 +37,25 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 
-/** Group key the vendor category uses for one family — the same formula as `LibraryIndex.groups`. */
+/**
+ * 系列目录给出一项时用的组键。
+ *
+ * 直接借 [LibraryIndex.vendorGroupKey] 的公式，而不是在这里再拼一遍：目录的键必须是
+ * `LibraryIndex.groups` 里那个真实分组键，否则「点系列」只能退化回去搜显示名。
+ */
 fun phoneFamilyGroupKey(vendorKey: String, family: LibraryFamilyGroup): String =
-    "vendor|$vendorKey|${family.key}"
+    LibraryIndex.vendorGroupKey(vendorKey, family.key)
 
 /**
- * 系列目录 (report §7.5): every brand with its series and real counts; one tap jumps
- * the sheet to that series. The brand/series split is WP-L's
- * (`LibraryIndex.vendors` / `families(vendorKey)`); no name is invented here, and
- * a series without a firmware family keeps WP-L's "未在固件中证实" label.
+ * 系列目录 (report §7.5): every brand with its series and real counts. The [onPick]
+ * answer is the **real** group key (`vendor|<brand>|<family>`) of the series, so the
+ * caller can scroll its category page to that group's header; it is never a display
+ * name and never a search word. That is what makes vivo work: its cards have no
+ * firmware family, so the only group is 「未在固件中证实」 — a sentence no card's
+ * name/brand/family contains, i.e. searching it could only ever answer 「未匹配」.
+ * The brand/series split is WP-L's (`LibraryIndex.vendors` / `families(vendorKey)`);
+ * no name is invented here, and a series without a firmware family keeps WP-L's
+ * "未在固件中证实" label.
  */
 @Composable
 fun PhoneSeriesDirectory(
