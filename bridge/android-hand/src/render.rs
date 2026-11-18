@@ -1001,7 +1001,31 @@ fn text_needing_fallback(
             out.push_str(value);
         }
     }
+    // 模板参数里的中文同样是「渲染器会画出来的字」。以前只扫了 stubTitle/stubLabel，
+    // 于是 profileFrame 的 `profileName`（人物 01–05 的示例名「鹤羽轻风」）这类参数
+    // 在 Android 上被判成「不需要 CJK 回退」→ 不装进包里那套中文，逐字画成「?」
+    // （桌面 CLI 无条件装了回退字体，所以只有手机端复现）。这里把参数里的字符串
+    // 全部纳入判定：宁可多装一次字体，也不能让用户看到问号。
+    push_param_strings(params, &mut out);
     out
+}
+
+/// 递归收集参数里的字符串值（数组 / 对象都走），供 [text_needing_fallback] 判断。
+fn push_param_strings(params: &hand::Params, out: &mut String) {
+    fn walk(value: &serde_json::Value, out: &mut String) {
+        match value {
+            serde_json::Value::String(text) => {
+                if !text.is_empty() {
+                    out.push('\n');
+                    out.push_str(text);
+                }
+            }
+            serde_json::Value::Array(items) => items.iter().for_each(|item| walk(item, out)),
+            serde_json::Value::Object(map) => map.values().for_each(|item| walk(item, out)),
+            _ => {}
+        }
+    }
+    params.values().for_each(|value| walk(value, out));
 }
 
 fn deep_merge(base: serde_json::Value, over: serde_json::Value) -> serde_json::Value {
@@ -1107,6 +1131,48 @@ mod tests {
         assert!(crate::fonts::contains_cjk(&text_needing_fallback(
             &text,
             &latin_exif,
+            &params,
+        )));
+    }
+
+    /// 人物 01–05 的示例名放在 `params.profileName` 里：这条链以前不参与「要不要装
+    /// CJK 回退」的判定，Android 上逐字画成「?」。钉住它，别再退回去。
+    #[test]
+    fn chinese_in_card_params_selects_the_bundled_cjk_face() {
+        let text: crate::hand::TextSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        let params: crate::hand::Params =
+            serde_json::from_value(serde_json::json!({ "profileName": "鹤羽轻风" })).unwrap();
+        assert!(crate::fonts::contains_cjk(&text_needing_fallback(
+            &text,
+            &Default::default(),
+            &params,
+        )));
+    }
+
+    /// 中文也可能藏在嵌套的数组 / 对象里（例如毕业季的贴纸配置）。
+    #[test]
+    fn chinese_nested_in_params_selects_the_bundled_cjk_face() {
+        let text: crate::hand::TextSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        let params: crate::hand::Params = serde_json::from_value(serde_json::json!({
+            "stickers": [{ "label": "毕业快乐" }]
+        }))
+        .unwrap();
+        assert!(crate::fonts::contains_cjk(&text_needing_fallback(
+            &text,
+            &Default::default(),
+            &params,
+        )));
+    }
+
+    /// 纯拉丁参数不该把 10MB 的中文字体白装一遍。
+    #[test]
+    fn latin_only_params_do_not_select_the_cjk_face() {
+        let text: crate::hand::TextSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        let params: crate::hand::Params =
+            serde_json::from_value(serde_json::json!({ "profileName": "Haru Kazama" })).unwrap();
+        assert!(!crate::fonts::contains_cjk(&text_needing_fallback(
+            &text,
+            &Default::default(),
             &params,
         )));
     }
@@ -1470,4 +1536,3 @@ mod photo_crop_tests {
         assert!(same(nan, base));
     }
 }
-
