@@ -222,11 +222,13 @@
   ],
   "audit": {
     "status": "approx",
-    "notes": "Auto-converted from Xiaomi camera config; needs visual audit.",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit. Right band content is 100% EXIF/brand driven: with an EXIF source that carries no focal/aperture/shutter/ISO (e.g. a PNG, or a JPEG whose optics tags were stripped) the band measures and paints empty except the leica dot, which is a fixture state, not a layout failure. Verified 2026-11-19 against bundle exif.jpg at 4:3 / 9:16 / 16:9 / 1:1 / 9:20: the rotated band paints at every ratio (non-white ink inside the 114-wide strip).",
     "unsupported": [
       "outer_border_left / outer_border_right 两个取向只落地 right（引擎无取向切换）",
       "exif / brand 两段在厂商配置里各自 rotate 90°；IR 用整带 rotation=90 表达同一结果",
-      "品牌行里的 2x36 分隔线（@foreground=1）未落地（IR group background 不支持主题色）"
+      "品牌行里的 2x36 分隔线（@foreground=1）未落地（IR group background 不支持主题色）",
+      "band.fit 保持默认（引擎的 2.5%/4% 内缩对这条带是有用的：16:9 时栏只有 607 单位长、品牌行会超出栏尾 43 单位，关闭 clamp 会让栏尾的 leica 圆点被裁掉；开启后整栏等比缩到栏内）",
+      "竖排（rotation=90）由引擎如实支持，未降级为正立；本卡不需要该降级"
     ]
   }
 }
