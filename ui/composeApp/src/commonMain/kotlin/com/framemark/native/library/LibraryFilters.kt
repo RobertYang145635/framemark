@@ -59,6 +59,22 @@ object LibraryGroups {
     const val PROV_VERIFIED_IN_FILE = "verified-in-file"
     const val PROV_NO_FAMILY = "no-family-by-design"
 
+    /**
+     * 手写复刻卡：族名沿用同名**固件**水印（哈苏 / LUMO / 蔡司 / 徕卡 / 小米），
+     * 但族名不是从固件里读出来的，而是照那套水印手写时对齐的。
+     *
+     * 单列一个来路等级，避免两种错误：一是把它们记成 `verified-in-file`（欺骗读者，
+     * 以为是从固件里读的）；二是丢进「未在固件中证实」桶（用户点哈苏只看到一桶
+     * 手写卡，还以为是没做完）。
+     */
+    const val PROV_HAND_AUTHORED_REPLICA = "hand-authored-replica"
+
+    /**
+     * 素材来自我们手里真实存在、但不是系统固件的包（例如 OPPO 相机包的毕业季贴纸）。
+     * 族名同样是从文件里核出来的，只是来源不是固件，所以和 `verified-in-file` 分开记。
+     */
+    const val PROV_VERIFIED_IN_PACKAGE = "verified-in-package"
+
     /** 无族档的 UI 标题（判别条件是数据字段 `no-family-by-design`，不是厂商名）。 */
     const val NO_FIRMWARE_LABEL = "未在固件中证实"
 
@@ -105,7 +121,15 @@ object LibraryGroups {
 
     /** 该卡是否有第三级（固件族）。 */
     fun hasThirdLevel(card: LibraryCard): Boolean =
-        card.familyNameProvenance == PROV_VERIFIED_IN_FILE && !card.styleFamilyLabel.isNullOrBlank()
+        card.familyNameProvenance in FORMAL_FAMILY_PROVENANCE &&
+            !card.styleFamilyLabel.isNullOrBlank()
+
+    /** 能撑起第三级（系列）的来路等级；其余一律进「未在固件中证实」桶。 */
+    private val FORMAL_FAMILY_PROVENANCE = setOf(
+        PROV_VERIFIED_IN_FILE,
+        PROV_VERIFIED_IN_PACKAGE,
+        PROV_HAND_AUTHORED_REPLICA,
+    )
 
     /** Stable order: brands by first appearance, then the null-brand / unverified buckets. */
     fun vendorOrder(cards: List<LibraryCard>): List<String> {

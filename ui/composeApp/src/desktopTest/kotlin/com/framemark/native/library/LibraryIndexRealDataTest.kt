@@ -125,9 +125,14 @@ class LibraryIndexRealDataTest {
             .eachCount()
         assertEquals(expected, index.vendors.associate { it.key to it.count }, "厂商卡数要和 taxonomy 一致")
 
+        // 2026-11-18：CameraPro 的四张补了 brand=OPPO，手写厂商卡也都归了品牌，
+        // 厂商类里已经没有「无品牌」卡，所以「其他」桶必须不存在 —— 不是忘了断言。
         val unbranded = vendorCards.count { it.jsonString("brand") == null }
-        assertEquals(LibraryIndex.VENDOR_OTHER, index.vendors.last().key, "没有品牌的卡放在最后")
-        assertEquals(unbranded, index.vendors.last().count)
+        assertEquals(0, unbranded, "厂商类里每张卡都应该有品牌")
+        assertTrue(
+            index.vendors.none { it.key == LibraryIndex.VENDOR_OTHER },
+            "没有无品牌卡时不该出现「其他」分组",
+        )
         assertEquals(
             LibraryGroups.vendorOrder(index.cards.filter { it.category == LibraryIndex.CATEGORY_VENDOR })
                 .filter { it.startsWith("brand:") },
@@ -191,34 +196,23 @@ class LibraryIndexRealDataTest {
         // 19 张 vivo 卡现在都有固件族（vivo / 蔡司定制 等）；没有族的只剩手写复刻卡
         // （OPPO 的哈苏/LUMO/毕业、小米的徕卡白底、vivo 的蔡司白底等）。它们必须每个
         // 厂商收在同一个“未在固件中证实”分组里，且 styleFamily 保持 null。
+        // 2026-11-18：手写复刻卡（哈苏 / LUMO / 蔡司 / 徕卡 / 小米）按同名固件水印
+        // 补了族，来路记成 hand-authored-replica；CameraPro 四张补了「OPPO / 相机专业版」。
+        // 于是每个品牌的厂商卡都有正式系列，「未在固件中证实」桶应当为空。
         for (brand in listOf("OPPO", "小米", "vivo")) {
             val families = index.families("brand:$brand")
             val informal = families.filter { !it.hasFormalFamily }
-            val expected = rawCards.filter {
-                it.jsonString("category") == LibraryIndex.CATEGORY_VENDOR &&
-                    it.jsonString("brand") == brand &&
-                    it.jsonString("familyNameProvenance") != LibraryGroups.PROV_VERIFIED_IN_FILE
-            }
-            assertEquals(1, informal.size, "$brand 没有正式系列的卡必须收在一个分组里")
-            val bucket = informal.single()
-            assertEquals(LibraryIndex.NO_FORMAL_FAMILY, bucket.key)
-            assertNull(bucket.styleFamily)
-            assertEquals(LibraryGroups.NO_FIRMWARE_LABEL, bucket.label)
-            assertEquals(expected.mapNotNull { it.jsonString("id") }.toSet(), bucket.ids.toSet())
-            val source = expected
-                .mapNotNull { it.jsonString("styleFamilyLabelSource")?.takeIf(String::isNotBlank) }
-                .distinct()
-            assertEquals(source.joinToString("；").ifBlank { null }, bucket.note, "组说明只取来源字段原文")
+            assertTrue(informal.isEmpty(), "$brand 不该再有未证实桶：${informal.map { it.key }}")
+            val formal = families.filter { it.hasFormalFamily }
+            assertTrue(formal.isNotEmpty(), "$brand 至少有一个正式系列")
             assertTrue(
-                bucket.cards.all { it.styleFamilyLabelSource.isNullOrBlank() || it.styleFamilyLabelSource in source },
-                "来源字段原样保留，不改写",
+                formal.all { it.styleFamily?.isNotBlank() == true },
+                "$brand 的正式系列都带 styleFamily",
             )
         }
 
-        val other = index.families(LibraryIndex.VENDOR_OTHER)
-        assertEquals(1, other.size)
-        assertEquals(LibraryIndex.NO_FORMAL_FAMILY, other.single().key)
-        assertTrue(other.single().count > 0)
+        // 没有品牌的厂商卡已经清零，所以“其他”厂商组也不再存在。
+        assertTrue(index.families(LibraryIndex.VENDOR_OTHER).isEmpty(), "没有无品牌卡时不该有「其他」系列组")
     }
 
     // ------------------------------------------------------------------ 热门
@@ -261,10 +255,13 @@ class LibraryIndexRealDataTest {
             "搜索不能漏也不能多",
         )
 
-        // 哈苏卡现在全部归到厂商类别（OPPO）：结果分成“OPPO · 哈苏定制”（固件族）
-        // 和“OPPO · 未在固件中证实”（手写复刻的哈苏卡）两段。
+        // 哈苏卡全部归到厂商（OPPO），手写复刻卡也并进同一个正式族，所以结果只有
+        // “OPPO · 哈苏定制”一段，不再出现“未在固件中证实”。
         assertTrue(groups.any { it.label == "OPPO · 哈苏定制" }, groups.map { it.label }.toString())
-        assertTrue(groups.any { it.label == "OPPO · ${LibraryGroups.NO_FIRMWARE_LABEL}" }, groups.map { it.label }.toString())
+        assertTrue(
+            groups.none { it.label.contains(LibraryGroups.NO_FIRMWARE_LABEL) },
+            "哈苏不该再落到未证实桶：${groups.map { it.label }}",
+        )
 
         // 厂商这一路：`vivo` 在 catalog 里只出现在 brand 字段，正好把“厂商”单拎出来验证
         val vivoCards = rawCards.filter { it.jsonString("brand") == "vivo" }.mapNotNull { it.jsonString("id") }
