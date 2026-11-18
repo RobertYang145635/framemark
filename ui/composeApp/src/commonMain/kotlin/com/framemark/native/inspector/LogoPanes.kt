@@ -232,10 +232,15 @@ internal fun logoPanelAction(
     state: LogoPaneState,
     action: LogoPanelAction,
     phonePicker: Boolean,
+    /** 自动匹配解析出的照片品牌字标（null = 解析不到，退回写 `auto`）。 */
+    autoAssetKey: String? = null,
 ): LogoPaneAction = when (action) {
+    // 自动匹配 = 按照片品牌。手写模板的引擎把「没有 logo 覆盖」当成「用卡片自带字标」，
+    // 只写 `auto` 会一直画样片品牌（OPPO 照片仍显示 Panasonic）。所以这里直接把
+    // 解析到的照片品牌字标写进去；解析不到才退回 `auto`（引擎侧按卡片默认处理）。
     LogoPanelAction.Auto -> LogoPaneAction(
         state = state.copy(body = LogoPaneBody.Panel, versionPage = false),
-        write = LOGO_SOURCE_AUTO,
+        write = autoAssetKey?.takeIf { it.isNotBlank() } ?: LOGO_SOURCE_AUTO,
     )
     LogoPanelAction.Replace -> LogoPaneAction(
         state = state.copy(
@@ -527,7 +532,7 @@ private fun BrandedCuratedLogo(
                 )
                 GhostButton(
                     text = "自动匹配",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null, photoBrand?.assetKey)) },
                     modifier = Modifier.weight(1f),
                     minHeight = DenseButtonHeight,
                 )
@@ -560,7 +565,7 @@ private fun BrandedCuratedLogo(
             ) {
                 GhostButton(
                     text = "自动匹配",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null, photoBrand?.assetKey)) },
                     modifier = Modifier.weight(1f),
                 )
                 GhostButton(

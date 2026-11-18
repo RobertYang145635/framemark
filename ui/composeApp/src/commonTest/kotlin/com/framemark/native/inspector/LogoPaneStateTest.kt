@@ -183,7 +183,7 @@ class LogoPaneStateTest {
 
     @Test
     fun autoMatchWritesAutoAndStaysOnThePanel() {
-        // 列表深处点「自动匹配」也回到面板；写入的就是取值域里的 `auto`。
+        // 列表深处点「自动匹配」也回到面板；没有解析到照片品牌时写入取值域里的 `auto`。
         val deep = LogoPaneState(body = LogoPaneBody.LibraryList, versionPage = true)
         val result = logoPanelAction(deep, LogoPanelAction.Auto, phonePicker = true)
         assertEquals("auto", result.write)
@@ -191,6 +191,20 @@ class LogoPaneStateTest {
         assertEquals(LogoPaneBody.Panel, result.state.body)
         assertFalse(result.state.versionPage)
         assertFalse(result.openPicker)
+    }
+
+    @Test
+    fun autoMatchWritesThePhotoBrandCutWhenItResolvedOne() {
+        // 手写模板的引擎把「没有 logo 覆盖」当成「用卡片自带字标」，只写 auto 会一直画样片品牌
+        // （OPPO 照片仍显示 Panasonic）。解析到照片品牌时写那一枚字标。
+        val result = logoPanelAction(
+            LogoPaneState.Landing,
+            LogoPanelAction.Auto,
+            phonePicker = true,
+            autoAssetKey = "oppo_black",
+        )
+        assertEquals("oppo_black", result.write)
+        assertEquals(LogoPaneBody.Panel, result.state.body)
     }
 
     @Test
