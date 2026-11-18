@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc23",
-  "versionCode": 22,
+  "versionName": "0.9.0-rc24",
+  "versionCode": 23,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-17T00:00:00Z",
-  "notes": "补齐小米 location 行可变字重（经典/胶片/徕卡/标准共 12 个样式），与 rc22 的 25 个样式字重/字距修复合并。",
+  "publishedAt": "2026-11-18T00:00:00Z",
+  "notes": "启动行为：冷启动回首页 / 边框库。玻璃 01–03 卡片跟随照片比例（任意比例不再裁切）；玻璃色卡画布跟随照片比例、色卡网格居中防重叠；液态玻璃面板重写（圆角色调、面板级模糊背衬、高光/内阴影/反光）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc23/FrameMark-0.9.0-rc23-arm64.apk",
-      "sha256": "e0eb92ab7ecd531312343be8f76743982e86a1d96b49d5bf26231f46957a3bcc",
-      "size": 131187607
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc24/FrameMark-0.9.0-rc24-arm64.apk",
+      "sha256": "c476d0a7fb389261fe5eb986d08a22855492e74cc87c5ef49dc114c2e12929c0",
+      "size": 130951483
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc23/FrameMark-0.9.0-rc23-win64.msi",
-      "sha256": "4979c3c123f62b0f1dda9f558982901edc9e6fc2d3eef8f995ad20e1371e34d7",
-      "size": 237678952
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc24/FrameMark-0.9.0-rc24-win64.msi",
+      "sha256": "c6a8eefd569020dfe383775ebc37679b7664afc3d88ab0bcf3104db839f42bc1",
+      "size": 237920680
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc23"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc24"
 }
