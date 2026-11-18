@@ -1804,6 +1804,43 @@ fn panel_backdrop(env: &Env, x: f32, y: f32, w: f32, h: f32) -> (skia_safe::Imag
     (surface.image_snapshot(), tw, th)
 }
 
+/// 玻璃的磨砂颗粒贴图（96×96，确定性伪随机，进程内只建一次）。
+///
+/// 理想情况下直接用 Overlay 混合盖在面板上；没有这层颗粒时，模糊背衬是一块
+/// 完全光滑的色块，看起来像塑料而不是磨砂玻璃。
+fn glass_grain() -> &'static skia_safe::Image {
+    use std::sync::OnceLock;
+    static GRAIN: OnceLock<skia_safe::Image> = OnceLock::new();
+    GRAIN.get_or_init(|| {
+        const N: usize = 96;
+        let mut surface = crate::gpu::raster_surface(N as i32, N as i32);
+        {
+            let canvas = surface.canvas();
+            canvas.clear(Color::TRANSPARENT);
+            let mut paint = skia_safe::Paint::default();
+            paint.set_anti_alias(false);
+            let mut seed: u64 = 0x9E37_79B9_7F4A_7C15;
+            let mut next = || {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                (seed & 0xFF) as u8
+            };
+            for y in 0..N {
+                for x in 0..N {
+                    let v = next();
+                    paint.set_color(Color::from_argb(255, v, v, v));
+                    canvas.draw_rect(
+                        Rect::from_xywh(x as f32, y as f32, 1.0, 1.0),
+                        &paint,
+                    );
+                }
+            }
+        }
+        surface.image_snapshot()
+    })
+}
+
 /// 磨砂玻璃面板：照片背衬（模糊）→ 色调 → 白雾 → 顶部高光 → 内阴影 → 边缘。
 ///
 /// 三处相对旧实现的行为修正：
@@ -1844,59 +1881,107 @@ pub fn draw_glass_panel(
     let (img, _tw, _th) = panel_backdrop(env, x, y, w, h);
     let mut samp = SamplingOptions::default();
     samp.filter = FilterMode::Linear;
-    // 1. 背衬：模糊后的照片本身
-    env.ctx.clip_round_rect(x, y, w, h, r);
-    match image_filters::blur(
+    let blur_filter = image_filters::blur(
         (blur_px.max(1.0), blur_px.max(1.0)),
         TileMode::Clamp,
         None,
         None,
-    ) {
+    );
+    // 1. 玻璃边带：把同一块模糊背衬按 1.06 倍围绕中心放大再铺进面板。
+    //    先铺这一层，后面用「内缩一个边带」的区域盖住中间，只在边缘留下被放大的
+    //    背衬 —— 这就是 iOS 玻璃边缘的折射（内容在边缘被压缩，看得见一圈亮带）。
+    let rim = (h * 0.085).min(w * 0.030).max(stroke_px * 2.0);
+    env.ctx.clip_round_rect(x, y, w, h, r);
+    let lens_w = w * 1.06;
+    let lens_h = h * 1.12;
+    let lens = Rect::from_xywh(
+        x + w / 2.0 - lens_w / 2.0,
+        y + h / 2.0 - lens_h / 2.0,
+        lens_w,
+        lens_h,
+    );
+    match &blur_filter {
         Some(f) => env
             .ctx
-            .draw_image_layer_filtered(&img, None, panel, samp, f, "glass.backdrop"),
-        None => env.ctx.draw_image(&img, None, panel, samp, "glass.backdrop"),
+            .draw_image_layer_filtered(&img, None, lens, samp, f.clone(), "glass.lens"),
+        None => env.ctx.draw_image(&img, None, lens, samp, "glass.lens"),
     }
     env.ctx.restore_clip();
-    // 2. 色调（压暗，给玻璃深度）
+    // 2. 内区：常规背衬 + 色调 + 白雾 + 高光（边带保持未压暗，读起来像玻璃的厚边）
+    let ix = x + rim;
+    let iy = y + rim;
+    let iw = (w - 2.0 * rim).max(1.0);
+    let ih = (h - 2.0 * rim).max(1.0);
+    let ir = (r - rim).max(0.0);
+    env.ctx.clip_round_rect(ix, iy, iw, ih, ir);
+    match &blur_filter {
+        Some(f) => env
+            .ctx
+            .draw_image_layer_filtered(&img, None, Rect::from_xywh(ix, iy, iw, ih), samp, f.clone(), "glass.backdrop"),
+        None => env
+            .ctx
+            .draw_image(&img, None, Rect::from_xywh(ix, iy, iw, ih), samp, "glass.backdrop"),
+    }
+    // 2b. 色调（压暗，给玻璃深度）
     env.ctx.fill_round_rect_gradient(
-        x,
-        y,
-        w,
-        h,
-        r,
-        x,
-        y,
-        x,
-        y + h,
+        ix,
+        iy,
+        iw,
+        ih,
+        ir,
+        ix,
+        iy,
+        ix,
+        iy + ih,
         &[(0.0, tint_top), (1.0, tint_bottom)],
     );
-    // 3. 白雾 + 顶部高光，让文字始终有对比
+    // 2c. 白雾 + 顶部高光，让文字始终有对比
     env.ctx.fill_round_rect(
-        x,
-        y,
-        w,
-        h,
-        r,
+        ix,
+        iy,
+        iw,
+        ih,
+        ir,
         &format!("rgba(255,255,255,{white_alpha})"),
     );
     env.ctx.fill_round_rect_gradient(
-        x,
-        y,
-        w,
-        h,
-        r,
-        x,
-        y,
-        x,
-        y + h,
+        ix,
+        iy,
+        iw,
+        ih,
+        ir,
+        ix,
+        iy,
+        ix,
+        iy + ih,
         &[
-            (0.0, "rgba(255,255,255,0.22)"),
+            (0.0, "rgba(255,255,255,0.20)"),
             (0.35, "rgba(255,255,255,0.04)"),
             (1.0, "rgba(255,255,255,0)"),
         ],
     );
-    // 4. 底部内阴影 + 斜向反光：玻璃的“厚度”和液态感
+    // 2d. 底部内阴影：玻璃下半部分压暗，才有厚度
+    env.ctx.fill_round_rect_gradient(
+        ix,
+        iy,
+        iw,
+        ih,
+        ir,
+        ix,
+        iy + ih,
+        ix,
+        iy,
+        &[
+            (0.0, "rgba(0,0,0,0.18)"),
+            (0.35, "rgba(0,0,0,0.05)"),
+            (1.0, "rgba(0,0,0,0)"),
+        ],
+    );
+    env.ctx.restore_clip();
+    // 3. 磨砂颗粒：iOS 的玻璃不是镜面，有一层很轻的颗粒；没有它就显得像塑料。
+    env.ctx
+        .fill_image_pattern_overlay(glass_grain(), panel, 0.055);
+    // 4. 斜向反光：整块玻璃上一道很淡的镜面高光
     env.ctx.fill_round_rect_gradient(
         x,
         y,
@@ -1904,13 +1989,31 @@ pub fn draw_glass_panel(
         h,
         r,
         x,
+        y,
+        x + w,
         y + h,
+        &[
+            (0.0, "rgba(255,255,255,0.10)"),
+            (0.45, "rgba(255,255,255,0.0)"),
+            (1.0, "rgba(255,255,255,0.05)"),
+        ],
+    );
+    // 5. 统一色调：边缘那圈折射带没有压暗过，最后用一层很轻的全幅渐变把它和
+    //    内区拉回同一个明度，避免出现「双描边」的观感。
+    env.ctx.fill_round_rect_gradient(
         x,
         y,
+        w,
+        h,
+        r,
+        x,
+        y,
+        x,
+        y + h,
         &[
-            (0.0, "rgba(0,0,0,0.18)"),
-            (0.35, "rgba(0,0,0,0.05)"),
-            (1.0, "rgba(0,0,0,0)"),
+            (0.0, "rgba(0,0,0,0.05)"),
+            (0.55, "rgba(0,0,0,0.12)"),
+            (1.0, "rgba(0,0,0,0.22)"),
         ],
     );
     env.ctx.fill_round_rect_gradient(
@@ -1927,6 +2030,24 @@ pub fn draw_glass_panel(
             (0.0, "rgba(255,255,255,0.10)"),
             (0.45, "rgba(255,255,255,0.0)"),
             (1.0, "rgba(255,255,255,0.05)"),
+        ],
+    );
+    // 5. 统一色调：边缘那圈折射带没有压暗过，最后用一层很轻的全幅渐变把它和
+    //    内区拉回同一个明度，避免出现「双描边」的观感。
+    env.ctx.fill_round_rect_gradient(
+        x,
+        y,
+        w,
+        h,
+        r,
+        x,
+        y,
+        x,
+        y + h,
+        &[
+            (0.0, "rgba(0,0,0,0.05)"),
+            (0.55, "rgba(0,0,0,0.12)"),
+            (1.0, "rgba(0,0,0,0.22)"),
         ],
     );
     // 5. 边缘：上半圈更亮、下半圈更暗，玻璃边才有方向感（iOS 液态玻璃的做法）；
