@@ -405,8 +405,11 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         kotlinx.coroutines.delay(6000)
         importNotice = null
     }
-    // Selecting a photo (or restoring a project) points the library at the card
-    // that photo was last designed with.
+    // Cold start shows the library, not last session's editor. Auto-selection of a
+    // photo's design is armed only after the user picks a card or a photo; a restored
+    // project primes the "本项目在用" card instead of opening it.
+    var autoSelectCard by remember { mutableStateOf(false) }
+    // Selecting a photo (after the user acts) points the library at its card.
     LaunchedEffect(projects.activePhotoId, projects.activeDesign?.cardId, libraryState) {
         if (projects.activePhoto == null) return@LaunchedEffect
         val ready = libraryState as? LibraryLoadState.Ready ?: return@LaunchedEffect
@@ -420,6 +423,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             selectedCard = null
             return@LaunchedEffect
         }
+        if (!autoSelectCard) return@LaunchedEffect
         if (selectedCard?.id != card.id) selectedCard = card
     }
 
@@ -612,6 +616,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
 
         fun applyCardSelection(card: LibraryCard, recordTrial: Boolean) {
+            autoSelectCard = true
             if (recordTrial) {
                 val previous = selectedCard?.id
                 val now = WorkflowEnv.platform?.nowMillis() ?: 0L
@@ -916,6 +921,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         // 关掉后摘要按 project.exportSettings 重新算。
                         onOpenExportSettings = { requestExport() },
                         onBackToEdit = { photoId ->
+                            autoSelectCard = true
                             projects.selectPhoto(photoId)
                             stageMode = StageMode.Edit
                         },

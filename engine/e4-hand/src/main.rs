@@ -198,7 +198,23 @@ fn preview_server_loop() -> Result<(), String> {
     Ok(())
 }
 
+
+/// Engine processes are rendering children, not the product UI. A native GPU
+/// abort inside Skia must not put a modal "e4hand.exe 停止工作" dialog on the
+/// user's desktop: the parent already restarts the worker / falls back. Keep the
+/// crash invisible and let the app report the preview failure.
+fn suppress_windows_crash_ui() {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::Diagnostics::Debug::{
+            SetErrorMode, SEM_FAILCRITICALERRORS, SEM_NOGPFAULTERRORBOX,
+        };
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+    }
+}
+
 fn main() {
+    suppress_windows_crash_ui();
     let args: Vec<String> = std::env::args().collect();
     let res = if args.get(1).map(String::as_str) == Some("preview-server") {
         preview_server_loop()
@@ -799,6 +815,28 @@ fn render(args: &[String]) -> Result<(), String> {
         .find(|t| t.id == card.template_id)
         .ok_or_else(|| format!("template '{}' not in hand/templates.json", card.template_id))?;
     let mut params = hand::merge_params(&def.defaults_map(), &design.params);
+    // Stale capture text must not outlive the sample photo: designs carried over
+    // from another photo can hold slotText overrides equal to the card's captured
+    // sample strings ("PANASONIC", "DC-S1", ...). Those are not user edits, so drop
+    // them and let the engine resolve the slot from the actual photo EXIF. This is
+    // what makes 经典双行 + 自动匹配 show OPPO after an OPPO photo is selected.
+    let sample_texts: std::collections::HashSet<String> = card
+        .texts
+        .iter()
+        .map(|t| t.s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if !sample_texts.is_empty() {
+        params.retain(|key, value| {
+            if !key.starts_with("slotText:") {
+                return true;
+            }
+            match value.as_str() {
+                Some(text) => !sample_texts.contains(text.trim()),
+                None => true,
+            }
+        });
+    }
 
     let overlay = parse_overlay(args)?;
     let fit = hand::resolve_fit(&arg(args, "fit", ""), design.fit_mode.as_deref())?;

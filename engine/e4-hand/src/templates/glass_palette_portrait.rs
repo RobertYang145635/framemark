@@ -9,8 +9,9 @@ use crate::draw::{
 use crate::hand::pct;
 
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
-    let h = (env.pw.max(env.ph)).round();
-    Ok(((h * 0.75).round(), h))
+    // 画布跟照片走：设计稿是 3:4 竖幅，但横构图照片塞进 3:4 会被裁掉两侧。
+    // 面板尺寸按宽度换算（设计比例 676:310），所以任何比例都排得下。
+    Ok((env.pw.round(), env.ph.round()))
 }
 
 pub fn render(env: &mut Env) -> Result<Rect, String> {
@@ -19,9 +20,12 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let cols = (pct(env.params, "swatchCols", 3.0) as f32).round().max(1.0) as i32;
     let rows = (pct(env.params, "swatchRows", 2.0) as f32).round().max(1.0) as i32;
     let panel_w = w * ((pct(env.params, "panelWidthPct", 89.2) as f32) / 100.0);
-    let panel_h = h * ((pct(env.params, "panelHeightPct", 29.7) as f32) / 100.0);
+    // 面板高由宽度推出，保持设计稿的面板形状（676 × 310 ≈ 2.18:1）。
+    // 设计稿 3:4 时 0.297h / (0.892·0.75h) = 0.444，这里沿用同一个比值。
+    let panel_h_design = panel_w * 0.444;
+    let panel_h = panel_h_design.min(h * 0.55);
     let panel_x = (w - panel_w) / 2.0;
-    let panel_y = h - h * ((pct(env.params, "panelBottomPct", 6.5) as f32) / 100.0) - panel_h;
+    let panel_y = h - (s * ((pct(env.params, "panelBottomPct", 6.5) as f32) / 100.0)) - panel_h;
     let radius =
         (panel_h * ((pct(env.params, "panelRadiusPct", 16.0) as f32) / 100.0)).min(w * 0.09);
     draw_photo_cover(
@@ -37,7 +41,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         s,
     );
     let tint = (pct(env.params, "tintAlpha", 0.3) as f32).clamp(0.0, 0.6);
-    let blur_px = (s * 0.012 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
+    let blur_px = (s * 0.022 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
     let tint_str = format!("rgba(0,0,0,{tint})");
     draw_glass_panel(
         env,
@@ -53,13 +57,37 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         (s * 0.001).max(1.0),
     );
     let colors = extract_palette(env, (cols * rows) as usize);
-    let d = panel_w * ((pct(env.params, "swatchPct", 12.3) as f32) / 100.0);
-    let first_x = panel_x + panel_w * ((pct(env.params, "gridFirstXPct", 18.9) as f32) / 100.0);
-    let pitch_x = panel_w * ((pct(env.params, "gridPitchXPct", 31.1) as f32) / 100.0);
-    let first_y = panel_y + panel_h * ((pct(env.params, "gridFirstYPct", 20.9) as f32) / 100.0);
-    let pitch_y = panel_h * ((pct(env.params, "gridPitchYPct", 45.1) as f32) / 100.0);
-    let label_size = h * ((pct(env.params, "labelPct", 2.2) as f32) / 100.0);
-    let label_top = d / 2.0 + h * 0.0148;
+    let mut d = panel_w * ((pct(env.params, "swatchPct", 12.3) as f32) / 100.0);
+    // 字号与标签间距按面板宽度换算：横构图时面板变矮，标签不会跟着被压小。
+    let mut label_size = panel_w * 0.0329 * ((pct(env.params, "labelPct", 2.2) as f32) / 2.2);
+    let mut label_gap = panel_w * 0.0221;
+    let mut label_h = label_size * 1.15;
+    let mut pitch_x = panel_w * ((pct(env.params, "gridPitchXPct", 31.1) as f32) / 100.0);
+    pitch_x = pitch_x.max(d * 1.6);
+    // 行距不能小于「圆 + 标签 + 呼吸」，否则横幅照片的扁面板上两行会叠在一起。
+    let min_pitch_y = d + label_gap + label_h + panel_h * 0.03;
+    let mut pitch_y = (panel_h * ((pct(env.params, "gridPitchYPct", 45.1) as f32) / 100.0))
+        .max(min_pitch_y);
+    // 面板矮到装不下两行时整组等比缩小，宁可色卡小一点，也不让标签跑出玻璃面板。
+    let mut block_h =
+        (rows.saturating_sub(1) as f32) * pitch_y + d + label_gap + label_h;
+    let avail_h = panel_h * 0.88;
+    if block_h > avail_h {
+        let k = (avail_h / block_h).max(0.4);
+        d *= k;
+        label_size *= k;
+        label_gap *= k;
+        label_h *= k;
+        pitch_x *= k;
+        pitch_y *= k;
+        block_h = (rows.saturating_sub(1) as f32) * pitch_y + d + label_gap + label_h;
+    }
+    // 网格按面板居中：设计稿的 18.9% / 20.9% 起点正是居中后的结果，
+    // 所以竖幅照片外观不变，其他比例也不会偏到一侧。
+    let block_w = (cols.saturating_sub(1) as f32) * pitch_x + d;
+    let first_x = panel_x + (panel_w - block_w) / 2.0 + d / 2.0;
+    let first_y = panel_y + (panel_h - block_h).max(0.0) / 2.0 + d / 2.0;
+    let label_top = d / 2.0 + label_gap;
     for r in 0..rows {
         for c in 0..cols {
             let idx = (r * cols + c) as usize;

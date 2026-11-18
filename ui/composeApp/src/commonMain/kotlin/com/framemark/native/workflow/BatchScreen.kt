@@ -46,6 +46,14 @@ internal const val BATCH_EXPORT_HINT: String =
     "导出用本机渲染（JPEG 质量 100，4:4:4），文件写在导出目录；从队列移除任务不会删除已导出的文件。"
 
 /**
+ * 队列语义：一条任务在入队那一刻就把边框、参数和导出设置固定下来。
+ * 用户改完当前设计再回来看批量页时，最常问的就是「我刚改的边框会不会影响已加进去的」，
+ * 这句话直接回答它（计划 §6）。
+ */
+internal const val BATCH_QUEUE_HINT: String =
+    "加入批量时会固定当时的边框与参数；之后再改设计，不影响已加入的任务。"
+
+/**
  * Batch queue page: real exports through the native engine, persisted to the app
  * data dir and resumable after a restart. The legacy tick loop below only drives
  * the U4 verifier's no-engine fixtures; real items advance from the export job.
@@ -74,6 +82,18 @@ fun BatchScreen(state: LazyListState, runner: BatchRunner, onClose: (() -> Unit)
             }
         }
         item { BatchSummary(runner) }
+        item {
+            Text(
+                text = BATCH_QUEUE_HINT,
+                style = FmType.bodyMedium,
+                color = FmPalette.onSurfaceMuted,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(FmRadii.card))
+                    .background(FmPalette.surfaceMuted)
+                    .padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+            )
+        }
         if (runner.items.isEmpty()) {
             item {
                 Text(

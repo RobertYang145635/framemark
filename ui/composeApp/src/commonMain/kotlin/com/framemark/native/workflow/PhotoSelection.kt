@@ -28,6 +28,10 @@ object PhotoSelection {
     var version: Int by mutableIntStateOf(0)
         private set
 
+    /** Bumped only by a real picker result ([setPaths]); a bare [set] is not a pick. */
+    var pickVersion: Int by mutableIntStateOf(0)
+        private set
+
     fun set(newPath: String?) {
         batch = listOfNotNull(newPath)
         displayNamesByPath = emptyMap()
@@ -43,5 +47,6 @@ object PhotoSelection {
             .filterValues { it.isNotBlank() }
         path = valid.lastOrNull()
         version++
+        pickVersion++
     }
 }

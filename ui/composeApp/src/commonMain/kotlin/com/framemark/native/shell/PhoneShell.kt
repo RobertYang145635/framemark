@@ -114,6 +114,11 @@ internal fun createPhoneBatchDemoRunner(
  *  - the card library is a full-screen sheet opened from 边框, not a tab;
  *  - 批量 / 设置 / 撤销 / 重做 live in the editor's overflow menu.
  */
+/** Process-local page memory: survives rotation, resets on a new process. */
+private object PhonePageMemory {
+    var page: PhonePage? = null
+}
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PhoneShell() {
@@ -184,7 +189,13 @@ fun PhoneShell() {
     // The top-level page (首页 / 编辑页 / 设置页). This replaced the old
     // `if (tray.isEmpty)` switch, which left a project with photos with no way back
     // to the home, the settings or the batch export (MID-APK-REPORT §6 item 1).
-    var page by rememberSaveable { mutableStateOf(PhonePagePolicy.initial()) }
+    // Page memory is process-scoped, not Activity-saved state: a rotation keeps the
+    // current page, while a fresh process (cold start or OS process death) opens
+    // Home instead of restoring the last editor page.
+    var page by remember { mutableStateOf(PhonePageMemory.page ?: PhonePage.Home) }
+    LaunchedEffect(page) { PhonePageMemory.page = page }
+    // Until the user acts, show Home regardless of pages restored by background
+    // effects (the startup photo sync also bumps PhotoSelection.version).
 
     val libraryCards = (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards.orEmpty()
 
@@ -356,8 +367,11 @@ fun PhoneShell() {
     // A pick (single or multi) lands asynchronously from the system picker; the
     // project registers every path of the batch, the strip follows. A pick always
     // lands in the editor, so the home closes even when it started the pick.
-    LaunchedEffect(PhotoSelection.version) {
-        if (PhotoSelection.version == 0) return@LaunchedEffect
+    LaunchedEffect(PhotoSelection.pickVersion) {
+        if (PhotoSelection.pickVersion == 0) return@LaunchedEffect
+        // A bare `set(path)` (startup restore pointing the engine at the active
+        // photo) also bumps the version, but is not a user pick: only a pick with
+        // a batch lands in the editor.
         val path = PhotoSelection.path ?: return@LaunchedEffect
         store.adoptPaths(PhotoSelection.batch, path, PhotoSelection.displayNamesByPath)
         // A pick always lands in the editor, whichever page started it.

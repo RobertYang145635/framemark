@@ -149,6 +149,10 @@ internal fun PhoneBorderLibraryOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(panelHeight)
+                    // Same corner fix as the editor sheet: the scrim is what sits
+                    // behind this panel, so the cut-outs must show scrim, not the
+                    // editor surface (which produced a square patch).
+                    .background(FmPalette.scrim)
                     .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
                     .background(FmPalette.canvas)
                     // 面板自己的空白处（标题行的留白、网格下方的内边距）也吃掉点击：
@@ -198,11 +202,13 @@ private fun BorderLibraryPanel(
     onPick: (LibraryCard) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var seriesOpen by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxSize()) {
         LibraryHead(
             appliedCard = appliedCard,
             categoryCount = index.categories().size,
             cardCount = index.cards.size,
+            onOpenSeries = { seriesOpen = true },
             onBack = onDismiss,
         )
         CategoryPagerRow(
@@ -242,14 +248,32 @@ private fun BorderLibraryPanel(
             }
         }
     }
+    if (seriesOpen) {
+        PhoneSeriesDirectory(
+            index = index,
+            onDismiss = { seriesOpen = false },
+            onPick = { groupKey ->
+                seriesOpen = false
+                // Series pick == the same global search the field already supports;
+                // the label comes from the real family table, never a guess.
+                val parts = groupKey.split('|')
+                val vendorKey = parts.getOrNull(1)
+                val label = vendorKey
+                    ?.let { index.families(it).firstOrNull { family -> family.key == parts.getOrNull(2) } }
+                    ?.label
+                if (!label.isNullOrBlank()) onQueryChange(label)
+            },
+        )
+    }
 }
 
-/** 固定标题行：库名 + 库规模 / 当前边框 + 回到面板。 */
+/** 固定标题行：库名 + 库规模 / 当前边框 + 系列 / 回到面板。 */
 @Composable
 private fun LibraryHead(
     appliedCard: LibraryCard?,
     categoryCount: Int,
     cardCount: Int,
+    onOpenSeries: () -> Unit,
     onBack: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(FmPalette.surface)) {
@@ -276,6 +300,24 @@ private fun LibraryHead(
                 )
             }
             Spacer(Modifier.width(FmSpacing.sm))
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 44.dp)
+                    .clip(RoundedCornerShape(FmRadii.pill))
+                    .background(FmPalette.surfaceMuted)
+                    .clickable(role = Role.Button, onClick = onOpenSeries)
+                    .semantics { contentDescription = "打开系列目录" }
+                    .padding(horizontal = FmSpacing.md),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "系列",
+                    style = FmType.labelMedium,
+                    color = FmPalette.onSurfaceSecondary,
+                    maxLines = 1,
+                )
+            }
+            Spacer(Modifier.width(FmSpacing.xxs))
             Box(
                 modifier = Modifier
                     .heightIn(min = 44.dp)

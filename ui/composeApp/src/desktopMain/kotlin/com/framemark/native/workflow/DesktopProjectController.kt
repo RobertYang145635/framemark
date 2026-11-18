@@ -322,22 +322,31 @@ class DesktopProjectController(
                 failures += ImportFailure(path, "已在工程中")
                 continue
             }
+            // Desktop used to hand WebP/TIFF straight to the engine, whose pinned
+            // Skia build has neither codec: WebP was rejected by the ImageIO probe
+            // and a TIFF import succeeded only to fail on every render. Both are
+            // normalised once at import time, exactly like Android's picker path.
+            val normalised = normalizeImport(file).getOrElse {
+                failures += ImportFailure(path, it.message ?: "无法解码（坏图或格式不支持）")
+                continue
+            }
             // AU1-04: header size + pixel/byte caps + one light decode before the
             // photo becomes part of the project. A truncated or absurd header used
             // to be accepted and then failed on every render.
-            val validated = PhotoMetadata.validate(file)
+            val validated = PhotoMetadata.validate(normalised)
             val meta = validated.getOrElse {
+                if (normalised != file) normalised.delete()
                 failures += ImportFailure(path, it.message ?: "无法解码（坏图或格式不支持）")
                 continue
             }
             val ref = PhotoRef(
                 id = "photo-${UUID.randomUUID()}",
-                path = file.absolutePath,
+                path = normalised.absolutePath,
                 displayName = file.name,
-                orientation = meta.orientation,
+                orientation = if (normalised == file) meta.orientation else 1,
                 widthPx = meta.width,
                 heightPx = meta.height,
-                fingerprint = PhotoMetadata.fingerprint(file),
+                fingerprint = PhotoMetadata.fingerprint(normalised),
             )
             // AU1-01: these are the dimensions every render chain reuses.
             PhotoSizes.prime(ref.path, ref.widthPx, ref.heightPx)
@@ -1214,6 +1223,80 @@ class DesktopProjectController(
     private fun supportedPhoto(name: String): Boolean {
         val ext = name.substringAfterLast('.', "").lowercase()
         return ext in setOf("jpg", "jpeg", "png", "webp", "tif", "tiff")
+    }
+
+    /**
+     * Converts an import the pinned engine cannot decode into a JPEG the engine
+     * reads (JPEG/PNG are returned untouched).
+     *
+     *  - WebP: Skiko (the same Skia build the UI already ships) decodes it; the
+     *    desktop JDK has no WebP ImageIO reader, which is why the old import probe
+     *    rejected every WebP file.
+     *  - TIFF: ImageIO decodes it and the EXIF orientation is baked into the
+     *    pixels, because a re-encoded JPEG carries no EXIF for the engine to
+     *    honour.
+     *
+     * The copy lives under `<data dir>/imports`, so the original file is never
+     * modified and the project keeps working if the user moves the source.
+     */
+    private fun normalizeImport(file: File): Result<File> {
+        val ext = file.extension.lowercase()
+        if (ext == "jpg" || ext == "jpeg" || ext == "png") return Result.success(file)
+        if (ext != "webp" && ext != "tif" && ext != "tiff") return Result.success(file)
+        val imports = File(dataDir, "imports")
+        if (!imports.isDirectory && !imports.mkdirs() && !imports.isDirectory) {
+            return Result.failure(IllegalStateException("无法创建导入缓存目录：${imports.absolutePath}"))
+        }
+        val target = File(imports, "import-${UUID.randomUUID()}.jpg")
+        return runCatching {
+            when (ext) {
+                "webp" -> {
+                    val image = org.jetbrains.skia.Image.makeFromEncoded(file.readBytes())
+                    val data = image.encodeToData(org.jetbrains.skia.EncodedImageFormat.JPEG, 95)
+                        ?: error("WebP 解码失败")
+                    target.writeBytes(data.bytes)
+                }
+                else -> {
+                    val image = javax.imageio.ImageIO.read(file) ?: error("TIFF 解码失败")
+                    val orientation = PhotoMetadata.read(file)?.orientation ?: 1
+                    javax.imageio.ImageIO.write(orient(image, orientation), "jpg", target)
+                }
+            }
+            target
+        }.onFailure {
+            target.delete()
+        }
+    }
+
+    /** Bakes EXIF 1..8 into pixels; `null` for a malformed matrix is not possible. */
+    private fun orient(source: java.awt.image.BufferedImage, orientation: Int): java.awt.image.BufferedImage {
+        val o = if (orientation in 1..8) orientation else 1
+        if (o == 1) return source
+        val w = source.width
+        val h = source.height
+        val transposed = o in 5..8
+        val out = java.awt.image.BufferedImage(
+            if (transposed) h else w,
+            if (transposed) w else h,
+            java.awt.image.BufferedImage.TYPE_INT_RGB,
+        )
+        val g = out.createGraphics()
+        try {
+            val at = java.awt.geom.AffineTransform()
+            when (o) {
+                2 -> { at.translate(w.toDouble(), 0.0); at.scale(-1.0, 1.0) }
+                3 -> { at.translate(w.toDouble(), h.toDouble()); at.rotate(Math.PI) }
+                4 -> { at.translate(0.0, h.toDouble()); at.scale(1.0, -1.0) }
+                5 -> { at.rotate(Math.PI / 2); at.scale(1.0, -1.0) }
+                6 -> { at.translate(h.toDouble(), 0.0); at.rotate(Math.PI / 2) }
+                7 -> { at.translate(h.toDouble(), w.toDouble()); at.rotate(Math.PI / 2); at.scale(-1.0, 1.0) }
+                8 -> { at.translate(0.0, w.toDouble()); at.rotate(-Math.PI / 2) }
+            }
+            g.drawImage(source, at, null)
+        } finally {
+            g.dispose()
+        }
+        return out
     }
 
     private fun newProject(): Project = Project(

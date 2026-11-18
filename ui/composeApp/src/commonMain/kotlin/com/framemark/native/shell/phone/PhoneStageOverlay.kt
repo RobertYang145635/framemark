@@ -44,97 +44,28 @@ import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
-import kotlin.math.abs
-
-/** Swipe distance that counts as "switch to the next border" (showcase: 48 px). */
-private val SwipeThreshold = 48.dp
-
-/** What the swipe HUD shows: the new card's name plus "第 N / M 个". */
-data class PhoneSwipeFeedback(
-    val title: String,
-    val detail: String?,
-    val atEdge: Boolean,
-)
 
 /**
- * The whole stage gesture on one pointer-input node: 左右滑动换边框 + 缩放/平移.
- *
- * WP-F2 D4 / WP-X3 §4: the stage used to hang two detectors on the same box —
- * [phoneFrameSwipe] (outer) and `detectTransformGestures` (inner). The inner
- * detector runs first in the Main pass, so it consumed every single-finger drag,
- * `change.isConsumed` became true and the frame swipe aborted 100 % of the time:
- * the pill advertised `· 左右滑动换边框` and nothing ever changed.
- *
- * Two detectors cannot be told apart by ordering (whichever runs first wins both
- * gestures), so the decision is made here instead, from the pointer stream:
- *
- *  - two pointers or a pinch → zoom/pan, always (the transform is never lost);
- *  - one pointer while [swipeEnabled] (border tool, photo not zoomed) →
- *    accumulates horizontally. Past the touch slop a mostly-horizontal drag is
- *    claimed as a frame swipe and consumed; a mostly-vertical drag is left to the
- *    pan branch so the photo can still be moved;
- *  - one pointer while [swipeEnabled] is false (zoomed in, comparing, other
- *    tools) → pan, exactly like before.
- *
- * A tap never crosses the slop, so the double-tap detector on the same box still
- * sees its events (this modifier consumes nothing until the slop is passed).
+ * Stage gesture: pinch to zoom, one finger to pan. The old left/right
+ * swipe-to-change-border gesture was removed (it only walked the current sheet
+ * category, did not wrap, and dead-ended after a few cards). Changing a border
+ * is now exclusively the sheet / list action.
  */
 fun Modifier.phoneStageGestures(
-    swipeEnabled: Boolean,
-    onStep: (Int) -> Unit,
     onTransform: (centroid: Offset, pan: Offset, zoom: Float) -> Unit,
-): Modifier = this.pointerInput(swipeEnabled) {
-    val slop = (SwipeThreshold / 2f).toPx()
+): Modifier = this.pointerInput(Unit) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
-        var totalX = 0f
-        var totalY = 0f
-        var claimed = false     // the swipe owns this gesture
-        var multiTouch = false
-        var lastStepAt = 0L
-        val stepThreshold = SwipeThreshold.toPx()
-        val stepCooldownMs = 320L
         do {
             val event = awaitPointerEvent()
-            val pressed = event.changes.count { it.pressed }
+            if (event.changes.none { it.pressed }) break
             val zoomChange = event.calculateZoom()
             val panChange = event.calculatePan()
-            if (pressed > 1 || zoomChange != 1f) multiTouch = true
-            if (multiTouch) {
-                if (!claimed && (panChange != Offset.Zero || zoomChange != 1f)) {
-                    val centroid = event.calculateCentroid(useCurrent = false)
-                    if (centroid.isSpecified) onTransform(centroid, panChange, zoomChange)
-                    event.changes.forEach { it.consume() }
-                }
-            } else {
-                val delta = event.changes.firstOrNull()?.positionChange() ?: Offset.Zero
-                if (claimed) {
-                    totalX += delta.x
-                    // 跟手切换：越过阈值立即发一步，而不是等松手；冷却避免一次手势
-                    // 连翻好几张（渲染跟不上时用户会以为滑了很远）。
-                    val now = System.currentTimeMillis()
-                    while (abs(totalX) >= stepThreshold && now - lastStepAt >= stepCooldownMs) {
-                        val direction = if (totalX < 0f) 1 else -1
-                        onStep(direction)
-                        totalX -= if (totalX < 0f) -stepThreshold else stepThreshold
-                        lastStepAt = now
-                    }
-                    event.changes.forEach { it.consume() }
-                } else if (swipeEnabled) {
-                    totalX += delta.x
-                    totalY += delta.y
-                    if (abs(totalX) > slop && abs(totalX) >= abs(totalY)) {
-                        claimed = true
-                        event.changes.forEach { it.consume() }
-                    } else if (abs(totalY) > slop) {
-                        // A vertical drag is not a frame swipe: pass it to the pan.
-                        onTransform(Offset.Unspecified, delta, 1f)
-                    }
-                } else if (delta != Offset.Zero) {
-                    onTransform(Offset.Unspecified, delta, 1f)
-                }
+            if (panChange != Offset.Zero || zoomChange != 1f) {
+                onTransform(event.calculateCentroid(useCurrent = false), panChange, zoomChange)
+                event.changes.forEach { it.consume() }
             }
-        } while (event.changes.any { it.pressed })
+        } while (true)
     }
 }
 
@@ -352,56 +283,3 @@ fun PhoneUndoNotice(onRedo: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 }
-
-/** The "第 N / M 个" HUD shown for a moment after a swipe (showcase `.step-hud`). */
-@Composable
-fun PhoneSwipeHud(feedback: PhoneSwipeFeedback?, modifier: Modifier = Modifier) {
-    val current = feedback ?: return
-    Row(
-        modifier = modifier
-            .heightIn(min = 32.dp)
-            .clip(RoundedCornerShape(FmRadii.pill))
-            .background(FmPalette.scrim)
-            .padding(horizontal = FmSpacing.md, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(FmSpacing.xs),
-    ) {
-        if (!current.atEdge) {
-            SwipeArrow(right = false, tint = FmPalette.stageMuted)
-            Spacer(Modifier.width(2.dp))
-        }
-        Text(
-            text = current.title,
-            style = FmType.labelSmall.copy(fontSize = 12.sp),
-            color = FmPalette.stageInk,
-            maxLines = 1,
-        )
-        current.detail?.let {
-            Spacer(Modifier.width(5.dp))
-            Text(
-                text = it,
-                style = FmType.labelSmall.copy(fontSize = 11.sp),
-                color = FmPalette.stageMuted,
-                maxLines = 1,
-            )
-        }
-        if (!current.atEdge) {
-            Spacer(Modifier.width(2.dp))
-            SwipeArrow(right = true, tint = FmPalette.stageMuted)
-        }
-    }
-}
-
-@Composable
-private fun SwipeArrow(right: Boolean, tint: androidx.compose.ui.graphics.Color) {
-    Canvas(modifier = Modifier.size(10.dp)) {
-        val w = size.width
-        val stroke = 1.4.dp.toPx()
-        val tip = if (right) w * 0.82f else w * 0.18f
-        val back = if (right) w * 0.3f else w * 0.7f
-        drawLine(tint, Offset(tip, w * 0.2f), Offset(tip, w * 0.8f), stroke, StrokeCap.Round)
-        drawLine(tint, Offset(back, w * 0.2f), Offset(tip, w * 0.5f), stroke, StrokeCap.Round)
-        drawLine(tint, Offset(back, w * 0.8f), Offset(tip, w * 0.5f), stroke, StrokeCap.Round)
-    }
-}
-

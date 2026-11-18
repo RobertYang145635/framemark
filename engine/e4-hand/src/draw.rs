@@ -1738,9 +1738,54 @@ pub fn cover_temp_image(env: &Env, tmp_w: usize) -> (skia_safe::Image, f32, f32)
     (surface.image_snapshot(), tw as f32, th as f32)
 }
 
-/// The frozen glass panel: tint gradient, round-rect clip, the 360-px cover
-/// drawn back through `filter: blur(...)`, a flat white wash, a sheen, then the
-/// stroke and the top highlight.
+/// 面板底下那块照片的低保真副本。
+///
+/// 旧实现把**整张照片**缩到 360 px 再取面板那一小块：面板越大，`src` 越窄，
+/// 放大后糊成一团色块。这里只取面板覆盖的区域，并按面板自身尺寸给副本定分辨率，
+/// 于是磨砂程度由 `blur_px` 决定，而不是由面板大小决定。
+fn panel_backdrop(env: &Env, x: f32, y: f32, w: f32, h: f32) -> (skia_safe::Image, f32, f32) {
+    let w = w.max(1.0);
+    let h = h.max(1.0);
+    let tw = w.min(640.0).max(64.0);
+    let th = (h * (tw / w)).min(640.0).max(32.0);
+    let crop = env.crop;
+    let sx = crop.sx + (x / env.w.max(1.0)) * crop.sw;
+    let sy = crop.sy + (y / env.h.max(1.0)) * crop.sh;
+    let sw = (w / env.w.max(1.0)) * crop.sw;
+    let sh = (h / env.h.max(1.0)) * crop.sh;
+    let src = env
+        .ctx
+        .photo_src_rect(Rect::from_xywh(sx, sy, sw.max(1.0), sh.max(1.0)));
+    let mut surface = crate::gpu::raster_surface(tw as i32, th as i32);
+    {
+        let canvas = surface.canvas();
+        canvas.clear(Color::TRANSPARENT);
+        let mut paint = skia_safe::Paint::default();
+        paint.set_anti_alias(true);
+        canvas.draw_image_rect_with_sampling_options(
+            env.photo,
+            Some((&src, skia_safe::canvas::SrcRectConstraint::Strict)),
+            &Rect::from_xywh(0.0, 0.0, tw, th),
+            {
+                let mut samp = SamplingOptions::default();
+                samp.filter = FilterMode::Linear;
+                samp
+            },
+            &paint,
+        );
+    }
+    (surface.image_snapshot(), tw, th)
+}
+
+/// 磨砂玻璃面板：照片背衬（模糊）→ 色调 → 白雾 → 顶部高光 → 内阴影 → 边缘。
+///
+/// 三处相对旧实现的行为修正：
+/// 1. 色调改成**按圆角路径**填充。旧代码先 `clip_round_rect` 再画矩形渐变，
+///    圆角外会露出一条比面板更暗的矩形（玻璃色卡顶部两角最明显）。
+/// 2. 模糊背衬只取面板覆盖的那一块照片，分辨率跟面板走，不再把整张照片压到
+///    360 px 再放大。
+/// 3. 色调画在背衬**之上**。旧顺序把色调垫在背衬下面，被不透明的背衬整块盖掉，
+///    面板因此偏亮、偏平；现在玻璃才会有真正的压暗与层次。
 #[allow(clippy::too_many_arguments)]
 pub fn draw_glass_panel(
     env: &mut Env,
@@ -1757,38 +1802,52 @@ pub fn draw_glass_panel(
 ) {
     let s = env.pw.min(env.ph);
     let panel = Rect::from_xywh(x, y, w, h);
-    // The tint must be inside the rounded clip: filling it first left a square
-    // dark rectangle behind the glass panel (the "dark frame" around the card).
-    env.ctx.clip_round_rect(x, y, w, h, radius);
-    env.ctx.fill_linear_gradient(
-        x,
-        y,
-        x,
-        y + h,
-        &[(0.0, tint_top), (1.0, tint_bottom)],
-        panel,
-    );
-    let (img, tw, th) = cover_temp_image(env, 360);
-    let src = Rect::from_xywh(
-        (x / env.w) * tw,
-        (y / env.h) * th,
-        (w / env.w) * tw,
-        (h / env.h) * th,
-    );
-    if let Some(f) = image_filters::blur(
+    let r = radius.max(0.0).min(w.min(h) / 2.0);
+    let (img, _tw, _th) = panel_backdrop(env, x, y, w, h);
+    let mut samp = SamplingOptions::default();
+    samp.filter = FilterMode::Linear;
+    // 1. 背衬：模糊后的照片本身
+    env.ctx.clip_round_rect(x, y, w, h, r);
+    match image_filters::blur(
         (blur_px.max(1.0), blur_px.max(1.0)),
         TileMode::Clamp,
         None,
         None,
     ) {
-        let mut samp = SamplingOptions::default();
-        samp.filter = FilterMode::Linear;
-        env.ctx
-            .draw_image_layer_filtered(&img, Some(src), panel, samp, f, "backdrop");
+        Some(f) => env
+            .ctx
+            .draw_image_layer_filtered(&img, None, panel, samp, f, "glass.backdrop"),
+        None => env.ctx.draw_image(&img, None, panel, samp, "glass.backdrop"),
     }
-    env.ctx
-        .fill_rect_color(x, y, w, h, &format!("rgba(255,255,255,{white_alpha})"));
-    env.ctx.fill_linear_gradient(
+    env.ctx.restore_clip();
+    // 2. 色调（压暗，给玻璃深度）
+    env.ctx.fill_round_rect_gradient(
+        x,
+        y,
+        w,
+        h,
+        r,
+        x,
+        y,
+        x,
+        y + h,
+        &[(0.0, tint_top), (1.0, tint_bottom)],
+    );
+    // 3. 白雾 + 顶部高光，让文字始终有对比
+    env.ctx.fill_round_rect(
+        x,
+        y,
+        w,
+        h,
+        r,
+        &format!("rgba(255,255,255,{white_alpha})"),
+    );
+    env.ctx.fill_round_rect_gradient(
+        x,
+        y,
+        w,
+        h,
+        r,
         x,
         y,
         x,
@@ -1798,24 +1857,68 @@ pub fn draw_glass_panel(
             (0.35, "rgba(255,255,255,0.04)"),
             (1.0, "rgba(255,255,255,0)"),
         ],
-        panel,
     );
-    env.ctx.restore_clip();
+    // 4. 底部内阴影 + 斜向反光：玻璃的“厚度”和液态感
+    env.ctx.fill_round_rect_gradient(
+        x,
+        y,
+        w,
+        h,
+        r,
+        x,
+        y + h,
+        x,
+        y,
+        &[
+            (0.0, "rgba(0,0,0,0.18)"),
+            (0.35, "rgba(0,0,0,0.05)"),
+            (1.0, "rgba(0,0,0,0)"),
+        ],
+    );
+    env.ctx.fill_round_rect_gradient(
+        x,
+        y,
+        w,
+        h,
+        r,
+        x,
+        y,
+        x + w,
+        y + h,
+        &[
+            (0.0, "rgba(255,255,255,0.10)"),
+            (0.45, "rgba(255,255,255,0.0)"),
+            (1.0, "rgba(255,255,255,0.05)"),
+        ],
+    );
+    // 5. 边缘：外描边 + 内侧 1px 亮线，读起来像有厚度的玻璃边
     env.ctx.stroke_round_rect(
         x,
         y,
         w,
         h,
-        radius,
+        r,
         "rgba(255,255,255,0.42)",
         stroke_px,
         None,
     );
+    if w > s * 0.06 && h > s * 0.02 {
+        env.ctx.stroke_round_rect(
+            x + stroke_px,
+            y + stroke_px,
+            w - 2.0 * stroke_px,
+            h - 2.0 * stroke_px,
+            (r - stroke_px).max(0.0),
+            "rgba(255,255,255,0.12)",
+            stroke_px.max(1.0),
+            None,
+        );
+    }
     line(
         &mut env.ctx,
-        x + radius,
+        x + r,
         y + 1.0,
-        x + w - radius,
+        x + w - r,
         y + 1.0,
         "rgba(255,255,255,0.5)",
         (s * 0.001).max(1.0),

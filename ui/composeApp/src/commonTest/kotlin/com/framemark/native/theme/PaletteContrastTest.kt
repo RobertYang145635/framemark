@@ -164,6 +164,18 @@ class PaletteContrastTest {
                 "dark" to listOf(0xFF121316, 0xFF1D1E22, 0xFF26282D, 0xFFEDEFF3, 0xFF9AA1AC,
                     0xFF2E71E0, 0xFFFFFFFF, 0xFF7FB0FF, 0xFF2E3036, 0xFF202D44),
             ),
+            PaletteId.Celadon to mapOf(
+                "light" to listOf(0xFFF0F3F0, 0xFFFAFCFA, 0xFFE1E8E2, 0xFF1E2622, 0xFF5C6B62,
+                    0xFF2F6B57, 0xFFFFFFFF, 0xFF2F6B57, 0xFFD2DCD4, 0xFFDDEBE3),
+                "dark" to listOf(0xFF121815, 0xFF1B2420, 0xFF24302A, 0xFFE4EDE7, 0xFFAEBCB3,
+                    0xFF8FC0AA, 0xFF10241A, 0xFF8FC0AA, 0xFF34453C, 0xFF24352C),
+            ),
+            PaletteId.Amber to mapOf(
+                "light" to listOf(0xFFFAF7F2, 0xFFFFFDF9, 0xFFF0EAE0, 0xFF2A2622, 0xFF6E655B,
+                    0xFF9A4F22, 0xFFFFFFFF, 0xFF9A4F22, 0xFFE2D8C9, 0xFFF3E5D7),
+                "dark" to listOf(0xFF171310, 0xFF211B16, 0xFF2E261F, 0xFFF0E9DF, 0xFFC0B3A2,
+                    0xFFE0A46B, 0xFF2B1A0E, 0xFFE0A46B, 0xFF3D3228, 0xFF33271E),
+            ),
         )
         for ((id, light, dark) in all) {
             for ((mode, colors) in listOf("light" to light, "dark" to dark)) {

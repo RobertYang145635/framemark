@@ -72,7 +72,6 @@ import com.framemark.native.shell.phone.PhoneBorderLibraryOverlay
 import com.framemark.native.shell.phone.PhoneCropUi
 import com.framemark.native.shell.phone.PhoneEditorTopBar
 import com.framemark.native.shell.phone.PhoneParameterPage
-import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.phoneLibraryTraversal
 import com.framemark.native.shell.phone.phoneLoadRecentFrames
 import com.framemark.native.shell.phone.phonePageControls
@@ -235,7 +234,6 @@ fun PhoneEditorScreen(
     var borderCategory by rememberSaveable { mutableStateOf(LibraryIndex.CATEGORY_COMMON) }
     var borderQuery by rememberSaveable { mutableStateOf("") }
     var recentFrames by remember { mutableStateOf(emptyList<String>()) }
-    var swipeFeedback by remember { mutableStateOf<PhoneSwipeFeedback?>(null) }
     // A-08: one short "已撤销" notice with its 重做 action after an undo.
     var undoNotice by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -325,13 +323,6 @@ fun PhoneEditorScreen(
                     ?: entry.positionLabel
             }
     }
-    // The swipe HUD says which card the user landed on, then gets out of the way.
-    LaunchedEffect(swipeFeedback) {
-        if (swipeFeedback != null) {
-            delay(1400)
-            swipeFeedback = null
-        }
-    }
     LaunchedEffect(undoNotice) {
         if (undoNotice) {
             delay(4000)
@@ -384,28 +375,9 @@ fun PhoneEditorScreen(
         if (tool !in tools) onToolChange(EditorTool.Border)
     }
 
-    // Swipe order == the sheet's display order: both read WP-L's traversal for the
-    // same view, so the two can never drift.
-    val traversal = if (libraryIndex != null) {
-        phoneLibraryTraversal(libraryIndex, borderCategory, null, borderQuery, inUseCardIds, recentFrames)
-    } else {
-        LibraryTraversal(emptyList())
-    }
-
     fun pickBorder(picked: LibraryCard) {
         recentFrames = phoneRecordRecentFrame(recentFramesStore, libraryIndex, picked.id)
         onOpenCard(picked)
-    }
-
-    fun stepBorder(direction: Int) {
-        val step = phoneSwipeStep(traversal, card?.id, direction)
-        val target = step.targetId?.let { libraryIndex?.card(it) }
-        swipeFeedback = PhoneSwipeFeedback(
-            title = target?.name ?: step.message,
-            detail = if (target != null) step.message else null,
-            atEdge = step.atEdge,
-        )
-        if (target != null) pickBorder(target)
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -479,9 +451,15 @@ fun PhoneEditorScreen(
                 keyboardController?.hide()
             } else if (!autoFullParameterPage || canShowForcedPreview(maxHeight.value)) {
                 fullParametersDismissed = autoFullParameterPage
+            } else {
+                // A landscape/short window cannot render a usable preview above
+                // the panel, so dismissing the full page would leave a zero-height
+                // shell. It used to simply do nothing — a dead "返回预览" button
+                // that trapped the user on the parameter page. Leave the editor
+                // instead: the design is already written through, and going home
+                // is the only exit that keeps a valid layout.
+                onRequestHome?.invoke()
             }
-            // A window too short for any valid preview (below FORCED_PREVIEW_MIN_DP)
-            // keeps the full page: dismissing it would render a zero-height shell.
         }
         BackHandler(enabled = fullParameterPage) {
             closeFullParametersOrHideKeyboard()
@@ -558,7 +536,11 @@ fun PhoneEditorScreen(
                     ParameterPageHeader(
                         height = fullHeaderH,
                         title = panelTitle(tool),
-                        closeLabel = if (imeVisible) "收起键盘" else "返回预览",
+                        closeLabel = when {
+                            imeVisible -> "收起键盘"
+                            canShowForcedPreview(windowHeightDp) -> "返回预览"
+                            else -> "返回首页"
+                        },
                         onClose = ::closeFullParametersOrHideKeyboard,
                     )
                 } else {
@@ -615,13 +597,11 @@ fun PhoneEditorScreen(
                             focusedTextSlotLabel = focusedTextSlotLabel,
                             renderFailure = renderFailure,
                             borderName = card?.name,
-                            swipeFeedback = swipeFeedback,
                             undoNotice = undoNotice,
                             onRedo = {
                                 onRedo()
                                 undoNotice = false
                             },
-                            swipeEnabled = tool == EditorTool.Border && zoom <= 1f,
                             focusMode = focusMode,
                             density = density,
                             onStageSize = { stageSize = it },
@@ -634,7 +614,6 @@ fun PhoneEditorScreen(
                             },
                             onDoubleTap = { setZoom(1f) },
                             onCompareChange = { compare = it },
-                            onFrameStep = ::stepBorder,
                             onFocusToggle = { focusMode = !focusMode },
                             onOpenBorder = { onToolChange(EditorTool.Border) },
                             onOpenBatch = onOpenBatch,

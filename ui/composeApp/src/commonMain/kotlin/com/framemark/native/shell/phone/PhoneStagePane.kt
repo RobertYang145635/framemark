@@ -1,5 +1,8 @@
 package com.framemark.native.shell.phone
 
+import com.framemark.native.theme.AppearanceEnv
+import com.framemark.native.theme.LocalFmColors
+import com.framemark.native.theme.StageTone
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -73,7 +76,6 @@ import com.framemark.native.shell.phone.PhoneStageBands
 import com.framemark.native.shell.phone.PhoneStageChip
 import com.framemark.native.shell.phone.PhoneStageFallback
 import com.framemark.native.shell.phone.PhoneStageFallbackOverlay
-import com.framemark.native.shell.phone.PhoneSwipeFeedback
 import com.framemark.native.shell.phone.phoneStageGestures
 import com.framemark.native.theme.FmDuration
 import com.framemark.native.theme.FmEasing
@@ -94,6 +96,7 @@ import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.WorkflowEnv
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -113,9 +116,8 @@ internal data class PreviewGeo(val w: Int, val h: Int, val photoRect: ImageRect?
  * the two V2 hints — the current border name (bottom-left) and 按住看原图
  * (bottom-right) — sit in the band under it (demo `.pchip` / `.pcmp`).
  *
- * Gestures: pinch / drag while zoomed / double-tap reset, the live watermark
- * overlay, and (border tool, unzoomed) the left/right swipe that switches frames
- * in WP-L's traversal order.
+ * Gestures: pinch / drag while zoomed / double-tap reset, and the live watermark
+ * overlay. Borders are changed from the sheet/list only.
  */
 @Composable
 internal fun StageArea(
@@ -136,9 +138,7 @@ internal fun StageArea(
     focusedTextSlotLabel: String?,
     renderFailure: String?,
     borderName: String?,
-    swipeFeedback: PhoneSwipeFeedback?,
     undoNotice: Boolean,
-    swipeEnabled: Boolean,
     focusMode: Boolean,
     density: Density,
     onStageSize: (IntSize) -> Unit,
@@ -146,7 +146,6 @@ internal fun StageArea(
     onDoubleTap: () -> Unit,
     onCompareChange: (Boolean) -> Unit,
     onRedo: () -> Unit,
-    onFrameStep: (Int) -> Unit,
     onFocusToggle: () -> Unit,
     onOpenBorder: () -> Unit,
     onOpenBatch: () -> Unit,
@@ -197,8 +196,9 @@ internal fun StageArea(
             cropChromeVisible = false
         }
     }
+    val stageTone = AppearanceEnv.controller?.settings?.stageTone ?: StageTone.Dark
     Box(
-        modifier = modifier.background(FmPalette.stage),
+        modifier = modifier.background(LocalFmColors.current.stageColor(stageTone)),
     ) {
         Box(
             modifier = Modifier
@@ -222,15 +222,10 @@ internal fun StageArea(
                             Modifier
                         } else {
                             Modifier
-                                // WP-X3 §4: one gesture node decides between 左右滑动换边框
-                                // and 缩放/平移. Two stacked detectors could not coexist —
-                                // the inner `detectTransformGestures` consumed every drag
-                                // first, so the frame swipe always aborted (WP-F2 D4).
-                                .phoneStageGestures(
-                                    swipeEnabled = swipeEnabled && !compare && zoom <= 1f,
-                                    onStep = onFrameStep,
-                                    onTransform = onTransform,
-                                )
+                                // Pinch zoom + one-finger pan. (The old swipe-to-change-
+                                // border gesture was removed; borders are changed from the
+                                // sheet/list only.)
+                                .phoneStageGestures(onTransform = onTransform)
                                 .pointerInput(Unit) {
                                     detectTapGestures(onDoubleTap = { onDoubleTap() })
                                 }
@@ -345,7 +340,6 @@ internal fun StageArea(
             )
         }
         PhoneStageOverlays(
-            swipeFeedback = swipeFeedback,
             undoNotice = undoNotice,
             onRedo = onRedo,
         )
@@ -362,7 +356,6 @@ internal fun StageArea(
                     renderFailure != null -> "预览失败 · 显示静态图"
                     card == null -> null
                     !NativeEngine.supports(card.id) -> "静态预览"
-                    swipeEnabled -> "左右滑动换边框"
                     else -> null
                 }
                 PhoneStageChip(
@@ -525,6 +518,7 @@ private fun BoxScope.WatermarkOverlay(
         photoHeight = photoH,
         rotation = rotation,
     )
+    val hit = layer.hitBox
 
     LaunchedEffect(aspect, liveSpec.photoAspect) {
         if (abs(aspect - liveSpec.photoAspect) > 0.01f) {
@@ -538,12 +532,29 @@ private fun BoxScope.WatermarkOverlay(
             // offset would be added to the centered position and the watermark
             // would drift down onto the border/footer.
             .align(Alignment.TopStart)
-            .offset { IntOffset(layer.clipLeft, layer.clipTop) }
+            .offset { IntOffset(hit.left.roundToInt(), hit.top.roundToInt()) }
             .size(
-                with(density) { layer.clipWidth.toFloat().toDp() },
-                with(density) { layer.clipHeight.toFloat().toDp() },
+                with(density) { hit.width.toDp() },
+                with(density) { hit.height.toDp() },
             )
-            .clipToBounds(),
+            .clipToBounds()
+            // 拖动节点放在**未旋转**的 AABB 框上（2026-11-18）。挂在
+            // `graphicsLayer` 里时 `drag.x/drag.y` 是水印自己的局部轴：旋转 45°
+            // 后手指横拖 (100, 0) 会被当成 (70.7, 70.7)，水印斜着走。移到外侧后
+            // delta 就是屏幕轴，映射只是除以照片宽高，与角度无关。
+            // 触控面 = AABB：比旋转后的可见图形略大（45° 时约 2 倍面积），
+            // 照片其余位置仍归舞台平移，九宫格热点仍先命中。
+            .pointerInput(liveSpec.path, aspect) {
+                detectDragGestures(
+                    onDragStart = { commit.sample(latestSpec) },
+                    onDragEnd = { commit.release() },
+                    onDragCancel = { commit.release() },
+                ) { change, drag ->
+                    change.consume()
+                    val nudge = watermarkDragNudge(drag.x, drag.y, photoW, photoH)
+                    commit.sample(commit.live.withRectNudge(nudge.dx, nudge.dy, aspect))
+                }
+            },
     ) {
         Box(
             modifier = Modifier
@@ -552,23 +563,7 @@ private fun BoxScope.WatermarkOverlay(
                     with(density) { layer.imageWidth.toFloat().toDp() },
                     with(density) { layer.imageHeight.toFloat().toDp() },
                 )
-                .graphicsLayer { rotationZ = rotation }
-                .pointerInput(liveSpec.path, aspect) {
-                    detectDragGestures(
-                        onDragStart = { commit.sample(latestSpec) },
-                        onDragEnd = { commit.release() },
-                        onDragCancel = { commit.release() },
-                    ) { change, drag ->
-                        change.consume()
-                        commit.sample(
-                            commit.live.withRectNudge(
-                                drag.x / photoW,
-                                drag.y / photoH,
-                                aspect,
-                            ),
-                        )
-                    }
-                },
+                .graphicsLayer { rotationZ = rotation },
         ) {
             // The tray thumbnail path re-encodes to JPEG (no alpha); the overlay
             // must keep the PNG alpha so it reads the same as the exported file.

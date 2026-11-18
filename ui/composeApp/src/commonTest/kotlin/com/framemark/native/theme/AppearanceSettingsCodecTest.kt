@@ -145,6 +145,6 @@ class AppearanceSettingsCodecTest {
         // must not silently change them.
         assertEquals(listOf("system", "light", "dark"), ThemeMode.entries.map { it.wire })
         assertEquals(listOf("dark", "mid", "light"), StageTone.entries.map { it.wire })
-        assertEquals(listOf("forest", "graphite", "indigo", "clay", "classic"), PaletteId.entries.map { it.wire })
+        assertEquals(listOf("forest", "graphite", "indigo", "clay", "classic", "celadon", "amber"), PaletteId.entries.map { it.wire })
     }
 }

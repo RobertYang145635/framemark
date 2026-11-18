@@ -2,6 +2,7 @@ package com.framemark.native.shell.phone
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,29 +103,30 @@ fun PhoneHomeGear(onClick: () -> Unit) {
         val ink = FmPalette.onSurfaceSecondary
         Canvas(modifier = Modifier.size(22.dp)) {
             val w = size.width
-            val tint = ink
-            // 齿比辐条粗，读起来才像齿轮而不是太阳（演示稿 `ic('gear', 22)`）。
-            val tooth = w * 0.13f
-            val teeth = 8
-            val outer = w * 0.46f
-            val ring = w * 0.27f
-            repeat(teeth) { index ->
-                val angle = (index * (360f / teeth)) * (kotlin.math.PI.toFloat() / 180f)
-                val dx = kotlin.math.cos(angle)
-                val dy = kotlin.math.sin(angle)
+            val c = Offset(w / 2f, w / 2f)
+            val body = w * 0.27f
+            val toothIn = body - w * 0.03f
+            val toothOut = w * 0.47f
+            // Thick teeth + a solid ring body with a real center hole: the old
+            // thin-ray drawing read as a sun. Teeth are short and wide, which is
+            // the visual difference between a gear and a sunburst.
+            repeat(8) { i ->
+                val a = (i * 45f) * (kotlin.math.PI.toFloat() / 180f)
+                val dx = kotlin.math.cos(a)
+                val dy = kotlin.math.sin(a)
                 drawLine(
-                    color = tint,
-                    start = Offset(w / 2f + dx * ring, w / 2f + dy * ring),
-                    end = Offset(w / 2f + dx * outer, w / 2f + dy * outer),
-                    strokeWidth = tooth,
-                    cap = StrokeCap.Round,
+                    color = ink,
+                    start = Offset(c.x + dx * toothIn, c.y + dy * toothIn),
+                    end = Offset(c.x + dx * toothOut, c.y + dy * toothOut),
+                    strokeWidth = w * 0.19f,
+                    cap = StrokeCap.Butt,
                 )
             }
             drawCircle(
-                color = tint,
-                radius = ring,
-                center = Offset(w / 2f, w / 2f),
-                style = Stroke(width = w * 0.115f),
+                color = ink,
+                radius = body,
+                center = c,
+                style = Stroke(width = w * 0.17f),
             )
         }
     }
@@ -447,7 +449,10 @@ private fun HeroFanPhoto(slot: PhoneHeroPreview?, width: Dp, rotation: Float, of
             .height(width / (slot?.aspect ?: FOUR_THREE))
             .fmElevated(level = FmElevation.nav, shape = PrintShape)
             .clip(PrintShape)
-            .background(FmPalette.surface),
+            .background(FmPalette.surface)
+            // Light mode put a white print on a near-white card; the outline keeps
+            // the fanned previews legible without changing the light/dark design.
+            .border(1.dp, FmPalette.outline, PrintShape),
     ) {
         PhotoThumbnail(
             path = slot?.path,
@@ -472,6 +477,7 @@ private fun HeroPrintPhoto(path: String?, width: Dp) {
             .fmElevated(level = FmElevation.nav, shape = PrintShape)
             .clip(PrintShape)
             .background(FmPalette.surface)
+            .border(1.dp, FmPalette.outline, PrintShape)
             .padding(PrintRadius),
     ) {
         Box(

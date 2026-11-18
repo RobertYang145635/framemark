@@ -47,7 +47,7 @@ class FmColorsTest {
     @Test
     fun theDefaultPaletteIsForestWithADocumentedWireId() {
         assertEquals(PaletteId.Forest, PaletteId.Default)
-        assertEquals(listOf("forest", "graphite", "indigo", "clay", "classic"), PaletteId.entries.map { it.wire })
+        assertEquals(listOf("forest", "graphite", "indigo", "clay", "classic", "celadon", "amber"), PaletteId.entries.map { it.wire })
         assertEquals("暖灰墨绿", PaletteId.Default.label)
     }
 

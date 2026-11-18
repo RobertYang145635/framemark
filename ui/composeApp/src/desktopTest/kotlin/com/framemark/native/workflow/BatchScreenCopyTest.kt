@@ -30,4 +30,14 @@ class BatchScreenCopyTest {
         assertTrue(hint.contains("4:4:4"), hint)
         assertTrue(hint.contains("导出目录"), hint)
     }
+
+    @Test
+    fun theQueueHintSaysWhatGetsFrozenWhenATaskIsAdded() {
+        // 计划 §6：不看文档也要能说出「加入批量后会固定什么、之后再改会不会影响队列」。
+        val hint = BATCH_QUEUE_HINT
+        assertTrue(hint.contains("固定"), hint)
+        assertTrue(hint.contains("边框"), hint)
+        assertTrue(hint.contains("不影响已加入的任务"), hint)
+        assertFalse(Regex("\\bE\\d+\\b").containsMatchIn(hint), "queue hint names a work item: $hint")
+    }
 }

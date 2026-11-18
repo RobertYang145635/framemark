@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.pow
 
 /**
- * 四套界面配色（配色方案 §6，2026-11-15）。
+ * 六套界面配色（原四套 + 青瓷竹影 / 夜航琥珀，2026-11-17）。
  *
  * 设计文档给出每套配色在浅色 / 深色下的 10 个**基础色**（画布、面板、输入框、
  * 主文字、次要文字、实心按钮、按钮上的文字、分隔线、柔和选中背景、链接文字）。
@@ -36,6 +36,12 @@ enum class PaletteId(val wire: String, val label: String) {
      * 其余基础色就是旧令牌的值，派生规则与其他四套完全一致。
      */
     Classic("classic", "经典蓝"),
+
+    /** 青瓷竹影：低饱和青绿，安静，适合照片不抢色。 */
+    Celadon("celadon", "青瓷竹影"),
+
+    /** 夜航琥珀：暖纸底 + 琥珀强调，夜晚/室内不刺眼。 */
+    Amber("amber", "夜航琥珀"),
     ;
 
     companion object {
@@ -194,6 +200,56 @@ object FmPalettes {
                 primaryStrong = 0xFF7FB0FF,
                 outline = 0xFF2E3036,
                 soft = 0xFF202D44,
+            )
+            ),
+        PaletteId.Celadon to (
+            PaletteSpec(
+                canvas = 0xFFF0F3F0,
+                surface = 0xFFFAFCFA,
+                surfaceMuted = 0xFFE1E8E2,
+                ink = 0xFF1E2622,
+                inkMuted = 0xFF5C6B62,
+                primary = 0xFF2F6B57,
+                onPrimary = 0xFFFFFFFF,
+                primaryStrong = 0xFF2F6B57,
+                outline = 0xFFD2DCD4,
+                soft = 0xFFDDEBE3,
+            ) to PaletteSpec(
+                canvas = 0xFF121815,
+                surface = 0xFF1B2420,
+                surfaceMuted = 0xFF24302A,
+                ink = 0xFFE4EDE7,
+                inkMuted = 0xFFAEBCB3,
+                primary = 0xFF8FC0AA,
+                onPrimary = 0xFF10241A,
+                primaryStrong = 0xFF8FC0AA,
+                outline = 0xFF34453C,
+                soft = 0xFF24352C,
+            )
+            ),
+        PaletteId.Amber to (
+            PaletteSpec(
+                canvas = 0xFFFAF7F2,
+                surface = 0xFFFFFDF9,
+                surfaceMuted = 0xFFF0EAE0,
+                ink = 0xFF2A2622,
+                inkMuted = 0xFF6E655B,
+                primary = 0xFF9A4F22,
+                onPrimary = 0xFFFFFFFF,
+                primaryStrong = 0xFF9A4F22,
+                outline = 0xFFE2D8C9,
+                soft = 0xFFF3E5D7,
+            ) to PaletteSpec(
+                canvas = 0xFF171310,
+                surface = 0xFF211B16,
+                surfaceMuted = 0xFF2E261F,
+                ink = 0xFFF0E9DF,
+                inkMuted = 0xFFC0B3A2,
+                primary = 0xFFE0A46B,
+                onPrimary = 0xFF2B1A0E,
+                primaryStrong = 0xFFE0A46B,
+                outline = 0xFF3D3228,
+                soft = 0xFF33271E,
             )
             ),
     )

@@ -33,6 +33,12 @@ import kotlin.math.sin
  *
  * Pure on purpose: the screenshot-level property is checked by a unit test on
  * these numbers, not by eyeballing a device capture.
+ *
+ * The clip box doubles as the **drag node's** box (2026-11-18). The gesture used
+ * to hang off the rotated image box, which made every drag move along the mark's
+ * local axes: at 45° a horizontal finger slid the watermark diagonally. The
+ * pointer node now sits on this unrotated box, so [watermarkDragNudge] receives
+ * screen-axis deltas and only divides them by the photo size.
  */
 internal data class WatermarkLayerPx(
     val clipLeft: Int,
@@ -91,4 +97,59 @@ internal fun watermarkLayerPx(
         imageWidth = imageWidth,
         imageHeight = imageHeight,
     )
+}
+
+/**
+ * Stage-pixel rect of the watermark's drag node: the clip box, i.e. the rotation
+ * AABB. Only this box takes pointer events — the photo around it keeps the stage
+ * pan, and the nine anchor hotspots keep their 44 dp squares (they are a
+ * later sibling, so they win the hit test first).
+ */
+internal data class WatermarkHitBox(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+) {
+    val width: Float get() = right - left
+    val height: Float get() = bottom - top
+
+    fun contains(x: Float, y: Float): Boolean =
+        x >= left && x <= right && y >= top && y <= bottom
+}
+
+/** The clip box as a float rect — the same numbers the drag node is sized and offset by. */
+internal val WatermarkLayerPx.hitBox: WatermarkHitBox
+    get() = WatermarkHitBox(
+        left = clipLeft.toFloat(),
+        top = clipTop.toFloat(),
+        right = (clipLeft + clipWidth).toFloat(),
+        bottom = (clipTop + clipHeight).toFloat(),
+    )
+
+/** A finger delta already divided by the photo draw box. */
+internal data class WatermarkNudge(val dx: Float, val dy: Float)
+
+/**
+ * Stage-pixel drag delta → the normalised nudge
+ * [com.framemark.native.workflow.WatermarkSpec.withRectNudge] consumes.
+ *
+ * Rotation is deliberately **not** a parameter. The gesture node sits on the
+ * unrotated [hitBox], so `detectDragGestures` already hands over screen-axis
+ * pixels; dividing by the photo size is the whole mapping, which makes one pixel
+ * of finger travel worth `1/photoWidth` (or `1/photoHeight`) at every angle.
+ *
+ * The bug this replaces: the node used to be the rotated image box, so its
+ * `drag.x/drag.y` were in the mark's local axes — a horizontal drag at 45°
+ * arrived as `(dx·cos45, dx·sin45)` and wrote a diagonal move.
+ */
+internal fun watermarkDragNudge(
+    dragX: Float,
+    dragY: Float,
+    photoWidth: Float,
+    photoHeight: Float,
+): WatermarkNudge {
+    // `!(x > 0f)` also rejects NaN, so a zero-sized photo can never emit infinities.
+    if (!(photoWidth > 0f) || !(photoHeight > 0f)) return WatermarkNudge(0f, 0f)
+    return WatermarkNudge(dx = dragX / photoWidth, dy = dragY / photoHeight)
 }

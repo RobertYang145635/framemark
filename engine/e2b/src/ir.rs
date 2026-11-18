@@ -1449,6 +1449,12 @@ fn place_node(
     gaps: &mut Gaps,
     out: &mut Vec<Item>,
 ) {
+    if std::env::var("E2B_DEBUG_LAYOUT").ok().as_deref() == Some("1") {
+        eprintln!(
+            "LAYOUT path={path} x={:.2} y={:.2} w={:.2} h={:.2}",
+            rect.x, rect.y, rect.w, rect.h
+        );
+    }
     match node {
         Node::Text(t) => place_text(t, rect, path, env, gaps, out),
         Node::Image(i) => {
@@ -1796,6 +1802,12 @@ fn fit_band_items(rect: Rect, items: &mut [Item], preserve_position: bool) {
         Some(b) => b,
         None => return,
     };
+    if std::env::var("E2B_DEBUG_LAYOUT").ok().as_deref() == Some("1") {
+        eprintln!(
+            "FIT band=({:.1},{:.1},{:.1},{:.1}) bounds=({:.1},{:.1},{:.1},{:.1}) preserve={preserve_position}",
+            rect.x, rect.y, rect.w, rect.h, bounds.x, bounds.y, bounds.w, bounds.h
+        );
+    }
     let pad_x = rect.w * 0.025;
     let pad_y = rect.h * 0.04;
     let inner = Rect {
@@ -2236,6 +2248,12 @@ pub fn solve(style: &Style, env: &Env, gaps: &mut Gaps) -> Result<Layout, String
         let layout_rect = layout_box_for_band(band, rect);
         let preserve = band.direction == "overlay";
         let clamp = band.fit.as_deref() != Some("none");
+        if std::env::var("E2B_DEBUG_LAYOUT").ok().as_deref() == Some("1") {
+            eprintln!(
+                "BAND path={path} rect=({:.1},{:.1},{:.1},{:.1}) layout=({:.1},{:.1},{:.1},{:.1}) clamp={clamp}",
+                rect.x, rect.y, rect.w, rect.h, layout_rect.x, layout_rect.y, layout_rect.w, layout_rect.h
+            );
+        }
         let items = place_band_root(env, band, layout_rect, &path, preserve, clamp, gaps);
         bands.push(PlacedBand {
             direction: band.direction.clone(),

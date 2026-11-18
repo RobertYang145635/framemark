@@ -390,6 +390,61 @@ impl<'a> Ctx2D<'a> {
         });
     }
 
+    /// 圆角矩形里的线性渐变填充。
+    ///
+    /// 玻璃面板的色调必须**沿圆角路径**落色：早先用 `clip_round_rect` +
+    /// `fill_linear_gradient` 时，矩形渐变在圆角外露出一条深色带（面板顶部两角
+    /// 最明显）。直接按路径填充，底色不再可能溢出圆角。
+    pub fn fill_round_rect_gradient(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        r: f32,
+        x0: f32,
+        y0: f32,
+        x1: f32,
+        y1: f32,
+        stops: &[(f32, &str)],
+    ) {
+        let mut colors = Vec::with_capacity(stops.len());
+        let mut pos = Vec::with_capacity(stops.len());
+        for (o, c) in stops {
+            colors.push(self.color_of(c));
+            pos.push(*o);
+        }
+        let Some(shader) = Shader::linear_gradient(
+            (Point::new(x0, y0), Point::new(x1, y1)),
+            colors.as_slice(),
+            Some(pos.as_slice()),
+            skia_safe::TileMode::Clamp,
+            None,
+            None,
+        ) else {
+            self.report
+                .borrow_mut()
+                .gap("rounded linear gradient shader build failed");
+            return;
+        };
+        let mut p = Paint::default();
+        p.set_anti_alias(true);
+        p.set_shader(shader);
+        p.set_alpha_f(self.st.alpha);
+        let path = round_rect_path(x, y, w, h, r);
+        self.scoped(|c| {
+            c.draw_path(&path, &p);
+        });
+        let seq = self.next_seq();
+        self.report.borrow_mut().decor.push(ShapeDraw {
+            seq,
+            underlay: false,
+            kind: "round-linear-gradient".into(),
+            rect: RectJson::from_skia(Rect::from_xywh(x, y, w, h)),
+            color: None,
+        });
+    }
+
     pub fn stroke_round_rect(
         &mut self,
         x: f32,

@@ -847,6 +847,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
+
         /** Same ceiling the tray renders for one import batch (old app: 可多选). */
         const val MAX_PICK = 9
     }

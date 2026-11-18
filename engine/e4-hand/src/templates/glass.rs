@@ -80,7 +80,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         card_y = h - card_h - h * 0.055;
         r = (card_h * 0.13).min(s * 0.03);
     }
-    let blur_px = (s * 0.012 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
+    let blur_px = (s * 0.022 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
     draw_glass_panel(
         env,
         card_x,
@@ -90,7 +90,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         r,
         "rgba(0,0,0,0.22)",
         "rgba(0,0,0,0.4)",
-        0.13,
+        0.10,
         blur_px,
         (s * 0.0009).max(1.0),
     );

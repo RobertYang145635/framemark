@@ -56,11 +56,11 @@ class PhoneSettingsCopyTest {
     @Test
     fun eachPaletteHasItsDocumentedNameAndTagline() {
         assertEquals(
-            listOf("暖灰墨绿", "石墨琥珀", "瓷白靛青", "纸白陶土", "经典蓝"),
+            listOf("暖灰墨绿", "石墨琥珀", "瓷白靛青", "纸白陶土", "经典蓝", "青瓷竹影", "夜航琥珀"),
             com.framemark.native.theme.PaletteId.entries.map { it.label },
         )
         assertEquals(
-            listOf("自然安静", "沉稳精确", "清爽有序", "温暖手作", "经典直接"),
+            listOf("自然安静", "沉稳精确", "清爽有序", "温暖手作", "经典直接", "清透安静", "温暖克制"),
             com.framemark.native.theme.PaletteId.entries.map { AppearancePanelText.tagline(it) },
         )
     }

@@ -480,7 +480,7 @@ const GEOGRAPHIC: StockStyle = {
     {
       direction: 'overlay',
       gravity: 'leftBottom',
-      offset: { x: 72, y: -72 },
+      offset: { x: 72, y: 72 },
       children: [
         {
           kind: 'group',

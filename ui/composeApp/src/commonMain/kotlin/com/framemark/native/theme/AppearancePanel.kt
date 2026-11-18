@@ -455,5 +455,7 @@ object AppearancePanelText {
         PaletteId.Indigo -> "清爽有序"
         PaletteId.Clay -> "温暖手作"
         PaletteId.Classic -> "经典直接"
+        PaletteId.Celadon -> "清透安静"
+        PaletteId.Amber -> "温暖克制"
     }
 }

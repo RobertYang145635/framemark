@@ -66,12 +66,29 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         .unwrap_or_else(|| "text-right".into());
     env.ctx.set_fill(&theme.bg);
     env.ctx.fill_rect(0.0, 0.0, w, h);
-    let card_aspect = pct(env.params, "cardAspect", 0.0) as f32;
-    let portrait = card_aspect > 0.0;
+    // 卡片的画幅：
+    //  - `cardFit: "photo"`（产品默认）= 跟照片实际比例走，任何比例的照片都完整入卡，
+    //    不再被 0.692 的竖幅窗口裁掉两侧 —— 这是「任意比例适配」的关键；
+    //  - 显式 `cardAspect`（> 0）= 保持老的固定画幅语义（冻结卡片 / 黄金图复现）。
+    let card_aspect_param = pct(env.params, "cardAspect", 0.0) as f32;
+    let card_fit = env
+        .params
+        .get("cardFit")
+        .map(|v| crate::jsval::js_string(Some(v)))
+        .unwrap_or_default();
+    let follow_photo = card_fit == "photo" || card_aspect_param <= 0.0;
+    let photo_aspect = if ph > 0.0 { pw / ph } else { 1.5 };
+    let aspect = if follow_photo {
+        photo_aspect
+    } else {
+        card_aspect_param
+    }
+    .max(0.05);
     let (photo_x, photo_y, ph_w, ph_h);
-    if portrait {
+    if aspect < 0.9 {
+        // 竖幅卡：高度吃满，宽度按画幅收；照片比例更窄时也不会顶到边。
         ph_h = h - 2.0 * m;
-        ph_w = ph_h * card_aspect;
+        ph_w = (ph_h * aspect).min(w - 2.0 * m);
         let auto_cx = if layout_mode == "text-left" {
             2.0 / 3.0
         } else if layout_mode == "text-right" {
@@ -113,10 +130,10 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     } else {
         let max_w = w * if layout_mode == "split" { 0.52 } else { 0.58 };
         let mut h2 = h - 2.0 * m;
-        let mut w2 = (h2 * pw) / ph;
+        let mut w2 = h2 * aspect;
         if w2 > max_w {
             w2 = max_w;
-            h2 = (w2 * ph) / pw;
+            h2 = w2 / aspect;
         }
         photo_x = if layout_mode == "text-right" {
             m
@@ -326,12 +343,14 @@ fn render_landscape(
             &theme.fg,
         );
     };
+    // 文字块跟着卡片走：横构图照片的卡片会比画布矮，按 h 的百分比定位会让
+    // 品牌和参数行浮在卡片上方，看起来像两块不相干的内容。
     if layout_mode == "split" {
         let left_w = photo_x - gap - m;
         let right_x = photo_x + ph_w + gap;
         let right_w = w - m - right_x;
-        draw_brand(env, m + left_w / 2.0, left_w, h * 0.5);
-        draw_rows(env, right_x, right_w, h * 0.29);
+        draw_brand(env, m + left_w / 2.0, left_w, photo_y + ph_h * 0.5);
+        draw_rows(env, right_x, right_w, photo_y + ph_h * 0.29);
     } else {
         let panel_x = if layout_mode == "text-left" {
             m
@@ -343,8 +362,7 @@ fn render_landscape(
         } else {
             w - m - panel_x
         };
-        draw_brand(env, panel_x + panel_w / 2.0, panel_w, h * 0.27);
-        draw_rows(env, panel_x, panel_w, h * 0.41);
+        draw_brand(env, panel_x + panel_w / 2.0, panel_w, photo_y + ph_h * 0.27);
+        draw_rows(env, panel_x, panel_w, photo_y + ph_h * 0.41);
     }
-    let _ = (photo_y, ph_h);
 }

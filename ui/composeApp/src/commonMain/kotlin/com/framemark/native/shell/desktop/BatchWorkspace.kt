@@ -241,6 +241,12 @@ private fun BatchPhotoList(
                 )
             }
             Spacer(Modifier.height(FmRhythm.inlineWide))
+            Text(
+                text = "加入批量时会固定当时的边框、参数和导出设置；之后再改设计，不影响已加入的任务。",
+                style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp),
+                color = FmPalette.onSurfaceMuted,
+            )
+            Spacer(Modifier.height(FmRhythm.inlineWide))
             Row(horizontalArrangement = Arrangement.spacedBy(FmRhythm.rowLoose)) {
                 Text(
                     text = "全选",
