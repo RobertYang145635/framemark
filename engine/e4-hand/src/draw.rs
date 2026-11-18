@@ -1150,7 +1150,20 @@ pub fn draw_brand_logo(env: &mut Env, x: f32, y: f32, w: f32, h: f32, color: &st
     }
     // 字标大小可调：非厂商边框统一读 `logoSizePct`（100 = 模板原尺寸），围绕原盒子
     // 中心缩放，所以放大缩小都不会把字标挤到别的元素上。
-    let scale = (pct(env.params, "logoSizePct", 100.0) as f32 / 100.0).clamp(0.3, 2.5);
+    //
+    // 放大还要再收一道：模板给的盒子本来就贴着画布边（例如背景模糊卡的字标离右边只有
+    // 3.5%），按中心放大到 180% 会把字标推出画布、右上角被切掉。这里按「盒子中心到画布
+    // 四边的最小距离」反算可用倍率，先收倍率再画 —— 宁可没放到那么大，也不要切掉字。
+    let requested = (pct(env.params, "logoSizePct", 100.0) as f32 / 100.0).clamp(0.3, 2.5);
+    let scale = if requested > 1.0 && w > 0.0 && h > 0.0 {
+        let cx = x + w / 2.0;
+        let cy = y + h / 2.0;
+        let room_x = (cx).min((env.w - cx).max(0.0)) / (w / 2.0);
+        let room_y = (cy).min((env.h - cy).max(0.0)) / (h / 2.0);
+        requested.min(room_x.max(1.0)).min(room_y.max(1.0))
+    } else {
+        requested
+    };
     let (x, y, w, h) = if (scale - 1.0).abs() > f32::EPSILON {
         let cx = x + w / 2.0;
         let cy = y + h / 2.0;
