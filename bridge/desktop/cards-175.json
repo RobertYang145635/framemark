@@ -3,7 +3,7 @@
  "generatedAt": "2026-11-18T18:55:40.000Z",
  "note": "175-card desktop manifest derived from the Android3 bundle (106 IR + 69 hand). All paths are package-relative POSIX; the data/ prefix is the bundle copied verbatim as the package data root. slots are node declarations: IR carries the e2b report nodePath (b<band>/g<child>…) for path binding, hand carries the frozen text-slot id plus sampleText (e4hand reports no path). No slot is removed for the sample photo; optionalSlotsAtSampleExif only records which nodes resolve empty for the bundle fixture. Kept alongside x1-cards.json (10 cards) for the caller to switch.",
  "sourceSha256": {
-  "manifest": "67e54f0b97731579f42743aeee6523b27eb04f5308c3abf2bdcc6bbc9c3f9e22",
+  "manifest": "4cc55a499f37bfed8c3fcde7f3c1baa3e23b9453bbb7b9d90040b323913def9e",
   "handCards": "5ba264f0db6329ca6bd174d6f62d265ccbf5d82437fbc55c90331cf4dacec75e",
   "textSlots": "eed19c1b0f827ab5f484895b6163e254823c2e3ce1760789eb5fc12218bca9e6",
   "schema": "framemark-ir-bundle/1"
@@ -2822,6 +2822,11 @@
      "key": "vivo-disney-chip_dale-white",
      "source": "data/assets/vivo-disney-chip_dale-white.png",
      "engineFile": "data/decoded/vivo/disney/chip_dale-white.png"
+    },
+    {
+     "key": "vivo-disney-chip_dale-art",
+     "source": "data/assets/vivo-disney-chip_dale-art.png",
+     "engineFile": "data/decoded/vivo/disney/chip_dale-art.png"
     }
    ],
    "slots": []
@@ -2841,6 +2846,11 @@
      "key": "vivo-disney-donald_duck-white",
      "source": "data/assets/vivo-disney-donald_duck-white.png",
      "engineFile": "data/decoded/vivo/disney/donald_duck-white.png"
+    },
+    {
+     "key": "vivo-disney-donald_duck-art",
+     "source": "data/assets/vivo-disney-donald_duck-art.png",
+     "engineFile": "data/decoded/vivo/disney/donald_duck-art.png"
     }
    ],
    "slots": []
@@ -2860,6 +2870,11 @@
      "key": "vivo-disney-judy-white",
      "source": "data/assets/vivo-disney-judy-white.png",
      "engineFile": "data/decoded/vivo/disney/judy-white.png"
+    },
+    {
+     "key": "vivo-disney-judy-art",
+     "source": "data/assets/vivo-disney-judy-art.png",
+     "engineFile": "data/decoded/vivo/disney/judy-art.png"
     }
    ],
    "slots": []
@@ -2879,6 +2894,11 @@
      "key": "vivo-disney-mickey-white",
      "source": "data/assets/vivo-disney-mickey-white.png",
      "engineFile": "data/decoded/vivo/disney/mickey-white.png"
+    },
+    {
+     "key": "vivo-disney-mickey-art",
+     "source": "data/assets/vivo-disney-mickey-art.png",
+     "engineFile": "data/decoded/vivo/disney/mickey-art.png"
     }
    ],
    "slots": []
@@ -2898,6 +2918,11 @@
      "key": "vivo-disney-pluto-white",
      "source": "data/assets/vivo-disney-pluto-white.png",
      "engineFile": "data/decoded/vivo/disney/pluto-white.png"
+    },
+    {
+     "key": "vivo-disney-pluto-art",
+     "source": "data/assets/vivo-disney-pluto-art.png",
+     "engineFile": "data/decoded/vivo/disney/pluto-art.png"
     }
    ],
    "slots": []

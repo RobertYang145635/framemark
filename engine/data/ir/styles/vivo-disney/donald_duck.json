@@ -32,36 +32,41 @@
       "file": "vivo/disney/donald_duck-white.png",
       "width": 1440,
       "height": 1234
+    },
+    "vivo-disney-donald_duck-art": {
+      "file": "vivo/disney/donald_duck-art.png",
+      "width": 380,
+      "height": 250
     }
   },
   "bands": [
     {
-      "direction": "overlay",
-      "width": 1440,
-      "thickness": 1234,
-      "offset": {
-        "x": 0,
-        "y": 0
-      },
+      "direction": "bottom",
+      "thickness": 154,
       "drawFirst": false,
       "fit": "none",
       "children": [
         {
           "kind": "image",
-          "asset": "vivo-disney-donald_duck-white",
-          "width": 1440,
-          "height": 1234,
-          "scale": "fill",
-          "gravity": "leftTop"
+          "asset": "vivo-disney-donald_duck-art",
+          "width": 380,
+          "height": 250,
+          "scale": "contain",
+          "gravity": "rightBottom",
+          "margins": {
+            "right": 34,
+            "bottom": 0
+          }
         }
       ]
     }
   ],
   "audit": {
     "status": "approx",
-    "notes": "Disney 2026 frame from the vivo X500 Pro Max PAG (photo layers replaced with transparency; 40/40 layer checks). Canvas is the PAG composition 1440x1234 = photo 1440x1080 + 154 bar (white material).",
+    "notes": "Disney 2026 frame from the vivo X500 Pro Max PAG (photo layers replaced with transparency; 40/40 layer checks). Canvas is the PAG composition 1440x1234 = photo 1440x1080 + 154 bar (white material). 2026-11-19: the shipped composite is split into the bar (style background + this bottom band) and the character art, cropped to its ink box 380x250 at (1026,984) of the composite (alpha>8 and non-white; the bar itself is opaque white) as vivo/disney/donald_duck-art.png. The art is a right/bottom-anchored image node in the bottom band, so every photo aspect keeps it flush with the canvas corner; the old full-canvas overlay was anchored to the photo rect and pushed the art out of frame on 3:2 / 16:9 / 9:16 / 1:1.",
     "unsupported": [
-      "PAG composition is authored 4:3; other photo aspects degrade like the other PAG-art vivo cards (no per-ratio composition in IR)",
+      "PAG composition is authored 4:3 (1440x1234); IR has no per-ratio composition, so the art keeps its 4:3 node size at referenceWidth 1440 and only its distance from the photo bottom follows the 154 bar",
+      "art node is 380x250 and deliberately rises 96 units above the 154 bar into the photo (band fit:\"none\", node margins right 34 / bottom 0); the photo/art overlap of the 4:3 composition is preserved, not removed, so a non-4:3 photo shows the art over a different slice of the photo — never at a different canvas position",
       "vendor material #2 (pag/.../black, blue card) is a different composition (photo window 1440x864 + blue band 864-1080 + white bar 1080-1234) and is not shipped as a theme — GAP; firmware pref_camera_watermark_material therefore only carries the white value here",
       "roll/tilt vector layer inside the PAG photo area is part of the photo replacement, not the decoration"
     ]
