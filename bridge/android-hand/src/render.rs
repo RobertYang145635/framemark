@@ -495,6 +495,12 @@ fn render_card_impl(
         .find(|t| t.id == card.template_id)
         .ok_or_else(|| format!("template '{}' not in hand/templates.json", card.template_id))?;
     let mut params = hand::merge_params(&def.defaults_map(), &design.params);
+    // 卡片自带的示例文本不是用户编辑。设计从别的照片带过来时，`slotText:` 可能还留着
+    // 上一张样片的品牌/机型（"PANASONIC"、"DC-S1" …），照原样渲染就会出现
+    // 「OPPO 照片 + 经典双行显示 Panasonic」。丢弃与卡片示例文本相同的覆盖，
+    // 让槽位回到照片 EXIF；用户真改过的文本不等于示例文本，因此不会被误删。
+    // 与 `engine/e4-hand/src/main.rs` 的同名处理保持一致。
+    drop_sample_slot_text(&mut params, card);
 
     let (photo_source, decode_report) =
         load_photo_source(photo_override.unwrap_or(&card.photo.path), preview_source_edge)?;
@@ -955,12 +961,37 @@ fn final_user_text(text: &hand::TextSettings) -> String {
     out
 }
 
+/// 丢掉「不是用户编辑」的槽位文本：覆盖值等于卡片样片文本的那些键。
+///
+/// 经典双行这类卡片的样片是 PANASONIC DC-S1；设计如果从样片带过来（或由旧版本把样片
+/// 文本写进设计），换一张 OPPO 照片后仍会显示 Panasonic。这里把与样片文本完全相同的
+/// 覆盖去掉，让槽位回到照片自身的 EXIF；用户手动改过的文本不等于样片文本，不受影响。
+fn drop_sample_slot_text(params: &mut hand::Params, card: &Card) {
+    let sample: std::collections::HashSet<String> = card
+        .texts
+        .iter()
+        .map(|t| t.s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if sample.is_empty() {
+        return;
+    }
+    params.retain(|key, value| {
+        if !key.starts_with("slotText:") {
+            return true;
+        }
+        match value.as_str() {
+            Some(text) => !sample.contains(text.trim()),
+            None => true,
+        }
+    });
+}
+
 fn text_needing_fallback(
     text: &hand::TextSettings,
     exif: &Exif,
     params: &hand::Params,
-) -> String {
-    let mut out = format!(
+) -> String {    let mut out = format!(
         "{}\n{}\n{}\n{}\n{}\n{}",
         final_user_text(text), exif.make, exif.model, exif.lens, exif.date_time, exif.line(" ")
     );

@@ -104,6 +104,8 @@ fn main() {
         design_doc.as_ref(),
         &a[6],
         max_edge,
+        // 交互档的采样长边：命令行证据工具始终走全分辨率，与导出一致。
+        0,
     ) {
         Ok(r) => {
             println!(
