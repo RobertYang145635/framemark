@@ -23,7 +23,7 @@ import kotlin.math.round
  *    metadata (label / options / range / declared default) comes from
  *    `inspector-meta.json`, a verbatim projection of the E1a source
  *    `_research/hand-controls/controls.hand.json` (see `tools/u3-gen-inspector-meta.mjs`).
- *    Every one of the 996 capability entries joins by `styleId + controlId`; a
+ *    Every one of the 1023 capability entries joins by `styleId + controlId`; a
  *    missing row stops the card with an explicit error instead of inventing a
  *    label.
  *  - unaudited stock cards (106): `controls.json` rows for the card's

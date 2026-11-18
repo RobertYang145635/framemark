@@ -30,16 +30,16 @@
     "pathNote": "Task book names framemark/_research/s7/control-audit.json; the repo has no _research/ (gitignored/local) and the file lives one level up at border&watermark/_research/s7/control-audit.json. This is the path that was hashed."
   },
   "counts": {
-    "auditRows": 996,
-    "effective": 752,
+    "auditRows": 1023,
+    "effective": 779,
     "gated": 244,
     "verdicts": {
-      "live": 752,
+      "live": 779,
       "no-op": 244
     },
     "auditedCards": 69,
     "unauditedCards": 114,
-    "auditedEffectiveSum": 752,
+    "auditedEffectiveSum": 779,
     "auditedGatedSum": 244,
     "auditCardsOutsideTaxonomy": 0,
     "duplicateAuditRows": 0
@@ -1012,7 +1012,7 @@
     {
       "styleId": "wm-classic",
       "audited": true,
-      "effectiveCount": 14,
+      "effectiveCount": 15,
       "gatedCount": 4,
       "effective": [
         {
@@ -1112,6 +1112,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -1167,7 +1174,7 @@
     {
       "styleId": "personal-simple",
       "audited": true,
-      "effectiveCount": 9,
+      "effectiveCount": 10,
       "gatedCount": 2,
       "effective": [
         {
@@ -1232,6 +1239,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -1273,7 +1287,7 @@
     {
       "styleId": "wm-canon",
       "audited": true,
-      "effectiveCount": 14,
+      "effectiveCount": 15,
       "gatedCount": 4,
       "effective": [
         {
@@ -1373,6 +1387,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -1410,7 +1431,7 @@
     {
       "styleId": "wm-simple",
       "audited": true,
-      "effectiveCount": 9,
+      "effectiveCount": 10,
       "gatedCount": 10,
       "effective": [
         {
@@ -1475,6 +1496,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -1846,7 +1874,7 @@
     {
       "styleId": "wm-wide",
       "audited": true,
-      "effectiveCount": 9,
+      "effectiveCount": 10,
       "gatedCount": 9,
       "effective": [
         {
@@ -1911,6 +1939,13 @@
           "kind": "text",
           "scope": "template-param",
           "currentValue": "logo"
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -1983,7 +2018,7 @@
     {
       "styleId": "wm-black",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 8,
       "effective": [
         {
@@ -2069,6 +2104,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -2356,7 +2398,7 @@
     {
       "styleId": "wm-right",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 7,
       "effective": [
         {
@@ -2442,6 +2484,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -2500,7 +2549,7 @@
     {
       "styleId": "wm-left",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 6,
       "effective": [
         {
@@ -2586,6 +2635,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -3086,7 +3142,7 @@
     {
       "styleId": "blur-classic",
       "audited": true,
-      "effectiveCount": 16,
+      "effectiveCount": 17,
       "gatedCount": 0,
       "effective": [
         {
@@ -3200,6 +3256,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -3208,7 +3271,7 @@
     {
       "styleId": "glass-white-1",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 0,
       "effective": [
         {
@@ -3294,6 +3357,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -3302,7 +3372,7 @@
     {
       "styleId": "glass-pill-5",
       "audited": true,
-      "effectiveCount": 27,
+      "effectiveCount": 28,
       "gatedCount": 1,
       "effective": [
         {
@@ -3493,6 +3563,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -3509,7 +3586,7 @@
     {
       "styleId": "glass-card",
       "audited": true,
-      "effectiveCount": 28,
+      "effectiveCount": 29,
       "gatedCount": 0,
       "effective": [
         {
@@ -3707,6 +3784,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -3982,7 +4066,7 @@
     {
       "styleId": "glass-liquid",
       "audited": true,
-      "effectiveCount": 13,
+      "effectiveCount": 14,
       "gatedCount": 2,
       "effective": [
         {
@@ -4075,6 +4159,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -4308,7 +4399,7 @@
     {
       "styleId": "glass-white-2",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 0,
       "effective": [
         {
@@ -4394,6 +4485,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -4402,7 +4500,7 @@
     {
       "styleId": "glass-white-3",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 0,
       "effective": [
         {
@@ -4488,6 +4586,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -4496,7 +4601,7 @@
     {
       "styleId": "glass-card-4",
       "audited": true,
-      "effectiveCount": 11,
+      "effectiveCount": 12,
       "gatedCount": 0,
       "effective": [
         {
@@ -4575,6 +4680,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -4583,7 +4695,7 @@
     {
       "styleId": "white-1",
       "audited": true,
-      "effectiveCount": 10,
+      "effectiveCount": 11,
       "gatedCount": 12,
       "effective": [
         {
@@ -4655,6 +4767,13 @@
           "kind": "slider",
           "scope": "template-param",
           "currentValue": 2
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -5212,7 +5331,7 @@
     {
       "styleId": "white-2",
       "audited": true,
-      "effectiveCount": 17,
+      "effectiveCount": 18,
       "gatedCount": 5,
       "effective": [
         {
@@ -5333,6 +5452,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -6033,7 +6159,7 @@
     {
       "styleId": "person-1",
       "audited": true,
-      "effectiveCount": 16,
+      "effectiveCount": 17,
       "gatedCount": 13,
       "effective": [
         {
@@ -6147,6 +6273,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -6508,7 +6641,7 @@
     {
       "styleId": "card-1",
       "audited": true,
-      "effectiveCount": 11,
+      "effectiveCount": 12,
       "gatedCount": 0,
       "effective": [
         {
@@ -6587,6 +6720,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],
@@ -6668,7 +6808,7 @@
     {
       "styleId": "card-2",
       "audited": true,
-      "effectiveCount": 8,
+      "effectiveCount": 9,
       "gatedCount": 3,
       "effective": [
         {
@@ -6726,6 +6866,13 @@
           "kind": "slider",
           "scope": "template-param",
           "currentValue": 1.2832
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -6865,7 +7012,7 @@
     {
       "styleId": "card-4",
       "audited": true,
-      "effectiveCount": 12,
+      "effectiveCount": 13,
       "gatedCount": 2,
       "effective": [
         {
@@ -6951,6 +7098,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -7148,7 +7302,7 @@
     {
       "styleId": "person-2",
       "audited": true,
-      "effectiveCount": 20,
+      "effectiveCount": 21,
       "gatedCount": 9,
       "effective": [
         {
@@ -7290,6 +7444,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -7362,7 +7523,7 @@
     {
       "styleId": "person-3",
       "audited": true,
-      "effectiveCount": 22,
+      "effectiveCount": 23,
       "gatedCount": 7,
       "effective": [
         {
@@ -7518,6 +7679,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -7576,7 +7744,7 @@
     {
       "styleId": "person-4",
       "audited": true,
-      "effectiveCount": 21,
+      "effectiveCount": 22,
       "gatedCount": 8,
       "effective": [
         {
@@ -7725,6 +7893,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -7790,7 +7965,7 @@
     {
       "styleId": "person-5",
       "audited": true,
-      "effectiveCount": 18,
+      "effectiveCount": 19,
       "gatedCount": 11,
       "effective": [
         {
@@ -7918,6 +8093,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [
@@ -8702,7 +8884,7 @@
     {
       "styleId": "fm-vertical",
       "audited": true,
-      "effectiveCount": 9,
+      "effectiveCount": 10,
       "gatedCount": 0,
       "effective": [
         {
@@ -8767,6 +8949,13 @@
           "kind": "slider",
           "scope": "design-text",
           "currentValue": 1
+        },
+        {
+          "controlId": "slider.params:logoSizePct",
+          "param": "params.logoSizePct",
+          "kind": "slider",
+          "scope": "template-param",
+          "currentValue": 100
         }
       ],
       "gated": [],

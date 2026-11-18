@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** Locates the repository and reads the frozen data the app ships. */
@@ -130,12 +131,12 @@ class ControlRegistryRealDataTest {
         assertEquals(183, stats.cards)
         assertEquals(69, stats.auditedCards)
         assertEquals(114, stats.unauditedCards)
-        assertEquals(996, stats.capabilityRows)
-        assertEquals(752, stats.effectiveRows)
+        assertEquals(1023, stats.capabilityRows)
+        assertEquals(779, stats.effectiveRows)
         assertEquals(244, stats.gatedRows)
         assertEquals(574, stats.platformRows)
         assertEquals(109, stats.platformStyles)
-        assertEquals(996, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
+        assertEquals(1023, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
         assertEquals(574, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
         assertEquals(45, stats.handPanelRows)
         assertEquals(61, stats.handPanelCardPairs)
@@ -149,21 +150,112 @@ class ControlRegistryRealDataTest {
         assertEquals(178, stats.cardsWithVisible)
         assertEquals(5, stats.emptyCards, "5 张迪士尼装饰卡没有控件")
         assertEquals(178, stats.cardsWithVisible)
-        assertEquals(1326, stats.visibleControls)
+        assertEquals(1353, stats.visibleControls)
         assertEquals(244, stats.hiddenControls)
         assertEquals(244, stats.gatedControls)
-        assertEquals(1570, stats.routableControls)
-        assertEquals(754, stats.consumedControls)
+        assertEquals(1597, stats.routableControls)
+        assertEquals(781, stats.consumedControls)
         assertEquals(574, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
-        assertEquals(752, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
+        assertEquals(779, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
         assertEquals(41, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { c -> c.controls.count { it.consumed } })
-        assertEquals(713, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
+        assertEquals(740, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
         val hiddenReasons = registry.cards.flatMap { it.controls }.filter { !it.visible }
             .groupingBy { it.hiddenReason ?: "null" }.eachCount()
         assertEquals(mapOf("gated" to 244), hiddenReasons, "除门控外不应有被隐藏的控件")
 
         val issues = registry.validate()
         assertTrue(issues.isEmpty(), "静态校验失败：\n${issues.joinToString("\n")}")
+    }
+
+    /**
+     * 2026-11-19「字标大小」：非厂商手写卡的字标尺寸可调。
+     *
+     * 目标集合 = 模板**真的**会画 `draw_brand_logo` 的卡（渲染 diff 证明：logoSizePct=30
+     * 与 100 的像素不同）。另有 30 张非厂商卡不在此列：参数 / 色卡 / 票据 / 电影 / 比例 /
+     * 毕业 / FrameMark 精选里除竖排外的卡、液态玻璃调色板，模板根本没有字标；blur-date、
+     * white-3、white-4、card-3 的字标行被门控（没有可选品牌），字标永远不出现。
+     * 厂商水印 12 张（下面点名）是身份的一部分，不加。
+     */
+    @Test
+    fun every_hand_card_that_draws_a_brand_mark_exposes_one_logo_size_slider() {
+        val registry = RealData.registry()
+        fun markControls(cardId: String) = registry.card(cardId)!!.controls
+            .filter { it.consumer == "params.logoSizePct" }
+
+        val expected = listOf(
+            "blur-classic", "personal-simple",
+            "wm-classic", "wm-simple", "wm-black", "wm-canon", "wm-left", "wm-wide", "wm-right",
+            "white-1", "white-2",
+            "card-1", "card-2", "card-4",
+            "person-1", "person-2", "person-3", "person-4", "person-5",
+            "glass-white-1", "glass-white-2", "glass-white-3", "glass-card-4", "glass-pill-5",
+            "glass-liquid", "glass-card",
+            "fm-vertical",
+        ).sorted()
+        val actual = registry.cards.filter { card -> card.controls.any { it.consumer == "params.logoSizePct" } }
+            .map { it.cardId }.sorted()
+        assertEquals(expected, actual, "字标大小滑杆的目标卡集合变了")
+
+        for (cardId in expected) {
+            val controls = markControls(cardId)
+            assertEquals(1, controls.size, "$cardId 只能有一条字标大小滑杆")
+            val control = controls.single()
+            assertEquals("slider.params:logoSizePct", control.controlId)
+            assertEquals(ControlType.Slider, control.type)
+            assertEquals("字标大小", control.label)
+            assertEquals(40.0, control.min)
+            assertEquals(220.0, control.max)
+            assertEquals(5.0, control.step)
+            assertEquals(100.0, control.defaultValue, "$cardId 默认 100 = 现状不变")
+            assertEquals(100.0, control.currentValue)
+            assertEquals("pct", control.unit, "百分比按 pct 词表走，UI 才显示 %")
+            assertTrue(control.visible && !control.gated, "$cardId 的字标大小必须可见")
+            assertEquals("params.logoSizePct", control.consumer)
+            assertTrue(control.consumed, "手写卡的 params.* 由引擎直接读取")
+        }
+
+        // 厂商水印是身份的一部分：字标尺寸不跟着品牌变。taxonomy 里 vendor 类还包含
+        // 厂商系统相机卡，所以这里按 12 张手写厂商水印卡点名，而不是按 category 过滤。
+        val vendorWatermark = listOf(
+            "vendor-hasselblad", "vendor-hasselblad-dark", "vendor-hasselblad-h",
+            "vendor-hasselblad-frame", "vendor-hasselblad-matte",
+            "vendor-lumo", "vendor-lumo-frame", "vendor-lumo-matte",
+            "vendor-zeiss", "vendor-leica", "vendor-xiaomi", "vendor-xiaomi-single",
+        )
+        assertEquals(12, vendorWatermark.size)
+        for (cardId in vendorWatermark) {
+            val card = requireNotNull(registry.card(cardId)) { "$cardId 不在注册表里" }
+            assertEquals(ControlBackend.Hand, card.backend, "$cardId 应是手写卡")
+            assertEquals("vendor", card.category)
+            assertTrue(
+                card.controls.none { it.consumer == "params.logoSizePct" },
+                "$cardId 是厂商水印卡，字标尺寸是身份的一部分，不该有字标大小滑杆",
+            )
+        }
+    }
+
+    /** 用户真正看到的那一列：字标大小落在 Logo 标签页，显示为百分比。 */
+    @Test
+    fun logo_size_slider_lands_in_the_logo_tab_as_a_percentage() {
+        val registry = RealData.registry()
+        val card = requireNotNull(registry.card("white-1")) { "white-1 不在注册表里" }
+        val model = com.framemark.native.inspector.RegistryInspectorFactory.build(
+            card.cardId, card.name, card.category, card.categoryName, card,
+            com.framemark.native.inspector.IrSlotBinding.EMPTY,
+        ).model
+        val row = model.controls.single { it.controlId == "slider.params:logoSizePct" }
+        assertEquals("字标大小", row.label)
+        assertEquals(com.framemark.native.inspector.ControlType.Slider, row.type)
+        assertEquals(com.framemark.native.inspector.InspectorSection.Logo, row.section)
+        assertEquals("params.logoSizePct", row.param)
+        assertEquals(40f, row.min)
+        assertEquals(220f, row.max)
+        assertEquals(5f, row.step)
+        assertEquals("%", row.unit)
+        assertEquals(1f, row.unitScale)
+        assertNull(row.disabledReason)
+        assertEquals("100.0", row.declaredDefault)
+        assertEquals("100.0", row.currentText)
     }
 
     /**
@@ -213,7 +305,7 @@ class ControlRegistryRealDataTest {
     fun gated_controls_stay_hidden_and_visible_ones_are_routable() {
         val registry = RealData.registry()
         val all = registry.cards.flatMap { card -> card.controls.map { card to it } }
-        assertEquals(996 + 574, all.size)
+        assertEquals(1023 + 574, all.size)
 
         var gated = 0
         all.forEach { (card, control) ->
