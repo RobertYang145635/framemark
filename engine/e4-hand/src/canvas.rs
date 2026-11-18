@@ -381,6 +381,45 @@ impl<'a> Ctx2D<'a> {
         self.fill_round_rect(x, y, w, h, r, color);
     }
 
+    /// 只要投影，不填本体：玻璃面板先投影再画背衬，才有悬浮在照片上的体积感。
+    pub fn draw_round_rect_shadow(
+        &mut self,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        r: f32,
+        shadow_color: &str,
+        blur: f32,
+        offset_y: f32,
+    ) {
+        let path = round_rect_path(x, y, w, h, r);
+        let sc = self.color_of(shadow_color);
+        let mut p = Paint::default();
+        p.set_anti_alias(true);
+        p.set_color(Color::from_argb(255, sc.r(), sc.g(), sc.b()));
+        p.set_alpha_f((sc.a() as f32 / 255.0) * self.st.alpha);
+        if let Some(mf) =
+            skia_safe::MaskFilter::blur(skia_safe::BlurStyle::Normal, blur.max(0.5) * 0.5, None)
+        {
+            p.set_mask_filter(mf);
+        }
+        self.scoped(|c| {
+            let _ = c.save();
+            c.translate((0.0, offset_y));
+            c.draw_path(&path, &p);
+            let _ = c.restore();
+        });
+        let seq = self.next_seq();
+        self.report.borrow_mut().decor.push(ShapeDraw {
+            seq,
+            underlay: false,
+            kind: "round-rect-shadow".into(),
+            rect: RectJson::from_skia(Rect::from_xywh(x, y, w, h)),
+            color: Some(shadow_color.to_string()),
+        });
+    }
+
     pub fn fill_round_rect(&mut self, x: f32, y: f32, w: f32, h: f32, r: f32, color: &str) {
         let col = self.color_of(color);
         let p = self.paint(col);

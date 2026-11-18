@@ -1762,6 +1762,33 @@ fn panel_backdrop(env: &Env, x: f32, y: f32, w: f32, h: f32) -> (skia_safe::Imag
         canvas.clear(Color::TRANSPARENT);
         let mut paint = skia_safe::Paint::default();
         paint.set_anti_alias(true);
+        // iOS 的「液态玻璃」不只是模糊：先把背衬彩度抬起来（vibrancy），
+        // 玻璃里才会透出颜色，而不是一层灰雾。1.55 取 1.4–1.8 区间的中值。
+        let sat = 1.55f32;
+        let (lr, lg, lb) = (0.2126f32, 0.7152f32, 0.0722f32);
+        let cm = skia_safe::ColorMatrix::new(
+            lr * (1.0 - sat) + sat,
+            lg * (1.0 - sat),
+            lb * (1.0 - sat),
+            0.0,
+            0.0,
+            lr * (1.0 - sat),
+            lg * (1.0 - sat) + sat,
+            lb * (1.0 - sat),
+            0.0,
+            0.0,
+            lr * (1.0 - sat),
+            lg * (1.0 - sat),
+            lb * (1.0 - sat) + sat,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+        );
+        paint.set_color_filter(skia_safe::color_filters::matrix(&cm, None));
         canvas.draw_image_rect_with_sampling_options(
             env.photo,
             Some((&src, skia_safe::canvas::SrcRectConstraint::Strict)),
@@ -1803,6 +1830,17 @@ pub fn draw_glass_panel(
     let s = env.pw.min(env.ph);
     let panel = Rect::from_xywh(x, y, w, h);
     let r = radius.max(0.0).min(w.min(h) / 2.0);
+    // 0. 投影：玻璃浮在照片上，先落一层柔和阴影（iOS 材质都有这一层）。
+    env.ctx.draw_round_rect_shadow(
+        x,
+        y,
+        w,
+        h,
+        r,
+        "rgba(0,0,0,0.30)",
+        blur_px.max(6.0),
+        h * 0.06,
+    );
     let (img, _tw, _th) = panel_backdrop(env, x, y, w, h);
     let mut samp = SamplingOptions::default();
     samp.filter = FilterMode::Linear;
@@ -1891,17 +1929,45 @@ pub fn draw_glass_panel(
             (1.0, "rgba(255,255,255,0.05)"),
         ],
     );
-    // 5. 边缘：外描边 + 内侧 1px 亮线，读起来像有厚度的玻璃边
-    env.ctx.stroke_round_rect(
-        x,
-        y,
-        w,
-        h,
-        r,
-        "rgba(255,255,255,0.42)",
-        stroke_px,
-        None,
-    );
+    // 5. 边缘：上半圈更亮、下半圈更暗，玻璃边才有方向感（iOS 液态玻璃的做法）；
+    //    再补一条内侧亮线，读起来像有厚度。
+    if h > s * 0.02 {
+        env.ctx.clip_rect(x, y - stroke_px, w, h * 0.5 + stroke_px);
+        env.ctx.stroke_round_rect(
+            x,
+            y,
+            w,
+            h,
+            r,
+            "rgba(255,255,255,0.62)",
+            stroke_px.max(1.0),
+            None,
+        );
+        env.ctx.restore_clip();
+        env.ctx.clip_rect(x, y + h * 0.5, w, h * 0.5 + stroke_px);
+        env.ctx.stroke_round_rect(
+            x,
+            y,
+            w,
+            h,
+            r,
+            "rgba(255,255,255,0.20)",
+            stroke_px.max(1.0),
+            None,
+        );
+        env.ctx.restore_clip();
+    } else {
+        env.ctx.stroke_round_rect(
+            x,
+            y,
+            w,
+            h,
+            r,
+            "rgba(255,255,255,0.42)",
+            stroke_px,
+            None,
+        );
+    }
     if w > s * 0.06 && h > s * 0.02 {
         env.ctx.stroke_round_rect(
             x + stroke_px,
@@ -2125,6 +2191,7 @@ pub fn draw_swatches(
     label_color: &str,
     spread: bool,
     slot_prefix: &str,
+    per_swatch_label: bool,
 ) {
     let gap = size * 0.34;
     let n = colors.len();
@@ -2157,15 +2224,30 @@ pub fn draw_swatches(
             start + i as f32 * (size + gap) + size / 2.0
         };
         env.ctx.fill_circle(cx, y + size / 2.0, size / 2.0, c);
+        // 参考实现的色卡标签是「斜体 + 用色块自己的颜色」；旧版统一灰字，
+        // 整条色卡看起来像表格而不是配色卡。深色块在浅底上直接用原色，
+        // 太浅的色块压暗一档保证可读。
+        let label_text_color = if per_swatch_label {
+            swatch_label_color(c)
+        } else {
+            label_color.to_string()
+        };
+        let skew = if per_swatch_label { 0.20 } else { 0.0 };
+        let label_y = y + size + size * 0.22;
+        env.ctx.save();
+        if skew != 0.0 {
+            env.ctx.transform(1.0, 0.0, -skew, 1.0, 0.0, 0.0);
+        }
+        let label_cx = cx + skew * label_y;
         if let Some(cell_slot) = SWATCH_SLOT_IDS.get(i) {
             let slot = format!("{slot_prefix}.{cell_slot}");
             draw_text_exact_slot(
                 env,
                 &c.to_uppercase(),
-                cx,
-                y + size + size * 0.22,
+                label_cx,
+                label_y,
                 size * 0.3,
-                label_color,
+                &label_text_color,
                 "JetBrains Mono",
                 400,
                 "center",
@@ -2184,10 +2266,10 @@ pub fn draw_swatches(
             draw_text_exact(
                 env,
                 &c.to_uppercase(),
-                cx,
-                y + size + size * 0.22,
+                label_cx,
+                label_y,
                 size * 0.3,
-                label_color,
+                &label_text_color,
                 "JetBrains Mono",
                 400,
                 "center",
@@ -2197,7 +2279,31 @@ pub fn draw_swatches(
                 None,
             );
         }
+        env.ctx.restore();
     }
+}
+
+/// 色卡标签色：用色块自己的颜色，太浅就压暗到能在浅底上读。
+fn swatch_label_color(hex: &str) -> String {
+    let parse = |s: &str| i64::from_str_radix(s, 16).unwrap_or(0) as f64;
+    if hex.len() != 7 || !hex.starts_with('#') {
+        return hex.to_string();
+    }
+    let (mut r, mut g, mut b) = (parse(&hex[1..3]), parse(&hex[3..5]), parse(&hex[5..7]));
+    let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0;
+    // 浅色块（>0.72）按比例压到 0.45 左右，既保留色相又能读。
+    if lum > 0.72 {
+        let k = 0.45 / lum;
+        r *= k;
+        g *= k;
+        b *= k;
+    }
+    format!(
+        "rgba({},{},{},0.95)",
+        r.round().clamp(0.0, 255.0) as u8,
+        g.round().clamp(0.0, 255.0) as u8,
+        b.round().clamp(0.0, 255.0) as u8
+    )
 }
 
 struct PaletteBucket {
@@ -2301,6 +2407,36 @@ pub fn extract_palette(env: &mut Env, count: usize) -> Vec<String> {
     palette_from_rgba(&data, w, h, count)
 }
 
+/// sRGB → CIE Lab（D65）。色卡的选择要先在感知空间里量「看起来差多少」，
+/// 直接在 RGB 里量会把几个差不多的棕色当成五张不同的色卡。
+fn srgb_to_lab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
+    fn lin(c: f64) -> f64 {
+        let c = c / 255.0;
+        if c <= 0.04045 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    }
+    fn f(t: f64) -> f64 {
+        if t > 0.008_856 {
+            t.cbrt()
+        } else {
+            7.787 * t + 16.0 / 116.0
+        }
+    }
+    let (rl, gl, bl) = (lin(r), lin(g), lin(b));
+    let x = rl * 0.4124 + gl * 0.3576 + bl * 0.1805;
+    let y = rl * 0.2126 + gl * 0.7152 + bl * 0.0722;
+    let z = rl * 0.0193 + gl * 0.1192 + bl * 0.9505;
+    let (fx, fy, fz) = (f(x / 0.950_47), f(y), f(z / 1.088_83));
+    (116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz))
+}
+
+fn lab_distance(a: (f64, f64, f64), b: (f64, f64, f64)) -> f64 {
+    ((a.0 - b.0).powi(2) + (a.1 - b.1).powi(2) + (a.2 - b.2).powi(2)).sqrt()
+}
+
 fn palette_from_rgba(data: &[u8], w: usize, h: usize, count: usize) -> Vec<String> {
     let mut buckets: Vec<PaletteBucket> = Vec::new();
     for i in (0..w * h).map(|i| i * 4) {
@@ -2335,31 +2471,65 @@ fn palette_from_rgba(data: &[u8], w: usize, h: usize, count: usize) -> Vec<Strin
             buckets.push(PaletteBucket { r, g, b, n: 1.0 });
         }
     }
-    buckets.sort_by(|a, b| b.n.partial_cmp(&a.n).unwrap_or(std::cmp::Ordering::Equal));
-    let mut picked: Vec<String> = Vec::new();
-    for b in &buckets {
-        let c = (b.r / b.n, b.g / b.n, b.b / b.n);
-        if !picked.is_empty() {
-            let near = picked.iter().any(|hex| {
-                let rr = i64::from_str_radix(&hex[1..3], 16).unwrap_or(0) as f64;
-                let gg = i64::from_str_radix(&hex[3..5], 16).unwrap_or(0) as f64;
-                let bb = i64::from_str_radix(&hex[5..7], 16).unwrap_or(0) as f64;
-                (rr - c.0).hypot(gg - c.1).hypot(bb - c.2) < 45.0
-            });
-            if near {
+    // 选择：先看覆盖面积，再在 Lab 里按「离已选颜色多远」拉开，并给有彩度的
+    // 颜色一点加权。旧做法只按次数排序 + RGB 距离 45 去重，一张暖木桌的照片
+    // 会给出五个几乎一样的棕色，照片里真正显眼的橙/青完全进不了色卡。
+    let total: f64 = buckets.iter().map(|b| b.n).sum::<f64>().max(1.0);
+    let entries: Vec<((f64, f64, f64), f64, (f64, f64, f64))> = buckets
+        .iter()
+        .map(|b| {
+            let rgb = (b.r / b.n, b.g / b.n, b.b / b.n);
+            (srgb_to_lab(rgb.0, rgb.1, rgb.2), b.n / total, rgb)
+        })
+        .collect();
+    const MIN_DELTA_E: f64 = 20.0;
+    let mut used = vec![false; entries.len()];
+    let mut picked_rgb: Vec<(f64, f64, f64)> = Vec::new();
+    let mut picked_lab: Vec<(f64, f64, f64)> = Vec::new();
+    while picked_rgb.len() < count {
+        let mut best: Option<(usize, f64)> = None;
+        for (i, (lab, share, _)) in entries.iter().enumerate() {
+            if used[i] {
                 continue;
             }
+            let delta = if picked_lab.is_empty() {
+                100.0
+            } else {
+                picked_lab
+                    .iter()
+                    .map(|p| lab_distance(*lab, *p))
+                    .fold(f64::INFINITY, f64::min)
+            };
+            if !picked_lab.is_empty() && delta < MIN_DELTA_E {
+                continue;
+            }
+            let chroma = (lab.1.powi(2) + lab.2.powi(2)).sqrt();
+            let score = share.powf(0.35) * delta * (1.0 + 0.6 * (chroma / 90.0));
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((i, score));
+            }
         }
-        picked.push(format!(
-            "#{:02x}{:02x}{:02x}",
-            c.0.round().clamp(0.0, 255.0) as u8,
-            c.1.round().clamp(0.0, 255.0) as u8,
-            c.2.round().clamp(0.0, 255.0) as u8
-        ));
-        if picked.len() >= count {
-            break;
+        match best {
+            Some((i, _)) => {
+                used[i] = true;
+                picked_rgb.push(entries[i].2);
+                picked_lab.push(entries[i].0);
+            }
+            // 剩下的颜色都太接近了：交给下面的兜底色补齐。
+            None => break,
         }
     }
+    let mut picked: Vec<String> = picked_rgb
+        .iter()
+        .map(|c| {
+            format!(
+                "#{:02x}{:02x}{:02x}",
+                c.0.round().clamp(0.0, 255.0) as u8,
+                c.1.round().clamp(0.0, 255.0) as u8,
+                c.2.round().clamp(0.0, 255.0) as u8
+            )
+        })
+        .collect();
     while picked.len() < count {
         picked.push(if picked.len() % 2 == 0 {
             "#d8d3c8".into()

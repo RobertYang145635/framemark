@@ -37,7 +37,9 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         &theme,
         s,
     );
-    let size = s * 0.082;
+    // 色卡圆的直径按短边取，默认 7.2%（参考实现约 6.8%）；旧值 8.2% 让整条
+    // 色卡比参考更高更挤，看起来像参数表。
+    let size = s * ((pct(env.params, "swatchPct", 7.2) as f32) / 100.0);
     let colors = extract_palette(env, 5);
     let gap_pct = js_pct(env.params.get("paletteGapPct"), f64::NAN);
     let row_pct = js_pct(env.params.get("paletteRowPct"), f64::NAN);
@@ -73,6 +75,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         &theme.sub,
         spread,
         "paletteCard.swatch",
+        // 色卡卡片：标签用色块自己的颜色 + 斜体（对齐参考实现）。
+        true,
     );
     Ok(Rect::from_xywh(m, m, pw, ph))
 }

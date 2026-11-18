@@ -19,11 +19,16 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let s = w.min(h);
     let cols = (pct(env.params, "swatchCols", 3.0) as f32).round().max(1.0) as i32;
     let rows = (pct(env.params, "swatchRows", 2.0) as f32).round().max(1.0) as i32;
-    let panel_w = w * ((pct(env.params, "panelWidthPct", 89.2) as f32) / 100.0);
-    // 面板高由宽度推出，保持设计稿的面板形状（676 × 310 ≈ 2.18:1）。
-    // 设计稿 3:4 时 0.297h / (0.892·0.75h) = 0.444，这里沿用同一个比值。
-    let panel_h_design = panel_w * 0.444;
-    let panel_h = panel_h_design.min(h * 0.55);
+    // 面板尺寸：设计稿是「宽 89.2%、高 = 宽 × 0.444」的水晶条。
+    // 但横构图照片的画布很矮，如果照搬这个高度，面板会吃掉整张照片（盖住 70%），
+    // 所以高度再按画布高度封顶 32%，超出时同步收窄宽度，保持面板自身比例。
+    let mut panel_w = w * ((pct(env.params, "panelWidthPct", 89.2) as f32) / 100.0);
+    let mut panel_h = panel_w * 0.444;
+    let max_h = h * ((pct(env.params, "panelMaxHeightPct", 32.0) as f32) / 100.0);
+    if panel_h > max_h {
+        panel_h = max_h;
+        panel_w = panel_h / 0.444;
+    }
     let panel_x = (w - panel_w) / 2.0;
     let panel_y = h - (s * ((pct(env.params, "panelBottomPct", 6.5) as f32) / 100.0)) - panel_h;
     let radius =
@@ -108,9 +113,9 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 cx,
                 cy + label_top,
                 label_size,
-                "rgba(255,255,255,0.94)",
-                "JetBrains Mono",
-                500,
+                "rgba(255,255,255,0.96)",
+                "Inter",
+                600,
                 "center",
                 "top",
                 0.0,

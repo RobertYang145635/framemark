@@ -63,9 +63,11 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let stack = crate::hand::str_param(env.params, "pillOrder", "") == "stack";
     if layout_mode == "pill" {
         card_w = w * if stack { 0.94 } else { 0.88 };
-        card_h = (s * if stack { 0.148 } else { 0.13 }).max(h * if stack { 0.148 } else { 0.12 });
+        // 参考实现的胶囊约占画面高度的 17%：够两行字呼吸，又不至于压住照片。
+        card_h = (s * if stack { 0.175 } else { 0.135 })
+            .max(h * if stack { 0.175 } else { 0.125 });
         card_x = (w - card_w) / 2.0;
-        card_y = h - card_h - h * if stack { 0.019 } else { 0.06 };
+        card_y = h - card_h - h * if stack { 0.028 } else { 0.06 };
         r = card_h / 2.0;
     } else if layout_mode == "palette" {
         card_w = w * if portrait { 0.82 } else { 0.66 };
@@ -88,58 +90,62 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         card_w,
         card_h,
         r,
-        "rgba(0,0,0,0.22)",
-        "rgba(0,0,0,0.4)",
-        0.10,
+        "rgba(0,0,0,0.30)",
+        "rgba(0,0,0,0.46)",
+        0.07,
         blur_px,
         (s * 0.0009).max(1.0),
     );
     let inner_x = card_x + card_w * if layout_mode == "pill" { 0.04 } else { 0.055 };
     if layout_mode == "pill" {
         if stack {
-            let pad_x = card_x + card_w * 0.055;
-            let top_cy = card_y + card_h * 0.16;
-            let bot_cy = card_y + card_h * 0.47;
-            let exif_x = card_x + card_w * 0.577;
+            // 液态玻璃胶囊的字排：左侧「品牌 + 日期」两行，中间 Logo，右侧「参数 +
+            // 坐标」两行（对齐参考实现：大写品牌、无等宽字、无宽字距，右列两行同一
+            // 左边界）。旧版把参数塞成一行等宽大字，读起来像日志而不是玻璃上的标注。
+            let pad_x = card_x + card_w * 0.045;
+            let brand_y = card_y + card_h * 0.40;
+            let date_y = card_y + card_h * 0.70;
             let topts = FittedOpts::new("Inter")
-                .weight(600)
+                .weight(700)
+                .tracking(0.05)
                 .baseline("middle")
-                .min(s * 0.014)
+                .min(s * 0.013)
                 .shadow(true)
                 .slot("glass.title");
             draw_fitted(
                 env,
-                &title_of(env),
+                &title_of(env).to_uppercase(),
                 pad_x,
-                top_cy,
-                card_w * 0.4,
-                s * 0.03,
+                brand_y,
+                card_w * 0.40,
+                s * 0.031,
                 "#ffffff",
                 &topts,
             );
             let dt = dot_date(env);
-            let dopts = FittedOpts::new("JetBrains Mono")
+            let dopts = FittedOpts::new("Inter")
+                .weight(400)
                 .baseline("middle")
-                .min(s * 0.01)
+                .min(s * 0.010)
                 .shadow(true)
                 .slot("glass.date");
             draw_fitted(
                 env,
                 &dt,
                 pad_x,
-                bot_cy,
-                card_w * 0.4,
-                s * 0.022,
-                "rgba(255,255,255,0.85)",
+                date_y,
+                card_w * 0.40,
+                s * 0.021,
+                "rgba(255,255,255,0.94)",
                 &dopts,
             );
             if env.text.show_logo {
-                let lw = card_w * 0.075;
-                let lh = card_h * 0.3;
+                let lw = card_w * 0.085;
+                let lh = card_h * 0.34;
                 draw_brand_logo(
                     env,
-                    card_x + card_w * 0.488 - lw / 2.0,
-                    card_y + card_h * 0.3 - lh / 2.0,
+                    card_x + card_w * 0.50 - lw / 2.0,
+                    card_y + card_h * 0.5 - lh / 2.0,
                     lw,
                     lh,
                     "#ffffff",
@@ -147,44 +153,46 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             }
             line(
                 &mut env.ctx,
-                card_x + card_w * 0.545,
-                card_y + card_h * 0.06,
-                card_x + card_w * 0.545,
-                card_y + card_h * 0.53,
-                "rgba(255,255,255,0.55)",
-                (s * 0.0012).max(1.0),
+                card_x + card_w * 0.575,
+                card_y + card_h * 0.22,
+                card_x + card_w * 0.575,
+                card_y + card_h * 0.78,
+                "rgba(255,255,255,0.5)",
+                (s * 0.0011).max(1.0),
                 None,
             );
             let ex = exif_text(env);
-            let eopts = FittedOpts::new("JetBrains Mono")
+            let eopts = FittedOpts::new("Inter")
+                .weight(600)
                 .baseline("middle")
-                .min(s * 0.01)
+                .min(s * 0.011)
                 .shadow(true)
                 .slot("glass.exif");
             draw_fitted(
                 env,
                 &ex,
-                exif_x,
-                top_cy,
-                card_w * 0.38,
-                s * 0.026,
-                "rgba(255,255,255,0.9)",
+                card_x + card_w * 0.615,
+                brand_y,
+                card_w * 0.355,
+                s * 0.022,
+                "#ffffff",
                 &eopts,
             );
             let loc = env.text.location.trim();
-            let lopts = FittedOpts::new("JetBrains Mono")
+            let lopts = FittedOpts::new("Inter")
+                .weight(400)
                 .baseline("middle")
-                .min(s * 0.01)
+                .min(s * 0.010)
                 .shadow(true)
                 .slot("glass.location");
             draw_fitted(
                 env,
                 loc,
-                exif_x,
-                bot_cy,
-                card_w * 0.38,
-                s * 0.022,
-                "rgba(255,255,255,0.8)",
+                card_x + card_w * 0.615,
+                date_y,
+                card_w * 0.355,
+                s * 0.018,
+                "rgba(255,255,255,0.85)",
                 &lopts,
             );
             return Ok(Rect::from_xywh(0.0, 0.0, w, h));
@@ -330,6 +338,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             "rgba(255,255,255,0.62)",
             false,
             "glass.palette.swatch",
+            false,
         );
         if env.text.show_logo {
             let lw = card_w * 0.16;
