@@ -1,6 +1,6 @@
 {
   "schemaVersion": "framemark-capabilities/v1",
-  "generatedAt": "2026-10-31T17:16:15.916Z",
+  "generatedAt": "2026-11-18T18:55:40.000Z",
   "sourceVersion": "framemark-control-differential/v1@2026-10-28T10:51:29.061Z",
   "sourceSha256": "bdeaa2902e1138c51985c797e9f4d03b73dabcacc9734352f3714a323d1a156f",
   "source": {
@@ -38,7 +38,7 @@
       "no-op": 244
     },
     "auditedCards": 69,
-    "unauditedCards": 111,
+    "unauditedCards": 114,
     "auditedEffectiveSum": 752,
     "auditedGatedSum": 244,
     "auditCardsOutsideTaxonomy": 0,
@@ -498,6 +498,33 @@
     },
     {
       "styleId": "stock-xiaomi-leica-1",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-xiaomi-leica-5",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-xiaomi-leica-88",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-xiaomi-leica-89",
       "audited": false,
       "effectiveCount": null,
       "gatedCount": null,

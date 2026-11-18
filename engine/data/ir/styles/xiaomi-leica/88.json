@@ -1,0 +1,401 @@
+{
+  "id": "xiaomi-leica:88",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "徕卡 · 88",
+  "nameEn": "leica_88",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FFFFFFFF",
+        "#CCFFFFFF",
+        "black",
+        "#1F000000",
+        "#FF000000",
+        "#CC000000",
+        "white",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FF141414",
+        "#CCFFFFFF",
+        "white",
+        "#1FFFFFFF",
+        "#FFFFFFFF",
+        "#CCFFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "leica-88-logo-xiaomi_black": {
+      "file": "xiaomi/leica/88/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-88-logo-xiaomi_white": {
+      "file": "xiaomi/leica/88/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-88-leica": {
+      "file": "xiaomi/leica/88/leica.webp",
+      "width": 240,
+      "height": 240
+    },
+    "leica-88-icon_signature_white": {
+      "file": "xiaomi/leica/88/icon_signature_white.webp",
+      "width": 574,
+      "height": 160
+    }
+  },
+  "placement": "with",
+  "margins": {
+    "left": 48,
+    "top": 48,
+    "right": 48,
+    "bottom": 218
+  },
+  "background": "#FFFFFFFF",
+  "bands": [
+    {
+      "direction": "overlay",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "leftTop",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftTop",
+              "margins": {
+                "left": 40,
+                "top": 24
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftVerticalCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "custom"
+                      },
+                      "font": "misans",
+                      "size": 28.0,
+                      "weight": 400,
+                      "colorIndex": 1,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "space",
+                      "height": 22
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftVerticalCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "image",
+                      "asset": "leica-88-icon_signature_white",
+                      "themeAssets": {
+                        "white": "leica-88-icon_signature_white",
+                        "black": "leica-88-icon_signature_white"
+                      },
+                      "colorIndex": 6,
+                      "width": 143.5,
+                      "height": 40,
+                      "scale": "contain",
+                      "isBrandLogo": false,
+                      "margins": {}
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "rightTop",
+              "margins": {
+                "top": 24
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "column",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "rightTop",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "location"
+                      },
+                      "font": "misans",
+                      "size": 28.0,
+                      "weight": 400,
+                      "colorIndex": 1,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": true
+                    },
+                    {
+                      "kind": "space",
+                      "height": 8
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+                      },
+                      "font": "misans",
+                      "size": 28.0,
+                      "weight": 400,
+                      "colorIndex": 1,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": true
+                    }
+                  ]
+                },
+                {
+                  "kind": "space",
+                  "width": 40
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "direction": "bottom",
+      "thickness": 218,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "height": 218,
+          "matchWidth": true,
+          "matchHeight": false,
+          "gravity": "leftTop",
+          "margins": {
+            "left": 48
+          },
+          "children": [
+            {
+              "kind": "image",
+              "asset": "leica-88-leica",
+              "width": 88,
+              "height": 88,
+              "scale": "contain",
+              "isBrandLogo": false,
+              "margins": {
+                "top": 65
+              }
+            },
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftTop",
+              "margins": {
+                "left": 36,
+                "top": 67
+              },
+              "children": [
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftVerticalCenter",
+                  "margins": {},
+                  "children": [
+                    {
+                      "kind": "image",
+                      "asset": "leica-88-logo-xiaomi_black",
+                      "themeAssets": {
+                        "white": "leica-88-logo-xiaomi_black",
+                        "black": "leica-88-logo-xiaomi_white"
+                      },
+                      "colorIndex": 2,
+                      "width": 151.425,
+                      "height": 36,
+                      "scale": "contain",
+                      "isBrandLogo": true,
+                      "margins": {}
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionNumber}"
+                      },
+                      "font": "misans",
+                      "size": 30,
+                      "weight": 501,
+                      "colorIndex": 4,
+                      "alpha": 1,
+                      "tracking": 0,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@model=@{versionName}"
+                      },
+                      "font": "misans",
+                      "size": 20,
+                      "weight": 401,
+                      "colorIndex": 4,
+                      "alpha": 1,
+                      "tracking": 0.028,
+                      "align": "left",
+                      "outline": {
+                        "paddingX": 8,
+                        "height": 29,
+                        "radius": 7.2,
+                        "strokeWidth": 2,
+                        "strokeColorIndex": 7
+                      },
+                      "margins": {},
+                      "optional": true
+                    }
+                  ]
+                },
+                {
+                  "kind": "group",
+                  "orientation": "row",
+                  "matchWidth": false,
+                  "matchHeight": false,
+                  "gravity": "leftTop",
+                  "margins": {
+                    "top": 8
+                  },
+                  "children": [
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{aperture}"
+                      },
+                      "font": "lg1056",
+                      "size": 28.0,
+                      "weight": 401,
+                      "colorIndex": 5,
+                      "alpha": 1,
+                      "tracking": 0.15,
+                      "align": "left",
+                      "margins": {},
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{speed}"
+                      },
+                      "font": "lg1056",
+                      "size": 28.0,
+                      "weight": 401,
+                      "colorIndex": 5,
+                      "alpha": 1,
+                      "tracking": 0.15,
+                      "align": "left",
+                      "margins": {
+                        "left": 32
+                      },
+                      "optional": false
+                    },
+                    {
+                      "kind": "text",
+                      "token": {
+                        "kind": "template",
+                        "value": "@exif=@{iso}"
+                      },
+                      "font": "lg1056",
+                      "size": 28.0,
+                      "weight": 401,
+                      "colorIndex": 5,
+                      "alpha": 1,
+                      "tracking": 0.15,
+                      "align": "left",
+                      "margins": {
+                        "left": 32
+                      },
+                      "optional": false
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit.",
+    "unsupported": [
+      "type_leica_looks（12 款滤镜 x2 色）与 type_leica_lens（5 只镜头 x2 色）是厂商可选图，IR 无选择器概念，未落地",
+      "厂商 loc/looks/lens 的 shadow ['1f','0f','0f','#80000000'] 编码无法确认，未落地",
+      "model_container / right_container 用 overlap 绝对定位，IR 只有 row/column，位置为近似",
+      "@locationLimit=0.41 / @locationMaxLines=5 与 IR location token 无关，未落地"
+    ]
+  }
+}

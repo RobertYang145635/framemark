@@ -1,15 +1,15 @@
 {
   "schemaVersion": "framemark-previews/v1",
-  "generatedAt": "2026-10-31T17:16:15.916Z",
+  "generatedAt": "2026-11-18T18:55:40.000Z",
   "roots": {
     "system": "src/renderer/src/assets/previews/system",
     "rendered": "src/renderer/src/assets/previews/rendered"
   },
   "consumerNote": "path = library card preview (VariantThumb: renderedPreview ?? preview). inspectorPath = Inspector preview (preview ?? renderedPreview); on hand cards these differ because a legacy screenshot is still declared.",
   "counts": {
-    "cards": 180,
+    "cards": 183,
     "mapped": 180,
-    "missing": 0,
+    "missing": 3,
     "byLayer": {
       "system": 111,
       "rendered": 69
@@ -2363,6 +2363,10 @@
       "height": 360
     }
   ],
-  "missing": [],
+  "missing": [
+    "stock-xiaomi-leica-5",
+    "stock-xiaomi-leica-88",
+    "stock-xiaomi-leica-89"
+  ],
   "unmappedPreviewFiles": []
 }

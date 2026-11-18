@@ -1,0 +1,232 @@
+{
+  "id": "xiaomi-leica:5",
+  "vendor": "xiaomi",
+  "family": "小米相机",
+  "name": "徕卡 · 5",
+  "nameEn": "leica_5",
+  "referenceWidth": 1080,
+  "themes": [
+    {
+      "id": "white",
+      "label": "white",
+      "swatch": "#FFFFFFFF",
+      "background": "#FFFFFFFF",
+      "foreground": [
+        "#FF000000",
+        "#4D000000",
+        "#80000000",
+        "black",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "black",
+      "label": "black",
+      "swatch": "#FF141414",
+      "background": "#FF141414",
+      "foreground": [
+        "#FFFFFFFF",
+        "#4DFFFFFF",
+        "#80FFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    },
+    {
+      "id": "light_blur",
+      "label": "light_blur",
+      "swatch": "#00000000",
+      "background": "#00000000",
+      "foreground": [
+        "#FF000000",
+        "#4D000000",
+        "#80000000",
+        "black",
+        "#BF000000"
+      ]
+    },
+    {
+      "id": "dark_blur",
+      "label": "dark_blur",
+      "swatch": "#00000000",
+      "background": "#00000000",
+      "foreground": [
+        "#FFFFFFFF",
+        "#4DFFFFFF",
+        "#80FFFFFF",
+        "white",
+        "#BFFFFFFF"
+      ]
+    }
+  ],
+  "defaultTheme": "white",
+  "assets": {
+    "leica-5-logo-xiaomi_black": {
+      "file": "xiaomi/leica/5/xiaomi_black.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-5-logo-xiaomi_white": {
+      "file": "xiaomi/leica/5/xiaomi_white.webp",
+      "width": 673,
+      "height": 160
+    },
+    "leica-5-leica": {
+      "file": "xiaomi/leica/5/leica.webp",
+      "width": 240,
+      "height": 240
+    }
+  },
+  "placement": "with",
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 114,
+    "bottom": 0
+  },
+  "background": "#FFFFFFFF",
+  "bands": [
+    {
+      "direction": "right",
+      "thickness": 114,
+      "rotation": 90,
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "row",
+          "matchWidth": true,
+          "matchHeight": true,
+          "gravity": "center",
+          "margins": {},
+          "children": [
+            {
+              "kind": "group",
+              "orientation": "column",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "leftVerticalCenter",
+              "margins": {},
+              "children": [
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+                  },
+                  "font": "misans",
+                  "size": 20.0,
+                  "weight": 451,
+                  "colorIndex": 2,
+                  "alpha": 1,
+                  "tracking": 0.083,
+                  "align": "left",
+                  "margins": {
+                    "left": 48
+                  },
+                  "optional": false
+                }
+              ]
+            },
+            {
+              "kind": "space",
+              "weight": 1
+            },
+            {
+              "kind": "group",
+              "orientation": "row",
+              "matchWidth": false,
+              "matchHeight": false,
+              "gravity": "rightVerticalCenter",
+              "margins": {
+                "right": 48
+              },
+              "children": [
+                {
+                  "kind": "image",
+                  "asset": "leica-5-logo-xiaomi_black",
+                  "themeAssets": {
+                    "white": "leica-5-logo-xiaomi_black",
+                    "black": "leica-5-logo-xiaomi_white",
+                    "light_blur": "leica-5-logo-xiaomi_black",
+                    "dark_blur": "leica-5-logo-xiaomi_white"
+                  },
+                  "colorIndex": 3,
+                  "width": 117.775,
+                  "height": 28,
+                  "scale": "contain",
+                  "isBrandLogo": true,
+                  "margins": {}
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionNumber}"
+                  },
+                  "font": "misans",
+                  "size": 25.0,
+                  "weight": 501,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0,
+                  "align": "left",
+                  "margins": {
+                    "left": 12
+                  },
+                  "optional": false
+                },
+                {
+                  "kind": "text",
+                  "token": {
+                    "kind": "template",
+                    "value": "@model=@{versionName}"
+                  },
+                  "font": "misans",
+                  "size": 15.4,
+                  "weight": 401,
+                  "colorIndex": 0,
+                  "alpha": 1,
+                  "tracking": 0.028,
+                  "align": "left",
+                  "outline": {
+                    "paddingX": 6,
+                    "height": 22,
+                    "radius": 5,
+                    "strokeWidth": 1.54,
+                    "strokeColorIndex": 4
+                  },
+                  "margins": {},
+                  "optional": true
+                },
+                {
+                  "kind": "space",
+                  "width": 24
+                },
+                {
+                  "kind": "image",
+                  "asset": "leica-5-leica",
+                  "width": 40,
+                  "height": 40,
+                  "scale": "contain",
+                  "isBrandLogo": false,
+                  "margins": {
+                    "left": 24
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "audit": {
+    "status": "approx",
+    "notes": "Auto-converted from Xiaomi camera config; needs visual audit.",
+    "unsupported": [
+      "outer_border_left / outer_border_right 两个取向只落地 right（引擎无取向切换）",
+      "exif / brand 两段在厂商配置里各自 rotate 90°；IR 用整带 rotation=90 表达同一结果",
+      "品牌行里的 2x36 分隔线（@foreground=1）未落地（IR group background 不支持主题色）"
+    ]
+  }
+}

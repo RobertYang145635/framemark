@@ -1,9 +1,9 @@
 {
  "schema": "framemark-cards-175/2",
- "generatedAt": "2026-10-31T17:16:40.096Z",
+ "generatedAt": "2026-11-18T18:55:40.000Z",
  "note": "175-card desktop manifest derived from the Android3 bundle (106 IR + 69 hand). All paths are package-relative POSIX; the data/ prefix is the bundle copied verbatim as the package data root. slots are node declarations: IR carries the e2b report nodePath (b<band>/g<child>…) for path binding, hand carries the frozen text-slot id plus sampleText (e4hand reports no path). No slot is removed for the sample photo; optionalSlotsAtSampleExif only records which nodes resolve empty for the bundle fixture. Kept alongside x1-cards.json (10 cards) for the caller to switch.",
  "sourceSha256": {
-  "manifest": "3c0705f61558ddc5accf8f6c68681ab860f15fc420e6fe3243fcef932f987bb6",
+  "manifest": "67e54f0b97731579f42743aeee6523b27eb04f5308c3abf2bdcc6bbc9c3f9e22",
   "handCards": "5ba264f0db6329ca6bd174d6f62d265ccbf5d82437fbc55c90331cf4dacec75e",
   "textSlots": "eed19c1b0f827ab5f484895b6163e254823c2e3ce1760789eb5fc12218bca9e6",
   "schema": "framemark-ir-bundle/1"
@@ -102,13 +102,13 @@
   "note": "optionalSlotsAtSampleExif only records which declared nodes resolve empty for this fixture (photo + EXIF, no --location/--custom); it is evidence, never a cropping rule."
  },
  "counts": {
-  "total": 180,
-  "ir": 111,
+  "total": 183,
+  "ir": 114,
   "hand": 69,
   "slots": {
-   "ir": 431,
+   "ir": 449,
    "hand": 204,
-   "irSkippedEmpty": 104
+   "irSkippedEmpty": 109
   }
  },
  "cards": [
@@ -5293,6 +5293,283 @@
     {
      "slotId": "location",
      "nodePath": "b0/g0/g1/g1/g1",
+     "reason": "empty CLI env (location)"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-xiaomi-leica-5",
+   "backend": "ir",
+   "engineId": "xiaomi-leica:5",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "name": "徕卡 · 5",
+   "nameEn": "leica_5",
+   "placement": "with",
+   "style": "data/styles/xiaomi-leica/5.json",
+   "assets": [
+    {
+     "key": "leica-5-logo-xiaomi_black",
+     "source": "data/assets/leica-5-logo-xiaomi_black.png",
+     "engineFile": "data/decoded/xiaomi/leica/5/xiaomi_black.png"
+    },
+    {
+     "key": "leica-5-logo-xiaomi_white",
+     "source": "data/assets/leica-5-logo-xiaomi_white.png",
+     "engineFile": "data/decoded/xiaomi/leica/5/xiaomi_white.png"
+    },
+    {
+     "key": "leica-5-leica",
+     "source": "data/assets/leica-5-leica.png",
+     "engineFile": "data/decoded/xiaomi/leica/5/leica.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "exif.focal+aperture+speed+iso",
+     "nodePath": "b0/g0/g0/g0",
+     "optional": false,
+     "label": "exif.focal+aperture+speed+iso",
+     "token": "template",
+     "template": "@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+    },
+    {
+     "slotId": "model.versionNumber",
+     "nodePath": "b0/g0/g2/g1",
+     "optional": false,
+     "label": "model.versionNumber",
+     "token": "template",
+     "template": "@model=@{versionNumber}"
+    },
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b0/g0/g2/g2",
+     "optional": true,
+     "label": "model.versionName",
+     "token": "template",
+     "template": "@model=@{versionName}"
+    }
+   ],
+   "optionalSlotsAtSampleExif": [
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b0/g0/g2/g2",
+     "reason": "template resolves empty under fixture"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-xiaomi-leica-88",
+   "backend": "ir",
+   "engineId": "xiaomi-leica:88",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "name": "徕卡 · 88",
+   "nameEn": "leica_88",
+   "placement": "with",
+   "style": "data/styles/xiaomi-leica/88.json",
+   "assets": [
+    {
+     "key": "leica-88-logo-xiaomi_black",
+     "source": "data/assets/leica-88-logo-xiaomi_black.png",
+     "engineFile": "data/decoded/xiaomi/leica/88/xiaomi_black.png"
+    },
+    {
+     "key": "leica-88-logo-xiaomi_white",
+     "source": "data/assets/leica-88-logo-xiaomi_white.png",
+     "engineFile": "data/decoded/xiaomi/leica/88/xiaomi_white.png"
+    },
+    {
+     "key": "leica-88-leica",
+     "source": "data/assets/leica-88-leica.png",
+     "engineFile": "data/decoded/xiaomi/leica/88/leica.png"
+    },
+    {
+     "key": "leica-88-icon_signature_white",
+     "source": "data/assets/leica-88-icon_signature_white.png",
+     "engineFile": "data/decoded/xiaomi/leica/88/icon_signature_white.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "custom",
+     "nodePath": "b0/g0/g0/g0/g0",
+     "optional": false,
+     "label": "custom",
+     "token": "custom"
+    },
+    {
+     "slotId": "location.address",
+     "nodePath": "b0/g0/g2/g0/g0",
+     "optional": true,
+     "label": "location.address",
+     "token": "location"
+    },
+    {
+     "slotId": "time.yyyy_MM_dd_HH_mm",
+     "nodePath": "b0/g0/g2/g0/g2",
+     "optional": true,
+     "label": "time.yyyy_MM_dd_HH_mm",
+     "token": "template",
+     "template": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+    },
+    {
+     "slotId": "model.versionNumber",
+     "nodePath": "b1/g0/g1/g0/g1",
+     "optional": false,
+     "label": "model.versionNumber",
+     "token": "template",
+     "template": "@model=@{versionNumber}"
+    },
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b1/g0/g1/g0/g2",
+     "optional": true,
+     "label": "model.versionName",
+     "token": "template",
+     "template": "@model=@{versionName}"
+    },
+    {
+     "slotId": "exif.aperture",
+     "nodePath": "b1/g0/g1/g1/g0",
+     "optional": false,
+     "label": "exif.aperture",
+     "token": "template",
+     "template": "@exif=@{aperture}"
+    },
+    {
+     "slotId": "exif.speed",
+     "nodePath": "b1/g0/g1/g1/g1",
+     "optional": false,
+     "label": "exif.speed",
+     "token": "template",
+     "template": "@exif=@{speed}"
+    },
+    {
+     "slotId": "exif.iso",
+     "nodePath": "b1/g0/g1/g1/g2",
+     "optional": false,
+     "label": "exif.iso",
+     "token": "template",
+     "template": "@exif=@{iso}"
+    }
+   ],
+   "optionalSlotsAtSampleExif": [
+    {
+     "slotId": "location.address",
+     "nodePath": "b0/g0/g2/g0/g0",
+     "reason": "empty CLI env (location)"
+    },
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b1/g0/g1/g0/g2",
+     "reason": "template resolves empty under fixture"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-xiaomi-leica-89",
+   "backend": "ir",
+   "engineId": "xiaomi-leica:89",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "name": "徕卡 · 89",
+   "nameEn": "leica_89",
+   "placement": "with",
+   "style": "data/styles/xiaomi-leica/89.json",
+   "assets": [
+    {
+     "key": "leica-89-logo-xiaomi_white_shadow",
+     "source": "data/assets/leica-89-logo-xiaomi_white_shadow.png",
+     "engineFile": "data/decoded/xiaomi/leica/89/xiaomi_white_shadow.png"
+    },
+    {
+     "key": "leica-89-leica",
+     "source": "data/assets/leica-89-leica.png",
+     "engineFile": "data/decoded/xiaomi/leica/89/leica.png"
+    },
+    {
+     "key": "leica-89-icon_signature_white",
+     "source": "data/assets/leica-89-icon_signature_white.png",
+     "engineFile": "data/decoded/xiaomi/leica/89/icon_signature_white.png"
+    },
+    {
+     "key": "leica-89-separator_black",
+     "source": "data/assets/leica-89-separator_black.png",
+     "engineFile": "data/decoded/xiaomi/leica/89/separator_black.png"
+    },
+    {
+     "key": "leica-89-separator_white",
+     "source": "data/assets/leica-89-separator_white.png",
+     "engineFile": "data/decoded/xiaomi/leica/89/separator_white.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "model.versionNumber",
+     "nodePath": "b0/g0/g0/g0/g1",
+     "optional": false,
+     "label": "model.versionNumber",
+     "token": "template",
+     "template": "@model=@{versionNumber}"
+    },
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b0/g0/g0/g0/g2",
+     "optional": true,
+     "label": "model.versionName",
+     "token": "template",
+     "template": "@model=@{versionName}"
+    },
+    {
+     "slotId": "location.address",
+     "nodePath": "b0/g0/g2/g0",
+     "optional": true,
+     "label": "location.address",
+     "token": "location"
+    },
+    {
+     "slotId": "time.yyyy_MM_dd_HH_mm",
+     "nodePath": "b0/g0/g2/g1",
+     "optional": true,
+     "label": "time.yyyy_MM_dd_HH_mm",
+     "token": "template",
+     "template": "@time=@wm_time_yyyy_MM_dd_HH_mm"
+    },
+    {
+     "slotId": "exif.speed",
+     "nodePath": "b1/g0/g0",
+     "optional": false,
+     "label": "exif.speed",
+     "token": "template",
+     "template": "@exif=@{speed}"
+    },
+    {
+     "slotId": "exif.aperture",
+     "nodePath": "b1/g0/g2",
+     "optional": false,
+     "label": "exif.aperture",
+     "token": "template",
+     "template": "@exif=@{aperture}"
+    },
+    {
+     "slotId": "exif.iso",
+     "nodePath": "b1/g0/g4",
+     "optional": false,
+     "label": "exif.iso",
+     "token": "template",
+     "template": "@exif=@{iso}"
+    }
+   ],
+   "optionalSlotsAtSampleExif": [
+    {
+     "slotId": "model.versionName",
+     "nodePath": "b0/g0/g0/g0/g2",
+     "reason": "template resolves empty under fixture"
+    },
+    {
+     "slotId": "location.address",
+     "nodePath": "b0/g0/g2/g0",
      "reason": "empty CLI env (location)"
     }
    ]

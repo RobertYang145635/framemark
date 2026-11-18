@@ -5,23 +5,23 @@
   "controls": {
    "oppo": "550bac70c8fbde1f2995d582b26f52ef1d9416af7ec1979743a97be026e4f53b",
    "vivo": "6016cff34d97414a9c6e07059ccdf4b417b31dadd7412cbc469a221ceecbf1ee",
-   "xiaomi": "ac229c337492716652b3cb46a68867687739143270f3763d715829def1acce7d"
+   "xiaomi": "a3a3e75db78ebce446e77d711f139e7a54931330ebe9bdd2b689c568889d0be4"
   },
-  "bundleManifest": "f659bab01c106faec76e886b76ddb56593df7eeef1efecdce637f1e45c6e6dd4",
-  "bundleManifestGeneratedAt": "2026-10-29T14:39:50.539Z"
+  "bundleManifest": "67e54f0b97731579f42743aeee6523b27eb04f5308c3abf2bdcc6bbc9c3f9e22",
+  "bundleManifestGeneratedAt": "2026-11-18T18:55:40.000Z"
  },
  "counts": {
-  "expectedControls": 554,
-  "expressible": 536,
+  "expectedControls": 574,
+  "expressible": 556,
   "unsupported": 12,
   "needs-ir-regen": 6
  },
  "byConsumer": {
   "text.slotText": {
-   "expressible": 199
+   "expressible": 206
   },
   "toggle.slotOff": {
-   "expressible": 161
+   "expressible": 168
   },
   "gravity.slotGravity": {
    "expressible": 7
@@ -38,11 +38,11 @@
    "expressible": 1
   },
   "theme.theme": {
-   "expressible": 26,
+   "expressible": 29,
    "unsupported": 12
   },
   "brand.brandLogoFile": {
-   "expressible": 37
+   "expressible": 40
   }
  },
  "bindingPolicy": {
@@ -22435,6 +22435,841 @@
       "b0/g0/g0/g0/g1/g1"
      ],
      "reason": "engine report text node b0/g0/g0/g0/g1/g1"
+    }
+   ]
+  },
+  "xiaomi-leica:5": {
+   "cardId": "stock-xiaomi-leica-5",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "themes": [
+    "white",
+    "black",
+    "light_blur",
+    "dark_blur"
+   ],
+   "defaultTheme": "white",
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "right",
+     "rotation": 90
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "xiaomi-leica:5",
+     "cardId": "stock-xiaomi-leica-5",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.modelLine.g1",
+     "slotType": "modelLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/right0/g0/g2",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "container-exact",
+      "detail": "setting_optional_type=type_model（厂商授权显示/隐藏整行）"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:5#modelLine#5",
+     "nodes": [
+      "b0/g0/g2"
+     ],
+     "containerPath": "b0/g0/g2",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2"
+    },
+    {
+     "styleId": "xiaomi-leica:5",
+     "cardId": "stock-xiaomi-leica-5",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.modelLine.g1",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/right0/g0/g2/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=model，text=@model=@{series}@{versionNumber}（机型版本号）"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:5#modelLine#5",
+     "nodes": [
+      "b0/g0/g2/g1"
+     ],
+     "containerPath": "b0/g0/g2/g1",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g2/g1"
+    },
+    {
+     "styleId": "xiaomi-leica:5",
+     "cardId": "stock-xiaomi-leica-5",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.exifCompositeLine.g0",
+     "slotType": "exifCompositeLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/right0/g0/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=exif，text=@exif=@{focal}mm  f/@{aperture}  @{speed}s  ISO@{iso}"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:5#exifCompositeLine#5",
+     "nodes": [
+      "b0/g0/g0/g0"
+     ],
+     "containerPath": "b0/g0/g0/g0",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:5",
+     "cardId": "stock-xiaomi-leica-5",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "brandPicker.brandSlot.g0",
+     "slotType": "brandSlot",
+     "consumer": "brand.brandLogoFile",
+     "param": "brandLogoFile",
+     "kind": "brandPicker",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/right0/g0/g2/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "brandLibrary": "core/brands(62)",
+      "autoMatch": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "slotType-unique",
+      "detail": "机型 logo 视图 path=pathType=fill;path=${logo};foreground=3"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:5#brandSlot#5",
+     "nodes": [
+      "b0/g0/g2/g0"
+     ],
+     "containerPath": "b0/g0/g2/g0",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:5",
+     "cardId": "stock-xiaomi-leica-5",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "themeSwatches.theme.style",
+     "slotType": "theme",
+     "consumer": "theme.theme",
+     "param": "theme",
+     "kind": "themeSwatches",
+     "group": "detail",
+     "provenance": "vendor",
+     "targetNode": null,
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "options": [
+       "white",
+       "black",
+       "light_blur",
+       "dark_blur"
+      ],
+      "themeCount": 4
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "style.themes",
+      "detail": "wmRes.background/foreground 数组长度 4（IR themes 4 组）"
+     },
+     "classification": "expressible",
+     "how": "style.themes",
+     "confidence": "strong",
+     "themes": [
+      "white",
+      "black",
+      "light_blur",
+      "dark_blur"
+     ],
+     "reason": "IR 有 4 个主题"
+    }
+   ]
+  },
+  "xiaomi-leica:88": {
+   "cardId": "stock-xiaomi-leica-88",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "themes": [
+    "white",
+    "black"
+   ],
+   "defaultTheme": "white",
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "overlay",
+     "rotation": null
+    },
+    {
+     "bandPath": "b1",
+     "direction": "bottom",
+     "rotation": null
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.customLine.g0",
+     "slotType": "customLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g0/g0",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "container-exact",
+      "detail": "custom_text_layout optional:true @custom=0.4"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#customLine#88",
+     "nodes": [
+      "b0/g0/g0/g0"
+     ],
+     "containerPath": "b0/g0/g0/g0",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.customLine.g0",
+     "slotType": "customLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/overlay0/g0/g0/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=custom_text，text=@custom=0.4"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#customLine#88",
+     "nodes": [
+      "b0/g0/g0/g0/g0"
+     ],
+     "containerPath": "b0/g0/g0/g0/g0",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g0/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.locationLine.g0",
+     "slotType": "locationLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g2/g0/g0",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "token-exact",
+      "detail": "location_layout optional:true @location=location_address;@locationLimit=0.41"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#locationLine#88",
+     "nodes": [
+      "b0/g0/g2/g0/g0"
+     ],
+     "containerPath": "b0/g0/g2/g0/g0",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.locationLine.g0",
+     "slotType": "locationLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/overlay0/g0/g2/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=location，text=@location=location_address;@locationLimit=0.41;@locationMaxLines=5"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#locationLine#88",
+     "nodes": [
+      "b0/g0/g2/g0/g0"
+     ],
+     "containerPath": "b0/g0/g2/g0/g0",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g2/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.dateLine.g0",
+     "slotType": "dateLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g2/g0/g2",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "token-exact",
+      "detail": "time_layout optional:true @time=@wm_time_yyyy_MM_dd_HH_mm"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#dateLine#88",
+     "nodes": [
+      "b0/g0/g2/g0/g2"
+     ],
+     "containerPath": "b0/g0/g2/g0/g2",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2/g0/g2"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.modelLine.g1",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b1/bottom0/g0/g1/g0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=model，text=@model= @{series}@{versionNumber}"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#modelLine#88",
+     "nodes": [
+      "b1/g0/g1/g0/g1"
+     ],
+     "containerPath": "b1/g0/g1/g0/g1",
+     "containerClean": true,
+     "reason": "token-exact → b1/g0/g1/g0/g1"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "brandPicker.brandSlot.g0",
+     "slotType": "brandSlot",
+     "consumer": "brand.brandLogoFile",
+     "param": "brandLogoFile",
+     "kind": "brandPicker",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b1/bottom0/g0/g1/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "brandLibrary": "core/brands(62)",
+      "autoMatch": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "slotType-unique",
+      "detail": "机型 logo 视图 path=pathType=fill;path=${logo};foreground=2"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:88#brandSlot#88",
+     "nodes": [
+      "b1/g0/g1/g0/g0"
+     ],
+     "containerPath": "b1/g0/g1/g0/g0",
+     "containerClean": true,
+     "reason": "container-exact → b1/g0/g1/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:88",
+     "cardId": "stock-xiaomi-leica-88",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "themeSwatches.theme.style",
+     "slotType": "theme",
+     "consumer": "theme.theme",
+     "param": "theme",
+     "kind": "themeSwatches",
+     "group": "detail",
+     "provenance": "vendor",
+     "targetNode": null,
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "options": [
+       "white",
+       "black"
+      ],
+      "themeCount": 2
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "style.themes",
+      "detail": "wmRes.background/foreground 数组长度 2（IR themes 2 组）"
+     },
+     "classification": "expressible",
+     "how": "style.themes",
+     "confidence": "strong",
+     "themes": [
+      "white",
+      "black"
+     ],
+     "reason": "IR 有 2 个主题"
+    }
+   ]
+  },
+  "xiaomi-leica:89": {
+   "cardId": "stock-xiaomi-leica-89",
+   "vendor": "xiaomi",
+   "family": "小米相机",
+   "themes": [
+    "white",
+    "black"
+   ],
+   "defaultTheme": "white",
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "overlay",
+     "rotation": null
+    },
+    {
+     "bandPath": "b1",
+     "direction": "right",
+     "rotation": 270
+    },
+    {
+     "bandPath": "b2",
+     "direction": "right",
+     "rotation": null
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.customSignature.g0",
+     "slotType": "customSignature",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g0/g1",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "container-exact",
+      "detail": "custom_signature_layout optional:true（手写签名图）"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#customSignature#89",
+     "nodes": [
+      "b0/g0/g0/g1"
+     ],
+     "containerPath": "b0/g0/g0/g1",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g0/g1"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.locationLine.g0",
+     "slotType": "locationLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g2/g0",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "token-exact",
+      "detail": "location optional:true @location=location_address;@locationLimit=0.41"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#locationLine#89",
+     "nodes": [
+      "b0/g0/g2/g0"
+     ],
+     "containerPath": "b0/g0/g2/g0",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.locationLine.g0",
+     "slotType": "locationLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/overlay0/g0/g2/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=location，text=@location=location_address;@locationLimit=0.41;@locationMaxLines=5"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#locationLine#89",
+     "nodes": [
+      "b0/g0/g2/g0"
+     ],
+     "containerPath": "b0/g0/g2/g0",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g2/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "toggle.dateLine.g0",
+     "slotType": "dateLine",
+     "consumer": "toggle.slotOff",
+     "param": "slotOff",
+     "kind": "toggle",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g2/g1",
+     "targetBand": null,
+     "default": "on",
+     "domain": {
+      "on": true,
+      "off": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "token-exact",
+      "detail": "time optional:true @time=@wm_time_yyyy_MM_dd_HH_mm"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#dateLine#89",
+     "nodes": [
+      "b0/g0/g2/g1"
+     ],
+     "containerPath": "b0/g0/g2/g1",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g2/g1"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "text.modelLine.g1",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/overlay0/g0/g0/g0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "token-exact",
+      "detail": "TextView id=model，text=@model= @{series}@{versionNumber}"
+     },
+     "classification": "expressible",
+     "how": "token-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#modelLine#89",
+     "nodes": [
+      "b0/g0/g0/g0/g1"
+     ],
+     "containerPath": "b0/g0/g0/g0/g1",
+     "containerClean": true,
+     "reason": "token-exact → b0/g0/g0/g0/g1"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "brandPicker.brandSlot.g0",
+     "slotType": "brandSlot",
+     "consumer": "brand.brandLogoFile",
+     "param": "brandLogoFile",
+     "kind": "brandPicker",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/overlay0/g0/g0/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "brandLibrary": "core/brands(62)",
+      "autoMatch": true
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "slotType-unique",
+      "detail": "机型 logo 视图 path=pathType=fill;path=${logo};foreground=4"
+     },
+     "classification": "expressible",
+     "how": "container-exact",
+     "confidence": "strong",
+     "elementId": "xiaomi-leica:89#brandSlot#89",
+     "nodes": [
+      "b0/g0/g0/g0/g0"
+     ],
+     "containerPath": "b0/g0/g0/g0/g0",
+     "containerClean": true,
+     "reason": "container-exact → b0/g0/g0/g0/g0"
+    },
+    {
+     "styleId": "xiaomi-leica:89",
+     "cardId": "stock-xiaomi-leica-89",
+     "vendor": "xiaomi",
+     "family": "小米相机",
+     "controlId": "themeSwatches.theme.style",
+     "slotType": "theme",
+     "consumer": "theme.theme",
+     "param": "theme",
+     "kind": "themeSwatches",
+     "group": "detail",
+     "provenance": "vendor",
+     "targetNode": null,
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "options": [
+       "white",
+       "black"
+      ],
+      "themeCount": 2
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "xiaomi-config-optional",
+      "match": "style.themes",
+      "detail": "wmRes.background/foreground 数组长度 2（IR themes 2 组）"
+     },
+     "classification": "expressible",
+     "how": "style.themes",
+     "confidence": "strong",
+     "themes": [
+      "white",
+      "black"
+     ],
+     "reason": "IR 有 2 个主题"
     }
    ]
   }

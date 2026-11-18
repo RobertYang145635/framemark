@@ -171,9 +171,9 @@ class LibraryIndexRealDataTest {
             }
         }
 
-        // 报告 §6 说“OPPO 11 个、小米 6 个、vivo 按名称归组”。前两个从数据算出来核对，
-        // vivo 这轮不按名称猜，统一进独立分组（见下一条断言）。
-        for (brand in listOf("OPPO", "小米")) {
+        // 三个厂商的正式系列数都从数据算出来核对（vivo 19 张现在带固件族，
+        // 见 cards_without_a_formal_family_land_in_one_group_that_keeps_the_source_field）。
+        for (brand in listOf("OPPO", "小米", "vivo")) {
             val expectedFamilies = rawCards
                 .filter { it.jsonString("category") == LibraryIndex.CATEGORY_VENDOR && it.jsonString("brand") == brand }
                 .mapNotNull { it.jsonString("styleFamily") }
@@ -188,23 +188,32 @@ class LibraryIndexRealDataTest {
 
     @Test
     fun cards_without_a_formal_family_land_in_one_group_that_keeps_the_source_field() {
-        val vivo = index.families("brand:vivo")
-        assertEquals(1, vivo.size)
-        val bucket = vivo.single()
-        assertEquals(LibraryIndex.NO_FORMAL_FAMILY, bucket.key)
-        assertFalse(bucket.hasFormalFamily)
-        assertNull(bucket.styleFamily)
-        assertEquals(LibraryGroups.NO_FIRMWARE_LABEL, bucket.label)
-        assertEquals(
-            rawCards.count { it.jsonString("category") == LibraryIndex.CATEGORY_VENDOR && it.jsonString("brand") == "vivo" },
-            bucket.count,
-        )
-        val source = assertNotNull(bucket.note, "没有正式系列的组必须带上来源字段")
-        assertTrue(source.isNotBlank())
-        assertTrue(
-            bucket.cards.all { it.styleFamilyLabelSource == source || it.styleFamilyLabelSource.isNullOrBlank() },
-            "来源字段原样保留，不改写",
-        )
+        // 19 张 vivo 卡现在都有固件族（vivo / 蔡司定制 等）；没有族的只剩手写复刻卡
+        // （OPPO 的哈苏/LUMO/毕业、小米的徕卡白底、vivo 的蔡司白底等）。它们必须每个
+        // 厂商收在同一个“未在固件中证实”分组里，且 styleFamily 保持 null。
+        for (brand in listOf("OPPO", "小米", "vivo")) {
+            val families = index.families("brand:$brand")
+            val informal = families.filter { !it.hasFormalFamily }
+            val expected = rawCards.filter {
+                it.jsonString("category") == LibraryIndex.CATEGORY_VENDOR &&
+                    it.jsonString("brand") == brand &&
+                    it.jsonString("familyNameProvenance") != LibraryGroups.PROV_VERIFIED_IN_FILE
+            }
+            assertEquals(1, informal.size, "$brand 没有正式系列的卡必须收在一个分组里")
+            val bucket = informal.single()
+            assertEquals(LibraryIndex.NO_FORMAL_FAMILY, bucket.key)
+            assertNull(bucket.styleFamily)
+            assertEquals(LibraryGroups.NO_FIRMWARE_LABEL, bucket.label)
+            assertEquals(expected.mapNotNull { it.jsonString("id") }.toSet(), bucket.ids.toSet())
+            val source = expected
+                .mapNotNull { it.jsonString("styleFamilyLabelSource")?.takeIf(String::isNotBlank) }
+                .distinct()
+            assertEquals(source.joinToString("；").ifBlank { null }, bucket.note, "组说明只取来源字段原文")
+            assertTrue(
+                bucket.cards.all { it.styleFamilyLabelSource.isNullOrBlank() || it.styleFamilyLabelSource in source },
+                "来源字段原样保留，不改写",
+            )
+        }
 
         val other = index.families(LibraryIndex.VENDOR_OTHER)
         assertEquals(1, other.size)
@@ -252,9 +261,10 @@ class LibraryIndexRealDataTest {
             "搜索不能漏也不能多",
         )
 
-        // 报告 §6 的示例：结果分成“OPPO · 哈苏定制”和“文字 · 厂商水印”两段。
+        // 哈苏卡现在全部归到厂商类别（OPPO）：结果分成“OPPO · 哈苏定制”（固件族）
+        // 和“OPPO · 未在固件中证实”（手写复刻的哈苏卡）两段。
         assertTrue(groups.any { it.label == "OPPO · 哈苏定制" }, groups.map { it.label }.toString())
-        assertTrue(groups.any { it.label == "文字 · 厂商水印" }, groups.map { it.label }.toString())
+        assertTrue(groups.any { it.label == "OPPO · ${LibraryGroups.NO_FIRMWARE_LABEL}" }, groups.map { it.label }.toString())
 
         // 厂商这一路：`vivo` 在 catalog 里只出现在 brand 字段，正好把“厂商”单拎出来验证
         val vivoCards = rawCards.filter { it.jsonString("brand") == "vivo" }.mapNotNull { it.jsonString("id") }

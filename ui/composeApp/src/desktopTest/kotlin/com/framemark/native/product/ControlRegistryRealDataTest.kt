@@ -127,16 +127,16 @@ class ControlRegistryRealDataTest {
         val registry = RealData.registry()
         val stats = registry.stats
 
-        assertEquals(180, stats.cards)
+        assertEquals(183, stats.cards)
         assertEquals(69, stats.auditedCards)
-        assertEquals(111, stats.unauditedCards)
+        assertEquals(114, stats.unauditedCards)
         assertEquals(996, stats.capabilityRows)
         assertEquals(752, stats.effectiveRows)
         assertEquals(244, stats.gatedRows)
-        assertEquals(554, stats.platformRows)
-        assertEquals(106, stats.platformStyles)
+        assertEquals(574, stats.platformRows)
+        assertEquals(109, stats.platformStyles)
         assertEquals(996, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
-        assertEquals(554, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
+        assertEquals(574, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
         assertEquals(45, stats.handPanelRows)
         assertEquals(61, stats.handPanelCardPairs)
         assertEquals(3, stats.handPanelRangeMismatches.size, "面板与 meta 的已知范围分歧")
@@ -145,18 +145,18 @@ class ControlRegistryRealDataTest {
             "stock-vivo-disney-chip_dale", "stock-vivo-disney-donald_duck", "stock-vivo-disney-judy",
             "stock-vivo-disney-mickey", "stock-vivo-disney-pluto",
         ), stats.unmappedCards.sorted())
-        assertEquals(180, stats.cardsWithVisible + stats.emptyCards)
-        assertEquals(175, stats.cardsWithVisible)
+        assertEquals(183, stats.cardsWithVisible + stats.emptyCards)
+        assertEquals(178, stats.cardsWithVisible)
         assertEquals(5, stats.emptyCards, "5 张迪士尼装饰卡没有控件")
-        assertEquals(175, stats.cardsWithVisible)
-        assertEquals(1306, stats.visibleControls)
+        assertEquals(178, stats.cardsWithVisible)
+        assertEquals(1326, stats.visibleControls)
         assertEquals(244, stats.hiddenControls)
         assertEquals(244, stats.gatedControls)
-        assertEquals(1550, stats.routableControls)
-        assertEquals(751, stats.consumedControls)
-        assertEquals(554, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
+        assertEquals(1570, stats.routableControls)
+        assertEquals(754, stats.consumedControls)
+        assertEquals(574, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
         assertEquals(752, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
-        assertEquals(38, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { c -> c.controls.count { it.consumed } })
+        assertEquals(41, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { c -> c.controls.count { it.consumed } })
         assertEquals(713, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
         val hiddenReasons = registry.cards.flatMap { it.controls }.filter { !it.visible }
             .groupingBy { it.hiddenReason ?: "null" }.eachCount()
@@ -189,7 +189,7 @@ class ControlRegistryRealDataTest {
         assertTrue(noText.isEmpty(), "这些 IR 卡没有任何可改的文字行：${noText.map { it.cardId }}")
 
         val textControls = irCards.flatMap { card -> card.controls.filter { it.visible && it.sourceKind == "text" } }
-        assertEquals(199, textControls.size, "84 条既有 + 87 条 W1 + 28 条 W4 机型行")
+        assertEquals(206, textControls.size, "84 条既有 + 87 条 W1 + 28 条 W4 机型行 + 7 条 leica 5/88/89")
 
         // 注册表层 consumer 是 vendor 拼写；真正发给引擎的是绑定表的 bundle 节点路径。
         val binding = com.framemark.native.inspector.IrSlotBinding.load(
@@ -213,7 +213,7 @@ class ControlRegistryRealDataTest {
     fun gated_controls_stay_hidden_and_visible_ones_are_routable() {
         val registry = RealData.registry()
         val all = registry.cards.flatMap { card -> card.controls.map { card to it } }
-        assertEquals(996 + 554, all.size)
+        assertEquals(996 + 574, all.size)
 
         var gated = 0
         all.forEach { (card, control) ->
