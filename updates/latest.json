@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc32",
-  "versionCode": 31,
+  "versionName": "0.9.0-rc34",
+  "versionCode": 33,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "批量导出改 CPU 多核并行（8 核机 4 路，顺序/命名/进度/取消语义不变）；导出期间暂停预览刷新、结束后按最新参数补渲；安卓交互预览改 GPU 光栅（导出仍纯 CPU，像素与之前逐字节一致；GPU 不可用时自动回退 CPU）。",
+  "notes": "安卓交互预览走 GPU 光栅（真机验证生效：Adreno 740/GLES3.2，探针画像素读回校验；失败自动回退 CPU，导出与 GPU 无关、像素逐字节不变）；批量导出 CPU 多核并行（8 核 4 路，语义不变）；导出期间暂停预览刷新、结束后补渲最新。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc32/FrameMark-0.9.0-rc32-arm64.apk",
-      "sha256": "341778e11c20b3015cb7fe655688f4e9c47e5ecb7568e46e91609da96d935681",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc34/FrameMark-0.9.0-rc34-arm64.apk",
+      "sha256": "b73e6d80b41f5a67f0134e573d897df0e3d55eaa33b550a174fd9505e37a9c41",
       "size": 132447579
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc32/FrameMark-0.9.0-rc32-win64.msi",
-      "sha256": "78ce945621556063b0c6569dc34323a62d93fbe698e82924f5a8271fb7ffe6ca",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc34/FrameMark-0.9.0-rc34-win64.msi",
+      "sha256": "b8dc58261d6e5282440a8051c0a5c1d715356228b4bc0b7bf0e83220ccaa1f56",
       "size": 239629768
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc32"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc34"
 }
