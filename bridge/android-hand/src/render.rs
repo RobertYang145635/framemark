@@ -528,8 +528,9 @@ fn render_card_impl(
             // line that `gpu::probe_cached()` logs before this frame.
             if gpu_preview::note_first_gpu_frame() {
                 note(&format!(
-                    "e4.gpu=gpu reason={} {}",
+                    "e4.gpu=gpu reason={} thread={} {}",
                     decision.reason,
+                    crate::egl::thread_tag(),
                     crate::gpu::describe()
                 ));
             }

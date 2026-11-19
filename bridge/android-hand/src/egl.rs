@@ -205,6 +205,10 @@ mod imp {
         }
 
         fn activate(&mut self) -> Result<(), String> {
+            // Never trust the cached flag: something else on this thread may have
+            // re-bound (or unbound) EGL since the last call, and a stale `true` would
+            // let Ganesh run without a current context.
+            self.current = unsafe { eglGetCurrentContext() } == self.context;
             if self.current {
                 return Ok(());
             }
@@ -218,8 +222,14 @@ mod imp {
             }
             // Trust but verify: a driver that returns EGL_TRUE without actually
             // binding the context would poison every later GL call.
-            if unsafe { eglGetCurrentContext() } != self.context {
-                return Err("egl:make-current-not-bound".to_string());
+            let bound = unsafe { eglGetCurrentContext() };
+            if bound != self.context {
+                return Err(format!(
+                    "egl:make-current-not-bound egl={} session={} err=0x{:04X}",
+                    ptr_tag(bound),
+                    ptr_tag(self.context),
+                    unsafe { eglGetError() } as u32
+                ));
             }
             self.current = true;
             Ok(())
@@ -234,8 +244,39 @@ mod imp {
         }
 
         fn is_current(&self) -> bool {
-            self.current && unsafe { eglGetCurrentContext() } == self.context
+            // The EGL state is the truth; the cached flag is only a hint.
+            (unsafe { eglGetCurrentContext() }) == self.context
         }
+    }
+
+    fn ptr_tag(handle: *mut c_void) -> String {
+        if handle.is_null() {
+            "none".to_string()
+        } else {
+            format!("0x{:x}", handle as usize)
+        }
+    }
+
+    /// EGL handles of this thread's context vs. the one EGL reports as current, for
+    /// diagnostics. `("none", "none")` without a session.
+    pub fn context_handles() -> (String, String) {
+        SESSION.with(|cell| {
+            let slot = cell.borrow();
+            match slot.as_ref() {
+                Some(session) => (
+                    ptr_tag(session.context),
+                    ptr_tag(unsafe { eglGetCurrentContext() }),
+                ),
+                None => ("none".to_string(), ptr_tag(unsafe { eglGetCurrentContext() })),
+            }
+        })
+    }
+
+    /// Debug tag of the calling thread (`ThreadId(N)` without the wrapper text).
+    pub fn thread_tag() -> String {
+        format!("{:?}", std::thread::current().id())
+            .replace("ThreadId(", "t")
+            .replace(')', "")
     }
 
     impl Drop for Session {
@@ -466,6 +507,22 @@ mod imp {
         })
     }
 
+    /// True when this thread has a Ganesh context installed *and* its GL context is
+    /// current. Only then may anything call into that `GrDirectContext`.
+    pub fn is_active() -> bool {
+        is_current() && with_direct_context(|_| ()).is_some()
+    }
+
+    /// Re-binds this thread's EGL context when it is not current and verifies the
+    /// bind with `eglGetCurrentContext()`. Every GL entry point in `gpu.rs` calls
+    /// this, so a frame cannot lose its context halfway through.
+    pub fn ensure_current() -> Result<(), String> {
+        SESSION.with(|cell| match cell.borrow_mut().as_mut() {
+            Some(session) => session.activate(),
+            None => Err("egl:session-missing".to_string()),
+        })
+    }
+
     /// Drains `glGetError()` and returns the first code (0 when clean). Only
     /// meaningful while a context is current; returns `u32::MAX` otherwise.
     pub fn drain_gl_error() -> u32 {
@@ -532,8 +589,9 @@ mod imp {
 #[cfg(target_os = "android")]
 #[allow(unused_imports)]
 pub use imp::{
-    describe, drain_gl_error, es_version, install_direct_context, is_current, prefer_es2,
-    prefers_es3, reset_session, with_direct_context, with_direct_context_mut, with_gl_context,
+    context_handles, describe, drain_gl_error, ensure_current, es_version, install_direct_context,
+    is_active, is_current, prefer_es2, prefers_es3, reset_session, thread_tag, with_direct_context,
+    with_direct_context_mut, with_gl_context,
 };
 
 #[cfg(not(target_os = "android"))]
@@ -571,6 +629,22 @@ mod stub {
         false
     }
 
+    pub fn is_active() -> bool {
+        false
+    }
+
+    pub fn ensure_current() -> Result<(), String> {
+        Err(super::NO_BACKEND.to_string())
+    }
+
+    pub fn context_handles() -> (String, String) {
+        ("none".to_string(), "none".to_string())
+    }
+
+    pub fn thread_tag() -> String {
+        "t0".to_string()
+    }
+
     /// Host: no context, so "no GL error" is 0 and the probe never asks.
     pub fn drain_gl_error() -> u32 {
         0
@@ -588,8 +662,9 @@ mod stub {
 #[cfg(not(target_os = "android"))]
 #[allow(unused_imports)]
 pub use stub::{
-    describe, drain_gl_error, es_version, install_direct_context, is_current, prefer_es2,
-    prefers_es3, reset_session, with_direct_context, with_direct_context_mut, with_gl_context,
+    context_handles, describe, drain_gl_error, ensure_current, es_version, install_direct_context,
+    is_active, is_current, prefer_es2, prefers_es3, reset_session, thread_tag, with_direct_context,
+    with_direct_context_mut, with_gl_context,
 };
 
 /// True when this target can ever rasterize on the GPU.

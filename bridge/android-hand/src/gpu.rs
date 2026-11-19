@@ -18,8 +18,9 @@
 //! that has to be thrown away, and the probe result — including the readback pixel
 //! value and any `glGetError()` — is logged as `e4.gpu.probe …` evidence.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 
 use skia_safe::gpu::{Budgeted, SurfaceOrigin};
@@ -33,6 +34,33 @@ thread_local! {
     /// shared engine modules), so it records the reason here and the frame wrapper
     /// reads it after the pass to decide the CPU retry.
     static GPU_ERROR: RefCell<Option<String>> = RefCell::new(None);
+
+    /// Whether this thread is currently inside [`run_preview`]. Only then may
+    /// anything submit to the Ganesh context: a CPU render that happens to run on a
+    /// thread which still caches a context must never touch GL (its flush would fail
+    /// with "no current context" and, worse, be reported as a GPU defect).
+    static FRAME_ACTIVE: Cell<bool> = Cell::new(false);
+}
+
+/// `true` while [`run_preview`] drives a GPU frame on this thread.
+fn frame_active() -> bool {
+    FRAME_ACTIVE.with(|flag| flag.get())
+}
+
+/// Clears [`FRAME_ACTIVE`] on every exit path (including a panic or an early `?`).
+struct FrameScope;
+
+impl FrameScope {
+    fn begin() -> Self {
+        FRAME_ACTIVE.with(|flag| flag.set(true));
+        FrameScope
+    }
+}
+
+impl Drop for FrameScope {
+    fn drop(&mut self) {
+        FRAME_ACTIVE.with(|flag| flag.set(false));
+    }
 }
 
 /// Process-wide probe outcome: the evidence line on success, the reason on failure.
@@ -78,15 +106,23 @@ fn cpu_raster(info: &ImageInfo) -> Option<Surface> {
     surfaces::raster(info, None, None)
 }
 
-/// Ganesh render target for `info` on this thread's context. `None` with no
-/// session, or after recording why the target could not be made.
+/// Ganesh render target for `info` on this thread's context. `None` outside a GPU
+/// frame or with no session, or after recording why the target could not be made.
 fn gpu_surface(info: &ImageInfo) -> Option<Surface> {
+    // `render_card_body` serves both backends. A CPU frame that happens to run on a
+    // thread which still caches a Ganesh context must stay CPU — the frame's mode
+    // decides the backend, not a leftover session. (This is also what keeps a CPU
+    // retry after a GPU failure on the pure raster path.)
+    if !frame_active() {
+        return None;
+    }
     let (w, h) = (info.width(), info.height());
     if w <= 0 || h <= 0 {
         return None;
     }
     match render_target(w, h, info) {
-        Ok(surface) => surface,
+        Ok(Some(surface)) => Some(surface),
+        Ok(None) => None,
         Err(reason) => {
             record_error(reason);
             None
@@ -96,6 +132,12 @@ fn gpu_surface(info: &ImageInfo) -> Option<Surface> {
 
 /// Shared render-target creation for the frame surfaces and the probe.
 fn render_target(w: i32, h: i32, info: &ImageInfo) -> Result<Option<Surface>, String> {
+    if egl::with_direct_context(|_| ()).is_none() {
+        return Ok(None);
+    }
+    // Every GL entry point re-establishes the context: a frame must not depend on a
+    // bind that happened one call earlier.
+    egl::ensure_current()?;
     let made = egl::with_direct_context_mut(|direct| {
         // Fail *before* asking Skia for a texture the driver cannot allocate: some
         // GL implementations hand back a null FBO instead of reporting an error.
@@ -147,13 +189,22 @@ pub fn surface_for(info: &ImageInfo) -> Option<Surface> {
 
 /// Submits the current frame's Ganesh work. Must run before any pixel readback of
 /// a GPU surface (`image_snapshot` → `read_pixels`/PNG encode) and before the EGL
-/// context is released. No-op without a GPU session.
+/// context is released.
+///
+/// No-op outside a GPU frame: `render_card_body` calls this for **every** render,
+/// and a CPU render that happens to run on a thread which still caches a Ganesh
+/// context has nothing to submit — submitting anyway was what produced
+/// `gpu:flush … current=no` on a device (and, through the `?` in the caller, failed
+/// an otherwise fine CPU frame).
 ///
 /// The CPU sync variant is used on purpose: this path always reads the finished
 /// pixels back into a CPU image in the same frame, so waiting here costs nothing it
 /// would not cost later — and it turns a wedged driver into a visible error instead
 /// of a frame of undefined pixels.
 pub fn flush_active() -> Result<(), String> {
+    if !frame_active() {
+        return Ok(());
+    }
     let result = flush_raw();
     if let Err(reason) = &result {
         record_error(reason.clone());
@@ -165,6 +216,22 @@ fn flush_raw() -> Result<(), String> {
     if egl::with_direct_context(|_| ()).is_none() {
         return Ok(());
     }
+    if !egl::is_current() {
+        // The frame's GL context is not current any more. Re-bind once, but leave a
+        // trace: a frame that needs this means something unbound the context between
+        // two GL calls, and that is worth seeing on the device.
+        egl::ensure_current().map_err(|e| {
+            let (session, bound) = egl::context_handles();
+            format!(
+                "gpu:flush-not-current {} session={} egl-current={} thread={}",
+                e,
+                session,
+                bound,
+                egl::thread_tag()
+            )
+        })?;
+        note_once_rebound();
+    }
     let gl_before = egl::drain_gl_error();
     let flushed = egl::with_direct_context_mut(|direct| direct.flush_submit_and_sync_cpu());
     match flushed {
@@ -174,13 +241,28 @@ fn flush_raw() -> Result<(), String> {
             // Everything a remote driver report needs: was our context still the
             // current one, and did GL itself flag an error?
             let gl_after = egl::drain_gl_error();
+            let (session, bound) = egl::context_handles();
             Err(format!(
-                "gpu:flush {err} current={} glerror={} glbefore={}",
+                "gpu:flush {err} current={} session={} egl-current={} thread={} glerror={} glbefore={}",
                 if egl::is_current() { "yes" } else { "no" },
+                session,
+                bound,
+                egl::thread_tag(),
                 gl_code(gl_after),
                 gl_code(gl_before),
             ))
         }
+    }
+}
+
+/// Logs once per process that a frame had to re-bind its GL context.
+fn note_once_rebound() {
+    static ONCE: AtomicBool = AtomicBool::new(false);
+    if !ONCE.swap(true, Ordering::Relaxed) {
+        crate::render::note(&format!(
+            "e4.gpu.rebound the frame's GL context was not current; re-bound it (thread={})",
+            egl::thread_tag()
+        ));
     }
 }
 
@@ -198,6 +280,11 @@ fn gl_code(code: u32) -> String {
 /// untouched, which keeps `off` mode free of extra copies.
 pub fn to_raster(image: &skia_safe::Image) -> skia_safe::Image {
     if !image.is_texture_backed() {
+        return image.clone();
+    }
+    // A texture can only be read back with its own context current; re-bind first.
+    if let Err(reason) = egl::ensure_current() {
+        record_error(format!("gpu:readback-not-current {reason}"));
         return image.clone();
     }
     // The context has to be passed explicitly: a null context would make Skia guess
@@ -332,8 +419,9 @@ fn self_test() -> Result<String, String> {
         }
         let after = egl::drain_gl_error();
         Ok(format!(
-            "es={} readback=#{:02X}{:02X}{:02X} drawn=#{:02X}{:02X}{:02X} glerror={} before={} maxTex={} {}",
+            "es={} thread={} readback=#{:02X}{:02X}{:02X} drawn=#{:02X}{:02X}{:02X} glerror={} before={} maxTex={} {}",
             egl::es_version().unwrap_or(0),
+            egl::thread_tag(),
             corner[0],
             corner[1],
             corner[2],
@@ -350,6 +438,7 @@ fn self_test() -> Result<String, String> {
 
 /// Reads the whole 4×4 surface back as unpremultiplied RGBA8888.
 fn read_back_4x4(image: &skia_safe::Image) -> Result<Vec<u8>, String> {
+    egl::ensure_current()?;
     let dst = ImageInfo::new(
         (4, 4),
         ColorType::RGBA8888,
@@ -410,6 +499,10 @@ pub fn run_preview<T>(f: impl Fn() -> Result<T, String>) -> Result<T, String> {
         }
     }
     egl::with_gl_context(|| {
+        // From here to the end of the closure the whole frame (layout, draw, flush,
+        // snapshot, readback) runs with this thread's EGL context current. Nothing
+        // outside the scope may touch GL/Ganesh.
+        let _frame = FrameScope::begin();
         egl::install_direct_context()?;
         clear_error();
         let body = catch_unwind(AssertUnwindSafe(&f));
@@ -475,6 +568,47 @@ mod tests {
 
         // Flushing and reading back with no session is a no-op, not an error.
         assert!(flush_active().is_ok());
+        assert!(take_error().is_none());
+    }
+
+    /// Regression guard for the device bug rc32/rc33 exposed: a **CPU** render runs
+    /// `render_card_body` too, and on a thread that still caches a Ganesh context it
+    /// used to submit that context without a current GL context → a bogus
+    /// `gpu:flush … current=no` that also failed the CPU frame. Only a frame opened
+    /// by `run_preview` may flush now.
+    #[test]
+    fn only_a_gpu_frame_may_flush() {
+        assert!(!frame_active());
+        assert!(flush_active().is_ok(), "a CPU render must not submit anything");
+        assert!(take_error().is_none(), "a CPU render must record nothing");
+
+        {
+            let _scope = FrameScope::begin();
+            assert!(frame_active());
+            // Host: still no session, so nothing to submit — but the scope is armed,
+            // which is what makes a device frame flush at all.
+            assert!(flush_active().is_ok());
+        }
+        assert!(!frame_active());
+
+        // A panicking frame must not leave the scope armed for the next CPU render.
+        let panicked = catch_unwind(AssertUnwindSafe(|| {
+            let _scope = FrameScope::begin();
+            panic!("boom");
+        }));
+        assert!(panicked.is_err());
+        assert!(!frame_active());
+        assert!(flush_active().is_ok());
+    }
+
+    /// A CPU frame must never allocate a GPU surface, even on a thread that still
+    /// caches a Ganesh context: the frame's mode decides the backend.
+    #[test]
+    fn cpu_frames_never_allocate_gpu_surfaces() {
+        assert!(!frame_active());
+        let info = temp_info(4, 4);
+        let mut surface = surface_for(&info).expect("cpu raster");
+        assert!(!surface.image_snapshot().is_texture_backed());
         assert!(take_error().is_none());
     }
 
