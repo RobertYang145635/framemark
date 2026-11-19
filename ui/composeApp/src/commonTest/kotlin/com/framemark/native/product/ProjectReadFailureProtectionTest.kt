@@ -35,7 +35,7 @@ class ProjectReadFailureProtectionTest {
             assertNotNull(store.saveError, "$name: protection state was not visible")
 
             // Two ordinary edit paths; neither may schedule or perform a replacement.
-            store.adoptSample()
+            store.adoptSampleFixture()
             store.setDesign(SAMPLE_PHOTO_ID, PhotoDesign.base("simple-4"))
             assertFalse(store.saveNow(), "$name: explicit save bypassed the guard")
             assertFalse(store.flushBlocking(), "$name: flush bypassed the guard")
@@ -56,7 +56,7 @@ class ProjectReadFailureProtectionTest {
         assertFalse(store.projectWritesBlocked)
         assertNull(store.loadError)
 
-        store.adoptSample()
+        store.adoptSampleFixture()
         store.setDesign(SAMPLE_PHOTO_ID, PhotoDesign.base("simple-4"))
         assertTrue(store.saveNow())
         val saved = SessionStore(fs).loadProject().ok()

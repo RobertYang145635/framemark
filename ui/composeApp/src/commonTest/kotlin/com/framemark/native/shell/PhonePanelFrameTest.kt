@@ -602,8 +602,9 @@ class PhonePanelFrameTest {
 
     @Test
     fun theBorderLandingPanelUsesTheCompactCurrentItemSheet() {
-        // 2026-11-15（配色方案 §4.1）：边框落地板 = 16 把手 + 44 标题 + 144 面板 = 204 dp，
-        // 不再是旧的 128 dp 卡片堆叠（300 dp）。
+        // 2026-11-15（配色方案 §4.1）：边框落地板 = 16 把手 + 44 标题 + 88 面板 = 148 dp，
+        // 不再是旧的 128 dp 卡片堆叠（300 dp）；2026-11 面板去掉第二条全宽按钮后两种
+        // 状态同高，所以这个数同时是「没边框」和「已选边框」的 sheet 高度。
         val expected = PHONE_BORDER_SHEET_GRABBER_DP + PHONE_BORDER_SHEET_HEAD_DP +
             com.framemark.native.shell.phone.PhoneBorderPageState.panelHeight(
                 tileDp = com.framemark.native.shell.phone.PhoneBorderPageState.PANEL_TILE_DP,

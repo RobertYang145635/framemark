@@ -74,9 +74,10 @@ class PhoneEditorCompactSheetTest {
 
     @Test
     fun both_panel_states_fit_inside_the_border_sheet() {
-        // 无边框时是整个面板的上界；有边框时只是更矮（余量是面板内的留白）。
-        assertTrue(chrome + emptyPanel <= chrome + emptyPanel)
-        assertTrue(chrome + filledPanel < chrome + emptyPanel)
+        // 2026-11：没有边框时面板里不再有第二条全宽按钮，两种状态都是**一行当前项**，
+        // 所以恒同高 —— sheet 在点选边框前后不跳，舞台上的照片也不会被顶一下。
+        assertEquals(emptyPanel, filledPanel, 0.01f)
+        assertEquals(chrome + emptyPanel, chrome + filledPanel, 0.01f)
         assertEquals(emptyPanel, PhoneBorderPageState.panelHeight(72f, hasCard = false), 0.01f)
         assertEquals(filledPanel, PhoneBorderPageState.panelHeight(72f, hasCard = true), 0.01f)
     }
@@ -127,7 +128,7 @@ class PhoneEditorCompactSheetTest {
 
     @Test
     fun a_window_too_short_for_a_usable_sheet_keeps_the_full_parameter_page() {
-        // 390 dp: 16+44+144 = 204 dp of sheet does not fit above a usable stage.
+        // 390 dp: 16+44+88 = 148 dp of sheet does not fit above a usable stage.
         assertTrue(computePhoneEditorHeights(390f, 1f, false, EditorTool.Border, false).fullPage)
         assertTrue(phoneSheetLevels(390f, EditorTool.Border, photosOpen = false) == null)
         assertTrue(phoneSheetLevels(390f, EditorTool.Params, photosOpen = false) == null)

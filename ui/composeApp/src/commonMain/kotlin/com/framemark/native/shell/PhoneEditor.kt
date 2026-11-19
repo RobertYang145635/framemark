@@ -143,8 +143,6 @@ fun PhoneEditorScreen(
     onRetryLibrary: () -> Unit,
     onOpenPresets: () -> Unit,
     onOpenExport: () -> Unit,
-    onOpenBatch: () -> Unit,
-    onOpenSettings: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
     onRetryInspector: () -> Unit,
@@ -159,8 +157,13 @@ fun PhoneEditorScreen(
      */
     onCropChange: (PhotoCrop) -> Unit = {},
     customizedPhotoIds: Set<Int> = emptySet(),
+    /**
+     * 「把当前设计用到全部 N 张」的同一个动作：导出表单里一处、边框面板的当前边框
+     * 那一行右侧一处（UX 审查 P1-3）。null 表示这张工程只有一张照片，入口不画。
+     */
     onApplyAll: (() -> Unit)? = null,
-    onOpenPhotoBatch: (() -> Unit)? = null,
+    /** 工程里的照片总数，只用来写入口那枚按钮的「全部 N 张」。 */
+    applyToAllCount: Int = 0,
     textSlots: List<TextSlot> = emptyList(),
     textOutputWidth: Int = 0,
     textOutputHeight: Int = 0,
@@ -236,6 +239,8 @@ fun PhoneEditorScreen(
     var recentFrames by remember { mutableStateOf(emptyList<String>()) }
     // A-08: one short "已撤销" notice with its 重做 action after an undo.
     var undoNotice by remember { mutableStateOf(false) }
+    // P0-2: 换边框现在也是一条可撤销的历史，换完在同一个提示位说一句「已换边框 · 撤销」。
+    var borderNotice by remember { mutableStateOf(false) }
     val density = LocalDensity.current
 
     // 裁切: everything below works in the **display** frame. The preview bitmap the
@@ -329,6 +334,17 @@ fun PhoneEditorScreen(
             undoNotice = false
         }
     }
+    // 换边框那一步：`lastStepIsBorder` 是历史自己给的，所以只有「换边框」会弹，
+    // 拖一下滑杆不会；撤销 / 重做把它清掉（那一下自己的反馈是「已撤销」。
+    LaunchedEffect(session.history.undoCount, session.history.lastStepIsBorder) {
+        borderNotice = session.history.lastStepIsBorder && session.history.canUndo
+    }
+    LaunchedEffect(borderNotice) {
+        if (borderNotice) {
+            delay(4000)
+            borderNotice = false
+        }
+    }
 
     /** Keeps the content point under [anchor] fixed while [zoom] changes. */
     fun zoomAround(anchor: Offset, target: Float) {
@@ -370,7 +386,9 @@ fun PhoneEditorScreen(
         hasTextSlots = hasTextPage(textSlots.size, textOutputWidth),
         watermarkModified = WatermarkZones.modifiedCount(watermark),
     )
-    val tools = phoneToolsFor(tabModel)
+    // 没有边框时工具条只剩「边框」一格（`phoneToolsFor`）：样式 / 文字 / 水印改的都是
+    // 一张还不存在的边框，那三格点开只能回一句「先选择边框」——三次无效点击。
+    val tools = phoneToolsFor(tabModel, hasBorder = card != null)
     LaunchedEffect(tools) {
         if (tool !in tools) onToolChange(EditorTool.Border)
     }
@@ -598,9 +616,16 @@ fun PhoneEditorScreen(
                             renderFailure = renderFailure,
                             borderName = card?.name,
                             undoNotice = undoNotice,
+                            borderNotice = borderNotice,
                             onRedo = {
                                 onRedo()
                                 undoNotice = false
+                            },
+                            onUndo = {
+                                onUndo()
+                                // 换边框那一步撤销了，就给回「已撤销 · 重做」这条提示。
+                                undoNotice = session.history.canRedo
+                                borderNotice = false
                             },
                             focusMode = focusMode,
                             density = density,
@@ -615,11 +640,16 @@ fun PhoneEditorScreen(
                             onDoubleTap = { setZoom(1f) },
                             onCompareChange = { compare = it },
                             onFocusToggle = { focusMode = !focusMode },
-                            onOpenBorder = { onToolChange(EditorTool.Border) },
-                            onOpenBatch = onOpenBatch,
-                            onApplyAll = onApplyAll,
-                            onOpenPhotoBatch = onOpenPhotoBatch,
-                            onOpenSettings = onOpenSettings,
+                            // 无边框这一屏**唯一**的入口：画布上那枚「选择一个边框」。
+                            // 它开的就是库覆盖层（以前是面板上那枚按钮做的事），而不是
+                            // 「切到边框工具」——工具本来就在边框，那样点一下什么都不发生。
+                            onOpenBorder = {
+                                borderLibraryOpen =
+                                    PhoneSheetPagePolicy.pageAfterLibraryAction(fullParameterPage)
+                            },
+                            // 舞台没有「批量 / 应用到全部 / 设置」这三枚控件：以前这里四个
+                            // 回调声明了却没人调，签名在撒谎（UX 审查 P1-3）。「用到全部」
+                            // 真正接上的位置是边框面板当前边框那一行，见 `PhoneSheetHost`。
                             onRendered = { w, h, rect ->
                                 previewGeo = PreviewGeo(w, h, rect)
                                 renderFailure = null
@@ -707,6 +737,10 @@ fun PhoneEditorScreen(
                     onOpenBorderLibrary = {
                         borderLibraryOpen = PhoneSheetPagePolicy.pageAfterLibraryAction(fullParameterPage)
                     },
+                    // 边框面板当前边框那一行右侧的「用到全部 N 张」：和导出表单里那一枚
+                    // 是同一个动作（同一个确认弹窗）。只有一个动作、两个入口。
+                    onApplyToAll = onApplyAll,
+                    applyToAllCount = applyToAllCount,
                 )
             }
         }

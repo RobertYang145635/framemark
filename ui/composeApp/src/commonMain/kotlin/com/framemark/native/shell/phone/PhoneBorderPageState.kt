@@ -10,10 +10,16 @@ import com.framemark.native.library.LibraryIndex
  * 直接测这一层）。
  *
  * 和 Logo 页同一套做法：**边框页本身不是库**。工具落地时是一个矮面板
- * （[PhoneBorderPageBody.Panel]）：当前项（小缩略图 + 名称/来源 + 更换）+（没有
- * 边框时的）全宽主按钮，全部固定，一屏放得下。库是一层盖在画布上的覆盖层
- * （[PhoneBorderPageBody.Library]），只有用户点面板上的动作才会出现；点一张卡就是
- * 应用并关闭，返回 / 遮罩 / 系统返回都是取消（什么都不改，回到面板）。
+ * （[PhoneBorderPageBody.Panel]）：当前项（小缩略图 + 名称/来源 + 更换），固定，一屏
+ * 放得下。库是一层盖在画布上的覆盖层（[PhoneBorderPageBody.Library]），只有用户在
+ * **画布上**点「选择一个边框」才会出现；点一张卡就是应用并关闭，返回 / 遮罩 /
+ * 系统返回都是取消（什么都不改，回到面板）。
+ *
+ * **无边框 = 只有一个入口**（2026-11，UX 审查）：导入照片后不自动套边框，这一屏
+ * 的全部意义是把人送到「选边框」。所以入口只在画布上（[CHOOSE_LABEL] 那一枚按钮，
+ * 离照片最近），面板不再放第二枚同样的按钮、也不再写「选好之后会怎样」的说明句 ——
+ * 同一个动作出现两次会让人以为它们是两件事。工具条同理收成只有「边框」一格
+ * （`phoneToolsFor(hasBorder = false)`），另三格在没边框时本来就无事可做。
  *
  * 这一层只回答五件事，全部是纯函数：
  *  1. 落地 / 覆盖层这两块 body 的状态与只允许的转换（库只能由动作打开）；
@@ -53,7 +59,7 @@ internal object PhoneBorderPageState {
      * 需要第二拍才能回舞台的路径（rc14 P3-1 那一类）。
      */
     enum class PhoneBorderPageBody {
-        /** 落地面板：当前边框 + 动作，不滚动。 */
+        /** 落地面板：当前边框那一行，不滚动，也没有第二个动作。 */
         Panel,
 
         /** 边框库覆盖层：遮罩 + 底部面板，唯一的滚动区是 2 列网格。 */
@@ -67,7 +73,8 @@ internal object PhoneBorderPageState {
     fun landingBody(): PhoneBorderPageBody = PhoneBorderPageBody.Panel
 
     /**
-     * 面板上那个主按钮被点之后：面板 → 库。
+     * 「选择一个边框」被点之后：面板 → 库。那枚按钮在**画布上**（[CHOOSE_LABEL]），
+     * 不在面板里，但它走的仍是这一条转换。
      *
      * 已经从库里调用（重复请求）时保持现状：覆盖层不叠第二层。
      */
@@ -94,7 +101,12 @@ internal object PhoneBorderPageState {
 
     // ------------------------------------------------------------------ 面板文案
 
-    /** 没有已应用的边框时，面板主按钮的文案。 */
+    /**
+     * 没有已应用的边框时，**画布上唯一那枚按钮**的文案（[StagePlaceholder]）。
+     *
+     * 2026-11：这枚按钮搬到了照片正中 —— 面板不再有自己的「选择一个边框」，
+     * 所以这个常量现在是行为入口的名字，不再只是面板的标签。
+     */
     const val CHOOSE_LABEL = "选择一个边框"
 
     /** 面板上当前项右侧的次级动作文案（配色方案 §4.1：更换不再是全宽主按钮）。 */
@@ -103,20 +115,24 @@ internal object PhoneBorderPageState {
     /** 面板上「当前边框」的名字：没有已应用的边框时用它，而不是空白。 */
     const val NO_CURRENT_LABEL = "未选边框"
 
-    /** 面板动作的文案：选过是「更换」，没选过是「选择一个边框」。 */
-    fun actionLabel(card: LibraryCard?): String =
-        if (card == null) CHOOSE_LABEL else CHANGE_LABEL
-
     /** 面板第一行：当前边框的名字，没有就是 [NO_CURRENT_LABEL]。 */
     fun currentName(card: LibraryCard?): String = card?.name ?: NO_CURRENT_LABEL
 
     /**
-     * 面板第二行：没有边框时说清「选了之后会发生什么」，有边框时写数据自带的
-     * 类别 / 品牌 / 系列（由调用方传 [description]，见 `phoneCardDescription`）。
+     * 面板第二行：有边框时写数据自带的类别 / 品牌 / 系列（由调用方传 [description]，
+     * 见 `phoneCardDescription`）。
+     *
+     * 没有边框时返回 **null（不画这一行）**：那一屏只靠画布上那一枚「选择一个边框」
+     * 表达，任何「选好之后会怎样 / 现在还不能做什么」的说明句都是多余的教程腔
+     * （用户原话：「不要加这种莫名其妙的说明性语句」）。删掉这句话，用户照样知道
+     * 该点哪里 —— 判断标准就是这个。
      */
-    fun currentDescription(card: LibraryCard?, description: String?): String =
-        if (card == null) "选一个边框后，样式 / 文字 / Logo / 水印才会出现。"
-        else description?.takeIf { it.isNotBlank() } ?: NO_CURRENT_LABEL
+    fun currentDescription(card: LibraryCard?, description: String?): String? =
+        if (card == null) {
+            null
+        } else {
+            description?.takeIf { it.isNotBlank() } ?: NO_CURRENT_LABEL
+        }
 
     /**
      * 库页头那一行：分类数 / 边框数。**不再占用面板**（配色方案 §4.1：库信息只在
@@ -130,7 +146,8 @@ internal object PhoneBorderPageState {
     // 面板不是滚动容器（owner 第 5 条），所以它的高度必须是**算出来的**而不是「大概
     // 放得下」。配色方案 §4.1 把面板收成一行「当前项」：
     //   - 有边框：8（上内边距）+ max(72 缩略图, 两行文字, 44「更换」)+ 8；
-    //   - 没有边框：8 + max(72, 两行文字) + 8 + 48（全宽主按钮）+ 8。
+    //   - 没有边框：8 + max(72, 一行文字) + 8 —— 面板里**没有**按钮了（唯一入口在
+    //     画布上），所以两种状态的高度一样：点选边框前后 sheet 不会跳。
     // 名称/来源两行分别是 `titleSmall` 21 sp 与 `labelSmall` 14 sp；字号放大时两行
     // 文字可能高过缩略图，预算跟着长大。矮窗换小一档缩略图，仍然不引入滚动容器。
 
@@ -148,12 +165,6 @@ internal object PhoneBorderPageState {
 
     /** 「更换」次级按钮的最小高度（触控地板，`GhostButton` 传 44）。 */
     const val PANEL_CHANGE_ACTION_HEIGHT_DP = 44f
-
-    /** 没有边框时的全宽主按钮高度（`PrimaryButton` 默认）。 */
-    const val PANEL_PRIMARY_ACTION_HEIGHT_DP = 48f
-
-    /** 当前项与下方主按钮之间的间距（只在没有边框时才有主按钮）。 */
-    const val PANEL_ACTION_GAP_DP = 8f
 
     /** 缩略图右侧名称行的行高（`FmType.titleSmall` 的 15 sp / 21 sp 行高）。 */
     const val PANEL_NAME_LINE_SP = 21f
@@ -173,7 +184,9 @@ internal object PhoneBorderPageState {
     /**
      * 面板总高度（dp）。
      *
-     * 有边框时「更换」在行内，不再有第二条全宽动作；没有边框时才出现全宽主按钮。
+     * 两种状态都是**一行当前项**：有边框时「更换」在行内，没有边框时那一行没有次级
+     * 动作、也不再有第二条全宽按钮（唯一入口在画布上）。所以 `hasCard` 只影响行内
+     * 的 44 dp 触控地板会不会顶替缩略图决定这个 max，返回值恒为同一档。
      */
     fun panelHeight(
         tileDp: Float,
@@ -185,12 +198,7 @@ internal object PhoneBorderPageState {
             textColumnHeight(fontScale),
             if (hasCard) PANEL_CHANGE_ACTION_HEIGHT_DP else 0f,
         )
-        val action = if (hasCard) {
-            0f
-        } else {
-            PANEL_ACTION_GAP_DP + PANEL_PRIMARY_ACTION_HEIGHT_DP
-        }
-        return PANEL_PADDING_DP + row + action + PANEL_PADDING_DP
+        return PANEL_PADDING_DP + row + PANEL_PADDING_DP
     }
 
     /**
@@ -368,7 +376,7 @@ internal object PhoneBorderPageState {
         LIBRARY_BANDS.filter { it !in LIBRARY_SCROLLABLE_BANDS }
 
     /**
-     * 落地面板的滚动分区：**没有**。缩略图、动作、说明都是固定的一段，靠
+     * 落地面板的滚动分区：**没有**。缩略图与当前项都是固定的一段，靠
      * [panelLayout] 决定大小，不靠滚动条让用户去够（owner 第 5 条）。
      */
     val PANEL_SCROLLABLE_BANDS: List<PhoneBorderPageBand> = emptyList()

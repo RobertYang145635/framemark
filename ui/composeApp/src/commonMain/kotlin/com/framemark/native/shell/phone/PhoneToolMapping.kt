@@ -46,8 +46,17 @@ fun phoneToolForPage(page: InspectorPage): EditorTool = when (page) {
  * four tools that need no Logo capability (the showcase's "no card" state does the
  * same). An IR card never gets a Logo page (WP-C `inspectorTabsFor`), so its bar
  * has four cells — the V06 rule the report §7.3 keeps.
+ *
+ * **[hasBorder] = false collapses the bar to 边框 alone** (2026-11, UX 审查): the
+ * other three pages all edit a card that does not exist yet, so their cells could
+ * only ever answer "先选择边框" — three dead taps in a row. The empty state has one
+ * real next step and it already has one entry on the stage (`CHOOSE_LABEL`), so the
+ * bar must not advertise three more. The caller forces `tool` back to 边框 whenever
+ * the list no longer contains it (`PhoneEditorScreen`), so this is not a visual
+ * trick: there is no state in which 样式/文字/水印 is selected with no card behind it.
  */
-fun phoneToolsFor(model: InspectorTabModel?): List<EditorTool> {
+fun phoneToolsFor(model: InspectorTabModel?, hasBorder: Boolean): List<EditorTool> {
+    if (!hasBorder) return listOf(EditorTool.Border)
     if (model == null) return phoneEditorTools(hasLogoCapability = false)
     val tools = ArrayList<EditorTool>(5)
     tools += EditorTool.Border

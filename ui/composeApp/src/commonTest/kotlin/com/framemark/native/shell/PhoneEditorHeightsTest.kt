@@ -33,9 +33,10 @@ class PhoneEditorHeightsTest {
         assertEquals(52f, h.topBar)
         assertEquals(62f, h.toolBar)
         assertEquals(0f, h.strip)
-        // 边框页没有被固定画框接管：它的落地板 = 16 dp 把手 + 44 dp 标题 + 144 dp
-        // 当前项面板（还没选边框那一摞），见 `phoneSheetLevels`。
-        assertEquals(204f, h.sheet, 0.01f)
+        // 边框页没有被固定画框接管：它的落地板 = 16 dp 把手 + 44 dp 标题 + 88 dp
+        // 当前项面板（还没选边框那一屏），见 `phoneSheetLevels`。2026-11：面板里
+        // 不再有第二条全宽按钮，所以这一档从 204 收到 148（两态同高）。
+        assertEquals(148f, h.sheet, 0.01f)
         // WP-P1 §4.1: the compact sheet leaves the stage at least half the window.
         assertTrue(h.stage >= 844f * 0.5f - 0.01f, "stage=${h.stage}")
         assertTrue(sum(h) <= 844f + 0.01f, "sum=${sum(h)}")
@@ -53,9 +54,9 @@ class PhoneEditorHeightsTest {
         assertFalse(h.fullPage)
         assertEquals(64f, h.strip)
         // WP-P1 §4.1: the 50 % stage floor wins over the sheet's own height
-        // (800 - 52 - 62 - 64 - 400 = 222 > 204), so the strip still comes out of
-        // the photo and the border sheet keeps its 204 dp.
-        assertEquals(204f, h.sheet, 0.01f)
+        // (800 - 52 - 62 - 64 - 400 = 222 > 148), so the strip still comes out of
+        // the photo and the border sheet keeps its 148 dp.
+        assertEquals(148f, h.sheet, 0.01f)
         assertTrue(h.stage >= 800f * 0.5f - 0.01f, "stage=${h.stage}")
         assertTrue(sum(h) <= 800f + 0.01f, "sum=${sum(h)}")
     }

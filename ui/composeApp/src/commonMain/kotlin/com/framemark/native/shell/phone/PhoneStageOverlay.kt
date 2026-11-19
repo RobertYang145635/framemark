@@ -244,9 +244,20 @@ fun PhoneStageFallbackOverlay(
     }
 }
 
-/** A-08: after an undo, a short notice that also offers the way back. */
+/**
+ * A-08: after an undo, a short notice that also offers the way back.
+ *
+ * 2026-11（UX 审查 P0-2）：同一个提示位现在也说「已换边框 · 撤销」—— 换边框成了
+ * 一条可撤销的历史，换完就地给出回去的路，而不是让用户去顶栏找那枚撤销。
+ * 所以句子和动作是参数，位置与样式不变。
+ */
 @Composable
-fun PhoneUndoNotice(onRedo: () -> Unit, modifier: Modifier = Modifier) {
+fun PhoneUndoNotice(
+    notice: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .heightIn(min = 34.dp)
@@ -257,7 +268,7 @@ fun PhoneUndoNotice(onRedo: () -> Unit, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
     ) {
         Text(
-            text = "已撤销",
+            text = notice,
             style = FmType.labelSmall.copy(fontSize = 12.sp),
             color = FmPalette.stageInk,
             maxLines = 1,
@@ -267,15 +278,15 @@ fun PhoneUndoNotice(onRedo: () -> Unit, modifier: Modifier = Modifier) {
                 .heightIn(min = 34.dp)
                 .clip(RoundedCornerShape(FmRadii.pill))
                 .semantics {
-                    contentDescription = "重做"
+                    contentDescription = actionLabel
                     role = Role.Button
                 }
-                .clickable(onClick = onRedo)
+                .clickable(onClick = onAction)
                 .padding(horizontal = FmSpacing.sm),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "重做",
+                text = actionLabel,
                 style = FmType.labelSmall.copy(fontSize = 12.sp),
                 color = FmPalette.primaryStrong,
                 maxLines = 1,

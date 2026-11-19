@@ -293,7 +293,7 @@ class PhonePresetMigrationOrderTest {
         fs.files[fs.presetsPath] = original.copyOf()
         val store = PhoneProjectStore(fs, io = null, platform = null)
         store.loadPresets()
-        store.adoptSample()
+        store.adoptSampleFixture()
         store.setDesign(SAMPLE_PHOTO_ID, PhotoDesign.base("simple-4"))
         // Land the debounced autosave synchronously so the rest of the case is deterministic.
         assertTrue(store.saveNow())
@@ -324,7 +324,7 @@ class PhonePresetMigrationOrderTest {
         val fs = FakeFs()
         val store = PhoneProjectStore(fs, io = null, platform = null)
         store.loadPresets()
-        store.adoptSample()
+        store.adoptSampleFixture()
         store.setDesign(SAMPLE_PHOTO_ID, PhotoDesign.base("simple-4"))
         assertTrue(store.saveNow())
 

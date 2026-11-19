@@ -1,8 +1,5 @@
 package com.framemark.native.shell.phone
 
-import com.framemark.native.theme.AppearanceEnv
-import com.framemark.native.theme.LocalFmColors
-import com.framemark.native.theme.StageTone
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -90,7 +87,7 @@ fun PhoneEditorTopBar(
     // clock was unreadable, and dark mode showed a #121316 seam over the #2B2C2F bar
     // (MID-APK-REPORT §6 item 2). Painting upward keeps the bar's own layout budget
     // untouched and puts the same stage colour behind the status bar in both modes.
-    val stageColor = LocalFmColors.current.stageColor(AppearanceEnv.controller?.settings?.stageTone ?: StageTone.Dark)
+    val stageColor = phoneStageColor()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Row(
         modifier = modifier

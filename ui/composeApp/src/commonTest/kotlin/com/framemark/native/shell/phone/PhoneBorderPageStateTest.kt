@@ -20,8 +20,9 @@ import kotlin.test.assertTrue
 /**
  * 手机端边框工具的纯状态契约（无 Compose、无资源、无持久化）：
  *
- *  1. **落地态是面板，不是列表**——边框页本身不是库，库只能由面板上的动作打开；
- *  2. 面板的文案（当前边框 / 用一个 / 换一个）与**竖向预算**（不滚动的前提）；
+ *  1. **落地态是面板，不是列表**——边框页本身不是库，库只能由用户明确要求才打开；
+ *     没边框时那个要求只有一个来源：画布上的 [PhoneBorderPageState.CHOOSE_LABEL]；
+ *  2. 面板的文案（当前边框 / 换一个）与**竖向预算**（不滚动的前提）；
  *  3. 覆盖层里的内容照旧：分类 ⇄ 页码、选中态、2 列网格、条目下标、空态；
  *  4. 「库里只有一个滚动区、面板里一个都没有」这条只能靠结构表达的不变量。
  *
@@ -122,7 +123,8 @@ class PhoneBorderPageStateTest {
     @Test
     fun onlyThePanelActionOpensTheLibrary() {
         val panel = PhoneBorderPageState.landingBody()
-        // 唯一开库的入口：面板上的「选择一个边框 / 换一个边框」。
+        // 开库的动作只有两个来源：没边框时画布上那枚按钮，有边框时面板里那枚「更换」。
+        // 两者走的是同一条转换（面板 → 库），面板里没有第二枚「选择一个边框」。
         val open = PhoneBorderPageState.bodyAfterAction(panel)
         assertEquals(PhoneBorderPageState.PhoneBorderPageBody.Library, open)
         assertTrue(PhoneBorderPageState.isLibraryOpen(open))
@@ -164,23 +166,28 @@ class PhoneBorderPageStateTest {
     // -- 面板文案 ---------------------------------------------------------------
 
     @Test
-    fun thePanelActionSaysChooseOrChangeAndTheCurrentBorderIsNeverBlank() {
-        // 没选过：主按钮是「选择一个边框」，当前边框写「未选边框」。
-        assertEquals("选择一个边框", PhoneBorderPageState.actionLabel(null))
-        assertEquals(PhoneBorderPageState.CHOOSE_LABEL, PhoneBorderPageState.actionLabel(null))
+    fun theOnlyChooseEntryIsTheStageButtonAndThePanelActionIsChange() {
+        // 没边框时面板**没有**动作：那一枚「选择一个边框」在画布上（StagePlaceholder
+        // 读的就是这个常量），所以常量本身必须还是那句完整的话。
+        assertEquals("选择一个边框", PhoneBorderPageState.CHOOSE_LABEL)
         assertEquals("未选边框", PhoneBorderPageState.currentName(null))
         assertEquals(PhoneBorderPageState.NO_CURRENT_LABEL, PhoneBorderPageState.currentName(null))
-        // 选过：行内次级动作是「更换」，不再占一整行主按钮（配色方案 §4.1）。
-        assertEquals("更换", PhoneBorderPageState.actionLabel(oppo))
-        assertEquals(PhoneBorderPageState.CHANGE_LABEL, PhoneBorderPageState.actionLabel(oppo))
+        // 有边框时面板行内的次级动作是「更换」（配色方案 §4.1），不再占一整行主按钮。
+        assertEquals("更换", PhoneBorderPageState.CHANGE_LABEL)
         assertEquals("OPPO 经典", PhoneBorderPageState.currentName(oppo))
+        // 两个常量不是同一句话：入口和换边框是两件事，文案不能混。
         assertTrue(PhoneBorderPageState.CHOOSE_LABEL != PhoneBorderPageState.CHANGE_LABEL)
     }
 
     @Test
-    fun thePanelSecondLineExplainsWhatHappensWithoutABorderAndNamesTheCardWithOne() {
-        val empty = PhoneBorderPageState.currentDescription(card = null, description = null)
-        assertTrue(empty.contains("选一个边框"), "empty=$empty")
+    fun thePanelSecondLineIsTheCardsOwnLineAndNothingWithoutABorder() {
+        // 没有边框：第二行整行不画。空状态只靠画布上那一枚按钮表达，**不补说明句**
+        //（用户原话：「不要加这种莫名其妙的说明性语句」）。所以这里必须是 null，
+        // 而不是换成另一句话。
+        assertNull(PhoneBorderPageState.currentDescription(card = null, description = null))
+        assertNull(
+            PhoneBorderPageState.currentDescription(card = null, description = "不该被用上"),
+        )
         // 有边框时用数据自带的那一行（`phoneCardDescription`），不猜、不拼别的。
         assertEquals(
             "OPPO · 经典",
@@ -207,15 +214,27 @@ class PhoneBorderPageStateTest {
     // -- 面板竖向预算：不留滚动容器 -------------------------------------------
 
     @Test
-    fun thePanelHeightIsTheCompactCurrentRowPlusThePrimaryOnlyWhenEmpty() {
-        // 有边框：8（上）+ 72（缩略图/行）+ 8（下）= 88；行内「更换」44 不单独占高。
+    fun thePanelHeightIsTheCompactCurrentRowInBothStates() {
+        // 两种状态都是一行当前项：8（上）+ 72（缩略图/行）+ 8（下）= 88。
+        // 2026-11：没边框时不再有第二条全宽按钮，所以两档**同高** —— 选完边框
+        // sheet 不跳，舞台上的照片也就不会被顶一下。
         assertEquals(88f, PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = true), 0.01f)
-        // 没有边框：8 + 72 + 8（间距）+ 48（全宽主按钮）+ 8 = 144。
-        assertEquals(144f, PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = false), 0.01f)
+        assertEquals(88f, PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = false), 0.01f)
+        assertEquals(
+            PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = true),
+            PhoneBorderPageState.panelHeight(tileDp = 72f, hasCard = false),
+            0.01f,
+            "选了边框之后面板高度不能变",
+        )
         assertEquals(listOf(72f, 64f, 56f), PhoneBorderPageState.PANEL_TILE_LADDER_DP)
         // 字号 1.5×：(21 + 14) × 1.5 + 4 = 56.5 < 72，行高仍由缩略图决定。
         assertEquals(88f, PhoneBorderPageState.panelHeight(72f, hasCard = true, fontScale = 1.5f), 0.01f)
-        assertEquals(144f, PhoneBorderPageState.panelHeight(72f, hasCard = false, fontScale = 1.5f), 0.01f)
+        assertEquals(88f, PhoneBorderPageState.panelHeight(72f, hasCard = false, fontScale = 1.5f), 0.01f)
+        // 缩略图小于 44 时「更换」的触控地板才会顶替它决定行高（有边框才有那一枚）。
+        assertTrue(
+            PhoneBorderPageState.panelHeight(32f, hasCard = true) >
+                PhoneBorderPageState.panelHeight(32f, hasCard = false),
+        )
     }
 
     @Test
@@ -227,16 +246,21 @@ class PhoneBorderPageStateTest {
         assertEquals(56f, PhoneBorderPageState.panelLayout(79f, hasCard = true).tileDp)
         assertEquals(56f, PhoneBorderPageState.panelLayout(0f, hasCard = true).tileDp)
         assertEquals(56f, PhoneBorderPageState.panelLayout(Float.NaN, hasCard = true).tileDp)
-        // 无边框：72 → 144，64 → 136，56 → 128。
-        assertEquals(72f, PhoneBorderPageState.panelLayout(144f, hasCard = false).tileDp)
-        assertEquals(64f, PhoneBorderPageState.panelLayout(143f, hasCard = false).tileDp)
-        assertEquals(56f, PhoneBorderPageState.panelLayout(127f, hasCard = false).tileDp)
+        // 无边框走同一条阶梯（面板高度同高）：72 → 88，64 → 80，56 → 72。
+        assertEquals(72f, PhoneBorderPageState.panelLayout(88f, hasCard = false).tileDp)
+        assertEquals(64f, PhoneBorderPageState.panelLayout(87f, hasCard = false).tileDp)
+        assertEquals(56f, PhoneBorderPageState.panelLayout(79f, hasCard = false).tileDp)
+        assertEquals(
+            PhoneBorderPageState.panelLayout(88f, hasCard = true).tileDp,
+            PhoneBorderPageState.panelLayout(88f, hasCard = false).tileDp,
+            "同一块 sheet 里两种状态必须挑到同一档缩略图",
+        )
         assertEquals(
             PhoneBorderPageState.panelFloorHeight(hasCard = false),
             PhoneBorderPageState.panelLayout(0f, hasCard = false).heightDp,
             0.01f,
         )
-        assertFalse(PhoneBorderPageState.panelLayout(144f, hasCard = false).hasCard)
+        assertFalse(PhoneBorderPageState.panelLayout(88f, hasCard = false).hasCard)
     }
 
     @Test
@@ -262,7 +286,7 @@ class PhoneBorderPageStateTest {
                 photosOpen = false,
             )
             assertFalse(heights.fullPage, "边框工具在 ${case.width}x${case.height} 应留在底板里")
-            // 2026-11-15：边框 sheet = 16 把手 + 44 标题 + 144 面板（无边框上界）。
+            // 2026-11：边框 sheet = 16 把手 + 44 标题 + 88 面板（两种状态同高）。
             val chrome = com.framemark.native.shell.PHONE_BORDER_SHEET_GRABBER_DP +
                 com.framemark.native.shell.PHONE_BORDER_SHEET_HEAD_DP
             val expectedSheet = chrome + PhoneBorderPageState.panelHeight(

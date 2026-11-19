@@ -180,7 +180,6 @@ ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evi
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:738:FM_TRAY_SELECT
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:751:FM_TRAY_EMPTY
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:754:FM_TRAY_REMOVE
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:769:FM_TRAY_SAMPLE
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:786:FM_SHORTCUT
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:816:FM_HOME_BATCH
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/shell/PhoneShell.kt:evidence-hook-literal:831:FM_HOME_RECENT

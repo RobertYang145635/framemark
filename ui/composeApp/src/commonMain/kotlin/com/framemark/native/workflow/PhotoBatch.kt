@@ -620,9 +620,15 @@ data class SubmitReport(
 // Surface
 // ---------------------------------------------------------------------------
 
-/** 原尺寸 or a long edge, in the words the export sheet uses. */
-private fun sizeLabel(settings: ExportSettings): String =
-    if (settings.sizeMode == ExportSizeMode.Original) "原尺寸" else "长边 ${settings.longEdge ?: "-"}px"
+/**
+ * 原尺寸 or a long edge, in the words the export sheet uses.
+ *
+ * 默认档是「原尺寸」，`longEdge` 那时是 null；早先这里按 `sizeMode` 分支却直接印
+ * `settings.longEdge`，页脚于是出现「长边 null」。现在与 `PhoneExportOptions`
+ * 同一句：`effectiveLongEdge` 为空就是原尺寸（长边档没填数时引擎也不缩放）。
+ */
+internal fun sizeLabel(settings: ExportSettings): String =
+    settings.effectiveLongEdge?.let { "长边 $it px" } ?: "原尺寸"
 
 /**
  * Batch export by photo: every row is one queued job with its own photo, border
@@ -781,7 +787,7 @@ fun PhotoBatchScreen(
         }
         Spacer(Modifier.height(FmSpacing.sm))
         Text(
-            text = "当前编辑的导出设置：${settings.format.label} · 长边 ${settings.longEdge}",
+            text = "当前编辑的导出设置：${settings.format.label} · ${sizeLabel(settings)}",
             style = FmType.labelSmall,
             color = FmPalette.onSurfaceMuted,
         )

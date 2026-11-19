@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
+import com.framemark.native.inspector.InspectorControl
+import com.framemark.native.shell.SAMPLE_EXPORT_REFUSAL
 import com.framemark.native.theme.FmDuration
 import com.framemark.native.theme.FmEasing
 import com.framemark.native.theme.FmMotionRules
@@ -111,6 +113,23 @@ fun PhoneExportSheet(
     onDismiss: () -> Unit,
     /** Debug evidence hook (`fmRunExport` / `FM_RUN_EXPORT`): export as soon as it opens. */
     autoGenerate: Boolean = false,
+    /**
+     * 舞台当前照片的像素尺寸。表单靠它把「原尺寸 / 长边 N」换算成**真实的成片像素**；
+     * 以前这里写死 0，于是表单永远退回去印「原尺寸」那一句，用户看不到 3024 × 4032。
+     */
+    photoWidthPx: Int = 0,
+    photoHeightPx: Int = 0,
+    /**
+     * 当前边框声明的参数行。`OutputSize` 靠它判断画布公式族（页脚 / 四边同宽），
+     * 与手机样式页的「导出尺寸」是同一份输入，所以两处印同一个数字。
+     */
+    controls: List<InspectorControl> = emptyList(),
+    /**
+     * 当前照片是内置样张（没有文件）。导出过了这里就写出应用自带的山景照 ——
+     * 外壳的 `openExport()` 已经先拒了一次（P0-1），这里是最后一道闸：
+     * 证据钩子（直接开表单、不等外壳收口）是绕过外壳的那条路。
+     */
+    isSamplePhoto: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
     val platform = WorkflowEnv.platform
@@ -133,6 +152,16 @@ fun PhoneExportSheet(
     val settings = PhoneExportOptions.normalized(session.export)
     val native = card != null && NativeEngine.supportsExport(card.id)
     val busyNow = busy || sharing || publishing
+    // 成片像素：右栏 / 顶栏 / 手机样式页 / 引擎桥接共用同一条 [OutputSize] 链 ——
+    // 先按该边框声明的参数算画布（页脚会加高），再套长边档。取不到照片尺寸时是
+    // null，表单退回「尺寸档」那一句，绝不印一个猜的数字。
+    val outputPixels = PhoneExportOptions.outputPixels(
+        photoWidthPx = photoWidthPx,
+        photoHeightPx = photoHeightPx,
+        controls = controls,
+        settings = settings,
+        value = { control -> session.value(control) },
+    )
 
     // Whether the active photo really carries an Ultra HDR gain map. Read off the UI
     // thread: UltraHdr.locate() takes the whole buffer, and a photo is tens of MB.
@@ -187,6 +216,13 @@ fun PhoneExportSheet(
 
     fun generate(shareAfter: Boolean) {
         if (busyNow) return
+        // P0-1：样张没有文件，引擎会拿内置样张渲染 —— 导出出来的是应用自带的照片。
+        // 这里给一句人话并停手，绝不写文件、也不假装成功。
+        if (isSamplePhoto) {
+            error = SAMPLE_EXPORT_REFUSAL
+            FmLog.warn("FM_EXPORT_FAIL") { "sample photo refused" }
+            return
+        }
         val target = card ?: return
         error = null
         note = null
@@ -295,10 +331,12 @@ fun PhoneExportSheet(
                 sharing = sharing,
                 error = error,
                 note = note,
-                // The engine reports the real canvas only after a render/export; until
-                // then the sheet prints the chosen step instead of inventing pixels.
-                outputWidth = 0,
-                outputHeight = 0,
+                // The engine reports the real canvas only after a render/export; before
+                // that the sheet prints the chosen step instead of inventing pixels.
+                // (The caller now hands in the photo's pixel size, so the form usually
+                // has the real numbers — 3024 × 4032 — before anything is written.)
+                outputWidth = outputPixels?.width ?: 0,
+                outputHeight = outputPixels?.height ?: 0,
                 hdrGainMap = hdrGainMap,
                 progress = exportProgress,
                 canApplyToAll = canApplyToAll,

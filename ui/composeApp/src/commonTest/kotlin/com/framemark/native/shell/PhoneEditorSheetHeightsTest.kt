@@ -61,9 +61,10 @@ class PhoneEditorSheetHeightsTest {
 
     @Test
     fun the_border_sheet_is_the_compact_panel_plus_its_fixed_chrome() {
-        // 2026-11-15（配色方案 §4.1）：16（把手）+ 44（标题）+ 144（无边框面板）
-        // = 204 dp；844 - 52 - 62 - 204 = 526 dp of stage. The sheet carries the
-        // current-item row, not the retired 128 dp card stack.
+        // 2026-11-15（配色方案 §4.1）：16（把手）+ 44（标题）+ 88（当前项面板）
+        // = 148 dp；844 - 52 - 62 - 148 = 582 dp of stage. The sheet carries the
+        // current-item row, not the retired 128 dp card stack. 2026-11：无边框那一屏
+        // 不再有第二条全宽按钮，所以「没边框」和「已选边框」同高。
         val h = computePhoneEditorHeights(844f, 1f, false, EditorTool.Border, false)
         val expectedSheet = PHONE_BORDER_SHEET_GRABBER_DP + PHONE_BORDER_SHEET_HEAD_DP +
             com.framemark.native.shell.phone.PhoneBorderPageState.panelHeight(

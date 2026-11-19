@@ -53,6 +53,14 @@ import com.framemark.native.product.FmLog
 const val SAMPLE_PHOTO_ID = "photo:sample"
 
 /**
+ * The one sentence a sample export is refused with（UX 审查 P0-1）。
+ *
+ * 样张是应用自带的山景照片，没有文件路径；导出它写出来的是**别人的照片**。
+ * 这句话只有一个出处，导出按钮、导出表单和批量导出都读它。
+ */
+const val SAMPLE_EXPORT_REFUSAL = "当前是示例照片，请先导入自己的照片再导出。"
+
+/**
  * Pixel size of the watermark the platform picker just normalised to PNG. The
  * shared `WatermarkSelection` object carries only an aspect, and an embedded asset
  * has to declare real dimensions, so the picker publishes them here before it
@@ -525,11 +533,32 @@ class PhoneProjectStore(
     /** True once [dispose] ran; read under its own lock so the IO thread sees it. */
     private fun isDisposed(): Boolean = synchronized(disposeLock) { disposed }
 
-    fun adoptSample(): String {
+    /**
+     * Test/evidence fixture: registers the bundled sample (which has no file) so a
+     * project can hold a design without any imported photo.
+     *
+     * **Product code must never call this** (UX 审查 P0-1: `openCardFromBrowser` did,
+     * so picking a border on an empty project wrote 「示例照片」 into the document and
+     * the export then rendered the built-in landscape). `SamplePhotoGuardTest` fails
+     * the build if any production source mentions it.
+     */
+    internal fun adoptSampleFixture(): String {
         if (project.photos.none { it.id == SAMPLE_PHOTO_ID }) {
             commit(project.addPhoto(PhotoRef(SAMPLE_PHOTO_ID, "", "示例照片"), inheritFrom(project)))
         }
         return SAMPLE_PHOTO_ID
+    }
+
+    /**
+     * Why the active photo cannot be exported, in one human sentence; null when it can.
+     *
+     * 样张与空工程都不许导出，理由是同一条：没有用户的照片。导出入口读这一句，
+     * 不要在 UI 里各写一遍（P0-1 的第二种表现就是「导出成功，但出来的是自带样张」）。
+     */
+    fun exportRefusal(): String? = when {
+        project.photos.isEmpty() || project.activePhotoId == null -> "先选择一张照片，再导出。"
+        project.activePhotoId == SAMPLE_PHOTO_ID -> SAMPLE_EXPORT_REFUSAL
+        else -> null
     }
 
     fun select(id: String) {

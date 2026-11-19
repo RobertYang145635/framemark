@@ -64,9 +64,9 @@ internal const val PHONE_LOGO_PICKER_PANEL_FRACTION = 0.88f
 /**
  * 手机端品牌字标选择器的**覆盖层**（两页，可左右滑动）。
  *
- * 它不是新页面，而是一层盖在画布上的面板：上半条带铺 `FmPalette.scrim`（舞台在
- * 遮罩下仍可见），底部再落一块 88 % 高、圆角朝上的面板。所以「挑品牌」的时候画布
- * 没有离开屏幕，选完关掉就精确回到进来之前的底板档位与工具。
+ * 它不是新页面，而是一层盖在画布上的面板：整屏铺 `FmPalette.scrim`（舞台在遮罩下仍
+ * 可见，面板盖在遮罩上），底部再落一块 88 % 高、圆角朝上的面板。所以「挑品牌」的时候
+ * 画布没有离开屏幕，选完关掉就精确回到进来之前的底板档位与工具。
  *
  * 布局只允许两个竖向滚动容器，而且都在 pager 的页面里：
  *  1. 第 1 页的品牌网格 [LazyVerticalGrid]（61 个品牌唯一该滚的地方）；
@@ -97,14 +97,23 @@ internal fun PhoneLogoPickerOverlay(
     val scrimInteraction = remember { MutableInteractionSource() }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val panelHeight = maxHeight * PHONE_LOGO_PICKER_PANEL_FRACTION
+        // 遮罩铺满整屏，面板再盖在它上面。遮罩必须一直铺到屏幕底部（被面板盖住）：
+        // 它以前只占「面板以上那条带」，面板上圆角切出来的缺口露的是**没压暗**的舞台，
+        // 也就是「圆角 + 直角」那块亮方角（和边框库、底板同一个根因）。
+        // 铺满之后缺口露的就是遮罩色，圆角是唯一的分界；面板不透光，铺满这层对面板
+        // 本身一个像素都不改。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FmPalette.scrim),
+        )
         Column(modifier = Modifier.fillMaxSize()) {
-            // 顶部条带 = 遮罩下的舞台。点它就关掉选择器，和标题行的「关闭」同一结果；
-            // 它只占面板以上那条带，所以点面板本身绝不会误关。
+            // 顶部条带只留点击：颜色来自下面那层铺满整屏的遮罩。点它就关掉选择器，和标题行
+            // 的「关闭」同一结果；它只占面板以上那条带，所以点面板本身绝不会误关。
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(FmPalette.scrim)
                     .clickable(
                         interactionSource = scrimInteraction,
                         indication = null,
@@ -116,6 +125,7 @@ internal fun PhoneLogoPickerOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(panelHeight)
+                    // 缺口露出真实背景（铺满整屏的遮罩），不再补一层方形底色。
                     .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
                     .background(FmPalette.canvas),
             ) {

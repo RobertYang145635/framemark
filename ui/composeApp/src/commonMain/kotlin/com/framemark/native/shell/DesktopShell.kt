@@ -322,7 +322,8 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
     }
 
-    LaunchedEffect(selectedCard?.id) { session.onCardChanged() }
+    // 换边框 = 一条可撤销的历史（P0-2），手机与桌面同一条规则：不清栈，记一步。
+    LaunchedEffect(selectedCard?.id) { session.onCardChanged(selectedCard?.id) }
 
     // The registry itself is replaced on a pair switch. Clear the focus marker
     // too so a highlight from the previous frame cannot survive that switch.
@@ -399,11 +400,24 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     // rows, so a `slotText:`/`slotOff:`/`slotScale:` edit is owned (and therefore
     // persisted and re-applied) instead of being dropped as an unknown consumer.
     val currentPanelModel by rememberUpdatedState(panelModel)
+    // 当前会话里的值是从哪张照片读出来的：同照片的重新水合 = 换了边框，它不能清撤销栈
+    // （换边框这一步就是用户要回去的那一步，P0-2）；换照片才清。
+    var hydratedPhotoId by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         session.onValuesChanged = { _, overrides ->
             currentPanelModel?.let { projects.applyControlOverrides(it, overrides) }
         }
         session.onExportChanged = { projects.setExportSettings(it) }
+        session.onCardRestored = { cardId ->
+            // 撤销 / 重做跨了边框：把选中边框指回去，写入仍由下面那个水合 effect 做。
+            // （手机端同一个回调；这里不另打证据标签，`FM_*` 字面量在 shell 层是被
+            // ARCH1 记在允许清单里的债，只减不增。）
+            if (cardId == null) {
+                selectedCard = null
+            } else {
+                libraryIndex?.card(cardId)?.let { restored -> selectedCard = restored }
+            }
+        }
     }
     // Re-hydrate when the *control set* changes (rows arriving or disappearing),
     // not on every render: typing must not be interrupted, and re-reading the
@@ -416,8 +430,11 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         projects.hydrationVersion,
     ) {
         val built = currentPanelModel ?: return@LaunchedEffect
+        val photoId = projects.activePhotoId
+        val photoChanged = hydratedPhotoId != photoId
+        hydratedPhotoId = photoId
         session.seed(built.controls)
-        session.replaceValues(projects.designValues(built))
+        session.replaceValues(projects.designValues(built), clearHistory = photoChanged)
         session.setExportSilently(projects.exportSettingsForUi())
     }
     LaunchedEffect(libraryState) {

@@ -17,21 +17,55 @@ import kotlin.time.TimeSource
 
 
 /**
- * Undo/redo over control values only (no renderer, no engine).
+ * One undoable step: the editor state **before** the gesture.
+ *
+ * A step carries the border as well as the control values. Switching a border is a
+ * user gesture like any other and has to be undoable (2026-11 UX audit P0-2); the
+ * old `history.clear()` made 「换错了」 unrecoverable *and* threw away every edit
+ * made before the switch. Because the border travels with the values, undoing a
+ * switch puts the previous border back together with the values it had.
+ */
+data class DesignStep(
+    val values: Map<String, Any>,
+    /** Border these values belong to; null for steps taken before any border existed. */
+    val cardId: String? = null,
+)
+
+/**
+ * Undo/redo over control values + the border they belong to (no renderer, no engine).
  *
  * A step is one user gesture: writes to the same control inside [MERGE_WINDOW_MS]
  * merge into the first step, so typing a name or dragging a slider is one undo.
+ * A border switch is recorded with [recordBorder] and is **always** its own step —
+ * it must not merge with a neighbouring slider drag, or 「连换 3 张，撤销回上一张」
+ * would jump three borders back.
  * The stack is capped at [limit]; undo/redo states are exposed as Compose state.
  */
 class DesignHistory(private val limit: Int = 50) {
-    private val undoStack = ArrayDeque<Map<String, Any>>()
-    private val redoStack = ArrayDeque<Map<String, Any>>()
+    private val undoStack = ArrayDeque<DesignStep>()
+    private val redoStack = ArrayDeque<DesignStep>()
     private var lastKey: String? = null
     private var lastMark: TimeMark? = null
+
+    /**
+     * Border the live design belongs to. Every recorded step carries it, so an undo
+     * that crosses a border switch can hand the old border back to the shell
+     * (`DesignSession.onCardRestored`). The session keeps this in sync.
+     */
+    var currentCardId: String? = null
+        internal set
 
     var undoCount by mutableStateOf(0)
         private set
     var redoCount by mutableStateOf(0)
+        private set
+
+    /**
+     * True when the newest step was a border switch. The stage reads it for the
+     * one-shot 「已换边框 · 撤销」 notice; any undo/redo clears it (that gesture is
+     * already its own feedback).
+     */
+    var lastStepIsBorder by mutableStateOf(false)
         private set
 
     val canUndo: Boolean get() = undoCount > 0
@@ -43,31 +77,43 @@ class DesignHistory(private val limit: Int = 50) {
             lastMark?.let { it.elapsedNow().inWholeMilliseconds < MERGE_WINDOW_MS } == true
         // Any new step invalidates redo, even a merged one.
         redoStack.clear()
-        if (!merge) {
-            undoStack.addLast(before)
-            while (undoStack.size > limit) undoStack.removeFirst()
-        }
+        if (!merge) push(DesignStep(before, currentCardId))
         lastKey = key
         lastMark = now
+        lastStepIsBorder = false
         syncCounts()
     }
 
-    fun undo(current: Map<String, Any>): Map<String, Any>? {
-        val before = undoStack.removeLastOrNull() ?: return null
-        redoStack.addLast(current)
-        while (redoStack.size > limit) redoStack.removeFirst()
+    /**
+     * A border switch: one discrete step, never merged.
+     *
+     * The merge window is reset as well, so the user's very next edit starts a step
+     * of its own instead of folding into the switch.
+     */
+    fun recordBorder(before: Map<String, Any>) {
+        redoStack.clear()
+        push(DesignStep(before, currentCardId))
         lastKey = null
         lastMark = null
+        lastStepIsBorder = true
+        syncCounts()
+    }
+
+    fun undo(current: DesignStep): DesignStep? {
+        val before = undoStack.removeLastOrNull() ?: return null
+        pushRedo(current)
+        resetWindow()
+        lastStepIsBorder = false
         syncCounts()
         return before
     }
 
-    fun redo(current: Map<String, Any>): Map<String, Any>? {
+    fun redo(current: DesignStep): DesignStep? {
         val after = redoStack.removeLastOrNull() ?: return null
         undoStack.addLast(current)
         while (undoStack.size > limit) undoStack.removeFirst()
-        lastKey = null
-        lastMark = null
+        resetWindow()
+        lastStepIsBorder = false
         syncCounts()
         return after
     }
@@ -77,7 +123,23 @@ class DesignHistory(private val limit: Int = 50) {
         redoStack.clear()
         lastKey = null
         lastMark = null
+        lastStepIsBorder = false
         syncCounts()
+    }
+
+    private fun push(step: DesignStep) {
+        undoStack.addLast(step)
+        while (undoStack.size > limit) undoStack.removeFirst()
+    }
+
+    private fun pushRedo(step: DesignStep) {
+        redoStack.addLast(step)
+        while (redoStack.size > limit) redoStack.removeFirst()
+    }
+
+    private fun resetWindow() {
+        lastKey = null
+        lastMark = null
     }
 
     private fun syncCounts() {
@@ -106,6 +168,17 @@ class DesignSession {
     var onValuesChanged: ((values: Map<String, Any>, overrides: Map<String, Any>) -> Unit)? = null
     var onExportChanged: ((ExportSettings) -> Unit)? = null
 
+    /**
+     * Undo/redo landed on a step taken on a **different border**: the shell has to
+     * re-point the stage at it (one code path for phone and desktop). Null means the
+     * step had no border at all (未选边框).
+     */
+    var onCardRestored: ((String?) -> Unit)? = null
+
+    /** Border the live [values] belong to; the shell keeps it in sync while browsing. */
+    var cardId: String? = null
+        private set
+
     private var exportState by mutableStateOf(ExportSettings())
     var export: ExportSettings
         get() = exportState
@@ -127,11 +200,18 @@ class DesignSession {
         }
     }
 
-    /** Hydrates the view from a project design without emitting a write-back. */
-    fun replaceValues(next: Map<String, Any>) {
+    /**
+     * Hydrates the view from a project design without emitting a write-back.
+     *
+     * [clearHistory] is off for a re-hydrate that only follows a **border switch**:
+     * the switch is itself an undoable step now (P0-2), and wiping the stack here
+     * would delete the very step the user needs to go back. A photo switch keeps the
+     * clearing — undoing one photo's values onto another photo is not a thing.
+     */
+    fun replaceValues(next: Map<String, Any>, clearHistory: Boolean = true) {
         values.clear()
         values.putAll(next)
-        history.clear()
+        if (clearHistory) history.clear()
     }
 
     /** Hydrates newly discovered controls without overwriting edits in progress. */
@@ -169,14 +249,14 @@ class DesignSession {
     }
 
     fun undo(): Boolean {
-        val restored = history.undo(values.toMap()) ?: return false
-        restore(restored)
+        val restored = history.undo(DesignStep(values.toMap(), cardId)) ?: return false
+        applyStep(restored)
         return true
     }
 
     fun redo(): Boolean {
-        val restored = history.redo(values.toMap()) ?: return false
-        restore(restored)
+        val restored = history.redo(DesignStep(values.toMap(), cardId)) ?: return false
+        applyStep(restored)
         return true
     }
 
@@ -223,12 +303,39 @@ class DesignSession {
         export = preset.export
         lastExport = null
         history.clear()
+        // A preset names its own border; the caller's `selectedCard` follows, so the
+        // switch must not be recorded as a step on top of the fresh, empty history.
+        cardId = preset.cardId
+        history.currentCardId = preset.cardId
         notifyChanged()
     }
 
-    /** Drops history when the selected border changes (template switches are not undoable). */
-    fun onCardChanged() {
-        history.clear()
+    /**
+     * The user moved to another border.
+     *
+     * One undoable step, recorded **before** the switch so undo lands on the border
+     * the user came from (P0-2). The stack is kept: a border switch must not be a
+     * one-way door that also costs every earlier edit.
+     */
+    fun onCardChanged(nextCardId: String?) {
+        if (nextCardId == cardId) return
+        if (nextCardId == null) {
+            // 没有边框就没有可回退的一步（清空照片会走到这里）：只清指针，历史留着。
+            cardId = null
+            history.currentCardId = null
+            return
+        }
+        history.recordBorder(values.toMap())
+        cardId = nextCardId
+        history.currentCardId = nextCardId
+    }
+
+    private fun applyStep(step: DesignStep) {
+        val borderChanged = step.cardId != cardId
+        cardId = step.cardId
+        history.currentCardId = step.cardId
+        restore(step.values)
+        if (borderChanged) onCardRestored?.invoke(step.cardId)
     }
 
     private fun restore(snapshot: Map<String, Any>) {

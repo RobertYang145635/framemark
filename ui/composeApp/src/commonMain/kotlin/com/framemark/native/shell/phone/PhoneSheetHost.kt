@@ -3,7 +3,6 @@ package com.framemark.native.shell.phone
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -26,11 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -113,6 +108,13 @@ internal fun ColumnScope.PhoneSheetHost(
      * （和品牌选择器同一层），底板只负责把请求递上去。
      */
     onOpenBorderLibrary: () -> Unit = {},
+    /**
+     * 「把当前设计用到全部 N 张」：边框页面板当前边框那一行右侧的入口（UX 审查
+     * P1-3）。和导出表单里那一枚是**同一个动作**；null / 只有一张照片时不画。
+     */
+    onApplyToAll: (() -> Unit)? = null,
+    /** 工程里的照片总数，只用来写那枚入口的「全部 N 张」。 */
+    applyToAllCount: Int = 0,
     model: InspectorCardModel?,
     session: DesignSession,
     inspectorState: InspectorLoadState,
@@ -137,9 +139,16 @@ internal fun ColumnScope.PhoneSheetHost(
                         Modifier
                             .fillMaxWidth()
                             .height(sheetHeight)
-                            // 不要在圆角外再刷一层方形底色：那层只能在「背后的颜色恰好等于它」
-                            // 时成立，换成浅色画布后就成了圆角旁边的两块方形小耳朵。
-                            // 圆角缺口应当露出真实背景（舞台照片或画布），由父级决定。
+                            // 底板浮在舞台上：先把整块矩形刷成舞台色（= 设置里的画布背景），
+                            // **再** clip 面板。于是上圆角切出来的是舞台色，和面板正上方那条
+                            // 舞台带接得上，圆角就是唯一的分界。
+                            // 以前这里直接留空，缺口露的是页面底色 `FmPalette.canvas` —— 它在
+                            // 每套配色里都只比 `surface` 深一档，于是圆角外沿读起来就是「圆角 +
+                            // 直角」两块叠在一起的小耳朵（用户反馈两轮的就是它）。
+                            // 注意顺序：background 必须在 clip 之前，否则它会被一起裁掉、缺口
+                            // 又露回底色；而「把父容器刷成固定颜色」那种只在单一主题下成立的
+                            // 做法不行，这里读的是舞台色本身，浅灰 / 中灰 / 深灰三种画布都成立。
+                            .background(phoneStageColor())
                             .clip(RoundedCornerShape(topStart = SheetRadius, topEnd = SheetRadius))
                             .background(FmPalette.surface)
                             .border(
@@ -238,19 +247,24 @@ internal fun ColumnScope.PhoneSheetHost(
                             tools = tools,
                             modifier = Modifier.fillMaxWidth().weight(1f),
                         ) { targetTool ->
-                            if (card == null && targetTool != EditorTool.Border) {
-                                PanelRequiresBorder(
-                                    onOpenBorder = { onToolChange(EditorTool.Border) },
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            } else if (targetTool == EditorTool.Border) {
-                                // 边框页的落地态就是这块面板：当前边框 + 一个动作。库是盖在
-                                // 画布上的覆盖层（外壳画的），只有点这个动作才出现。
+                            // 没有边框时工具条只剩「边框」一格（`phoneToolsFor(hasBorder =
+                            // false)`），所以这里画的一定是这块面板 —— 包括「刚删掉边框、
+                            // 工具条正在收口」那一帧还在飞的过渡页（那时 targetTool 仍是
+                            // 样式 / 文字 / 水印，而 card 已经没了）。以前那一帧会落到
+                            // 「先选择边框 + 去选边框」：同一个动作的第二个入口，现在没有了。
+                            if (card == null || targetTool == EditorTool.Border) {
+                                // 边框页的落地态就是这块面板：当前边框那一行。库里点一张卡
+                                // 就应用；唯一的入口在画布上（`StagePlaceholder`），面板里
+                                // 没有第二枚按钮。
                                 PhoneBorderPanel(
                                     index = libraryIndex,
                                     card = card,
                                     onRetry = onRetryLibrary,
                                     onOpenLibrary = onOpenBorderLibrary,
+                                    // 当前边框那一行右侧的「用到全部 N 张」：与导出表单
+                                    // 里那一枚同一个动作（UX 审查 P1-3）。
+                                    onApplyToAll = onApplyToAll,
+                                    applyToAllCount = applyToAllCount,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -328,43 +342,6 @@ internal fun panelTitle(tool: EditorTool): String = phoneToolLabel(tool)
 // ---------------------------------------------------------------------------
 // Panel
 // ---------------------------------------------------------------------------
-
-/** A non-border tool with no applied border yet: a real explanation, not empty rows. */
-@Composable
-private fun PanelRequiresBorder(onOpenBorder: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(FmSpacing.md),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text("先选择边框", style = FmType.titleSmall, color = FmPalette.onSurface)
-        Spacer(Modifier.height(FmSpacing.xs))
-        Text(
-            text = "这张照片还没有边框。选择边框后才能调整参数、文字、Logo 和水印位置。",
-            style = FmType.bodyMedium,
-            color = FmPalette.onSurfaceMuted,
-        )
-        Spacer(Modifier.height(FmSpacing.md))
-        Box(
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .background(FmPalette.primary)
-                .semantics {
-                    contentDescription = "去选择边框"
-                    role = Role.Button
-                }
-                .clickable(onClick = onOpenBorder)
-                .padding(horizontal = FmSpacing.xl),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "去选边框",
-                style = FmType.labelMedium,
-                color = FmPalette.onPrimary,
-            )
-        }
-    }
-}
 
 @Composable
 internal fun ParameterPageHeader(

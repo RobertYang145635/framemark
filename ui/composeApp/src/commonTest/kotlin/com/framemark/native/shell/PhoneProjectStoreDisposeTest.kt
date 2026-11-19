@@ -36,7 +36,7 @@ class PhoneProjectStoreDisposeTest {
         store.load()
 
         val beforeMutation = fs.projectWrites
-        store.adoptSample()
+        store.adoptSampleFixture()
         assertEquals(beforeMutation, fs.projectWrites, "编辑只登记待保存，不立即写盘")
 
         store.dispose()
@@ -58,7 +58,7 @@ class PhoneProjectStoreDisposeTest {
         val previousFs = CountingFs(FakeFs())
         val previous = PhoneProjectStore(previousFs, io = null, platform = null)
         previous.load()
-        previous.adoptSample()
+        previous.adoptSampleFixture()
         PhoneProjectRuntime.install(previous)
 
         val next = PhoneProjectStore(CountingFs(FakeFs()), io = null, platform = null)

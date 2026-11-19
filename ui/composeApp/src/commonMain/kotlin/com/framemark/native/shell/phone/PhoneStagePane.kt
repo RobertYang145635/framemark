@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -80,7 +79,6 @@ import com.framemark.native.shell.phone.phoneStageGestures
 import com.framemark.native.theme.FmDuration
 import com.framemark.native.theme.FmEasing
 import com.framemark.native.theme.FmPalette
-import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.theme.fmTweenSpec
@@ -91,6 +89,7 @@ import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.NativeStagePreview
 import com.framemark.native.workflow.PhotoThumbnail
 import com.framemark.native.workflow.PhotoTray
+import com.framemark.native.workflow.PrimaryButton
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.TrayPhoto
 import com.framemark.native.workflow.WatermarkSpec
@@ -110,6 +109,17 @@ internal data class PreviewGeo(val w: Int, val h: Int, val photoRect: ImageRect?
 // The stage's photo band and pill band live in `PhoneStageBands` (phone package):
 // the failed-preview placeholder draws inside the same photo band, so both places
 // must read one definition.
+
+/**
+ * 舞台底色 = 设置里的「画布背景」档（深灰 / 中灰 / 浅灰），四套配色共用。
+ *
+ * 舞台上、编辑器顶栏（含状态栏条带）、以及底板圆角缺口背后的那一层都读**这一个**
+ * 函数。三处必须同色：底板上圆角切掉的那两个小缺口只有落在舞台色上才看不见，
+ * 落在别的颜色上就成了一块方形小耳朵（2026-11 的真机缺陷）。
+ */
+@Composable
+internal fun phoneStageColor(): Color =
+    LocalFmColors.current.stageColor(AppearanceEnv.controller?.settings?.stageTone ?: StageTone.Dark)
 
 /**
  * The dark photo stage. The photo takes every dp the chrome leaves (report §7.2);
@@ -139,6 +149,8 @@ internal fun StageArea(
     renderFailure: String?,
     borderName: String?,
     undoNotice: Boolean,
+    /** 「已换边框 · 撤销」：换边框现在是一条可撤销的历史（P0-2）。 */
+    borderNotice: Boolean = false,
     focusMode: Boolean,
     density: Density,
     onStageSize: (IntSize) -> Unit,
@@ -146,12 +158,13 @@ internal fun StageArea(
     onDoubleTap: () -> Unit,
     onCompareChange: (Boolean) -> Unit,
     onRedo: () -> Unit,
+    onUndo: () -> Unit,
     onFocusToggle: () -> Unit,
     onOpenBorder: () -> Unit,
-    onOpenBatch: () -> Unit,
-    onApplyAll: (() -> Unit)?,
-    onOpenPhotoBatch: (() -> Unit)?,
-    onOpenSettings: () -> Unit,
+    // 2026-11（UX 审查 P1-3）：这里曾经还声明 onOpenBatch / onApplyAll /
+    // onOpenPhotoBatch / onOpenSettings 四个回调，舞台上一个控件都没用到 —— 签名在
+    // 撒谎。舞台只画照片、边框名与裁切入口；「用到全部 N 张」真正接上的位置是边框
+    // 面板的当前边框那一行（`PhoneBorderPanel` → `PhoneSheetHost`）。
     onRendered: (Int, Int, ImageRect?) -> Unit,
     onRenderStarted: () -> Unit,
     onFailed: (String) -> Unit,
@@ -196,9 +209,8 @@ internal fun StageArea(
             cropChromeVisible = false
         }
     }
-    val stageTone = AppearanceEnv.controller?.settings?.stageTone ?: StageTone.Dark
     Box(
-        modifier = modifier.background(LocalFmColors.current.stageColor(stageTone)),
+        modifier = modifier.background(phoneStageColor()),
     ) {
         Box(
             modifier = Modifier
@@ -341,7 +353,9 @@ internal fun StageArea(
         }
         PhoneStageOverlays(
             undoNotice = undoNotice,
+            borderNotice = borderNotice,
             onRedo = onRedo,
+            onUndo = onUndo,
         )
         if (!focusMode) {
             // Two chrome sets overlap for exactly the length of the enter transition:
@@ -427,6 +441,14 @@ internal fun StageArea(
     }
 }
 
+/**
+ * 导入照片、还没选边框时的画布：照片 + **唯一那枚主按钮**。
+ *
+ * 2026-11（UX 审查）：产品是「导入 → 选边框 → 微调 →（要水印再加）→ 导出」，所以
+ * 这一屏的全部内容就是「选边框」这一个动作。按钮放在照片正中（离刚导入的图最近），
+ * 用的是全局主按钮 [PrimaryButton]，和别处的主行动同一套视觉。这里**不加**副标题、
+ * 不加步骤说明、不加提示条 —— 删掉那些字用户照样知道该点它，那它们就是多余的。
+ */
 @Composable
 private fun StagePlaceholder(tray: PhotoTray, onOpenBorder: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -436,25 +458,10 @@ private fun StagePlaceholder(tray: PhotoTray, onOpenBorder: () -> Unit) {
             cornerRadius = 0.dp,
             modifier = Modifier.fillMaxSize(),
         )
-        Box(
-            modifier = Modifier
-                .heightIn(min = 48.dp)
-                .clip(RoundedCornerShape(FmRadii.pill))
-                .background(FmPalette.primary)
-                .semantics {
-                    contentDescription = "选择边框"
-                    role = Role.Button
-                }
-                .clickable(onClick = onOpenBorder)
-                .padding(horizontal = FmSpacing.xl),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "选择边框",
-                style = FmType.labelMedium,
-                color = FmPalette.onPrimary,
-            )
-        }
+        PrimaryButton(
+            text = PhoneBorderPageState.CHOOSE_LABEL,
+            onClick = onOpenBorder,
+        )
     }
 }
 

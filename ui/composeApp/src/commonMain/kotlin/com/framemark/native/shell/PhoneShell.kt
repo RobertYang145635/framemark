@@ -570,9 +570,12 @@ fun PhoneShell() {
         FmLog.info("FM_CARD_RESTORE_UNRESOLVED") { "no card matched saved photo design=$designCard" }
     }
 
-    // Border changes are not undoable; the active photo owns the card it shows.
+    // 边框切换 = 一条可撤销的历史（UX 审查 P0-2）。`onCardChanged` 把「旧边框 → 新边框」
+    // 记成一步，前面所有值编辑的历史一律留着（以前这里 `history.clear()`，换错一次既回
+    // 不去也把之前的编辑全丢了）。撤销 / 重做跨边框时 session 通过 `onCardRestored` 把
+    // 选中边框指回历史里那一张，走的仍是「改 selectedCard」这一条写入路径。
     LaunchedEffect(selectedCard?.id, store.activePhotoId) {
-        session.onCardChanged()
+        session.onCardChanged(selectedCard?.id)
         val card = selectedCard ?: return@LaunchedEffect
         val photoId = store.activePhotoId ?: return@LaunchedEffect
         if (store.designOf(photoId)?.cardId != card.id) store.applyCard(card.id, card.systemStyle)
@@ -653,19 +656,44 @@ fun PhoneShell() {
     // design owns (persisted, exported, re-applied) instead of being dropped as an
     // unknown consumer.
     val currentPanelModel by rememberUpdatedState(panelModel)
+    // 当前会话里的值是从哪张照片读出来的。同照片的重新水合 = 换了边框（或套了预设 /
+    // 样式），它**不能**清撤销栈 —— 换边框这一步就是用户要回去的那一步（P0-2）；
+    // 真的换了照片才清，把一张照片的撤销结果搬到另一张上不是一回事。
+    var hydratedPhotoId by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
         session.onValuesChanged = { _, overrides ->
             currentPanelModel?.let { store.writeActiveValues(it, styleOf(it.cardId), overrides) }
         }
         session.onExportChanged = { store.setExportSettings(it) }
+        session.onCardRestored = { cardId ->
+            // 撤销跨了边框：把选中边框指回去，剩下的写入由上面那个 effect 做。
+            // 与「从工程里恢复边框」是同一条路，所以复用同一个证据标签。
+            if (cardId == null) {
+                selectedCard = null
+                FmLog.info("FM_CARD_RESTORE") { "card=- via=undo 未选边框" }
+            } else {
+                val restored = cardOf(cardId)
+                if (restored != null) {
+                    selectedCard = restored
+                    FmLog.info("FM_CARD_RESTORE") { "card=${restored.id} via=undo" }
+                } else {
+                    FmLog.warn("FM_CARD_RESTORE") { "card=$cardId via=undo unresolved" }
+                }
+            }
+        }
     }
 
     // Hydrate the editor from the project: card defaults + this photo's overrides.
     LaunchedEffect(panelModel?.cardId, store.activePhotoId, hydrateToken) {
         val built = currentPanelModel ?: return@LaunchedEffect
         val photoId = store.activePhotoId ?: return@LaunchedEffect
+        val photoChanged = hydratedPhotoId != photoId
+        hydratedPhotoId = photoId
         session.seed(built.controls)
-        session.replaceValues(sessionValuesFor(built, store.designOf(photoId)))
+        session.replaceValues(
+            sessionValuesFor(built, store.designOf(photoId)),
+            clearHistory = photoChanged,
+        )
         session.setExportSilently(store.exportSettingsForUi())
         if (!exportHookApplied) {
             val ui = session.export
@@ -722,10 +750,11 @@ fun PhoneShell() {
         if (autoOpened) return@LaunchedEffect
         val card = ready.snapshot.cards.firstOrNull { it.id == id }
         if (card != null) {
+            // 证据钩子同样不注入样张（P0-1）：拿不到用户的照片就只是把边框选上，
+            // 工程文档里一个 `photo:sample` 都不留。
             selectedCard = card
-            if (tray.isEmpty) store.adoptSample()
             autoOpened = true
-            FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name}" }
+            FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name} photos=${store.photos.size}" }
         } else {
             FmLog.info("FM_OPEN_CARD_MISSING") { "$id" }
             autoOpened = true
@@ -734,7 +763,12 @@ fun PhoneShell() {
 
     val anySheet = presetSheetOpen || exportSheetOpen || batchSheetOpen || photoBatchOpen || confirmApplyAll || pendingPhotoBatch != null
     fun openExport() {
-        if (activeDesignSnapshot() == null) {
+        // P0-1 的第二半：样张没有文件，导出它写出来的是自带的山景照。这里先拒绝，
+        // 给人话；「有照片但没有边框」仍然是另一句更具体的话。
+        val refusal = store.exportRefusal()
+        if (refusal != null) {
+            watermarkError = refusal
+        } else if (activeDesignSnapshot() == null) {
             watermarkError = "请先选择并应用边框，再导出这张照片。"
         } else {
             exportSheetOpen = true
@@ -803,17 +837,37 @@ fun PhoneShell() {
     }
 
     /**
+     * 「先选择照片」：挑边框 / 换边框之前必须有用户的照片。
+     *
+     * 有系统选片器就**直接打开它**（用户这一下的意图是「做一张图」，不是想看一句
+     * 提示）；没有就明说，绝不退回「先塞一张示例照片」那条路。
+     */
+    fun requestPhotoFirst() {
+        val picker = WorkflowEnv.photoPicker
+        // 仍是「点了一张边框」这一路，只是去处换成了选片器（同一个证据标签）。
+        FmLog.info("FM_OPEN_CARD") { "redirect=photo-picker picker=${if (picker == null) "none" else "open"} photos=${store.photos.size}" }
+        if (picker != null) {
+            picker()
+        } else {
+            watermarkError = "先选择一张照片，再挑边框。"
+        }
+    }
+
+    /**
      * A border picked in the in-panel browser: apply it and stay in the browser,
      * so neighbouring styles can be compared without leaving the row.
+     *
+     * 空工程上**绝不**注入内置样张（UX 审查 P0-1）：以前这里调 `adoptSample`
+     * 把 `PhotoRef(photo:sample)` 写进工程，于是「导出」出来的是应用自带的山景照。
+     * 现在没有照片就把这一下转成「先选择照片」，选完之后用户再点边框。
      */
     fun openCardFromBrowser(card: LibraryCard) {
+        if (tray.isEmpty) {
+            requestPhotoFirst()
+            return
+        }
         selectedCard = card
         tool = EditorTool.Border
-        if (tray.isEmpty) {
-            store.adoptSample()
-            PhotoSelection.set(null)
-            FmLog.info("FM_TRAY_SAMPLE") { "browse" }
-        }
         FmLog.info("FM_OPEN_CARD") { "${card.id} name=${card.name} inPanel=true" }
     }
 
@@ -947,8 +1001,6 @@ fun PhoneShell() {
                 onRetryLibrary = { libraryReload++ },
                 onOpenPresets = { presetSheetOpen = true },
                 onOpenExport = ::openExport,
-                onOpenBatch = { batchSheetOpen = true },
-                onOpenSettings = { page = PhonePage.Settings },
                 onUndo = { session.undo() },
                 onRedo = { session.redo() },
                 onRetryInspector = { inspectorReload++ },
@@ -972,7 +1024,9 @@ fun PhoneShell() {
                     .map { it.id }
                     .toSet(),
                 onApplyAll = { confirmApplyAll = true },
-                onOpenPhotoBatch = { openPhotoBatch() },
+                // 「把当前设计用到全部 N 张」的第二个入口在边框面板的当前边框那一行
+                // （UX 审查 P1-3）；两处都走同一个动作 + 同一个确认弹窗。
+                applyToAllCount = store.photos.size,
                 textSlots = textSlots.slots,
                 textOutputWidth = textSlots.width,
                 textOutputHeight = textSlots.height,
@@ -1102,6 +1156,8 @@ fun PhoneShell() {
                 card = selectedCard,
                 design = activeDesignSnapshot(),
                 overlay = { activeOverlay() },
+                // 样张（没有文件）永远是 null：引擎拿到 null 会退到内置样张，所以这一层
+                // 只能「不导出」，真正的拒绝在 `openExport()` 与表单的 `generate()` 里。
                 photoPath = when (val activePhoto = store.activePhoto) {
                     null -> "" // Fail closed when no sample or real project photo is active.
                     else -> if (activePhoto.id == SAMPLE_PHOTO_ID) null else activePhoto.path
@@ -1109,6 +1165,12 @@ fun PhoneShell() {
                 photoIndex = (store.photos.indexOfFirst { it.id == store.activePhotoId } + 1)
                     .coerceAtLeast(1),
                 photoDisplayName = store.activePhoto?.displayName,
+                // 表单上的「真实像素」读的是舞台这张照片的尺寸 + 这张边框声明的参数：
+                // 与手机样式页「导出尺寸」同一份输入，所以两处印同一个数字。
+                photoWidthPx = store.activePhoto?.widthPx ?: 0,
+                photoHeightPx = store.activePhoto?.heightPx ?: 0,
+                controls = panelModel?.controls.orEmpty(),
+                isSamplePhoto = store.activePhotoId == SAMPLE_PHOTO_ID,
                 // §3.4: 应用到全部照片 moved here from the removed stage menu; the
                 // project already owns `applyActiveDesignToAll`, so no new engine work.
                 canApplyToAll = store.photos.size > 1,

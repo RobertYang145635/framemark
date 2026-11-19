@@ -1,5 +1,8 @@
 package com.framemark.native.shell.phone
 
+import com.framemark.native.inspector.InspectorControl
+import com.framemark.native.inspector.OutputPixels
+import com.framemark.native.inspector.OutputSize
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.product.ExportSettings
 import com.framemark.native.product.ExportSizeMode
@@ -186,6 +189,34 @@ object PhoneExportOptions {
     /** 尺寸 chip caption: 原尺寸 has no number to print. */
     fun sizeCaption(size: PhoneExportSize): String =
         size.longEdge?.let { "长边 $it px" } ?: "原尺寸"
+
+    /**
+     * 导出表单上要印的**真实成片像素**。
+     *
+     * 表单以前把 `outputWidth/outputHeight` 写死 0，于是永远退回去印「原尺寸」这一句，
+     * 用户看不到 3024 × 4032（UX 审查 P1）。这里读的是舞台那张照片的像素 + 这张边框
+     * 声明的参数，走的是右栏「导出尺寸」/ 顶栏 / 手机样式页 / 引擎桥接共用的那一条
+     * [OutputSize] 链：先按参数算画布（页脚会加高），再套长边档。所以同一份设计在
+     * 表单和样式页上印同一个数字。
+     *
+     * 取不到照片尺寸时返回 null —— 宁可不写，也不写一个猜的数字（表单退回尺寸档文案）。
+     */
+    fun outputPixels(
+        photoWidthPx: Int,
+        photoHeightPx: Int,
+        controls: List<InspectorControl>,
+        settings: ExportSettings,
+        value: (InspectorControl) -> Any?,
+    ): OutputPixels? = OutputSize.applyLongEdge(
+        pixels = OutputSize.canvas(
+            photoWidthPx = photoWidthPx,
+            photoHeightPx = photoHeightPx,
+            controls = controls,
+            value = value,
+        ),
+        mode = settings.sizeMode,
+        longEdge = settings.effectiveLongEdge,
+    )
 
     /**
      * Caption of the real selection. A custom edge prints its exact value, so the

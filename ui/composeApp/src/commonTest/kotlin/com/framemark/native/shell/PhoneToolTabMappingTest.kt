@@ -73,10 +73,10 @@ class PhoneToolTabMappingTest {
                 EditorTool.Logo,
                 EditorTool.Watermark,
             ),
-            phoneToolsFor(full),
+            phoneToolsFor(full, hasBorder = true),
         )
         // Edit order of the report §7.3: 边框 / 样式 / 文字 / Logo / 水印.
-        assertEquals(listOf("边框", "样式", "文字", "Logo", "水印"), phoneToolsFor(full).map(::phoneToolLabel))
+        assertEquals(listOf("边框", "样式", "文字", "Logo", "水印"), phoneToolsFor(full, hasBorder = true).map(::phoneToolLabel))
     }
 
     @Test
@@ -88,13 +88,31 @@ class PhoneToolTabMappingTest {
         )
         assertEquals(
             listOf(EditorTool.Border, EditorTool.Params, EditorTool.Text, EditorTool.Watermark),
-            phoneToolsFor(noLogo),
+            phoneToolsFor(noLogo, hasBorder = true),
         )
         // The inspector has not loaded yet: four tools, never a dead Logo cell.
         assertEquals(
             listOf(EditorTool.Border, EditorTool.Params, EditorTool.Text, EditorTool.Watermark),
-            phoneToolsFor(null),
+            phoneToolsFor(null, hasBorder = true),
         )
+    }
+
+    @Test
+    fun without_a_border_the_bar_collapses_to_the_border_cell_alone() {
+        // 2026-11（UX 审查）：导入照片后不自动套边框，这一屏只有「选边框」一个下一步。
+        // 另外三格改的都是还不存在的边框，点开只能回一句「先选择边框」——三次无效点击。
+        // 所以无边框时工具条只剩一格，**与 inspector 有没有加载完无关**（两种都测）。
+        val full = model(
+            tab(InspectorPage.Style, 0),
+            tab(InspectorPage.Text, 0),
+            tab(InspectorPage.Logo, 0),
+            tab(InspectorPage.Watermark, 0),
+        )
+        assertEquals(listOf(EditorTool.Border), phoneToolsFor(full, hasBorder = false))
+        assertEquals(listOf(EditorTool.Border), phoneToolsFor(null, hasBorder = false))
+        assertEquals(listOf("边框"), phoneToolsFor(full, hasBorder = false).map(::phoneToolLabel))
+        // 反过来：同一份 model，有边框时照旧是五格 —— 收口只由「有没有边框」决定。
+        assertEquals(5, phoneToolsFor(full, hasBorder = true).size)
     }
 
     @Test
@@ -114,7 +132,7 @@ class PhoneToolTabMappingTest {
             sections = listOf(InspectorSectionModel(InspectorSection.Logo, listOf(brandControl()))),
             isIr = true,
         )
-        val tools = phoneToolsFor(inspectorTabsFor(irModel, DesignSession()))
+        val tools = phoneToolsFor(inspectorTabsFor(irModel, DesignSession()), hasBorder = true)
         assertFalse(EditorTool.Logo in tools, "IR card must not offer a Logo tool: $tools")
         assertTrue(EditorTool.Watermark in tools)
     }

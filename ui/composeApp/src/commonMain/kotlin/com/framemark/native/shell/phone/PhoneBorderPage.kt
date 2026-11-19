@@ -148,14 +148,23 @@ internal fun PhoneBorderLibraryOverlay(
     val scrimInteraction = remember { MutableInteractionSource() }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val panelHeight = maxHeight * PHONE_BORDER_LIBRARY_PANEL_FRACTION
+        // 遮罩铺满整屏，面板再盖在它上面。遮罩必须一直铺到屏幕底部（被面板盖住）：
+        // 它以前只占「面板以上那条带」，于是面板上圆角切出来的缺口露的是**没压暗**的
+        // 舞台 —— 在深色遮罩边上就是一块亮方角，也就是用户说的「圆角 + 直角」小耳朵。
+        // 铺满之后缺口露的就是遮罩色，圆角才是唯一的分界；面板不透光，所以铺满这层
+        // 对面板本身一个像素都不改。
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(FmPalette.scrim),
+        )
         Column(modifier = Modifier.fillMaxSize()) {
-            // 顶部条带 = 遮罩下的舞台。点它就关掉库，和标题行的「返回」同一结果；
-            // 它只占面板以上那条带，所以点面板本身绝不会误关。
+            // 顶部条带只留点击：颜色来自下面那层铺满整屏的遮罩。点它就关掉库，和标题行的
+            // 「返回」同一结果；它只占面板以上那条带，所以点面板本身绝不会误关。
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(FmPalette.scrim)
                     .clickable(
                         interactionSource = scrimInteraction,
                         indication = null,
@@ -167,7 +176,7 @@ internal fun PhoneBorderLibraryOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(panelHeight)
-                    // 圆角缺口露出真实背景（这里是上面那层遮罩），不再补一层方形底色 ——
+                    // 圆角缺口露出真实背景（铺满整屏的遮罩），不再补一层方形底色 ——
                     // 补色只在「背后颜色恰好相同」时成立，换主题就会露出方形小耳朵。
                     .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
                     .background(FmPalette.canvas)
