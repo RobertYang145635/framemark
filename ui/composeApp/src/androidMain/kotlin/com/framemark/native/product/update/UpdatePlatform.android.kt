@@ -128,7 +128,7 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (L
             return "下载文件大小不符（${part.length()} != ${asset.size}）"
         }
         if (hasSha && asset.size > 0 && part.length() != asset.size) {
-            com.framemark.native.product.FmLog.warn("FM_UPDATE_SIZE_MISMATCH") {
+            com.framemark.native.product.FmLog.warn("UPDATE_SIZE_MISMATCH") {
                 "len=${part.length()} declared=${asset.size}（sha256 已通过，按通过处理）"
             }
         }
