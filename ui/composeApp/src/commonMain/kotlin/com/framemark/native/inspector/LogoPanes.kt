@@ -56,10 +56,10 @@ import com.framemark.native.workflow.trackTextEditing
 /**
  * Logo 页（演示稿 `logo.js` 的 `lgPaneLive`，按 UI-v2 复测的反馈重排）。
  *
- * 面板正文 = **调整字标**（位置 / 大小 / 显示 Logo）+ **三个动作**（更换 Logo /
- * 自动匹配 / 我的 Logo）+ 一行 `当前：品牌 · 款式`。落地永远是这一块：进来先看见
- * 「现在用的是哪个字标」，并且当场就能调；品牌库是一层盖在画布上的覆盖层（手机）
- * 或内联品牌页（桌面），只能由「更换 Logo」点进去。
+ * 面板正文 = **当前字标 + 三个动作**（更换 Logo / 自动匹配 / 我的 Logo）在上，
+ * **调整字标**（位置 / 大小 / 显示 Logo）在下 —— 先选，再调。落地永远是这一块：
+ * 进来先看见「现在用的是哪个字标」，先把它选对；品牌库是一层盖在画布上的覆盖层
+ * （手机）或内联品牌页（桌面），只能由「更换 Logo」点进去。
  *
  * 数据与写入点一个没换：品牌库数据、版本/字标键、预览图加载、`logoBrandMode` 判定
  * 沿用 `BrandLogoLibrary.kt`；仍是「浏览不写入、只有点具体字标才写入」。
@@ -163,14 +163,14 @@ internal const val LOGO_SOURCE_AUTO = "auto"
 /**
  * Logo 页此刻画哪一块正文。
  *
- * 落地永远是 [Panel]：进来就是「调位置 / 大小 + 三个动作」，画布仍在，手上立刻有活。
- * 品牌库 / 版本库 / 我的 Logo 都只能由**明确的点击**进入，而且各自都带返回入口 ——
- * 选完 / 取消都回得到同一块面板，不会停在列表上，也不会什么都不画。
+ * 落地永远是 [Panel]：进来就是「当前字标 + 三个动作」在上、「调整」在下，画布仍在，
+ * 手上立刻有活。品牌库 / 版本库 / 我的 Logo 都只能由**明确的点击**进入，而且各自都带
+ * 返回入口 —— 选完 / 取消都回得到同一块面板，不会停在列表上，也不会什么都不画。
  */
 internal enum class LogoPaneBody {
     /**
-     * 落地态：调整字标（位置 / 大小 / 显示 Logo）+ 更换 Logo / 自动匹配 / 我的 Logo
-     * + 一行 `当前：…` 说明。这一块是唯一的落地与返回落点。
+     * 落地态：一行 `当前：…` + 更换 Logo / 自动匹配 / 我的 Logo，下面是调整字标
+     * （位置 / 大小 / 显示 Logo）。这一块是唯一的落地与返回落点。
      */
     Panel,
 
@@ -225,22 +225,22 @@ internal enum class LogoPanelAction {
  *
  * - [LogoPanelAction.Replace]：手机端只发「开覆盖层」的请求，正文不动 —— 覆盖层选完 /
  *   关掉都回到同一块面板；桌面端进内联品牌页（品牌页再进版本页）。
- * - [LogoPanelAction.Auto]：写 `auto` 并停在面板上，说明行立刻变成「自动匹配」。
+ * - [LogoPanelAction.Auto]：写回取值域里的 `auto`（= 没有覆盖值），停在面板上。
+ *   注意它**不写入解析出来的那一枚字标**：品牌在渲染时按照片解析（`LogoPhotoBrand.cutKeyFor`
+ *   → 安卓 `AndroidNativeRender.resolveHandLogo` / 桌面 `DesktopNativeRender`），
+ *   把结果冻进设计里会让用户换一张照片后还画着上一张的品牌。
  * - [LogoPanelAction.User]：进本机用户库正文（桌面上也是内联），每行只写 Brand 控件。
  */
 internal fun logoPanelAction(
     state: LogoPaneState,
     action: LogoPanelAction,
     phonePicker: Boolean,
-    /** 自动匹配解析出的照片品牌字标（null = 解析不到，退回写 `auto`）。 */
-    autoAssetKey: String? = null,
 ): LogoPaneAction = when (action) {
-    // 自动匹配 = 按照片品牌。手写模板的引擎把「没有 logo 覆盖」当成「用卡片自带字标」，
-    // 只写 `auto` 会一直画样片品牌（OPPO 照片仍显示 Panasonic）。所以这里直接把
-    // 解析到的照片品牌字标写进去；解析不到才退回 `auto`（引擎侧按卡片默认处理）。
+    // 自动匹配 = 按照片品牌，而且**在渲染时**解析：这里只把设计里的显式选择清掉，
+    // 选完边框、换一张照片，字标就跟着那张照片的品牌走。
     LogoPanelAction.Auto -> LogoPaneAction(
         state = state.copy(body = LogoPaneBody.Panel, versionPage = false),
-        write = autoAssetKey?.takeIf { it.isNotBlank() } ?: LOGO_SOURCE_AUTO,
+        write = LOGO_SOURCE_AUTO,
     )
     LogoPanelAction.Replace -> LogoPaneAction(
         state = state.copy(
@@ -365,12 +365,35 @@ private fun logoEvidencePane(): LogoPaneState? {
 }
 
 /**
+ * Logo 面板正文的分块，**顺序即渲染顺序**（[LogoPaneSectionOrder] 驱动正文的拼装，
+ * 测试也钉这一份）：用户先看到现在用的是哪个字标、先把它选对，再去调位置 / 大小。
+ */
+internal enum class LogoPaneSection {
+    /** 一行「当前字标」+ 三个动作（更换 Logo / 自动匹配 / 我的 Logo）。 */
+    Brand,
+
+    /** 调整字标（位置 / 大小 / 显示 Logo）。 */
+    Adjust,
+}
+
+/**
+ * 「先选，再调」：字标块永远在调整块上面，两块都是主路径，没有谁要翻过谁。
+ *
+ * 旧版把「调整字标」放在最上（理由是「用户盯着画布调」），结果是换 Logo 这一下被
+ * 挤到三个滑杆下面：挑完边框进来先看见的是一堆调整，找不到「选哪个字标」。
+ */
+internal val LogoPaneSectionOrder: List<LogoPaneSection> = listOf(
+    LogoPaneSection.Brand,
+    LogoPaneSection.Adjust,
+)
+
+/**
  * 品牌字标面板（手机底板与桌面右栏同一份）。
  *
- * 正文只有一块，顺序固定：
- *  1. **调整字标**（位置 / 大小 / 显示 Logo）—— 用户是盯着画布调这些的，所以放在最上；
- *  2. **三个动作**：更换 Logo（开覆盖层）/ 自动匹配（就地写 `auto`）/ 我的 Logo（本机库）；
- *  3. 一行 `当前：品牌 · 款式`（自动匹配时说清按什么解析）。
+ * 正文只有两块，顺序固定（**[LogoPaneSectionOrder]**）：
+ *  1. **当前字标 + 三个动作**：一行 `当前：品牌 · 款式`，然后是更换 Logo（开覆盖层）/
+ *     自动匹配（回到按照片品牌）/ 我的 Logo（本机库）；
+ *  2. **调整字标**：位置 / 大小 / 显示 Logo。
  *
  * 品牌库、版本页、我的 Logo 都只能由动作点进去，各带返回入口，所以落地与返回永远是
  * 这一块 —— 没有分段控件，也没有任何一页列表会自己冒出来。
@@ -518,8 +541,18 @@ private fun BrandedCuratedLogo(
 
     val actions: @Composable () -> Unit = {
         if (dense) {
-            // 手机密度档（2026-11）：三个动作并排一行（每个 44 dp），下面仍然只有
-            // 一行说明。「我的 Logo」画不出用户字标时，理由就用这一行说明，不再另起一行。
+            // 手机密度档（2026-11 复测「先选再调」）：**一行「当前字标」在最上**，
+            // 三个动作并排一行（每个 44 dp）在下面。行数不变（还是这一块两行），
+            // 只是把「现在用的是哪个字标」提到动作之前 —— 用户先看见、再决定换不换。
+            // 「我的 Logo」画不出用户字标时，理由就用这一行说明，不再另起一行。
+            Text(
+                text = userAction.note ?: logoCaption(summary),
+                style = CuratedNote,
+                color = if (userAction.note != null) FmPalette.error else FmPalette.onSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(FmSpacing.xs))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
@@ -532,7 +565,7 @@ private fun BrandedCuratedLogo(
                 )
                 GhostButton(
                     text = "自动匹配",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null, photoBrand?.assetKey)) },
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
                     modifier = Modifier.weight(1f),
                     minHeight = DenseButtonHeight,
                 )
@@ -544,15 +577,25 @@ private fun BrandedCuratedLogo(
                     minHeight = DenseButtonHeight,
                 )
             }
-            Spacer(Modifier.height(FmSpacing.xs))
+        } else {
+            // 桌面右栏：描述顺序与手机一致 —— 先是「当前字标」，再是三个动作。
             Text(
-                text = userAction.note ?: logoCaption(summary),
+                text = logoCaption(summary),
                 style = CuratedNote,
-                color = if (userAction.note != null) FmPalette.error else FmPalette.onSurfaceMuted,
+                color = FmPalette.onSurfaceMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        } else {
+            // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在说明下面。
+            userAction.note?.let { note ->
+                Text(
+                    text = note,
+                    style = FmType.labelSmall,
+                    color = FmPalette.error,
+                    modifier = Modifier.padding(top = FmSpacing.xs),
+                )
+            }
+            Spacer(Modifier.height(FmSpacing.sm))
             PrimaryButton(
                 text = "更换 Logo",
                 onClick = { run(logoPanelAction(state, LogoPanelAction.Replace, phonePicker != null)) },
@@ -565,7 +608,7 @@ private fun BrandedCuratedLogo(
             ) {
                 GhostButton(
                     text = "自动匹配",
-                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null, photoBrand?.assetKey)) },
+                    onClick = { run(logoPanelAction(state, LogoPanelAction.Auto, phonePicker != null)) },
                     modifier = Modifier.weight(1f),
                 )
                 GhostButton(
@@ -575,69 +618,59 @@ private fun BrandedCuratedLogo(
                     modifier = Modifier.weight(1f),
                 )
             }
-            Spacer(Modifier.height(FmSpacing.xs))
-            Text(
-                text = logoCaption(summary),
-                style = CuratedNote,
-                color = FmPalette.onSurfaceMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            // 画不出用户 Logo 时唯一那一行原因：动作置灰，理由就贴在按钮下面。
-            userAction.note?.let { note ->
-                Text(
-                    text = note,
-                    style = FmType.labelSmall,
-                    color = FmPalette.error,
-                    modifier = Modifier.padding(top = FmSpacing.xs),
-                )
-            }
         }
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // 1. 调整字标：进来第一件事就是能在画布还看得见的时候调位置 / 大小 / 显示。
-        if (adjustments.isNotEmpty()) {
-            val rows: @Composable () -> Unit = {
-                if (dense) {
-                    // 相邻两条滑杆一行（`logoAdjustmentRows` 与分页政策同一份行表）。
-                    logoAdjustmentRows(adjustments).forEach { row ->
-                        if (row.size > 1) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                row.forEach { control ->
-                                    Box(Modifier.weight(1f)) {
-                                        CuratedLogoAdjustment(control, session, adjustments, dense = true)
+        // 正文顺序 = 用户的操作顺序：**先选字标，再调字标**。这一份顺序表既驱动渲染，
+        // 也被 commonTest 钉住（`LogoPaneStateTest`），不是注释里的一句愿望。
+        LogoPaneSectionOrder.forEach { section ->
+            when (section) {
+                LogoPaneSection.Brand -> {
+                    // 当前字标那一行 + 三个动作。品牌 / 版本列表只能从「更换 Logo」进去。
+                    if (!showActions) return@forEach
+                    if (grouped) {
+                        CuratedGroup(title = "字标", right = { CuratedCount(logoSourceLabel(summary)) }) {
+                            actions()
+                        }
+                    } else {
+                        actions()
+                    }
+                }
+                LogoPaneSection.Adjust -> {
+                    if (adjustments.isEmpty()) return@forEach
+                    val rows: @Composable () -> Unit = {
+                        if (dense) {
+                            // 相邻两条滑杆一行（`logoAdjustmentRows` 与分页政策同一份行表）。
+                            logoAdjustmentRows(adjustments).forEach { row ->
+                                if (row.size > 1) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(FmSpacing.md),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        row.forEach { control ->
+                                            Box(Modifier.weight(1f)) {
+                                                CuratedLogoAdjustment(control, session, adjustments, dense = true)
+                                            }
+                                        }
                                     }
+                                } else {
+                                    CuratedLogoAdjustment(row.first(), session, adjustments, dense = true)
                                 }
                             }
                         } else {
-                            CuratedLogoAdjustment(row.first(), session, adjustments, dense = true)
+                            orderedLogoAdjustments(adjustments).forEach {
+                                CuratedLogoAdjustment(it, session, adjustments)
+                            }
                         }
                     }
-                } else {
-                    orderedLogoAdjustments(adjustments).forEach {
-                        CuratedLogoAdjustment(it, session, adjustments)
+                    if (grouped) {
+                        CuratedGroup("调整字标") { rows() }
+                    } else {
+                        rows()
                     }
                 }
-            }
-            if (grouped) {
-                CuratedGroup("调整字标") { rows() }
-            } else {
-                rows()
-            }
-        }
-        // 2. 三个动作 + 一行说明。品牌 / 版本列表只能从「更换 Logo」进去。
-        if (showActions) {
-            if (grouped) {
-                CuratedGroup(title = "字标", right = { CuratedCount(logoSourceLabel(summary)) }) {
-                    actions()
-                }
-            } else {
-                actions()
             }
         }
     }

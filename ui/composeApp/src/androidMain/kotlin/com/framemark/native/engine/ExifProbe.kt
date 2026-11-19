@@ -1,6 +1,7 @@
 package com.framemark.native.engine
 
 import android.graphics.Bitmap
+import com.framemark.native.product.ExifMake
 import com.framemark.native.product.orientedImage
 import java.io.File
 import java.io.FileInputStream
@@ -43,6 +44,17 @@ object ExifProbe {
         }
         false
     }.getOrDefault(false)
+
+    /**
+     * IFD0 `Make`（0x010F）：照片的品牌原文，字标自动匹配就按它解析。
+     *
+     * 容器解析交给共用的 [ExifMake]（JPEG APP1 / TIFF / WebP 一份逻辑，与桌面同源），
+     * 这里只负责读文件头。HEIC 导入后的像素是 PNG，Exif 在侧车 JPEG 里，由调用方
+     * （`AndroidNativeRender` 的 `files/exif/<name>.jpg` 约定）补一次读取。
+     */
+    fun make(file: File): String? = runCatching {
+        ExifMake.read(head(file, 256 * 1024))
+    }.getOrNull()
 
     /** IFD0 Orientation (1 when absent/unreadable). */
     fun orientation(file: File): Int = runCatching {

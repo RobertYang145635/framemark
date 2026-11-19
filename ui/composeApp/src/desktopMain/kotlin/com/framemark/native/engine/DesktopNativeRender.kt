@@ -2,6 +2,7 @@ package com.framemark.native.engine
 
 import com.framemark.native.inspector.LogoBrandCatalog
 import com.framemark.native.product.Base64Codec
+import com.framemark.native.product.PhotoBrandKeys
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.ImageRect
 import com.framemark.native.workflow.NativeImage
@@ -13,6 +14,7 @@ import com.framemark.native.workflow.UserLogoLibrary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import com.framemark.native.product.FmLog
+import java.io.File
 
 /**
  * Desktop [NativeRenderApi]: runs the render-v1 bridge on the IO dispatcher.
@@ -25,6 +27,24 @@ class DesktopNativeRender(
 ) : NativeRenderApi {
 
     private val supported = bridge.cardIds().toSet()
+
+    /**
+     * 照片 → EXIF `Make`：键是 `路径@mtime`，值是厂商名（`""` = 读过了但没有）。
+     * 预览会反复问同一张照片，不能每帧重读文件头；换照片 / 重新导入 = 另一个键。
+     */
+    private val photoMakeCache = LinkedHashMap<String, String>(8, 0.75f, true)
+    private val photoMakeLock = Any()
+
+    private fun photoMake(photo: File): String? {
+        val cacheKey = photo.absolutePath + "@" + photo.lastModified()
+        synchronized(photoMakeLock) { photoMakeCache[cacheKey] }?.let { return it.ifEmpty { null } }
+        val make = JpegExif.make(photo)
+        synchronized(photoMakeLock) {
+            photoMakeCache[cacheKey] = make.orEmpty()
+            while (photoMakeCache.size > 8) photoMakeCache.remove(photoMakeCache.keys.first())
+        }
+        return make
+    }
 
     init {
         FmLog.info("FM_ENGINE_READY") { "cards=${supported.size} bridge=${bridge.catalog.manifestPath}" }
@@ -82,9 +102,37 @@ class DesktopNativeRender(
             null
         }
         val isExactLogoCut = design.logoBrand?.let { LogoBrandCatalog.cutForAssetKey(it) != null } ?: false
+        // 自动匹配（空 / `auto`）在**渲染时**按照片品牌解析：只在点按钮时写一次值，
+        // 换一张照片就不跟随了 —— 那正是「选完边框还是样片字标」的成因。
+        val autoLogo = backend == "hand" && PhotoBrandKeys.isAuto(design.logoBrand)
+        val autoMake = if (autoLogo) {
+            photoPath?.let { path -> File(path).takeIf { it.isFile }?.let { photoMake(it) } }
+        } else {
+            null
+        }
+        val autoLogoKey = if (autoLogo) {
+            LogoBrandCatalog.autoCutForBrandKey(PhotoBrandKeys.brandKeyFor(autoMake))
+        } else {
+            null
+        }
+        if (autoLogo) {
+            FmLog.info("FM_LOGO") {
+                "mode=auto photo=${photoPath?.substringAfterLast('/') ?: "<none>"} " +
+                    "make=${autoMake ?: "<none>"} key=${autoLogoKey ?: "<none>"} " +
+                    "(no explicit design.logo, following the photo)"
+            }
+        }
         return runInterruptible(Dispatchers.IO) {
             val userLogo = if (backend == "hand") loadedUserLogo else null
-            val logo = userLogo ?: if (backend == "hand") logos.resolve(design.logoBrand, isExactLogoCut) else null
+            // 自动解析失败（运行时缺这枚字标）只是「没有自动结果」：退回引擎的卡片自带
+            // 字标，不能因为字标解析把整帧渲染打掉。
+            val autoResolved = autoLogoKey?.let { key ->
+                runCatching { logos.resolve(key, exactAssetKey = false) }
+                    .onFailure { FmLog.info("FM_LOGO") { "mode=auto-fail key=$key ${it.message}" } }
+                    .getOrNull()
+            }
+            val logo = userLogo ?: autoResolved
+                ?: if (backend == "hand") logos.resolve(design.logoBrand, isExactLogoCut) else null
             val irLogoKey = if (backend == "ir") logos.engineKey(design.logoBrand, isExactLogoCut) else null
             val renderParams = if (backend == "ir") {
                 val isAuto = design.logoBrand?.equals("auto", ignoreCase = true) == true ||

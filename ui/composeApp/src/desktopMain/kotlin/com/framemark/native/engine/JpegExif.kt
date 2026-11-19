@@ -1,5 +1,6 @@
 package com.framemark.native.engine
 
+import com.framemark.native.product.ExifMake
 import java.io.File
 
 /**
@@ -7,8 +8,38 @@ import java.io.File
  * The returned block has no GPS IFD, has orientation normalized to 1, and can
  * carry the dimensions of the newly encoded image. Invalid/truncated TIFF data
  * is omitted instead of being copied through unchanged.
+ *
+ * Also answers the one read the renderer needs from a photo's own header:
+ * [make] (the EXIF `Make`, i.e. the camera brand the watermark logo follows).
+ * Same TIFF walk as the sanitizer, so both platforms agree on which block counts
+ * (`product.ExifMake` is the shared parser; this is only the desktop file access).
  */
 object JpegExif {
+    /** The header the EXIF block lives in; a 50 MP photo must not be read whole. */
+    private const val HEAD_BYTES = 512 * 1024
+
+    /**
+     * IFD0 `Make`（0x010F）of [photo], or null when the file has no readable EXIF.
+     *
+     * 渲染器用它在**每一帧**决定字标（设计里没有显式选择时）。读不懂就是「这张照片
+     * 没有品牌」，调用方退回卡片自带字标 —— 不是错误，也不画空白。
+     */
+    fun make(photo: File): String? = try {
+        if (!photo.isFile) null else ExifMake.read(head(photo))
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun head(file: File): ByteArray = file.inputStream().use { input ->
+        val buffer = ByteArray(HEAD_BYTES)
+        var read = 0
+        while (read < buffer.size) {
+            val n = input.read(buffer, read, buffer.size - read)
+            if (n <= 0) break
+            read += n
+        }
+        buffer.copyOf(read)
+    }
     /**
      * Returns the first EXIF TIFF block in [jpeg], with GPS removed. [width] and
      * [height] are optional output-image dimensions; supplied dimensions replace

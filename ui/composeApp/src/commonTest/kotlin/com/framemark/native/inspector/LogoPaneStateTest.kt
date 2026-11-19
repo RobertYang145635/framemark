@@ -10,9 +10,10 @@ import kotlin.test.assertTrue
  * Logo 面板的视图合同（复测反馈：落地不是品牌库列表，选完 / 取消回到同一块面板）。
  *
  * 三条要钉的东西：
- *  1. **落地** = 调整 + 三个动作；任何已生效值都不会让面板落在列表页上；
+ *  1. **落地** = 字标块（当前字标 + 三个动作）在上、调整在下；任何已生效值都不会让
+ *     面板落在列表页上；
  *  2. **返回** = 覆盖层选中 / 取消都回到同一块正文，取消一个字都不写；
- *  3. **动作** = 更换 Logo 是唯一能进品牌库的一下，自动匹配就地写 `auto` 并留在面板上。
+ *  3. **动作** = 更换 Logo 是唯一能进品牌库的一下，自动匹配写回 `auto` 并留在面板上。
  *
  * 纯函数，没有 Compose、没有资源、没有总表数据。
  */
@@ -195,16 +196,36 @@ class LogoPaneStateTest {
 
     @Test
     fun autoMatchWritesThePhotoBrandCutWhenItResolvedOne() {
-        // 手写模板的引擎把「没有 logo 覆盖」当成「用卡片自带字标」，只写 auto 会一直画样片品牌
-        // （OPPO 照片仍显示 Panasonic）。解析到照片品牌时写那一枚字标。
+        // 复测（2026-11）之后改了口径：**先选后调**，而且自动匹配是「一直跟随照片」，
+        // 不再在点按钮时把解析结果写进设计。
+        //
+        // 这一条原来断言写入 `oppo_black`（上一轮为了让默认路径看起来对而加的补丁）：
+        // 那样写会把品牌冻进工程 —— 用户换一张 Canon 照片，边框还是画 OPPO。现在
+        // 解析发生在渲染时（`LogoPhotoBrand.cutKeyFor` → 两个平台的 renderer），
+        // 动作本身只负责把显式选择清掉。
         val result = logoPanelAction(
             LogoPaneState.Landing,
             LogoPanelAction.Auto,
             phonePicker = true,
-            autoAssetKey = "oppo_black",
         )
-        assertEquals("oppo_black", result.write)
+        assertEquals(LOGO_SOURCE_AUTO, result.write)
         assertEquals(LogoPaneBody.Panel, result.state.body)
+        // 写进去的是「没有显式选择」的标记，不是某一枚具体字标。
+        assertTrue(LogoPhotoBrand.isAutoValue(result.write))
+    }
+
+    @Test
+    fun theBrandBlockIsRenderedAboveTheAdjustBlock() {
+        // 用户原话：「应该是先选择 logo，然后再调整」。顺序表就是渲染顺序
+        // （`BrandedCuratedLogo` 按它拼正文），所以改顺序必须改这一份。
+        assertEquals(
+            listOf(LogoPaneSection.Brand, LogoPaneSection.Adjust),
+            LogoPaneSectionOrder,
+        )
+        // 品牌块排在最前：进来第一眼是「当前字标 + 三个动作」，不是三个滑杆。
+        assertEquals(LogoPaneSection.Brand, LogoPaneSectionOrder.first())
+        assertTrue(LogoPaneSectionOrder.indexOf(LogoPaneSection.Brand) <
+            LogoPaneSectionOrder.indexOf(LogoPaneSection.Adjust))
     }
 
     @Test

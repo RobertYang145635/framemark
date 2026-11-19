@@ -229,8 +229,8 @@ object PhoneGroupIds {
     // 文字：文本框选择 + 字号只有两条，合成一组（两组各一行会把面板留成空的）
     const val TEXT_CONTENT = "text.content"
 
-    // Logo：显示 / 位置一组，大小 + 微调 + 品牌字标一组
-    const val LOGO_DISPLAY = "logo.display"
+    // Logo：先选后调 —— 「当前字标 + 三个动作」一组，调整行（位置 / 大小 / 显示）一组
+    const val LOGO_BRAND = "logo.brand"
     const val LOGO_ADJUST = "logo.adjust"
 
     // 水印：图层卡片 + 两条边距一组，宽度 / 不透明度 / 旋转一组
@@ -705,12 +705,14 @@ private fun textGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
 }
 
 /**
- * Logo 页：`[显示｜调整]`。
+ * Logo 页：`[字标｜调整]`。
  *
- * 旧版 `[调整｜动作]` 把 4 条调整行塞进一个 tab（放不下，要滚），动作只有品牌一行。
- * 现在前两行（显示 Logo / Logo 位置）归「显示」，后三行（Logo 大小 / 水平位置 /
- * 品牌字标）归「调整」：2 + 3 = 5 行，两组都在 411 dp 里完整露出。
- * 行的条数随卡片变：[chunkParamRows] 按 2..3 行切块，切不出单行组。
+ * **先选后调**（2026-11 复测）：第一组永远是「当前字标 + 三个动作」（更换 Logo /
+ * 自动匹配 / 我的 Logo，合成一行），调整行（显示 Logo / 位置 / 大小 / 水平位置）
+ * 跟在后面按 2..3 行切块 —— [chunkParamRows] 切不出单行组。
+ *
+ * 旧版是 `[调整｜动作]`：四行调整排在最前，换 Logo 要先滑过它们才够得到。用户挑完
+ * 边框进来，第一步应该是「这个字标对不对」，第二步才是「摆哪里」。
  */
 private fun logoGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
     val brand = spec.controls.firstOrNull { it.type == ControlType.Brand }
@@ -732,20 +734,28 @@ private fun logoGroups(spec: PhonePageSpec): List<PhoneParamGroup> {
             )
         },
     )
-    val chunks = chunkParamRows(adjustRows + actionRows)
-    // 标签：第一块是「显示」（显示 Logo / Logo 位置），第二块是「调整」（大小 / 微调 /
-    // 品牌字标）。只有一块时按内容取名（没有调整行就是「动作」，只有通知就是「调整」）。
-    val labels = when {
-        chunks.size <= 1 -> listOf(if (adjustRows.isEmpty() && actionRows.isNotEmpty()) "动作" else "调整")
-        else -> listOf("显示", "调整", "调整 2", "调整 3")
+    val chunks = chunkParamRows(actionRows + adjustRows)
+    // 标签跟着内容走：有品牌行时第一块是「字标」，之后的调整块编号从「调整」数起；
+    // 没有品牌行（固定字标卡）时第一块就是「调整」。
+    var adjustGroup = 0
+    val labels = chunks.indices.map { index ->
+        if (actionRows.isNotEmpty() && index == 0) {
+            "字标"
+        } else {
+            adjustGroup += 1
+            if (adjustGroup == 1) "调整" else "调整 $adjustGroup"
+        }
     }
+    var adjustId = 0
     return chunks.mapIndexed { index, rows ->
+        val id = if (index == 0 && actionRows.isNotEmpty()) {
+            PhoneGroupIds.LOGO_BRAND
+        } else {
+            adjustId += 1
+            if (adjustId == 1) PhoneGroupIds.LOGO_ADJUST else "${PhoneGroupIds.LOGO_ADJUST}.$adjustId"
+        }
         PhoneParamGroup(
-            id = when {
-                index == 0 && chunks.size > 1 -> PhoneGroupIds.LOGO_DISPLAY
-                index <= 1 -> PhoneGroupIds.LOGO_ADJUST
-                else -> "${PhoneGroupIds.LOGO_ADJUST}.$index"
-            },
+            id = id,
             label = labels.getOrElse(index) { "调整 ${index + 1}" },
             rows = rows,
         )

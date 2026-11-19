@@ -235,8 +235,10 @@ class PhonePanelFrameTest {
             phonePanelRows(PhonePageSpec(EditorTool.Params, style)).map { it.label },
         )
         val logo = PhoneTestControls.logoControls()
+        // 先选后调：品牌字标（那一段就是「当前字标 + 三个动作」）排在第一行，
+        // 调整行（显示 / 位置 / 大小 / 水平位置）跟着它，标签本身不变。
         assertEquals(
-            listOf("显示 Logo", "Logo 位置", "Logo 大小", "水平位置", "品牌字标"),
+            listOf("品牌字标", "显示 Logo", "Logo 位置", "Logo 大小", "水平位置"),
             phonePanelRows(PhonePageSpec(EditorTool.Logo, logo)).map { it.label },
         )
         assertEquals(
@@ -328,7 +330,9 @@ class PhonePanelFrameTest {
             ),
         )
         assertEquals(
-            listOf("显示", "调整"),
+            // 先选后调（2026-11 复测）：Logo 的第一组是「字标」——品牌字标 + 显示 Logo，
+            // 不再是旧版的「显示」。
+            listOf("字标", "调整"),
             phoneGroupTabLabels(PhonePageSpec(EditorTool.Logo, PhoneTestControls.logoControls())),
         )
         assertEquals(
@@ -427,12 +431,13 @@ class PhonePanelFrameTest {
             logoControls.map { it.key }.sorted(),
             logoRows.mapNotNull { it.control?.key }.sorted(),
         )
-        // 品牌字标排在最后一组「调整」里（同组还有 大小 / 水平位置）。
-        val actionGroup = phonePanelGroups(PhonePageSpec(EditorTool.Logo, logoControls)).last()
-        assertEquals("调整", actionGroup.label)
+        // 品牌字标排在**第一组「字标」**的最前面（先选后调）：换 Logo 不需要先滑过
+        // 位置 / 大小这两个滑杆；同组还有「显示 Logo」（字标在不在）。
+        val brandGroup = phonePanelGroups(PhonePageSpec(EditorTool.Logo, logoControls)).first()
+        assertEquals("字标", brandGroup.label)
         assertEquals(
-            listOf("card::params:logoScale", "card::params:logoCenterX", "card::design.logo"),
-            actionGroup.rows.map { it.key },
+            listOf("card::design.logo", "card::params:showLogo"),
+            brandGroup.rows.map { it.key },
         )
 
         // 水印的六行全是合成行（没有声明控件），键不重复。

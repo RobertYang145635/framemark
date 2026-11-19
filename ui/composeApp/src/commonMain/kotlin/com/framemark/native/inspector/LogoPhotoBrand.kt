@@ -1,18 +1,19 @@
 package com.framemark.native.inspector
 
+import com.framemark.native.product.PhotoBrandKeys
 import com.framemark.native.workflow.TextSlot
 
 /**
  * 自动匹配 = **按照片的品牌**（演示稿 `logo.js` `lgAutoBrand()` / `lgPaneLive()`）：
  * 照片 EXIF 的 `Make` → 品牌键 → 品牌库条目。演示稿把这条链写在 `core/js`，
- * 原生端唯一能读到的「照片品牌」是引擎渲染报告里的文字 slot：
- * `engine/data/hand/text-slots.json` 的 `wm-classic#make#0`（`source=make`，
- * 内容就是照片 EXIF 的 Make），也就是文字页「品牌」那一行。
+ * 原生端「照片品牌」有两个来源，两个都必须指向同一张表：
+ *  - 引擎渲染报告里的文字 slot（`wm-classic#make#0`，`source=make`），界面拿它写
+ *    「当前：自动匹配 · 按照片品牌 X」；
+ *  - 照片文件自己的 EXIF `Make`（[com.framemark.native.product.ExifMake]），渲染器
+ *    拿它在**每一帧**决定画哪一枚字标 —— 用户不需要再点一次「自动匹配」。
  *
  * 这里只做**只读映射**：
- *  - [MatchTable] 与 `src/renderer/src/core/brands.ts` `matchBrand()`、
- *    `engine/e2b/src/brand.rs` `match_brand()` 同序（首个命中生效）。表只抄不增删，
- *    免得两端对同一张照片给出不同品牌；
+ *  - 厂商名 → 品牌键的匹配表在 [PhotoBrandKeys]（product 层，渲染器与界面共用一份）；
  *  - 命中的键再落回 [LogoBrandCatalog] 的条目（目录把 LUMIX 折进 Panasonic，
  *    所以 `lumix` → `panasionic`，与 `logoBrandForAssetKey()` 用的是同一份目录）；
  *  - [autoCutKey] 取引擎实际画的那一枚字标（app-logo `<key>_black`），没有时退回
@@ -24,74 +25,6 @@ internal object LogoPhotoBrand {
 
     /** 品牌行的 logical name：`classicTextRows` 认的两种写法。 */
     private val BrandSlotNames = setOf("make", "brand")
-
-    /** `matchBrand()` 的表，顺序即优先级（`core/brands.ts:120`、`brand.rs:69`）。 */
-    private val MatchTable: List<Pair<String, List<String>>> = listOf(
-        "laika" to listOf("leica", "leitz"),
-        "canon" to listOf("canon"),
-        "nikon" to listOf("nikon"),
-        "sony" to listOf("sony", "ilce", "alpha"),
-        "panasionic" to listOf("panasonic", "dc-", "lumix"),
-        "lumix" to listOf("lumix"),
-        "fushi" to listOf("fuji", "fujifilm"),
-        "hasu" to listOf("hasselblad"),
-        "aolinbasi" to listOf("olympus", "om system"),
-        "binde" to listOf("pentax"),
-        "ricoh" to listOf("ricoh", "gr "),
-        "caisi" to listOf("zeiss", "carl zeiss"),
-        "dji" to listOf("dji", "mavic", "osmo"),
-        "insta360" to listOf("insta360"),
-        "konica_minolta" to listOf("konica minolta", "konicaminolta"),
-        "contax" to listOf("contax"),
-        "minolta" to listOf("minolta"),
-        "konica" to listOf("konica"),
-        "yashica" to listOf("yashica"),
-        "rollei" to listOf("rollei", "rolleiflex"),
-        "voigtlander" to listOf("voigtlander", "voigtländer"),
-        "mamiya" to listOf("mamiya"),
-        "bronica" to listOf("bronica", "zenza"),
-        "kodak" to listOf("kodak", "eastman"),
-        "polaroid" to listOf("polaroid"),
-        "agfa" to listOf("agfa"),
-        "praktica" to listOf("praktica", "practika"),
-        "exakta" to listOf("exakta"),
-        "minox" to listOf("minox"),
-        "sinar" to listOf("sinar"),
-        "linhof" to listOf("linhof"),
-        "alpa" to listOf("alpa"),
-        "zenit" to listOf("zenit"),
-        "lomo" to listOf("lomo", "lomography"),
-        "seagull" to listOf("seagull"),
-        "casio" to listOf("casio"),
-        "cosina" to listOf("cosina"),
-        "horseman" to listOf("horseman"),
-        "graflex" to listOf("graflex"),
-        "sigma" to listOf("sigma"),
-        "tamron" to listOf("tamron"),
-        "tokina" to listOf("tokina"),
-        "samyang" to listOf("samyang"),
-        "phaseone" to listOf("phase one", "phaseone", "leaf"),
-        "gopro" to listOf("gopro"),
-        "nokia" to listOf("nokia"),
-        "motorola" to listOf("motorola", "moto "),
-        "google" to listOf("google", "pixel"),
-        "realme" to listOf("realme"),
-        "nothing" to listOf("nothing"),
-        "nubia" to listOf("nubia", "zte "),
-        "honor" to listOf("honor"),
-        "huawei" to listOf("huawei"),
-        "xiaomi" to listOf("xiaomi", "redmi", "mi "),
-        "oppo" to listOf("oppo"),
-        "vivo" to listOf("vivo"),
-        "samsung" to listOf("samsung", "galaxy"),
-        "iqoo" to listOf("iqoo"),
-        "meizu" to listOf("meizu"),
-        "yijia" to listOf("oneplus", "one plus"),
-        "apple" to listOf("apple", "iphone"),
-    )
-
-    /** 目录折叠：`LogoBrandCatalog` 把 LUMIX 并进 Panasonic，条目键也要跟着折。 */
-    private val KeyAlias = mapOf("lumix" to "panasionic")
 
     /**
      * 照片品牌原文：文字 slot 里 `source=make`（或 `brand`）那一行的内容。
@@ -115,14 +48,28 @@ internal object LogoPhotoBrand {
         logicalName(slot) in BrandSlotNames
     }
 
-    /** `matchBrand()` 的原生版：命中返回品牌键，没命中返回 null。 */
-    fun brandKeyForMake(make: String): String? {
-        val haystack = make.trim().lowercase()
-        if (haystack.isEmpty()) return null
-        for ((key, words) in MatchTable) {
-            if (words.any { haystack.contains(it) }) return KeyAlias[key] ?: key
-        }
-        return null
+    /** `matchBrand()` 的原生版（表在 [PhotoBrandKeys]）：命中返回品牌键，没命中返回 null。 */
+    fun brandKeyForMake(make: String): String? = PhotoBrandKeys.brandKeyFor(make)
+
+    /**
+     * 取值域里「没有显式选择」的两种写法：空（从没选过）与 `auto`（点过自动匹配）。
+     * 两种都必须**在渲染时**按照片品牌解析 —— 只在点按钮时解析一次会把品牌冻进设计里，
+     * 换一张照片就不跟随了。
+     */
+    fun isAutoValue(logoBrand: String?): Boolean = PhotoBrandKeys.isAuto(logoBrand)
+
+    /**
+     * 照片品牌 → 该画的那一枚字标（渲染器侧的唯一入口）。
+     *
+     * [logoBrand] 是显式选择时返回 null —— **用户选过的品牌优先，任何自动解析都不覆盖**；
+     * 只有空 / `auto` 才按照片品牌解析。照片没有 Make、品牌不在库里、或目录还没载入时
+     * 同样返回 null，调用方保持「引擎用卡片自带字标」的现状，不报错也不画空白。
+     */
+    fun cutKeyFor(logoBrand: String?, make: String?, brands: List<LogoBrand>): String? {
+        if (!isAutoValue(logoBrand)) return null
+        val key = brandKeyForMake(make ?: return null) ?: return null
+        val brand = brands.firstOrNull { it.key == key } ?: return null
+        return autoCutKey(brand)
     }
 
     /**

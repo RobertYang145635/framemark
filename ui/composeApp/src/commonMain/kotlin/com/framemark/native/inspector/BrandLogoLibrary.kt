@@ -196,6 +196,22 @@ object LogoBrandCatalog {
     }
 
     /**
+     * 照片品牌键 → 自动匹配该画的字标（`<key>_black`，没有就退回 canonical version）。
+     *
+     * 这是**渲染器在每一帧**要问的那一步：设计里没有显式选择时（空 / `auto`），两个
+     * 平台都按照片 EXIF 的 `Make` 走到这里，再把结果当 hand 引擎的 `logo` 传下去。
+     * 品牌不在库里 / 目录载入失败 → null，引擎退回卡片自带字标（旧行为，不报错）。
+     *
+     * 放在目录上而不是渲染器里：渲染器只允许向下依赖 `product`，这一层是它已经
+     * 在用的目录入口；厂商名 → 品牌键的匹配表仍只有 `product.PhotoBrandKeys` 一份。
+     */
+    suspend fun autoCutForBrandKey(brandKey: String?): String? {
+        val key = brandKey?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val brand = load().firstOrNull { it.key == key } ?: return null
+        return LogoPhotoBrand.autoCutKey(brand)
+    }
+
+    /**
      * 持久化的 cut 键 → 打包的预览 webp 名（`files/logov/` 里的文件名）。
      * 「当前 Logo」卡拿到的值是 cut 键，而占位图加载器认的是 webp 名，两者不同，
      * 中间这一步不能省；找不到就是真的没有这枚字标，返回 null。

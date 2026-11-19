@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
  *
  * 分组的数字都写在 [thePartitionsAreTheDecidedOnes] 里；旧的分组是
  * 样式 `[底色｜版式｜留白]`、文字 `[选择｜大小]`、Logo `[调整｜动作]`、
- * 水印 `[图层｜边距｜外观]`。
+ * 水印 `[图层｜边距｜外观]`。Logo 现在是 `[字标｜调整]`（先选后调，2026-11 复测）。
  */
 class PhoneGroupPartitionTest {
 
@@ -248,11 +248,13 @@ class PhoneGroupPartitionTest {
             ),
             table(PhonePageSpec(EditorTool.Text, PhoneTestControls.textControls(), hasTextReport = true)),
         )
-        // Logo：显示 + 位置 = 显示（2 行）；大小 + 水平位置 + 品牌字标 = 调整（3 行）。
+        // Logo（2026-11 复测：先选后调）：品牌字标 + 显示 Logo = 字标（2 行）；
+        // 位置 + 大小 + 水平位置 = 调整（3 行）。品牌那一行自己就是「当前字标 + 三个
+        // 动作」的整块内容（`PhoneRowKind.LogoActions`），所以它永远在第一页最上面。
         assertEquals(
             mapOf(
-                "显示" to listOf("card::params:showLogo", "card::params:logoPos"),
-                "调整" to listOf("card::params:logoScale", "card::params:logoCenterX", "card::design.logo"),
+                "字标" to listOf("card::design.logo", "card::params:showLogo"),
+                "调整" to listOf("card::params:logoPos", "card::params:logoScale", "card::params:logoCenterX"),
             ),
             table(PhonePageSpec(EditorTool.Logo, PhoneTestControls.logoControls())),
         )

@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import android.util.Base64
 import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.LogoBrandCatalog
+import com.framemark.native.product.PhotoBrandKeys
 import com.framemark.native.product.requireReadablePhotoOverride
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.ImageRect
@@ -56,6 +57,14 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
     private val handLogoCache = LinkedHashMap<String, InlineHandLogo>(8, 0.75f, true)
     private val handLogoCacheLock = Any()
     private val irLogoStageLock = Any()
+
+    /**
+     * 照片 → EXIF `Make` 的缓存：键是 `路径@mtime`，值是厂商名（`""` = 读过了但没有）。
+     * 预览每帧都会走一次自动匹配，不能每帧都把文件头重读一遍；照片换了（mtime 变了）
+     * 或换了文件就是另一个键，旧条目自然失效，最多留 8 张。
+     */
+    private val photoMakeCache = LinkedHashMap<String, String>(8, 0.75f, true)
+    private val photoMakeCacheLock = Any()
 
     private val byUiCard: Map<String, EngineData.Style> by lazy {
         data.styles.values
@@ -578,18 +587,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
         }
 
         val cards = data.handCardsJson ?: error("hand cards bundle missing")
-        val selectedLogo = design.logoBrand
-            ?.takeIf { it.isNotBlank() && !it.equals("auto", ignoreCase = true) }
-            ?.let { key ->
-                if (UserLogoLibrary.isUserLogo(key)) inlineUserLogo(key)
-                else if (LogoBrandCatalog.cutForAssetKey(key) != null) inlineHandLogo(key)
-                else if (key.startsWith("ver:")) {
-                    throw com.framemark.native.workflow.EngineFailure(
-                        "FM-E-LOGO-001",
-                        "所选 Logo 版本未包含在当前应用资源中",
-                    )
-                } else null
-            }
+        val selectedLogo = resolveHandLogo(design, overridePhoto)
         val userPhoto = currentUserPhoto().orEmpty()
         fun call(useNative: Boolean, maxEdge: Int): String = NativeEngineProbe.renderExportHand(
             cardsPath = cards,
@@ -777,18 +775,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
         interactive: Boolean,
     ): HandResult {
         val cards = data.handCardsJson ?: error("hand cards bundle missing")
-        val selectedLogo = design.logoBrand
-            ?.takeIf { it.isNotBlank() && !it.equals("auto", ignoreCase = true) }
-            ?.let { key ->
-                if (UserLogoLibrary.isUserLogo(key)) inlineUserLogo(key)
-                else if (LogoBrandCatalog.cutForAssetKey(key) != null) inlineHandLogo(key)
-                else if (key.startsWith("ver:")) {
-                    throw com.framemark.native.workflow.EngineFailure(
-                        "FM-E-LOGO-001",
-                        "所选 Logo 版本未包含在当前应用资源中",
-                    )
-                } else null
-            }
+        val selectedLogo = resolveHandLogo(design, overridePhoto)
         // The standard photo arg stays the current global; the explicit override
         // (when present) wins inside the engine. Empty keeps the bundled sample.
         val userPhoto = currentUserPhoto().orEmpty()
@@ -890,6 +877,73 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
                 while (handLogoCache.size > 8) handLogoCache.remove(handLogoCache.keys.first())
             }
         }
+    }
+
+    /**
+     * 这一帧到底画哪一枚字标 —— 预览与导出、两个 hand 引擎入口共用这一条决策。
+     *
+     *  - **显式选择**（精确 cut 键 / 用户 Logo）：原样解析，用户选过的品牌永远优先，
+     *    自动解析不许覆盖它；
+     *  - **空 / `auto`**（从没选过，或点过「自动匹配」）：按照片 EXIF 的 `Make` 在
+     *    品牌库里找到那一枚字标（`PhotoBrandKeys.brandKeyFor` → `LogoBrandCatalog`），
+     *    把结果当 `handLogo` 传给引擎，走的是与显式选择**同一条**内联路径。
+     *
+     * 这就是「选完边框、字标就是这张照片的品牌」的那一步：不需要用户再点任何按钮。
+     * 解析不到（没有 EXIF 品牌 / 品牌不在库里 / 资源读不出来）→ null，引擎退回卡片
+     * 自带字标，与旧行为一致：不报错、不空白。
+     */
+    private suspend fun resolveHandLogo(design: DesignSnapshot, overridePhoto: String?): InlineHandLogo? {
+        val explicit = design.logoBrand?.takeIf { !PhotoBrandKeys.isAuto(it) }
+            ?: return autoHandLogo(design, overridePhoto)
+        return if (UserLogoLibrary.isUserLogo(explicit)) inlineUserLogo(explicit)
+        else if (LogoBrandCatalog.cutForAssetKey(explicit) != null) inlineHandLogo(explicit)
+        else if (explicit.startsWith("ver:")) {
+            throw com.framemark.native.workflow.EngineFailure(
+                "FM-E-LOGO-001",
+                "所选 Logo 版本未包含在当前应用资源中",
+            )
+        } else null
+    }
+
+    /** 按照片品牌解析字标；任何失败都只是「没有自动结果」，不是这次渲染的失败。 */
+    private suspend fun autoHandLogo(design: DesignSnapshot, overridePhoto: String?): InlineHandLogo? {
+        if (!PhotoBrandKeys.isAuto(design.logoBrand)) return null
+        val photo = overridePhoto?.takeIf { File(it).isFile } ?: currentUserPhoto() ?: return null
+        return runCatching {
+            val make = photoMake(File(photo))
+            val assetKey = LogoBrandCatalog.autoCutForBrandKey(PhotoBrandKeys.brandKeyFor(make))
+            FmLog.info("FM_ANDROID_LOGO") {
+                "mode=auto photo=${File(photo).name} make=${make ?: "<none>"} " +
+                    "key=${assetKey ?: "<none>"} (no explicit design.logo, following the photo)"
+            }
+            assetKey?.let { inlineHandLogo(it) }
+        }.onFailure { error ->
+            if (error is kotlinx.coroutines.CancellationException) throw error
+            FmLog.info("FM_ANDROID_LOGO") {
+                "mode=auto-fail photo=${File(photo).name} ${error.message}"
+            }
+        }.getOrNull()
+    }
+
+    /**
+     * 照片的 EXIF `Make`（按 `路径@mtime` 缓存，预览每帧都会问一次）。
+     *
+     * 读不到自己的 APP1 时（HEIC 导入的 PNG）再读导入时写出的侧车 JPEG，
+     * 与 [exifFor] 是同一个目录约定。
+     */
+    private fun photoMake(photo: File): String? {
+        val cacheKey = photo.absolutePath + "@" + photo.lastModified()
+        synchronized(photoMakeCacheLock) { photoMakeCache[cacheKey] }?.let { cached ->
+            return cached.ifEmpty { null }
+        }
+        val make = runCatching {
+            ExifProbe.make(photo) ?: exifSidecarFor(photo)?.let { ExifProbe.make(it) }
+        }.getOrNull()
+        synchronized(photoMakeCacheLock) {
+            photoMakeCache[cacheKey] = make.orEmpty()
+            while (photoMakeCache.size > 8) photoMakeCache.remove(photoMakeCache.keys.first())
+        }
+        return make
     }
 
     private suspend fun inlineHandLogo(assetKey: String): InlineHandLogo {
