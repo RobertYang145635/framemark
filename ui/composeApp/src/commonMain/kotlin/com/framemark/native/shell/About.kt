@@ -60,6 +60,13 @@ data class LicenseEntry(val name: String, val license: String, val purpose: Stri
  */
 @Composable
 fun AboutContent(version: String, modifier: Modifier = Modifier) {
+    var donateOpen by remember { mutableStateOf(false) }
+    if (donateOpen) {
+        Column(modifier = modifier.fillMaxWidth()) {
+            AboutCard { DonatePage(onClose = { donateOpen = false }) }
+        }
+        return
+    }
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -80,7 +87,9 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
             }
         }
         UpdateCard(currentVersion = version)
-        DonateSection()
+        AboutCard {
+            DonateEntryRow(onOpen = { donateOpen = true })
+        }
         AboutSection(title = AboutText.PRIVACY_TITLE) {
             AboutParagraph(AboutText.PRIVACY)
         }
