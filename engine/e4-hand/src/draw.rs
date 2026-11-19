@@ -1991,17 +1991,35 @@ pub fn draw_glass_panel(
             (1.0, "rgba(255,255,255,0.05)"),
         ],
     );
-    // 5. 边缘：外描边 + 内侧 1px 亮线，读起来像有厚度的玻璃边
+    // 4b. 磨砂颗粒：真实玻璃不是镜面，有一层极细的颗粒；没有它就像塑料片。
+    env.ctx
+        .fill_image_pattern_overlay(glass_grain(), panel, 0.035);
+    // 5. 边缘：上亮下暗的方向性描边（参考实现的边是有「光从上面来」的），
+    //    再补一条内侧亮线，读起来像有厚度的玻璃边。
+    env.ctx.clip_rect(x, y - stroke_px, w, h * 0.5 + stroke_px);
     env.ctx.stroke_round_rect(
         x,
         y,
         w,
         h,
         r,
-        "rgba(255,255,255,0.42)",
+        "rgba(255,255,255,0.55)",
         stroke_px,
         None,
     );
+    env.ctx.restore_clip();
+    env.ctx.clip_rect(x, y + h * 0.5, w, h * 0.5 + stroke_px);
+    env.ctx.stroke_round_rect(
+        x,
+        y,
+        w,
+        h,
+        r,
+        "rgba(255,255,255,0.22)",
+        stroke_px,
+        None,
+    );
+    env.ctx.restore_clip();
     if w > s * 0.06 && h > s * 0.02 {
         env.ctx.stroke_round_rect(
             x + stroke_px,
