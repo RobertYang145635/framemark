@@ -1905,15 +1905,18 @@ pub fn draw_glass_panel(
     samp.filter = FilterMode::Linear;
     // 1. 背衬：模糊后的照片本身
     env.ctx.clip_round_rect(x, y, w, h, r);
-    match image_filters::blur(
+    // 玻璃的「通透感」一半来自模糊、一半来自彩度：只模糊会把画面糊成灰雾，
+    // 参考实现（Haze 那套）在模糊之后还会把颜色提亮一点，透出来的才像玻璃。
+    let backdrop_filter = image_filters::blur(
         (blur_px.max(1.0), blur_px.max(1.0)),
         TileMode::Clamp,
         None,
         None,
-    ) {
+    );
+    match &backdrop_filter {
         Some(f) => env
             .ctx
-            .draw_image_layer_filtered(&img, None, panel, samp, f, "glass.backdrop"),
+            .draw_image_layer_filtered(&img, None, panel, samp, f.clone(), "glass.backdrop"),
         None => env.ctx.draw_image(&img, None, panel, samp, "glass.backdrop"),
     }
     env.ctx.restore_clip();

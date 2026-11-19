@@ -45,8 +45,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         0.0,
         s,
     );
-    let tint = (pct(env.params, "tintAlpha", 0.3) as f32).clamp(0.0, 0.6);
-    let blur_px = (s * 0.022 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
+    let tint = (pct(env.params, "tintAlpha", 0.24) as f32).clamp(0.0, 0.6);
+    let blur_px = (s * 0.032 * ((pct(env.params, "blur", 24.0) as f32) / 24.0)).max(1.0);
     let tint_str = format!("rgba(0,0,0,{tint})");
     draw_glass_panel(
         env,
