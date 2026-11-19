@@ -186,6 +186,14 @@ object PhoneOverlayFiles {
  * exports **that photo with that design**, not whatever the editor happens to be
  * showing (or the bundled sample). Status changes are persisted as they happen, so
  * an interrupted run continues where it stopped instead of repeating or skipping.
+ *
+ * A run exports several photos at a time ([batchWorkerCountForFrame]: half the
+ * cores, 2..4, capped at 2 for a very large frame) because the engine renders on
+ * the CPU — a serial queue used one core of eight. Parallelism changes only *when*
+ * a job is claimed: the pick and the durable Running claim happen under one lock,
+ * every transition still goes through [BatchQueue]'s legal-source-state guards, and
+ * the queue's order, names, statuses and failure isolation stay exactly as they
+ * were.
  */
 class PhonePhotoBatchQueue(
     fs: ProductFileSystem,
@@ -346,25 +354,77 @@ class PhonePhotoBatchQueue(
         running = true
         pauseRequested = false
         error = null
+        // The engine renders on the CPU, so a serial queue left every core but one
+        // idle. Workers are bounded by the shared policy (see `BatchConcurrency.kt`):
+        // half the cores, 2..4, and only 2 when one frame is very large — the memory
+        // ceiling is what decides, not the queue length.
+        val workers = batchWorkerCountForFrame(largestFramePixels())
         scope.launch {
+            // The batch owns the CPU while it runs, so previews stand down until it
+            // ends — a failure, a pause or a cancellation included (hence `finally`).
+            PreviewSuspension.suspendRendering()
             try {
-                while (!pauseRequested) {
-                    val job = queue.jobs.firstOrNull { it.status == BatchJobStatus.Queued && !it.requiresRebuild }
-                    if (job == null) {
-                        if (queue.jobs.any { it.status == BatchJobStatus.Queued && it.requiresRebuild }) {
-                            error = "旧队列任务缺少稳定序号或输出目录；请移除后重新加入。"
-                        }
-                        break
-                    }
-                    runOne(job)
+                runBatchWorkers(workers, next = { claimNext() }) { job -> exportJob(job) }
+                if (!pauseRequested && queue.jobs.any { it.status == BatchJobStatus.Queued && it.requiresRebuild }) {
+                    error = "旧队列任务缺少稳定序号或输出目录；请移除后重新加入。"
                 }
             } finally {
+                // Reopen previews before the run reports itself stopped, so a caller that
+                // saw `running == false` can never find the gate still held.
+                PreviewSuspension.resumeRendering()
                 running = false
             }
         }
     }
 
-    /** Native encoding finishes the current photo; no new photo is started. */
+    /**
+     * Worst-case pixel count of one frame in this run, or null when it cannot be known
+     * (原尺寸 keeps the photo's own size, which the queue does not record). Drives the
+     * memory cap in [batchWorkerCountForFrame].
+     */
+    private fun largestFramePixels(): Long? = queue.jobs.maxOfOrNull { job ->
+        val settings = job.exportSettings
+        val longEdge = if (settings.sizeMode == ExportSizeMode.LongEdge) settings.longEdge else null
+        if (longEdge == null) Long.MAX_VALUE else longEdge.toLong() * longEdge.toLong()
+    }
+
+    /**
+     * Takes the next queued job **and** durably claims it, in one critical section, so
+     * two workers can never pick the same photo. Null means "this run has nothing left
+     * to start": the queue is drained, the user paused, or the claim could not be
+     * written (a failed persist already asked the run to stop).
+     */
+    private fun claimNext(): BatchJob? = synchronized(queueLock) {
+        if (pauseRequested) return@synchronized null
+        val next = queue.jobs.firstOrNull { it.status == BatchJobStatus.Queued && !it.requiresRebuild }
+            ?: return@synchronized null
+        queue = queue.claim(next.id, clock())
+        val claimed = queue.job(next.id)
+        if (claimed?.status != BatchJobStatus.Running) {
+            // Something else moved the job out of Queued first: never render a photo
+            // this worker did not claim.
+            return@synchronized null
+        }
+        if (!persist()) {
+            // The claim never reached the document, so the photo is still "queued" on
+            // disk; hand it back in memory too and let the run stop.
+            queue = queue.update(next.id) { job ->
+                if (job.status == BatchJobStatus.Running) {
+                    job.copy(status = BatchJobStatus.Queued, startedAt = null)
+                } else {
+                    job
+                }
+            }
+            return@synchronized null
+        }
+        claimed
+    }
+
+    /**
+     * Native encoding finishes the photos already in flight; no **new** photo is
+     * started. With more than one worker that is up to `batchWorkerCount()` photos
+     * rather than one, which is what 「完成当前后暂停」 now means.
+     */
     fun pause() {
         pauseRequested = true
     }
@@ -396,15 +456,17 @@ class PhonePhotoBatchQueue(
         updateQueue { current -> BatchQueue(current.jobs.filterNot { it.id == jobId }) }
     }
 
-    private suspend fun runOne(job: BatchJob) {
-        if (!updateQueue { it.claim(job.id, clock()) }) {
-            synchronized(queueLock) { queue = queue.recoverAfterRestart() }
-            return
-        }
-        if (queue.job(job.id)?.status != BatchJobStatus.Running) return
+    /**
+     * Exports one already-claimed job. The claim is what makes a job this worker's own,
+     * so nothing here checks the queue again before rendering — but every transition it
+     * writes still goes through [BatchQueue]'s legal-source-state guards, so a job that
+     * was cancelled or removed meanwhile simply keeps its state instead of being
+     * resurrected.
+     */
+    private suspend fun exportJob(job: BatchJob) {
         FmLog.info("FM_PHOTO_JOB_START") {
             "id=${job.id} photo=${job.photoPath ?: "<missing>"} card=${job.design.cardId} " +
-                "wm=${job.overlay?.asset?.sha256?.take(8) ?: "none"} attempt=${job.attempts + 1} " +
+                "wm=${job.overlay?.asset?.sha256?.take(8) ?: "none"} attempt=${job.attempts} " +
                 "settings=${job.exportSettings.format.id}/${job.exportSettings.longEdge ?: "original"}"
         }
         val path = job.photoPath
@@ -444,8 +506,16 @@ class PhonePhotoBatchQueue(
             updateQueue { it.complete(job.id, result.path, clock()) }
             FmLog.info("FM_PHOTO_JOB_DONE") { "id=${job.id} out=${result.path} bytes=${result.bytes}" }
         } catch (c: kotlinx.coroutines.CancellationException) {
+            // Recover **this** job only. The queue now runs several photos at once, and a
+            // whole-queue recover would turn a sibling worker's in-flight photo into
+            // Queued/Done from this coroutine — its own worker must own that transition.
             synchronized(queueLock) {
-                queue = recoverBatchQueue(queue, WorkflowEnv.platform, clock())
+                val recovered = recoverBatchQueue(
+                    BatchQueue(queue.jobs.filter { it.id == job.id }),
+                    WorkflowEnv.platform,
+                    clock(),
+                ).jobs.firstOrNull()
+                if (recovered != null) queue = queue.update(job.id) { recovered }
                 persist()
             }
             throw c

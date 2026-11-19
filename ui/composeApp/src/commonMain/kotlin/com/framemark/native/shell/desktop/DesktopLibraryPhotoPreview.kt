@@ -17,6 +17,7 @@ import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.NativeEngine
 import com.framemark.native.workflow.PreviewScratch
+import com.framemark.native.workflow.PreviewSuspension
 import com.framemark.native.workflow.WorkflowEnv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -109,6 +110,11 @@ internal object DesktopLibraryPhotoThumbs {
         return slots.withPermit {
             cached(card.id, photoPath, edge)?.let { return@withPermit it }
             if (failed(card.id)) return@withPermit null
+            // A batch export owns the engine for its whole run: a library thumbnail is a
+            // prefetch, never worth taking a core (or the GPU context) from it. The wait
+            // happens inside the one render slot, so at most one thumbnail is parked on
+            // the gate and the rest keep queueing behind it exactly as before.
+            PreviewSuspension.awaitResumed()
             val rendered = try {
                 NativeEngine.preview(
                     card = card,

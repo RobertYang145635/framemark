@@ -31,7 +31,15 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.framemark.native.product.FmLog
+
+/** Poll interval while a run is paused (the serial loop's own `delay(80)`). */
+private const val PARALLEL_PAUSE_POLL_MS = 80L
+
+/** The pause between two serial items, kept so a worker yields between photos. */
+private const val SERIAL_ITEM_GAP_MS = 20L
 
 enum class BatchItemStatus { Queued, Running, Done, Failed, Cancelled }
 
@@ -93,6 +101,14 @@ interface BatchInputs {
  * plus status — so a killed run resumes with each job's own photo instead of
  * falling back to the bundled sample. [loadPersisted] still reads the older
  * hand-written document, so an upgrade does not lose the queue.
+ *
+ * A real run exports **several photos at a time**: [batchWorkerCountForFrame]
+ * decides how many ({@code min(4, max(2, cores / 2))}, capped at two when a frame
+ * is larger than [LARGE_FRAME_PIXELS]), because the engine renders on the CPU and
+ * a serial queue left seven of an eight-core phone idle. What the queue *shows* is
+ * unchanged: one row per item in queue order, the same per-item progress and
+ * status, the same names, the same cancellation rule (nothing new starts) and the
+ * same failure isolation (one failed photo never stops the rest).
  */
 class BatchRunner(
     private val productFs: ProductFileSystem? = null,
@@ -261,53 +277,85 @@ class BatchRunner(
         runState = BatchRunState.Running
         started = true
         persist()
-        FmLog.info("FM_BATCH_START") { "items=${items.size} pending=${items.count { it.status != BatchItemStatus.Done }} queue=${queueFile ?: "-"}" }
+        val snapshot = items.toList()
+        val workers = batchWorkerCountForFrame(largestFramePixels(snapshot))
+        // Items that would write the same file must keep running in queue order, or the
+        // `-2 … -N` disambiguation suffix could land on a different photo than it does in
+        // a serial run. Everything else is independent and goes into the pool.
+        val (independent, sharedTargets) = batchRunOrder(snapshot, ::targetPathOf)
+        FmLog.info("FM_BATCH_START") {
+            "items=${items.size} pending=${items.count { it.status != BatchItemStatus.Done }} " +
+                "workers=$workers ordered=${sharedTargets.size} queue=${queueFile ?: "-"}"
+        }
         job = scope.launch {
+            // A running batch owns the CPU (and the frame in flight), so previews stand
+            // down for its whole lifetime — including the failure and cancellation
+            // exits, which is why the release sits in this `finally`.
+            PreviewSuspension.suspendRendering()
             try {
-                for (item in items.toList()) {
-                    if (runState == BatchRunState.Cancelled) break
-                    while (runState == BatchRunState.Paused) delay(80)
-                    if (item.status == BatchItemStatus.Done) continue
-                    if (item.status != BatchItemStatus.Queued && item.status != BatchItemStatus.Failed) continue
-                    item.status = BatchItemStatus.Running
-                    item.progress = 0.5f
-                    item.error = null
-                    item.attempts += 1
-                    persist()
-                    FmLog.info("FM_BATCH_ITEM_START") { "id=${item.id} card=${item.cardId} attempt=${item.attempts} fingerprint=${item.photoFingerprint?.take(16) ?: "-"} designKey=${item.designKey}" }
-                    try {
-                        val snapshot = item.job
-                        if (snapshot != null) {
-                            exportFromSnapshot(item, snapshot)
-                        } else {
-                            val settings = ExportSettings(
-                                format = item.format.toExportFormat(),
-                                quality = item.quality,
-                                sizeMode = com.framemark.native.product.ExportSizeMode.LongEdge,
-                                longEdge = item.longEdge,
-                                filenamePattern = item.filenamePattern,
-                                webpLossless = item.webpLossless,
-                            )
-                            val design = DesignSnapshot(item.cardId, item.styleId, emptyMap(), emptyMap())
-                            val result = NativeEngine.exportCard(item.cardId, item.cardName, item.styleId, settings, design)
-                            item.outputPath = result.path
+                // One worker per in-flight frame, each taking the next item of the queue.
+                // The cursor and the pause/cancel gate are the only shared state; an item
+                // is touched by exactly one worker, so its status/progress/attempts keep
+                // the single-writer property the serial loop had.
+                val gate = Mutex()
+                var cursor = 0
+                // Only **one** worker hands the previews back when the run pauses, and only
+                // that worker takes them again. The gate is a depth counter, so a release
+                // nobody re-acquires would leave previews frozen for good.
+                val pauseHold = Any()
+                var pauseReleased = false
+                /**
+                 * True when a worker may start another item. A paused run does no CPU
+                 * work, so the gate is handed back while it waits and taken again before
+                 * the next photo; a cancelled run answers false and stops everything that
+                 * has not started.
+                 */
+                suspend fun mayStartNext(): Boolean {
+                    while (true) {
+                        if (runState == BatchRunState.Cancelled) return false
+                        if (runState != BatchRunState.Paused) return true
+                        val owner = synchronized(pauseHold) {
+                            if (pauseReleased) {
+                                false
+                            } else {
+                                pauseReleased = true
+                                true
+                            }
                         }
-                        item.progress = 1f
-                        item.status = BatchItemStatus.Done
-                        FmLog.info("FM_BATCH_ITEM_DONE") { "id=${item.id} card=${item.cardId} path=${item.outputPath}" }
-                    } catch (t: Throwable) {
-                        item.progress = 0f
-                        item.status = BatchItemStatus.Failed
-                        // `EngineFailure.userMessage` is already the sentence; anything else
-                        // is a raw Java/engine message, so the copy is fixed and the text
-                        // goes to the log (audit items 4 and 5).
-                        item.error = (t as? EngineFailure)?.userMessage ?: "导出失败，请重试。"
-                        FmLog.warn("FM_BATCH_ITEM_FAIL") { "id=${item.id} card=${item.cardId} raw=${t.message}" }
+                        if (!owner) {
+                            delay(PARALLEL_PAUSE_POLL_MS)
+                            continue
+                        }
+                        PreviewSuspension.resumeRendering()
+                        try {
+                            while (runState == BatchRunState.Paused) delay(PARALLEL_PAUSE_POLL_MS)
+                        } finally {
+                            synchronized(pauseHold) { pauseReleased = false }
+                            PreviewSuspension.suspendRendering()
+                        }
                     }
-                    persist()
-                    delay(20)
+                }
+                suspend fun nextIndependent(): BatchItem? {
+                    while (true) {
+                        if (!mayStartNext()) return null
+                        val index = gate.withLock {
+                            if (cursor < independent.size) cursor++ else -1
+                        }
+                        if (index < 0) return null
+                        return independent[index]
+                    }
+                }
+                runBatchWorkers(workers, next = { nextIndependent() }, run = { runRealItem(it) })
+                // Phase 2: the same-output group, one photo at a time and in queue order,
+                // which is exactly the order (and therefore the naming) a serial run had.
+                for (item in sharedTargets) {
+                    if (!mayStartNext()) break
+                    runRealItem(item)
                 }
             } finally {
+                // Reopen previews *before* the run reports itself settled: a caller that
+                // already saw "Finished"/"Cancelled" must never find the gate still held.
+                PreviewSuspension.resumeRendering()
                 if (runState != BatchRunState.Paused) {
                     runState = if (runState == BatchRunState.Cancelled) BatchRunState.Cancelled else BatchRunState.Finished
                     persist()
@@ -315,6 +363,104 @@ class BatchRunner(
                 }
             }
         }
+    }
+
+    /**
+     * Exports one item. Extracted from the loop unchanged: every state transition, the
+     * failure copy, the per-item persist and the inter-item delay are the serial
+     * behaviour, now executed by whichever worker owns this item.
+     */
+    private suspend fun runRealItem(item: BatchItem) {
+        if (item.status == BatchItemStatus.Done) return
+        if (item.status != BatchItemStatus.Queued && item.status != BatchItemStatus.Failed) return
+        item.status = BatchItemStatus.Running
+        item.progress = 0.5f
+        item.error = null
+        item.attempts += 1
+        persist()
+        FmLog.info("FM_BATCH_ITEM_START") { "id=${item.id} card=${item.cardId} attempt=${item.attempts} fingerprint=${item.photoFingerprint?.take(16) ?: "-"} designKey=${item.designKey}" }
+        try {
+            val snapshot = item.job
+            if (snapshot != null) {
+                exportFromSnapshot(item, snapshot)
+            } else {
+                val settings = settingsFor(item)
+                val design = DesignSnapshot(item.cardId, item.styleId, emptyMap(), emptyMap())
+                val result = NativeEngine.exportCard(item.cardId, item.cardName, item.styleId, settings, design)
+                item.outputPath = result.path
+            }
+            item.progress = 1f
+            item.status = BatchItemStatus.Done
+            FmLog.info("FM_BATCH_ITEM_DONE") { "id=${item.id} card=${item.cardId} path=${item.outputPath}" }
+        } catch (t: Throwable) {
+            item.progress = 0f
+            item.status = BatchItemStatus.Failed
+            // `EngineFailure.userMessage` is already the sentence; anything else
+            // is a raw Java/engine message, so the copy is fixed and the text
+            // goes to the log (audit items 4 and 5).
+            item.error = (t as? EngineFailure)?.userMessage ?: "导出失败，请重试。"
+            FmLog.warn("FM_BATCH_ITEM_FAIL") { "id=${item.id} card=${item.cardId} raw=${t.message}" }
+        }
+        persist()
+        // Serial ran this between items to let the UI breathe; with a worker pool it
+        // can only delay the item that just finished, never the others.
+        delay(SERIAL_ITEM_GAP_MS)
+    }
+
+    /**
+     * Worst-case pixel count of one frame this run will render, or null when it cannot
+     * be known (原尺寸 = the source photo's own size, which the queue does not record).
+     * Drives the memory cap in [batchWorkerCountForFrame].
+     */
+    private fun largestFramePixels(snapshot: List<BatchItem>): Long? = snapshot.maxOfOrNull { item ->
+        val settings = item.job?.exportSettings
+        val longEdge = when {
+            settings == null -> item.longEdge
+            settings.sizeMode != com.framemark.native.product.ExportSizeMode.LongEdge -> null
+            else -> settings.longEdge ?: item.longEdge
+        }
+        if (longEdge == null) Long.MAX_VALUE else longEdge.toLong() * longEdge.toLong()
+    }
+
+    /**
+     * The export settings this item will really be exported with: the queue snapshot
+     * when it has one, the legacy item fields otherwise. One source, so [targetPathOf]
+     * and the export itself cannot disagree about the file name.
+     */
+    private fun settingsFor(item: BatchItem): ExportSettings = item.job?.exportSettings ?: ExportSettings(
+        format = item.format.toExportFormat(),
+        quality = item.quality,
+        sizeMode = com.framemark.native.product.ExportSizeMode.LongEdge,
+        longEdge = item.longEdge,
+        filenamePattern = item.filenamePattern,
+        webpLossless = item.webpLossless,
+    )
+
+    /**
+     * The file this item aims at first, resolved with the **production** naming rules
+     * ([ExportNaming.candidatePath], no `exists` probe). Two items with the same target
+     * would compete for the `-N` disambiguation suffix, and a serial run assigns those in
+     * queue order — so they are kept in queue order (see [batchRunOrder]). Null when the
+     * platform is missing or the item carries no snapshot: nothing to compare then.
+     */
+    private fun targetPathOf(item: BatchItem): String? {
+        val platform = WorkflowEnv.platform ?: return null
+        val settings = settingsFor(item)
+        val job = item.job
+        return ExportNaming.candidatePath(
+            platform = platform,
+            pattern = settings.filenamePattern,
+            cardName = item.cardName.ifBlank { item.cardId },
+            photoName = ExportNaming.photoNameFor(
+                settings.filenamePattern,
+                ExportNaming.photoStem(job?.photoPath ?: item.photoPath),
+                item.cardId,
+            ),
+            extension = settings.format.extension,
+            index = job?.nameIndex ?: 1,
+            collisionNumber = 1,
+            outputDirectory = job?.outputDirectory,
+        )
     }
 
     /**

@@ -540,6 +540,15 @@ fun NativeStagePreview(
                 awaitFixedSlot()
                 drainSignals()
 
+                // A batch export is running: do not submit anything to the engine (it is
+                // the export's CPU and, on the phone, its GPU context). A frame already
+                // in flight above was allowed to finish; this only stops the *next* one.
+                // `latestInput` keeps taking the user's edits while we wait here, and it
+                // is read **after** the gate opens, so the first frame of the resumed
+                // stage is already the newest design instead of the one from before the
+                // export — the stage catches up by itself, with no extra request.
+                PreviewSuspension.awaitResumed()
+
                 val request = latestInput.value
                 val requestVersion = requestGate.version
                 val requestStarted = TimeSource.Monotonic.markNow()

@@ -16,6 +16,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -72,6 +73,10 @@ class PhoneBatchControlTest {
         val photoPaths = CopyOnWriteArrayList<String?>()
         val entered = CompletableDeferred<String?>()
         val release = CompletableDeferred<Unit>()
+        private val inFlight = AtomicInteger(0)
+
+        /** Most photos this renderer was working on at the same time. */
+        val maxInFlight = AtomicInteger(0)
 
         override fun supports(cardId: String): Boolean = true
         override fun supportsExport(cardId: String): Boolean = true
@@ -92,7 +97,13 @@ class PhoneBatchControlTest {
         ): NativeImage {
             photoPaths += photoPath
             entered.complete(photoPath)
-            release.await()
+            val concurrent = inFlight.incrementAndGet()
+            maxInFlight.updateAndGet { maxOf(it, concurrent) }
+            try {
+                release.await()
+            } finally {
+                inFlight.decrementAndGet()
+            }
             platform.writeBytes(requireNotNull(outputPath), "rendered:${photoPath.orEmpty()}".encodeToByteArray())
             return NativeImage(
                 path = requireNotNull(outputPath),
@@ -218,11 +229,15 @@ class PhoneBatchControlTest {
         val oldRender = WorkflowEnv.nativeRender
         WorkflowEnv.platform = harness.platform
         WorkflowEnv.nativeRender = harness.render
+        com.framemark.native.workflow.PreviewSuspension.resetForVerify()
         return try {
             block()
         } finally {
             harness.render.release.complete(Unit)
             if (harness.queue.running) awaitStopped(harness.queue)
+            // The queue holds the process-wide preview gate while it runs; a leaked hold
+            // would freeze every later preview in this JVM.
+            com.framemark.native.workflow.PreviewSuspension.resetForVerify()
             WorkflowEnv.platform = oldPlatform
             WorkflowEnv.nativeRender = oldRender
         }
@@ -230,6 +245,24 @@ class PhoneBatchControlTest {
 
     private suspend fun awaitRenderStart(render: GatedRender): String =
         withTimeout(5_000) { requireNotNull(render.entered.await()) }
+
+    /** Waits until the worker pool is fully busy, i.e. [workers] photos are in flight. */
+    private suspend fun awaitSaturated(render: GatedRender, workers: Int) {
+        withTimeout(5_000) {
+            while (render.maxInFlight.get() < workers) yield()
+        }
+    }
+
+    /**
+     * The pool size the queue picks for these candidates. `candidate()` uses the default
+     * `ExportSettings()` (原尺寸), whose frame size is unknown, so the memory cap applies
+     * and the run is capped at the two-worker floor.
+     */
+    private fun batchWorkersForQueue(): Int =
+        com.framemark.native.workflow.batchWorkerCountForFrame(
+            largestFramePixels = null,
+            cores = com.framemark.native.workflow.platformProcessorCount(),
+        )
 
     private suspend fun awaitStopped(queue: PhonePhotoBatchQueue) {
         withTimeout(5_000) {
@@ -344,46 +377,67 @@ class PhoneBatchControlTest {
         }
     }
 
+    /**
+     * 暂停 = 「做完已经在飞的照片，不再开新的」。并行导出后「当前」是一**组**而不是一张，
+     * 所以这条用例先让 worker 池吃满再暂停：在飞的都完成，排队的一张不动。
+     * 语义（不多跑、不跳号、暂停不再开新任务）与串行时代一致，只有「在飞几张」变了。
+     */
     @Test
-    fun pause_finishes_current_photo_without_starting_the_next() = kotlinx.coroutines.runBlocking<Unit> {
+    fun pause_finishes_the_in_flight_photos_without_starting_the_next() = kotlinx.coroutines.runBlocking<Unit> {
         val harness = Harness()
         withHarness(harness) {
-            harness.queue.submit(listOf(candidate("one"), candidate("two")))
+            val workers = batchWorkersForQueue()
+            val total = workers + 3
+            harness.queue.submit((1..total).map { candidate("p$it") })
             harness.queue.start()
-            assertEquals("/photos/one.jpg", awaitRenderStart(harness.render))
+            awaitSaturated(harness.render, workers)
 
             harness.queue.pause()
             harness.render.release.complete(Unit)
             awaitStopped(harness.queue)
 
-            assertEquals(listOf("/photos/one.jpg"), harness.render.photoPaths.toList())
+            assertEquals(workers, harness.render.photoPaths.size, "暂停后不得再开新的照片")
             val jobs = harness.queue.queue.jobs
-            assertEquals(BatchJobStatus.Done, jobs[0].status)
-            assertEquals(BatchJobStatus.Queued, jobs[1].status)
-            assertTrue(jobs[0].outputPath?.endsWith("/one-1.jpg") == true)
+            jobs.take(workers).forEach { job ->
+                assertEquals(BatchJobStatus.Done, job.status, "${job.displayName} was in flight and must finish")
+                assertTrue(job.outputPath != null, "${job.displayName} in flight must keep its result")
+            }
+            jobs.drop(workers).forEach { job ->
+                assertEquals(BatchJobStatus.Queued, job.status, "${job.displayName} must stay queued")
+            }
         }
     }
 
     @Test
-    fun cancel_pending_keeps_current_result_and_marks_waiting_jobs_cancelled() = kotlinx.coroutines.runBlocking<Unit> {
+    fun cancel_pending_keeps_the_in_flight_results_and_marks_waiting_jobs_cancelled() = kotlinx.coroutines.runBlocking<Unit> {
         val harness = Harness()
         withHarness(harness) {
-            harness.queue.submit(listOf(candidate("one"), candidate("two")))
+            val workers = batchWorkersForQueue()
+            val total = workers + 3
+            harness.queue.submit((1..total).map { candidate("p$it") })
             harness.queue.start()
-            assertEquals("/photos/one.jpg", awaitRenderStart(harness.render))
+            awaitSaturated(harness.render, workers)
 
             harness.queue.cancelPending()
-            assertEquals(BatchJobStatus.Running, harness.queue.queue.jobs[0].status)
-            assertEquals(BatchJobStatus.Cancelled, harness.queue.queue.jobs[1].status)
+            harness.queue.queue.jobs.take(workers).forEach {
+                assertEquals(BatchJobStatus.Running, it.status, "在飞的照片继续导出，不被取消")
+            }
+            harness.queue.queue.jobs.drop(workers).forEach {
+                assertEquals(BatchJobStatus.Cancelled, it.status, "排队的一张都不再开始")
+            }
 
             harness.render.release.complete(Unit)
             awaitStopped(harness.queue)
 
-            assertEquals(listOf("/photos/one.jpg"), harness.render.photoPaths.toList())
+            assertEquals(workers, harness.render.photoPaths.size, "取消后不得再开新的照片")
             val jobs = harness.queue.queue.jobs
-            assertEquals(BatchJobStatus.Done, jobs[0].status)
-            assertEquals(BatchJobStatus.Cancelled, jobs[1].status)
-            assertTrue(jobs[0].outputPath?.endsWith("/one-1.jpg") == true)
+            jobs.take(workers).forEach { job ->
+                assertEquals(BatchJobStatus.Done, job.status)
+                assertTrue(job.outputPath != null)
+            }
+            jobs.drop(workers).forEach { job ->
+                assertEquals(BatchJobStatus.Cancelled, job.status)
+            }
         }
     }
 }
