@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.appVersionLabel
+import com.framemark.native.shell.OnboardingText
 import com.framemark.native.theme.AppearancePanel
 import com.framemark.native.theme.AppearancePanelText
 import com.framemark.native.theme.FmPalette
@@ -53,6 +54,7 @@ fun PhoneSettingsPage(
     errorText: String? = null,
     onClose: () -> Unit,
     onOpenAbout: () -> Unit = {},
+    onOpenOnboarding: () -> Unit = {},
 ) {
     val version = PhoneSettingsText.versionLabel(appVersionLabel())
     Column(
@@ -146,6 +148,40 @@ fun PhoneSettingsPage(
                         color = FmPalette.onSurfaceMuted,
                     )
                 }
+                // 新手教程：与桌面齿轮弹层同一行入口。它是一层浮层，不改页面栈，
+                // 所以这里只是一个回调，页面本身不新增 PhonePage。
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(FmPalette.outline),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button, onClick = onOpenOnboarding)
+                        .semantics { contentDescription = PhoneSettingsText.ONBOARDING_ROW }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = PhoneSettingsText.ONBOARDING_ROW,
+                            style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+                            color = FmPalette.onSurface,
+                        )
+                        Text(
+                            text = PhoneSettingsText.ONBOARDING_HINT,
+                            style = TextStyle(fontSize = 11.5.sp, lineHeight = 16.sp),
+                            color = FmPalette.onSurfaceMuted,
+                        )
+                    }
+                    Text(
+                        text = "›",
+                        style = TextStyle(fontSize = 16.sp, lineHeight = 20.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
             }
             Text(
                 text = PhoneSettingsText.FOOT_NOTE,
@@ -214,6 +250,13 @@ object PhoneSettingsText {
     const val BACK_LABEL: String = "返回首页"
     const val BACK_TO_SETTINGS: String = "返回设置"
     const val ABOUT_ROW: String = "隐私、权限与许可"
+
+    /**
+     * 关于那一组里的第三行：新手教程。名字与提示都直接取教程自己的文案表
+     * （[OnboardingText]），设置页不再存一份字面量。
+     */
+    const val ONBOARDING_ROW: String = OnboardingText.ENTRY
+    const val ONBOARDING_HINT: String = OnboardingText.ENTRY_HINT
 
     /** 第一组的组标题（`.set-h`）。 */
     const val GROUP_APPEARANCE: String = "外观"

@@ -92,6 +92,7 @@ import com.framemark.native.workflow.AppExitGate
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.product.ExportFormat
 import com.framemark.native.workflow.InMemoryProjectHolder
+import com.framemark.native.workflow.OnboardingState
 import com.framemark.native.workflow.ProjectHolder
 import com.framemark.native.workflow.ProjectReadRecoveryBlock
 import com.framemark.native.workflow.ProjectStatusBanner
@@ -100,6 +101,7 @@ import com.framemark.native.workflow.LocalTextEditFocus
 import com.framemark.native.workflow.TextEditFocus
 import com.framemark.native.workflow.TextSlotRegistry
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.workflow.WorkflowOnboardingStore
 import com.framemark.native.workflow.withNativeTextSlots
 import kotlinx.coroutines.launch
 import com.framemark.native.product.FmLog
@@ -236,6 +238,31 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     var helpOpen by remember { mutableStateOf(false) }
     var aboutOpen by remember { mutableStateOf(false) }
     var applyDesignOpen by remember { mutableStateOf(false) }
+    // 新手教程：一层整窗覆盖，不是第四个 StageMode，也不动顶栏的 编辑 / 批量导出。
+    // 首次启动在**首帧之后**才判定（`withFrameNanos`），免得工作区先闪一下再被盖住。
+    val onboardingStore = remember { WorkflowOnboardingStore() }
+    var onboardingOpen by remember { mutableStateOf(false) }
+    var onboardingPage by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        onboardingOpen = shouldAutoShowOnboarding(onboardingStore)
+        if (onboardingOpen) FmLog.info(ONBOARDING_TAG) { "auto open page=1 / ${OnboardingText.PAGES.size}" }
+    }
+
+    /** 跳过与完成走同一条路：写 done、关掉覆盖层。 */
+    fun closeOnboarding(skipped: Boolean) {
+        OnboardingState.markDone(onboardingStore)
+        onboardingOpen = false
+        onboardingPage = 0
+        FmLog.info(ONBOARDING_TAG) { "closed skipped=$skipped path=${onboardingStore.settingsPath}" }
+    }
+
+    /** 从齿轮弹层手动打开：永远从第一页开始，且不改 `onboarding.done`。 */
+    fun openOnboarding() {
+        onboardingPage = 0
+        onboardingOpen = true
+        FmLog.info(ONBOARDING_TAG) { "open from=gear" }
+    }
 
     val libraryIndex = remember(libraryState) {
         (libraryState as? LibraryLoadState.Ready)?.snapshot?.let { LibraryIndex.of(it) }
@@ -538,8 +565,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         }
     }
 
-    BackHandler(enabled = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen) {
+    BackHandler(enabled = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen || onboardingOpen) {
         when {
+            // 返回/关闭等于「跳过」：显式关掉了就别再每次启动都弹（与跳过按钮同一条路）。
+            onboardingOpen -> closeOnboarding(skipped = true)
             aboutOpen -> aboutOpen = false
             helpOpen -> helpOpen = false
             exportSheetOpen -> exportSheetOpen = false
@@ -727,7 +756,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         ctrl = event.isCtrlPressed,
                         shift = event.isShiftPressed,
                         textEditing = textEditFocus.isEditing,
-                        sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen,
+                        sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen || onboardingOpen,
                         editStage = stageMode == StageMode.Edit,
                     )
                     if (direction == 0) return@onKeyEvent false
@@ -754,9 +783,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         return@onPreviewKeyEvent true
                     }
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                    val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen
+                    val sheetOpen = presetSheetOpen || exportSheetOpen || helpOpen || aboutOpen || onboardingOpen
                     if (event.key == Key.Escape) {
                         when {
+                            onboardingOpen -> closeOnboarding(skipped = true)
                             aboutOpen -> aboutOpen = false
                             helpOpen -> helpOpen = false
                             exportSheetOpen -> exportSheetOpen = false
@@ -887,6 +917,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     onResetDesign = { resetConfirmOpen = true },
                     onOpenHelp = { helpOpen = true },
                     onOpenAbout = { aboutOpen = true },
+                    onOpenOnboarding = { openOnboarding() },
                     onToggleLeft = ::toggleLeft,
                     // 宽窗口是"折叠/展开右栏"，窄窗口（compact）下退化成"切到参数面板"，
                     // 这样去掉顶栏那个演示稿没有的「参数」按钮之后，窄窗口仍然进得去。
@@ -1090,6 +1121,18 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                         val recovered = projects.retryProjectLoad()
                         FmLog.info("FM_PROJECT_RETRY_RESULT") { "recovered=$recovered error=${projects.loadError ?: "-"}" }
                     },
+                )
+            }
+
+            // 新手教程盖在所有东西之上：首次启动自动弹，之后从齿轮弹层手动打开。
+            if (onboardingOpen) {
+                OnboardingOverlay(
+                    page = onboardingPage,
+                    onNext = {
+                        onboardingPage = (onboardingPage + 1).coerceAtMost(OnboardingText.PAGES.lastIndex)
+                    },
+                    onSkip = { closeOnboarding(skipped = true) },
+                    onDone = { closeOnboarding(skipped = false) },
                 )
             }
         }

@@ -45,6 +45,7 @@ import com.framemark.native.appVersionLabel
 import com.framemark.native.product.FmLog
 import com.framemark.native.shell.AboutContent
 import com.framemark.native.shell.AboutText
+import com.framemark.native.shell.OnboardingText
 import com.framemark.native.theme.FmDesktop
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
@@ -90,6 +91,7 @@ fun DesktopTopBarV2(
     onResetDesign: () -> Unit,
     onOpenHelp: () -> Unit,
     onOpenAbout: () -> Unit = {},
+    onOpenOnboarding: () -> Unit = {},
     onToggleLeft: () -> Unit,
     onToggleRight: () -> Unit,
 ) {
@@ -175,7 +177,7 @@ fun DesktopTopBarV2(
                 kbd = if (compact) null else "Ctrl E",
                 onClick = onOpenExport,
             )
-            AppearanceGear(onOpenAbout = onOpenAbout)
+            AppearanceGear(onOpenAbout = onOpenAbout, onOpenOnboarding = onOpenOnboarding)
         }
     }
 }
@@ -308,7 +310,7 @@ private fun ChevronDown(tint: androidx.compose.ui.graphics.Color) {
 
 /** 顶栏右端的齿轮：弹层里是配色方案 §8 的外观面板（配色 / 明暗 / 画布）。 */
 @Composable
-private fun AppearanceGear(onOpenAbout: () -> Unit) {
+private fun AppearanceGear(onOpenAbout: () -> Unit, onOpenOnboarding: () -> Unit = {}) {
     var open by remember { mutableStateOf(false) }
     Box {
         DeskIconButton(
@@ -345,6 +347,43 @@ private fun AppearanceGear(onOpenAbout: () -> Unit) {
                             color = FmPalette.primaryStrong,
                         )
                     }
+                }
+                Spacer(Modifier.height(10.dp))
+                // 新手教程：手机设置页那一行的桌面同款入口。也放在面板上方的可靠
+                // 点击区里（同样的原因），点开是整窗覆盖层，项目与页面都不受影响。
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(FmRadii.chip))
+                        .background(FmPalette.surfaceMuted)
+                        .clickable(role = Role.Button) {
+                            open = false
+                            onOpenOnboarding()
+                        }
+                        .semantics { contentDescription = OnboardingText.ENTRY }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = OnboardingText.ENTRY,
+                        style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+                        color = FmPalette.onSurface,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = OnboardingText.ENTRY_HINT,
+                        style = TextStyle(fontSize = 11.sp, lineHeight = 15.sp),
+                        color = FmPalette.onSurfaceMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "›",
+                        style = TextStyle(fontSize = 14.sp, lineHeight = 18.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
                 }
                 Spacer(Modifier.height(10.dp))
                 AppearancePanel()

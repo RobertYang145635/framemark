@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -80,6 +81,7 @@ import com.framemark.native.workflow.BatchScreen
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.NativeEngine
+import com.framemark.native.workflow.OnboardingState
 import com.framemark.native.workflow.OverlaySpec
 import com.framemark.native.workflow.PhonePhotoBatchQueue
 import com.framemark.native.workflow.PhotoBatchScreen
@@ -96,6 +98,7 @@ import com.framemark.native.workflow.WatermarkSelection
 import com.framemark.native.workflow.WatermarkSpec
 import com.framemark.native.workflow.withNativeTextSlots
 import com.framemark.native.workflow.WorkflowEnv
+import com.framemark.native.workflow.WorkflowOnboardingStore
 import com.framemark.native.product.FmLog
 import com.framemark.native.product.NoticeText
 
@@ -194,6 +197,23 @@ fun PhoneShell() {
     // Home instead of restoring the last editor page.
     var page by remember { mutableStateOf(PhonePageMemory.page ?: PhonePage.Home) }
     LaunchedEffect(page) { PhonePageMemory.page = page }
+    // 新手教程：一层覆盖，不是第五个 PhonePage。页面栈不动，关掉就回到原来那一页。
+    // 首次启动在**首帧之后**才判定（`withFrameNanos`），免得首页先露一下再被盖住。
+    val onboardingStore = remember { WorkflowOnboardingStore() }
+    var onboardingOpen by remember { mutableStateOf(false) }
+    var onboardingPage by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        onboardingOpen = shouldAutoShowOnboarding(onboardingStore)
+        if (onboardingOpen) FmLog.info(ONBOARDING_TAG) { "auto open page=1 / ${OnboardingText.PAGES.size}" }
+    }
+    /** 跳过与完成走同一条路：写 done、关掉覆盖层。 */
+    fun closeOnboarding(skipped: Boolean) {
+        OnboardingState.markDone(onboardingStore)
+        onboardingOpen = false
+        onboardingPage = 0
+        FmLog.info(ONBOARDING_TAG) { "closed skipped=$skipped path=${onboardingStore.settingsPath}" }
+    }
     // Until the user acts, show Home regardless of pages restored by background
     // effects (the startup photo sync also bumps PhotoSelection.version).
 
@@ -721,13 +741,15 @@ fun PhoneShell() {
         }
     }
     // Back order: the editor's own focus/parameter-page handlers compose later and
-    // win first; here sheets close, then any edit tool falls back to 边框, then the
-    // page goes back one step (编辑页 / 设置页 → 首页). On 首页 nothing is enabled,
-    // so the platform exits the app as usual.
+    // win first; here the tutorial closes (treated as 跳过), then sheets close, then
+    // any edit tool falls back to 边框, then the page goes back one step
+    // (编辑页 / 设置页 → 首页). On 首页 nothing is enabled, so the platform exits.
     BackHandler(
-        enabled = anySheet || tool != EditorTool.Border || PhonePagePolicy.handlesBack(page),
+        enabled = onboardingOpen || anySheet || tool != EditorTool.Border || PhonePagePolicy.handlesBack(page),
     ) {
         when {
+            // 返回键等于「跳过」：显式关掉了就别再每次启动都弹（与跳过按钮同一条路）。
+            onboardingOpen -> closeOnboarding(skipped = true)
             pendingPhotoBatch != null -> pendingPhotoBatch = null
             confirmApplyAll -> confirmApplyAll = false
             photoBatchOpen -> photoBatchOpen = false
@@ -886,12 +908,22 @@ fun PhoneShell() {
                     page = PhonePage.About
                     FmLog.info("FM_PHONE_PAGE") { "Settings->About" }
                 },
+                onOpenOnboarding = {
+                    onboardingPage = 0
+                    onboardingOpen = true
+                    FmLog.info(ONBOARDING_TAG) { "open from=settings" }
+                },
             )
 
             PhonePage.About -> PhoneAboutPage(
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.About) ?: PhonePage.Settings
                     FmLog.info("FM_PHONE_PAGE") { "About->${page.name} viaClose" }
+                },
+                onOpenOnboarding = {
+                    onboardingPage = 0
+                    onboardingOpen = true
+                    FmLog.info(ONBOARDING_TAG) { "open from=about" }
                 },
             )
 
@@ -1084,6 +1116,16 @@ fun PhoneShell() {
                 // Same evidence hook the previous sheet carried (`fmRunExport`).
                 autoGenerate = LaunchOptions.runSampleExport,
                 onDismiss = { exportSheetOpen = false },
+            )
+        }
+
+        // 新手教程盖在所有东西之上（包括上面那些弹层），关掉之后下面的页面原样还在。
+        if (onboardingOpen) {
+            OnboardingOverlay(
+                page = onboardingPage,
+                onNext = { onboardingPage = (onboardingPage + 1).coerceAtMost(OnboardingText.PAGES.lastIndex) },
+                onSkip = { closeOnboarding(skipped = true) },
+                onDone = { closeOnboarding(skipped = false) },
             )
         }
     }
