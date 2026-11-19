@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc34",
-  "versionCode": 33,
+  "versionName": "0.9.0-rc35",
+  "versionCode": 34,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "安卓交互预览走 GPU 光栅（真机验证生效：Adreno 740/GLES3.2，探针画像素读回校验；失败自动回退 CPU，导出与 GPU 无关、像素逐字节不变）；批量导出 CPU 多核并行（8 核 4 路，语义不变）；导出期间暂停预览刷新、结束后补渲最新。",
+  "notes": "关于页新增「支持 FrameMark」打赏入口（微信 / 支付宝收款码）；更新器改为以 SHA-256 为准，清单 size 写错不再拦死更新。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc34/FrameMark-0.9.0-rc34-arm64.apk",
-      "sha256": "b73e6d80b41f5a67f0134e573d897df0e3d55eaa33b550a174fd9505e37a9c41",
-      "size": 132447579
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc35/FrameMark-0.9.0-rc35-arm64.apk",
+      "sha256": "cd04e691b1572b83faa055fd5f3a0c8a3bd32900e87c48b47639c4c629ed8ec5",
+      "size": 132821183
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc34/FrameMark-0.9.0-rc34-win64.msi",
-      "sha256": "b8dc58261d6e5282440a8051c0a5c1d715356228b4bc0b7bf0e83220ccaa1f56",
-      "size": 239629768
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc35/FrameMark-0.9.0-rc35-win64.msi",
+      "sha256": "d41e0093153b6f1eb2702c78c55bfa5d18b1e364f88e71c40115d2ef4cb10a69",
+      "size": 239548847
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc34"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc35"
 }
