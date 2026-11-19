@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc30",
-  "versionCode": 29,
+  "versionName": "0.9.0-rc31",
+  "versionCode": 30,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "液态玻璃退回最初的实现（模糊背衬 + 色调 + 白雾 + 高光 + 内阴影 + 亮边）；毕业 01/02 字体改成 OPPO Sans；其余同 rc29（厂商 183 张、小米徕卡 5/88/89、vivo 11 系列、系列跳转、迪士尼右下、人物中文、字标大小滑杆）。",
+  "notes": "补 OPPO「品牌 · 3」；上架 2025 春节/情人节限定水印 3 张打样（新春 1002、新春 1005、情人节 1001）。边框 183→187，厂商类 129→133。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc30/FrameMark-0.9.0-rc30-arm64.apk",
-      "sha256": "45c3577be022df73ec5c285705e6f8fdc4a7b645c3bd7f45be0fde4397c04042",
-      "size": 131964319
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc31/FrameMark-0.9.0-rc31-arm64.apk",
+      "sha256": "9180a69e9cfe5de250cd392434c0b68591444f9eecde5e31dccd94547bb769b1",
+      "size": 131985153
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc30/FrameMark-0.9.0-rc30-win64.msi",
-      "sha256": "a5be5e325155b2e75ef90e371a9aa21acbdbe74b08e88687f79595db6a6a441a",
-      "size": 239129668
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc31/FrameMark-0.9.0-rc31-win64.msi",
+      "sha256": "d45f62e6d8850afe9a293703e9298cf63cd235bf91e0fd4daabd912a1dfcca45",
+      "size": 239600836
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc30"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc31"
 }
