@@ -259,6 +259,96 @@ class ControlRegistryRealDataTest {
     }
 
     /**
+     * 2026-11-19「模糊度」：玻璃族手写卡的模糊强度可调。
+     *
+     * 目标集合 = 模板**真的**读 `params.blur` 的 4 张玻璃卡（variants.json 的 base
+     * 为 glass / glassSideCard / glassPalettePortrait）：
+     *  - glass-liquid（glass.rs）与 glass-palette（glass_palette_portrait.rs）按
+     *    `blur_px = s * 0.032 * (blur / 24)` 采样；
+     *  - glass-card / glass-pill-5（glass_side_card.rs）通过 `draw_blurred_backdrop`
+     *    读同一个键。
+     * 同属「液态玻璃」分类、但模板是 sideCard / specFooter 的 glass-white-1..3 与
+     * glass-card-4 不在此列：把设计稿的 blur 从 6 改到 48，渲染结果逐字节相同
+     * （负对照，见本轮报告），加了就是永不生效的死控件。
+     *
+     * 范围 0–48、步进 2 写在 inspector-meta.json（注册表真正读的那份）；默认值
+     * 沿用每张卡自己的现状（引擎缺省 24，glass-card 26、glass-pill-5 30 是它们的
+     * 声明值），不硬改成 24，否则「重置」会把卡片改样。
+     */
+    @Test
+    fun every_glass_family_hand_card_exposes_one_blur_strength_slider() {
+        val registry = RealData.registry()
+        val expected = linkedMapOf(
+            "glass-liquid" to 24.0,
+            "glass-palette" to 24.0,
+            "glass-card" to 26.0,
+            "glass-pill-5" to 30.0,
+        )
+        for ((cardId, current) in expected) {
+            val card = requireNotNull(registry.card(cardId)) { "$cardId 不在注册表里" }
+            val controls = card.controls.filter { it.consumer == "params.blur" }
+            assertEquals(1, controls.size, "$cardId 只能有一条模糊度滑杆")
+            val control = controls.single()
+            assertEquals("slider.params:blur", control.controlId)
+            assertEquals(ControlType.Slider, control.type)
+            assertEquals("模糊度", control.label)
+            assertEquals(0.0, control.min)
+            assertEquals(48.0, control.max)
+            assertEquals(2.0, control.step)
+            assertEquals(current, control.defaultValue, "$cardId 的默认值 = 该卡现状")
+            assertEquals(current, control.currentValue)
+            assertEquals("", control.unit, "模糊度没有单位，面板不显示后缀")
+            assertTrue(control.visible && !control.gated, "$cardId 的模糊度必须可见")
+            assertEquals("params.blur", control.consumer)
+            assertTrue(control.consumed, "手写卡的 params.* 由引擎直接读取")
+        }
+
+        // 背景模糊族的滑杆保持原名「模糊强度」，这次只加玻璃族的「模糊度」。
+        assertEquals(
+            "模糊强度",
+            registry.card("blur-classic")!!.controls.single { it.controlId == "slider.params:blur" }.label,
+        )
+
+        // 负对照：模板不读 params.blur 的 4 张「液态玻璃」卡没有这条滑杆。
+        for (cardId in listOf("glass-white-1", "glass-white-2", "glass-white-3", "glass-card-4")) {
+            val card = requireNotNull(registry.card(cardId)) { "$cardId 不在注册表里" }
+            assertTrue(
+                card.controls.none { it.consumer == "params.blur" },
+                "$cardId 的模板（sideCard / specFooter）不读 params.blur，不该有模糊度滑杆",
+            )
+        }
+    }
+
+    /** 用户真正看到的那一列：模糊度落在「样式」页、不带单位后缀、0–48 步进 2。 */
+    @Test
+    fun glass_blur_slider_lands_in_the_style_tab_without_a_unit() {
+        val registry = RealData.registry()
+        val card = requireNotNull(registry.card("glass-liquid")) { "glass-liquid 不在注册表里" }
+        val model = com.framemark.native.inspector.RegistryInspectorFactory.build(
+            card.cardId, card.name, card.category, card.categoryName, card,
+            com.framemark.native.inspector.IrSlotBinding.EMPTY,
+        ).model
+        val row = model.controls.single { it.controlId == "slider.params:blur" }
+        assertEquals("模糊度", row.label)
+        assertEquals(com.framemark.native.inspector.ControlType.Slider, row.type)
+        // 模糊度是外观：布局分组 + 样式页（标签页由 param 推导，不需要新数据）。
+        assertEquals(com.framemark.native.inspector.InspectorSection.Layout, row.section)
+        assertEquals(
+            com.framemark.native.inspector.InspectorPage.Style,
+            com.framemark.native.inspector.inspectorPageOf(row),
+        )
+        assertEquals("params.blur", row.param)
+        assertEquals(0f, row.min)
+        assertEquals(48f, row.max)
+        assertEquals(2f, row.step)
+        assertNull(row.unit, "模糊度没有单位")
+        assertEquals(1f, row.unitScale)
+        assertNull(row.disabledReason)
+        assertEquals("24.0", row.declaredDefault)
+        assertEquals("24.0", row.currentText)
+    }
+
+    /**
      * W1（2026-10-31）：用户口径「厂商模板只需要能修改文字内容」。
      * 106 张 IR 卡每张至少要有一条可见的文字控件，且键必须落在 bundle 节点路径上
      * （`params.slotText:b<band>/g<n>...`），不能是厂商拼写。
