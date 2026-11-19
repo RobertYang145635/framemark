@@ -1,107 +1,107 @@
 {
-  "id": "oppo-gallery:restrict_valentine_2025_style_1001",
-  "vendor": "oppo",
-  "family": "OPPO 相册",
-  "name": "情人节限定 · 1001",
-  "nameEn": "restrict_valentine_2025_style_1001",
-  "placement": "out",
-  "referenceWidth": 360,
-  "margins": {
-    "left": 0,
-    "top": 0,
-    "right": 0,
-    "bottom": 60
-  },
-  "background": "#CD1623",
-  "bands": [
+ "id": "oppo-gallery:restrict_valentine_2025_style_1001",
+ "vendor": "oppo",
+ "family": "OPPO 相册",
+ "name": "情人节限定 · 1001",
+ "nameEn": "restrict_valentine_2025_style_1001",
+ "placement": "out",
+ "referenceWidth": 360,
+ "margins": {
+  "left": 0,
+  "top": 0,
+  "right": 0,
+  "bottom": 60
+ },
+ "background": "#CD1623",
+ "bands": [
+  {
+   "direction": "bottom",
+   "thickness": 60,
+   "offset": {
+    "x": 0,
+    "y": 0
+   },
+   "children": [
     {
-      "direction": "bottom",
-      "thickness": 60,
-      "offset": {
-        "x": 0,
-        "y": 0
+     "kind": "group",
+     "orientation": "column",
+     "gravity": "leftVerticalCenter",
+     "margins": {
+      "left": 20
+     },
+     "children": [
+      {
+       "kind": "text",
+       "token": {
+        "kind": "model"
+       },
+       "font": "sys",
+       "size": 12,
+       "weight": 600,
+       "color": "#FFECEE",
+       "alpha": 1,
+       "tracking": 0.04,
+       "lineHeight": 14.06,
+       "align": "left",
+       "gravity": "leftTop",
+       "margins": {},
+       "optional": false
       },
-      "children": [
-        {
-          "kind": "group",
-          "orientation": "column",
-          "gravity": "leftVerticalCenter",
-          "margins": {
-            "left": 20
-          },
-          "children": [
-            {
-              "kind": "text",
-              "token": {
-                "kind": "model"
-              },
-              "font": "sys",
-              "size": 12,
-              "weight": 600,
-              "color": "#FFECEE",
-              "alpha": 1,
-              "tracking": 0.04,
-              "lineHeight": 14.06,
-              "align": "left",
-              "gravity": "leftTop",
-              "margins": {},
-              "optional": false
-            },
-            {
-              "kind": "text",
-              "token": {
-                "kind": "literal",
-                "value": "你眼中 藏着我余生"
-              },
-              "font": "sys",
-              "size": 8,
-              "weight": 500,
-              "color": "#FFECEE",
-              "alpha": 1,
-              "tracking": 0.08,
-              "lineHeight": 9.38,
-              "align": "left",
-              "gravity": "leftTop",
-              "margins": {
-                "top": 3
-              },
-              "optional": true
-            }
-          ]
-        },
-        {
-          "kind": "space",
-          "weight": 1
-        },
-        {
-          "kind": "image",
-          "asset": "valentine_2025_style1001_logo_v1",
-          "width": 160,
-          "height": 60,
-          "scale": "contain",
-          "gravity": "rightVerticalCenter",
-          "margins": {},
-          "alpha": 1
-        }
-      ]
+      {
+       "kind": "text",
+       "token": {
+        "kind": "literal",
+        "value": "你眼中 藏着我余生"
+       },
+       "font": "sys",
+       "size": 8,
+       "weight": 500,
+       "color": "#FFECEE",
+       "alpha": 1,
+       "tracking": 0.08,
+       "lineHeight": 9.38,
+       "align": "left",
+       "gravity": "leftTop",
+       "margins": {
+        "top": 3
+       },
+       "optional": true
+      }
+     ]
+    },
+    {
+     "kind": "space",
+     "weight": 1
+    },
+    {
+     "kind": "image",
+     "asset": "valentine_2025_style1001_logo_v1",
+     "width": 160,
+     "height": 60,
+     "scale": "contain",
+     "gravity": "rightVerticalCenter",
+     "margins": {},
+     "alpha": 1
     }
-  ],
-  "assets": {
-    "valentine_2025_style1001_logo_v1": {
-      "file": "valentine_2025_style1001_logo_v1.webp",
-      "width": 800,
-      "height": 300
-    }
-  },
-  "audit": {
-    "status": "approx",
-    "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_valentine_style_1001.json",
-    "notes": "OPPO 2025 情人节限定 (restrict_valentine_2025_style_1001, publish 2025-02). Bottom band 60 over #CD1623, left column at 20: model line (textSource 0) 12/600 tracking .04 lineHeight 14.06 in #FFECEE, greeting (textSource 5) 8/500 tracking .08 lineHeight 9.38 also #FFECEE with topMargin 3; spacer weight 1; the ornament bitmap valentine_2025_style1001_logo_v1 (CDN, 800x300) is drawn 160x60 at the right edge. referenceWidth 360 = baseImageSize.",
-    "unsupported": [
-      "vendor maxWidth 166 on both lines is not an IR field; layout comes from the margins (the ornament is right-anchored, so it cannot be overrun)",
-      "greetings[] holds 36 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"你眼中 藏着我余生\" as a literal, the remaining 35 are not shipped",
-      "offlineTime 2025-02 has passed: the card is a data-accurate replica, not an on-sale official asset",
-      "机型行 text token=model 与源 JSON 一样只取照片 EXIF 的 Make/Model：照片没有 EXIF 时该行为空、引擎按空 token 不绘制（图案与祝福语照常出现），与既有 114 张厂商卡（哈苏 / 小米 / 宋干节 等）行为一致——不是本卡独有的缺项"
-    ]
+   ]
   }
+ ],
+ "assets": {
+  "valentine_2025_style1001_logo_v1": {
+   "file": "valentine_2025_style1001_logo_v1.webp",
+   "width": 800,
+   "height": 300
+  }
+ },
+ "audit": {
+  "status": "approx",
+  "source": "oppo_2025_valentine_style_1001.json",
+  "notes": "OPPO 2025 情人节限定 (restrict_valentine_2025_style_1001, publish 2025-02). Bottom band 60 over #CD1623, left column at 20: model line (textSource 0) 12/600 tracking .04 lineHeight 14.06 in #FFECEE, greeting (textSource 5) 8/500 tracking .08 lineHeight 9.38 also #FFECEE with topMargin 3; spacer weight 1; the ornament bitmap valentine_2025_style1001_logo_v1 (CDN, 800x300) is drawn 160x60 at the right edge. referenceWidth 360 = baseImageSize.",
+  "unsupported": [
+   "vendor maxWidth 166 on both lines is not an IR field; layout comes from the margins (the ornament is right-anchored, so it cannot be overrun)",
+   "greetings[] holds 36 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"你眼中 藏着我余生\" as a literal, the remaining 35 are not shipped",
+   "offlineTime 2025-02 has passed: the card is a data-accurate replica, not an on-sale official asset",
+   "机型行 text token=model 与源 JSON 一样只取照片 EXIF 的 Make/Model：照片没有 EXIF 时该行为空、引擎按空 token 不绘制（图案与祝福语照常出现），与既有 114 张厂商卡（哈苏 / 小米 / 宋干节 等）行为一致——不是本卡独有的缺项"
+  ]
+ }
 }
