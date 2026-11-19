@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc29",
-  "versionCode": 28,
+  "versionName": "0.9.0-rc30",
+  "versionCode": 29,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "厂商类补齐到 183 张（OPPO 63 / 小米 46 / vivo 20），补小米徕卡 5/88/89 与 vivo 11 个系列；系列目录点一下就跳转到分组；液态玻璃换运行时折射着色器，玻璃 05/玻璃卡片跟照片比例；vivo 迪士尼图案改锚白条右下；人物卡中文名不再显示问号；非厂商边框新增字标大小滑杆（40–220%）。",
+  "notes": "液态玻璃退回最初的实现（模糊背衬 + 色调 + 白雾 + 高光 + 内阴影 + 亮边）；毕业 01/02 字体改成 OPPO Sans；其余同 rc29（厂商 183 张、小米徕卡 5/88/89、vivo 11 系列、系列跳转、迪士尼右下、人物中文、字标大小滑杆）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc29/FrameMark-0.9.0-rc29-arm64.apk",
-      "sha256": "e3fa08a31dd73c3d088e5aba211462cbcc322dc4c4986caa735c699e7ae2e0fb",
-      "size": 131979215
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc30/FrameMark-0.9.0-rc30-arm64.apk",
+      "sha256": "45c3577be022df73ec5c285705e6f8fdc4a7b645c3bd7f45be0fde4397c04042",
+      "size": 131964319
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc29/FrameMark-0.9.0-rc29-win64.msi",
-      "sha256": "0f9dc9a0243278c5adbe14995c5857b52550295839cdd206e7318f4bcaaa1841",
-      "size": 239137860
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc30/FrameMark-0.9.0-rc30-win64.msi",
+      "sha256": "a5be5e325155b2e75ef90e371a9aa21acbdbe74b08e88687f79595db6a6a441a",
+      "size": 239129668
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc29"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc30"
 }
