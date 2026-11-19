@@ -105,10 +105,9 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (L
             if (downloaded) break
         }
         if (!downloaded) return lastError
-        if (asset.size > 0 && part.length() != asset.size) {
-            part.delete()
-            return "下载文件大小不符（${part.length()} != ${asset.size}）"
-        }
+        // 体积只是弱校验：发布清单里的 size 写错（例如复用上一版数字）不该让用户没法更新。
+        // SHA-256 才是权威 —— 只要哈希对得上就接受，size 不符只记一条日志；
+        // 清单没有 sha256 时才退回按大小拦截。
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         part.inputStream().use { input ->
             val buffer = ByteArray(1 shl 16)
@@ -119,9 +118,19 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (L
             }
         }
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
-        if (!actual.equals(asset.sha256, ignoreCase = true)) {
+        val hasSha = asset.sha256.isNotBlank()
+        if (hasSha && !actual.equals(asset.sha256, ignoreCase = true)) {
             part.delete()
             return "更新包校验失败（SHA-256 不符）"
+        }
+        if (!hasSha && asset.size > 0 && part.length() != asset.size) {
+            part.delete()
+            return "下载文件大小不符（${part.length()} != ${asset.size}）"
+        }
+        if (hasSha && asset.size > 0 && part.length() != asset.size) {
+            com.framemark.native.product.FmLog.warn("FM_UPDATE_SIZE_MISMATCH") {
+                "len=${part.length()} declared=${asset.size}（sha256 已通过，按通过处理）"
+            }
         }
         if (!part.renameTo(apk)) {
             part.copyTo(apk, overwrite = true)
