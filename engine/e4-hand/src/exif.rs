@@ -79,9 +79,23 @@ struct Tiff<'a> {
     base: usize,
     le: bool,
 }
+/// One IFD entry. `val` is the 4-byte value field read as a u32 in file byte order;
+/// `vpos` is that field's absolute index in `b`. TIFF inlines every value whose total
+/// length is <= 4 bytes *inside the value field* (so `val` is then the data itself —
+/// e.g. a little-endian SHORT pair `35/10` gives `val` = 0x000A0023); only longer
+/// values store an offset relative to the TIFF header. Always resolve through
+/// `bytes_of()` instead of computing `base + val` by hand.
+#[derive(Clone, Copy)]
+struct Entry {
+    tag: u16,
+    ty: u16,
+    cnt: u32,
+    val: u32,
+    vpos: usize,
+}
+
 impl<'a> Tiff<'a> {
-    fn ifd(&self, off: u32) -> Vec<(u16, u16, u32, u32)> {
-        // (tag, type, count, value_offset)
+    fn ifd(&self, off: u32) -> Vec<Entry> {
         let mut out = Vec::new();
         let p = self.base + off as usize;
         let n = match u16at(self.b, p, self.le) {
@@ -98,41 +112,57 @@ impl<'a> Tiff<'a> {
             ) else {
                 break;
             };
-            out.push((tag, ty, cnt, val));
+            out.push(Entry {
+                tag,
+                ty,
+                cnt,
+                val,
+                vpos: e + 8,
+            });
         }
         out
     }
-    fn bytes_of(&self, ty: u16, cnt: u32, val: u32) -> Option<usize> {
-        let unit = match ty {
+    fn bytes_of(&self, e: Entry) -> Option<usize> {
+        let unit = match e.ty {
             1 | 2 | 6 | 7 => 1usize,
             3 | 8 => 2,
             4 | 9 | 11 => 4,
             5 | 10 | 12 => 8,
             _ => return None,
         };
-        let len = unit * cnt as usize;
+        let len = unit * e.cnt as usize;
         if len <= 4 {
-            Some(self.base + val as usize)
+            // Inline: the bytes live in the value field itself, so the data starts at
+            // `vpos`. `self.base + val` would jump to a garbage offset (a SHORT pair
+            // reads as ~0x000100C8, i.e. megabytes past the TIFF header) and every
+            // numeric tag would come back as None.
+            Some(e.vpos)
         } else {
-            Some(self.base + val as usize)
+            Some(self.base + e.val as usize)
         }
     }
-    fn ascii(&self, ty: u16, cnt: u32, val: u32) -> String {
-        if ty != 2 {
+    fn ascii(&self, e: Entry) -> String {
+        if e.ty != 2 {
             return String::new();
         }
-        let p = self.base + val as usize;
-        ascii(self.b, p, cnt as usize)
+        let n = e.cnt as usize;
+        let p = if n <= 4 {
+            // ASCII of <= 4 bytes is inline too.
+            e.vpos
+        } else {
+            self.base + e.val as usize
+        };
+        ascii(self.b, p, n)
     }
-    fn num(&self, ty: u16, cnt: u32, val: u32) -> Option<f64> {
-        let p = match self.bytes_of(ty, cnt, val) {
+    fn num(&self, e: Entry) -> Option<f64> {
+        let p = match self.bytes_of(e) {
             Some(p) => p,
             None => return None,
         };
-        match ty {
+        match e.ty {
             // SHORT 对：piexif / 部分手机把 `35/10` 写成两个 SHORT（count=2），
             // 只读第一个会把 f/3.5 读成 35、210mm 读成 210 的一半，ISO 更会读成乱数。
-            3 if cnt >= 2 => {
+            3 if e.cnt >= 2 => {
                 let a = u16at(self.b, p, self.le)? as f64;
                 let d = u16at(self.b, p + 2, self.le)? as f64;
                 if d > 0.0 {
@@ -200,34 +230,37 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
     let mut sho: Option<f64> = None;
     let mut w: Option<f64> = None;
     let mut h: Option<f64> = None;
-    for (tag, ty, cnt, val) in t.ifd(first) {
-        match tag {
-            0x010F => ex.make = t.ascii(ty, cnt, val),
-            0x0110 => ex.model = t.ascii(ty, cnt, val),
-            0x0132 => ex.date_time = t.ascii(ty, cnt, val),
-            0x8769 => exif_ifd_off = Some(val),
+    for e in t.ifd(first) {
+        match e.tag {
+            0x010F => ex.make = t.ascii(e),
+            0x0110 => ex.model = t.ascii(e),
+            0x0132 => ex.date_time = t.ascii(e),
+            // Pointer to the Exif sub-IFD. Normally a LONG (inline, so `e.val` already
+            // holds the offset), but go through `num()` so a SHORT-typed pointer and
+            // an inline/out-of-line value are both handled correctly.
+            0x8769 => exif_ifd_off = t.num(e).map(|v| v as u32),
             // 有些相机/导出工具（含部分手机）把光圈、快门、ISO、焦距直接写在 IFD0，
             // 只扫 Exif 子 IFD 会整行丢掉 —— 这些标签在两处都认，子 IFD 里的值后写、优先。
-            0x829D => fnum = t.num(ty, cnt, val),
-            0x829A => sho = t.num(ty, cnt, val),
-            0x8827 => iso = t.num(ty, cnt, val),
-            0x920A => focal = t.num(ty, cnt, val),
-            0xA405 => f35 = t.num(ty, cnt, val),
+            0x829D => fnum = t.num(e),
+            0x829A => sho = t.num(e),
+            0x8827 => iso = t.num(e),
+            0x920A => focal = t.num(e),
+            0xA405 => f35 = t.num(e),
             _ => {}
         }
     }
     if let Some(off) = exif_ifd_off {
-        for (tag, ty, cnt, val) in t.ifd(off) {
-            match tag {
-                0x9003 => dt_original = t.ascii(ty, cnt, val),
-                0xA434 => ex.lens = t.ascii(ty, cnt, val),
-                0x829D => fnum = t.num(ty, cnt, val),
-                0x829A => sho = t.num(ty, cnt, val),
-                0x8827 => iso = t.num(ty, cnt, val),
-                0x920A => focal = t.num(ty, cnt, val),
-                0xA405 => f35 = t.num(ty, cnt, val),
-                0xA002 => w = t.num(ty, cnt, val),
-                0xA003 => h = t.num(ty, cnt, val),
+        for e in t.ifd(off) {
+            match e.tag {
+                0x9003 => dt_original = t.ascii(e),
+                0xA434 => ex.lens = t.ascii(e),
+                0x829D => fnum = t.num(e),
+                0x829A => sho = t.num(e),
+                0x8827 => iso = t.num(e),
+                0x920A => focal = t.num(e),
+                0xA405 => f35 = t.num(e),
+                0xA002 => w = t.num(e),
+                0xA003 => h = t.num(e),
                 _ => {}
             }
         }
@@ -255,4 +288,189 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
         || ex.iso.is_some()
         || !ex.lens.is_empty();
     ex
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static SEQ: AtomicUsize = AtomicUsize::new(0);
+
+    /// Little/big-endian TIFF writer for fixtures. Offsets are relative to the TIFF
+    /// header, exactly like a real file, so the tests exercise the real offset math.
+    struct Buf {
+        b: Vec<u8>,
+        le: bool,
+    }
+    impl Buf {
+        fn new(le: bool) -> Self {
+            Buf { b: Vec::new(), le }
+        }
+        fn u16(&mut self, v: u16) {
+            let w = if self.le { v.to_le_bytes() } else { v.to_be_bytes() };
+            self.b.extend_from_slice(&w);
+        }
+        fn u32(&mut self, v: u32) {
+            let w = if self.le { v.to_le_bytes() } else { v.to_be_bytes() };
+            self.b.extend_from_slice(&w);
+        }
+        fn bytes(&mut self, s: &[u8]) {
+            self.b.extend_from_slice(s);
+        }
+        fn pad_to(&mut self, off: usize) {
+            assert!(self.b.len() <= off, "layout overflow: {} > {}", self.b.len(), off);
+            self.b.resize(off, 0);
+        }
+        fn ifd(&mut self, entries: &[(u16, u16, u32, [u8; 4])], next: u32) {
+            self.u16(entries.len() as u16);
+            for (tag, ty, cnt, raw) in entries {
+                self.u16(*tag);
+                self.u16(*ty);
+                self.u32(*cnt);
+                self.bytes(raw);
+            }
+            self.u32(next);
+        }
+    }
+
+    fn offset_field(le: bool, off: u32) -> [u8; 4] {
+        if le {
+            off.to_le_bytes()
+        } else {
+            off.to_be_bytes()
+        }
+    }
+    /// Inline value field: a value of <= 4 bytes is written into the first bytes of the
+    /// field in file byte order, the rest stays zero.
+    fn inline_shorts(le: bool, vals: &[u16]) -> [u8; 4] {
+        let mut raw = [0u8; 4];
+        for (i, v) in vals.iter().enumerate() {
+            let w = if le { v.to_le_bytes() } else { v.to_be_bytes() };
+            raw[i * 2] = w[0];
+            raw[i * 2 + 1] = w[1];
+        }
+        raw
+    }
+    fn inline_ascii(s: &[u8]) -> [u8; 4] {
+        let mut raw = [0u8; 4];
+        raw[..s.len()].copy_from_slice(s);
+        raw
+    }
+
+    fn parse(block: &[u8]) -> Exif {
+        let n = SEQ.fetch_add(1, Ordering::SeqCst);
+        let path = std::env::temp_dir().join(format!(
+            "fm-e4-exif-{}-{n}.bin",
+            std::process::id()
+        ));
+        std::fs::write(&path, block).expect("write exif fixture");
+        let ex = read_photo(&path);
+        let _ = std::fs::remove_file(&path);
+        ex
+    }
+
+    /// The reported bug: a phone wrote ExposureTime/FNumber/FocalLength as SHORT *pairs*
+    /// and ISO as a single SHORT, all inline in IFD0. `bytes_of()` used `base + val` for
+    /// inline values too, so the "offset" became the raw value field (0x000100C8 etc.)
+    /// and landed megabytes past the TIFF header -> every numeric tag parsed as None and
+    /// the footer only kept the camera name.
+    #[test]
+    fn inline_short_pairs_in_ifd0_parse() {
+        for le in [true, false] {
+            let mut b = Buf::new(le);
+            b.bytes(if le { b"II" } else { b"MM" });
+            b.u16(0x2A);
+            b.u32(8);
+            b.pad_to(8);
+            b.ifd(
+                &[
+                    (0x010F, 2, 5, offset_field(le, 110)), // "OPPO\0"
+                    (0x0110, 2, 3, inline_ascii(b"X8\0")), // inline ASCII
+                    (0x829A, 3, 2, inline_shorts(le, &[1, 200])), // 1/200s
+                    (0x829D, 3, 2, inline_shorts(le, &[35, 10])), // F3.5
+                    (0x8827, 3, 1, inline_shorts(le, &[100])), // ISO100
+                    (0x920A, 3, 2, inline_shorts(le, &[210, 1])), // 210mm
+                    (0xA405, 3, 1, inline_shorts(le, &[35])), // 35mm equivalent
+                ],
+                0,
+            );
+            assert_eq!(b.b.len(), 8 + 2 + 7 * 12 + 4);
+            b.pad_to(110);
+            b.bytes(b"OPPO\0");
+
+            let ex = parse(&b.b);
+            assert_eq!(ex.make, "OPPO", "le={le}");
+            assert_eq!(ex.model, "X8", "inline ASCII, le={le}");
+            assert_eq!(ex.aperture, Some(3.5), "le={le}");
+            assert_eq!(ex.shutter, Some(0.005), "le={le}");
+            assert_eq!(ex.iso, Some(100.0), "le={le}");
+            assert_eq!(ex.focal, Some(210.0), "le={le}");
+            assert_eq!(ex.focal_equivalent, Some(true), "le={le}");
+            assert_eq!(ex.line("  "), "210mm  F3.5  1/200s  ISO100", "le={le}");
+            assert!(ex.has_any, "le={le}");
+        }
+    }
+
+    /// The shape ordinary cameras write: RATIONALs live out-of-line and the numeric tags
+    /// sit in the Exif sub-IFD reached through 0x8769, with ISO/pixels inline. Both
+    /// encodings must keep working after the inline fix.
+    #[test]
+    fn rationals_in_exif_sub_ifd_still_parse() {
+        for le in [true, false] {
+            let mut b = Buf::new(le);
+            b.bytes(if le { b"II" } else { b"MM" });
+            b.u16(0x2A);
+            b.u32(8);
+            b.pad_to(8);
+            b.ifd(
+                &[
+                    (0x010F, 2, 10, offset_field(le, 58)),  // "Panasonic\0"
+                    (0x0132, 2, 20, offset_field(le, 180)), // DateTime
+                    (0x8769, 4, 1, offset_field(le, 68)),   // inline LONG pointer
+                ],
+                0,
+            );
+            assert_eq!(b.b.len(), 50);
+            b.u32(63); // FNumber = 63/10 at 50
+            b.u32(10);
+            b.bytes(b"Panasonic\0"); // 58..68
+            assert_eq!(b.b.len(), 68);
+            b.ifd(
+                &[
+                    (0x829D, 5, 1, offset_field(le, 50)),
+                    (0x8827, 3, 1, inline_shorts(le, &[125])),
+                    (0xA002, 4, 1, offset_field(le, 2667)),
+                    (0x9003, 2, 20, offset_field(le, 200)),
+                ],
+                0,
+            );
+            assert_eq!(b.b.len(), 122);
+            b.pad_to(180);
+            b.bytes(b"2022:07:05 16:21:59\0");
+            assert_eq!(b.b.len(), 200);
+            b.bytes(b"2022:07:05 14:13:37\0");
+
+            let ex = parse(&b.b);
+            assert_eq!(ex.make, "Panasonic", "le={le}");
+            assert_eq!(ex.date_time, "2022:07:05 16:21:59", "IFD0 wins, le={le}");
+            assert_eq!(ex.aperture, Some(6.3), "le={le}");
+            assert_eq!(ex.iso, Some(125.0), "le={le}");
+            assert_eq!(ex.width, 2667.0, "inline LONG, le={le}");
+            // Never invent what the file does not carry.
+            assert_eq!(ex.focal, None, "le={le}");
+            assert_eq!(ex.shutter, None, "le={le}");
+            assert_eq!(ex.line("  "), "F6.3  ISO125", "le={le}");
+        }
+    }
+
+    /// A JPEG without APP1 stays empty instead of falling back to a card's sample EXIF.
+    #[test]
+    fn jpeg_without_app1_stays_empty() {
+        let ex = parse(&[0xFF, 0xD8, 0xFF, 0xD9]);
+        assert_eq!(ex.line("  "), "");
+        assert_eq!(ex.make, "");
+        assert_eq!(ex.focal, None);
+        assert!(!ex.has_any);
+    }
 }
