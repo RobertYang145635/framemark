@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc35",
-  "versionCode": 34,
+  "versionName": "0.9.0-rc36",
+  "versionCode": 35,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "关于页新增「支持 FrameMark」打赏入口（微信 / 支付宝收款码）；更新器改为以 SHA-256 为准，清单 size 写错不再拦死更新。",
+  "notes": "新增新手教程（四页，首启自动出现，设置/关于可重看）；修复浅色画布下圆角面板两侧露出方形小耳朵；更新器以 SHA-256 为准（清单 size 写错不再拦更新）；关于页含打赏入口。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc35/FrameMark-0.9.0-rc35-arm64.apk",
-      "sha256": "cd04e691b1572b83faa055fd5f3a0c8a3bd32900e87c48b47639c4c629ed8ec5",
-      "size": 132821183
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc36/FrameMark-0.9.0-rc36-arm64.apk",
+      "sha256": "0933c8d820c1a8d96777d15ceb307d525e549a1f9d4b3dbd18edcc7e24f0f045",
+      "size": 132853951
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc35/FrameMark-0.9.0-rc35-win64.msi",
-      "sha256": "d41e0093153b6f1eb2702c78c55bfa5d18b1e364f88e71c40115d2ef4cb10a69",
-      "size": 239548847
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc36/FrameMark-0.9.0-rc36-win64.msi",
+      "sha256": "e14d1cf6d75647d49d4c3d279314d2cc41e4ddadf34d30d7d0b7b06b4fb46465",
+      "size": 239534381
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc35"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc36"
 }
