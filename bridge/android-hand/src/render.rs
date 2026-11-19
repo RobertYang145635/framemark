@@ -648,8 +648,25 @@ fn render_card_body(
 
     // A1: a user photo carries its own shooting information. The card's sample
     // EXIF is only used when no user photo was supplied (bundled sample preview).
+    //
+    // 用户换上来的照片常常不是 JPEG（HEIC 导入后被烤成 PNG，或来自社交软件），
+    // 这类文件读不到 APP1；此时不能退回卡片自带的样片 EXIF（那会把松下 DC-S1
+    // 印到 OPPO 照片上），而要继续找导入时写出的同名 sidecar
+    // （`files/exif/<photo>.jpg`，只含 APP1），找不到就留空。
     let exif: Exif = match photo_override {
-        Some(p) if !p.is_empty() => crate::exif::read_photo(Path::new(p)),
+        Some(p) if !p.is_empty() => {
+            let direct = crate::exif::read_photo(Path::new(p));
+            if direct.has_any {
+                direct
+            } else {
+                exif_sidecar_for(Path::new(p))
+                    .and_then(|side| {
+                        let side_exif = crate::exif::read_photo(&side);
+                        side_exif.has_any.then_some(side_exif)
+                    })
+                    .unwrap_or_default()
+            }
+        }
         _ => card.exif.clone().unwrap_or_default(),
     };
     let fallback_text = text_needing_fallback(&design.text, &exif, &params);
@@ -1141,6 +1158,17 @@ fn push_param_strings(params: &hand::Params, out: &mut String) {
         }
     }
     params.values().for_each(|value| walk(value, out));
+}
+
+
+/// 照片没有自带 APP1 时，去导入时写出的 sidecar 找：`.../photos/x.png` →
+/// `.../exif/x.jpg`（与 Kotlin 侧 `exifSidecarFor` 同一约定）。
+fn exif_sidecar_for(photo: &Path) -> Option<std::path::PathBuf> {
+    let parent = photo.parent()?;                  // .../photos
+    let root = parent.parent()?;                   // files/
+    let stem = photo.file_stem()?.to_str()?;
+    let candidate = root.join("exif").join(format!("{stem}.jpg"));
+    candidate.is_file().then_some(candidate)
 }
 
 fn deep_merge(base: serde_json::Value, over: serde_json::Value) -> serde_json::Value {
