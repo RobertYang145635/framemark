@@ -1,0 +1,109 @@
+{
+  "id": "oppo-gallery:restrict_spring_1005",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "新春限定 · 1005",
+  "nameEn": "restrict_spring_1005",
+  "placement": "out",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 0,
+    "top": 0,
+    "right": 0,
+    "bottom": 60
+  },
+  "background": "#B81817",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 60,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "gravity": "leftVerticalCenter",
+          "margins": {
+            "left": 20
+          },
+          "children": [
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 13,
+              "weight": 700,
+              "color": "#F2BC54",
+              "alpha": 1,
+              "tracking": 0.05,
+              "lineHeight": 15.24,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {},
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "祥蛇纳福 吉庆有余"
+              },
+              "font": "sys",
+              "size": 10,
+              "weight": 400,
+              "color": "#F2BC54",
+              "alpha": 1,
+              "tracking": 0.03,
+              "lineHeight": 12.25,
+              "align": "left",
+              "gravity": "leftTop",
+              "margins": {
+                "top": 3
+              },
+              "optional": true
+            }
+          ]
+        },
+        {
+          "kind": "space",
+          "weight": 1
+        },
+        {
+          "kind": "image",
+          "asset": "spring_2025_style1005_logo_v1",
+          "width": 159,
+          "height": 60,
+          "scale": "contain",
+          "gravity": "rightVerticalCenter",
+          "margins": {},
+          "alpha": 1
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "spring_2025_style1005_logo_v1": {
+      "file": "spring_2025_style1005_logo_v1.webp",
+      "width": 1120,
+      "height": 480
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1005.json",
+    "notes": "OPPO 2025 新春限定 (restrict_spring_1005, publish 2025-01-12 / offline 2025-02-12). Bottom band 60 over #B81817, left column at 20: model line (textSource 0) 13/700 tracking .05 lineHeight 15.24, greeting (textSource 5) 10/400 tracking .03 lineHeight 12.25 with topMargin 3; spacer weight 1; the ornament bitmap spring_2025_style1005_logo_v1 (CDN, 1120x480) is drawn 159x60 at the right edge. referenceWidth 360 = baseImageSize.",
+    "unsupported": [
+      "vendor paints both lines with gradientType 0 over 5 stops (#D7AF5E/#FFE296/#F2BC54/#F4D189/#FFF5C4) across coordinateArray 20,30->166,30: IR text has one flat colour, so both lines use the middle gold #F2BC54",
+      "vendor font FZYaSongDB1GBK.zip is not shipped: both lines fall back to font key 'sys' (StockSysSans)",
+      "vendor maxWidth 166 on both lines is not an IR field; the lines are laid out by their margins and may exceed 166 reference px on long EXIF (the ornament is right-anchored, so it cannot be overrun)",
+      "greetings[] holds 160 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"祥蛇纳福 吉庆有余\" as a literal, the remaining 159 are not shipped",
+      "offlineTime 2025-02-12 has passed: the card is a data-accurate replica, not an on-sale official asset",
+      "机型行 text token=model 与源 JSON 一样只取照片 EXIF 的 Make/Model：照片没有 EXIF 时该行为空、引擎按空 token 不绘制（图案与祝福语照常出现），与既有 114 张厂商卡（哈苏 / 小米 / 宋干节 等）行为一致——不是本卡独有的缺项"
+    ]
+  }
+}

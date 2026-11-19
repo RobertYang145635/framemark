@@ -1,6 +1,6 @@
 {
  "schemaVersion": "framemark-taxonomy/v1",
- "generatedAt": "2026-11-18T18:55:40.000Z",
+ "generatedAt": "2026-11-19T05:40:00.000Z",
  "source": {
   "role": "taxonomy",
   "path": "src/renderer/src/core/taxonomy.generated.ts",
@@ -14,53 +14,53 @@
   "sha256": "417030e8518e7039c4a9b9c3655f71bad3efe43536a7dc11b217f1a7468b2546"
  },
  "counts": {
-  "cards": 183,
-  "uniqueIds": 183,
+  "cards": 187,
+  "uniqueIds": 187,
   "categories": 7,
   "byCategory": {
+   "vendor": 133,
    "card": 15,
-   "color": 5,
    "impression": 13,
-   "minimal": 4,
    "text": 12,
-   "vendor": 129,
-   "white": 5
+   "color": 5,
+   "white": 5,
+   "minimal": 4
   },
-  "vendorTaggedCards": 129,
+  "vendorTaggedCards": 133,
   "byVendor": {
+   "oppo": 67,
    "(none)": 54,
-   "oppo": 63,
-   "vivo": 20,
-   "xiaomi": 46
+   "xiaomi": 46,
+   "vivo": 20
   },
   "byFamily": {
+   "OPPO 相册": 55,
    "(none)": 54,
-   "OPPO 相册": 51,
-   "OPPO 相机": 12,
+   "小米相机": 46,
    "vivo 相机": 20,
-   "小米相机": 46
+   "OPPO 相机": 12
   },
   "byTaxonomyBrand": {
+   "OPPO": 67,
    "(none)": 54,
-   "OPPO": 63,
-   "vivo": 20,
-   "小米": 46
+   "小米": 46,
+   "vivo": 20
   },
-  "stockCardsWithSystemStyle": 114,
+  "stockCardsWithSystemStyle": 118,
   "handCardsWithoutSystemStyle": 69,
   "fidelity": {
-   "approx": 115,
+   "approx": 119,
    "(none)": 68
   },
   "badge": {
-   "近似": 115,
-   "原版": 18,
+   "近似": 119,
    "(none)": 29,
+   "原版": 18,
    "官方规格": 10,
-   "官方素材": 1,
-   "复刻": 1,
-   "实测": 2,
    "热门": 6,
+   "实测": 2,
+   "复刻": 1,
+   "官方素材": 1,
    "视频": 1
   },
   "autoLogo": 18,
@@ -72,13 +72,13 @@
   {
    "key": "vendor",
    "name": "厂商边框",
-   "declaredCount": 129,
-   "actualCount": 129,
+   "declaredCount": 133,
+   "actualCount": 133,
    "declaredBrands": [
     {
      "key": "OPPO",
      "name": "OPPO",
-     "count": 59
+     "count": 63
     },
     {
      "key": "小米",
@@ -95,8 +95,8 @@
     {
      "key": "OPPO",
      "name": "OPPO",
-     "declaredCount": 59,
-     "actualBrandCount": 63
+     "declaredCount": 63,
+     "actualBrandCount": 67
     },
     {
      "key": "vivo",
@@ -1563,6 +1563,123 @@
     "kind": "firmware-shipped",
     "path": "_research/vendor-latest/oppo/assets/watermark_master_styles/restrict_local_songkran_holiday_2025_style_1.json",
     "sha256": "2cc227dc823ee432f19870cae96498bb7f122a1da9ef309da223709a9964be9a"
+   }
+  },
+  {
+   "id": "stock-oppo-restrict_spring_1002",
+   "name": "新春限定 · 1002",
+   "category": "vendor",
+   "categoryName": "厂商边框",
+   "brand": "OPPO",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "fidelity": "approx",
+   "badge": "近似",
+   "declaredText": {
+    "showMake": true,
+    "showModel": true,
+    "showExif": true,
+    "showDate": true,
+    "showLogo": true
+   },
+   "autoLogo": false,
+   "vendorLogo": null,
+   "en": "restrict_spring_1002",
+   "base": "systemCamera",
+   "templateCategory": "系统相机",
+   "systemStyle": "oppo-gallery:restrict_spring_1002",
+   "sourceClass": "firmware-confirmed",
+   "firmwareStatus": "firmware-confirmed/name-or-group-drift",
+   "firmwareVerdict": "OPPO",
+   "styleFamily": "OPPO / 限定水印",
+   "styleFamilyLabel": "OPPO / 限定水印",
+   "styleFamilyLabelSource": "源文件名（verified-in-file：_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1002.json）",
+   "familyNameProvenance": "verified-in-file",
+   "familyPendingReason": null,
+   "countsInFirmwareComparison": true,
+   "g2Disposition": "in-g2",
+   "implementationOrigin": {
+    "kind": "firmware-shipped",
+    "path": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1002.json",
+    "sha256": "0bcb89e3d0c54583d9303364d2d6a8e142e2f641f89744aebcf4ad6e9859cbfd"
+   }
+  },
+  {
+   "id": "stock-oppo-restrict_spring_1005",
+   "name": "新春限定 · 1005",
+   "category": "vendor",
+   "categoryName": "厂商边框",
+   "brand": "OPPO",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "fidelity": "approx",
+   "badge": "近似",
+   "declaredText": {
+    "showMake": true,
+    "showModel": true,
+    "showExif": true,
+    "showDate": true,
+    "showLogo": true
+   },
+   "autoLogo": false,
+   "vendorLogo": null,
+   "en": "restrict_spring_1005",
+   "base": "systemCamera",
+   "templateCategory": "系统相机",
+   "systemStyle": "oppo-gallery:restrict_spring_1005",
+   "sourceClass": "firmware-confirmed",
+   "firmwareStatus": "firmware-confirmed/name-or-group-drift",
+   "firmwareVerdict": "OPPO",
+   "styleFamily": "OPPO / 限定水印",
+   "styleFamilyLabel": "OPPO / 限定水印",
+   "styleFamilyLabelSource": "源文件名（verified-in-file：_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1005.json）",
+   "familyNameProvenance": "verified-in-file",
+   "familyPendingReason": null,
+   "countsInFirmwareComparison": true,
+   "g2Disposition": "in-g2",
+   "implementationOrigin": {
+    "kind": "firmware-shipped",
+    "path": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1005.json",
+    "sha256": "38b6bc41f0fa61242e62cedb92af108fab2fc52b11025d70664ee4f626a9895d"
+   }
+  },
+  {
+   "id": "stock-oppo-restrict_valentine_2025_style_1001",
+   "name": "情人节限定 · 1001",
+   "category": "vendor",
+   "categoryName": "厂商边框",
+   "brand": "OPPO",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "fidelity": "approx",
+   "badge": "近似",
+   "declaredText": {
+    "showMake": true,
+    "showModel": true,
+    "showExif": true,
+    "showDate": true,
+    "showLogo": true
+   },
+   "autoLogo": false,
+   "vendorLogo": null,
+   "en": "restrict_valentine_2025_style_1001",
+   "base": "systemCamera",
+   "templateCategory": "系统相机",
+   "systemStyle": "oppo-gallery:restrict_valentine_2025_style_1001",
+   "sourceClass": "firmware-confirmed",
+   "firmwareStatus": "firmware-confirmed/name-or-group-drift",
+   "firmwareVerdict": "OPPO",
+   "styleFamily": "OPPO / 限定水印",
+   "styleFamilyLabel": "OPPO / 限定水印",
+   "styleFamilyLabelSource": "源文件名（verified-in-file：_research/extracted/oppo-limits-2025/restricts/oppo_2025_valentine_style_1001.json）",
+   "familyNameProvenance": "verified-in-file",
+   "familyPendingReason": null,
+   "countsInFirmwareComparison": true,
+   "g2Disposition": "in-g2",
+   "implementationOrigin": {
+    "kind": "firmware-shipped",
+    "path": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_valentine_style_1001.json",
+    "sha256": "99016fcb73409a2dc4c29fce8c89a9ca08dc6300d9baeb61f891501e3a9cf47c"
    }
   },
   {
@@ -4546,6 +4663,45 @@
     "kind": "firmware-shipped",
     "path": "_research/vendor-latest/oppo/assets/watermark_master_styles/personalize_brand_2.json",
     "sha256": "841e9803430c1f531f458bfd9fcebaebac89e73e16e2cc57cb2049428d9071c2"
+   }
+  },
+  {
+   "id": "stock-oppo-personalize_brand_3",
+   "name": "品牌 · 3",
+   "category": "vendor",
+   "categoryName": "厂商边框",
+   "brand": "OPPO",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "fidelity": "approx",
+   "badge": "近似",
+   "declaredText": {
+    "showMake": true,
+    "showModel": true,
+    "showExif": true,
+    "showDate": true,
+    "showLogo": true
+   },
+   "autoLogo": false,
+   "vendorLogo": null,
+   "en": "personalize_brand_3",
+   "base": "systemCamera",
+   "templateCategory": "系统相机",
+   "systemStyle": "oppo-gallery:personalize_brand_3",
+   "sourceClass": "firmware-confirmed",
+   "firmwareStatus": "firmware-confirmed/name-or-group-drift",
+   "firmwareVerdict": "OPPO",
+   "styleFamily": "OPPO / 品牌力量",
+   "styleFamilyLabel": "OPPO / 品牌力量",
+   "styleFamilyLabelSource": "固件组名（verified-in-file：string/pitcure_edtior_text_watermark_brand_power @0x7f141d13）",
+   "familyNameProvenance": "verified-in-file",
+   "familyPendingReason": null,
+   "countsInFirmwareComparison": true,
+   "g2Disposition": "in-g2",
+   "implementationOrigin": {
+    "kind": "firmware-shipped",
+    "path": "_research/extracted/oppo-watermarks/gallery-master-styles/assets/watermark_master_styles/personalize_brand_3.json",
+    "sha256": "46133d03a8eba0b817a746541ff3795410f0cc117a7b6ec493692657afbab51d"
    }
   },
   {

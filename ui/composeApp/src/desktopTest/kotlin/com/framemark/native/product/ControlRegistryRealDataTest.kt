@@ -128,16 +128,16 @@ class ControlRegistryRealDataTest {
         val registry = RealData.registry()
         val stats = registry.stats
 
-        assertEquals(183, stats.cards)
+        assertEquals(187, stats.cards)
         assertEquals(69, stats.auditedCards)
-        assertEquals(114, stats.unauditedCards)
+        assertEquals(118, stats.unauditedCards)
         assertEquals(1023, stats.capabilityRows)
         assertEquals(779, stats.effectiveRows)
         assertEquals(244, stats.gatedRows)
-        assertEquals(574, stats.platformRows)
-        assertEquals(109, stats.platformStyles)
+        assertEquals(585, stats.platformRows)
+        assertEquals(113, stats.platformStyles)
         assertEquals(1023, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
-        assertEquals(574, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
+        assertEquals(585, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
         assertEquals(45, stats.handPanelRows)
         assertEquals(61, stats.handPanelCardPairs)
         assertEquals(3, stats.handPanelRangeMismatches.size, "面板与 meta 的已知范围分歧")
@@ -146,16 +146,16 @@ class ControlRegistryRealDataTest {
             "stock-vivo-disney-chip_dale", "stock-vivo-disney-donald_duck", "stock-vivo-disney-judy",
             "stock-vivo-disney-mickey", "stock-vivo-disney-pluto",
         ), stats.unmappedCards.sorted())
-        assertEquals(183, stats.cardsWithVisible + stats.emptyCards)
-        assertEquals(178, stats.cardsWithVisible)
+        assertEquals(187, stats.cardsWithVisible + stats.emptyCards)
+        assertEquals(182, stats.cardsWithVisible)
         assertEquals(5, stats.emptyCards, "5 张迪士尼装饰卡没有控件")
-        assertEquals(178, stats.cardsWithVisible)
-        assertEquals(1353, stats.visibleControls)
+        assertEquals(182, stats.cardsWithVisible)
+        assertEquals(1364, stats.visibleControls)
         assertEquals(244, stats.hiddenControls)
         assertEquals(244, stats.gatedControls)
-        assertEquals(1597, stats.routableControls)
+        assertEquals(1608, stats.routableControls)
         assertEquals(781, stats.consumedControls)
-        assertEquals(574, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
+        assertEquals(585, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
         assertEquals(779, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
         assertEquals(41, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { c -> c.controls.count { it.consumed } })
         assertEquals(740, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
@@ -281,7 +281,7 @@ class ControlRegistryRealDataTest {
         assertTrue(noText.isEmpty(), "这些 IR 卡没有任何可改的文字行：${noText.map { it.cardId }}")
 
         val textControls = irCards.flatMap { card -> card.controls.filter { it.visible && it.sourceKind == "text" } }
-        assertEquals(206, textControls.size, "84 条既有 + 87 条 W1 + 28 条 W4 机型行 + 7 条 leica 5/88/89")
+        assertEquals(214, textControls.size, "84 条既有 + 87 条 W1 + 28 条 W4 机型行 + 7 条 leica 5/88/89 + 8 条 OPPO 新卡")
 
         // 注册表层 consumer 是 vendor 拼写；真正发给引擎的是绑定表的 bundle 节点路径。
         val binding = com.framemark.native.inspector.IrSlotBinding.load(
@@ -305,7 +305,7 @@ class ControlRegistryRealDataTest {
     fun gated_controls_stay_hidden_and_visible_ones_are_routable() {
         val registry = RealData.registry()
         val all = registry.cards.flatMap { card -> card.controls.map { card to it } }
-        assertEquals(1023 + 574, all.size)
+        assertEquals(1023 + 585, all.size)
 
         var gated = 0
         all.forEach { (card, control) ->

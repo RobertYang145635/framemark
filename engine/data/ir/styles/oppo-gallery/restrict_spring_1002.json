@@ -1,0 +1,106 @@
+{
+  "id": "oppo-gallery:restrict_spring_1002",
+  "vendor": "oppo",
+  "family": "OPPO 相册",
+  "name": "新春限定 · 1002",
+  "nameEn": "restrict_spring_1002",
+  "placement": "with",
+  "referenceWidth": 360,
+  "margins": {
+    "left": 10,
+    "top": 10,
+    "right": 10,
+    "bottom": 111
+  },
+  "background": "#B81817",
+  "bands": [
+    {
+      "direction": "bottom",
+      "thickness": 111,
+      "offset": {
+        "x": 10,
+        "y": 0
+      },
+      "gravity": "center",
+      "children": [
+        {
+          "kind": "group",
+          "orientation": "column",
+          "width": 340,
+          "margins": {},
+          "children": [
+            {
+              "kind": "image",
+              "asset": "spring_2025_style1002_logo_v1",
+              "width": 36,
+              "height": 36,
+              "scale": "contain",
+              "gravity": "horCenter",
+              "margins": {
+                "bottom": 8.33
+              },
+              "alpha": 1
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "model"
+              },
+              "font": "sys",
+              "size": 10.5,
+              "weight": 700,
+              "color": "#F2BC54",
+              "alpha": 1,
+              "tracking": 0.04,
+              "lineHeight": 12.6,
+              "align": "center",
+              "gravity": "horCenter",
+              "margins": {
+                "bottom": 2
+              },
+              "optional": false
+            },
+            {
+              "kind": "text",
+              "token": {
+                "kind": "literal",
+                "value": "春回大地 福运连"
+              },
+              "font": "sys",
+              "size": 8,
+              "weight": 400,
+              "color": "#F2BC54",
+              "alpha": 1,
+              "tracking": 0.06,
+              "lineHeight": 9.8,
+              "align": "center",
+              "gravity": "horCenter",
+              "margins": {},
+              "optional": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "spring_2025_style1002_logo_v1": {
+      "file": "spring_2025_style1002_logo_v1.webp",
+      "width": 288,
+      "height": 289
+    }
+  },
+  "audit": {
+    "status": "approx",
+    "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1002.json",
+    "notes": "OPPO 2025 新春限定 (restrict_spring_1002, publish 2025-01-12 / offline 2025-02-12). Bottom band 111 over a #B81817 plate, photo inset 10/10/10 (vendor size.leftMargin/topMargin/rightMargin) . Vendor element tree: column group width 340 -> seal 36x36 (CDN spring_2025_style1002_logo_v1, 288x289) centred with bottomMargin 8.33, model line (textSource 0) 10.5/700 tracking .04 lineHeight 12.6, greeting (textSource 5) 8/400 tracking .06 lineHeight 9.8. referenceWidth 360 = the JSON's own baseImageSize.",
+    "unsupported": [
+      "vendor paints both lines with gradientType 0 over 5 stops (#D7AF5E/#FFE296/#F2BC54/#F4D189/#FFF5C4) across coordinateArray 20,30->166,30: the IR text node has one flat colour, so both lines use the middle gold #F2BC54",
+      "vendor fonts BulterBold.zip (model) and FZYaSongDB1GBK.zip (greeting) are not in the shipped font set: both lines fall back to font key 'sys' (StockSysSans)",
+      "vendor paint.withLogoTextSize 10.5 / noLogoTextSize 12: the seal is always drawn here, so the with-logo size is used",
+      "greetings[] holds 160 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"春回大地 福运连\" as a literal, the remaining 159 are not shipped",
+      "offlineTime 2025-02-12 has passed: the card is a data-accurate replica, not an on-sale official asset",
+      "机型行 text token=model 与源 JSON 一样只取照片 EXIF 的 Make/Model：照片没有 EXIF 时该行为空、引擎按空 token 不绘制（图案与祝福语照常出现），与既有 114 张厂商卡（哈苏 / 小米 / 宋干节 等）行为一致——不是本卡独有的缺项"
+    ]
+  }
+}

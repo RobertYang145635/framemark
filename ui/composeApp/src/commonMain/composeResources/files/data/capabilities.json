@@ -1,6 +1,6 @@
 {
   "schemaVersion": "framemark-capabilities/v1",
-  "generatedAt": "2026-11-18T18:55:40.000Z",
+  "generatedAt": "2026-11-19T05:40:00.000Z",
   "sourceVersion": "framemark-control-differential/v1@2026-10-28T10:51:29.061Z",
   "sourceSha256": "bdeaa2902e1138c51985c797e9f4d03b73dabcacc9734352f3714a323d1a156f",
   "source": {
@@ -38,7 +38,7 @@
       "no-op": 244
     },
     "auditedCards": 69,
-    "unauditedCards": 114,
+    "unauditedCards": 118,
     "auditedEffectiveSum": 779,
     "auditedGatedSum": 244,
     "auditCardsOutsideTaxonomy": 0,
@@ -57,6 +57,15 @@
     },
     {
       "styleId": "stock-oppo-personalize_brand_1",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-oppo-personalize_brand_3",
       "audited": false,
       "effectiveCount": null,
       "gatedCount": null,
@@ -363,6 +372,33 @@
     },
     {
       "styleId": "stock-oppo-restrict_local_songkran_holiday_2025_style_1",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-oppo-restrict_spring_1002",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-oppo-restrict_spring_1005",
+      "audited": false,
+      "effectiveCount": null,
+      "gatedCount": null,
+      "effective": null,
+      "gated": null,
+      "note": "no rows in control-audit (not audited; capabilities unknown, not zero)"
+    },
+    {
+      "styleId": "stock-oppo-restrict_valentine_2025_style_1001",
       "audited": false,
       "effectiveCount": null,
       "gatedCount": null,

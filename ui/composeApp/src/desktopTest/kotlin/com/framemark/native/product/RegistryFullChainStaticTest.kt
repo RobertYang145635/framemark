@@ -26,7 +26,7 @@ class RegistryFullChainStaticTest {
         val target = load
         assertTrue(target != null, "注册表必须能加载：missing=${provider.missing()}")
         val stats = target!!.stats
-        assertEquals(183, stats.cards)
+        assertEquals(187, stats.cards)
         assertEquals(0, ControlRegistryValidator.issues(target.registry).size, "静态校验必须 0 错")
         println(
             "P3F_REGISTRY cards=${stats.cards} visible=${stats.visibleControls} " +
@@ -130,9 +130,9 @@ class RegistryFullChainStaticTest {
     fun the_binding_table_matches_the_p3c_counts() {
         val target = requireNotNull(load) { "Registry fixtures must load: ${provider.missing()}" }
         val stats = target.binding.stats
-        assertEquals(109, stats.styles)
-        assertEquals(574, stats.entries)
-        assertEquals(556, stats.expressible)
+        assertEquals(113, stats.styles)
+        assertEquals(585, stats.entries)
+        assertEquals(567, stats.expressible)
         assertEquals(12, stats.unsupported)
         assertEquals(6, stats.needsRegen)
     }

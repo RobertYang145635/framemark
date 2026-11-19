@@ -2629,6 +2629,103 @@
     }
   },
   {
+    "id": "oppo-gallery:personalize_brand_3",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "品牌 · 3",
+    "nameEn": "personalize_brand_3",
+    "placement": "with",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 50,
+      "bottom": 0
+    },
+    "background": "#FFFFFF",
+    "bands": [
+      {
+        "direction": "right",
+        "thickness": 50,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 90,
+        "children": [
+          {
+            "kind": "text",
+            "token": {
+              "kind": "model"
+            },
+            "font": "sys",
+            "size": 8,
+            "weight": 600,
+            "color": "#000000",
+            "alpha": 0.54,
+            "tracking": 0.04,
+            "lineHeight": 9.38,
+            "align": "left",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "optional": false
+          },
+          {
+            "kind": "text",
+            "token": {
+              "kind": "timeLocation"
+            },
+            "font": "sys",
+            "size": 8,
+            "weight": 500,
+            "color": "#000000",
+            "alpha": 0.54,
+            "tracking": 0.03,
+            "lineHeight": 9.38,
+            "align": "left",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 12
+            },
+            "optional": false
+          },
+          {
+            "kind": "image",
+            "asset": "brand_imagine_dark",
+            "width": 97,
+            "height": 34,
+            "scale": "contain",
+            "gravity": "rightVerticalCenter",
+            "margins": {
+              "right": 20
+            },
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "brand_imagine_dark": {
+        "file": "brand_imagine_dark.webp",
+        "width": 528,
+        "height": 272
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "source": "_research/extracted/oppo-watermarks/gallery-master-styles/assets/watermark_master_styles/personalize_brand_3.json",
+      "notes": "Auto-converted from OPPO Gallery JSON with a visual audit: right band 50 rotated 90deg (vendor direction=2 + rotation=90 + height=50 + rightMargin=50), same geometry as the shipped 胶片 · 2 (personalize_film_2) card; only the bitmap differs. textSource 0 -> model, textSource 2 -> timeLocation, bitmap brand_imagine_dark (528x272) drawn into a 97x34 contain box.",
+      "unsupported": [
+        "vendor paint.lightAlpha/darkAlpha dual alpha: IR keeps one alpha (0.54, the light-theme value the vendor JSON stores first)",
+        "vendor textSource 2 carries maxWidth 90 + layoutWeight 1 (the params line takes the leftover width); the IR has neither field, so the line is laid out by its own margin and can run past 90 reference px on long EXIF",
+        "vendor paint.fontName OplusSans / SysSans-En-Regular.ttf: engine font key 'sys' (StockSysSans) is the closest shipped face",
+        "bitmap scaleType 5 is reproduced as scale 'contain' (the 528x272 art is letterboxed inside the 97x34 box)"
+      ]
+    }
+  },
+  {
     "id": "oppo-gallery:personalize_brand_5",
     "vendor": "oppo",
     "family": "OPPO 相册",
@@ -4886,6 +4983,325 @@
     "audit": {
       "status": "approx",
       "notes": "Auto-converted from OPPO Gallery JSON; pending visual audit."
+    }
+  },
+  {
+    "id": "oppo-gallery:restrict_spring_1002",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "新春限定 · 1002",
+    "nameEn": "restrict_spring_1002",
+    "placement": "with",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 10,
+      "top": 10,
+      "right": 10,
+      "bottom": 111
+    },
+    "background": "#B81817",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 111,
+        "offset": {
+          "x": 10,
+          "y": 0
+        },
+        "gravity": "center",
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "width": 340,
+            "margins": {},
+            "children": [
+              {
+                "kind": "image",
+                "asset": "spring_2025_style1002_logo_v1",
+                "width": 36,
+                "height": 36,
+                "scale": "contain",
+                "gravity": "horCenter",
+                "margins": {
+                  "bottom": 8.33
+                },
+                "alpha": 1
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 10.5,
+                "weight": 700,
+                "color": "#F2BC54",
+                "alpha": 1,
+                "tracking": 0.04,
+                "lineHeight": 12.6,
+                "align": "center",
+                "gravity": "horCenter",
+                "margins": {
+                  "bottom": 2
+                },
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "literal",
+                  "value": "春回大地 福运连"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 400,
+                "color": "#F2BC54",
+                "alpha": 1,
+                "tracking": 0.06,
+                "lineHeight": 9.8,
+                "align": "center",
+                "gravity": "horCenter",
+                "margins": {},
+                "optional": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "spring_2025_style1002_logo_v1": {
+        "file": "spring_2025_style1002_logo_v1.webp",
+        "width": 288,
+        "height": 289
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1002.json",
+      "notes": "OPPO 2025 新春限定 (restrict_spring_1002, publish 2025-01-12 / offline 2025-02-12). Bottom band 111 over a #B81817 plate, photo inset 10/10/10 (vendor size.leftMargin/topMargin/rightMargin) . Vendor element tree: column group width 340 -> seal 36x36 (CDN spring_2025_style1002_logo_v1, 288x289) centred with bottomMargin 8.33, model line (textSource 0) 10.5/700 tracking .04 lineHeight 12.6, greeting (textSource 5) 8/400 tracking .06 lineHeight 9.8. referenceWidth 360 = the JSON's own baseImageSize.",
+      "unsupported": [
+        "vendor paints both lines with gradientType 0 over 5 stops (#D7AF5E/#FFE296/#F2BC54/#F4D189/#FFF5C4) across coordinateArray 20,30->166,30: the IR text node has one flat colour, so both lines use the middle gold #F2BC54",
+        "vendor fonts BulterBold.zip (model) and FZYaSongDB1GBK.zip (greeting) are not in the shipped font set: both lines fall back to font key 'sys' (StockSysSans)",
+        "vendor paint.withLogoTextSize 10.5 / noLogoTextSize 12: the seal is always drawn here, so the with-logo size is used",
+        "greetings[] holds 160 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"春回大地 福运连\" as a literal, the remaining 159 are not shipped",
+        "offlineTime 2025-02-12 has passed: the card is a data-accurate replica, not an on-sale official asset"
+      ]
+    }
+  },
+  {
+    "id": "oppo-gallery:restrict_spring_1005",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "新春限定 · 1005",
+    "nameEn": "restrict_spring_1005",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#B81817",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 13,
+                "weight": 700,
+                "color": "#F2BC54",
+                "alpha": 1,
+                "tracking": 0.05,
+                "lineHeight": 15.24,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "literal",
+                  "value": "祥蛇纳福 吉庆有余"
+                },
+                "font": "sys",
+                "size": 10,
+                "weight": 400,
+                "color": "#F2BC54",
+                "alpha": 1,
+                "tracking": 0.03,
+                "lineHeight": 12.25,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {
+                  "top": 3
+                },
+                "optional": true
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "spring_2025_style1005_logo_v1",
+            "width": 159,
+            "height": 60,
+            "scale": "contain",
+            "gravity": "rightVerticalCenter",
+            "margins": {},
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "spring_2025_style1005_logo_v1": {
+        "file": "spring_2025_style1005_logo_v1.webp",
+        "width": 1120,
+        "height": 480
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_spring_style_1005.json",
+      "notes": "OPPO 2025 新春限定 (restrict_spring_1005, publish 2025-01-12 / offline 2025-02-12). Bottom band 60 over #B81817, left column at 20: model line (textSource 0) 13/700 tracking .05 lineHeight 15.24, greeting (textSource 5) 10/400 tracking .03 lineHeight 12.25 with topMargin 3; spacer weight 1; the ornament bitmap spring_2025_style1005_logo_v1 (CDN, 1120x480) is drawn 159x60 at the right edge. referenceWidth 360 = baseImageSize.",
+      "unsupported": [
+        "vendor paints both lines with gradientType 0 over 5 stops (#D7AF5E/#FFE296/#F2BC54/#F4D189/#FFF5C4) across coordinateArray 20,30->166,30: IR text has one flat colour, so both lines use the middle gold #F2BC54",
+        "vendor font FZYaSongDB1GBK.zip is not shipped: both lines fall back to font key 'sys' (StockSysSans)",
+        "vendor maxWidth 166 on both lines is not an IR field; the lines are laid out by their margins and may exceed 166 reference px on long EXIF (the ornament is right-anchored, so it cannot be overrun)",
+        "greetings[] holds 160 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"祥蛇纳福 吉庆有余\" as a literal, the remaining 159 are not shipped",
+        "offlineTime 2025-02-12 has passed: the card is a data-accurate replica, not an on-sale official asset"
+      ]
+    }
+  },
+  {
+    "id": "oppo-gallery:restrict_valentine_2025_style_1001",
+    "vendor": "oppo",
+    "family": "OPPO 相册",
+    "name": "情人节限定 · 1001",
+    "nameEn": "restrict_valentine_2025_style_1001",
+    "placement": "out",
+    "referenceWidth": 360,
+    "margins": {
+      "left": 0,
+      "top": 0,
+      "right": 0,
+      "bottom": 60
+    },
+    "background": "#CD1623",
+    "bands": [
+      {
+        "direction": "bottom",
+        "thickness": 60,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "children": [
+          {
+            "kind": "group",
+            "orientation": "column",
+            "gravity": "leftVerticalCenter",
+            "margins": {
+              "left": 20
+            },
+            "children": [
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "model"
+                },
+                "font": "sys",
+                "size": 12,
+                "weight": 600,
+                "color": "#FFECEE",
+                "alpha": 1,
+                "tracking": 0.04,
+                "lineHeight": 14.06,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {},
+                "optional": false
+              },
+              {
+                "kind": "text",
+                "token": {
+                  "kind": "literal",
+                  "value": "你眼中 藏着我余生"
+                },
+                "font": "sys",
+                "size": 8,
+                "weight": 500,
+                "color": "#FFECEE",
+                "alpha": 1,
+                "tracking": 0.08,
+                "lineHeight": 9.38,
+                "align": "left",
+                "gravity": "leftTop",
+                "margins": {
+                  "top": 3
+                },
+                "optional": true
+              }
+            ]
+          },
+          {
+            "kind": "space",
+            "weight": 1
+          },
+          {
+            "kind": "image",
+            "asset": "valentine_2025_style1001_logo_v1",
+            "width": 160,
+            "height": 60,
+            "scale": "contain",
+            "gravity": "rightVerticalCenter",
+            "margins": {},
+            "alpha": 1
+          }
+        ]
+      }
+    ],
+    "assets": {
+      "valentine_2025_style1001_logo_v1": {
+        "file": "valentine_2025_style1001_logo_v1.webp",
+        "width": 800,
+        "height": 300
+      }
+    },
+    "audit": {
+      "status": "approx",
+      "source": "_research/extracted/oppo-limits-2025/restricts/oppo_2025_valentine_style_1001.json",
+      "notes": "OPPO 2025 情人节限定 (restrict_valentine_2025_style_1001, publish 2025-02). Bottom band 60 over #CD1623, left column at 20: model line (textSource 0) 12/600 tracking .04 lineHeight 14.06 in #FFECEE, greeting (textSource 5) 8/500 tracking .08 lineHeight 9.38 also #FFECEE with topMargin 3; spacer weight 1; the ornament bitmap valentine_2025_style1001_logo_v1 (CDN, 800x300) is drawn 160x60 at the right edge. referenceWidth 360 = baseImageSize.",
+      "unsupported": [
+        "vendor maxWidth 166 on both lines is not an IR field; layout comes from the margins (the ornament is right-anchored, so it cannot be overrun)",
+        "greetings[] holds 36 candidate lines and the client draws one at random per save; the IR carries the vendor's own aiContent default \"你眼中 藏着我余生\" as a literal, the remaining 35 are not shipped",
+        "offlineTime 2025-02 has passed: the card is a data-accurate replica, not an on-sale official asset"
+      ]
     }
   },
   {

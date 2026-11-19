@@ -1,24 +1,24 @@
 {
  "schema": "framemark-ir-slot-binding/1",
- "generatedAt": "2026-10-31",
+ "generatedAt": "2026-11-19",
  "inputs": {
   "controls": {
-   "oppo": "550bac70c8fbde1f2995d582b26f52ef1d9416af7ec1979743a97be026e4f53b",
+   "oppo": "5a7d96ffd66ec5984873a3867091c57b3e40efc4489cab16f1886490367e0ccb",
    "vivo": "6016cff34d97414a9c6e07059ccdf4b417b31dadd7412cbc469a221ceecbf1ee",
    "xiaomi": "a3a3e75db78ebce446e77d711f139e7a54931330ebe9bdd2b689c568889d0be4"
   },
-  "bundleManifest": "67e54f0b97731579f42743aeee6523b27eb04f5308c3abf2bdcc6bbc9c3f9e22",
-  "bundleManifestGeneratedAt": "2026-11-18T18:55:40.000Z"
+  "bundleManifest": "969298494ae71a3a772584af7592b0f5b23d8527fe9c11c1d697c0589e7ef418",
+  "bundleManifestGeneratedAt": "2026-11-19T07:05:00.000Z"
  },
  "counts": {
-  "expectedControls": 574,
-  "expressible": 556,
+  "expectedControls": 585,
+  "expressible": 567,
   "unsupported": 12,
   "needs-ir-regen": 6
  },
  "byConsumer": {
   "text.slotText": {
-   "expressible": 206
+   "expressible": 214
   },
   "toggle.slotOff": {
    "expressible": 168
@@ -27,11 +27,11 @@
    "expressible": 7
   },
   "anchorGrid.stockAnchor": {
-   "expressible": 35,
+   "expressible": 36,
    "needs-ir-regen": 2
   },
   "xyOffset.stockOffset": {
-   "expressible": 70,
+   "expressible": 72,
    "needs-ir-regen": 4
   },
   "slider.slotAlpha": {
@@ -23270,6 +23270,476 @@
       "black"
      ],
      "reason": "IR 有 2 个主题"
+    }
+   ]
+  },
+  "oppo-gallery:personalize_brand_3": {
+   "cardId": "stock-oppo-personalize_brand_3",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "themes": [],
+   "defaultTheme": null,
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "right",
+     "rotation": 90
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "oppo-gallery:personalize_brand_3",
+     "cardId": "stock-oppo-personalize_brand_3",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.dateLine+locationLine.right1",
+     "slotType": "dateLine+locationLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": 3,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "oppo-style-editable",
+      "detail": "editable:true textSource:2(time_location) el#3",
+      "match": "tokenKind-unique"
+     },
+     "classification": "expressible",
+     "how": "greeting-literal",
+     "confidence": "medium",
+     "elementId": "oppo-gallery:personalize_brand_3#dateLine+locationLine#1",
+     "nodes": [
+      "b0/g1"
+     ],
+     "reason": "greeting-literal → b0/g1"
+    },
+    {
+     "styleId": "oppo-gallery:personalize_brand_3",
+     "cardId": "stock-oppo-personalize_brand_3",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "anchorGrid.bandb0.b0",
+     "slotType": "bandb0",
+     "consumer": "anchorGrid.stockAnchor",
+     "param": "stockAnchor",
+     "kind": "anchorGrid",
+     "group": "layout",
+     "provenance": "inferred",
+     "targetNode": null,
+     "targetBand": "b0",
+     "default": "vendor",
+     "domain": {
+      "options": [
+       "vendor",
+       "leftTop",
+       "leftCenter",
+       "leftBottom",
+       "centerTop",
+       "center",
+       "centerBottom",
+       "rightTop",
+       "rightCenter",
+       "rightBottom"
+      ]
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "band-gate",
+      "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段"
+     },
+     "classification": "expressible",
+     "how": "band-target",
+     "confidence": "strong",
+     "band": "b0",
+     "reason": "条带 b0 承载全部水印内容"
+    },
+    {
+     "styleId": "oppo-gallery:personalize_brand_3",
+     "cardId": "stock-oppo-personalize_brand_3",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "xyOffset.offsetX.b0",
+     "slotType": "offsetX",
+     "consumer": "xyOffset.stockOffset",
+     "param": "stockOffsetXPct",
+     "kind": "xyOffset",
+     "group": "layout",
+     "provenance": "inferred",
+     "targetNode": null,
+     "targetBand": "b0",
+     "default": 0,
+     "domain": {
+      "min": -25,
+      "max": 25,
+      "step": 0.5,
+      "unit": "pctOfLongEdge"
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "band-gate",
+      "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段"
+     },
+     "classification": "expressible",
+     "how": "band-target",
+     "confidence": "strong",
+     "band": "b0",
+     "reason": "条带 b0 承载全部水印内容"
+    },
+    {
+     "styleId": "oppo-gallery:personalize_brand_3",
+     "cardId": "stock-oppo-personalize_brand_3",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "xyOffset.offsetY.b0",
+     "slotType": "offsetY",
+     "consumer": "xyOffset.stockOffset",
+     "param": "stockOffsetYPct",
+     "kind": "xyOffset",
+     "group": "layout",
+     "provenance": "inferred",
+     "targetNode": null,
+     "targetBand": "b0",
+     "default": 0,
+     "domain": {
+      "min": -25,
+      "max": 25,
+      "step": 0.5,
+      "unit": "pctOfLongEdge"
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "ir-slot-structure",
+      "match": "band-gate",
+      "detail": "条带 b0 overlay/rotation ⇒ 位置锚点/微调；厂商 style JSON 无自由拖拽字段"
+     },
+     "classification": "expressible",
+     "how": "band-target",
+     "confidence": "strong",
+     "band": "b0",
+     "reason": "条带 b0 承载全部水印内容"
+    },
+    {
+     "styleId": "oppo-gallery:personalize_brand_3",
+     "cardId": "stock-oppo-personalize_brand_3",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.modelLine.g0",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "engine-text-node",
+      "detail": "引擎渲染报告在 b0/g0 绘制文字「OPPO Find X8」；值取这张照片自身的 EXIF 或用户输入",
+      "match": "rendered-text-node"
+     },
+     "classification": "expressible",
+     "how": "engine-text-node",
+     "confidence": "high",
+     "elementId": "oppo-gallery:personalize_brand_3#text#b0/g0",
+     "nodes": [
+      "b0/g0"
+     ],
+     "reason": "engine report text node b0/g0"
+    }
+   ]
+  },
+  "oppo-gallery:restrict_spring_1002": {
+   "cardId": "stock-oppo-restrict_spring_1002",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "themes": [],
+   "defaultTheme": null,
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "bottom",
+     "rotation": null
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "oppo-gallery:restrict_spring_1002",
+     "cardId": "stock-oppo-restrict_spring_1002",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.greetingLine.g2",
+     "slotType": "greetingLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/g0/g2",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": 4,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "oppo-style-editable",
+      "detail": "editable:true textSource:5(greeting) el#4",
+      "match": "tokenKind-unique"
+     },
+     "classification": "expressible",
+     "how": "greeting-literal",
+     "confidence": "medium",
+     "elementId": "oppo-gallery:restrict_spring_1002#greetingLine#1",
+     "nodes": [
+      "b0/g0/g2"
+     ],
+     "reason": "greeting-literal → b0/g0/g2"
+    },
+    {
+     "styleId": "oppo-gallery:restrict_spring_1002",
+     "cardId": "stock-oppo-restrict_spring_1002",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.modelLine.g1",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/g0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "engine-text-node",
+      "detail": "引擎渲染报告在 b0/g0/g1 绘制文字「OPPO Find X8」；值取这张照片自身的 EXIF 或用户输入",
+      "match": "rendered-text-node"
+     },
+     "classification": "expressible",
+     "how": "engine-text-node",
+     "confidence": "high",
+     "elementId": "oppo-gallery:restrict_spring_1002#text#b0/g0/g1",
+     "nodes": [
+      "b0/g0/g1"
+     ],
+     "reason": "engine report text node b0/g0/g1"
+    }
+   ]
+  },
+  "oppo-gallery:restrict_spring_1005": {
+   "cardId": "stock-oppo-restrict_spring_1005",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "themes": [],
+   "defaultTheme": null,
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "bottom",
+     "rotation": null
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "oppo-gallery:restrict_spring_1005",
+     "cardId": "stock-oppo-restrict_spring_1005",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.greetingLine.g1",
+     "slotType": "greetingLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/g0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": 3,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "oppo-style-editable",
+      "detail": "editable:true textSource:5(greeting) el#3",
+      "match": "tokenKind-unique"
+     },
+     "classification": "expressible",
+     "how": "greeting-literal",
+     "confidence": "medium",
+     "elementId": "oppo-gallery:restrict_spring_1005#greetingLine#1",
+     "nodes": [
+      "b0/g0/g1"
+     ],
+     "reason": "greeting-literal → b0/g0/g1"
+    },
+    {
+     "styleId": "oppo-gallery:restrict_spring_1005",
+     "cardId": "stock-oppo-restrict_spring_1005",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.modelLine.g0",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "engine-text-node",
+      "detail": "引擎渲染报告在 b0/g0/g0 绘制文字「OPPO Find X8」；值取这张照片自身的 EXIF 或用户输入",
+      "match": "rendered-text-node"
+     },
+     "classification": "expressible",
+     "how": "engine-text-node",
+     "confidence": "high",
+     "elementId": "oppo-gallery:restrict_spring_1005#text#b0/g0/g0",
+     "nodes": [
+      "b0/g0/g0"
+     ],
+     "reason": "engine report text node b0/g0/g0"
+    }
+   ]
+  },
+  "oppo-gallery:restrict_valentine_2025_style_1001": {
+   "cardId": "stock-oppo-restrict_valentine_2025_style_1001",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "themes": [],
+   "defaultTheme": null,
+   "bands": [
+    {
+     "bandPath": "b0",
+     "direction": "bottom",
+     "rotation": null
+    }
+   ],
+   "controls": [
+    {
+     "styleId": "oppo-gallery:restrict_valentine_2025_style_1001",
+     "cardId": "stock-oppo-restrict_valentine_2025_style_1001",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.greetingLine.g1",
+     "slotType": "greetingLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "vendor",
+     "targetNode": "b0/g0/g1",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": 3,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "oppo-style-editable",
+      "detail": "editable:true textSource:5(greeting) el#3",
+      "match": "tokenKind-unique"
+     },
+     "classification": "expressible",
+     "how": "greeting-literal",
+     "confidence": "medium",
+     "elementId": "oppo-gallery:restrict_valentine_2025_style_1001#greetingLine#1",
+     "nodes": [
+      "b0/g0/g1"
+     ],
+     "reason": "greeting-literal → b0/g0/g1"
+    },
+    {
+     "styleId": "oppo-gallery:restrict_valentine_2025_style_1001",
+     "cardId": "stock-oppo-restrict_valentine_2025_style_1001",
+     "vendor": "oppo",
+     "family": "OPPO 相册",
+     "controlId": "text.modelLine.g0",
+     "slotType": "modelLine",
+     "consumer": "text.slotText",
+     "param": "slotText",
+     "kind": "text",
+     "group": "content",
+     "provenance": "engine-text-node",
+     "targetNode": "b0/g0/g0",
+     "targetBand": null,
+     "default": null,
+     "domain": {
+      "maxLength": null,
+      "minLength": null,
+      "maxLengthSource": "fallback",
+      "multiline": false
+     },
+     "vendorElement": null,
+     "fidelityRisk": false,
+     "evidence": {
+      "source": "engine-text-node",
+      "detail": "引擎渲染报告在 b0/g0/g0 绘制文字「OPPO Find X8」；值取这张照片自身的 EXIF 或用户输入",
+      "match": "rendered-text-node"
+     },
+     "classification": "expressible",
+     "how": "engine-text-node",
+     "confidence": "high",
+     "elementId": "oppo-gallery:restrict_valentine_2025_style_1001#text#b0/g0/g0",
+     "nodes": [
+      "b0/g0/g0"
+     ],
+     "reason": "engine report text node b0/g0/g0"
     }
    ]
   }
