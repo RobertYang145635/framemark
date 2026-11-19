@@ -137,11 +137,9 @@ internal fun ColumnScope.PhoneSheetHost(
                         Modifier
                             .fillMaxWidth()
                             .height(sheetHeight)
-                            // Square stage backdrop *behind* the rounded sheet: the
-                            // corner cut-outs used to reveal the canvas-coloured root
-                            // (a square patch outside the round corner). Painting the
-                            // stage colour first makes the cut-out show the stage.
-                            .background(FmPalette.stage)
+                            // 不要在圆角外再刷一层方形底色：那层只能在「背后的颜色恰好等于它」
+                            // 时成立，换成浅色画布后就成了圆角旁边的两块方形小耳朵。
+                            // 圆角缺口应当露出真实背景（舞台照片或画布），由父级决定。
                             .clip(RoundedCornerShape(topStart = SheetRadius, topEnd = SheetRadius))
                             .background(FmPalette.surface)
                             .border(

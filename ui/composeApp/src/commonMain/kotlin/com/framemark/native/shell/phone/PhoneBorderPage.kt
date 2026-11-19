@@ -167,10 +167,8 @@ internal fun PhoneBorderLibraryOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(panelHeight)
-                    // Same corner fix as the editor sheet: the scrim is what sits
-                    // behind this panel, so the cut-outs must show scrim, not the
-                    // editor surface (which produced a square patch).
-                    .background(FmPalette.scrim)
+                    // 圆角缺口露出真实背景（这里是上面那层遮罩），不再补一层方形底色 ——
+                    // 补色只在「背后颜色恰好相同」时成立，换主题就会露出方形小耳朵。
                     .clip(RoundedCornerShape(topStart = FmRadii.sheet, topEnd = FmRadii.sheet))
                     .background(FmPalette.canvas)
                     // 面板自己的空白处（标题行的留白、网格下方的内边距）也吃掉点击：
