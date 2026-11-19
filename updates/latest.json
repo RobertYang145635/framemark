@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc31",
-  "versionCode": 30,
+  "versionName": "0.9.0-rc32",
+  "versionCode": 31,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "补 OPPO「品牌 · 3」；上架 2025 春节/情人节限定水印 3 张打样（新春 1002、新春 1005、情人节 1001）。边框 183→187，厂商类 129→133。",
+  "notes": "批量导出改 CPU 多核并行（8 核机 4 路，顺序/命名/进度/取消语义不变）；导出期间暂停预览刷新、结束后按最新参数补渲；安卓交互预览改 GPU 光栅（导出仍纯 CPU，像素与之前逐字节一致；GPU 不可用时自动回退 CPU）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc31/FrameMark-0.9.0-rc31-arm64.apk",
-      "sha256": "9180a69e9cfe5de250cd392434c0b68591444f9eecde5e31dccd94547bb769b1",
-      "size": 131985153
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc32/FrameMark-0.9.0-rc32-arm64.apk",
+      "sha256": "341778e11c20b3015cb7fe655688f4e9c47e5ecb7568e46e91609da96d935681",
+      "size": 132447579
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc31/FrameMark-0.9.0-rc31-win64.msi",
-      "sha256": "d45f62e6d8850afe9a293703e9298cf63cd235bf91e0fd4daabd912a1dfcca45",
-      "size": 239600836
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc32/FrameMark-0.9.0-rc32-win64.msi",
+      "sha256": "78ce945621556063b0c6569dc34323a62d93fbe698e82924f5a8271fb7ffe6ca",
+      "size": 239629768
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc31"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc32"
 }
