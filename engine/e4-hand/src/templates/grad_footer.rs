@@ -77,8 +77,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         left_w,
         (s * (pct(env.params, "brandSizePct", 3.7) as f32)) / 100.0,
         &theme.fg,
-        &FittedOpts::new("Inter")
-            .weight(700)
+        &FittedOpts::new("OplusSans")
+            .weight(500)
             .tracking(0.02)
             .min(s * 0.018)
             .slot("gradFooter.brand"),
@@ -96,7 +96,8 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         left_w,
         (s * (pct(env.params, "exifSizePct", 2.85) as f32)) / 100.0,
         &theme.sub,
-        &FittedOpts::new("Inter")
+        &FittedOpts::new("OplusSans")
+            .weight(400)
             .min(s * 0.014)
             .slot("gradFooter.exif"),
     );
