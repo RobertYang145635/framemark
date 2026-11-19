@@ -130,6 +130,17 @@ impl<'a> Tiff<'a> {
             None => return None,
         };
         match ty {
+            // SHORT 对：piexif / 部分手机把 `35/10` 写成两个 SHORT（count=2），
+            // 只读第一个会把 f/3.5 读成 35、210mm 读成 210 的一半，ISO 更会读成乱数。
+            3 if cnt >= 2 => {
+                let a = u16at(self.b, p, self.le)? as f64;
+                let d = u16at(self.b, p + 2, self.le)? as f64;
+                if d > 0.0 {
+                    Some(a / d)
+                } else {
+                    Some(a)
+                }
+            }
             3 => u16at(self.b, p, self.le).map(|v| v as f64),
             4 => u32at(self.b, p, self.le).map(|v| v as f64),
             5 | 10 => {
@@ -195,6 +206,13 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
             0x0110 => ex.model = t.ascii(ty, cnt, val),
             0x0132 => ex.date_time = t.ascii(ty, cnt, val),
             0x8769 => exif_ifd_off = Some(val),
+            // 有些相机/导出工具（含部分手机）把光圈、快门、ISO、焦距直接写在 IFD0，
+            // 只扫 Exif 子 IFD 会整行丢掉 —— 这些标签在两处都认，子 IFD 里的值后写、优先。
+            0x829D => fnum = t.num(ty, cnt, val),
+            0x829A => sho = t.num(ty, cnt, val),
+            0x8827 => iso = t.num(ty, cnt, val),
+            0x920A => focal = t.num(ty, cnt, val),
+            0xA405 => f35 = t.num(ty, cnt, val),
             _ => {}
         }
     }

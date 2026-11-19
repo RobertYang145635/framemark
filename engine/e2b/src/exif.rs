@@ -94,12 +94,29 @@ fn get_ascii(t: &Tiff, val_off: usize, typ: u16, count: u32) -> Option<String> {
     t.ascii(off, n)
 }
 
-fn get_rational(t: &Tiff, val_off: usize, typ: u16) -> Option<f32> {
-    if typ != 5 {
-        return None;
+/// 光圈 / 快门 / 焦距这类数值在真实文件里有三种写法：
+/// - RATIONAL(5) / SRATIONAL(10)：8 字节，值在偏移处；
+/// - **SHORT 对(3, count≥2)**：piexif 与部分手机导出把 `35/10` 写成两个 SHORT，
+///   直接按整数读会把 f/3.5 读成 35、把 210mm 读成 210 的那一半（用户看到的
+///   「210mm 变成 35mm」「ISO 变成 12896」都属于这一类误读）。
+fn get_rational(t: &Tiff, val_off: usize, typ: u16, count: u32) -> Option<f32> {
+    match typ {
+        5 | 10 => {
+            let off = t.u32(val_off)? as usize;
+            t.rational(off)
+        }
+        3 if count >= 2 => {
+            let a = t.u16(val_off)? as f32;
+            let b = t.u16(val_off + 2)? as f32;
+            if b > 0.0 {
+                Some(a / b)
+            } else {
+                Some(a)
+            }
+        }
+        3 => t.u16(val_off).map(|v| v as f32),
+        _ => None,
     }
-    let off = t.u32(val_off)? as usize;
-    t.rational(off)
 }
 
 fn get_u16(t: &Tiff, val_off: usize, typ: u16) -> Option<u32> {
@@ -126,16 +143,16 @@ fn parse_ifd(t: &Tiff, ifd: usize, exif: &mut Exif, in_exif_ifd: bool) -> Option
                 }
             }
             0x8769 => exif_ptr = get_u16(t, val_off, typ).or_else(|| get_u16(t, val_off, 4)),
-            0x829A if in_exif_ifd => exif.shutter = get_rational(t, val_off, typ),
-            0x829D if in_exif_ifd => exif.aperture = get_rational(t, val_off, typ),
-            0x8827 if in_exif_ifd => exif.iso = get_u16(t, val_off, typ),
-            0x9003 if in_exif_ifd => {
+            0x829A => exif.shutter = get_rational(t, val_off, typ, count),
+            0x829D => exif.aperture = get_rational(t, val_off, typ, count),
+            0x8827 => exif.iso = get_u16(t, val_off, typ),
+            0x9003 => {
                 let s = get_ascii(t, val_off, typ, count).unwrap_or_default();
                 if !s.is_empty() {
                     exif.date_time = s;
                 }
             }
-            0x920A if in_exif_ifd => exif.focal = get_rational(t, val_off, typ),
+            0x920A => exif.focal = get_rational(t, val_off, typ, count),
             0xA405 if in_exif_ifd => {
                 // piexif writes the 35 mm equivalent as a SHORT pair [mm*100, 100]
                 // (core/exif.ts num() divides it back); reading only the first
