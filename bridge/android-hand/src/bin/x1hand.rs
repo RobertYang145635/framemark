@@ -1,5 +1,11 @@
 //! Host pre-flight for the Android hand renderer.
 //! x1hand <cards.json> <card> <hand_dir> <fonts> <extra_fonts> <out.png> [--max-edge N]
+//!
+//! `--preview-source-edge N` reproduces the interactive preview tier (bounded
+//! source decode), i.e. the only tier that may rasterize on the GPU. Combined with
+//! `FM_GPU_PREVIEW=off|auto|force` it is the host-side test bed for the GPU switch;
+//! this binary itself never links EGL, so a host run always reports
+//! `gpu=cpu:no-gl-backend` and must stay pixel-identical to earlier builds.
 use std::path::PathBuf;
 
 fn main() {
@@ -20,6 +26,14 @@ fn main() {
     if let Some(i) = a.iter().position(|x| x == "--max-edge") {
         max_edge = a.get(i + 1).and_then(|v| v.parse().ok()).unwrap_or(0);
     }
+    // Interactive preview tier: decode the source photo no larger than this edge.
+    // 0 (default) keeps the full decode, exactly like the export path.
+    let preview_source_edge = a
+        .iter()
+        .position(|x| x == "--preview-source-edge")
+        .and_then(|i| a.get(i + 1))
+        .and_then(|v| v.parse::<i32>().ok())
+        .unwrap_or(0);
     let photo = a
         .iter()
         .position(|x| x == "--photo")
@@ -104,13 +118,14 @@ fn main() {
         design_doc.as_ref(),
         &a[6],
         max_edge,
-        // 交互档的采样长边：命令行证据工具始终走全分辨率，与导出一致。
-        0,
+        // 交互档的采样长边：0 与导出一致（全分辨率），`--preview-source-edge` 复现
+        // 交互预览档。GPU 预览只对后者开放（`FM_GPU_PREVIEW` 控制）。
+        preview_source_edge,
     ) {
         Ok(r) => {
             println!(
-                "X1HAND_OK card={} canvas={}x{} out={}x{} photo={:?} ms={}",
-                r.card, r.raw_width, r.raw_height, r.width, r.height, r.photo_rect, r.ms
+                "X1HAND_OK card={} canvas={}x{} out={}x{} photo={:?} gpu={} ms={}",
+                r.card, r.raw_width, r.raw_height, r.width, r.height, r.photo_rect, r.gpu, r.ms
             );
             let _ = PathBuf::from(&a[6]);
         }

@@ -31,7 +31,9 @@ mod text;
 #[path = "../../../engine/shared/photo_source.rs"]
 mod photo_source;
 // X1-ANDROID8: same desktop TIFF decoder the IR bridge uses.
+mod egl;
 mod gpu;
+mod gpu_preview;
 mod render;
 #[path = "../../../engine/e5/src/tiffsrc.rs"]
 pub mod tiffsrc;
@@ -71,7 +73,7 @@ pub fn overlay_spec(
     })
 }
 
-pub const VERSION: &CStr = c"fm-android-hand 0.2.0 (e4-hand templates, cpu raster)";
+pub const VERSION: &CStr = c"fm-android-hand 0.3.0 (e4-hand templates, gpu preview + cpu raster)";
 
 #[no_mangle]
 pub extern "C" fn fm_hand_version() -> *const c_char {
@@ -213,13 +215,14 @@ pub extern "C" fn fm_render_hand(
     match result {
         Ok(r) => {
             println!(
-                "fm_hand.render card={} canvas={}x{} raw={}x{} photo={:?} ms={}",
+                "fm_hand.render card={} canvas={}x{} raw={}x{} photo={:?} gpu={} ms={}",
                 r.card,
                 r.width,
                 r.height,
                 r.raw_width,
                 r.raw_height,
                 r.photo_rect.map(|v| (v * 1000.0).round() / 1000.0),
+                r.gpu,
                 r.ms
             );
             std::ptr::null_mut()
@@ -385,4 +388,88 @@ pub extern "C" fn fm_rgba_hand_free(handle: *mut FmHandRgbaHandle) {
             drop(Box::from_raw(handle));
         }
     }
+}
+
+// --- GPU preview switch / diagnostics ---------------------------------------
+//
+// The switch is read on every render as: explicit override (here) → environment
+// `FM_GPU_PREVIEW=auto|off|force` → `auto`. `fm_hand_set_gpu_mode` exists so a
+// later Kotlin setting can drive it without a second ABI change; an empty string
+// clears the override and hands control back to the environment.
+
+fn gpu_json(extra: &str) -> *mut c_char {
+    let doc = format!(
+        "{{\"mode\":\"{}\",\"backend\":{},\"probe\":\"{}\",\"probeReason\":\"{}\",\"env\":\"{}\",\"gl\":\"{}\"{}}}",
+        gpu_preview::current_mode().as_str(),
+        gpu::backend_available(),
+        match gpu_preview::probe_state() {
+            gpu_preview::Probe::Unknown => "unknown",
+            gpu_preview::Probe::Ok => "ok",
+            gpu_preview::Probe::Failed => "failed",
+        },
+        gpu_preview::probe_reason().replace('"', "'"),
+        std::env::var(gpu_preview::ENV).unwrap_or_default(),
+        gpu::describe().replace('"', "'"),
+        extra
+    );
+    CString::new(doc)
+        .unwrap_or_else(|_| CString::new("{\"error\":\"gpu info\"}").unwrap())
+        .into_raw()
+}
+
+/// Sets the GPU preview mode (`auto`/`off`/`force`, case-insensitive).
+/// An empty string clears the override. Returns 0 on success, -1 on a bad value.
+#[no_mangle]
+pub extern "C" fn fm_hand_set_gpu_mode(mode: *const c_char) -> i32 {
+    let parsed = unsafe { cstr(mode, "gpu_mode") };
+    match parsed {
+        Ok(value) if value.trim().is_empty() => {
+            gpu_preview::set_override(None);
+            0
+        }
+        Ok(value) => match gpu_preview::Mode::parse(value) {
+            Some(mode) => {
+                gpu_preview::set_override(Some(mode));
+                render::note(&format!("fm_hand.gpu mode={} (explicit)", mode.as_str()));
+                0
+            }
+            None => -1,
+        },
+        Err(_) => -1,
+    }
+}
+
+/// Cached GPU preview state as JSON; never creates a GL context. Free with
+/// [`fm_hand_free_string`].
+#[no_mangle]
+pub extern "C" fn fm_hand_gpu_info() -> *mut c_char {
+    gpu_json("")
+}
+
+/// Probes the GPU backend on the calling thread (creates the EGL/Ganesh context
+/// once for this thread) and returns the resulting state as JSON. Used by QA to
+/// answer "would the preview use the GPU on this device?" without rendering.
+#[no_mangle]
+pub extern "C" fn fm_hand_gpu_probe() -> *mut c_char {
+    let result = if !gpu::backend_available() {
+        Err(egl::NO_BACKEND.to_string())
+    } else {
+        egl::with_gl_context(|| {
+            gpu::clear_error();
+            egl::install_direct_context()?;
+            gpu::flush_active()
+        })
+    };
+    let extra = match result {
+        Ok(()) => {
+            gpu_preview::record_probe_ok();
+            ",\"probeNow\":\"ok\"".to_string()
+        }
+        Err(reason) => {
+            gpu_preview::record_probe_failed(&reason);
+            format!(",\"probeNow\":\"{}\"", reason.replace('"', "'"))
+        }
+    };
+    render::note(&format!("fm_hand.gpu probe {}", gpu::describe()));
+    gpu_json(&extra)
 }

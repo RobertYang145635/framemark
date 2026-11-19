@@ -1,5 +1,10 @@
 //! Hand-template render: the same steps `engine/e4-hand/src/main.rs` runs for
 //! `render`, with a CPU raster surface (no D3D12/ANGLE) and an optional scale.
+//!
+//! Interactive preview frames may rasterize on the GPU (Ganesh + GL, see
+//! `gpu.rs`/`egl.rs`) when `FM_GPU_PREVIEW` allows it; export-class renders and
+//! every GPU failure stay on the CPU raster path, which is byte-for-byte the
+//! pre-GPU renderer.
 
 use std::cell::RefCell;
 use std::path::Path;
@@ -14,6 +19,7 @@ use skia_safe::{
 use crate::canvas::{Ctx2D, OverlaySpec};
 use crate::draw::{Env, Images, LayoutEnv};
 use crate::fonts::HandFonts;
+use crate::gpu_preview;
 use crate::hand::{self, Card, Exif};
 use crate::photo_source::{self, DecodeReport, PhotoSource};
 use crate::report::Report;
@@ -45,6 +51,10 @@ pub struct HandRender {
     pub raw_height: i32,
     pub photo_rect: [f32; 4],
     pub geom: Option<HandGeom>,
+    /// Which backend rasterized this frame: `cpu:<why>`, `gpu:<why>` or
+    /// `gpu-fallback=<reason>`. Logged by the C ABI so logcat answers "did the
+    /// preview actually use the GPU?" without a rebuild.
+    pub gpu: String,
     pub ms: u128,
 }
 
@@ -288,7 +298,11 @@ fn draw_pass(
         AlphaType::Opaque,
         Some(ColorSpace::new_srgb()),
     );
-    let mut surface = skia_safe::surfaces::raster(&info, None, None)
+    // Same `ImageInfo` either way; `gpu::surface_for` returns a Ganesh render
+    // target only while a GPU preview session is installed on this thread, and a
+    // CPU raster surface otherwise (export-class renders and `FM_GPU_PREVIEW=off`
+    // always land in the second branch).
+    let mut surface = crate::gpu::surface_for(&info)
         .ok_or_else(|| "cannot create raster surface".to_string())?;
     surface.canvas().clear(skia_safe::Color::BLACK);
     let report_cell = RefCell::new(Report {
@@ -384,6 +398,9 @@ pub fn render_card(
         &geom_path,
         max_edge,
         preview_source_edge,
+        // GPU raster is a preview-only optimisation: the export-class request
+        // (`max_edge <= 0`) and every non-interactive tier stay on the CPU.
+        !gpu_preview::is_export_path(max_edge, preview_source_edge),
     )
     .map(|product| product.render)
 }
@@ -428,6 +445,9 @@ pub fn render_card_rgba(
         max_edge,
         // Raw RGBA is the export path: it always keeps the full decode.
         0,
+        // …and it is export-class by definition, so it must never touch the GPU
+        // (`fm_render_hand_rgba` feeds the JPEG/WebP encoder).
+        false,
     )?;
     let rgba = product
         .rgba
@@ -439,8 +459,96 @@ pub fn render_card_rgba(
     })
 }
 
+/// Backend selection + the one-shot CPU retry, then the real render.
+///
+/// Export-class frames (`gpu_preview == false`, i.e. the RGBA export JNI, any
+/// `max_edge <= 0` request and every non-interactive tier) never touch GL: the
+/// decision short-circuits on `export` before the switch/probe are even consulted,
+/// so `FM_GPU_PREVIEW=force` cannot change an exported pixel. Interactive preview
+/// frames run on the GPU when the switch allows it, and any GPU-level failure
+/// (EGL/GLES init, `GrDirectContext` → `None`, texture limit, submit error, panic
+/// inside a GPU pass) re-runs the same render on the CPU exactly once and reports
+/// the cause as `gpu-fallback=<reason>`.
 #[allow(clippy::too_many_arguments)]
 fn render_card_impl(
+    cards_path: &str,
+    card_id: &str,
+    hand_dir: &str,
+    fonts_dir: &str,
+    extra_fonts: &str,
+    fallback_cjk: Option<&str>,
+    photo_override: Option<&Path>,
+    overlay: Option<OverlaySpec>,
+    app_design: Option<&serde_json::Value>,
+    out_png: Option<&str>,
+    geom_path: &str,
+    max_edge: i32,
+    preview_source_edge: i32,
+    // GPU raster is only allowed for the interactive preview tier. `render_card`
+    // derives it from the two edges ([`gpu_preview::is_export_path`]); the RGBA
+    // export entry point passes `false` unconditionally.
+    gpu_preview: bool,
+) -> Result<CardRenderProduct, String> {
+    let decision = gpu_preview::decide(
+        gpu_preview::current_mode(),
+        !gpu_preview,
+        gpu_preview::probe_state(),
+        crate::gpu::backend_available(),
+    );
+    // `overlay` is cloned per attempt: the first (GPU) attempt consumes its own copy
+    // so a CPU retry still draws the watermark.
+    let body = || {
+        render_card_body(
+            cards_path,
+            card_id,
+            hand_dir,
+            fonts_dir,
+            extra_fonts,
+            fallback_cjk,
+            photo_override,
+            overlay.clone(),
+            app_design,
+            out_png,
+            geom_path,
+            max_edge,
+            preview_source_edge,
+        )
+    };
+    if !decision.use_gpu {
+        note(&format!("e4.gpu=cpu reason={}", decision.reason));
+        let mut product = body()?;
+        product.render.gpu = format!("cpu:{}", decision.reason);
+        return Ok(product);
+    }
+    match crate::gpu::run_preview(body) {
+        Ok(mut product) => {
+            // First GPU frame that came back clean: the probe is known good, so
+            // later frames skip the one wasted "is there a context?" round trip and
+            // the (long) driver description is logged exactly once.
+            if gpu_preview::record_probe_ok() {
+                note(&format!(
+                    "e4.gpu=gpu reason={} {}",
+                    decision.reason,
+                    crate::gpu::describe()
+                ));
+            }
+            product.render.gpu = format!("gpu:{}", decision.reason);
+            Ok(product)
+        }
+        Err(reason) => {
+            // Auto mode stops trying for the rest of the process; the frame itself
+            // always succeeds on the CPU.
+            gpu_preview::record_probe_failed(&reason);
+            note(&format!("e4.gpu=fallback reason={reason}"));
+            let mut product = body()?;
+            product.render.gpu = format!("gpu-fallback={reason}");
+            Ok(product)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_card_body(
     cards_path: &str,
     card_id: &str,
     hand_dir: &str,
@@ -778,7 +886,10 @@ fn render_card_impl(
         .and_then(|d| d.src.as_ref())
         .map(|r| [r.x, r.y, r.w, r.h]);
 
-    let snapshot = surface.image_snapshot();
+    // GPU frames must be submitted before any pixel readback below; on the CPU
+    // path this is a no-op (no GPU session → nothing to flush).
+    crate::gpu::flush_active()?;
+    let snapshot = crate::gpu::to_raster(&surface.image_snapshot());
     let raw_rgba = if let Some(out_png) = out_png {
         let data = snapshot
             .encode_to_data(EncodedImageFormat::PNG)
@@ -844,6 +955,8 @@ fn render_card_impl(
         raw_height: ch,
         photo_rect,
         geom: Some(geom),
+        // Filled in by `render_card_impl` once it knows which backend ran.
+        gpu: String::new(),
         ms: started.elapsed().as_millis(),
     };
     Ok(CardRenderProduct {
@@ -920,7 +1033,7 @@ fn decode_logo_data_url(url: &str) -> Result<Vec<u8>, String> {
     Ok(out)
 }
 
-fn note(msg: &str) {
+pub(crate) fn note(msg: &str) {
     #[cfg(target_os = "android")]
     {
         use std::ffi::CString;
