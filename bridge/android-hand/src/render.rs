@@ -522,10 +522,11 @@ fn render_card_impl(
     }
     match crate::gpu::run_preview(body) {
         Ok(mut product) => {
-            // First GPU frame that came back clean: the probe is known good, so
-            // later frames skip the one wasted "is there a context?" round trip and
-            // the (long) driver description is logged exactly once.
-            if gpu_preview::record_probe_ok() {
+            // One line on the first clean GPU frame: it answers "is the preview
+            // really on the GPU?" without printing per dragged frame. The driver
+            // strings, readback colour and glGetError live in the `e4.gpu.probe …`
+            // line that `gpu::probe_cached()` logs before this frame.
+            if gpu_preview::note_first_gpu_frame() {
                 note(&format!(
                     "e4.gpu=gpu reason={} {}",
                     decision.reason,

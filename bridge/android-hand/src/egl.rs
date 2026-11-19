@@ -28,6 +28,7 @@ mod imp {
     use std::cell::RefCell;
     use std::ffi::c_void;
     use std::os::raw::{c_char, c_int};
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::OnceLock;
 
     use skia_safe::gpu::{self, DirectContext};
@@ -69,6 +70,7 @@ mod imp {
             read: EGLSurface,
             ctx: EGLContext,
         ) -> EGLBoolean;
+        fn eglGetCurrentContext() -> EGLContext;
         fn eglReleaseThread() -> EGLBoolean;
         fn eglDestroySurface(dpy: EGLDisplay, surface: EGLSurface) -> EGLBoolean;
         fn eglDestroyContext(dpy: EGLDisplay, ctx: EGLContext) -> EGLBoolean;
@@ -78,6 +80,7 @@ mod imp {
     #[link(name = "GLESv2")]
     extern "C" {
         fn glGetString(name: u32) -> *const u8;
+        fn glGetError() -> u32;
     }
 
     const EGL_DEFAULT_DISPLAY: *mut c_void = std::ptr::null_mut();
@@ -111,6 +114,17 @@ mod imp {
     // `usize` in the `OnceLock` and cast back on use.
     static DISPLAY: OnceLock<Result<Display, String>> = OnceLock::new();
 
+    /// Driver strings, captured **while a GL context is current** the first time a
+    /// Ganesh context is created. `glGetString` outside a current context returns
+    /// `NULL` (and is undefined behaviour on some drivers), so nothing may query it
+    /// on demand — this cache is the only source.
+    static GL_INFO: OnceLock<String> = OnceLock::new();
+
+    /// Whether new sessions should ask for GLES3. Flipped to `false` process-wide by
+    /// the GPU probe when a GLES3 context cannot render, so every later session on
+    /// every thread uses the GLES2 ladder step.
+    static PREFER_ES3: AtomicBool = AtomicBool::new(true);
+
     /// Process-wide EGL display plus the GLES3 config when the device has one
     /// (`0` when it does not) and the always-present GLES2 config.
     struct Display {
@@ -132,6 +146,8 @@ mod imp {
         context: EGLContext,
         surface: EGLSurface,
         current: bool,
+        /// 3 or 2: which GLES context this session ended up with.
+        es: u32,
     }
 
     impl Session {
@@ -142,51 +158,33 @@ mod imp {
             if unsafe { eglBindAPI(EGL_OPENGL_ES_API) } == EGL_FALSE {
                 return Err(egl_error("egl:bind-api"));
             }
-            // GLES3 first: `GL_SRGB8_ALPHA8` is core there, so Ganesh's sRGB render
-            // targets (what every surface in this renderer asks for) are allocated
-            // as real sRGB textures instead of being emulated by the shader. Every
-            // API-26+ device has GLES3; the GLES2 context is the safety net.
+            // A GLES3 context and its pbuffer must come from the *same* config, or
+            // `eglMakeCurrent` can succeed while the drawable is not really usable
+            // (Ganesh then fails every flush). So: pick one config, build both from
+            // it, and only fall back to the GLES2 pair if the 3.x context is refused.
+            let mut config = EGL_NO_CONTEXT as EGLConfig;
             let mut context = EGL_NO_CONTEXT;
-            if display.config3 != 0 {
-                context = create_context(
-                    dpy,
-                    display.config3 as EGLConfig,
-                    EGL_CONTEXT_CLIENT_VERSION,
-                    3,
-                );
+            let mut es = 2;
+            if PREFER_ES3.load(Ordering::Relaxed) && display.config3 != 0 {
+                config = display.config3 as EGLConfig;
+                context = create_context(dpy, config, EGL_CONTEXT_CLIENT_VERSION, 3);
+                if !context.is_null() {
+                    es = 3;
+                }
             }
             if context.is_null() {
-                context = create_context(
-                    dpy,
-                    display.config2 as EGLConfig,
-                    EGL_CONTEXT_CLIENT_VERSION,
-                    2,
-                );
+                config = display.config2 as EGLConfig;
+                context = create_context(dpy, config, EGL_CONTEXT_CLIENT_VERSION, 2);
+                es = 2;
             }
             if context.is_null() {
                 return Err(egl_error("egl:create-context"));
             }
             // Ganesh never draws into this surface: every render target gets its own
-            // FBO. A 1×1 pbuffer only exists so `eglMakeCurrent` has a drawable. The
-            // GLES2 config is always a valid pbuffer config for a GLES3 context, and
-            // it is also what the GLES2 fallback context was created with.
-            let config = display.config2 as EGLConfig;
-            let mut surface = unsafe {
+            // FBO. A 1×1 pbuffer only exists so `eglMakeCurrent` has a drawable.
+            let surface = unsafe {
                 eglCreatePbufferSurface(dpy, config, [EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE].as_ptr())
             };
-            if surface.is_null() {
-                // Some drivers want the pbuffer on the same config as the context; if
-                // the GLES2 config was refused, retry with the GLES3 one.
-                if display.config3 != 0 {
-                    surface = unsafe {
-                        eglCreatePbufferSurface(
-                            dpy,
-                            display.config3 as EGLConfig,
-                            [EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE].as_ptr(),
-                        )
-                    };
-                }
-            }
             if surface.is_null() {
                 unsafe { eglDestroyContext(dpy, context) };
                 return Err(egl_error("egl:create-pbuffer"));
@@ -197,6 +195,7 @@ mod imp {
                 context,
                 surface,
                 current: false,
+                es,
             };
             if let Err(e) = session.activate() {
                 // `drop` cleans up the pbuffer/context that were just created.
@@ -217,6 +216,11 @@ mod imp {
                 // falls back to CPU and the process stops trying (auto mode).
                 return Err(egl_error("egl:make-current"));
             }
+            // Trust but verify: a driver that returns EGL_TRUE without actually
+            // binding the context would poison every later GL call.
+            if unsafe { eglGetCurrentContext() } != self.context {
+                return Err("egl:make-current-not-bound".to_string());
+            }
             self.current = true;
             Ok(())
         }
@@ -227,6 +231,10 @@ mod imp {
             }
             unsafe { eglMakeCurrent(self.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT) };
             self.current = false;
+        }
+
+        fn is_current(&self) -> bool {
+            self.current && unsafe { eglGetCurrentContext() } == self.context
         }
     }
 
@@ -391,22 +399,111 @@ mod imp {
         }
         let direct = gpu::ganesh::gl::direct_contexts::make_gl(interface, None)
             .ok_or_else(|| "ganesh:no-direct-context".to_string())?;
+        // The context is current right here, which is the only safe place to read
+        // `GL_VENDOR`/`GL_RENDERER`/`GL_VERSION` (see `GL_INFO`).
+        let (es, info) = capture_gl_info();
+        let _ = GL_INFO.set(info);
         SESSION.with(|cell| {
             if let Some(session) = cell.borrow_mut().as_mut() {
                 session.direct = Some(direct);
+                session.es = es;
             }
         });
         Ok(())
     }
 
-    /// Drops the Ganesh context (while current) so a wedged driver state cannot
-    /// leak into the next frame. The EGL context is kept for reuse.
-    pub fn drop_direct_context() {
+    /// Reads the driver strings while a context is current. Returns the context's
+    /// GLES major version plus a `vendor=… renderer=… version=…` line.
+    fn capture_gl_info() -> (u32, String) {
+        let read = |name: u32| -> String {
+            let ptr = unsafe { glGetString(name) };
+            if ptr.is_null() {
+                return "<null>".to_string();
+            }
+            unsafe { std::ffi::CStr::from_ptr(ptr as *const c_char) }
+                .to_string_lossy()
+                .trim()
+                .to_string()
+        };
+        let (vendor, renderer, version) = (read(GL_VENDOR), read(GL_RENDERER), read(GL_VERSION));
+        // "OpenGL ES 3.2 V@…" → 3
+        let es = version
+            .strip_prefix("OpenGL ES ")
+            .and_then(|rest| rest.chars().next())
+            .and_then(|c| c.to_digit(10))
+            .unwrap_or(0);
+        let es = es.max(current_es_version().unwrap_or(2));
+        (
+            es,
+            format!(
+                "vendor='{}' renderer='{}' version='{}'",
+                vendor, renderer, version
+            ),
+        )
+    }
+
+    fn current_es_version() -> Option<u32> {
+        SESSION.with(|cell| cell.borrow().as_ref().map(|s| s.es))
+    }
+
+    /// GLES major version of the session on this thread (3 or 2), if any.
+    pub fn es_version() -> Option<u32> {
+        current_es_version()
+    }
+
+    /// Driver strings captured while a context was current; never calls GL itself.
+    pub fn describe() -> Option<String> {
+        GL_INFO.get().cloned()
+    }
+
+    /// Whether this thread's EGL context is current *right now*.
+    pub fn is_current() -> bool {
+        SESSION.with(|cell| {
+            cell.borrow()
+                .as_ref()
+                .map(|session| session.is_current())
+                .unwrap_or(false)
+        })
+    }
+
+    /// Drains `glGetError()` and returns the first code (0 when clean). Only
+    /// meaningful while a context is current; returns `u32::MAX` otherwise.
+    pub fn drain_gl_error() -> u32 {
+        if !is_current() {
+            return u32::MAX;
+        }
+        let mut first = 0;
+        // The error queue holds at least one entry; loop a bounded number of times.
+        for _ in 0..8 {
+            let code = unsafe { glGetError() };
+            if code == 0 {
+                break;
+            }
+            if first == 0 {
+                first = code;
+            }
+        }
+        first
+    }
+
+    /// Stops asking for GLES3 in new sessions (process-wide). Used by the GPU probe
+    /// ladder when a GLES3 context cannot render.
+    pub fn prefer_es2() {
+        PREFER_ES3.store(false, Ordering::Relaxed);
+    }
+
+    pub fn prefers_es3() -> bool {
+        PREFER_ES3.load(Ordering::Relaxed)
+    }
+
+    /// Destroys this thread's EGL session so the next [`with_gl_context`] rebuilds it
+    /// with the current preference (probe ladder). Also drops the Ganesh context.
+    pub fn reset_session() {
         SESSION.with(|cell| {
             if let Ok(mut slot) = cell.try_borrow_mut() {
-                if let Some(session) = slot.as_mut() {
-                    session.direct = None;
-                }
+                // `Session::drop` makes the context current, releases Ganesh and then
+                // destroys the EGL handles.
+                *slot = None;
             }
         });
     }
@@ -430,35 +527,13 @@ mod imp {
             Some(f(direct))
         })
     }
-
-    /// `vendor/renderer/driver` as the driver reports them; `None` when no context
-    /// is current on this thread. Used by the diagnostics entry point.
-    pub fn describe() -> Option<String> {
-        with_direct_context(|_| ()).map(|_| unsafe {
-            let read = |name: u32| -> String {
-                let ptr = glGetString(name);
-                if ptr.is_null() {
-                    return "<null>".to_string();
-                }
-                std::ffi::CStr::from_ptr(ptr as *const c_char)
-                    .to_string_lossy()
-                    .into_owned()
-            };
-            format!(
-                "vendor='{}' renderer='{}' version='{}'",
-                read(GL_VENDOR),
-                read(GL_RENDERER),
-                read(GL_VERSION)
-            )
-        })
-    }
 }
 
 #[cfg(target_os = "android")]
 #[allow(unused_imports)]
 pub use imp::{
-    describe, drop_direct_context, install_direct_context, with_direct_context,
-    with_direct_context_mut, with_gl_context,
+    describe, drain_gl_error, es_version, install_direct_context, is_current, prefer_es2,
+    prefers_es3, reset_session, with_direct_context, with_direct_context_mut, with_gl_context,
 };
 
 #[cfg(not(target_os = "android"))]
@@ -476,8 +551,6 @@ mod stub {
         Err(super::NO_BACKEND.to_string())
     }
 
-    pub fn drop_direct_context() {}
-
     pub fn with_direct_context_mut<R>(_f: impl FnOnce(&mut DirectContext) -> R) -> Option<R> {
         None
     }
@@ -489,13 +562,34 @@ mod stub {
     pub fn describe() -> Option<String> {
         None
     }
+
+    pub fn es_version() -> Option<u32> {
+        None
+    }
+
+    pub fn is_current() -> bool {
+        false
+    }
+
+    /// Host: no context, so "no GL error" is 0 and the probe never asks.
+    pub fn drain_gl_error() -> u32 {
+        0
+    }
+
+    pub fn prefer_es2() {}
+
+    pub fn prefers_es3() -> bool {
+        false
+    }
+
+    pub fn reset_session() {}
 }
 
 #[cfg(not(target_os = "android"))]
 #[allow(unused_imports)]
 pub use stub::{
-    describe, drop_direct_context, install_direct_context, with_direct_context,
-    with_direct_context_mut, with_gl_context,
+    describe, drain_gl_error, es_version, install_direct_context, is_current, prefer_es2,
+    prefers_es3, reset_session, with_direct_context, with_direct_context_mut, with_gl_context,
 };
 
 /// True when this target can ever rasterize on the GPU.

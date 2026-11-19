@@ -446,30 +446,40 @@ pub extern "C" fn fm_hand_gpu_info() -> *mut c_char {
     gpu_json("")
 }
 
-/// Probes the GPU backend on the calling thread (creates the EGL/Ganesh context
-/// once for this thread) and returns the resulting state as JSON. Used by QA to
-/// answer "would the preview use the GPU on this device?" without rendering.
+/// Probes the GPU backend on the calling thread right now (4×4 render target that
+/// is drawn, flushed and read back) and returns the outcome as JSON. Used by QA to
+/// answer "would the preview use the GPU on this device?" without rendering a card.
 #[no_mangle]
 pub extern "C" fn fm_hand_gpu_probe() -> *mut c_char {
-    let result = if !gpu::backend_available() {
-        Err(egl::NO_BACKEND.to_string())
-    } else {
-        egl::with_gl_context(|| {
-            gpu::clear_error();
-            egl::install_direct_context()?;
-            gpu::flush_active()
-        })
-    };
-    let extra = match result {
-        Ok(()) => {
+    let extra = match gpu::probe_now() {
+        Ok(evidence) => {
             gpu_preview::record_probe_ok();
-            ",\"probeNow\":\"ok\"".to_string()
+            render::note(&format!("fm_hand.gpu probe ok {evidence}"));
+            format!(",\"probeNow\":\"ok\",\"evidence\":\"{}\"", json_escape(&evidence))
         }
         Err(reason) => {
             gpu_preview::record_probe_failed(&reason);
-            format!(",\"probeNow\":\"{}\"", reason.replace('"', "'"))
+            render::note(&format!("fm_hand.gpu probe fail reason={reason}"));
+            format!(
+                ",\"probeNow\":\"fail\",\"evidence\":\"{}\"",
+                json_escape(&reason)
+            )
         }
     };
-    render::note(&format!("fm_hand.gpu probe {}", gpu::describe()));
     gpu_json(&extra)
+}
+
+/// Minimal JSON string escaping for the values this ABI returns (driver strings and
+/// error reasons can contain quotes/backslashes).
+fn json_escape(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    for ch in raw.chars() {
+        match ch {
+            '"' => out.push('\''),
+            '\\' => out.push('/'),
+            '\n' | '\r' => out.push(' '),
+            c => out.push(c),
+        }
+    }
+    out
 }

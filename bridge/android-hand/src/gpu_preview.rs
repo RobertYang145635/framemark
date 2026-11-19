@@ -16,7 +16,7 @@
 //!   mode, so a driver that cannot do Ganesh/GL costs one retried frame instead of
 //!   one retry per card.
 
-use std::sync::atomic::{AtomicI8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI8, Ordering};
 use std::sync::OnceLock;
 
 /// Environment variable read on every render (cheap; lets QA flip it per process).
@@ -171,6 +171,14 @@ pub fn record_probe_failed(reason: &str) {
 
 pub fn probe_reason() -> String {
     PROBE_REASON.get().cloned().unwrap_or_default()
+}
+
+static FIRST_GPU_FRAME: AtomicBool = AtomicBool::new(false);
+
+/// `true` exactly once per process: used to log the one `e4.gpu=gpu …` line without
+/// spamming logcat for every dragged frame.
+pub fn note_first_gpu_frame() -> bool {
+    !FIRST_GPU_FRAME.swap(true, Ordering::Relaxed)
 }
 
 /// Human-readable one-liner for logcat / the render note.
