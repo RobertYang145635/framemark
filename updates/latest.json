@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc36",
-  "versionCode": 35,
+  "versionName": "0.9.0-rc37",
+  "versionCode": 36,
   "channel": "rc",
   "minSupportedVersionCode": 0,
   "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "新增新手教程（四页，首启自动出现，设置/关于可重看）；修复浅色画布下圆角面板两侧露出方形小耳朵；更新器以 SHA-256 为准（清单 size 写错不再拦更新）；关于页含打赏入口。",
+  "notes": "修复 EXIF 解析：内联 SHORT 值（光圈/快门/ISO/焦距）与 IFD0 里的标签此前读不到或读错（210mm 显示成 35mm、ISO 显示成乱数），厂商卡与手写卡两条链路都已修正；玻璃质感加强（模糊 0.032·短边、压暗减轻、磨砂颗粒、方向性亮边），玻璃族 4 张卡新增「模糊度」滑杆 0–48；打赏改为二级页面只留二维码。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc36/FrameMark-0.9.0-rc36-arm64.apk",
-      "sha256": "0933c8d820c1a8d96777d15ceb307d525e549a1f9d4b3dbd18edcc7e24f0f045",
-      "size": 132853951
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc37/FrameMark-0.9.0-rc37-arm64.apk",
+      "sha256": "23243a8328e49357c7423abeeee9906f76d2ebfd97b22dc9e1b93f848d9d519a",
+      "size": 132858967
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc36/FrameMark-0.9.0-rc36-win64.msi",
-      "sha256": "e14d1cf6d75647d49d4c3d279314d2cc41e4ddadf34d30d7d0b7b06b4fb46465",
-      "size": 239534381
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc37/FrameMark-0.9.0-rc37-win64.msi",
+      "sha256": "dc7344a5fbbaec4806f4796b4b0f73f2c7f5c6e6e5f4bd1aa3c212ac7fa780f4",
+      "size": 239534225
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc36"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc37"
 }
