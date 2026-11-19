@@ -1,0 +1,163 @@
+{
+  "background": {
+    "brand_dark": true,
+    "fill": "#1c1d1f",
+    "surface": "#00000000",
+    "theme": null,
+    "transparent": false,
+    "value": "#00000000"
+  },
+  "bands": [
+    {
+      "background": null,
+      "direction": "overlay",
+      "items": 3,
+      "radius": null,
+      "rect": [
+        148.1666717529297,
+        1014.816650390625,
+        2667.0,
+        266.70001220703125
+      ]
+    }
+  ],
+  "canvas": {
+    "h": 2000,
+    "w": 2667
+  },
+  "exif_source": "E:/FrameMark/execution-ui-v2-20261106/build/runs/20261117055959864/artifacts/desktop-runtime/data/exif.jpg",
+  "gaps": [
+    "env: model/imageParams/time/timeLocation/template tokens resolved from EXIF + env (IR stores no string)",
+    "env: text.font key -> engine/assets/fonts face via core/system/fonts.ts mapping + fonts.json files",
+    "rule: image.scale=contain draw rect is a renderer rule (node box vs asset aspect)",
+    "rule: overlay band content is clamped to the 2.5%/4% inner box and translated (preservePosition)",
+    "rule: 8-digit app colours are #AARRGGBB; Canvas shadowColor is #RRGGBBAA (vendor #AARRGGBB shadows are invisible, matching the golden)",
+    "rule: isBrandLogo substitutes the EXIF brand wordmark (matchBrand/chooseBrandSlot/brandSlotRect from core/system/assets.ts+paint.ts); baked vendor bitmap only supplies the box/ink",
+    "env: text tokens model/imageParams/time/timeLocation resolved from the source photo's EXIF (IR stores no string)",
+    "env: text.font is a key, not a file -> StockAvenir/StockSysSans/StockVivo via the renderer key->file map; CSS weight applied as a variable wght axis",
+    "rule: image.scale=contain draw rect is a renderer rule (node box vs asset aspect); IR stores only the node box",
+    "rule: overlay band content is clamped to a 2.5%/4% inner box and translated (preservePosition) unless the band declares fit:\"none\""
+  ],
+  "items": [
+    {
+      "align": "left",
+      "alpha": 1.0,
+      "anchor": [
+        731.6469116210938,
+        1081.158203125
+      ],
+      "baseline": 1100.4718017578125,
+      "box": [
+        731.6469116210938,
+        1025.484619140625,
+        674.7511596679688,
+        111.34724426269531
+      ],
+      "color": "#FFFFFF",
+      "d021_px": -6.519333362579346,
+      "family": "StockAvenir",
+      "font_key": "avenir",
+      "fs": 81.49166870117188,
+      "kind": "text",
+      "line_height": 111.34724426269531,
+      "lines": [
+        "Panasonic DC-S1"
+      ],
+      "measure": 674.7510375976562,
+      "notdef": 0,
+      "path": "b0/g0/g0",
+      "rect": [
+        731.6469116210938,
+        1025.484619140625,
+        674.7511596679688,
+        111.3472900390625
+      ],
+      "shadow_alpha": 0,
+      "tracking": 2.4447498321533203,
+      "weight": 600
+    },
+    {
+      "color": "#FFFFFF",
+      "kind": "shape",
+      "rect": [
+        1454.55224609375,
+        1056.710693359375,
+        10.3717041015625,
+        55.5625
+      ],
+      "shape": "rect",
+      "vectorKey": null
+    },
+    {
+      "asset": "hasselblad_watermark_text_style",
+      "decoded": [
+        518.0,
+        53.0
+      ],
+      "draw": [
+        1505.669677734375,
+        1047.3502197265625,
+        726.0166015625,
+        74.2835693359375
+      ],
+      "kind": "image",
+      "path": "b0/g0/g2",
+      "rect": [
+        1505.669677734375,
+        1041.1531982421875,
+        726.0166015625,
+        86.677490234375
+      ],
+      "scale": "contain"
+    }
+  ],
+  "layout_units": {
+    "base_w": 360.0,
+    "h": 269.96624755859375,
+    "k": 7.4083333015441895,
+    "w": 360.0
+  },
+  "margins": {
+    "bottom": 0.0,
+    "left": 0.0,
+    "right": 0.0,
+    "top": 0.0
+  },
+  "overlay": null,
+  "photo": [
+    0.0,
+    0.0,
+    2667.0,
+    2000.0
+  ],
+  "photo_src": [
+    0.0,
+    0.0,
+    2667.0,
+    2000.0
+  ],
+  "reference_width": 360.0,
+  "reference_width_mode": null,
+  "style": "oppo-gallery:hassel_text_style_2",
+  "style_path": "E:/FrameMark/execution-ui-v2-20261106/build/runs/20261117055959864/artifacts/desktop-runtime/data/styles/oppo-gallery/hassel_text_style_2.json",
+  "textSlots": [
+    {
+      "hidden": false,
+      "key": "b0/g0/g0",
+      "path": "b0/g0/g0",
+      "present": true,
+      "raw": "Panasonic DC-S1",
+      "stable": true,
+      "text": "Panasonic DC-S1"
+    }
+  ],
+  "text_settings": {
+    "d021_override_em": null,
+    "edging": "AntiAlias",
+    "hinting": "Slight",
+    "logo_sampling": "mitchell",
+    "subpixel": true,
+    "surface_props": "none"
+  },
+  "theme_foreground": []
+}

@@ -1,0 +1,238 @@
+{
+  "canvas": [
+    2807,
+    2380
+  ],
+  "canvas_matches_ops": true,
+  "card": "blur-classic",
+  "fit": {
+    "canvas": [
+      2807,
+      2380
+    ],
+    "mode": "design"
+  },
+  "ops_canvas": [
+    2807,
+    2380
+  ],
+  "overlay": null,
+  "photo_rect": [
+    70.0,
+    70.0,
+    2667.0,
+    2000.0
+  ],
+  "photo_src": [
+    0.0,
+    0.0,
+    2667.0,
+    2000.0
+  ],
+  "report": {
+    "canvas": [
+      2807,
+      2380
+    ],
+    "decor": [
+      {
+        "kind": "backdrop",
+        "rect": {
+          "h": 2665.60009765625,
+          "w": 3143.840087890625,
+          "x": -168.42001342773438,
+          "y": -142.8000030517578
+        },
+        "seq": 1,
+        "underlay": true
+      },
+      {
+        "kind": "backdrop",
+        "rect": {
+          "h": 2380.0,
+          "w": 2807.0,
+          "x": 0.0,
+          "y": 0.0
+        },
+        "seq": 2,
+        "underlay": true
+      },
+      {
+        "kind": "photo-shadow",
+        "rect": {
+          "h": 2000.0,
+          "w": 2667.0,
+          "x": 70.0,
+          "y": 70.0
+        },
+        "seq": 3,
+        "underlay": false
+      }
+    ],
+    "gaps": [],
+    "images": [
+      {
+        "dst": {
+          "h": 2665.60009765625,
+          "w": 3143.840087890625,
+          "x": -168.42001342773438,
+          "y": -142.8000030517578
+        },
+        "key": "backdrop",
+        "sampling": "SamplingOptions { max_aniso: 0, use_cubic: true, cubic: CubicResampler { b: 0.33333334, c: 0.33333334 }, filter: Nearest, mipmap: None }",
+        "seq": 1,
+        "src": null
+      },
+      {
+        "dst": {
+          "h": 2000.0,
+          "w": 2667.0,
+          "x": 70.0,
+          "y": 70.0
+        },
+        "key": "photo",
+        "sampling": "SamplingOptions { max_aniso: 0, use_cubic: false, cubic: CubicResampler { b: 0.0, c: 0.0 }, filter: Linear, mipmap: None }",
+        "seq": 4,
+        "src": {
+          "h": 2000.0,
+          "w": 2667.0,
+          "x": 0.0,
+          "y": 0.0
+        }
+      },
+      {
+        "dst": {
+          "h": 43.199951171875,
+          "w": 281.762939453125,
+          "x": 2416.118408203125,
+          "y": 2200.0
+        },
+        "key": "logo",
+        "sampling": "SamplingOptions { max_aniso: 0, use_cubic: false, cubic: CubicResampler { b: 0.0, c: 0.0 }, filter: Linear, mipmap: None }",
+        "seq": 9,
+        "src": {
+          "h": 79.0,
+          "w": 512.0,
+          "x": 0.0,
+          "y": 0.0
+        }
+      }
+    ],
+    "photo": {
+      "h": 2000.0,
+      "w": 2667.0,
+      "x": 70.0,
+      "y": 70.0
+    },
+    "photo_radius": 40.0,
+    "photo_seq": 5,
+    "shapes": [],
+    "template": "blur",
+    "texts": [
+      {
+        "align": "center",
+        "baseline": "alphabetic",
+        "family": "Inter",
+        "hidden": false,
+        "key": "hand:blur-classic:blur.title",
+        "matrix": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        "measure": 528.5015869140625,
+        "present": true,
+        "raw": "PANASONIC DC-S1",
+        "rect": {
+          "h": 44.639892578125,
+          "w": 528.5015869140625,
+          "x": 1139.249267578125,
+          "y": 2187.0400390625
+        },
+        "s": "PANASONIC DC-S1",
+        "seq": 6,
+        "shadow": false,
+        "size": 48.0,
+        "source": "title",
+        "stable": true,
+        "tracking": 5.759999752044678,
+        "weight": 600,
+        "x": 1403.5,
+        "y": 2221.60009765625
+      },
+      {
+        "align": "center",
+        "baseline": "alphabetic",
+        "family": "JetBrains Mono",
+        "hidden": false,
+        "key": "hand:blur-classic:blur.exif",
+        "matrix": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        "measure": 550.7998657226562,
+        "present": true,
+        "raw": "366mm  F6.3  1/400s  ISO125",
+        "rect": {
+          "h": 31.6201171875,
+          "w": 550.7998046875,
+          "x": 1128.10009765625,
+          "y": 2259.52001953125
+        },
+        "s": "366mm  F6.3  1/400s  ISO125",
+        "seq": 7,
+        "shadow": false,
+        "size": 34.0,
+        "source": "exif",
+        "stable": true,
+        "tracking": 0.0,
+        "weight": 400,
+        "x": 1403.5,
+        "y": 2284.0
+      },
+      {
+        "align": "center",
+        "baseline": "alphabetic",
+        "family": "JetBrains Mono",
+        "hidden": false,
+        "key": "hand:blur-classic:blur.date",
+        "matrix": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        "measure": 168.00003051757812,
+        "present": true,
+        "raw": "2022-07-05",
+        "rect": {
+          "h": 26.0400390625,
+          "w": 168.0,
+          "x": 1319.5,
+          "y": 2345.840087890625
+        },
+        "s": "2022-07-05",
+        "seq": 8,
+        "shadow": false,
+        "size": 28.0,
+        "source": "date",
+        "stable": true,
+        "tracking": 0.0,
+        "weight": 400,
+        "x": 1403.5,
+        "y": 2366.0
+      }
+    ],
+    "variant": "blur-classic"
+  },
+  "template": "blur"
+}

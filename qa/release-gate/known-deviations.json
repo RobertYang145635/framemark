@@ -1,0 +1,3 @@
+{
+  "stock-vivo-geographic-overlay": "Fixed the legacy geographic overlay: offset.y was -72, which the engine (and the frozen web oracle) read as 72 units *below* the canvas, so the model and time lines overlapped and the date was clipped. The style now declares +72 (the same inset convention every other bottom overlay uses); the new frame stacks model + time fully inside the photo. The oracle golden still shows the clipped legacy frame, so a golden diff here is expected."
+}
