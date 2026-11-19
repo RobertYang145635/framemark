@@ -80,6 +80,7 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
             }
         }
         UpdateCard(currentVersion = version)
+        DonateSection()
         AboutSection(title = AboutText.PRIVACY_TITLE) {
             AboutParagraph(AboutText.PRIVACY)
         }
@@ -329,8 +330,12 @@ private fun AboutCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun AboutSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column {
+internal fun AboutSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = modifier) {
         Text(
             text = title,
             style = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp),
