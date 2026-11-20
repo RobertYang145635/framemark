@@ -977,6 +977,7 @@ fn template_text(env: &Env, value: &str) -> String {
     let speed = env
         .exif
         .shutter
+        .filter(|v| v.is_finite() && *v > 0.0) // 0/0 曝光是残渣：别印成 `1/inf`
         .map(|v| {
             if v >= 1.0 {
                 if (v.fract()).abs() < 1e-4 {

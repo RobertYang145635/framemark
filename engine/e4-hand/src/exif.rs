@@ -270,14 +270,14 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
     }
     // FocalLengthIn35mm is recorded as a flag in this Exif shape; keep the value only
     // when the file really carries it, and never invent a focal length from it.
-    ex.focal_equivalent = f35.map(|_| true);
+    ex.focal_equivalent = f35.filter(|v| plausible(v)).map(|_| true);
     // 手机照片的 `FocalLength`(0x920A) 是**原生焦段**（常常只有 35mm 这种小数字），
     // 相机 App 与厂商水印给用户看的一直是 `FocalLengthIn35mmFilm`(0xA405) 的等效值
     // （例如等效 230mm）。有等效值时优先用它，并标 focal_equivalent。
-    ex.focal = f35.or(focal);
-    ex.aperture = fnum;
-    ex.shutter = sho;
-    ex.iso = iso;
+    ex.focal = f35.filter(|v| plausible(v)).or(focal.filter(|v| plausible(v)));
+    ex.aperture = fnum.filter(|v| plausible(v));
+    ex.shutter = sho.filter(|v| plausible(v));
+    ex.iso = iso.filter(|v| plausible(v));
     ex.width = w.unwrap_or(0.0);
     ex.height = h.unwrap_or(0.0);
     ex.has_any = !ex.make.is_empty()
@@ -289,6 +289,15 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
         || ex.iso.is_some()
         || !ex.lens.is_empty();
     ex
+}
+
+/// 一个「有意义的」拍摄参数：正的有限数。
+///
+/// 有些文件把 `ExposureTime` 写成 `0/0`、把光圈写成 0 —— 那是写出方的残渣，不是数据。
+/// 以前这些值会一路走到排版：没有 APP1 的照片在玻璃卡上印出 `1/inf`（真机实测，
+/// 一张没有 EXIF 的荷花照）。在解析处就丢掉，所有模板都不用各自再防一次。
+fn plausible(v: &f64) -> bool {
+    v.is_finite() && *v > 0.0
 }
 
 #[cfg(test)]
@@ -494,5 +503,34 @@ mod tests {
         assert_eq!(ex.make, "");
         assert_eq!(ex.focal, None);
         assert!(!ex.has_any);
+    }
+
+    /// 写出方的残渣：`ExposureTime = 0/0`、`FNumber = 0/0`。这些不是数据，落地时丢掉，
+    /// 否则玻璃卡会把 `1/inf` 印在快门格上（真机实测：一张没有 APP1 的荷花照）。
+    #[test]
+    fn zero_rationals_are_dropped_instead_of_printing_infinity() {
+        for le in [true, false] {
+            let mut b = Buf::new(le);
+            b.bytes(if le { b"II" } else { b"MM" });
+            b.u16(0x2A);
+            b.u32(8);
+            b.pad_to(8);
+            b.ifd(
+                &[
+                    (0x829A, 3, 2, inline_shorts(le, &[0, 0])), // ExposureTime 0/0
+                    (0x829D, 3, 2, inline_shorts(le, &[0, 0])), // FNumber 0/0
+                    (0x8827, 3, 1, inline_shorts(le, &[0])),    // ISO 0
+                ],
+                0,
+            );
+
+            let ex = parse(&b.b);
+            assert_eq!(ex.shutter, None, "le={le}");
+            assert_eq!(ex.aperture, None, "le={le}");
+            assert_eq!(ex.iso, None, "le={le}");
+            assert_eq!(ex.line("  "), "", "le={le}");
+            assert_eq!(crate::hand::format_shutter(0.0), "");
+            assert_eq!(crate::hand::format_aperture(0.0), "");
+        }
     }
 }

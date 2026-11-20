@@ -279,6 +279,10 @@ pub fn model_without_make(make: &str, model: &str) -> String {
 }
 
 pub fn format_aperture(v: f64) -> String {
+    // 0 / NaN / inf 不是光圈值：一张没有 APP1 的照片以前会印成 `F0`（或 `Finf`）。
+    if !v.is_finite() || v <= 0.0 {
+        return String::new();
+    }
     if v.fract() == 0.0 {
         format!("F{}", v as i64)
     } else {
@@ -287,6 +291,10 @@ pub fn format_aperture(v: f64) -> String {
 }
 
 pub fn format_shutter(v: f64) -> String {
+    // 同上：`1/inf`（0 s 曝光）是解析残渣，不是快门速度，宁可不印。
+    if !v.is_finite() || v <= 0.0 {
+        return String::new();
+    }
     if v >= 1.0 {
         if v.fract() == 0.0 {
             format!("{}s", v as i64)

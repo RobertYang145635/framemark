@@ -259,7 +259,7 @@ class ControlRegistryRealDataTest {
     }
 
     /**
-     * 2026-11-19「模糊度」：玻璃族手写卡的模糊强度可调。
+     * 2026-11-19 玻璃族手写卡的模糊强度可调（名字与背景模糊族统一成「模糊强度」）。
      *
      * 目标集合 = 模板**真的**读 `params.blur` 的 4 张玻璃卡（variants.json 的 base
      * 为 glass / glassSideCard / glassPalettePortrait）：
@@ -287,23 +287,24 @@ class ControlRegistryRealDataTest {
         for ((cardId, current) in expected) {
             val card = requireNotNull(registry.card(cardId)) { "$cardId 不在注册表里" }
             val controls = card.controls.filter { it.consumer == "params.blur" }
-            assertEquals(1, controls.size, "$cardId 只能有一条模糊度滑杆")
+            assertEquals(1, controls.size, "$cardId 只能有一条模糊强度滑杆")
             val control = controls.single()
             assertEquals("slider.params:blur", control.controlId)
             assertEquals(ControlType.Slider, control.type)
-            assertEquals("模糊度", control.label)
+            assertEquals("模糊强度", control.label, "纵使数据里写的是「模糊度」，注册表也走同一张标签表")
             assertEquals(0.0, control.min)
             assertEquals(48.0, control.max)
             assertEquals(2.0, control.step)
             assertEquals(current, control.defaultValue, "$cardId 的默认值 = 该卡现状")
             assertEquals(current, control.currentValue)
-            assertEquals("", control.unit, "模糊度没有单位，面板不显示后缀")
-            assertTrue(control.visible && !control.gated, "$cardId 的模糊度必须可见")
+            assertEquals("", control.unit, "模糊强度没有单位，面板不显示后缀")
+            assertTrue(control.visible && !control.gated, "$cardId 的模糊强度必须可见")
             assertEquals("params.blur", control.consumer)
             assertTrue(control.consumed, "手写卡的 params.* 由引擎直接读取")
         }
 
-        // 背景模糊族的滑杆保持原名「模糊强度」，这次只加玻璃族的「模糊度」。
+        // 同一个控件只能有一个名字：玻璃族以前写「模糊度」，与背景模糊族的「模糊强度」
+        // 是两条文案（桌面看源标签、手机走 param）。现在两端统一成「模糊强度」。
         assertEquals(
             "模糊强度",
             registry.card("blur-classic")!!.controls.single { it.controlId == "slider.params:blur" }.label,
@@ -319,7 +320,7 @@ class ControlRegistryRealDataTest {
         }
     }
 
-    /** 用户真正看到的那一列：模糊度落在「样式」页、不带单位后缀、0–48 步进 2。 */
+    /** 用户真正看到的那一列：模糊强度落在「样式」页、不带单位后缀、0–48 步进 2。 */
     @Test
     fun glass_blur_slider_lands_in_the_style_tab_without_a_unit() {
         val registry = RealData.registry()
@@ -329,7 +330,7 @@ class ControlRegistryRealDataTest {
             com.framemark.native.inspector.IrSlotBinding.EMPTY,
         ).model
         val row = model.controls.single { it.controlId == "slider.params:blur" }
-        assertEquals("模糊度", row.label)
+        assertEquals("模糊强度", row.label, "与背景模糊族同一个名字")
         assertEquals(com.framemark.native.inspector.ControlType.Slider, row.type)
         // 模糊度是外观：布局分组 + 样式页（标签页由 param 推导，不需要新数据）。
         assertEquals(com.framemark.native.inspector.InspectorSection.Layout, row.section)
@@ -341,7 +342,7 @@ class ControlRegistryRealDataTest {
         assertEquals(0f, row.min)
         assertEquals(48f, row.max)
         assertEquals(2f, row.step)
-        assertNull(row.unit, "模糊度没有单位")
+        assertNull(row.unit, "模糊强度没有单位")
         assertEquals(1f, row.unitScale)
         assertNull(row.disabledReason)
         assertEquals("24.0", row.declaredDefault)
