@@ -4863,10 +4863,10 @@
       "h": 558
     },
     "src/renderer/src/assets/logos/godox_black.webp": {
-      "sha256": "0a31904c8034fee11af4ee76d890a648d32ebc743369ecc2afa354f36273be6d",
-      "bytes": 50508,
+      "sha256": "c6ac59f736c80299300627c2861911a71b1946a86ed50ad04ae9dde069c90134",
+      "bytes": 22488,
       "format": "webp",
-      "variant": "VP8X",
+      "variant": "VP8L",
       "w": 1600,
       "h": 438
     },
@@ -17753,7 +17753,7 @@
           "declaredWidth": 1600,
           "declaredHeight": 438,
           "resolvedPath": "src/renderer/src/assets/logos/godox_black.webp",
-          "sha256": "0a31904c8034fee11af4ee76d890a648d32ebc743369ecc2afa354f36273be6d",
+          "sha256": "c6ac59f736c80299300627c2861911a71b1946a86ed50ad04ae9dde069c90134",
           "actualWidth": 1600,
           "actualHeight": 438,
           "sourceCut": "ver:godox:godox-wordmark"

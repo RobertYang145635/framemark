@@ -1,5 +1,6 @@
 # generated-pairs.csv — FrameMark 品牌黑/白字标来源表（每枚资产一行）
 # mode=official-stage：官方变体原样转存，像素/alpha 不改；mode=recolor-neutral：仅把 max-min<=40 的近中性像素推到目标色（黑标→RGB 0，白标→RGB 255），保留 alpha，max-min>40 的高饱和品牌色像素原样保留；note=mark-only 表示该品牌官方只有「标记」形态。
+# mode=recolor-force：官方无对应底色稿且原稿对比度不足（<3:1），整幅推到目标色（黑标→RGB 0，白标→RGB 255），只保留 alpha。
 brandKey,generated,sourceCut,sourcePath,sourceAspect,outW,outH,mode,note
 adox,black,ver:adox:adox-wordmark,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__adox__adox-wordmark.webp,1.8265,1600,876,official-stage,
 adox,white,ver:adox:adox-wordmark--light,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__adox__adox-wordmark--light.webp,1.8286,1600,875,official-stage,
@@ -23,7 +24,7 @@ cinestill,black,ver:cinestill:cinestill-film,ui/composeApp/src/commonMain/compos
 cinestill,white,ver:cinestill:cinestill-film--light,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__cinestill__cinestill-film--light.webp,6.867,1600,233,official-stage,
 ferrania,black,ver:ferrania:ferrania,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__ferrania__ferrania.webp,2.8725,1600,557,official-stage,
 ferrania,white,ver:ferrania:ferrania--light,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__ferrania__ferrania--light.webp,2.8674,1600,558,official-stage,
-godox,black,ver:godox:godox-wordmark,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__godox__godox-wordmark.webp,3.653,1600,438,official-stage,
+godox,black,ver:godox:godox-wordmark,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__godox__godox-wordmark.webp,3.653,1600,438,recolor-force,
 godox,white,ver:godox:godox-wordmark--light,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__godox__godox-wordmark--light.webp,3.653,1600,438,official-stage,
 holga,black,ver:holga:holga-inc,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__holga__holga-inc.webp,3.9409,1600,406,official-stage,
 holga,white,ver:holga:holga-inc--light,ui/composeApp/src/commonMain/composeResources/files/logov/logo-versions__holga__holga-inc--light.webp,3.9506,1600,405,official-stage,
