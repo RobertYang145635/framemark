@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc41",
-  "versionCode": 40,
+  "versionName": "0.9.0-rc42",
+  "versionCode": 41,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T08:30:00Z",
-  "notes": "撤销修好了：换边框也进历史，撤销 / 重做真的会回到上一张边框（此前撤销会吃掉历史、画面不动）。Logo 跟随照片品牌：选完边框字标就是这张照片的品牌，Logo 页先把字标选对再调位置；说明行写「按照片品牌 OPPO」而不是「按边框自己的品牌」。焦距显示等效值（手机原生 3.5mm 印成 23mm）。没有 EXIF 的照片不再印出「1/inf」。模糊滑杆统一叫「模糊强度」。玻璃质感、圆角缺口、导出示真实像素、「用到全部 N 张」等上一版内容保留。",
+  "publishedAt": "2026-11-20T09:45:00Z",
+  "notes": "删照片不再是一次性动作：长按照片 →「移出项目」（原件不动），舞台给一条 4 秒的「已移除 · 撤销」，撤销把照片连同它的边框、文字、Logo 和水印原样放回原位。批量导出列表每行加了缩略图 —— IMG 文件名认不出是哪一张。往已有工程里再导入照片会继承工程现在的样子（同一场拍不用重选边框）；边框设成「未选边框」再导入则不带边框。上一版：撤销真的会回到上一张边框、字标跟随照片品牌、焦距印等效值、没有 EXIF 不再出现 1/inf。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc41/FrameMark-0.9.0-rc41-arm64.apk",
-      "sha256": "608334d4aed67b996a6c31acf38e85920d8c11675186ea005ea09e12c3bc7a90",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc42/FrameMark-0.9.0-rc42-arm64.apk",
+      "sha256": "0240763e3e4f7528c2d9a7007a0a60dc2d52ee8cb4f14a8fecc967849662beca",
       "size": 132870343
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc41/FrameMark-0.9.0-rc41-win64.msi",
-      "sha256": "7ec8cfd666c76a4e4e917df9151fafe67e9c4f580f4245fcf857391ee6b3f45f",
-      "size": 239564224
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc42/FrameMark-0.9.0-rc42-win64.msi",
+      "sha256": "c4d8ea523b987c572b97a6e4cbaf906f90c2d93ddd714a6cd95cb466026d203a",
+      "size": 239577585
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc41"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc42"
 }
