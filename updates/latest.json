@@ -1,10 +1,10 @@
 {
-  "versionName": "0.9.0-rc48",
-  "versionCode": 47,
+  "versionName": "0.9.0-rc47",
+  "versionCode": 46,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T20:15:00Z",
-  "notes": "临时测试清单：验证启动自动更新弹窗与镜像下载（测完立刻改回 rc47）。",
+  "publishedAt": "2026-11-20T22:45:00Z",
+  "notes": "打开应用时自动检查新版本（清单优先、6 秒预算、请求绕开镜像缓存），有新版本弹一次窗：可直接下载安装，也能「跳过这个版本」。国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张：照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位（白色卡面与深色舞台都看得见），进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白共 88 枚（保留品牌色，如富士那点红；官方稿缺对应底色且对比度不足的只有神牛一枚，已按「自行染色」推黑），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
   "assets": {
     "android": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc47/FrameMark-0.9.0-rc47-arm64.apk",
@@ -13,9 +13,9 @@
     },
     "windows": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc47/FrameMark-0.9.0-rc47-win64.msi",
-      "sha256": "d43c39bd330377ba05b4c0096d01e0dd5abb2d642729b75b62a2277f792f4f20",
-      "size": 247951364
+      "sha256": "170d706b632f15e84e8f6ffd0470b8302ae002008a3522674c769eb10247b633",
+      "size": 248111108
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc48"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc47"
 }
