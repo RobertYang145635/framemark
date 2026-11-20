@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.IntSize
 import com.framemark.native.inspector.ExifGapNotice
-import com.framemark.native.theme.FmPalette
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.slotHighlightRect
 
@@ -44,13 +43,16 @@ internal fun ExifSlotHintLayer(
     bitmapHeight: Int,
     boxSize: IntSize,
     modifier: Modifier = Modifier,
-    tint: Color = FmPalette.stageInk,
 ) {
     val missing = ExifGapNotice.missingFields(slots)
     if (missing.isEmpty() || bitmapWidth <= 0 || bitmapHeight <= 0) return
     Canvas(modifier = modifier) {
         val dash = PathEffect.dashPathEffect(floatArrayOf(6f, 5f))
         val stroke = Stroke(width = 1.5f, pathEffect = dash)
+        // 两色虚线：白的画在略偏左上、黑的画在略偏右下。这样在深色舞台和白色卡面上
+        // 都能看清 —— 单色描边总会在某一种底色上消失（白卡上的浅灰几乎看不见）。
+        val lightEdge = Color.White.copy(alpha = 0.34f)
+        val darkEdge = Color.Black.copy(alpha = 0.38f)
         for (slot in missing) {
             val rect = slotHighlightRect(
                 slot = slot,
@@ -59,13 +61,15 @@ internal fun ExifSlotHintLayer(
                 boxW = boxSize.width.toFloat(),
                 boxH = boxSize.height.toFloat(),
             ) ?: continue
-            drawRoundRect(
-                color = tint.copy(alpha = 0.28f),
-                topLeft = Offset(rect.x, rect.y),
-                size = Size(rect.w, rect.h),
-                cornerRadius = CornerRadius(4f, 4f),
-                style = stroke,
-            )
+            for ((color, shift) in listOf(lightEdge to -0.7f, darkEdge to 0.7f)) {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(rect.x + shift, rect.y + shift),
+                    size = Size(rect.w, rect.h),
+                    cornerRadius = CornerRadius(4f, 4f),
+                    style = stroke,
+                )
+            }
         }
     }
 }
