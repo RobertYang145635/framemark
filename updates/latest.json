@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc42",
-  "versionCode": 41,
+  "versionName": "0.9.0-rc43",
+  "versionCode": 42,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T09:45:00Z",
-  "notes": "删照片不再是一次性动作：长按照片 →「移出项目」（原件不动），舞台给一条 4 秒的「已移除 · 撤销」，撤销把照片连同它的边框、文字、Logo 和水印原样放回原位。批量导出列表每行加了缩略图 —— IMG 文件名认不出是哪一张。往已有工程里再导入照片会继承工程现在的样子（同一场拍不用重选边框）；边框设成「未选边框」再导入则不带边框。上一版：撤销真的会回到上一张边框、字标跟随照片品牌、焦距印等效值、没有 EXIF 不再出现 1/inf。",
+  "publishedAt": "2026-11-20T12:20:00Z",
+  "notes": "照片托盘不再是一条夹在舞台和底板之间的白带：缩略图直接浮在舞台上（底色跟舞台同一个），底板那条圆角就是唯一的分界，「＋ 添加」也改成暗底上的虚线框。上一版：删照片给「已移除 · 撤销」、批量列表带缩略图、撤销真的回到上一张边框、字标跟随照片品牌、焦距印等效值。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc42/FrameMark-0.9.0-rc42-arm64.apk",
-      "sha256": "0240763e3e4f7528c2d9a7007a0a60dc2d52ee8cb4f14a8fecc967849662beca",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc43/FrameMark-0.9.0-rc43-arm64.apk",
+      "sha256": "181c089f7bbcfde07a3d2bff9bef5c42e518c190ba8ece9a81b3e21a025adacc",
       "size": 132870343
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc42/FrameMark-0.9.0-rc42-win64.msi",
-      "sha256": "c4d8ea523b987c572b97a6e4cbaf906f90c2d93ddd714a6cd95cb466026d203a",
-      "size": 239577585
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc43/FrameMark-0.9.0-rc43-win64.msi",
+      "sha256": "f080d49080b430290cad766b7b6f017842a83a9f0b923372741a6e4fb0c579a1",
+      "size": 239499761
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc42"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc43"
 }
