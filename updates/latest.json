@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc43",
-  "versionCode": 42,
+  "versionName": "0.9.0-rc44",
+  "versionCode": 43,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T12:20:00Z",
-  "notes": "照片托盘不再是一条夹在舞台和底板之间的白带：缩略图直接浮在舞台上（底色跟舞台同一个），底板那条圆角就是唯一的分界，「＋ 添加」也改成暗底上的虚线框。上一版：删照片给「已移除 · 撤销」、批量列表带缩略图、撤销真的回到上一张边框、字标跟随照片品牌、焦距印等效值。",
+  "publishedAt": "2026-11-20T15:10:00Z",
+  "notes": "导出方向修好了：EXIF 方向 2/3/4（镜像、180°、镜像+180°）以前画布上是正的、导出会翻回去，现在预览和导出完全一致（真机用左红右蓝的方向 3 测试图验证）。桌面导入 TIFF / WebP 会把原图的拍摄信息搬到转码副本上——自动字标跟得到品牌，机型行与参数行不再空白；16 位灰度与带透明通道的 TIFF 不再被拒绝成「文件不存在」；同一张 TIFF / WebP 也不会重复加入工程。有损 WebP 现在真的按你选的质量编码（此前一律 q100）。等效焦距标签写着 0 时回退物理焦距，不再印「0mm」。品牌字标缩小改走 mipmap，OPPO 那类词标的锯齿没了；华为照片此前自动匹配会选中白标（白底上等于看不见），已改正。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc43/FrameMark-0.9.0-rc43-arm64.apk",
-      "sha256": "181c089f7bbcfde07a3d2bff9bef5c42e518c190ba8ece9a81b3e21a025adacc",
-      "size": 132870343
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc44/FrameMark-0.9.0-rc44-arm64.apk",
+      "sha256": "480b9b9067c49de8dece6ccb2b326976f569d6b089db2251e0aca3657d0c535a",
+      "size": 133026441
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc43/FrameMark-0.9.0-rc43-win64.msi",
-      "sha256": "f080d49080b430290cad766b7b6f017842a83a9f0b923372741a6e4fb0c579a1",
-      "size": 239499761
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc44/FrameMark-0.9.0-rc44-win64.msi",
+      "sha256": "570d1479daf13e514b3fe928b73ca421f39107537bfa36fc4f5d46627322daec",
+      "size": 239689240
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc43"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc44"
 }
