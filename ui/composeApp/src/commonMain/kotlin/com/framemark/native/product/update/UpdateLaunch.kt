@@ -51,7 +51,8 @@ object UpdateLaunch {
         source: UpdateSource = UpdateSource.Mirror,
     ): UpdateManifest? {
         forgetIfOutdated(storage, currentVersion)
-        val outcome = runCatching { checkForUpdate(currentVersion, source) }.getOrNull()
+        // 只要清单、并且有总预算：冷启动不能为了一个弹窗等十几秒。
+        val outcome = runCatching { checkManifestForLaunch(currentVersion, source) }.getOrNull()
         val manifest = (outcome as? UpdateCheckOutcome.Available)?.manifest ?: return null
         if (!shouldPrompt(currentVersion, skipped(storage), manifest.versionName)) return null
         return manifest

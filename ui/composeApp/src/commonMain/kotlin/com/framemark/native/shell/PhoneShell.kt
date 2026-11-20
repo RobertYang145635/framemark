@@ -646,7 +646,9 @@ fun PhoneShell() {
             currentVersion = current,
             storage = com.framemark.native.shell.PlatformUpdateSkipStorage(),
         )
-        if (pendingUpdate != null) FmLog.info("UPDATE_ON_LAUNCH") { "current=$current remote=${pendingUpdate?.versionName}" }
+        FmLog.info("UPDATE_ON_LAUNCH") {
+            "current=$current remote=${pendingUpdate?.versionName ?: "<none>"}"
+        }
     }
 
     // The inspector model drives the export snapshot; building it here keeps the

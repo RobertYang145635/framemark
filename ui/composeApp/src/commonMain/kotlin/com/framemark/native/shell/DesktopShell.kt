@@ -256,7 +256,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             currentVersion = current,
             storage = com.framemark.native.shell.PlatformUpdateSkipStorage(),
         )
-        if (pendingUpdate != null) FmLog.info("UPDATE_ON_LAUNCH") { "current=$current remote=${pendingUpdate?.versionName}" }
+        FmLog.info("UPDATE_ON_LAUNCH") { "current=$current remote=${pendingUpdate?.versionName ?: "<none>"}" }
     }
     LaunchedEffect(Unit) {
         withFrameNanos { }

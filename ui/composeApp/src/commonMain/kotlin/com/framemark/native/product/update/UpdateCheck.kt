@@ -228,6 +228,36 @@ sealed interface UpdateCheckOutcome {
     data object Failed : UpdateCheckOutcome
 }
 
+
+/**
+ * 启动路径用的**只要清单**的检查：清单里就有版本号与资产直链，比 Releases API 快得多。
+ *
+ * 为什么要限时：`fetchUrlText` 是阻塞调用（各平台 8 s 超时），冷启动时如果第一个候选
+ * 不可达，用户会等十几秒才看到弹窗 —— 那比没有弹窗更糟。这里给候选循环一个总预算
+ * （[LAUNCH_CHECK_BUDGET_MS]），超预算就放弃，交给关于页的手动检查。
+ */
+private const val LAUNCH_CHECK_BUDGET_MS = 6_000L
+
+suspend fun checkManifestForLaunch(
+    currentVersion: String,
+    source: UpdateSource = UpdateSource.Mirror,
+): UpdateCheckOutcome {
+    val started = kotlin.time.TimeSource.Monotonic.markNow()
+    for (url in UpdateUrls.manifestCandidates(source)) {
+        if (started.elapsedNow().inWholeMilliseconds > LAUNCH_CHECK_BUDGET_MS) break
+        val text = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { fetchUrlText(url) } }
+            .getOrNull() ?: continue
+        val manifest = UpdateManifestJson.parse(text) ?: continue
+        return if (UpdateVersion.isNewer(currentVersion, manifest.versionName)) {
+            UpdateCheckOutcome.Available(manifest, manifest.assetFor(updatePlatform()))
+        } else {
+            UpdateCheckOutcome.Latest
+        }
+    }
+    // 清单都没读到：不回退 Releases API（那是关于页的活），按「这次不提示」处理。
+    return UpdateCheckOutcome.Failed
+}
+
 /**
  * 检查更新：先读清单（随分支发布，镜像只需代理同一份文件），读不到再退回 Releases API。
  *
