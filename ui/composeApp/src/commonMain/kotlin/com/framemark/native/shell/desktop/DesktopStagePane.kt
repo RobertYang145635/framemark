@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -93,6 +94,8 @@ internal fun EditStage(
     /** Filled by the stage render; read by the 文字 tab. */
     textSlots: TextSlotRegistry,
     /** §3.3: row being edited in the 文字 tab; null draws no frame. */
+    /** 缺拍摄参数的行画不画虚线占位（进过「文字」页之后为 false）。 */
+    showExifHints: Boolean = false,
     highlightedTextSlotKey: String?,
     onAddPhoto: () -> Unit,
     onRemovePhoto: (String) -> Unit,
@@ -296,6 +299,7 @@ internal fun EditStage(
                             design = design,
                             projects = projects,
                             textSlots = textSlots,
+                            showExifHints = showExifHints,
                             highlightedTextSlotKey = highlightedTextSlotKey,
                             highlightedTextSlotLabel = highlightedTextSlotLabel,
                             // 渲染帧与导出画布是同一个设计，宽高比一致；有了它 `.print`
@@ -415,6 +419,8 @@ private fun DesktopNativeStage(
     highlightedTextSlotLabel: String?,
     /** 渲染帧宽高比：`.print` 的投影要贴着成品，不能围着整块舞台。 */
     printAspect: Float?,
+    /** 缺拍摄参数的行画不画虚线占位（进过「文字」页之后为 false）。 */
+    showExifHints: Boolean = false,
     onRenderedPx: (Int, Int) -> Unit,
     /** 水印引导线是否显示（只有打开水印页时为真，见 WP-R D8）。 */
     watermarkGuides: Boolean = false,
@@ -423,6 +429,8 @@ private fun DesktopNativeStage(
     // the first frame; bumping the version re-keys the overlay so the mark lands
     // on the rendered image instead of the placeholder.
     var geometryVersion by remember { mutableIntStateOf(0) }
+    // 占位按渲染帧的像素坐标定位（与文字 slot 同一坐标系）。
+    var renderedSize by remember { mutableStateOf(IntSize.Zero) }
     val overlay = remember(projects.activePhotoId, projects.activeDesign?.overlay, geometryVersion) {
         projects.overlaySpec()
     }
@@ -450,6 +458,7 @@ private fun DesktopNativeStage(
                     spotColor = shadowColor,
                 ),
         ) {
+            Box(Modifier.fillMaxSize()) {
             NativeStagePreview(
                 card = card,
                 design = design,
@@ -458,6 +467,7 @@ private fun DesktopNativeStage(
                 photoPath = projects.activePhoto?.path,
                 onRendered = { w, h, _ ->
                     geometryVersion++
+                    renderedSize = IntSize(w, h)
                     onRenderedPx(w, h)
                 },
                 onTextSlots = textSlots::update,
@@ -472,6 +482,22 @@ private fun DesktopNativeStage(
                 // 编辑态（有水印）没有这层线，所以按当前页签开关。
                 watermarkGuides = watermarkGuides,
             )
+            if (showExifHints && renderedSize.width > 0 && renderedSize.height > 0) {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val densityNow = androidx.compose.ui.platform.LocalDensity.current
+                    val box = with(densityNow) {
+                        IntSize(maxWidth.toPx().toInt(), maxHeight.toPx().toInt())
+                    }
+                    com.framemark.native.shell.ExifSlotHintLayer(
+                        slots = textSlots.slots,
+                        bitmapWidth = renderedSize.width,
+                        bitmapHeight = renderedSize.height,
+                        boxSize = box,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            }
         }
     }
 }

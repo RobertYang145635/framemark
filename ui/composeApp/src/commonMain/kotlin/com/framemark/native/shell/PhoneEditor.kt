@@ -246,6 +246,15 @@ fun PhoneEditorScreen(
     var undoNotice by remember { mutableStateOf(false) }
     // P0-2: 换边框现在也是一条可撤销的历史，换完在同一个提示位说一句「已换边框 · 撤销」。
     var borderNotice by remember { mutableStateOf(false) }
+    // 缺参数占位是否还画（2026-11-20 用户定）：**按照片**记「看过了」——进过一次
+    // 「文字」页就撤掉；但**换照片或换边框都会重置**，所以同一张照片换到别的边框再换
+    // 回来，占位仍然出现（那时用户面对的是另一套排版，需要重新看见缺口）。
+    // `remember(photoId, cardId)` 正好就是这条语义：任一变化 → 回到「没看过」。
+    var exifHintsAcknowledged by remember(tray.selectedId, card?.id) { mutableStateOf(false) }
+    val exifHintsVisible = !exifHintsAcknowledged && textSlots.isNotEmpty()
+    LaunchedEffect(tool) {
+        if (tool == EditorTool.Text) exifHintsAcknowledged = true
+    }
     val density = LocalDensity.current
 
     // 裁切: everything below works in the **display** frame. The preview bitmap the
@@ -631,6 +640,9 @@ fun PhoneEditorScreen(
                             undoNotice = undoNotice,
                             borderNotice = borderNotice,
                             removeNoticeLabel = removeNoticeLabel,
+                            // 缺拍摄参数的行给一圈虚线占位；进过「文字」页就不再画。
+                            showExifSlotHints = exifHintsVisible,
+                            textSlots = textSlots,
                             onUndoRemove = {
                                 onUndoRemove()
                                 onRemoveNoticeExpired()

@@ -99,6 +99,8 @@ internal fun DesktopColumnLayout(
     /** [model] plus the text rows the stage renderer reported; panel only. */
     panelModel: InspectorCardModel?,
     textSlots: TextSlotRegistry,
+    /** 缺拍摄参数的行画不画虚线占位（进过「文字」页之后为 false）。 */
+    showExifHints: Boolean = false,
     session: DesignSession,
     inspectorState: InspectorLoadState,
     onRetryInspector: () -> Unit,
@@ -336,6 +338,7 @@ internal fun DesktopColumnLayout(
                     model = model,
                     projects = projects,
                     textSlots = textSlots,
+                    showExifHints = showExifHints,
                     highlightedTextSlotKey = highlightedTextSlotKey,
                     onAddPhoto = onAddPhoto,
                     onRemovePhoto = onRemovePhoto,

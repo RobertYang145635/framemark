@@ -70,6 +70,7 @@ import com.framemark.native.inspector.InspectorCardModel
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryPreview
 import com.framemark.native.library.LibraryPreviewLoader
+import com.framemark.native.shell.ExifSlotHintLayer
 import com.framemark.native.shell.phone.PhoneHoldCompareChip
 import com.framemark.native.shell.phone.PhoneStageBands
 import com.framemark.native.shell.phone.PhoneStageChip
@@ -174,6 +175,10 @@ internal fun StageArea(
     onFailed: (String) -> Unit,
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)?,
     onWatermarkChange: (WatermarkSpec?) -> Unit,
+    /** 这套边框这一张照片上有没有「缺参数」的占位要画（进过文字页后为 false）。 */
+    showExifSlotHints: Boolean = false,
+    /** 渲染报告里的文字行，用来定位缺口；与 `showExifSlotHints` 一起决定画不画。 */
+    textSlots: List<com.framemark.native.workflow.TextSlot> = emptyList(),
     /**
      * 水印九宫格画不画在照片上（只有 水印 工具 + 真的有一层水印时为 true，
      * 见 `showsWatermarkAnchorLayer`）。它铺在照片矩形的九个格子上，点一格写回
@@ -306,6 +311,18 @@ internal fun StageArea(
                     )
                     else -> Box(modifier = Modifier.fillMaxSize()) {
                         LibraryPreview(card = card, modifier = Modifier.fillMaxSize())
+                    }
+                }
+                // 缺拍摄参数的行：给一圈极淡虚线（只在编辑器里，进过「文字」页就不再画）。
+                if (!compare && !cropActive && showExifSlotHints) {
+                    previewGeo?.let { geo ->
+                        ExifSlotHintLayer(
+                            slots = textSlots,
+                            bitmapWidth = geo.w,
+                            bitmapHeight = geo.h,
+                            boxSize = stageSize,
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
                 }
                 if (!compare && !cropActive) {

@@ -243,6 +243,11 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     val onboardingStore = remember { WorkflowOnboardingStore() }
     var onboardingOpen by remember { mutableStateOf(false) }
     var onboardingPage by remember { mutableIntStateOf(0) }
+    // 缺拍摄参数的行：舞台给一圈虚线占位。**按照片**记「看过了」：进过一次「文字」页
+    // 就撤掉；换照片或换边框都重置，所以同一张照片换到别的边框再换回来，占位照样出现。
+    var exifHintsAcknowledged by remember(projects.activePhotoId, selectedCard?.id) {
+        mutableStateOf(false)
+    }
     // 启动自动检查更新（与手机端同一条逻辑）：有新版本弹一次，跳过的版本不再打扰。
     var pendingUpdate by remember { mutableStateOf<com.framemark.native.product.update.UpdateManifest?>(null) }
     LaunchedEffect(Unit) {
@@ -293,6 +298,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     // screen — photo, card, inspector tab, folded inspector — clears it, so a
     // highlight can never outlive the frame it described.
     var focusedTextSlotKey by remember { mutableStateOf<String?>(null) }
+
 
     fun requestExport(): Boolean {
         val photo = projects.activePhoto
@@ -672,6 +678,8 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         // collapsing into the single-pane layout drops it, so the stage never
         // frames a row whose editor is no longer on screen.
         LaunchedEffect(paramsPage, rightVisible) {
+            // 打开过文字页 = 用户已经知道这几行能改：撤掉这一拍舞台上的占位。
+            if (paramsPage == InspectorPage.Text) exifHintsAcknowledged = true
             if (paramsPage != InspectorPage.Text || !rightVisible) focusedTextSlotKey = null
         }
 
@@ -1008,6 +1016,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                     model = model,
                     panelModel = panelModel,
                     textSlots = textSlots,
+                    showExifHints = !exifHintsAcknowledged,
                     session = session,
                     inspectorState = inspectorState,
                     onRetryInspector = { inspectorReload++ },
