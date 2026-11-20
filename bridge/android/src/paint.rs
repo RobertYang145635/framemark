@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use serde_json::Value;
 use skia_safe::{
     canvas::SrcRectConstraint, AlphaType, Canvas, ClipOp, Color, ColorSpace, ColorType, Data,
-    EncodedImageFormat, FilterMode, Image, ImageInfo, Paint, Rect, SamplingOptions, Surface,
+    EncodedImageFormat, FilterMode, Image, ImageInfo, MipmapMode, Paint, Rect, SamplingOptions, Surface,
 };
 
 use crate::photo_source::{self, PhotoSource};
@@ -108,124 +108,25 @@ struct Ctx<'a> {
     geom: &'a mut Vec<BandGeom>,
 }
 
-/// EXIF Orientation (IFD0 tag 0x0112) from a JPEG APP1 block or a WebP EXIF
-/// chunk; 1 when absent/unreadable. Phones store portrait shots as landscape
-/// pixels + Orientation 6/8, so decoding without this shows them sideways.
-fn exif_orientation(bytes: &[u8]) -> u16 {
-    if bytes.len() > 4 && bytes[0] == 0xFF && bytes[1] == 0xD8 {
-        let mut i = 2usize;
-        while i + 4 <= bytes.len() {
-            if bytes[i] != 0xFF {
-                break;
-            }
-            let marker = bytes[i + 1];
-            if marker == 0xD8 || marker == 0x01 || (0xD0..=0xD7).contains(&marker) {
-                i += 2;
-                continue;
-            }
-            if marker == 0xD9 || marker == 0xDA {
-                break;
-            }
-            let len = u16::from_be_bytes([bytes[i + 2], bytes[i + 3]]) as usize;
-            if len < 2 || i + 2 + len > bytes.len() {
-                break;
-            }
-            if marker == 0xE1 {
-                let p = &bytes[i + 4..i + 2 + len];
-                if p.len() > 6 && &p[..6] == b"Exif\0\0" {
-                    return crate::tiffsrc::orientation(&p[6..]);
-                }
-            }
-            i += 2 + len;
-        }
-        return 1;
-    }
-    if bytes.len() > 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        let mut i = 12usize;
-        while i + 8 <= bytes.len() {
-            let fourcc = &bytes[i..i + 4];
-            let size = u32::from_le_bytes([bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]])
-                as usize;
-            let start = i + 8;
-            let end = start.saturating_add(size).min(bytes.len());
-            if fourcc == b"EXIF" {
-                let d = &bytes[start..end];
-                let tiff = if d.len() > 6 && &d[..6] == b"Exif\0\0" {
-                    &d[6..]
-                } else {
-                    d
-                };
-                return crate::tiffsrc::orientation(tiff);
-            }
-            i = start + size + (size & 1);
-        }
-    }
-    1
-}
 
-/// Apply the EXIF orientation unless Skia already did. Skia m156's
-/// `Image::from_encoded` returns the *oriented* image for JPEG, so rotating
-/// again would undo it; the codec's pre-rotation dimensions tell us which case
-/// we are in. Orientation 1 stays on the untouched decode path.
-fn orient_decoded(image: Image, bytes: &[u8]) -> Result<Image, String> {
-    let orientation = exif_orientation(bytes);
-    if orientation <= 1 || orientation > 8 {
-        return Ok(image);
-    }
-    if let Some(codec) = skia_safe::codec::Codec::from_data(Data::new_copy(bytes)) {
-        let d = codec.dimensions();
-        if image.width() != d.width || image.height() != d.height {
-            return Ok(image);
-        }
-    }
-    rotate_by_orientation(image, orientation)
-}
 
-/// Rotate a decoded image by its EXIF orientation (1 = passthrough so the
-/// untouched decode path stays byte-identical).
-fn rotate_by_orientation(image: Image, orientation: u16) -> Result<Image, String> {
-    if orientation <= 1 || orientation > 8 {
-        return Ok(image);
-    }
-    let (w, h) = (image.width(), image.height());
-    let info = ImageInfo::new(
-        (w, h),
-        ColorType::RGBA8888,
-        AlphaType::Unpremul,
-        Some(ColorSpace::new_srgb()),
-    );
-    let mut rgba = vec![0u8; (w as usize) * (h as usize) * 4];
-    let ok = image.read_pixels(
-        &info,
-        &mut rgba,
-        (w as usize) * 4,
-        (0, 0),
-        skia_safe::image::CachingHint::Disallow,
-    );
-    if !ok {
-        return Err("read_pixels failed for orientation".into());
-    }
-    let (rot, nw, nh) = crate::tiffsrc::apply_orientation(&rgba, w as u32, h as u32, orientation);
-    let out_info = ImageInfo::new(
-        (nw as i32, nh as i32),
-        ColorType::RGBA8888,
-        AlphaType::Unpremul,
-        Some(ColorSpace::new_srgb()),
-    );
-    skia_safe::images::raster_from_data(&out_info, Data::new_copy(&rot), (nw as usize) * 4)
-        .ok_or_else(|| "orientation raster failed".into())
-}
 
 /// Skia decodes JPEG/PNG/WebP but has no TIFF codec. `.tif/.tiff` goes through
-/// the desktop E5 decoder (`e5::tiffsrc`, pulled in read-only); JPEG/WebP get
-/// their EXIF orientation applied. PNG has no orientation tag in practice.
+/// the desktop E5 decoder (`e5::tiffsrc`, pulled in read-only) and then the EXIF
+/// orientation is applied here, because that decoder hands back the raw raster.
+/// PNG has no orientation tag in practice.
+///
+/// **JPEG/WebP 不再自己旋转**（2026-11-20）：Skia m156 的 `Image::from_encoded`
+/// 已经按 EXIF 方向解出像素（`photo_source::decode_bounded` 整套逻辑都建立在这个前提
+/// 上，桌面 `e4-hand` / `e2b` 也是解码即终态、不再旋转）。以前这里又按方向转了一次，
+/// 判断依据是「宽高是否互换」——镜像(2)、180°(3)、镜像+180°(4) 宽高不变，猜不出来，
+/// 于是二次旋转把方向转回原样：预览（受限解码，不走这条）是正的，导出是反的。
 fn load_photo(path: &str) -> Result<Image, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("photo missing: {path}: {e}"))?;
     let is_tiff = bytes.len() >= 4 && (&bytes[..4] == b"II*\0" || &bytes[..4] == b"MM\0*");
     if !is_tiff {
-        let image = Image::from_encoded(Data::new_copy(&bytes))
-            .ok_or_else(|| format!("photo decode failed: {path}"))?;
-        return orient_decoded(image, &bytes);
+        return Image::from_encoded(Data::new_copy(&bytes))
+            .ok_or_else(|| format!("photo decode failed: {path}"));
     }
     let img = crate::tiffsrc::decode(Path::new(path))?;
     let (rgba, w, h) = crate::tiffsrc::apply_orientation(&img.rgba, img.w, img.h, img.orientation);
@@ -1289,7 +1190,7 @@ fn draw_image_item(
             &logo.image,
             Some(Rect::from_xywh(0.0, 0.0, logo.w as f32, logo.h as f32)),
             Rect::from_xywh(rect.x, rect.y, rect.w, rect.h),
-            image_sampling(logo.w as f32, rect.w),
+            brand_sampling(logo.w as f32, rect.w),
             Some(&p),
         );
         ctx.stats.brand_slots += 1;
@@ -1785,6 +1686,19 @@ fn sampling_high() -> SamplingOptions {
     s
 }
 
+/// 品牌字标缩小用的采样：线性 + mipmap（与桌面 `engine/e2b/src/main.rs` 同一条规则）。
+///
+/// 素材是 1024 宽的 wordmark，卡上通常画 60–600 px；纯线性下采样每个目标像素只覆盖
+/// 2×2 个源像素，笔画就出锯齿 —— 真机反馈的 OPPO 字标「毛刺」（2026-11-20）。
+/// mipmap 链在 `brand::BrandLib::load_stem` 里建好；建不出来时 Skia 退回线性。
+fn brand_sampling(iw: f32, dw: f32) -> SamplingOptions {
+    if dw < iw - 1e-3 {
+        SamplingOptions::new(FilterMode::Linear, MipmapMode::Linear)
+    } else {
+        sampling_high()
+    }
+}
+
 fn image_sampling(iw: f32, dw: f32) -> SamplingOptions {
     if dw < iw - 1e-3 {
         SamplingOptions {
@@ -2079,5 +1993,70 @@ mod photo_crop_tests {
         // The full frame is served through `full_photo`, not the shared cache, so
         // a drag starts from a cold-but-correct entry rather than a stale raster.
         assert!(!photo.is_scaled());
+    }
+}
+
+/// 方向只应用一次（2026-11-20 真机缺陷）：JPEG/WebP 的像素已经由 Skia 按 EXIF origin
+/// 解好，`load_photo` 不能再转一次。以前用「宽高是否互换」猜 Skia 有没有转过 —— 镜像(2)、
+/// 180°(3)、镜像+180°(4) 宽高不变，猜不出来，二次旋转把方向还原回原始：预览（受限解码）
+/// 是正的、导出是反的。夹具与手写 bridge 共用 `engine/shared/orientation_fixture.rs`。
+#[cfg(test)]
+mod orientation_tests {
+    use super::load_photo;
+    use crate::orientation_fixture::{corner, is_blue, is_green, is_red, is_white, temp_jpeg};
+    use skia_safe::Image;
+
+    fn decoded_at(orientation: u16) -> Image {
+        let path = temp_jpeg(orientation);
+        let image = load_photo(path.to_string_lossy().as_ref()).expect("decode orientation fixture");
+        let _ = std::fs::remove_file(&path);
+        image
+    }
+
+    #[test]
+    fn orientation_1_keeps_the_quadrants() {
+        let image = decoded_at(1);
+        assert_eq!((image.width(), image.height()), (64, 48));
+        assert!(is_red(corner(&image)), "TL 应该还是红");
+    }
+
+    #[test]
+    fn orientation_2_mirrors_once() {
+        let image = decoded_at(2);
+        assert_eq!((image.width(), image.height()), (64, 48));
+        let c = corner(&image);
+        assert!(is_blue(c), "镜像后 TL 应为蓝，实际 {c:?}");
+    }
+
+    #[test]
+    fn orientation_3_rotates_once() {
+        let image = decoded_at(3);
+        assert_eq!((image.width(), image.height()), (64, 48));
+        let c = corner(&image);
+        assert!(is_white(c), "180° 后 TL 应为白，实际 {c:?}");
+    }
+
+    #[test]
+    fn orientation_4_flips_vertically_once() {
+        let image = decoded_at(4);
+        assert_eq!((image.width(), image.height()), (64, 48));
+        let c = corner(&image);
+        assert!(is_green(c), "垂直镜像后 TL 应为绿，实际 {c:?}");
+    }
+
+    #[test]
+    fn orientation_6_rotates_and_swaps_dimensions_once() {
+        let image = decoded_at(6);
+        assert_eq!((image.width(), image.height()), (48, 64), "90° 后宽高互换");
+        let c = corner(&image);
+        assert!(is_green(c), "顺时针 90° 后 TL 应为绿，实际 {c:?}");
+    }
+
+    #[test]
+    fn orientation_8_rotates_the_other_way_once() {
+        let image = decoded_at(8);
+        assert_eq!((image.width(), image.height()), (48, 64));
+        let c = corner(&image);
+        assert!(is_blue(c), "逆时针 90° 后 TL 应为蓝，实际 {c:?}");
     }
 }

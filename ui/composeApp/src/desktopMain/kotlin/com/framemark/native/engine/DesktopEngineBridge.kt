@@ -423,8 +423,23 @@ class DesktopEngineBridge(
                     val exif = JpegExif.tiffBlock(File(exifAbs), outW, outH)
                     if (exif == null) warnings += "EXIF block not found in $exifAbs"
                     if (webp) {
-                        e5.encodeWebp(scaled, target, work, exif, lossless = webpLossless, quality = 100)
-                        warnings += if (webpLossless) "WebP VP8L lossless" else "WebP VP8 q100 lossy"
+                        // 有损 WebP 必须用用户在导出对话框里选的质量：以前这里写死 100，
+                        // 于是「质量 60」编码出来的仍是 q100（两次 SHA-256 一模一样，审计实测）。
+                        // 无损时不看质量（VP8L 没有质量旋钮），但仍然原样传下去。
+                        val webpQuality = (quality ?: 100).coerceIn(1, 100)
+                        e5.encodeWebp(
+                            scaled,
+                            target,
+                            work,
+                            exif,
+                            lossless = webpLossless,
+                            quality = webpQuality,
+                        )
+                        warnings += if (webpLossless) {
+                            "WebP VP8L lossless"
+                        } else {
+                            "WebP VP8 q$webpQuality lossy"
+                        }
                     } else {
                         val jpegQuality = (quality ?: 100).coerceIn(60, 100)
                         e5.encodeJpeg(scaled, target, work, exif, quality = jpegQuality)

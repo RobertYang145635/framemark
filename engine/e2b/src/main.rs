@@ -231,6 +231,20 @@ fn sampling_low() -> SamplingOptions {
 /// bitmap goes through the Mitchell cubic, a *downscaled* one through bilinear
 /// (the ZEISS grid 168→155.6 pins the first arm, the ZEISS stamp 221→237.1 the
 /// second). `E3_IMG_FILTER=mitchell|linear` pins one arm for A/B measurement.
+/// 品牌字标缩小用的采样：线性 + mipmap。
+///
+/// 与 `image_sampling` 分开是故意的：照片/素材图沿用与冻结参考逐字节对齐的那条规则，
+/// 词标则必须走 mipmap —— 1024 宽的 wordmark 在卡上画成 60–600 px，纯线性下采样
+/// 每个目标像素只覆盖 2×2 个源像素，笔画就出锯齿（真机「毛刺」2026-11-20）。
+/// mipmap 链在 `brand::BrandLib::load_stem` 里建好。
+fn brand_sampling(iw: f32, dw: f32) -> SamplingOptions {
+    if dw < iw - 1e-3 {
+        SamplingOptions::new(FilterMode::Linear, MipmapMode::Linear)
+    } else {
+        sampling_high()
+    }
+}
+
 fn image_sampling(iw: f32, dw: f32) -> SamplingOptions {
     match std::env::var("E3_IMG_FILTER").ok().as_deref() {
         Some("mitchell") => return sampling_high(),
@@ -1548,7 +1562,7 @@ fn render_once(args: Vec<String>) {
                                     tinted.as_ref().unwrap_or(&logo.image),
                                     Some(Rect::from_xywh(0.0, 0.0, logo.w as f32, logo.h as f32)),
                                     Rect::from_xywh(rect.x, rect.y, rect.w, rect.h),
-                                    image_sampling(logo.w as f32, rect.w),
+                                    brand_sampling(logo.w as f32, rect.w),
                                     Some(&p),
                                 );
                                 let ink_json = |i: Option<&brand::InkBox>| {

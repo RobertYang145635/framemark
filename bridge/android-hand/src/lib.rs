@@ -28,6 +28,11 @@ mod templates;
 #[path = "../../../engine/e4-hand/src/text.rs"]
 mod text;
 // Interactive source decode, shared with the desktop engine and the IR bridge.
+// EXIF 方向的测试夹具（四象限 JPEG + APP1 注入）：两个 bridge 共用同一份，
+// 免得一边修好一边没修。
+#[cfg(test)]
+#[path = "../../../engine/shared/orientation_fixture.rs"]
+mod orientation_fixture;
 #[path = "../../../engine/shared/photo_source.rs"]
 mod photo_source;
 // X1-ANDROID8: same desktop TIFF decoder the IR bridge uses.

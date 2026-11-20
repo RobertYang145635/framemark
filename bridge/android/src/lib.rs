@@ -21,6 +21,11 @@ mod text;
 #[path = "../../../engine/e5/src/tiffsrc.rs"]
 pub mod tiffsrc;
 // Interactive source decode, shared with the hand bridge (same `#[path]` reuse).
+// EXIF 方向的测试夹具（四象限 JPEG + APP1 注入）：两个 bridge 共用同一份，
+// 免得一边修好一边没修。
+#[cfg(test)]
+#[path = "../../../engine/shared/orientation_fixture.rs"]
+mod orientation_fixture;
 #[path = "../../../engine/shared/photo_source.rs"]
 mod photo_source;
 

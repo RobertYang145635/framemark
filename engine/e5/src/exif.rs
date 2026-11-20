@@ -657,7 +657,11 @@ impl Exif {
 
     pub fn image_params(&self) -> String {
         let mut parts: Vec<String> = Vec::new();
-        let focal = self.focal_35mm.or(self.focal);
+        // 等效值写着 0 时回退物理焦距（与 e2b 同一条规则）。
+        let focal = self
+            .focal_35mm
+            .filter(|v| v.is_finite() && *v > 0.0)
+            .or(self.focal.filter(|v| v.is_finite() && *v > 0.0));
         if let Some(f) = focal {
             if f > 0.0 {
                 parts.push(format!("{}mm", f.round() as i64));

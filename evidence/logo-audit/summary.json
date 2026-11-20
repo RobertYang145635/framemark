@@ -1,0 +1,456 @@
+{
+ "assets_png": 166,
+ "cuts_catalog": 474,
+ "assets_unified": 527,
+ "brands": 102,
+ "brands_with_baseline": 61,
+ "brands_without_baseline_png": [
+  "alcatel",
+  "asus",
+  "blackberry",
+  "blackmagic",
+  "ferrania",
+  "holga",
+  "htc",
+  "ilford",
+  "infinix",
+  "kowa",
+  "kyocera",
+  "lenovo",
+  "lg",
+  "manfrotto",
+  "panavision",
+  "sirui",
+  "tcl",
+  "vivitar",
+  "wiko",
+  "zte",
+  "viltrox",
+  "instax",
+  "angenieux",
+  "schneider",
+  "pentacon",
+  "ttartisan",
+  "godox",
+  "broncolor",
+  "novoflex",
+  "lensbaby",
+  "meyeroptik",
+  "adox",
+  "cinestill",
+  "redmagic",
+  "tecno",
+  "sharp",
+  "vertu",
+  "meitu",
+  "autel",
+  "yuneec",
+  "kandao"
+ ],
+ "coverage_list": {
+  "light-only": [
+   "meyeroptik"
+  ],
+  "dark-only": [
+   "godox"
+  ],
+  "none": []
+ },
+ "coverage": {
+  "ok": 100,
+  "dark-only": 1,
+  "light-only": 1
+ },
+ "coverage_lists": {
+  "light-only": [
+   "meyeroptik"
+  ],
+  "dark-only": [
+   "godox"
+  ],
+  "none": []
+ },
+ "marginal": [
+  [
+   "viltrox",
+   5.51,
+   3.81
+  ],
+  [
+   "pentacon",
+   3.84,
+   5.47
+  ]
+ ],
+ "psnr_pil_below26_png": 0,
+ "psnr_pil_below26_all": 0,
+ "psnr_2tap_below26_png": 105,
+ "psnr_2tap_below26_all": 228,
+ "psnr_2tap_below22_png": 30,
+ "stroke_below_1px_png": 1,
+ "stroke_below_3px_png": 37,
+ "edge_over_40_png": 17,
+ "edge_over_40_all": 83,
+ "light_unusable_png": 72,
+ "dark_unusable_png": 76,
+ "meta_surface_contradiction": 25,
+ "ink_contradiction": 4,
+ "meta_contradiction_list": [
+  [
+   "canon",
+   "ver:canon:canon-1953",
+   "light",
+   1.57,
+   13.33
+  ],
+  [
+   "nikon",
+   "ver:nikon:nikon-1917",
+   "light",
+   1.6,
+   13.16
+  ],
+  [
+   "sony",
+   "ver:sony:sony-1",
+   "light",
+   2.3,
+   9.14
+  ],
+  [
+   "fushi",
+   "ver:fushi:fujifilm-1980",
+   "light",
+   2.83,
+   7.41
+  ],
+  [
+   "aolinbasi",
+   "ver:aolinbasi:olympus-1970",
+   "light",
+   1.84,
+   11.44
+  ],
+  [
+   "ricoh",
+   "ver:ricoh:ricoh-1963",
+   "light",
+   1.41,
+   14.91
+  ],
+  [
+   "minolta",
+   "ver:minolta:minolta-1937",
+   "light",
+   1.31,
+   16.07
+  ],
+  [
+   "kodak",
+   "ver:kodak:kodak-1971",
+   "light",
+   1.89,
+   11.1
+  ],
+  [
+   "kodak",
+   "ver:kodak:kodak-2006",
+   "light",
+   1.8,
+   11.68
+  ],
+  [
+   "kodak",
+   "kodak_yellow",
+   "light",
+   1.91,
+   11.0
+  ],
+  [
+   "alpa",
+   "ver:alpa:alpa-14940",
+   "light",
+   1.73,
+   12.11
+  ],
+  [
+   "sigma",
+   "ver:sigma:sigma-1",
+   "light",
+   2.65,
+   7.94
+  ],
+  [
+   "sigma",
+   "ver:sigma:sigma-2025-lockup",
+   "light",
+   1.25,
+   18.52
+  ],
+  [
+   "phaseone",
+   "ver:phaseone:phase-one-logo",
+   "light",
+   2.55,
+   8.25
+  ],
+  [
+   "motorola",
+   "ver:motorola:motorola-1950",
+   "light",
+   2.02,
+   10.42
+  ],
+  [
+   "google",
+   "ver:google:google-1998",
+   "light",
+   1.29,
+   16.34
+  ],
+  [
+   "apple",
+   "ver:apple:apple-1",
+   "light",
+   2.81,
+   7.48
+  ],
+  [
+   "laika",
+   "ver:laika:leitz-1",
+   "light",
+   2.56,
+   8.2
+  ],
+  [
+   "xiaomi",
+   "ver:xiaomi:xiaomi-1",
+   "light",
+   2.89,
+   7.28
+  ],
+  [
+   "xiaomi",
+   "ver:xiaomi:xiaomi-logo-2",
+   "light",
+   2.5,
+   8.41
+  ],
+  [
+   "xiaomi",
+   "ver:xiaomi:xiaomi-brasil-logo-2",
+   "light",
+   2.6,
+   8.07
+  ],
+  [
+   "alcatel",
+   "ver:alcatel:alcatel-mobile-3",
+   "light",
+   2.91,
+   7.21
+  ],
+  [
+   "vivitar",
+   "ver:vivitar:vivitar",
+   "light",
+   2.18,
+   9.62
+  ],
+  [
+   "wiko",
+   "ver:wiko:wiko-logo",
+   "light",
+   2.64,
+   7.95
+  ],
+  [
+   "godox",
+   "ver:godox:godox-wordmark",
+   "light",
+   2.94,
+   7.15
+  ]
+ ],
+ "auto_below3": [
+  [
+   "huawei",
+   "huawei_white",
+   1.0
+  ],
+  [
+   "xiaomi",
+   "ver:xiaomi:xiaomi-1",
+   2.89
+  ],
+  [
+   "alcatel",
+   "ver:alcatel:alcatel-mobile-3",
+   2.91
+  ],
+  [
+   "htc",
+   "ver:htc:htc",
+   2.58
+  ],
+  [
+   "vivitar",
+   "ver:vivitar:vivitar",
+   2.18
+  ],
+  [
+   "wiko",
+   "ver:wiko:wiko-logo",
+   2.64
+  ],
+  [
+   "zte",
+   "ver:zte:zte-logo",
+   2.14
+  ],
+  [
+   "godox",
+   "ver:godox:godox-wordmark",
+   2.94
+  ]
+ ],
+ "auto_kind": {
+  "canonical-first-cut": 54,
+  "brand-cut": 48
+ },
+ "top_risk_png": [
+  [
+   "tokina_black",
+   19.13,
+   13.31,
+   2.6
+  ],
+  [
+   "horseman_black",
+   19.41,
+   14.05,
+   2.4
+  ],
+  [
+   "hand-30566632c0e1",
+   19.44,
+   12.21,
+   2.0
+  ],
+  [
+   "hassel_wordmark_black",
+   19.44,
+   12.21,
+   2.0
+  ],
+  [
+   "tokina_white",
+   19.53,
+   13.1,
+   2.6
+  ],
+  [
+   "horseman_white",
+   19.87,
+   13.99,
+   2.4
+  ],
+  [
+   "praktica_black",
+   20.04,
+   12.12,
+   7.6
+  ],
+  [
+   "nothing_black",
+   20.25,
+   11.41,
+   2.4
+  ],
+  [
+   "insta360_black",
+   20.33,
+   11.49,
+   2.8
+  ],
+  [
+   "hassel_wordmark_white",
+   20.35,
+   12.36,
+   2.0
+  ],
+  [
+   "konica_minolta_black",
+   20.36,
+   9.23,
+   2.0
+  ],
+  [
+   "praktica_white",
+   20.45,
+   11.61,
+   7.6
+  ],
+  [
+   "bronica_black",
+   20.52,
+   11.25,
+   3.4
+  ],
+  [
+   "nothing_white",
+   20.56,
+   11.85,
+   2.4
+  ],
+  [
+   "konica_minolta_white",
+   20.75,
+   9.11,
+   2.0
+  ],
+  [
+   "phaseone_black",
+   20.84,
+   10.57,
+   2.8
+  ],
+  [
+   "voigtlander_black",
+   20.91,
+   10.18,
+   1.8
+  ],
+  [
+   "bronica_white",
+   20.96,
+   10.93,
+   3.4
+  ],
+  [
+   "tamron_black",
+   21.2,
+   9.98,
+   12.0
+  ],
+  [
+   "hand-4bf2fbfe5f78",
+   21.24,
+   9.93,
+   1.2
+  ]
+ ],
+ "dups": {
+  "hand-3c9070186b7a": [
+   "hassel_h_black"
+  ],
+  "xiaomi_loing": [
+   "xiaomi_loing_black",
+   "xiaomi_loing_white"
+  ]
+ },
+ "dims": {
+  "declared_vs_actual": 121,
+  "actual_vs_real": 0
+ }
+}

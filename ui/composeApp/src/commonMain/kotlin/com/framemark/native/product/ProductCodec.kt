@@ -233,6 +233,10 @@ private fun encodePhoto(photo: PhotoRef): String = buildString {
     append(",\"widthPx\":").append(photo.widthPx)
     append(",\"heightPx\":").append(photo.heightPx)
     append(",\"fingerprint\":").append(photo.fingerprint?.let(ProductJson::quote) ?: "null")
+    // 只有转码导入才有原图路径；为空时**不写这个键**，老文档的字节保持不变。
+    photo.sourcePath?.takeIf { it.isNotBlank() }?.let {
+        append(",\"sourcePath\":").append(ProductJson.quote(it))
+    }
     append('}')
 }
 
@@ -257,6 +261,7 @@ private fun decodePhoto(raw: Any?, where: String): PhotoRef {
         widthPx = widthPx,
         heightPx = heightPx,
         fingerprint = map.optionalString("fingerprint", where),
+        sourcePath = map.optionalString("sourcePath", where)?.takeIf { it.isNotBlank() },
     )
 }
 

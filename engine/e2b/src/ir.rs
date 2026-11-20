@@ -955,10 +955,13 @@ fn template_text(env: &Env, value: &str) -> String {
         }
         s = s.trim().to_string();
     }
+    // 等效焦距标签存在但写着 0（部分导出工具会这样写）不是数据：先按「有效」过滤，
+    // 再回退物理焦距。以前 `.or()` 直接取了 0，模板就把 50mm 的照片印成 `0mm`。
     let focal = env
         .exif
         .focal_35mm
-        .or(env.exif.focal)
+        .filter(|v| v.is_finite() && *v > 0.0)
+        .or(env.exif.focal.filter(|v| v.is_finite() && *v > 0.0))
         .map(|v| format!("{}", v.round() as i64))
         .unwrap_or_default();
     s = s.replace("@{focal}", &focal);

@@ -13,6 +13,14 @@ data class PhotoRef(
     val heightPx: Int = 0,
     /** Content hash for batch idempotency and relinking; null when unavailable. */
     val fingerprint: String? = null,
+    /**
+     * 用户实际导入的那个文件（原图）的绝对路径；[path] 是工程真正渲染的副本。
+     *
+     * 只有格式需要转码时两者不同（桌面导入 TIFF / WebP 会转成引擎能读的 JPEG/PNG）。
+     * 留着它有两个用处：**去重**（同一张原图重复导入要点回同一张照片）和**溯源**
+     * （原文件被移动/删除时能告诉用户渲染副本的来历）。null = 导入的就是原图。
+     */
+    val sourcePath: String? = null,
 )
 
 /**

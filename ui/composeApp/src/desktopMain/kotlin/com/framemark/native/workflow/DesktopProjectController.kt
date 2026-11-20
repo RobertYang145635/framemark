@@ -318,7 +318,10 @@ class DesktopProjectController(
                 failures += ImportFailure(path, "不支持的格式（JPEG/PNG/WebP/TIFF）")
                 continue
             }
-            if (project.photos.any { samePath(it.path, file) }) {
+            // 去重要认**原图**：转码导入的工程里存的是 `imports/import-<uuid>.jpg`，
+            // 拿它跟用户点的原文件比永远不相等，于是同一张 TIFF/WebP 能重复加进来
+            // （审计 2026-11-20 实测 added=1 两次、两份缓存）。`sourcePath` 记着原图。
+            if (project.photos.any { samePath(it.sourcePath ?: it.path, file) }) {
                 failures += ImportFailure(path, "已在工程中")
                 continue
             }
@@ -347,6 +350,8 @@ class DesktopProjectController(
                 widthPx = meta.width,
                 heightPx = meta.height,
                 fingerprint = PhotoMetadata.fingerprint(normalised),
+                // 转码副本 ≠ 用户点的那个文件：原图路径留着做去重与溯源。
+                sourcePath = file.absolutePath.takeIf { normalised != file },
             )
             // AU1-01: these are the dimensions every render chain reuses.
             PhotoSizes.prime(ref.path, ref.widthPx, ref.heightPx)
@@ -1249,23 +1254,42 @@ class DesktopProjectController(
         }
         val target = File(imports, "import-${UUID.randomUUID()}.jpg")
         return runCatching {
-            when (ext) {
+            val jpegBytes = when (ext) {
                 "webp" -> {
                     val image = org.jetbrains.skia.Image.makeFromEncoded(file.readBytes())
                     val data = image.encodeToData(org.jetbrains.skia.EncodedImageFormat.JPEG, 95)
                         ?: error("WebP 解码失败")
-                    target.writeBytes(data.bytes)
+                    data.bytes
                 }
                 else -> {
                     val image = javax.imageio.ImageIO.read(file) ?: error("TIFF 解码失败")
                     val orientation = PhotoMetadata.read(file)?.orientation ?: 1
-                    javax.imageio.ImageIO.write(orient(image, orientation), "jpg", target)
+                    encodeJpeg(orient(image, orientation))
                 }
             }
+            // 转码副本不带原图的拍摄信息，字标与机型/参数行会全空（审计 2026-11-20）。
+            // 把原图的 EXIF 搬到副本上：读不到就照常导入（缺元数据不该挡住用户）。
+            val withExif = ExifApp1.fromSource(file)?.let { ExifApp1.inject(jpegBytes, it) } ?: jpegBytes
+            target.writeBytes(withExif)
             target
         }.onFailure {
             target.delete()
         }
+    }
+
+    /**
+     * 8 位 RGB → JPEG 字节。**检查 `ImageIO.write` 的返回值**：16 位灰度、带 alpha 的
+     * TIFF 这类光栅 JPEG 写不出来，`write` 会返回 false 且一个字节都不生成；以前没人看
+     * 这个返回值，于是流程继续去校验一个不存在的文件，用户看到的错误是「文件不存在」
+     * （审计 2026-11-20 实测）。这里先转成 8 位 RGB 再写，还失败就明确报「这张 TIFF
+     * 的像素格式无法转成 JPEG」，不再假装文件丢了。
+     */
+    private fun encodeJpeg(image: java.awt.image.BufferedImage): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val wrote = javax.imageio.ImageIO.write(ExifApp1.toRgb(image), "jpg", out)
+        val bytes = out.toByteArray()
+        if (!wrote || bytes.isEmpty()) error("这张图片的像素格式无法转成 JPEG（16 位灰度或带透明通道）")
+        return bytes
     }
 
     /** Bakes EXIF 1..8 into pixels; `null` for a malformed matrix is not possible. */

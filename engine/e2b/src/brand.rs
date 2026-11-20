@@ -290,6 +290,11 @@ impl BrandLib {
         let path = self.dir.join(format!("{stem}.png"));
         let data = skia_safe::Data::from_filename(&path)?;
         let image = Image::from_encoded(data)?;
+        // 词标会被缩小到卡上的 60–600 px。带上默认 mipmap 链，缩小采样才拿得到 LOD；
+        // 否则纯线性下采样每个目标像素只覆盖 2×2 个源像素（1024→200 时跳过 5 像素），
+        // 笔画边缘就成锯齿 —— 真机反馈的 OPPO 字标「毛刺」（2026-11-20）。
+        // 建链失败就用原图：行为退回线性插值，不报错、不影响渲染。
+        let image = image.with_default_mipmaps().unwrap_or(image);
         let w = image.width();
         let h = image.height();
         let ink = ink_box(&image);

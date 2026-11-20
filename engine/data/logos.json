@@ -1174,7 +1174,7 @@
       "w": 1620,
       "h": 169
     },
-    "src/renderer/src/assets/logos/huawe_black.webp": {
+    "src/renderer/src/assets/logos/huawei_black.webp": {
       "sha256": "eba086c81dcebafd49e6e0d2112193fa757748fc8d62df48c8eead69a4332562",
       "bytes": 43508,
       "format": "webp",
@@ -9957,19 +9957,19 @@
       "selected": true,
       "status": "LEGACY",
       "surface": "both",
-      "primaryCut": "huawe_black",
+      "primaryCut": "huawei_black",
       "cuts": [
         {
-          "id": "huawe_black",
-          "assetKey": "huawe_black",
-          "file": "huawe_black.webp",
+          "id": "huawei_black",
+          "assetKey": "huawei_black",
+          "file": "huawei_black.webp",
           "ink": "dark",
           "surface": "light",
           "status": "LEGACY",
           "confidence": "medium",
           "declaredWidth": 1006,
           "declaredHeight": 1024,
-          "resolvedPath": "src/renderer/src/assets/logos/huawe_black.webp",
+          "resolvedPath": "src/renderer/src/assets/logos/huawei_black.webp",
           "sha256": "eba086c81dcebafd49e6e0d2112193fa757748fc8d62df48c8eead69a4332562",
           "actualWidth": 1006,
           "actualHeight": 1024
