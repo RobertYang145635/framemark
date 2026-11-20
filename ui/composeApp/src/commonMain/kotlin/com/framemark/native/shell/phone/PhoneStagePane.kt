@@ -618,11 +618,14 @@ internal fun PhotoStrip(
     customIds: Set<Int> = emptySet(),
     modifier: Modifier = Modifier,
 ) {
-    // Collapsed by default: the caller only composes this when the strip is open.
+    // 托盘是**舞台的一部分**：底色跟舞台同一个（设置里的画布背景），不另起一条白带。
+    // 以前这里铺的是 `surface`，于是屏幕自上而下变成「深色舞台 / 白条 / 白底板」三条，
+    // 白条上还留着大半行空处 —— 看着像第三条工具栏。现在缩略图直接浮在舞台上，
+    // 底板那条圆角就是唯一的分界（与「底板背后那一层必须是舞台色」是同一条规则）。
     Box(
         modifier = modifier
-            .background(FmPalette.surface)
-            .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+            .background(phoneStageColor())
+            .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 10.dp),
     ) {
         Row(
             modifier = Modifier
@@ -746,13 +749,14 @@ private fun Modifier.dashedBorder(color: Color, radius: androidx.compose.ui.unit
 
 @Composable
 private fun AddPhotoTile(onAdd: () -> Unit) {
+    // 浮在舞台上，所以不能再铺一块白色底板：虚线框与文字都用舞台墨色。
     Column(
         modifier = Modifier
             .size(width = 52.dp, height = 48.dp)
             .clip(RoundedCornerShape(7.dp))
-            .background(FmPalette.surface)
+            .background(FmPalette.stageInk.copy(alpha = 0.06f))
             // WP-T report §1.6 item 9: the dashed "add photo" outline is a token now.
-            .dashedBorder(FmPalette.onSurfaceFaint, 7.dp)
+            .dashedBorder(FmPalette.stageInk.copy(alpha = 0.32f), 7.dp)
             .semantics(mergeDescendants = true) {
                 contentDescription = "添加照片"
                 role = Role.Button
@@ -764,12 +768,12 @@ private fun AddPhotoTile(onAdd: () -> Unit) {
         Text(
             "＋",
             style = FmType.titleSmall.copy(fontSize = 14.sp),
-            color = FmPalette.onSurfaceMuted,
+            color = FmPalette.stageInk.copy(alpha = 0.75f),
         )
         Text(
             "添加",
             style = FmType.labelSmall.copy(fontSize = 10.sp),
-            color = FmPalette.onSurfaceMuted,
+            color = FmPalette.stageInk.copy(alpha = 0.75f),
         )
     }
 }
