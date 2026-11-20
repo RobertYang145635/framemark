@@ -74,14 +74,14 @@ class LogoCatalogLookupTest {
         //
         // 取值不是「猜的」：`autoCutKey` 先找 `<key>_black` / `<key>_white`，找不到才退回
         // canonical version 的第一枚 cut —— 所以 Panasonic 落到 `ver:panasionic:panasonic`，
-        // Leica 那一刻的 assetKey 本身就是 `laika`。这三条路径都要在这条测试里走过一遍。
+        // Leica 现在也有了自己的 `<key>_black`，落到 `laika_black`。两条路径都要在这条测试里走过一遍。
         val brands = catalog()
         listOf(
             "OPPO" to "oppo_black",
             "OPPO CPH2505" to "oppo_black",
             "PANASONIC" to "ver:panasionic:panasonic",
             "Canon" to "canon_black",
-            "LEICA CAMERA AG" to "laika",
+            "LEICA CAMERA AG" to "laika_black",
             "Hasselblad" to "hasu_black",
         ).forEach { (make, expected) ->
             assertEquals(expected, LogoPhotoBrand.cutKeyFor(null, make, brands), "make=$make")
