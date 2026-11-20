@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc44",
-  "versionCode": 43,
+  "versionName": "0.9.0-rc45",
+  "versionCode": 44,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T15:10:00Z",
-  "notes": "导出方向修好了：EXIF 方向 2/3/4（镜像、180°、镜像+180°）以前画布上是正的、导出会翻回去，现在预览和导出完全一致（真机用左红右蓝的方向 3 测试图验证）。桌面导入 TIFF / WebP 会把原图的拍摄信息搬到转码副本上——自动字标跟得到品牌，机型行与参数行不再空白；16 位灰度与带透明通道的 TIFF 不再被拒绝成「文件不存在」；同一张 TIFF / WebP 也不会重复加入工程。有损 WebP 现在真的按你选的质量编码（此前一律 q100）。等效焦距标签写着 0 时回退物理焦距，不再印「0mm」。品牌字标缩小改走 mipmap，OPPO 那类词标的锯齿没了；华为照片此前自动匹配会选中白标（白底上等于看不见），已改正。",
+  "publishedAt": "2026-11-20T19:40:00Z",
+  "notes": "打开应用时自动检查新版本，有新版本弹一次窗（可直接下载安装，也能「跳过这个版本」）；国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张，照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位，进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白，共 88 枚官方变体（保留品牌色，如富士那点红），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc44/FrameMark-0.9.0-rc44-arm64.apk",
-      "sha256": "480b9b9067c49de8dece6ccb2b326976f569d6b089db2251e0aca3657d0c535a",
-      "size": 133026441
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc45/FrameMark-0.9.0-rc45-arm64.apk",
+      "sha256": "cd30d79c85b675820956532db54626933648b4f0e1580cd381742c3a790fe02d",
+      "size": 144882214
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc44/FrameMark-0.9.0-rc44-win64.msi",
-      "sha256": "570d1479daf13e514b3fe928b73ca421f39107537bfa36fc4f5d46627322daec",
-      "size": 239689240
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc45/FrameMark-0.9.0-rc45-win64.msi",
+      "sha256": "8bb43e629dc16bbaf6da5b01609197e678a23a05307f67ecd6a5d9be81837e3d",
+      "size": 247948352
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc44"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc45"
 }
