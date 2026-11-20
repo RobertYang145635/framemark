@@ -238,13 +238,16 @@ sealed interface UpdateCheckOutcome {
  */
 private const val LAUNCH_CHECK_BUDGET_MS = 6_000L
 
-/** 每次检查都拼一个递增的查询参数：绕开镜像 CDN 缓存的旧清单（见 checkManifestForLaunch）。 */
-private var manifestProbeSeq = 0
-
+/**
+ * 每次检查都拼一个随机查询参数：绕开镜像 CDN 缓存的旧清单。
+ *
+ * 实测教训：一开始用「进程内递增序号」，结果两个进程都从 `fm=1` 开始，第二次启动又命中
+ * 了第一次留下的缓存 —— 仍然读到旧清单。这里改成随机值，每个请求都是新的缓存条目；
+ * 清单只有 1.5 KB，牺牲这点缓存换取「发布后立刻能读到」是值得的。
+ */
 private fun withCacheBuster(url: String): String {
-    val seq = ++manifestProbeSeq
     val separator = if (url.contains('?')) '&' else '?'
-    return "$url${separator}fm=$seq"
+    return "$url${separator}fm=${kotlin.random.Random.nextLong()}"
 }
 
 
