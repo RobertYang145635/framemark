@@ -238,6 +238,16 @@ sealed interface UpdateCheckOutcome {
  */
 private const val LAUNCH_CHECK_BUDGET_MS = 6_000L
 
+/** 每次检查都拼一个递增的查询参数：绕开镜像 CDN 缓存的旧清单（见 checkManifestForLaunch）。 */
+private var manifestProbeSeq = 0
+
+private fun withCacheBuster(url: String): String {
+    val seq = ++manifestProbeSeq
+    val separator = if (url.contains('?')) '&' else '?'
+    return "$url${separator}fm=$seq"
+}
+
+
 suspend fun checkManifestForLaunch(
     currentVersion: String,
     source: UpdateSource = UpdateSource.Mirror,
@@ -245,7 +255,7 @@ suspend fun checkManifestForLaunch(
     val started = kotlin.time.TimeSource.Monotonic.markNow()
     for (url in UpdateUrls.manifestCandidates(source)) {
         if (started.elapsedNow().inWholeMilliseconds > LAUNCH_CHECK_BUDGET_MS) break
-        val text = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { fetchUrlText(url) } }
+        val text = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { fetchUrlText(withCacheBuster(url)) } }
             .getOrNull() ?: continue
         val manifest = UpdateManifestJson.parse(text) ?: continue
         return if (UpdateVersion.isNewer(currentVersion, manifest.versionName)) {
@@ -271,7 +281,7 @@ suspend fun checkForUpdate(
 ): UpdateCheckOutcome {
     val manifest = runCatching {
         UpdateUrls.manifestCandidates(source).firstNotNullOfOrNull { url ->
-            fetchUrlText(url)?.let { UpdateManifestJson.parse(it) }
+            fetchUrlText(withCacheBuster(url))?.let { UpdateManifestJson.parse(it) }
         }
     }.getOrNull()
     if (manifest != null && UpdateVersion.isNewer(currentVersion, manifest.versionName)) {
