@@ -3,6 +3,7 @@ package com.framemark.native.shell
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,9 +62,17 @@ data class LicenseEntry(val name: String, val license: String, val purpose: Stri
 @Composable
 fun AboutContent(version: String, modifier: Modifier = Modifier) {
     var donateOpen by remember { mutableStateOf(false) }
+    var feedbackOpen by remember { mutableStateOf(false) }
     if (donateOpen) {
         Column(modifier = modifier.fillMaxWidth()) {
             AboutCard { DonatePage(onClose = { donateOpen = false }) }
+        }
+        return
+    }
+    // 反馈与打赏是同一层级的二级页面：都是「关于」里的一行，点开只有一张码。
+    if (feedbackOpen) {
+        Column(modifier = modifier.fillMaxWidth()) {
+            AboutCard { FeedbackPage(onClose = { feedbackOpen = false }) }
         }
         return
     }
@@ -88,7 +97,17 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
         }
         UpdateCard(currentVersion = version)
         AboutCard {
-            DonateEntryRow(onOpen = { donateOpen = true })
+            Column {
+                DonateEntryRow(onOpen = { donateOpen = true })
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                        .height(1.dp)
+                        .background(FmPalette.outline),
+                )
+                CommunityEntryRow(onOpen = { feedbackOpen = true })
+            }
         }
         AboutSection(title = AboutText.PRIVACY_TITLE) {
             AboutParagraph(AboutText.PRIVACY)
