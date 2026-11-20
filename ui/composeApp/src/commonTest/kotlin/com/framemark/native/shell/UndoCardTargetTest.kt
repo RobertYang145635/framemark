@@ -6,8 +6,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * 撤销跨边框要指回的那张卡 —— 真机 rc38 的缺陷（`FM_CARD_RESTORE … via=undo
- * unresolved`）：回调挂在 `LaunchedEffect(Unit)` 里，捕获的是首次组合的库快照
+ * 撤销跨边框要指回的那张卡 —— 真机 rc38 的缺陷（证据行「…via=undo
+ * unresolved」）：回调挂在 `LaunchedEffect(Unit)` 里，捕获的是首次组合的库快照
  * （`Loading` ⇒ 空），于是撤销把历史一步一步吃掉，画面一动不动。
  *
  * 这里钉的是**解析时机**：`UndoCardTarget` 每次解析都现读外壳给的读取器，所以库到得

@@ -9,11 +9,8 @@ import com.framemark.native.library.LibraryCard
  * 去的，它捕获的是**首次组合**的闭包。手机外壳用 `cardOf(...)`（组成期闭包里的
  * `libraryCards`）、桌面外壳用 `libraryIndex?.card(...)`，两者在首次组合时都还是空的
  * （库还在 Loading），于是撤销跨边框永远解析不到卡片：历史被一步一步消耗掉，画面却
- * 一动不动。真机实测（rc38，OPPO）：
- *
- * ```
- * FM_CARD_RESTORE card=glass-white-1 via=undo unresolved
- * ```
+ * 一动不动。真机实测（rc38，OPPO）的证据行是「card=glass-white-1 via=undo
+ * unresolved」——解析到的是空表，不是「这一步没有卡片」。
  *
  * 所以卡片**每次解析时现读**（外壳传 `{ currentCards }` / `{ currentLibraryIndex }`
  * 这类 `rememberUpdatedState` 的读取器），而不是捕获一份快照。
