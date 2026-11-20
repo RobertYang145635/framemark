@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc37",
-  "versionCode": 36,
+  "versionName": "0.9.0-rc41",
+  "versionCode": 40,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-19T00:00:00Z",
-  "notes": "修复 EXIF 解析：内联 SHORT 值（光圈/快门/ISO/焦距）与 IFD0 里的标签此前读不到或读错（210mm 显示成 35mm、ISO 显示成乱数），厂商卡与手写卡两条链路都已修正；玻璃质感加强（模糊 0.032·短边、压暗减轻、磨砂颗粒、方向性亮边），玻璃族 4 张卡新增「模糊度」滑杆 0–48；打赏改为二级页面只留二维码。",
+  "publishedAt": "2026-11-20T08:30:00Z",
+  "notes": "撤销修好了：换边框也进历史，撤销 / 重做真的会回到上一张边框（此前撤销会吃掉历史、画面不动）。Logo 跟随照片品牌：选完边框字标就是这张照片的品牌，Logo 页先把字标选对再调位置；说明行写「按照片品牌 OPPO」而不是「按边框自己的品牌」。焦距显示等效值（手机原生 3.5mm 印成 23mm）。没有 EXIF 的照片不再印出「1/inf」。模糊滑杆统一叫「模糊强度」。玻璃质感、圆角缺口、导出示真实像素、「用到全部 N 张」等上一版内容保留。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc37/FrameMark-0.9.0-rc37-arm64.apk",
-      "sha256": "23243a8328e49357c7423abeeee9906f76d2ebfd97b22dc9e1b93f848d9d519a",
-      "size": 132858967
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc41/FrameMark-0.9.0-rc41-arm64.apk",
+      "sha256": "608334d4aed67b996a6c31acf38e85920d8c11675186ea005ea09e12c3bc7a90",
+      "size": 132870343
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc37/FrameMark-0.9.0-rc37-win64.msi",
-      "sha256": "dc7344a5fbbaec4806f4796b4b0f73f2c7f5c6e6e5f4bd1aa3c212ac7fa780f4",
-      "size": 239534225
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc41/FrameMark-0.9.0-rc41-win64.msi",
+      "sha256": "7ec8cfd666c76a4e4e917df9151fafe67e9c4f580f4245fcf857391ee6b3f45f",
+      "size": 239564224
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc37"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc41"
 }
