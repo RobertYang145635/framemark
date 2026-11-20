@@ -174,7 +174,13 @@ object UpdateVersion {
         val base = if (dash >= 0) cleaned.substring(0, dash) else cleaned
         val suffix = if (dash >= 0) cleaned.substring(dash + 1) else null
         val numbers = base.split('.').map { it.toIntOrNull() ?: return null }
-        val suffixNumber = suffix?.takeLastWhile { it.isDigit() }?.toIntOrNull() ?: 0
+        // 后缀里的数字要按「第一个数字段」取：`rc48-qa` 是 48，不是 0。
+        // 用 `takeLastWhile` 会取到空串 → 0，于是 `rc48-qa` 被当成比 `rc47` 旧，
+        // 真机上表现为已经是最新版还反复提示旧版本（2026-11-21 实测）。
+        val suffixNumber = suffix
+            ?.dropWhile { !it.isDigit() }
+            ?.takeWhile { it.isDigit() }
+            ?.toIntOrNull() ?: 0
         return Parsed(numbers, suffix, suffixNumber)
     }
 

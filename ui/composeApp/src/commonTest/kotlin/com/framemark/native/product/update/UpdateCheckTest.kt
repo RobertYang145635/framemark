@@ -40,6 +40,11 @@ class UpdateCheckTest {
         assertTrue(UpdateVersion.isNewer("v0.9.0", "V1.0.0"))
         assertEquals(0, UpdateVersion.compare("0.9.0", "0.9.0"))
         assertEquals(0, UpdateVersion.compare("dev", "1.0.0"))
+        // 带构建后缀的版本：`rc48-qa` 的数字段是 48，不能被当成 0（真机反复提示旧版本的根因）。
+        assertTrue(!UpdateVersion.isNewer("0.9.0-rc48-qa", "0.9.0-rc47"))
+        assertTrue(UpdateVersion.isNewer("0.9.0-rc47-qa", "0.9.0-rc48"))
+        assertTrue(!UpdateVersion.isNewer("0.9.0-rc48", "0.9.0-rc48"))
+        assertEquals(0, UpdateVersion.compare("0.9.0-rc48", "0.9.0-rc48-qa"), "同一版本的正式包与 QA 包等价")
     }
 
     @Test
