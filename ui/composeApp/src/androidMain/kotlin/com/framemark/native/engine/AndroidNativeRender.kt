@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import android.util.Base64
 import com.framemark.native.LaunchOptions
 import com.framemark.native.inspector.LogoBrandCatalog
+import com.framemark.native.product.PhotoBrandHint
 import com.framemark.native.product.PhotoBrandKeys
 import com.framemark.native.product.requireReadablePhotoOverride
 import com.framemark.native.workflow.DesignSnapshot
@@ -911,7 +912,11 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
         val photo = overridePhoto?.takeIf { File(it).isFile } ?: currentUserPhoto() ?: return null
         return runCatching {
             val make = photoMake(File(photo))
-            val assetKey = LogoBrandCatalog.autoCutForBrandKey(PhotoBrandKeys.brandKeyFor(make))
+            val brandKey = PhotoBrandKeys.brandKeyFor(make)
+            val assetKey = LogoBrandCatalog.autoCutForBrandKey(brandKey)
+            // Logo 页的说明行要知道「现在按照片品牌是什么」：卡片把品牌画成图片时
+            // 文字 slot 里没有厂商名（真机：玻璃 04 只说「按边框自己的品牌」）。
+            PhotoBrandHint.mark(make, brandKey)
             FmLog.info("FM_ANDROID_LOGO") {
                 "mode=auto photo=${File(photo).name} make=${make ?: "<none>"} " +
                     "key=${assetKey ?: "<none>"} (no explicit design.logo, following the photo)"

@@ -2,6 +2,7 @@ package com.framemark.native.engine
 
 import com.framemark.native.inspector.LogoBrandCatalog
 import com.framemark.native.product.Base64Codec
+import com.framemark.native.product.PhotoBrandHint
 import com.framemark.native.product.PhotoBrandKeys
 import com.framemark.native.workflow.DesignSnapshot
 import com.framemark.native.workflow.ImageRect
@@ -114,6 +115,11 @@ class DesktopNativeRender(
             LogoBrandCatalog.autoCutForBrandKey(PhotoBrandKeys.brandKeyFor(autoMake))
         } else {
             null
+        }
+        if (autoLogo) {
+            // Logo 页的说明行读这里（与手机端同一个来源）：卡片把品牌画成图片时，
+            // 文字 slot 里没有厂商名，说明行不能凭空写「按边框自己的品牌」。
+            PhotoBrandHint.mark(autoMake, PhotoBrandKeys.brandKeyFor(autoMake))
         }
         if (autoLogo) {
             FmLog.info("FM_LOGO") {

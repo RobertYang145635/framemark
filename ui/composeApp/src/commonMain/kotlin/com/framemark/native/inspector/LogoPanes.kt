@@ -420,9 +420,14 @@ private fun BrandedCuratedLogo(
     val brands = catalog.orEmpty()
     // 自动匹配 = 按照片品牌（演示稿 `lgAutoBrand()`）：品牌行 slot → 品牌库条目。
     // slot 来自 `LocalCuratedTextSlots`（桌面 rail 与手机底板都提供），所以两端口径一致。
+    // 有些卡把品牌画成字标图片、slot 里只有机型（「Find X6 Pro」没有厂商名），这时读
+    // 渲染器刚解析出的 [com.framemark.native.product.PhotoBrandHint]：屏上画的是哪家
+    // 的字标，说明行就写哪家，不能退成「按边框自己的品牌」。
     val photoBrand = LogoPhotoBrand.resolve(textSlots, brands)
     val photoMake = LogoPhotoBrand.makeText(textSlots)
-    val summary = logoSummary(raw, brands, photoBrand?.brand?.label)
+    val hintBrand = com.framemark.native.product.PhotoBrandHint.brandKey
+        ?.let { key -> brands.firstOrNull { it.key == key } }
+    val summary = logoSummary(raw, brands, photoBrand?.brand?.label ?: hintBrand?.label)
     // 画不出用户 Logo 的边框只拦「我的 Logo」这一下：引擎画不出来，进去选就是一次
     // 静默无效。原因（`USER_LOGO_UNSUPPORTED_ON_CARD`）就显示在按钮下面。
     val userAction = userLogoActionDecision(supportsUserLogo)
