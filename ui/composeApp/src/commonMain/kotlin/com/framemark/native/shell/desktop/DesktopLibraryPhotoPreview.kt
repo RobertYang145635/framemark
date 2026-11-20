@@ -171,8 +171,17 @@ internal object DesktopLibraryPhotoThumbs {
 }
 
 /**
- * 缩略图内容：有照片且引擎支持时渲染“照片 + 该边框”，否则回退随包预览。
- * `photoPath` 变化（切照片、导入照片）会重新渲染。
+ * 边框库缩略图：**这张边框自己的样子**（随包预览图），不套用户自己的照片。
+ *
+ * 2026-11-20 改的（两个真机问题一起解决）：
+ *  1. 以前用「当前照片 + 该边框」实时渲染。照片没有 EXIF 或只缺几项时，凡是只差参数行的
+ *     边框都渲染成一模一样，用户既看不出边框能画什么，也分不出这些边框的区别；而随包
+ *     预览图是用带完整拍摄信息的样片渲染的，参数行、字标、日期都在。
+ *  2. 每张卡一次引擎渲染、还带 250–1400 ms 去抖，所以「划到了才开始渲染」。随包预览是
+ *     APK 里的文件（480×360，共 1.5 MB），解码走 [LibraryPreviewLoader] 的受限缓存，
+ *     打开即有。
+ *
+ * `photoPath` 只对**没有随包预览**的少数卡兜底（用内置样片渲染），不再参与常规路径。
  */
 @Composable
 internal fun DesktopLibraryThumb(
@@ -180,7 +189,7 @@ internal fun DesktopLibraryThumb(
     photoPath: String?,
     modifier: Modifier = Modifier,
 ) {
-    if (photoPath.isNullOrBlank()) {
+    if (card.previewFile.isNotBlank() || photoPath.isNullOrBlank()) {
         LibraryPreview(card = card, modifier = modifier)
         return
     }

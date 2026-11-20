@@ -10,6 +10,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -70,6 +71,23 @@ object LibraryPreviewLoader {
             }
         }
         return pending.await()
+    }
+
+    /**
+     * 预热：把这一批卡片的预览图解码进缓存（边框库打开时先跑可视区 + 下一屏）。
+     *
+     * 预览图是随包文件，这里只是解码，不排引擎任务；失败忽略（那一格会自己再取一次）。
+     */
+    fun warm(cards: List<LibraryCard>, limit: Int = 16) {
+        val targets = cards.asSequence()
+            .filter { it.previewFile.isNotBlank() }
+            .take(limit)
+            .toList()
+        if (targets.isEmpty()) return
+        workerScope.launch {
+            // 顺序解码即可：4 个并发槽由 load() 自己控，这里不额外争抢。
+            targets.forEach { card -> runCatching { load(card) } }
+        }
     }
 
     @OptIn(ExperimentalResourceApi::class)

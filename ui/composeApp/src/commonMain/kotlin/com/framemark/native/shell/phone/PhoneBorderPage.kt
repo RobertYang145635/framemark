@@ -51,6 +51,7 @@ import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryCardGroup
 import com.framemark.native.library.LibraryCategory
 import com.framemark.native.library.LibraryIndex
+import com.framemark.native.library.LibraryPreviewLoader
 import com.framemark.native.library.LibraryIndexView
 import com.framemark.native.theme.ColumnRule
 import com.framemark.native.theme.FmPalette
@@ -553,6 +554,11 @@ private fun BorderSearchGrid(
     if (groups.isEmpty()) {
         PhoneLibraryNote(PhoneBorderPageState.emptyNote(query))
         return
+    }
+    // 打开库 / 换分类时先预热「这一页 + 下一屏」：预览图是随包文件，解码即可，
+    // 不再等每张卡片划进可视区才去解码（更不再排引擎渲染）。
+    LaunchedEffect(groups) {
+        LibraryPreviewLoader.warm(groups.flatMap { it.cards })
     }
     BorderCardGrid(groups = groups, selectedCardId = selectedCardId, onPick = onPick)
 }
