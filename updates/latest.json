@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc47",
-  "versionCode": 46,
+  "versionName": "0.9.0-rc48",
+  "versionCode": 47,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T22:45:00Z",
-  "notes": "打开应用时自动检查新版本（清单优先、6 秒预算、请求绕开镜像缓存），有新版本弹一次窗：可直接下载安装，也能「跳过这个版本」。国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张：照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位（白色卡面与深色舞台都看得见），进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白共 88 枚（保留品牌色，如富士那点红；官方稿缺对应底色且对比度不足的只有神牛一枚，已按「自行染色」推黑），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
+  "publishedAt": "2026-11-20T23:50:00Z",
+  "notes": "打开应用时自动检查新版本（清单优先、6 秒预算、每次请求绕开镜像缓存），有新版本弹一次窗：可直接下载安装，也能「跳过这个版本」。国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张：照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位（白色卡面与深色舞台都看得见），进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白共 88 枚（保留品牌色，如富士那点红；官方稿缺对应底色且对比度不足的只有神牛一枚，按「自行染色」推黑），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc47/FrameMark-0.9.0-rc47-arm64.apk",
-      "sha256": "fd6c28fb1ff7aa6bdb87ace98e5872990bfde7adad6bb118e91ecf9514796636",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc48/FrameMark-0.9.0-rc48-arm64.apk",
+      "sha256": "dba5539d6014cffef6085aa61c201867440a0c2ce97762bfff80febdd57698d5",
       "size": 144882214
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc47/FrameMark-0.9.0-rc47-win64.msi",
-      "sha256": "170d706b632f15e84e8f6ffd0470b8302ae002008a3522674c769eb10247b633",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc48/FrameMark-0.9.0-rc48-win64.msi",
+      "sha256": "8f89bb83caad240b87310eb7ee7edf9469359b3787e53a32877442394ab6aa45",
       "size": 248111108
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc47"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc48"
 }
