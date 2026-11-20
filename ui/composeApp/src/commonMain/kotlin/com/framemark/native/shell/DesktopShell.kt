@@ -400,6 +400,10 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     // rows, so a `slotText:`/`slotOff:`/`slotScale:` edit is owned (and therefore
     // persisted and re-applied) instead of being dropped as an unknown consumer.
     val currentPanelModel by rememberUpdatedState(panelModel)
+    // 与手机端同一个坑：`LaunchedEffect(Unit)` 捕获的是首次组合的 `libraryIndex`
+    // （那时还是 null），撤销跨边框就永远指不回上一张卡 —— 历史被消耗掉，画面不动。
+    // 见 [UndoCardTarget]。
+    val undoCardTarget = remember { UndoCardTarget { libraryIndex?.cards.orEmpty() } }
     // 当前会话里的值是从哪张照片读出来的：同照片的重新水合 = 换了边框，它不能清撤销栈
     // （换边框这一步就是用户要回去的那一步，P0-2）；换照片才清。
     var hydratedPhotoId by remember { mutableStateOf<String?>(null) }
@@ -415,7 +419,7 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             if (cardId == null) {
                 selectedCard = null
             } else {
-                libraryIndex?.card(cardId)?.let { restored -> selectedCard = restored }
+                undoCardTarget.resolve(cardId)?.let { restored -> selectedCard = restored }
             }
         }
     }

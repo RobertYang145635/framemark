@@ -96,8 +96,47 @@ class LogoPhotoBrandTest {
             "PANASONIC",
             LogoPhotoBrand.makeText(listOf(slot("make", "我的相机", raw = "PANASONIC"))),
         )
-        assertNull(LogoPhotoBrand.makeText(listOf(slot("model", "DC-S1"))))
+        // 品牌行画成图片时那一行没有文字，退回机型行（机型里带着厂商名）。
+        assertEquals(
+            "OPPO Find X6 Pro",
+            LogoPhotoBrand.makeText(listOf(slot("make", ""), slot("model", "OPPO Find X6 Pro"))),
+        )
+        assertNull(LogoPhotoBrand.makeText(listOf(slot("exif", "23mm  F2.2  1/33s  ISO250"))))
         assertNull(LogoPhotoBrand.makeText(null))
+    }
+
+    /**
+     * 真机 玻璃 04：品牌行画成字标图片（文字为空），机型行是「OPPO Find X6 Pro」。
+     * 摘要要说「按照片品牌 OPPO」，不能因为品牌行没字就退回「按边框自己的品牌」。
+     */
+    @Test
+    fun blankBrandRowFallsBackToTheModelRow() {
+        val oppo = brand(
+            key = "oppo",
+            label = "OPPO",
+            canonical = "oppo-black",
+            versions = listOf(
+                LogoVersion(
+                    id = "oppo-black",
+                    name = "OPPO black",
+                    era = "current",
+                    years = "2004–",
+                    surface = "light",
+                    cuts = listOf(cut("oppo_black")),
+                ),
+            ),
+        )
+        val slots = listOf(
+            slot("make", ""),
+            slot("model", "OPPO Find X6 Pro"),
+            slot("exif", "23mm  F2.2  1/33s  ISO250"),
+        )
+        val match = LogoPhotoBrand.resolve(slots, listOf(oppo))
+        assertNotNull(match)
+        assertEquals("oppo", match.brand.key)
+        assertEquals("oppo_black", match.assetKey)
+        // 机型里没有厂商名（且品牌行也没字）仍然是「未收录」，不猜。
+        assertNull(LogoPhotoBrand.resolve(listOf(slot("model", "X-T5")), listOf(oppo)))
     }
 
     @Test

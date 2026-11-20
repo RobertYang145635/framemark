@@ -656,6 +656,11 @@ fun PhoneShell() {
     // design owns (persisted, exported, re-applied) instead of being dropped as an
     // unknown consumer.
     val currentPanelModel by rememberUpdatedState(panelModel)
+    // 撤销走的那条路必须读**当前**的品牌库快照：`LaunchedEffect(Unit)` 里捕获的
+    // `cardOf` 是首次组合的那个闭包，那时 libraryState 还是 Loading（空列表），于是
+    // 「撤销跨边框」永远解析不到卡片 —— 撤销**消耗了历史**却什么也不变（真机实测：
+    // `FM_CARD_RESTORE card=glass-white-1 via=undo unresolved`）。见 [UndoCardTarget]。
+    val undoCardTarget = remember { UndoCardTarget { currentCards } }
     // 当前会话里的值是从哪张照片读出来的。同照片的重新水合 = 换了边框（或套了预设 /
     // 样式），它**不能**清撤销栈 —— 换边框这一步就是用户要回去的那一步（P0-2）；
     // 真的换了照片才清，把一张照片的撤销结果搬到另一张上不是一回事。
@@ -672,7 +677,7 @@ fun PhoneShell() {
                 selectedCard = null
                 FmLog.info("FM_CARD_RESTORE") { "card=- via=undo 未选边框" }
             } else {
-                val restored = cardOf(cardId)
+                val restored = undoCardTarget.resolve(cardId)
                 if (restored != null) {
                     selectedCard = restored
                     FmLog.info("FM_CARD_RESTORE") { "card=${restored.id} via=undo" }

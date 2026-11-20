@@ -27,6 +27,13 @@ internal object LogoPhotoBrand {
     private val BrandSlotNames = setOf("make", "brand")
 
     /**
+     * 机型行。有些卡把品牌画成图片（字标），品牌那一行的 `text` 是空的，机型行却带着
+     * 「OPPO Find X6 Pro」这种带品牌名的文字 —— 只认品牌行的话，摘要会退回「按边框
+     * 自己的品牌」，而屏上画的明明是照片品牌的字标。
+     */
+    private val ModelSlotNames = setOf("model", "camera")
+
+    /**
      * 照片品牌原文：文字 slot 里 `source=make`（或 `brand`）那一行的内容。
      * 只取**没有改过**的原文（`raw` 优先）：用户改过的品牌行是他自己的字，
      * 不能拿来当「照片品牌」。
@@ -37,6 +44,13 @@ internal object LogoPhotoBrand {
         // 逐行取第一份**有字**的内容。品牌画成图片时该行会没有文字，不能因此判成「没有品牌」。
         for (slot in list) {
             if (logicalName(slot) !in BrandSlotNames) continue
+            val text = (slot.raw.ifBlank { slot.text }).trim()
+            if (text.isNotEmpty()) return text
+        }
+        // 品牌行没字（画成图片）时退回机型行：机型文字里通常带着厂商名
+        // （「OPPO Find X6 Pro」），品牌表按子串匹配，照样能落到同一个品牌。
+        for (slot in list) {
+            if (logicalName(slot) !in ModelSlotNames) continue
             val text = (slot.raw.ifBlank { slot.text }).trim()
             if (text.isNotEmpty()) return text
         }
@@ -108,14 +122,16 @@ internal object LogoPhotoBrand {
     /**
      * 这一行 slot 的语义名。两种 id 都见过：`hand:wm-classic:make`（2 段）与
      * `wm-classic#make#0`（3 段，`text-slots.json` 的写法），所以按分隔符逐段找，
-     * 取第一个正好是品牌行名字的段；都命不中才退回最后一段。
+     * 取第一个正好是行名字的段；最后一段是行序号（`…model#0`），所以退回时取它前面
+     * 那一段，而不是把序号当名字。
      */
     private fun logicalName(slot: TextSlot): String {
         val raw = slot.key ?: slot.id
-        for (part in raw.split(':', '#')) {
-            val name = part.trim().lowercase()
-            if (name in BrandSlotNames) return name
+        val parts = raw.split(':', '#').map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        for (name in parts) {
+            if (name in BrandSlotNames || name in ModelSlotNames) return name
         }
+        if (parts.size >= 2 && parts.last().all { it.isDigit() }) return parts[parts.size - 2]
         return raw.substringAfterLast(':').substringAfterLast('#').lowercase()
     }
 }
