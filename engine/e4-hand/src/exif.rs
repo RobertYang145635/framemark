@@ -271,9 +271,10 @@ pub fn read_photo(path: &std::path::Path) -> Exif {
     // FocalLengthIn35mm is recorded as a flag in this Exif shape; keep the value only
     // when the file really carries it, and never invent a focal length from it.
     ex.focal_equivalent = f35.map(|_| true);
-    // A1: never invent a focal length. 0xA405 is a 35mm-equivalent tag; using it
-    // as `focal` would print a value the photo does not carry.
-    ex.focal = focal;
+    // 手机照片的 `FocalLength`(0x920A) 是**原生焦段**（常常只有 35mm 这种小数字），
+    // 相机 App 与厂商水印给用户看的一直是 `FocalLengthIn35mmFilm`(0xA405) 的等效值
+    // （例如等效 230mm）。有等效值时优先用它，并标 focal_equivalent。
+    ex.focal = f35.or(focal);
     ex.aperture = fnum;
     ex.shutter = sho;
     ex.iso = iso;
@@ -390,8 +391,8 @@ mod tests {
                     (0x829A, 3, 2, inline_shorts(le, &[1, 200])), // 1/200s
                     (0x829D, 3, 2, inline_shorts(le, &[35, 10])), // F3.5
                     (0x8827, 3, 1, inline_shorts(le, &[100])), // ISO100
-                    (0x920A, 3, 2, inline_shorts(le, &[210, 1])), // 210mm
-                    (0xA405, 3, 1, inline_shorts(le, &[35])), // 35mm equivalent
+                    (0x920A, 3, 2, inline_shorts(le, &[67, 10])), // 6.7mm native
+                    (0xA405, 3, 1, inline_shorts(le, &[230])), // 230mm equivalent
                 ],
                 0,
             );
@@ -405,10 +406,31 @@ mod tests {
             assert_eq!(ex.aperture, Some(3.5), "le={le}");
             assert_eq!(ex.shutter, Some(0.005), "le={le}");
             assert_eq!(ex.iso, Some(100.0), "le={le}");
-            assert_eq!(ex.focal, Some(210.0), "le={le}");
+            // 用户看到的必须是等效焦段：手机的原生 6.7mm 是传感器物理焦距，
+            // 相机 App 和厂商水印印的都是 0xA405 的等效值（这里是 230mm）。
+            assert_eq!(ex.focal, Some(230.0), "le={le}");
             assert_eq!(ex.focal_equivalent, Some(true), "le={le}");
-            assert_eq!(ex.line("  "), "210mm  F3.5  1/200s  ISO100", "le={le}");
+            assert_eq!(ex.line("  "), "230mm  F3.5  1/200s  ISO100", "le={le}");
             assert!(ex.has_any, "le={le}");
+        }
+    }
+
+    /// No 35mm-equivalent tag (ordinary cameras, and phones that omit it): the physical
+    /// focal length is the only value in the file, so it is what the footer shows.
+    #[test]
+    fn native_focal_is_used_when_no_35mm_tag() {
+        for le in [true, false] {
+            let mut b = Buf::new(le);
+            b.bytes(if le { b"II" } else { b"MM" });
+            b.u16(0x2A);
+            b.u32(8);
+            b.pad_to(8);
+            b.ifd(&[(0x920A, 3, 2, inline_shorts(le, &[366, 10]))], 0);
+
+            let ex = parse(&b.b);
+            assert_eq!(ex.focal, Some(36.6), "le={le}");
+            assert_eq!(ex.focal_equivalent, None, "le={le}");
+            assert_eq!(ex.line("  "), "37mm", "le={le}");
         }
     }
 
