@@ -29,11 +29,23 @@ object UpdateUrls {
         "https://raw.githubusercontent.com/$REPO/ui-v2/main/updates/latest.json"
     const val RELEASE_PAGE = "https://github.com/$REPO/releases"
 
-    /** 常用的 GitHub 加速前缀；只做前缀拼接，不改变路径。 */
+    /**
+     * GitHub 加速前缀（只做前缀拼接，不改变路径），**顺序按实测速度**。
+     *
+     * 2026-11-20 本机（国内网络）实测，同一份 raw 清单 + 同一个 4 MB 资产分片：
+     *  - `ghfast.top`       资产 ~249 KB/s，清单 2.4 s
+     *  - `gh-proxy.org`     资产 ~155 KB/s，清单 1.5 s（官方文档域名）
+     *  - `gh-proxy.com`     资产 ~80 KB/s，清单 2.2 s
+     *  - `ghproxy.net`      清单 7.3 s（偏慢，兜底）
+     *  - 直连 github.com    资产 ~18 KB/s、且会 302 到 objects.githubusercontent.com
+     *  - `mirror.ghproxy.com` 已失效（12 s 超时）→ 从候选里删掉
+     * 速度会随时间/地区波动，所以下面只是**起始顺序**：下载失败会依次换下一个。
+     */
     val MIRRORS: List<String> = listOf(
-        "https://gh-proxy.com/",
         "https://ghfast.top/",
-        "https://mirror.ghproxy.com/",
+        "https://gh-proxy.org/",
+        "https://gh-proxy.com/",
+        "https://ghproxy.net/",
     )
 
     /** 依次尝试的 URL：镜像源先镜像后直连；直连源先直连后镜像。 */
@@ -52,13 +64,23 @@ object UpdateUrls {
             listOf(MANIFEST_DIRECT) + MIRRORS.map { it + MANIFEST_DIRECT }
         }
 
-    /** 资产下载候选：镜像优先，直连兜底（GitHub 资产域名在国内常被阻断）。 */
-    fun assetCandidates(url: String): List<String> =
-        if (url.startsWith("https://github.com/") || url.startsWith("https://objects.githubusercontent.com/")) {
+    /**
+     * 资产下载候选：清单里自带的镜像（[extraMirrors]，完整 URL，优先）→ 加速前缀 → 直连。
+     *
+     * 清单里的镜像让**没有发新版也能换渠道**（比如以后挂到国内对象存储上，只改
+     * `updates/latest.json`），不用等用户升级到这个版本才认新地址。
+     */
+    fun assetCandidates(url: String, extraMirrors: List<String> = emptyList()): List<String> {
+        val extras = extraMirrors.map { it.trim() }.filter { it.startsWith("https://") }
+        val proxied = if (url.startsWith("https://github.com/") ||
+            url.startsWith("https://objects.githubusercontent.com/")
+        ) {
             MIRRORS.map { it + url } + url
         } else {
             listOf(url)
         }
+        return (extras + proxied).distinct()
+    }
 
     /** 发布页地址：镜像源用镜像前缀打开，直连源用原地址。 */
     fun releasePage(url: String, source: UpdateSource): String =
@@ -189,3 +211,52 @@ object UpdateVersion {
 
 /** 平台 HTTP GET；失败返回 null（调用方按候选顺序重试）。 */
 expect fun fetchUrlText(url: String): String?
+
+/**
+ * 一次「检查更新」的结果。手动检查（关于页）与启动自动检查共用同一份逻辑，
+ * 免得两条路对「有没有新版」给出不同答案。
+ */
+sealed interface UpdateCheckOutcome {
+    /** 清单可用：有平台资产就顺手带出来（下载走 [installUpdate]）。 */
+    data class Available(val manifest: UpdateManifest, val asset: UpdateAsset?) : UpdateCheckOutcome
+
+    /** 清单不可用，退回 GitHub Releases：只有 tag/notes，没有直链。 */
+    data class AvailableRelease(val release: UpdateRelease) : UpdateCheckOutcome
+
+    data object Latest : UpdateCheckOutcome
+
+    data object Failed : UpdateCheckOutcome
+}
+
+/**
+ * 检查更新：先读清单（随分支发布，镜像只需代理同一份文件），读不到再退回 Releases API。
+ *
+ * 清单优先的理由：它带**平台资产直链 + sha256 + 大小**，能直接下载并校验；
+ * Releases API 只能拿到页面地址。两条路都失败才是 [UpdateCheckOutcome.Failed]。
+ */
+suspend fun checkForUpdate(
+    currentVersion: String,
+    source: UpdateSource = UpdateSource.Mirror,
+    platform: UpdatePlatform = updatePlatform(),
+): UpdateCheckOutcome {
+    val manifest = runCatching {
+        UpdateUrls.manifestCandidates(source).firstNotNullOfOrNull { url ->
+            fetchUrlText(url)?.let { UpdateManifestJson.parse(it) }
+        }
+    }.getOrNull()
+    if (manifest != null && UpdateVersion.isNewer(currentVersion, manifest.versionName)) {
+        return UpdateCheckOutcome.Available(manifest, manifest.assetFor(platform))
+    }
+    val releases = runCatching {
+        UpdateUrls.apiCandidates(source).firstNotNullOfOrNull { url ->
+            fetchUrlText(url)?.let { body -> UpdateJson.releases(body) }
+        }
+    }.getOrNull()
+    if (releases != null) {
+        UpdateVersion.newestAvailable(currentVersion, releases)?.let {
+            return UpdateCheckOutcome.AvailableRelease(it)
+        }
+        return UpdateCheckOutcome.Latest
+    }
+    return if (manifest != null) UpdateCheckOutcome.Latest else UpdateCheckOutcome.Failed
+}

@@ -72,7 +72,7 @@ actual fun installUpdate(asset: UpdateAsset, versionName: String, onProgress: (L
     return runCatching {
         var downloaded = false
         var lastError = "下载失败"
-        for (candidate in UpdateUrls.assetCandidates(asset.url)) {
+        for (candidate in UpdateUrls.assetCandidates(asset.url, asset.mirrors)) {
             downloaded = runCatching {
                 val existing = if (part.isFile) part.length() else 0L
                 val connection = java.net.URL(candidate).openConnection() as HttpURLConnection

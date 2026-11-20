@@ -243,6 +243,16 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
     val onboardingStore = remember { WorkflowOnboardingStore() }
     var onboardingOpen by remember { mutableStateOf(false) }
     var onboardingPage by remember { mutableIntStateOf(0) }
+    // 启动自动检查更新（与手机端同一条逻辑）：有新版本弹一次，跳过的版本不再打扰。
+    var pendingUpdate by remember { mutableStateOf<com.framemark.native.product.update.UpdateManifest?>(null) }
+    LaunchedEffect(Unit) {
+        val current = com.framemark.native.appVersionLabel()
+        pendingUpdate = com.framemark.native.product.update.UpdateLaunch.check(
+            currentVersion = current,
+            storage = com.framemark.native.shell.PlatformUpdateSkipStorage(),
+        )
+        if (pendingUpdate != null) FmLog.info("UPDATE_ON_LAUNCH") { "current=$current remote=${pendingUpdate?.versionName}" }
+    }
     LaunchedEffect(Unit) {
         withFrameNanos { }
         onboardingOpen = shouldAutoShowOnboarding(onboardingStore)
@@ -1054,6 +1064,23 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
                 )
             }
 
+            pendingUpdate?.let { manifest ->
+                UpdatePromptDialog(
+                    manifest = manifest,
+                    asset = manifest.assetFor(com.framemark.native.product.update.updatePlatform()),
+                    onDismiss = {
+                        pendingUpdate = null
+                        FmLog.info("UPDATE_PROMPT") { "action=later version=${manifest.versionName}" }
+                    },
+                    onSkipVersion = {
+                        com.framemark.native.product.update.UpdateLaunch.skip(
+                        com.framemark.native.shell.PlatformUpdateSkipStorage(),
+                        manifest.versionName,
+                    )
+                        FmLog.info("UPDATE_PROMPT") { "action=skip version=${manifest.versionName}" }
+                    },
+                )
+            }
             DesktopHelpOverlay(open = helpOpen, onDismiss = { helpOpen = false })
             DesktopAboutOverlay(open = aboutOpen, onDismiss = { aboutOpen = false })
             // W-02: the window close handler refused to exit; this is the only place

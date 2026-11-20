@@ -155,6 +155,8 @@ fun PhoneShell() {
     // M01 rule 2: 「按照片批量」预检——有未应用边框的照片时先确认，再入队。
     var pendingPhotoBatch by remember { mutableStateOf<BatchPreflight?>(null) }
     var watermarkError by remember { mutableStateOf<String?>(null) }
+    // 启动自动检查：有新版本就弹一次（同一版本「跳过」过就不再弹），见 UpdateLaunch。
+    var pendingUpdate by remember { mutableStateOf<com.framemark.native.product.update.UpdateManifest?>(null) }
     // 「已移除 · 撤销」要放回去的那一张（null = 提示位空着）。快照自己带着设计和水印。
     var removedPhoto by remember { mutableStateOf<RemovedPhoto?>(null) }
     // A watermark picked before any border exists yet; applied once the card does.
@@ -637,6 +639,16 @@ fun PhoneShell() {
         }
     }
 
+    // 每次打开都静默检查一次更新：清单读到比当前新的版本就弹窗（IO 线程，失败静默）。
+    LaunchedEffect(Unit) {
+        val current = com.framemark.native.appVersionLabel()
+        pendingUpdate = com.framemark.native.product.update.UpdateLaunch.check(
+            currentVersion = current,
+            storage = com.framemark.native.shell.PlatformUpdateSkipStorage(),
+        )
+        if (pendingUpdate != null) FmLog.info("UPDATE_ON_LAUNCH") { "current=$current remote=${pendingUpdate?.versionName}" }
+    }
+
     // The inspector model drives the export snapshot; building it here keeps the
     // export's theme/ratio/override values identical to the stage preview.
     val inspectorSnapshot = (inspectorState as? InspectorLoadState.Ready)?.snapshot
@@ -1088,6 +1100,24 @@ fun PhoneShell() {
                     onClose = { photoBatchOpen = false },
                 )
             }
+        }
+
+        pendingUpdate?.let { manifest ->
+            com.framemark.native.shell.UpdatePromptDialog(
+                manifest = manifest,
+                asset = manifest.assetFor(com.framemark.native.product.update.updatePlatform()),
+                onDismiss = {
+                    pendingUpdate = null
+                    FmLog.info("UPDATE_PROMPT") { "action=later version=${manifest.versionName}" }
+                },
+                onSkipVersion = {
+                    com.framemark.native.product.update.UpdateLaunch.skip(
+                        com.framemark.native.shell.PlatformUpdateSkipStorage(),
+                        manifest.versionName,
+                    )
+                    FmLog.info("UPDATE_PROMPT") { "action=skip version=${manifest.versionName}" }
+                },
+            )
         }
 
         if (confirmApplyAll) {

@@ -40,7 +40,8 @@ import com.framemark.native.product.update.UpdateRelease
 import com.framemark.native.product.update.UpdateSource
 import com.framemark.native.product.update.UpdateUrls
 import com.framemark.native.product.update.UpdateVersion
-import com.framemark.native.product.update.fetchUrlText
+import com.framemark.native.product.update.UpdateCheckOutcome
+import com.framemark.native.product.update.checkForUpdate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -167,37 +168,17 @@ private fun UpdateCard(currentVersion: String) {
         if (state == UpdateState.Checking) return
         state = UpdateState.Checking
         scope.launch {
-            val manifest = withContext(Dispatchers.IO) {
-                UpdateUrls.manifestCandidates(source).firstNotNullOfOrNull { url ->
-                    fetchUrlText(url)?.let { UpdateManifestJson.parse(it) }
-                }
+            // 与启动自动检查走同一条逻辑（清单优先、Releases API 兜底），
+            // 免得两处对「有没有新版」给出不同答案。
+            val outcome = withContext(Dispatchers.IO) { checkForUpdate(currentVersion, source) }
+            state = when (outcome) {
+                is UpdateCheckOutcome.Available ->
+                    UpdateState.AvailableManifest(outcome.manifest, outcome.asset)
+                is UpdateCheckOutcome.AvailableRelease -> UpdateState.Available(outcome.release)
+                UpdateCheckOutcome.Latest -> UpdateState.Latest
+                UpdateCheckOutcome.Failed -> UpdateState.Failed
             }
-            val platform = updatePlatform()
-            val manifestNewer = manifest?.takeIf {
-                UpdateVersion.isNewer(currentVersion, it.versionName)
-            }
-            if (manifestNewer != null) {
-                state = UpdateState.AvailableManifest(manifest = manifestNewer, asset = manifestNewer.assetFor(platform))
-                FmLog.info("UPDATE_CHECK") {
-                    "source=${source.name} manifest=${manifestNewer.versionCode} asset=${manifestNewer.assetFor(platform) != null}"
-                }
-                return@launch
-            }
-            val candidates = UpdateUrls.apiCandidates(source)
-            val releases = withContext(Dispatchers.IO) {
-                candidates.firstNotNullOfOrNull { url ->
-                    fetchUrlText(url)?.let { body -> UpdateJson.releases(body) }
-                }
-            }
-            state = when {
-                releases == null -> UpdateState.Failed
-                else -> UpdateVersion.newestAvailable(currentVersion, releases)
-                    ?.let { UpdateState.Available(it) }
-                    ?: UpdateState.Latest
-            }
-            FmLog.info("UPDATE_CHECK") {
-                "source=${source.name} candidates=${candidates.size} state=$state"
-            }
+            FmLog.info("UPDATE_CHECK") { "source=${source.name} state=$state" }
         }
     }
 
