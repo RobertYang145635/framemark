@@ -3,18 +3,18 @@
   "versionCode": 45,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T19:40:00Z",
-  "notes": "临时测试清单：验证启动自动更新弹窗（测完立刻撤回）。",
+  "publishedAt": "2026-11-20T20:15:00Z",
+  "notes": "打开应用时自动检查新版本，有新版本弹一次窗（可直接下载安装，也能「跳过这个版本」）；国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张，照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位，进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白，共 88 枚官方变体（保留品牌色，如富士那点红），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
   "assets": {
     "android": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc46/FrameMark-0.9.0-rc46-arm64.apk",
-      "sha256": "cd30d79c85b675820956532db54626933648b4f0e1580cd381742c3a790fe02d",
+      "sha256": "b5f584e1429f1ef39b3c5aef5a55562c758a5c153c4cf4e92fa66b0fffff7965",
       "size": 144882214
     },
     "windows": {
       "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc46/FrameMark-0.9.0-rc46-win64.msi",
-      "sha256": "8bb43e629dc16bbaf6da5b01609197e678a23a05307f67ecd6a5d9be81837e3d",
-      "size": 247948352
+      "sha256": "d43c39bd330377ba05b4c0096d01e0dd5abb2d642729b75b62a2277f792f4f20",
+      "size": 247951364
     }
   },
   "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc46"
