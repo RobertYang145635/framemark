@@ -151,6 +151,8 @@ internal fun StageArea(
     undoNotice: Boolean,
     /** 「已换边框 · 撤销」：换边框现在是一条可撤销的历史（P0-2）。 */
     borderNotice: Boolean = false,
+    /** 「已移除 · 撤销」的题目（刚删掉那张的文件名）；null = 这一条不出现。 */
+    removeNoticeLabel: String? = null,
     focusMode: Boolean,
     density: Density,
     onStageSize: (IntSize) -> Unit,
@@ -159,6 +161,8 @@ internal fun StageArea(
     onCompareChange: (Boolean) -> Unit,
     onRedo: () -> Unit,
     onUndo: () -> Unit,
+    /** 「已移除 · 撤销」那一下。 */
+    onUndoRemove: () -> Unit = {},
     onFocusToggle: () -> Unit,
     onOpenBorder: () -> Unit,
     // 2026-11（UX 审查 P1-3）：这里曾经还声明 onOpenBatch / onApplyAll /
@@ -354,8 +358,10 @@ internal fun StageArea(
         PhoneStageOverlays(
             undoNotice = undoNotice,
             borderNotice = borderNotice,
+            removeNoticeLabel = removeNoticeLabel,
             onRedo = onRedo,
             onUndo = onUndo,
+            onUndoRemove = onUndoRemove,
         )
         if (!focusMode) {
             // Two chrome sets overlap for exactly the length of the enter transition:

@@ -155,6 +155,8 @@ fun PhoneShell() {
     // M01 rule 2: 「按照片批量」预检——有未应用边框的照片时先确认，再入队。
     var pendingPhotoBatch by remember { mutableStateOf<BatchPreflight?>(null) }
     var watermarkError by remember { mutableStateOf<String?>(null) }
+    // 「已移除 · 撤销」要放回去的那一张（null = 提示位空着）。快照自己带着设计和水印。
+    var removedPhoto by remember { mutableStateOf<RemovedPhoto?>(null) }
     // A watermark picked before any border exists yet; applied once the card does.
     var pendingWatermark by remember { mutableStateOf<String?>(null) }
     var pairDemoSeeded by remember { mutableStateOf(false) }
@@ -814,6 +816,8 @@ fun PhoneShell() {
 
     fun selectPhoto(photo: TrayPhoto) {
         val id = trayToPhotoId(photo)
+        // 换了照片，「已移除 · 撤销」这一拍就过去了：撤销要能看出放回到哪儿。
+        removedPhoto = null
         // 先存后载：the outgoing design already lives in the project, so switching
         // persists the selection instead of copying a stale snapshot onto it.
         store.select(id)
@@ -827,7 +831,10 @@ fun PhoneShell() {
 
     fun removePhoto(photo: TrayPhoto) {
         val id = trayToPhotoId(photo)
-        store.remove(id)
+        // 删除是可逆的一步，不是确认框：原件留在 Originals，丢的是这张照片的设计。
+        // 快照留给舞台那条约 4 秒的「已移除 · 撤销」用（与「已换边框 · 撤销」同一个提示位）。
+        val snapshot = store.removeWithSnapshot(id)
+        removedPhoto = snapshot
         val next = store.activePhoto
         if (store.photos.isEmpty()) {
             PhotoSelection.set(null)
@@ -838,6 +845,15 @@ fun PhoneShell() {
             if (next != null && PhotoSelection.path != next.path) PhotoSelection.set(next.path)
             FmLog.info("FM_TRAY_REMOVE") { "photos=${store.photos.size} next=${next?.displayName}" }
         }
+        syncTray()
+    }
+
+    /** 「已移除 · 撤销」：原样放回（同位置、同设计、同水印）并重新选上这张照片。 */
+    fun undoRemovePhoto() {
+        val snapshot = removedPhoto ?: return
+        removedPhoto = null
+        store.restoreRemoved(snapshot)
+        store.activePhoto?.let { photo -> if (PhotoSelection.path != photo.path) PhotoSelection.set(photo.path) }
         syncTray()
     }
 
@@ -1002,6 +1018,10 @@ fun PhoneShell() {
                 onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
                 onSelectPhoto = ::selectPhoto,
                 onRemovePhoto = ::removePhoto,
+                // 「已移除 · 撤销」：提示位由编辑器画，快照留在外壳（那里才拿得到 store）。
+                removeNoticeLabel = removedPhoto?.ref?.displayName,
+                onUndoRemove = ::undoRemovePhoto,
+                onRemoveNoticeExpired = { removedPhoto = null },
                 onOpenCard = ::openCardFromBrowser,
                 onRetryLibrary = { libraryReload++ },
                 onOpenPresets = { presetSheetOpen = true },

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -732,6 +733,15 @@ fun PhotoBatchScreen(
                         .padding(FmSpacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    // 认照片靠图不靠文件名：`1000084839.jpg` 这种名字谁也认不出是哪一张。
+                    // 缩略图与照片托盘的同一个加载器（平台降采样 + 这张图自己的缓存）。
+                    PhotoThumbnail(
+                        path = row.photoPath,
+                        modifier = Modifier.size(44.dp),
+                        maxEdge = 128,
+                        cornerRadius = FmRadii.tile,
+                    )
+                    Spacer(Modifier.width(FmSpacing.md))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(row.photoName, style = FmType.bodyMedium, color = FmPalette.onSurface)
                         Text(

@@ -138,6 +138,11 @@ fun PhoneEditorScreen(
     onPickPhoto: () -> Unit,
     onSelectPhoto: (TrayPhoto) -> Unit,
     onRemovePhoto: (TrayPhoto) -> Unit,
+    /** 「已移除 · 撤销」的题目（刚删掉那张的文件名）；null = 提示位空着。 */
+    removeNoticeLabel: String? = null,
+    onUndoRemove: () -> Unit = {},
+    /** 4 秒到了 / 用户换了照片：把快照丢掉，这条就不再可撤销。 */
+    onRemoveNoticeExpired: () -> Unit = {},
     /** Border browser tap: applies the card and keeps the browser open. */
     onOpenCard: (LibraryCard) -> Unit,
     onRetryLibrary: () -> Unit,
@@ -343,6 +348,14 @@ fun PhoneEditorScreen(
         if (borderNotice) {
             delay(4000)
             borderNotice = false
+        }
+    }
+    // 「已移除 · 撤销」与上面两条共用同一个提示位，但它那一拍更长一点：删除是破坏性的
+    // 一下，4 秒是「手已经离开屏幕之后还能补救」的窗口。
+    LaunchedEffect(removeNoticeLabel) {
+        if (removeNoticeLabel != null) {
+            delay(4000)
+            onRemoveNoticeExpired()
         }
     }
 
@@ -617,6 +630,11 @@ fun PhoneEditorScreen(
                             borderName = card?.name,
                             undoNotice = undoNotice,
                             borderNotice = borderNotice,
+                            removeNoticeLabel = removeNoticeLabel,
+                            onUndoRemove = {
+                                onUndoRemove()
+                                onRemoveNoticeExpired()
+                            },
                             onRedo = {
                                 onRedo()
                                 undoNotice = false

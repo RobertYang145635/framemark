@@ -127,6 +127,16 @@ object PhoneProjectRuntime {
 }
 
 /**
+ * 一次「移除照片」的快照，供「已移除 · 撤销」原样放回：同一个位置、同一份设计
+ * （边框 + 参数 + 文字 + Logo + 内嵌水印字节）。
+ */
+data class RemovedPhoto(
+    val ref: PhotoRef,
+    val design: PhotoDesign?,
+    val index: Int,
+)
+
+/**
  * The phone's project state: `product.Project` is the single source of truth and
  * `product.SessionStore` persists it. A write is staged into a temp file, the
  * staged size and a streaming SHA-256 are verified before the replace, and when the
@@ -578,6 +588,44 @@ class PhoneProjectStore(
         FmLog.info("FM_PROJECT_REMOVE") { "id=$id photos=${project.photos.size} designs=${project.designs.size}" }
     }
 
+    /**
+     * 移除一张照片，并把「还原这一下要的东西」交回来。
+     *
+     * 手机上不弹确认框：这一下不销毁文件（原件留在 Originals 里），丢的是这张照片的
+     * 设计 —— 那正好是撤销能救回来的东西，所以舞台给一条 4 秒的「已移除 · 撤销」。
+     * 快照带位置、[PhotoRef] 和整份 [PhotoDesign]（含水印字节）。
+     */
+    fun removeWithSnapshot(id: String): RemovedPhoto? {
+        val index = project.photos.indexOfFirst { it.id == id }
+        if (index < 0) return null
+        val snapshot = RemovedPhoto(
+            ref = project.photos[index],
+            design = project.designs[id],
+            index = index,
+        )
+        remove(id)
+        return snapshot
+    }
+
+    /** 「撤销移除」：同位置放回，同一份设计、同一枚水印，并重新选上这张。 */
+    fun restoreRemoved(removed: RemovedPhoto) {
+        if (project.photos.any { it.id == removed.ref.id }) return
+        var next = project
+        val photos = next.photos.toMutableList()
+        photos.add(removed.index.coerceIn(0, photos.size), removed.ref)
+        next = next.copy(photos = photos)
+        val design = removed.design
+        if (design != null) next = next.setDesign(removed.ref.id, design)
+        next = next.selectPhoto(removed.ref.id)
+        commit(next)
+        saveNow()
+        // 与 remove 同一个标签（`FM_PROJECT_REMOVE`，`undo=1` 区分方向）：shell 层的
+        // 证据标签是 ARCH1 记在允许清单里的债，只减不增，所以不新开一个。
+        FmLog.info("FM_PROJECT_REMOVE") {
+            "id=${removed.ref.id} undo=1 photos=${next.photos.size} card=${removed.design?.cardId ?: "-"}"
+        }
+    }
+
     fun clearPhotos() {
         if (project.photos.isEmpty()) return
         commit(project.copy(photos = emptyList(), activePhotoId = null, designs = emptyMap()))
@@ -622,7 +670,17 @@ class PhoneProjectStore(
         commit(project.applyWatermarkToAll(active.overlay))
     }
 
-    /** A new photo starts from the shared design, else the active one, else the card. */
+    /**
+     * A new photo starts from the shared design, else the active one, else the card.
+     *
+     * **这是有意的（2026-11-20 决定）**：往已有工程里再导入照片，会拿到工程现在的样子，
+     * 而不是一张没边框的空白。工程本身的意思就是「一套照片一个样子」——`用到全部 N 张`
+     * 和批量导出都建立在这个前提上；不继承的话，同一场拍的 5 张照片要重选 5 次边框，
+     * 正好是最该省掉的那次重复劳动。
+     *
+     * 不想继承的退路已经存在：把当前照片设成「未选边框」再导入（`activeDesign` 为 null
+     * 时这里返回 null，新照片就是没有设计的），或者导入后用边框库里的「未选边框」清掉。
+     */
     private fun inheritFrom(current: Project): PhotoDesign? =
         current.sharedDesign ?: current.activeDesign ?: current.selectedCardId?.let { PhotoDesign.base(it) }
 
