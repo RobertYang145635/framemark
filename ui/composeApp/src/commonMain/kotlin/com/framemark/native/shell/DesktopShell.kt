@@ -490,6 +490,24 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
         if (!autoSelectCard) return@LaunchedEffect
         if (selectedCard?.id != card.id) selectedCard = card
     }
+    // 恢复已保存的工程：当前照片本来就带着边框，右栏不能写「未选择边框」。
+    // 冷启动仍然先看边框库（`stageMode` 不动），只把这张卡点亮，参数面板按
+    // 工程里的设计恢复 —— 与底部胶片条的「已选边框」计数保持一致。
+    var restoredSelection by remember { mutableStateOf(false) }
+    LaunchedEffect(projects.loaded, projects.activeDesign?.cardId, libraryState) {
+        if (restoredSelection) return@LaunchedEffect
+        if (!projects.loaded) return@LaunchedEffect
+        if (autoSelectCard || selectedCard != null) {
+            restoredSelection = true
+            return@LaunchedEffect
+        }
+        val ready = libraryState as? LibraryLoadState.Ready ?: return@LaunchedEffect
+        val card = restoredCardOf(projects.activeDesign?.cardId, ready.snapshot.cards)
+            ?: return@LaunchedEffect
+        selectedCard = card
+        restoredSelection = true
+        FmLog.info("FM_CARD_RESTORE") { "card=${card.id} photo=${projects.activePhotoId} source=project" }
+    }
 
     // Legacy presets (pre-SessionStore `presets.json`, no watermark, session-keyed
     // values) fold into the product document once the inspector data can map their

@@ -629,6 +629,28 @@ private fun BoxScope.WatermarkOverlay(
 // Photo strip
 // ---------------------------------------------------------------------------
 
+/** 一格缩略图 + 格间距（`PhotoTile` 的 52 × 48 + 6 间距）。 */
+internal const val PHOTO_TILE_STRIDE_DP = 58
+
+/**
+ * 展开照片条时要不要滚、滚到哪：当前照片已经完整可见就返回 null（不打扰手动滑动），
+ * 否则把它居中。`scroll` 是**编辑器持有**的滚动位置 —— 收起/展开、键盘弹起都不会
+ * 让它回到开头（WP-Q2⑥ 摩擦二：展开只看得到第 1–7 张，关掉键盘又跳回开头）。
+ */
+internal fun photoStripScrollTarget(
+    index: Int,
+    stride: Float,
+    viewport: Float,
+    current: Float,
+    maxValue: Float,
+): Float? {
+    if (index < 0 || stride <= 0f || viewport <= 0f) return null
+    val start = index * stride
+    val end = start + stride
+    if (start >= current && end <= current + viewport) return null
+    return (start - (viewport - stride) / 2f).coerceIn(0f, maxValue.coerceAtLeast(0f))
+}
+
 @Composable
 internal fun PhotoStrip(
     tray: PhotoTray,
@@ -636,8 +658,24 @@ internal fun PhotoStrip(
     onRemove: (TrayPhoto) -> Unit,
     onAdd: () -> Unit,
     customIds: Set<Int> = emptySet(),
+    /** 收起/展开不丢的滚动位置，由 [com.framemark.native.shell.PhoneEditor] 持有。 */
+    scroll: androidx.compose.foundation.ScrollState = androidx.compose.foundation.rememberScrollState(),
     modifier: Modifier = Modifier,
 ) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val stridePx = with(density) { PHOTO_TILE_STRIDE_DP.dp.toPx() }
+    // 每次展开都对着当前照片定位：16 张时打开就停在第 16 张，而不是第 1 张。
+    LaunchedEffect(Unit) {
+        val index = tray.items.indexOfFirst { it.id == tray.selected?.id }
+        val target = photoStripScrollTarget(
+            index = index,
+            stride = stridePx,
+            viewport = scroll.viewportSize.toFloat(),
+            current = scroll.value.toFloat(),
+            maxValue = scroll.maxValue.toFloat(),
+        )
+        if (target != null) scroll.scrollTo(target.toInt())
+    }
     // 托盘是**舞台的一部分**：底色跟舞台同一个（设置里的画布背景），不另起一条白带。
     // 以前这里铺的是 `surface`，于是屏幕自上而下变成「深色舞台 / 白条 / 白底板」三条，
     // 白条上还留着大半行空处 —— 看着像第三条工具栏。现在缩略图直接浮在舞台上，
@@ -650,7 +688,7 @@ internal fun PhotoStrip(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .horizontalScroll(rememberScrollState()),
+                .horizontalScroll(scroll),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

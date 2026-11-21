@@ -222,6 +222,8 @@ fun PhoneEditorScreen(
     var sheetLevel by rememberSaveable { mutableStateOf(0) }
     var sheetDragPx by remember { mutableStateOf<Float?>(null) }
     var photosOpen by rememberSaveable { mutableStateOf(false) }
+    // 照片条的滚动位置：跨收起/展开与键盘开关保持（WP-Q2⑥ 摩擦二）。
+    val photoStripScroll = androidx.compose.foundation.rememberScrollState()
     var focusMode by rememberSaveable { mutableStateOf(false) }
     // §2.8: stable TextSlot key of the row being edited. UI only — never written
     // into the project, a preset, a cache key or an export request.
@@ -735,6 +737,8 @@ fun PhoneEditorScreen(
                                 onRemove = onRemovePhoto,
                                 onAdd = onPickPhoto,
                                 customIds = customizedPhotoIds,
+                                // 滚动位置挂在这一层：收起/展开、键盘弹起都不会回到开头。
+                                scroll = photoStripScroll,
                                 modifier = Modifier.fillMaxWidth().height(stripH),
                             )
                         }
