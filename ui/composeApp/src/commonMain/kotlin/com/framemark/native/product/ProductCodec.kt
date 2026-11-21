@@ -237,6 +237,10 @@ private fun encodePhoto(photo: PhotoRef): String = buildString {
     photo.sourcePath?.takeIf { it.isNotBlank() }?.let {
         append(",\"sourcePath\":").append(ProductJson.quote(it))
     }
+    // 拍摄时间同样是可缺省的：没有 EXIF 的老照片不写键。
+    photo.capturedAt?.takeIf { it.isNotBlank() }?.let {
+        append(",\"capturedAt\":").append(ProductJson.quote(it))
+    }
     append('}')
 }
 
@@ -262,6 +266,7 @@ private fun decodePhoto(raw: Any?, where: String): PhotoRef {
         heightPx = heightPx,
         fingerprint = map.optionalString("fingerprint", where),
         sourcePath = map.optionalString("sourcePath", where)?.takeIf { it.isNotBlank() },
+        capturedAt = map.optionalString("capturedAt", where)?.takeIf { it.isNotBlank() },
     )
 }
 
@@ -424,6 +429,10 @@ internal object BatchCodec {
         append(",\"photoPath\":").append(job.photoPath?.let(ProductJson::quote) ?: "null")
         append(",\"photoFingerprint\":").append(job.photoFingerprint?.let(ProductJson::quote) ?: "null")
         append(",\"displayName\":").append(ProductJson.quote(job.displayName))
+    // 拍摄时间可缺省：老队列不写这个键，命名的行为与从前一致。
+    job.capturedAt?.takeIf { it.isNotBlank() }?.let {
+        append(",\"capturedAt\":").append(ProductJson.quote(it))
+    }
         append(",\"design\":").append(encodeDesign(job.design))
         append(",\"overlay\":").append(job.overlay?.let(::encodeOverlay) ?: "null")
         append(",\"export\":").append(encodeExport(job.exportSettings))
@@ -484,6 +493,7 @@ internal object BatchCodec {
             photoPath = map.optionalString("photoPath", where),
             photoFingerprint = map.optionalString("photoFingerprint", where),
             displayName = displayName,
+            capturedAt = map.optionalString("capturedAt", where)?.takeIf { it.isNotBlank() },
             design = design.copy(overlay = null),
             overlay = overlay,
             exportSettings = decodeExport(map["export"], "$where.export"),

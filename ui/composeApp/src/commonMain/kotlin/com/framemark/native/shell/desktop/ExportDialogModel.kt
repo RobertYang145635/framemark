@@ -104,7 +104,14 @@ object ExportFileName {
         cardName: String,
         photoStem: String?,
         index: Int,
-    ): String = ExportNaming.previewName(pattern = pattern, cardName = cardName, photoName = photoStem, index = index)
+        capturedAt: String? = null,
+    ): String = ExportNaming.previewName(
+        pattern = pattern,
+        cardName = cardName,
+        photoName = photoStem,
+        index = index,
+        capturedAt = capturedAt,
+    )
 
     fun previewFile(
         pattern: String,
@@ -112,7 +119,8 @@ object ExportFileName {
         photoStem: String?,
         index: Int,
         extension: String,
-    ): String = previewName(pattern, cardName, photoStem, index) + "." + extension
+        capturedAt: String? = null,
+    ): String = previewName(pattern, cardName, photoStem, index, capturedAt) + "." + extension
 
     /** 插入一个变量到光标处（UI 的 chips 用）；未知 key 原样返回。 */
     fun insertToken(pattern: String, tokenKey: String, selectionStart: Int, selectionEnd: Int): String {
@@ -158,6 +166,19 @@ object ExportCopy {
         quality: Int,
         webpLossless: Boolean,
     ): String = resolutionLine(sizeMode, longEdge) + "；" + encoderLine(format, quality, webpLossless)
+
+    /**
+     * 命名里的「拍摄日期 / 拍摄时间」没有 EXIF 可依时的说明。
+     *
+     * 有拍摄时间就返回 null（界面不多话）；没有时必须说清用的是导出那一刻，
+     * 否则用户会以为文件名记的是拍摄日 —— 实际上归档会分错日期。
+     */
+    fun captureTimeNote(capturedAt: String?): String? {
+        if (capturedAt != null && com.framemark.native.product.ExifCaptureDate.normalize(capturedAt) != null) {
+            return null
+        }
+        return "这张照片没有拍摄时间，文件名用导出时间"
+    }
 
     /** 拍摄信息（EXIF/GPS）的去留，按格式给准确说法。 */
     fun metadataLines(format: ExportFormat): List<String> = when (format) {

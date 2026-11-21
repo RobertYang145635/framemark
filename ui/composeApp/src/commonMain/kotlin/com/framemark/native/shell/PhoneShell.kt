@@ -1329,6 +1329,8 @@ fun PhoneShell() {
                 // 与手机样式页「导出尺寸」同一份输入，所以两处印同一个数字。
                 photoWidthPx = store.activePhoto?.widthPx ?: 0,
                 photoHeightPx = store.activePhoto?.heightPx ?: 0,
+                // 命名的拍摄日期/时间读照片自己的 EXIF，不读系统时钟。
+                capturedAt = store.activePhoto?.capturedAt,
                 controls = panelModel?.controls.orEmpty(),
                 isSamplePhoto = store.activePhotoId == SAMPLE_PHOTO_ID,
                 // §3.4: 应用到全部照片 moved here from the removed stage menu; the

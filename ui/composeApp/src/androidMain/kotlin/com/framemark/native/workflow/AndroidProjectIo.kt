@@ -177,6 +177,18 @@ class AndroidPhoneAssetIo : PhoneAssetIo {
         return intArrayOf(width, height, orientation)
     }
 
+    /**
+     * EXIF `DateTimeOriginal`（`android.media.ExifInterface` 直接用系统解析器）。
+     * 读不到（非 JPEG/TIFF、字段缺失、文件不可读）就是 null。
+     */
+    override fun capturedAt(path: String): String? = runCatching {
+        val exif = android.media.ExifInterface(path)
+        val original = exif.getAttribute(android.media.ExifInterface.TAG_DATETIME_ORIGINAL)
+        val modified = exif.getAttribute(android.media.ExifInterface.TAG_DATETIME)
+        com.framemark.native.product.ExifCaptureDate.normalize(original)
+            ?: com.framemark.native.product.ExifCaptureDate.normalize(modified)
+    }.getOrNull()
+
     override fun fingerprint(path: String): String? = runCatching {
         val digest = MessageDigest.getInstance("SHA-256")
         File(path).inputStream().use { input ->

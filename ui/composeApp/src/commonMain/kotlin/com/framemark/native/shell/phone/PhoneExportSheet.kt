@@ -120,6 +120,8 @@ fun PhoneExportSheet(
      */
     photoWidthPx: Int = 0,
     photoHeightPx: Int = 0,
+    /** 照片自己的拍摄时间（EXIF `DateTimeOriginal`），命名的 `{date}`/`{time}` 用它。 */
+    capturedAt: String? = null,
     /**
      * 当前边框声明的参数行。`OutputSize` 靠它判断画布公式族（页脚 / 四边同宽），
      * 与手机样式页的「导出尺寸」是同一份输入，所以两处印同一个数字。
@@ -261,6 +263,7 @@ fun PhoneExportSheet(
                     photoDisplayName = photoDisplayName,
                     outputDirectory = platform?.exportDir,
                     onStage = { next -> stage = next },
+                    capturedAt = capturedAt,
                 )
                 session.lastExport = exported
                 result = exported
@@ -354,6 +357,7 @@ fun PhoneExportSheet(
                 // (The caller now hands in the photo's pixel size, so the form usually
                 // has the real numbers — 3024 × 4032 — before anything is written.)
                 onCanvas = { width, height -> engineCanvasPx = width to height },
+                capturedAt = capturedAt,
                 outputWidth = outputPixels?.width ?: 0,
                 outputHeight = outputPixels?.height ?: 0,
                 hdrGainMap = hdrGainMap,
@@ -669,6 +673,8 @@ internal fun ColumnScope.ExportFormContent(
     note: String?,
     /** Engine canvas from this row's own preview render (the size truth). */
     onCanvas: ((Int, Int) -> Unit)? = null,
+    /** 照片自己的拍摄时间；命名用它，缺省时表单说明用了导出时间。 */
+    capturedAt: String? = null,
     outputWidth: Int,
     outputHeight: Int,
     /** The active photo really carries an Ultra HDR gain map (read off the UI thread). */
@@ -790,6 +796,9 @@ internal fun ColumnScope.ExportFormContent(
                 text = PhoneExportOptions.resolutionNote(settings),
                 minHeight = PhoneExportSheetLayout.NoteShelfHeight,
             )
+            // 命名用照片自己的拍摄时间；没有时必须说清用的是导出那一刻。
+            com.framemark.native.shell.desktop.ExportCopy.captureTimeNote(capturedAt)
+                ?.let { ExportNote(it) }
             if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")
             if (canApplyToAll) {
                 Box(

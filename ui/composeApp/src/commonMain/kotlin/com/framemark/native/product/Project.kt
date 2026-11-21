@@ -14,6 +14,12 @@ data class PhotoRef(
     /** Content hash for batch idempotency and relinking; null when unavailable. */
     val fingerprint: String? = null,
     /**
+     * 照片自己的拍摄时间（EXIF `DateTimeOriginal`，规范成 `yyyy-MM-dd HH:mm:ss`）。
+     * 导出命名的 `{date}` / `{time}` 用它；null = 这张照片没有拍摄时间，命名退回
+     * 当前时钟，界面必须说明这一点。
+     */
+    val capturedAt: String? = null,
+    /**
      * 用户实际导入的那个文件（原图）的绝对路径；[path] 是工程真正渲染的副本。
      *
      * 只有格式需要转码时两者不同（桌面导入 TIFF / WebP 会转成引擎能读的 JPEG/PNG）。

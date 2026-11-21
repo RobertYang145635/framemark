@@ -194,6 +194,15 @@ object PhotoMetadata {
         }
     }.getOrNull()
 
+    /**
+     * 照片自己的拍摄时间（EXIF `DateTimeOriginal`，规范成 `yyyy-MM-dd HH:mm:ss`）。
+     * 只读头部：导出命名要用它，不需要整张照片进内存。
+     */
+    fun capturedAt(file: File): String? = runCatching {
+        val head = file.inputStream().use { it.readNBytes(headerBytes) }
+        com.framemark.native.product.ExifCaptureDate.read(head)
+    }.getOrNull()
+
     fun orientation(file: File): Int {
         val name = file.name.lowercase()
         val head = runCatching { file.inputStream().use { it.readNBytes(headerBytes) } }.getOrNull() ?: return 1

@@ -199,6 +199,8 @@ object NativeEngine {
         outputDirectory: String? = null,
         onOutputPrepared: ((path: String, size: Long, sha256: String) -> Boolean)? = null,
         onStage: ((ExportStage) -> Unit)? = null,
+        /** 照片自己的拍摄时间；命名的 `{date}`/`{time}` 用它，缺省才用当前时钟。 */
+        capturedAt: String? = null,
     ): ExportResult {
         val api = WorkflowEnv.nativeRender
         val platform = WorkflowEnv.platform
@@ -223,6 +225,7 @@ object NativeEngine {
             outputDirectory = outputDirectory,
             onOutputPrepared = onOutputPrepared,
             onStage = onStage,
+            capturedAt = capturedAt,
         )
     }
 
@@ -245,6 +248,7 @@ object NativeEngine {
         outputDirectory: String? = null,
         onOutputPrepared: ((path: String, size: Long, sha256: String) -> Boolean)? = null,
         onStage: ((ExportStage) -> Unit)? = null,
+        capturedAt: String? = null,
     ): ExportResult {
         val api = WorkflowEnv.nativeRender
             ?: throw EngineFailure("FM-E-ENGINE-001", "渲染组件未安装或无法启动，无法导出")
@@ -265,6 +269,7 @@ object NativeEngine {
             ),
             extension = settings.format.extension,
             index = nameIndex,
+            capturedAt = capturedAt,
             outputDirectory = outputDirectory,
         )
         var temporaryPath = withContext(Dispatchers.IO) {

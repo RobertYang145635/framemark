@@ -352,6 +352,8 @@ class DesktopProjectController(
                 fingerprint = PhotoMetadata.fingerprint(normalised),
                 // 转码副本 ≠ 用户点的那个文件：原图路径留着做去重与溯源。
                 sourcePath = file.absolutePath.takeIf { normalised != file },
+                // 导出命名的拍摄日期/时间；转码副本可能会丢掉 EXIF，所以读用户的原图。
+                capturedAt = PhotoMetadata.capturedAt(file),
             )
             // AU1-01: these are the dimensions every render chain reuses.
             PhotoSizes.prime(ref.path, ref.widthPx, ref.heightPx)
@@ -883,6 +885,7 @@ class DesktopProjectController(
                 now = clock(),
                 nameIndex = photoIndex,
                 outputDirectory = platform.exportDir,
+                capturedAt = photo.capturedAt,
             )
             when (val outcome = batchQueue.submit(job)) {
                 is SubmitOutcome.Added -> {

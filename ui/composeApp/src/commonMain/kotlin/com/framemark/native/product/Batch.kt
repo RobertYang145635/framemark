@@ -20,6 +20,8 @@ data class BatchJob(
     val photoPath: String?,
     val photoFingerprint: String?,
     val displayName: String,
+    /** 照片自己的拍摄时间（EXIF `DateTimeOriginal`）；导出命名用它，缺省才用时钟。 */
+    val capturedAt: String? = null,
     val design: PhotoDesign,
     val overlay: ProjectWatermarkSpec?,
     val exportSettings: ExportSettings = ExportSettings(),
@@ -73,11 +75,13 @@ data class BatchJob(
             now: Long = 0,
             nameIndex: Int? = null,
             outputDirectory: String? = null,
+            capturedAt: String? = null,
         ): BatchJob = BatchJob(
             id = id,
             photoPath = photoPath,
             photoFingerprint = photoFingerprint,
             displayName = displayName,
+            capturedAt = capturedAt,
             design = design.copy(overlay = null),
             overlay = design.overlay,
             exportSettings = exportSettings,

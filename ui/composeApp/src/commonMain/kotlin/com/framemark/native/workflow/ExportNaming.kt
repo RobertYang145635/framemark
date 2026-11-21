@@ -4,6 +4,12 @@ package com.framemark.native.workflow
  * Export file naming: `{photo}` = source photo stem, `{index}` = the 1-based
  * position of that photo in the project, `{name}` = card name, `{date}` / `{time}`.
  * The default pattern `{photo}-{index}` keeps every batch item on its own file.
+ *
+ * `{date}` / `{time}` are the photo's **own** capture time (`DateTimeOriginal`),
+ * not the clock: a 2022-07-05 sample exported today used to be named
+ * `portrait-320261121224134.jpg`, which files the shot under the wrong day.
+ * Only a photo without any EXIF time falls back to the current clock, and the
+ * export sheets say so (`ExportCopy.captureTimeNote`).
  */
 object ExportNaming {
     fun exportPath(
@@ -14,9 +20,10 @@ object ExportNaming {
         extension: String,
         index: Int = 1,
         outputDirectory: String? = null,
+        capturedAt: String? = null,
     ): String = uniquePath(
         platform,
-        resolveName(pattern, cardName, photoName, platform, index),
+        resolveName(pattern, cardName, photoName, platform, index, capturedAt = capturedAt),
         extension,
         outputDirectory,
     )
@@ -31,19 +38,21 @@ object ExportNaming {
         index: Int = 1,
         collisionNumber: Int = 1,
         outputDirectory: String? = null,
+        capturedAt: String? = null,
     ): String {
-        val base = resolveName(pattern, cardName, photoName, platform, index)
+        val base = resolveName(pattern, cardName, photoName, platform, index, capturedAt = capturedAt)
         val collisionSuffix = if (collisionNumber <= 1) "" else "-$collisionNumber"
         val dir = (outputDirectory?.takeIf { it.isNotBlank() } ?: platform.exportDir).trimEnd('/', '\\')
         return "$dir/$base$collisionSuffix.$extension"
     }
 
-    fun previewName(pattern: String, cardName: String, photoName: String? = null, index: Int = 1): String {
-        val platform = WorkflowEnv.platform
-        val date = platform?.dateStamp() ?: "20260101"
-        val time = platform?.timeStamp() ?: "000000"
-        return resolveName(pattern, cardName, photoName, platform, index, date, time)
-    }
+    fun previewName(
+        pattern: String,
+        cardName: String,
+        photoName: String? = null,
+        index: Int = 1,
+        capturedAt: String? = null,
+    ): String = resolveName(pattern, cardName, photoName, WorkflowEnv.platform, index, capturedAt = capturedAt)
 
     /** Source photo stem (`/a/b/IMG_1.jpg` → `IMG_1`), null when there is no path. */
     fun photoStem(path: String?): String? {
@@ -61,9 +70,13 @@ object ExportNaming {
         photoName: String?,
         platform: WorkflowPlatform?,
         index: Int,
-        date: String = platform?.dateStamp() ?: "20260101",
-        time: String = platform?.timeStamp() ?: "000000",
+        capturedAt: String? = null,
     ): String {
+        // 拍摄时间优先；没有就用当前时钟（调用方会把这件事写在界面上）。
+        val date = capturedAt?.let { com.framemark.native.product.ExifCaptureDate.dateToken(it) }
+            ?: platform?.dateStamp() ?: "20260101"
+        val time = capturedAt?.let { com.framemark.native.product.ExifCaptureDate.timeToken(it) }
+            ?: platform?.timeStamp() ?: "000000"
         val filled = pattern
             .replace("{name}", cardName)
             .replace("{photo}", photoName.orEmpty())

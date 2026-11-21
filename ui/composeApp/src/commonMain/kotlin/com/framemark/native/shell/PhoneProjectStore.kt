@@ -92,6 +92,12 @@ interface PhoneAssetIo {
     fun photoMeta(path: String): IntArray? = imageBounds(path)?.let { intArrayOf(it[0], it[1], 1) }
 
     fun fingerprint(path: String): String? = null
+
+    /**
+     * 照片自己的拍摄时间（`yyyy-MM-dd HH:mm:ss`），导出命名用。平台读不到就返回
+     * null —— 命名会退回当前时钟，界面负责说明这一点。
+     */
+    fun capturedAt(path: String): String? = null
 }
 
 /**
@@ -505,6 +511,7 @@ class PhoneProjectStore(
                 // An import must not hash hundreds of MB on the caller thread (a Compose
                 // LaunchedEffect): the digest is filled in on the store's IO scope below.
                 fingerprint = null,
+                capturedAt = io?.capturedAt(path),
             )
             next = next.addPhoto(ref, inheritFrom(next))
         }

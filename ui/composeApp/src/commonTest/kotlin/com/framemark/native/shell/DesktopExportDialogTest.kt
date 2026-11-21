@@ -259,6 +259,19 @@ class DesktopExportDialogTest {
         )
     }
 
+    @Test
+    fun the_capture_time_not_the_clock_names_the_file() {
+        // 2022-07-05 14:13:37 拍的样片，导出命名的日期/时间必须是拍摄那一刻。
+        assertEquals(
+            "IMG_1-20220705-141337",
+            ExportFileName.previewName("{photo}-{date}-{time}", "边框", "IMG_1", 1, "2022:07:05 14:13:37"),
+        )
+        // 没有拍摄时间时界面明说用的是导出时间（而不是静默用时钟）。
+        assertNull(ExportCopy.captureTimeNote("2022:07:05 14:13:37"))
+        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote(null))
+        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote("0000:00:00 00:00:00"))
+    }
+
     // ---- 画布真值优先级（WP-Q2③） --------------------------------------------
 
     @Test

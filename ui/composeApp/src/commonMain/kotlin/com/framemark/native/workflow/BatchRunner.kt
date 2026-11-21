@@ -495,6 +495,8 @@ class BatchRunner(
             design = design.toDesignSnapshot().copy(styleId = design.styleId ?: item.styleId),
             overlay = overlay,
             photoPath = path,
+            // 命名用照片自己的拍摄时间（批量也要，不然文件名记的是导出时刻）。
+            capturedAt = snapshot.capturedAt,
         )
         item.outputPath = result.path
     }

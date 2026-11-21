@@ -350,6 +350,7 @@ fun DesktopExportDialog(
                     nameIndex = photoIndex,
                     photoDisplayName = photo?.displayName,
                     outputDirectory = outputDirectory,
+                    capturedAt = photo?.capturedAt,
                 )
                 result = produced
                 session.lastExport = produced
@@ -455,6 +456,7 @@ fun DesktopExportDialog(
                             cardName = card?.name ?: "边框",
                             photoStem = ExportNaming.photoStem(photo?.displayName ?: photo?.path),
                             photoIndex = photoIndex,
+                            capturedAt = photo?.capturedAt,
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                             onChange = { next ->
                                 // Switching to 指定长边 pins the number shown in the field,
@@ -670,6 +672,7 @@ private fun ExportFormColumn(
     cardName: String,
     photoStem: String?,
     photoIndex: Int,
+    capturedAt: String? = null,
     modifier: Modifier,
     onChange: (ExportSettings) -> Unit,
     onQualityText: (String) -> Unit,
@@ -837,6 +840,7 @@ private fun ExportFormColumn(
                             photoStem = photoStem,
                             index = photoIndex,
                             extension = settings.format.extension,
+                            capturedAt = capturedAt,
                         ),
                         style = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
                             .withNumericDigits(),
@@ -845,6 +849,8 @@ private fun ExportFormColumn(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                // 没有拍摄时间时必须说清命名用的是导出那一刻，否则用户会按文件名归档。
+                ExportCopy.captureTimeNote(capturedAt)?.let { DlgNote(it) }
             }
         }
 
