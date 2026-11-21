@@ -504,13 +504,11 @@ private fun BrandedCuratedLogo(
                     )
                 }
             }
-            // 手机底板的高是算好的（一页一组），品牌 / 版本列表是**内容列表**，
-            // 规则允许它自带一个竖向滚动区；桌面右栏本来就在滚动列表里，不能再套。
-            if (dense) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { listBody() }
-            } else {
-                listBody()
-            }
+            // 不再自带竖向滚动区：手机底板（参数页）与桌面右栏**都已经**是滚动容器，
+            // 这里再套一层 verticalScroll 会拿到无限高约束并直接崩溃（2026-11-21 用户
+            // 点「我的 Logo」闪退：Vertically scrollable component was measured with an
+            // infinity maximum height constraints）。内容跟随外层的滚动即可。
+            listBody()
             return
         }
         LogoPaneBody.UserLibrary -> {
@@ -533,12 +531,8 @@ private fun BrandedCuratedLogo(
                     }
                 }
             }
-            // 我的 Logo 同样是内容列表：手机端一个滚动区，桌面端跟着右栏滚。
-            if (dense) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { userBody() }
-            } else {
-                userBody()
-            }
+            // 同上：我的 Logo 也跟着外层滚动，不能自带第二个滚动区（见上一条注释）。
+            userBody()
             return
         }
         LogoPaneBody.Panel -> Unit
