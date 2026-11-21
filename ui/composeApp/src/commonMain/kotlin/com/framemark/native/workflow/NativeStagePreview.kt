@@ -114,6 +114,8 @@ private sealed interface StageRender {
         val bitmap: ImageBitmap,
         val photoRect: ImageRect? = null,
         val textSlots: List<TextSlot> = emptyList(),
+        /** Engine `fit.source_canvas` (final canvas at photo pixels); null when absent. */
+        val canvasPx: Pair<Int, Int>? = null,
     ) : StageRender
     data class Failed(val requestKey: PreviewRequestKey, val reason: String) : StageRender
 }
@@ -134,6 +136,12 @@ fun NativeStagePreview(
     photoPath: String? = null,
     /** Rendered pixel size + the engine photo box (the overlay anchor). */
     onRendered: ((Int, Int, ImageRect?) -> Unit)? = null,
+    /**
+     * Engine `fit.source_canvas`: the finished canvas at the photo's own pixels —
+     * the size "原尺寸" writes, including a template's own crop. Delivered with the
+     * same frame as [onRendered]; null when the engine did not report it.
+     */
+    onCanvas: ((Int, Int) -> Unit)? = null,
     /** Current render's text metadata, delivered only with a matching Ready key. */
     onTextSlots: ((Int, Int, List<TextSlot>) -> Unit)? = null,
     /** Fired when a new render key starts; the old photo box must not be reused. */
@@ -215,6 +223,7 @@ fun NativeStagePreview(
         val requestGate = remember(card.id) { PreviewRequestGate(key) }
         val latestKey by rememberUpdatedState(key)
         val latestOnRendered by rememberUpdatedState(onRendered)
+        val latestOnCanvas by rememberUpdatedState(onCanvas)
         val latestOnTextSlots by rememberUpdatedState(onTextSlots)
         val latestOnRenderStarted by rememberUpdatedState(onRenderStarted)
         val latestOnFailed by rememberUpdatedState(onFailed)
@@ -364,6 +373,7 @@ fun NativeStagePreview(
                         decoded.bitmap,
                         decoded.photoRect,
                         decoded.textSlots,
+                        decoded.canvasPx,
                     )
                     busy = quality == "interactive"
                     FmLog.info("FM_PREVIEW_REQUEST") {
@@ -385,7 +395,7 @@ fun NativeStagePreview(
                         lastInteractiveVersion = maxOf(lastInteractiveVersion, version)
                     }
                     renderCache.attachDecoded(requestKey, bitmap)
-                    state = StageRender.Ready(requestKey, bitmap, cached.photoRect, cached.textSlots)
+                    state = StageRender.Ready(requestKey, bitmap, cached.photoRect, cached.textSlots, cached.canvasPx)
                     busy = quality == "interactive"
                     FmLog.info("FM_PREVIEW_REQUEST") {
                         "card=${request.card.id} version=$version phase=cache-hit " +
@@ -487,8 +497,8 @@ fun NativeStagePreview(
                         false
                     } else {
                         lastInteractiveVersion = version
-                        renderCache.put(requestKey, bytes, image.photoRect, image.textSlots, bitmap)
-                        state = StageRender.Ready(requestKey, bitmap, image.photoRect, image.textSlots)
+                        renderCache.put(requestKey, bytes, image.photoRect, image.textSlots, bitmap, image.canvasPx)
+                        state = StageRender.Ready(requestKey, bitmap, image.photoRect, image.textSlots, image.canvasPx)
                         busy = true
                         image.photoRect?.let { rect ->
                             PreviewGeometry.record(
@@ -501,8 +511,8 @@ fun NativeStagePreview(
                 } else {
                     requestGate.publishIfCurrent(request.key, version) {
                         if (latestKey == request.key && latestInput.value.key == request.key) {
-                            renderCache.put(requestKey, bytes, image.photoRect, image.textSlots, bitmap)
-                            state = StageRender.Ready(requestKey, bitmap, image.photoRect, image.textSlots)
+                            renderCache.put(requestKey, bytes, image.photoRect, image.textSlots, bitmap, image.canvasPx)
+                            state = StageRender.Ready(requestKey, bitmap, image.photoRect, image.textSlots, image.canvasPx)
                             busy = false
                             image.photoRect?.let { rect ->
                                 PreviewGeometry.record(
@@ -704,6 +714,7 @@ fun NativeStagePreview(
                         reported = true
                         latestOnRendered?.invoke(ready.bitmap.width, ready.bitmap.height, ready.photoRect)
                         latestOnTextSlots?.invoke(ready.bitmap.width, ready.bitmap.height, ready.textSlots)
+                        ready.canvasPx?.let { latestOnCanvas?.invoke(it.first, it.second) }
                     }
                 }
                 Image(

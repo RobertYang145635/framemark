@@ -104,6 +104,13 @@ data class NativeImage(
     val textSlots: List<TextSlot> = emptyList(),
     /** Source pixels the renderer sampled for the photo; see [NativeImage]'s class doc. */
     val photoSrc: ImageRect? = null,
+    /**
+     * Engine-reported `fit.source_canvas`: the finished canvas at the **photo's own
+     * pixels**, i.e. exactly what "原尺寸" writes. Templates that crop the photo to
+     * their own ratio make this differ from the photo size, so no caller can derive
+     * it by dividing the preview's photo box. Null when the engine did not report it.
+     */
+    val canvasPx: Pair<Int, Int>? = null,
 )
 
 /**

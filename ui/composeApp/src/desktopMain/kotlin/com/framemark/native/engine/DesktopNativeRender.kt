@@ -191,6 +191,7 @@ class DesktopNativeRender(
                 photoSrc = result.photoSrc?.takeIf { it.size >= 4 }?.let {
                     ImageRect(it[0].toFloat(), it[1].toFloat(), it[2].toFloat(), it[3].toFloat())
                 },
+                canvasPx = result.sourceCanvas?.takeIf { it.size >= 2 }?.let { it[0] to it[1] },
             )
         }
     }

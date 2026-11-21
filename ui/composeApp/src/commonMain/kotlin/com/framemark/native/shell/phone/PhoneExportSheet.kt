@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.inspector.InspectorControl
+import com.framemark.native.inspector.OutputPixels
 import com.framemark.native.shell.SAMPLE_EXPORT_REFUSAL
 import com.framemark.native.theme.FmDuration
 import com.framemark.native.theme.FmEasing
@@ -155,12 +156,17 @@ fun PhoneExportSheet(
     // 成片像素：右栏 / 顶栏 / 手机样式页 / 引擎桥接共用同一条 [OutputSize] 链 ——
     // 先按该边框声明的参数算画布（页脚会加高），再套长边档。取不到照片尺寸时是
     // null，表单退回「尺寸档」那一句，绝不印一个猜的数字。
+    // 引擎报的 `fit.source_canvas`（预览行那次渲染带回来）是画布真值；固定比例
+    // 模板按自己的版式裁照片，Kotlin 侧反推不出来。只有它缺位时才退回公式。
+    var engineCanvasPx by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    LaunchedEffect(photoPath, card?.id, design) { engineCanvasPx = null }
     val outputPixels = PhoneExportOptions.outputPixels(
         photoWidthPx = photoWidthPx,
         photoHeightPx = photoHeightPx,
         controls = controls,
         settings = settings,
         value = { control -> session.value(control) },
+        engineCanvasPx = engineCanvasPx,
     )
 
     // Whether the active photo really carries an Ultra HDR gain map. Read off the UI
@@ -347,6 +353,7 @@ fun PhoneExportSheet(
                 // that the sheet prints the chosen step instead of inventing pixels.
                 // (The caller now hands in the photo's pixel size, so the form usually
                 // has the real numbers — 3024 × 4032 — before anything is written.)
+                onCanvas = { width, height -> engineCanvasPx = width to height },
                 outputWidth = outputPixels?.width ?: 0,
                 outputHeight = outputPixels?.height ?: 0,
                 hdrGainMap = hdrGainMap,
@@ -444,6 +451,8 @@ private fun ExportPreviewRow(
     /** Real export pixels when the engine has reported them, else the step caption. */
     sizeLabel: String,
     formatLabel: String,
+    /** Engine canvas from this row's own preview render (the size truth). */
+    onCanvas: ((Int, Int) -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -468,6 +477,7 @@ private fun ExportPreviewRow(
                     overlay = overlay(),
                     photoPath = photoPath,
                     modifier = Modifier.fillMaxSize(),
+                    onCanvas = onCanvas,
                 )
             }
         }
@@ -657,6 +667,8 @@ internal fun ColumnScope.ExportFormContent(
     sharing: Boolean,
     error: String?,
     note: String?,
+    /** Engine canvas from this row's own preview render (the size truth). */
+    onCanvas: ((Int, Int) -> Unit)? = null,
     outputWidth: Int,
     outputHeight: Int,
     /** The active photo really carries an Ultra HDR gain map (read off the UI thread). */
@@ -698,6 +710,7 @@ internal fun ColumnScope.ExportFormContent(
             design = design,
             overlay = overlay,
             photoPath = photoPath,
+            onCanvas = onCanvas,
             sizeLabel = if (outputWidth > 0 && outputHeight > 0) {
                 "$outputWidth × $outputHeight"
             } else {

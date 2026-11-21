@@ -259,6 +259,33 @@ class DesktopExportDialogTest {
         )
     }
 
+    // ---- 画布真值优先级（WP-Q2③） --------------------------------------------
+
+    @Test
+    fun the_engine_canvas_beats_every_kotlin_side_derivation() {
+        // 引擎报的画布就是「原尺寸」写出的像素：模板按自己的版式裁照片时，Kotlin 的
+        // 公式/测量都算不出来（方片曾估成 1600 × 1600，成片 1600 × 1226）。
+        val resolved = ExportEstimate.canvasOf(
+            engineCanvasPx = 2609 to 2000,
+            canonical = ExportPixels(800, 800),
+            measured = ExportPixels(800, 613),
+        )
+        assertEquals(ExportPixels(2609, 2000), resolved)
+    }
+
+    @Test
+    fun without_an_engine_report_the_shell_formula_then_the_measurement_decide() {
+        assertEquals(
+            ExportPixels(720, 552),
+            ExportEstimate.canvasOf(null, ExportPixels(720, 552), ExportPixels(720, 552)),
+        )
+        assertEquals(
+            ExportPixels(720, 552),
+            ExportEstimate.canvasOf(null, null, ExportPixels(720, 552)),
+        )
+        assertNull(ExportEstimate.canvasOf(null, null, null))
+    }
+
     // ---- 平台兜底 -----------------------------------------------------------
 
     private class FakePlatform(override val exportDir: String) : WorkflowPlatform {

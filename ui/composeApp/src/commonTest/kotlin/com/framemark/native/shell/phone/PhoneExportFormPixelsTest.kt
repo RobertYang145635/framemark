@@ -82,6 +82,23 @@ class PhoneExportFormPixelsTest {
     }
 
     @Test
+    fun the_engine_canvas_wins_over_the_photo_size_formula() {
+        // 引擎报的画布（固定比例模板会裁照片）必须直接用量，再套长边档：
+        // 方片 800 × 800 的模板画布是 800 × 613，长边 1600 → 1600 × 1226。
+        val px = PhoneExportOptions.outputPixels(
+            photoWidthPx = 800,
+            photoHeightPx = 800,
+            controls = listOf(control("params.footerPct", 7.5f)),
+            settings = ExportSettings(sizeMode = ExportSizeMode.LongEdge, longEdge = 1600),
+            value = { c -> (c.initial as ControlValue.Num).value },
+            engineCanvasPx = 800 to 613,
+        )
+        assertEquals(1600, px!!.longEdge)
+        assertEquals(1600, px.width)
+        assertEquals(1226, px.height)
+    }
+
+    @Test
     fun without_a_photo_size_the_form_prints_no_number_at_all() {
         assertNull(pixels(0, 0))
         assertNull(pixels(-1, 4032))

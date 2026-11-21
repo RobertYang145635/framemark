@@ -43,6 +43,13 @@ data class EngineRenderResult(
      * fallback must run.
      */
     val photoSrc: DoubleArray? = null,
+    /**
+     * Engine-reported `fit.source_canvas`: the canvas the engine writes at the
+     * photo's own pixels (before any long-edge normalisation). This is the
+     * "原尺寸" export size and the only truthful canvas for templates that crop
+     * the photo to their own ratio.
+     */
+    val sourceCanvas: IntArray? = null,
 )
 
 /** Compatibility import for existing desktop callers; the model is now shared. */
@@ -246,14 +253,11 @@ class DesktopEngineBridge(
                     )
                     layout.handExtraFontsDir?.let { args += listOf("--extra-fonts", dataArg(it)) }
                     if (photoPath != null) args += listOf("--photo", photoAbs)
-                    // A2: an export with no requested long edge is 原尺寸 — keep the
-                    // whole photo and grow the template instead of cropping to its
-                    // ratio. `nativeFit` remembers the flag so a template that cannot
-                    // hold the photo can be re-run on the design path below.
-                    if (mode == "export" && longEdge == null) {
-                        nativeFit = true
-                        args += listOf("--fit", "native")
-                    }
+                    // 原尺寸导出走**设计画布**，不再传 `--fit native`：预览画的就是
+                    // 设计画布，固定比例模板会按自己的版式裁照片；只走 native 时同一张
+                    // 卡预览裁、成片不裁，尺寸与构图都对不上（WP-Q2③）。`nativeFit`
+                    // 仍保留给下面的回退分支，但现在恒为 false。
+                    nativeFit = false
                     args += overlayArgs
                     args
                 }
@@ -473,6 +477,7 @@ class DesktopEngineBridge(
                 // Source-photo pixels: deliberately not multiplied by `scale`,
                 // which only maps the canvas to the requested output size.
                 photoSrc = rep.photoSrc,
+                sourceCanvas = rep.sourceCanvas,
             )
         } finally {
             // AU1-02: engine scratch files are deleted on both the success and
@@ -738,6 +743,8 @@ class DesktopEngineBridge(
         val requiredResourceErrors: List<String> = emptyList(),
         /** Engine-reported `photo_src` in display (EXIF-applied) pixels; null when absent. */
         val photoSrc: DoubleArray? = null,
+        /** Engine-reported `fit.source_canvas`: the final canvas in photo pixels. */
+        val sourceCanvas: IntArray? = null,
     )
 
     /**
@@ -753,6 +760,20 @@ class DesktopEngineBridge(
         if (rect[2] <= 0.0 || rect[3] <= 0.0) return null
         if (rect[0] < 0.0 || rect[1] < 0.0) return null
         return rect.toDoubleArray()
+    }
+
+    /**
+     * `fit.source_canvas` — the canvas the engine would write at the photo's own
+     * pixels. This is the only number that can answer "原尺寸导出多大" without
+     * re-deriving a template's own cropping rule in Kotlin.
+     */
+    private fun parseSourceCanvas(doc: Map<String, Any?>): IntArray? {
+        val values = doc["fit"].jsonMap()["source_canvas"].jsonList()
+        if (values.size != 2) return null
+        val w = (values[0] as? Number)?.toInt() ?: return null
+        val h = (values[1] as? Number)?.toInt() ?: return null
+        if (w <= 0 || h <= 0) return null
+        return intArrayOf(w, h)
     }
 
     private fun parseReport(card: EngineCard, report: File): RawReport {
@@ -858,7 +879,7 @@ class DesktopEngineBridge(
                 val declaredPaths = declarations.mapNotNull { it.path }.toSet()
                 val extras = draws.filter { it.path !in declaredPaths }
                 val texts = declarations + extras
-                RawReport(w, h, photo.toDoubleArray(), texts, resourceErrors, parsePhotoSrc(doc))
+                RawReport(w, h, photo.toDoubleArray(), texts, resourceErrors, parsePhotoSrc(doc), parseSourceCanvas(doc))
             }
             "hand" -> {
                 val canvas = doc["canvas"].jsonList()
@@ -891,7 +912,7 @@ class DesktopEngineBridge(
                         located = located,
                     )
                 }
-                RawReport(w, h, photo.toDoubleArray(), texts, photoSrc = parsePhotoSrc(doc))
+                RawReport(w, h, photo.toDoubleArray(), texts, photoSrc = parsePhotoSrc(doc), sourceCanvas = parseSourceCanvas(doc))
             }
             else -> error("unknown backend ${card.backend}")
         }

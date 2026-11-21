@@ -204,6 +204,19 @@ object ExportEstimate {
         )
     }
 
+    /**
+     * 画布真值优先级：引擎 `fit.source_canvas` → Shell 的同一份公式结果 → 预览帧测量。
+     *
+     * 第一档是唯一能覆盖「模板按自己的版式裁照片」的数字：预览画的就是它，导出写的
+     * 也是它（原尺寸不再向引擎要 `--fit native`）。后两档只是取不到引擎报告时的兜底
+     * ——早先只有测量档，方片预览被算成 1600 × 1600，成片却是 1600 × 1226。
+     */
+    fun canvasOf(
+        engineCanvasPx: Pair<Int, Int>?,
+        canonical: ExportPixels?,
+        measured: ExportPixels?,
+    ): ExportPixels? = engineCanvasPx?.let { ExportPixels(it.first, it.second) } ?: canonical ?: measured
+
     /** 指定长边档：把画布长边归一到所选值（放大与缩小同式，D-1）。 */
     fun output(canvas: ExportPixels?, sizeMode: ExportSizeMode, longEdge: Int?): ExportPixels? {
         if (canvas == null) return null

@@ -210,19 +210,27 @@ object PhoneExportOptions {
      *
      * 取不到照片尺寸时返回 null —— 宁可不写，也不写一个猜的数字（表单退回尺寸档文案）。
      */
+    /**
+     * 成片像素。优先用引擎报的 `fit.source_canvas`（预览那次渲染带回来的画布真值）：
+     * 固定比例模板会按自己的版式裁照片，Kotlin 侧的公式只覆盖已知参数族，算不出来
+     * 就报一个照片尺寸（如方片 800 × 800），与真正写出的 1600 × 1226 对不上。
+     */
     fun outputPixels(
         photoWidthPx: Int,
         photoHeightPx: Int,
         controls: List<InspectorControl>,
         settings: ExportSettings,
         value: (InspectorControl) -> Any?,
+        engineCanvasPx: Pair<Int, Int>? = null,
     ): OutputPixels? = OutputSize.applyLongEdge(
-        pixels = OutputSize.canvas(
-            photoWidthPx = photoWidthPx,
-            photoHeightPx = photoHeightPx,
-            controls = controls,
-            value = value,
-        ),
+        pixels = engineCanvasPx
+            ?.let { OutputPixels(it.first, it.second) }
+            ?: OutputSize.canvas(
+                photoWidthPx = photoWidthPx,
+                photoHeightPx = photoHeightPx,
+                controls = controls,
+                value = value,
+            ),
         mode = settings.sizeMode,
         longEdge = settings.effectiveLongEdge,
     )

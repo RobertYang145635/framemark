@@ -129,18 +129,15 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
             val overridePhoto = requireReadablePhotoOverride(photoPath) { path ->
                 File(path).let { it.isFile && it.canRead() }
             }
-            // 原尺寸 (no long edge asked for) means the photo's own pixels, not a fixed
-            // cap: the canvas follows the source that is actually being rendered.
-            // A2: an export without a long edge is the user's "原尺寸" — the whole photo,
-            // no template-ratio centre crop. The engine grows the canvas instead of
-            // resampling; templates that cannot hold the photo report E4H-FIT-NATIVE-*
-            // and fall back to the template ratio with a visible note.
-            val fitNative = mode == "export" && longEdge == null
+            // 原尺寸 = 设计画布（照片像素 1:1，不重采样），与预览同一画布：
+            // 固定比例模板按自己的版式裁照片，导出不能再退回「整张照片」。
+            val originalSize = mode == "export" && longEdge == null
+            // 不再向引擎要 `fitMode=native`：那样模板的裁切会消失，预览与成片对不上。
+            val fitNative = false
             val edge = when {
                 mode == "preview" -> maxEdge ?: 1280
-                // Native canvas is photo + border, usually larger than the photo's
-                // long edge; any max edge here would downscale the 1:1 photo.
-                fitNative -> 0
+                // 画布是照片 + 边框，通常比照片长边大；这里给 0 表示不缩放。
+                originalSize -> 0
                 else -> longEdge ?: nativeLongEdge(overridePhoto, mode)
             }
             if (mode == "export" && (format == SampleFormat.Jpeg || format == SampleFormat.WebP)) {
@@ -203,6 +200,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
                     direct.note,
                     textSlots,
                     photoSrc = photoSrc,
+                    canvasPx = sourceCanvasOf(geom),
                 )
                 } finally {
                     geom.delete()
@@ -386,6 +384,21 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
      * second pre-crop may be added on top. Null when the running engine binary
      * predates the field.
      */
+    /**
+     * `fit.source_canvas` — the canvas at the photo's own pixels, i.e. the
+     * "原尺寸" output size. Templates that crop the photo to their own ratio make
+     * this differ from the photo size, so the export sheet must not re-derive it.
+     */
+    private fun sourceCanvasOf(geom: File): Pair<Int, Int>? = runCatching {
+        if (!geom.isFile) return null
+        val fit = JSONObject(geom.readText()).optJSONObject("fit") ?: return null
+        val canvas = fit.optJSONArray("source_canvas") ?: return null
+        if (canvas.length() < 2) return null
+        val w = canvas.optInt(0, 0)
+        val h = canvas.optInt(1, 0)
+        if (w <= 0 || h <= 0) null else w to h
+    }.getOrNull()
+
     private fun photoSrcOf(geom: File): ImageRect? = runCatching {
         if (!geom.isFile) return null
         val rect = JSONObject(geom.readText()).optJSONArray("photo_src") ?: return null

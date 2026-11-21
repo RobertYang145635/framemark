@@ -278,6 +278,10 @@ fun DesktopExportDialog(
     val editable = card != null && NativeEngine.supportsExport(card.id)
     val canExport = editable && qualityError == null && longEdgeError == null && !exporting
     val qualityValue = ExportRules.parseQuality(qualityText) ?: ExportRules.QUALITY_DEFAULT
+    // The dialog's own preview reports the engine canvas; it wins over every
+    // Kotlin-side derivation because it is what the export will actually write.
+    var engineCanvasPx by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    LaunchedEffect(photo?.path, card?.id, design) { engineCanvasPx = null }
     // 画布优先用 Shell 传来的同一份公式结果；只有拿不到时才退回测量估算。
     // FIX1: 估算也用**显示**尺寸（EXIF 方向已应用），预览帧画的是解码后的画面。
     val photoDisplay = photo?.displayPixels()
@@ -288,7 +292,13 @@ fun DesktopExportDialog(
         previewWidthPx = frame?.width ?: 0,
         previewHeightPx = frame?.height ?: 0,
     )
-    val canvas = canonicalCanvas?.let { ExportPixels(it.width, it.height) } ?: measuredCanvas
+    // 引擎报的 `fit.source_canvas` 是唯一真值：固定比例模板会按自己的版式裁照片，
+    // 用预览帧的照片框反推只会在这种卡上多算一截（1664×1283 vs 真值 1131）。
+    val canvas = ExportEstimate.canvasOf(
+        engineCanvasPx = engineCanvasPx,
+        canonical = canonicalCanvas?.let { ExportPixels(it.width, it.height) },
+        measured = measuredCanvas,
+    )
     val outPixels = ExportEstimate.output(canvas, settings.sizeMode, effectiveLongEdge)
 
     fun runExport() {
@@ -424,6 +434,7 @@ fun DesktopExportDialog(
                             previewPixels = outPixels,
                             modifier = Modifier.width(220.dp).fillMaxHeight(),
                             onFrame = { width, height, box -> frame = PreviewFrame(width, height, box) },
+                            onCanvas = { width, height -> engineCanvasPx = width to height },
                         )
                         Spacer(Modifier.width(22.dp))
                         ExportFormColumn(
@@ -557,6 +568,7 @@ private fun ExportPreviewColumn(
     previewPixels: ExportPixels?,
     modifier: Modifier,
     onFrame: (Int, Int, ImageRect?) -> Unit,
+    onCanvas: (Int, Int) -> Unit,
 ) {
     val estimate = ExportEstimate.estimatedBytes(
         previewPixels,
@@ -585,6 +597,7 @@ private fun ExportPreviewColumn(
                     photoPath = photo?.path,
                     modifier = Modifier.fillMaxSize(),
                     onRendered = { width, height, box -> onFrame(width, height, box) },
+                    onCanvas = onCanvas,
                 )
                 card != null -> Text(
                     "这张边框没有接入实时预览，导出仍按同一模板渲染",

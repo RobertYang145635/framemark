@@ -209,6 +209,8 @@ internal data class PreviewCacheEntry(
     val textSlots: List<TextSlot>,
     /** Already decoded preview pixels; absent for older/tests-only cache entries. */
     val bitmap: ImageBitmap? = null,
+    /** Engine `fit.source_canvas` (final canvas at photo pixels); null when absent. */
+    val canvasPx: Pair<Int, Int>? = null,
 )
 
 /** A decoded hit needs neither a PNG byte copy nor another decoder pass. */
@@ -216,6 +218,7 @@ internal data class PreviewDecodedEntry(
     val bitmap: ImageBitmap,
     val photoRect: ImageRect?,
     val textSlots: List<TextSlot>,
+    val canvasPx: Pair<Int, Int>? = null,
 )
 
 /** Small synchronized LRU whose lookup returns bytes and geometry atomically. */
@@ -232,14 +235,16 @@ internal class PreviewRenderCache(private val capacity: Int = 6) {
 
     fun get(key: PreviewRequestKey): PreviewCacheEntry? = synchronized(lock) {
         entries[key]?.let {
-            PreviewCacheEntry(it.bytes.copyOf(), it.photoRect, it.textSlots.toList(), it.bitmap)
+            PreviewCacheEntry(it.bytes.copyOf(), it.photoRect, it.textSlots.toList(), it.bitmap, it.canvasPx)
         }
     }
 
     /** Avoids copying the PNG when the exact decoded frame is already available. */
     fun getDecoded(key: PreviewRequestKey): PreviewDecodedEntry? = synchronized(lock) {
         entries[key]?.let { entry ->
-            entry.bitmap?.let { bitmap -> PreviewDecodedEntry(bitmap, entry.photoRect, entry.textSlots.toList()) }
+            entry.bitmap?.let { bitmap ->
+                PreviewDecodedEntry(bitmap, entry.photoRect, entry.textSlots.toList(), entry.canvasPx)
+            }
         }
     }
 
@@ -249,8 +254,9 @@ internal class PreviewRenderCache(private val capacity: Int = 6) {
         photoRect: ImageRect?,
         textSlots: List<TextSlot>,
         bitmap: ImageBitmap? = null,
+        canvasPx: Pair<Int, Int>? = null,
     ) = synchronized(lock) {
-        entries[key] = PreviewCacheEntry(bytes.copyOf(), photoRect, textSlots.toList(), bitmap)
+        entries[key] = PreviewCacheEntry(bytes.copyOf(), photoRect, textSlots.toList(), bitmap, canvasPx)
         Unit
     }
 
