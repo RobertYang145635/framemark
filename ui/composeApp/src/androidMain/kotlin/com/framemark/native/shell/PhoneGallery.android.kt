@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
@@ -62,6 +63,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.framemark.native.shell.phone.GallerySelection
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.gestures.detectDragGestures
+import java.util.TimeZone
+import com.framemark.native.shell.phone.GalleryDateGroups
 import com.framemark.native.theme.FmPalette
 import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
@@ -100,6 +107,14 @@ actual fun PhoneGalleryOverlay(
     var selectionVersion by remember { mutableStateOf(0) }
     var permission by remember { mutableStateOf(readPermissionState(context)) }
     var items by remember { mutableStateOf(listOf<GalleryPhoto>()) }
+    // 「今天 / 昨天 / 11月20日」分组：网格里的日期标题 + 吸顶标签 + 快速滚动气泡都用它。
+    val zoneOffset = remember {
+        (TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 1000L)
+    }
+    val nowSeconds = remember { System.currentTimeMillis() / 1000L }
+    var entries by remember { mutableStateOf<List<GalleryDateGroups.Entry>>(emptyList()) }
+    val gridState = rememberLazyGridState()
+    val photoById = remember { mutableStateMapOf<String, GalleryPhoto>() }
     var bucket by remember { mutableStateOf<GalleryBucket?>(null) }
     var buckets by remember { mutableStateOf(listOf<GalleryBucket>()) }
     var loading by remember { mutableStateOf(false) }
@@ -124,11 +139,18 @@ actual fun PhoneGalleryOverlay(
         val page = withContext(Dispatchers.IO) { MediaGallery.query(context, bucket?.id, 0, PAGE_SIZE) }
         buckets = withContext(Dispatchers.IO) { MediaGallery.buckets(context) }
         items = page
+        photoById.clear()
+        page.forEach { photoById[it.id] = it }
+        entries = GalleryDateGroups.entries(
+            photos = page.map { it.id to it.dateSec },
+            nowSeconds = nowSeconds,
+            zoneOffsetSeconds = zoneOffset,
+        )
+        gridState.scrollToItem(0)
         done = page.isEmpty()
         loading = false
     }
 
-    val gridState = rememberLazyGridState()
     LaunchedEffect(gridState, items.size, permission) {
         snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
             .collect { last ->
@@ -139,7 +161,15 @@ actual fun PhoneGalleryOverlay(
                 val next = withContext(Dispatchers.IO) {
                     MediaGallery.query(context, bucket?.id, items.size, PAGE_SIZE)
                 }
-                items = items + next.filter { candidate -> items.none { it.id == candidate.id } }
+                val fresh = next.filter { candidate -> items.none { it.id == candidate.id } }
+                items = items + fresh
+                fresh.forEach { photoById[it.id] = it }
+                entries = GalleryDateGroups.append(
+                    existing = entries,
+                    more = fresh.map { it.id to it.dateSec },
+                    nowSeconds = nowSeconds,
+                    zoneOffsetSeconds = zoneOffset,
+                )
                 done = next.isEmpty()
                 loading = false
             }
@@ -239,31 +269,146 @@ actual fun PhoneGalleryOverlay(
             val selectionTick = selectionVersion
             Box(Modifier.weight(1f)) {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Fixed(4),
                     state = gridState,
                     contentPadding = PaddingValues(horizontal = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(items, key = { it.id }) { photo ->
-                        val position = selection.positionOf(photo.id)
-                        GalleryTile(
-                            context = context,
-                            photo = photo,
-                            position = position,
-                            tick = selectionTick,
-                            onClick = {
-                                val wasSelected = selection.contains(photo.id)
-                                val changed = selection.toggle(photo.id)
-                                if (changed) {
-                                    if (wasSelected) uriById.remove(photo.id) else uriById[photo.id] = photo.uri.toString()
-                                    selectionVersion++
-                                } else if (selection.isFull) {
-                                    notice = "最多一次选 ${selection.limit} 张"
+                    items(
+                        items = entries,
+                        key = { it.key },
+                        span = { entry ->
+                            if (entry is GalleryDateGroups.Entry.Header) {
+                                androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan)
+                            } else {
+                                androidx.compose.foundation.lazy.grid.GridItemSpan(1)
+                            }
+                        },
+                    ) { entry ->
+                        when (entry) {
+                            is GalleryDateGroups.Entry.Header -> GalleryDayHeader(entry)
+                            is GalleryDateGroups.Entry.Item -> {
+                                val photo = photoById[entry.photoId]
+                                if (photo != null) {
+                                    val position = selection.positionOf(photo.id)
+                                    GalleryTile(
+                                        context = context,
+                                        photo = photo,
+                                        position = position,
+                                        tick = selectionTick,
+                                        onClick = {
+                                            val wasSelected = selection.contains(photo.id)
+                                            val changed = selection.toggle(photo.id)
+                                            if (changed) {
+                                                if (wasSelected) uriById.remove(photo.id)
+                                                else uriById[photo.id] = photo.uri.toString()
+                                                selectionVersion++
+                                            } else if (selection.isFull) {
+                                                notice = "最多一次选 ${selection.limit} 张"
+                                            }
+                                        },
+                                    )
                                 }
-                            },
-                        )
+                            }
+                        }
+                    }
+                }
+                // 吸顶日期：跟随滚动显示当前这一组的日期（网格没有内建 sticky header）。
+                val sticky = remember(entries) {
+                    androidx.compose.runtime.derivedStateOf {
+                        GalleryDateGroups.headerAt(entries, gridState.firstVisibleItemIndex)
+                    }
+                }
+                sticky.value?.let { header ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // 不透明：网格里的日期标题会从下面滚过去，半透明会叠成两层字。
+                            .background(FmPalette.canvas)
+                            .padding(horizontal = FmSpacing.lg, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(text = header.label, color = FmPalette.onSurfaceSecondary, fontSize = 13.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(text = "${header.photos} 张", color = FmPalette.onSurfaceMuted, fontSize = 11.sp)
+                    }
+                }
+                // 右侧快速滚动：按住拖动直接跳到对应位置，拖动时显示时间气泡。
+                var scrubIndex by remember { mutableStateOf<Int?>(null) }
+                val scopeForScrub = rememberCoroutineScope()
+                val thumbFraction = androidx.compose.runtime.derivedStateOf {
+                    if (entries.size <= 1) 0f
+                    else (gridState.firstVisibleItemIndex.toFloat() / (entries.size - 1)).coerceIn(0f, 1f)
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(40.dp)
+                        .fillMaxHeight()
+                        .pointerInput(entries.size) {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    val fraction = (offset.y / size.height).coerceIn(0f, 1f)
+                                    scrubIndex = (fraction * (entries.size - 1).coerceAtLeast(0)).toInt()
+                                    scopeForScrub.launch { gridState.scrollToItem(scrubIndex ?: 0) }
+                                },
+                                onDrag = { change, _ ->
+                                    val fraction = (change.position.y / size.height).coerceIn(0f, 1f)
+                                    val target = (fraction * (entries.size - 1).coerceAtLeast(0)).toInt()
+                                    if (target != scrubIndex) {
+                                        scrubIndex = target
+                                        scopeForScrub.launch { gridState.scrollToItem(target) }
+                                    }
+                                },
+                                onDragEnd = { scrubIndex = null },
+                                onDragCancel = { scrubIndex = null },
+                            )
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // 可见滑块：告诉用户「这里可以拖」，也显示当前大致位置。
+                    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val trackHeight = maxHeight
+                        val thumbHeight = 56.dp
+                        val travel = (trackHeight - thumbHeight).coerceAtLeast(0.dp)
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(vertical = 4.dp)
+                                .width(6.dp)
+                                .fillMaxHeight(),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .offset(y = travel * thumbFraction.value)
+                                    .align(Alignment.TopCenter)
+                                    .width(6.dp)
+                                    .height(thumbHeight)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(FmPalette.onSurfaceMuted.copy(alpha = 0.55f)),
+                            )
+                        }
+                    }
+                    if (scrubIndex != null) {
+                        val label = GalleryDateGroups.headerAt(entries, scrubIndex ?: 0)?.label.orEmpty()
+                        // 气泡画在条带**外面**：条带只有 40dp 宽，放里面会把日期挤成竖排。
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 52.dp)
+                                .clip(RoundedCornerShape(FmRadii.chip))
+                                .background(FmPalette.surface)
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            Text(
+                                text = label,
+                                color = FmPalette.onSurface,
+                                fontSize = 14.sp,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
                 notice?.let { text ->
@@ -328,7 +473,7 @@ private const val THUMB_EDGE_PX = 320
 
 private enum class GalleryPermission { Full, Limited, Missing }
 
-private data class GalleryPhoto(val id: String, val uri: Uri, val bucket: String?)
+private data class GalleryPhoto(val id: String, val uri: Uri, val bucket: String?, val dateSec: Long)
 private data class GalleryBucket(val id: Long, val name: String)
 
 private fun requiredPermissions(): Array<String> = when {
@@ -368,6 +513,7 @@ private object MediaGallery {
         val projection = arrayOf(
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Images.Media.DATE_ADDED,
         )
         val selection = if (bucketId != null) "${MediaStore.Images.Media.BUCKET_ID}=?" else null
         val args = bucketId?.let { arrayOf(it.toString()) }
@@ -398,6 +544,7 @@ private object MediaGallery {
             }?.use { cursor ->
                 val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
                 val bucketColumn = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
+                val dateColumn = cursor.getColumnIndex(MediaStore.Images.Media.DATE_ADDED)
                 buildList {
                     while (cursor.moveToNext()) {
                         val id = cursor.getLong(idColumn)
@@ -408,6 +555,11 @@ private object MediaGallery {
                                 uri = uri,
                                 bucket = bucketColumn.takeIf { it >= 0 && !cursor.isNull(it) }
                                     ?.let { cursor.getString(it) },
+                                dateSec = if (dateColumn >= 0 && !cursor.isNull(dateColumn)) {
+                                    cursor.getLong(dateColumn)
+                                } else {
+                                    0L
+                                },
                             ),
                         )
                     }
@@ -474,6 +626,20 @@ private object ThumbnailCache {
 
     fun get(key: String): ImageBitmap? = cache.get(key)
     fun put(key: String, value: ImageBitmap) { cache.put(key, value) }
+}
+
+@Composable
+private fun GalleryDayHeader(header: GalleryDateGroups.Entry.Header) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = FmSpacing.lg, end = FmSpacing.lg, top = FmSpacing.md, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = header.label, color = FmPalette.onSurfaceSecondary, fontSize = 13.sp)
+        Spacer(Modifier.width(8.dp))
+        Text(text = "${header.photos} 张", color = FmPalette.onSurfaceMuted, fontSize = 11.sp)
+    }
 }
 
 @Composable
