@@ -15,8 +15,11 @@ enum class PhonePage {
     Editor,
     Settings,
 
-    /** 设置 → 关于 FrameMark（版本 / 隐私 / 权限 / 许可）。 */
+    /** 设置 → 关于与许可（版本 / 更新 / 支持与反馈 / 许可）。 */
     About,
+
+    /** 设置 → 隐私与权限（内容与桌面「关于」里的二级页同一份）。 */
+    Privacy,
 }
 
 object PhonePagePolicy {
@@ -42,6 +45,7 @@ object PhonePagePolicy {
         PhonePage.Editor -> PhonePage.Home
         PhonePage.Settings -> PhonePage.Home
         PhonePage.About -> PhonePage.Settings
+        PhonePage.Privacy -> PhonePage.Settings
     }
 
     /** True when this page must intercept Back instead of letting the app exit. */

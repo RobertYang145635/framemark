@@ -3,6 +3,7 @@ package com.framemark.native.shell
 import com.framemark.native.shell.phone.PhoneSettingsText
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -49,7 +50,25 @@ class AboutTextTest {
 
     @Test
     fun theSettingsEntryAndBackLabelAreTheDocumentedCopy() {
-        assertEquals("隐私、权限与许可", PhoneSettingsText.ABOUT_ROW)
+        // 「关于」不再把隐私权限一起吞进去：两行入口，各自标题就是名字。
+        assertEquals("关于与许可", PhoneSettingsText.ABOUT_ROW)
+        assertEquals("隐私与权限", PhoneSettingsText.PRIVACY_ROW)
+        assertEquals("隐私与权限", PhoneSettingsText.PRIVACY_PAGE_TITLE)
+        assertEquals(AboutText.PRIVACY_ENTRY, PhoneSettingsText.PRIVACY_ROW)
         assertEquals("返回设置", PhoneSettingsText.BACK_TO_SETTINGS)
+        assertEquals("返回", AboutText.SUB_BACK)
+    }
+
+    /**
+     * 返回键先关「关于」里的二级页（打赏 / 支持与反馈 / 隐私与权限），再退页面。
+     * 以前这些二级页只是 `AboutContent` 内部的布尔量，外壳按 `PhonePage.About`
+     * 一步退回设置首页。
+     */
+    @Test
+    fun aSubPageOfAboutConsumesOneBackPress() {
+        assertEquals(AboutSubPage.None, AboutPolicy.back(AboutSubPage.Feedback))
+        assertEquals(AboutSubPage.None, AboutPolicy.back(AboutSubPage.Donate))
+        assertEquals(AboutSubPage.None, AboutPolicy.back(AboutSubPage.Privacy))
+        assertNull(AboutPolicy.back(AboutSubPage.None), "根上要交给页面栈，不是再吞一次")
     }
 }

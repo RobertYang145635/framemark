@@ -101,34 +101,7 @@ fun PhoneHomeGear(onClick: () -> Unit) {
     ) {
         // Read the token outside the draw scope: FmPalette members are composable.
         val ink = FmPalette.onSurfaceSecondary
-        Canvas(modifier = Modifier.size(22.dp)) {
-            val w = size.width
-            val c = Offset(w / 2f, w / 2f)
-            val body = w * 0.27f
-            val toothIn = body - w * 0.03f
-            val toothOut = w * 0.47f
-            // Thick teeth + a solid ring body with a real center hole: the old
-            // thin-ray drawing read as a sun. Teeth are short and wide, which is
-            // the visual difference between a gear and a sunburst.
-            repeat(8) { i ->
-                val a = (i * 45f) * (kotlin.math.PI.toFloat() / 180f)
-                val dx = kotlin.math.cos(a)
-                val dy = kotlin.math.sin(a)
-                drawLine(
-                    color = ink,
-                    start = Offset(c.x + dx * toothIn, c.y + dy * toothIn),
-                    end = Offset(c.x + dx * toothOut, c.y + dy * toothOut),
-                    strokeWidth = w * 0.19f,
-                    cap = StrokeCap.Butt,
-                )
-            }
-            drawCircle(
-                color = ink,
-                radius = body,
-                center = c,
-                style = Stroke(width = w * 0.17f),
-            )
-        }
+        com.framemark.native.shell.FmGearGlyph(tint = ink, size = 22.dp)
     }
 }
 

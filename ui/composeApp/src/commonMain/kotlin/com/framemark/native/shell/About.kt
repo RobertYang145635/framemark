@@ -25,6 +25,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.framemark.native.product.FmLog
@@ -60,22 +63,61 @@ data class LicenseEntry(val name: String, val license: String, val purpose: Stri
  * Android 清单里没有任何相册、存储或网络权限；选照片走系统照片选择器；导出通过
  * 系统媒体库写入 —— 这几条都能在安装包和代码里核对。
  */
+/**
+ * 「关于」里的一层二级页：打赏 / 支持与反馈 / 隐私与权限。
+ *
+ * 这些页过去是 `AboutContent` 内部的布尔量，手机端按系统返回键时外壳只看见
+ * `PhonePage.About`，于是把整页退回设置首页，二级页被跳过（WP-Q2⑥ 的同类摩擦）。
+ * 现在状态可以被外壳持有（[AboutContent] 的 `subPage` / `onSubPageChange`），
+ * 返回键先关二级页（[AboutPolicy.back]），再退页面。
+ */
+enum class AboutSubPage { None, Donate, Feedback, Privacy }
+
+object AboutPolicy {
+    /** 二级页打开时返回一层；已经在根上返回 null（交给页面栈）。 */
+    fun back(subPage: AboutSubPage): AboutSubPage? =
+        if (subPage == AboutSubPage.None) null else AboutSubPage.None
+}
+
 @Composable
-fun AboutContent(version: String, modifier: Modifier = Modifier) {
-    var donateOpen by remember { mutableStateOf(false) }
-    var feedbackOpen by remember { mutableStateOf(false) }
-    if (donateOpen) {
-        Column(modifier = modifier.fillMaxWidth()) {
-            AboutCard { DonatePage(onClose = { donateOpen = false }) }
-        }
-        return
+fun AboutContent(
+    version: String,
+    modifier: Modifier = Modifier,
+    /**
+     * 由外壳持有的二级页状态；null = 内容自己记（桌面齿轮弹层就是这样用的）。
+     */
+    subPage: AboutSubPage? = null,
+    onSubPageChange: (AboutSubPage) -> Unit = {},
+) {
+    var localSubPage by remember { mutableStateOf(AboutSubPage.None) }
+    val current = subPage ?: localSubPage
+    fun open(next: AboutSubPage) {
+        if (subPage == null) localSubPage = next else onSubPageChange(next)
     }
-    // 反馈与打赏是同一层级的二级页面：都是「关于」里的一行，点开只有一张码。
-    if (feedbackOpen) {
-        Column(modifier = modifier.fillMaxWidth()) {
-            AboutCard { FeedbackPage(onClose = { feedbackOpen = false }) }
+    when (current) {
+        AboutSubPage.Donate -> {
+            Column(modifier = modifier.fillMaxWidth()) {
+                AboutCard { DonatePage(onClose = { open(AboutSubPage.None) }) }
+            }
+            return
         }
-        return
+        AboutSubPage.Feedback -> {
+            Column(modifier = modifier.fillMaxWidth()) {
+                AboutCard { FeedbackPage(onClose = { open(AboutSubPage.None) }) }
+            }
+            return
+        }
+        AboutSubPage.Privacy -> {
+            Column(
+                modifier = modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                AboutBackRow(label = AboutText.SUB_BACK, onBack = { open(AboutSubPage.None) })
+                PrivacyContent()
+            }
+            return
+        }
+        AboutSubPage.None -> Unit
     }
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -99,7 +141,7 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
         UpdateCard(currentVersion = version)
         AboutCard {
             Column {
-                DonateEntryRow(onOpen = { donateOpen = true })
+                DonateEntryRow(onOpen = { open(AboutSubPage.Donate) })
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -107,14 +149,20 @@ fun AboutContent(version: String, modifier: Modifier = Modifier) {
                         .height(1.dp)
                         .background(FmPalette.outline),
                 )
-                CommunityEntryRow(onOpen = { feedbackOpen = true })
+                CommunityEntryRow(onOpen = { open(AboutSubPage.Feedback) })
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                        .height(1.dp)
+                        .background(FmPalette.outline),
+                )
+                // 隐私与权限单列一行：它过去是这一页里的一段正文，用户找不到。
+                AboutLinkRow(
+                    label = AboutText.PRIVACY_ENTRY,
+                    onOpen = { open(AboutSubPage.Privacy) },
+                )
             }
-        }
-        AboutSection(title = AboutText.PRIVACY_TITLE) {
-            AboutParagraph(AboutText.PRIVACY)
-        }
-        AboutSection(title = AboutText.PERMISSIONS_TITLE) {
-            AboutParagraph(AboutText.PERMISSIONS)
         }
         AboutSection(title = AboutText.LICENSE_TITLE) {
             AboutText.LICENSES.forEachIndexed { index, entry ->
@@ -323,6 +371,77 @@ private fun AboutUpdateLine(text: String, error: Boolean = false) {
     )
 }
 
+/**
+ * 隐私与权限正文。手机端是独立一页（设置 → 隐私与权限），桌面端是「关于」里的
+ * 一层二级页；两端读同一份文案，避免各写一套。
+ */
+@Composable
+fun PrivacyContent(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        AboutSection(title = AboutText.PRIVACY_TITLE) {
+            AboutParagraph(AboutText.PRIVACY)
+        }
+        AboutSection(title = AboutText.PERMISSIONS_TITLE) {
+            AboutParagraph(AboutText.PERMISSIONS)
+        }
+    }
+}
+
+/** 二级页的返回行（与打赏 / 反馈页的返回同形）。 */
+@Composable
+internal fun AboutBackRow(label: String, onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onBack)
+            .semantics { contentDescription = label }
+            .padding(horizontal = 4.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = "‹",
+            style = TextStyle(fontSize = 18.sp, lineHeight = 20.sp),
+            color = FmPalette.onSurfaceMuted,
+        )
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+            color = FmPalette.onSurface,
+        )
+    }
+}
+
+/** 关于页里的一行入口：标题 + `›`。 */
+@Composable
+private fun AboutLinkRow(label: String, onOpen: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onOpen)
+            .semantics { contentDescription = label }
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+            color = FmPalette.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "›",
+            style = TextStyle(fontSize = 16.sp, lineHeight = 20.sp),
+            color = FmPalette.onSurfaceMuted,
+        )
+    }
+}
+
 @Composable
 private fun AboutCard(content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(16.dp)
@@ -381,6 +500,8 @@ object AboutText {
     const val UPDATE_INSTALL: String = "下载并安装"
     const val UPDATE_INSTALL_STARTED: String = "已开始安装；完成后按系统提示重启应用。"
     const val UPDATE_NOTE: String = "联网只用于读取发布版本号，不上传照片或工程。"
+    const val PRIVACY_ENTRY: String = "隐私与权限"
+    const val SUB_BACK: String = "返回"
     const val PRIVACY_TITLE: String = "隐私"
     const val PERMISSIONS_TITLE: String = "权限"
     const val LICENSE_TITLE: String = "许可与版权"

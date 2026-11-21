@@ -494,26 +494,9 @@ fun DeskCompareGlyph(tint: Color, size: Dp = 16.dp) {
 /** 齿轮（顶栏外观入口）；演示稿是 18 dp 描边齿轮：一圈环 + 八颗短齿。 */
 @Composable
 fun DeskGearGlyph(tint: Color, size: Dp = 18.dp) {
-    androidx.compose.foundation.Canvas(modifier = Modifier.size(size)) {
-        val w = this.size.width
-        val h = this.size.height
-        val stroke = 2.dp.toPx()
-        val ring = w * 0.24f
-        val center = Offset(w / 2f, h / 2f)
-        drawCircle(tint, ring, center, style = Stroke(width = stroke))
-        repeat(8) { index ->
-            val angle = Math.toRadians((index * 45).toDouble()).toFloat()
-            val inner = ring + stroke * 0.4f
-            val outer = ring + stroke * 1.5f
-            drawLine(
-                tint,
-                Offset(center.x + kotlin.math.cos(angle) * inner, center.y + kotlin.math.sin(angle) * inner),
-                Offset(center.x + kotlin.math.cos(angle) * outer, center.y + kotlin.math.sin(angle) * outer),
-                stroke,
-                StrokeCap.Round,
-            )
-        }
-    }
+    // 与手机首页同一枚字形（见 `FmGearGlyph`）：2026-11 之前这里是细环 + 射线，
+    // 装在顶部看起来像太阳，和手机端不是同一个图标。
+    com.framemark.native.shell.FmGearGlyph(tint = tint, size = size)
 }
 
 

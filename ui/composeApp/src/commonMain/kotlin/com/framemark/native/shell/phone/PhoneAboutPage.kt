@@ -43,9 +43,13 @@ import com.framemark.native.theme.fmElevated
 @Composable
 fun PhoneAboutPage(
     onClose: () -> Unit,
+    /** 二级页（打赏 / 支持与反馈 / 隐私与权限）由外壳持有，返回键先关它。 */
+    subPage: com.framemark.native.shell.AboutSubPage? = null,
+    onSubPageChange: (com.framemark.native.shell.AboutSubPage) -> Unit = {},
     onOpenOnboarding: (() -> Unit)? = null,
 ) {
     val version = PhoneSettingsText.versionLabel(appVersionLabel())
+    val subPageOpen = subPage != null && subPage != com.framemark.native.shell.AboutSubPage.None
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,8 +57,16 @@ fun PhoneAboutPage(
     ) {
         PhoneSubPageTopBar(
             title = AboutText.TITLE,
-            onBack = onClose,
-            backLabel = PhoneSettingsText.BACK_TO_SETTINGS,
+            // 打开二级页时，返回箭头先回「关于」根（和系统返回键同一条路），
+            // 不能一边能退二级页、一边直接跳回设置。
+            onBack = {
+                if (subPageOpen) {
+                    onSubPageChange(com.framemark.native.shell.AboutSubPage.None)
+                } else {
+                    onClose()
+                }
+            },
+            backLabel = if (subPageOpen) AboutText.SUB_BACK else PhoneSettingsText.BACK_TO_SETTINGS,
         )
         Column(
             modifier = Modifier
@@ -62,7 +74,11 @@ fun PhoneAboutPage(
                 .verticalScroll(rememberScrollState())
                 .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
         ) {
-            AboutContent(version = version)
+            AboutContent(
+                version = version,
+                subPage = subPage,
+                onSubPageChange = onSubPageChange,
+            )
             if (onOpenOnboarding != null) {
                 Spacer(Modifier.height(14.dp))
                 OnboardingRow(onOpen = onOpenOnboarding)

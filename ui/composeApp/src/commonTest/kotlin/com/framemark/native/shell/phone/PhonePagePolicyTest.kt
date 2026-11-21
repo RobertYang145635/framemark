@@ -83,10 +83,23 @@ class PhonePagePolicyTest {
     }
 
     @Test
-    fun thereAreExactlyFourTopLevelPages() {
-        assertEquals(4, PhonePage.entries.size)
+    fun thePrivacyPageIsASettingsSubPage() {
+        // 设置 → 隐私与权限 → 返回设置。它不再是「关于」里的一段正文。
+        assertEquals(PhonePage.Settings, PhonePagePolicy.back(PhonePage.Privacy))
+        assertTrue(PhonePagePolicy.handlesBack(PhonePage.Privacy))
+    }
+
+    @Test
+    fun thereAreExactlyFivePages() {
+        assertEquals(5, PhonePage.entries.size)
         assertEquals(
-            listOf(PhonePage.Home, PhonePage.Editor, PhonePage.Settings, PhonePage.About),
+            listOf(
+                PhonePage.Home,
+                PhonePage.Editor,
+                PhonePage.Settings,
+                PhonePage.About,
+                PhonePage.Privacy,
+            ),
             PhonePage.entries.toList(),
         )
     }

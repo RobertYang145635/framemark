@@ -62,12 +62,15 @@ import com.framemark.native.library.LibraryDataSource
 import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.product.toDesignSnapshot
+import com.framemark.native.shell.AboutPolicy
+import com.framemark.native.shell.AboutSubPage
 import com.framemark.native.shell.phone.PhoneAboutPage
 import com.framemark.native.shell.phone.PhoneExportSheet
 import com.framemark.native.shell.phone.PhoneHomeDestination
 import com.framemark.native.shell.phone.PhoneHomePolicy
 import com.framemark.native.shell.phone.PhonePage
 import com.framemark.native.shell.phone.PhonePagePolicy
+import com.framemark.native.shell.phone.PhonePrivacyPage
 import com.framemark.native.shell.phone.PhoneRecentEdit
 import com.framemark.native.shell.phone.PhoneSettingsPage
 import com.framemark.native.theme.FmPalette
@@ -206,6 +209,8 @@ fun PhoneShell() {
     // current page, while a fresh process (cold start or OS process death) opens
     // Home instead of restoring the last editor page.
     var page by remember { mutableStateOf(PhonePageMemory.page ?: PhonePage.Home) }
+    // 「关于」的二级页由外壳持有：系统返回键先关它，再退页面。
+    var aboutSubPage by remember { mutableStateOf(AboutSubPage.None) }
     LaunchedEffect(page) { PhonePageMemory.page = page }
     // 新手教程：一层覆盖，不是第五个 PhonePage。页面栈不动，关掉就回到原来那一页。
     // 首次启动在**首帧之后**才判定（`withFrameNanos`），免得首页先露一下再被盖住。
@@ -900,6 +905,10 @@ fun PhoneShell() {
             exportSheetOpen -> exportSheetOpen = false
             batchSheetOpen -> batchSheetOpen = false
             tool != EditorTool.Border -> tool = EditorTool.Border
+            // 「关于」里的二级页（打赏 / 支持与反馈 / 隐私与权限）先关，别一步跳回设置。
+            page == PhonePage.About && AboutPolicy.back(aboutSubPage) != null -> {
+                aboutSubPage = AboutSubPage.None
+            }
             else -> {
                 val next = PhonePagePolicy.back(page) ?: return@BackHandler
                 FmLog.info("FM_PHONE_PAGE") { "${page.name}->${next.name} viaBack" }
@@ -1088,8 +1097,13 @@ fun PhoneShell() {
                     FmLog.info("FM_PHONE_PAGE") { "Settings->${page.name} viaClose" }
                 },
                 onOpenAbout = {
+                    aboutSubPage = AboutSubPage.None
                     page = PhonePage.About
                     FmLog.info("FM_PHONE_PAGE") { "Settings->About" }
+                },
+                onOpenPrivacy = {
+                    page = PhonePage.Privacy
+                    FmLog.info("FM_PHONE_PAGE") { "Settings->Privacy" }
                 },
                 onOpenOnboarding = {
                     onboardingPage = 0
@@ -1098,7 +1112,16 @@ fun PhoneShell() {
                 },
             )
 
+            PhonePage.Privacy -> PhonePrivacyPage(
+                onClose = {
+                    page = PhonePagePolicy.back(PhonePage.Privacy) ?: PhonePage.Settings
+                    FmLog.info("FM_PHONE_PAGE") { "Privacy->${page.name} viaClose" }
+                },
+            )
+
             PhonePage.About -> PhoneAboutPage(
+                subPage = aboutSubPage,
+                onSubPageChange = { aboutSubPage = it },
                 onClose = {
                     page = PhonePagePolicy.back(PhonePage.About) ?: PhonePage.Settings
                     FmLog.info("FM_PHONE_PAGE") { "About->${page.name} viaClose" }

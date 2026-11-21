@@ -54,6 +54,7 @@ fun PhoneSettingsPage(
     errorText: String? = null,
     onClose: () -> Unit,
     onOpenAbout: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
     onOpenOnboarding: () -> Unit = {},
 ) {
     val version = PhoneSettingsText.versionLabel(appVersionLabel())
@@ -119,6 +120,34 @@ fun PhoneSettingsPage(
                     Text(
                         text = version,
                         style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp),
+                        color = FmPalette.onSurfaceMuted,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(FmPalette.outline),
+                )
+                // 隐私与权限：独立一行。以前它藏在「隐私、权限与许可」那一页的正文里，
+                // 用户找不到（WP-Q2⑥ 的同类反馈）。
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(role = Role.Button, onClick = onOpenPrivacy)
+                        .semantics { contentDescription = PhoneSettingsText.PRIVACY_ROW }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = PhoneSettingsText.PRIVACY_ROW,
+                        style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
+                        color = FmPalette.onSurface,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "›",
+                        style = TextStyle(fontSize = 16.sp, lineHeight = 20.sp),
                         color = FmPalette.onSurfaceMuted,
                     )
                 }
@@ -249,7 +278,9 @@ object PhoneSettingsText {
     const val PAGE_TITLE: String = "设置"
     const val BACK_LABEL: String = "返回首页"
     const val BACK_TO_SETTINGS: String = "返回设置"
-    const val ABOUT_ROW: String = "隐私、权限与许可"
+    const val ABOUT_ROW: String = "关于与许可"
+    const val PRIVACY_ROW: String = "隐私与权限"
+    const val PRIVACY_PAGE_TITLE: String = "隐私与权限"
 
     /**
      * 关于那一组里的第三行：新手教程。名字与提示都直接取教程自己的文案表
