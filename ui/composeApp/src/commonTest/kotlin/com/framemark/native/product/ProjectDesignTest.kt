@@ -69,16 +69,17 @@ class ProjectDesignTest {
     }
 
     @Test
-    fun a_new_photo_inherits_the_current_design_but_not_the_watermark() {
+    fun a_new_photo_starts_from_the_same_border_with_default_values() {
+        // 2026-11-21 用户反馈：导入新照片不该沿用上一张改过的设置，但必须有边框可看。
         val project = sampleProject() // active a: simple-4, inset 0.12, model X-T5, sig-1
         val next = project.addPhoto(photoRef("c"))
 
         val inherited = next.designOf("c")!!
-        assertEquals("simple-4", inherited.cardId)
-        assertEquals(0.12, inherited.params["inset"])
-        assertEquals("X-T5", inherited.text["model"])
+        assertEquals("simple-4", inherited.cardId, "边框照旧沿用，不用再点「选择一个边框」")
+        assertTrue(inherited.params.isEmpty(), "参数回到边框默认值，不复制上一张的 inset=${inherited.params["inset"]}")
+        assertTrue(inherited.text.isEmpty(), "文字回到默认，不复制上一张的机型")
         assertNull(inherited.overlay, "新照片不得自动继承水印")
-        assertFalse(inherited.baseDesign)
+        assertTrue(inherited.baseDesign, "新照片从「默认设计」开始")
         assertEquals(project.designForNewPhoto(), inherited)
 
         // The copy is independent on both sides.
@@ -120,7 +121,7 @@ class ProjectDesignTest {
         assertEquals(spec, spread.designOf("a")!!.overlay)
         assertEquals(spec, spread.designOf("b")!!.overlay)
         assertEquals(spec, spread.designOf("c")!!.overlay)
-        assertEquals(0.12, spread.designOf("c")!!.params["inset"], "“应用到全部”只复制水印")
+        assertNull(spread.designOf("c")!!.params["inset"], "“应用到全部”只复制水印，不动参数")
 
         val edited = spread.selectPhoto("a")
             .updateActiveDesign { it.withOverlay(watermarkSpec(8, size = 16)) }

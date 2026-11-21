@@ -3,6 +3,16 @@
 
     <!-- 仅用于「检查更新」读取 GitHub Releases 的版本信息；不访问其它地址。 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      自建相册（2026-11-21）：浏览手机照片需要读媒体库。33+ 是 READ_MEDIA_IMAGES；
+      34+ 额外声明 READ_MEDIA_VISUAL_USER_SELECTED 以支持「只允许访问选中的照片」；
+      ≤32 才是 READ_EXTERNAL_STORAGE。拒绝授权时应用回退到系统选择器（零权限）。
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!--

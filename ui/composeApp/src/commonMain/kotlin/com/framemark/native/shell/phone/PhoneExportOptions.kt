@@ -124,12 +124,21 @@ object PhoneExportOptions {
     fun hdrEnabled(format: ExportFormat, hasGainMap: Boolean): Boolean =
         format == ExportFormat.Jpeg && hasGainMap
 
-    /** The one-line reason the Ultra HDR switch is disabled; null when it can be used. */
-    fun hdrReason(format: ExportFormat, hasGainMap: Boolean): String? = when {
-        !hasGainMap -> "这张照片没有 HDR 增益图，只能导出 SDR"
-        format != ExportFormat.Jpeg -> "Ultra HDR 仅在 JPEG 格式下可用"
-        else -> null
+    /**
+     * The one-line reason the Ultra HDR switch is disabled; null when it can be used.
+     *
+     * [hasHeifHdrSource]：这张照片的 HDR 来自 HEIC 的辅助增益图（导入时转成了 PNG，增益图
+     * 留在 `<照片>.hdrsrc` 里）。这种照片**能识别**成 HDR，但当前版本还不会从 HEIC 合成
+     * 增益图，所以导出只能 SDR —— 说清楚，而不是静默显示「没有增益图」。
+     */
+    fun hdrReason(format: ExportFormat, hasGainMap: Boolean, hasHeifHdrSource: Boolean = false): String? = when {
+        hasGainMap -> if (format != ExportFormat.Jpeg) "Ultra HDR 仅在 JPEG 格式下可用" else null
+        hasHeifHdrSource -> "这张是 HDR（HEIC）照片，当前版本暂不支持从 HEIC 导出 HDR"
+        else -> "这张照片没有 HDR 增益图，只能导出 SDR"
     }
+
+    /** 照片自带增益图时，导出默认就保留 HDR（用户不必自己发现这个开关）。 */
+    fun hdrDefaultOn(hasGainMap: Boolean): Boolean = hasGainMap
 
     /** Writes the HDR switch through the same copy path as 格式 / 尺寸 (no new JSON key). */
     fun applyPreserveHdr(settings: ExportSettings, enabled: Boolean): ExportSettings =

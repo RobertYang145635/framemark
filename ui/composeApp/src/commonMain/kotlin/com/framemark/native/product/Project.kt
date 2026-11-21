@@ -57,13 +57,21 @@ data class Project(
     fun designOf(photoId: String): PhotoDesign? = designs[photoId]
 
     /**
-     * The design a newly added photo receives, in priority order: explicit
-     * [inheritedDesign], the project's [sharedDesign], the current photo's design,
-     * the card selected in the library. The watermark is always dropped — a
-     * signature reaches other photos only through [applyWatermarkToAll].
+     * The design a newly added photo receives.
+     *
+     * Priority: explicit [inheritedDesign] → explicit [sharedDesign] → **the current
+     * photo's border without its tweaks** → the card selected in the library.
+     *
+     * 2026-11-21（用户反馈「导入新照片沿用上一张的设置，很没有道理」）：上一张照片的
+     * 设计只贡献**边框**（cardId + styleId），参数/文字/主题都回到该边框的默认值 ——
+     * 新照片从自己的默认状态开始，用户改过的值不会悄悄复制到下一张。显式的
+     * [sharedDesign]（「默认设计」）仍然整套生效：那是用户明确声明的默认值。
+     * 水印两种情况下都不继承（只经 [applyWatermarkToAll] 传播）。
      */
     fun designForNewPhoto(inheritedDesign: PhotoDesign? = null): PhotoDesign? =
-        (inheritedDesign ?: sharedDesign ?: activeDesign
+        (inheritedDesign
+            ?: sharedDesign
+            ?: activeDesign?.let { PhotoDesign.base(it.cardId, it.styleId) }
             ?: selectedCardId?.takeIf { it.isNotBlank() }?.let { PhotoDesign.base(it) })
             ?.withoutOverlay()
 

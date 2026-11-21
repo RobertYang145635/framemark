@@ -166,14 +166,26 @@ fun PhoneExportSheet(
     // Whether the active photo really carries an Ultra HDR gain map. Read off the UI
     // thread: UltraHdr.locate() takes the whole buffer, and a photo is tens of MB.
     var hdrGainMap by remember(photoPath) { mutableStateOf(false) }
+    // HEIC 导入时把原始文件留成 `<照片>.hdrsrc`：增益图在里面，但当前版本还不会用它合成。
+    var hdrHeifSource by remember(photoPath) { mutableStateOf(false) }
     LaunchedEffect(photoPath) {
         val path = photoPath
-        hdrGainMap = if (path.isNullOrBlank()) {
-            false
+        if (path.isNullOrBlank()) {
+            hdrGainMap = false
+            hdrHeifSource = false
         } else {
-            withContext(Dispatchers.IO) {
+            val (gainMap, heifSource) = withContext(Dispatchers.IO) {
                 val bytes = runCatching { platform?.readBytes(path) }.getOrNull()
-                bytes != null && UltraHdr.locate(bytes) != null
+                val hasGainMap = bytes != null && UltraHdr.locate(bytes) != null
+                val hasHeif = !hasGainMap && runCatching { platform?.exists("$path.hdrsrc") == true }
+                    .getOrDefault(false)
+                hasGainMap to hasHeif
+            }
+            hdrGainMap = gainMap
+            hdrHeifSource = heifSource
+            // 照片自带增益图时**默认开启**保留 HDR：用户不必自己发现这个开关。
+            if (PhoneExportOptions.hdrDefaultOn(gainMap) && !settings.preserveHdr) {
+                session.export = PhoneExportOptions.applyPreserveHdr(settings, true)
             }
         }
     }
@@ -338,6 +350,7 @@ fun PhoneExportSheet(
                 outputWidth = outputPixels?.width ?: 0,
                 outputHeight = outputPixels?.height ?: 0,
                 hdrGainMap = hdrGainMap,
+                hdrHeifSource = hdrHeifSource,
                 progress = exportProgress,
                 canApplyToAll = canApplyToAll,
                 onApplyToAll = onApplyToAll,
@@ -648,6 +661,7 @@ internal fun ColumnScope.ExportFormContent(
     outputHeight: Int,
     /** The active photo really carries an Ultra HDR gain map (read off the UI thread). */
     hdrGainMap: Boolean,
+    hdrHeifSource: Boolean,
     /**
      * Determinate export progress in `0..1` ([ExportStage] fractions). One of the
      * four pipeline stops at a time — the sheet animates the bar's width, it does not
@@ -743,7 +757,7 @@ internal fun ColumnScope.ExportFormContent(
                     color = if (hdrEnabled) FmPalette.onSurface else FmPalette.onSurfaceMuted,
                 )
                 Text(
-                    text = PhoneExportOptions.hdrReason(format, hdrGainMap)
+                    text = PhoneExportOptions.hdrReason(format, hdrGainMap, hdrHeifSource)
                         ?: if (settings.preserveHdr) {
                             "已开启：成片仍可在 HDR 屏幕上还原高光"
                         } else {

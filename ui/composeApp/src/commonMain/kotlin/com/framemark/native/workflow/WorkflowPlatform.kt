@@ -191,4 +191,12 @@ object WorkflowEnv {
 
     /** Creates a portable single-preset document; success(false) means user cancellation. */
     var presetDocumentWriter: ((String, String, (Result<Boolean>) -> Unit) -> Unit)? = null
+
+    /**
+     * 自建相册里选好照片后交给宿主导入（Android 注入；参数是 `content://` 地址）。
+     *
+     * 导入仍然走 MainActivity 里那条相册选择器用的同一条路径（落盘、归一化、带 EXIF），
+     * 自建浏览器只负责「选哪几张」，不复制导入逻辑。
+     */
+    var uriImporter: ((List<String>) -> Unit)? = null
 }

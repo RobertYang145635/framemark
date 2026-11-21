@@ -59,6 +59,7 @@ import com.framemark.native.inspector.InspectorLoadState
 import com.framemark.native.inspector.InspectorModelFactory
 import com.framemark.native.library.LibraryCard
 import com.framemark.native.library.LibraryDataSource
+import com.framemark.native.library.LibraryIndex
 import com.framemark.native.library.LibraryLoadState
 import com.framemark.native.product.toDesignSnapshot
 import com.framemark.native.shell.phone.PhoneAboutPage
@@ -157,6 +158,8 @@ fun PhoneShell() {
     var watermarkError by remember { mutableStateOf<String?>(null) }
     // 启动自动检查：有新版本就弹一次（同一版本「跳过」过就不再弹），见 UpdateLaunch。
     var pendingUpdate by remember { mutableStateOf<com.framemark.native.product.update.UpdateManifest?>(null) }
+    // 自建相册（Android 有实现；桌面端没有，按钮回退到系统选择器）。
+    var galleryOpen by remember { mutableStateOf(false) }
     // 「已移除 · 撤销」要放回去的那一张（null = 提示位空着）。快照自己带着设计和水印。
     var removedPhoto by remember { mutableStateOf<RemovedPhoto?>(null) }
     // A watermark picked before any border exists yet; applied once the card does.
@@ -464,6 +467,18 @@ fun PhoneShell() {
         demoBatch.seedDemo(ready.snapshot.cards, LaunchOptions.batchCount)
         if (WorkflowEnv.platform?.batchAutoStart() == true && demoBatch.hasPending) demoBatch.start()
         FmLog.info("FM_BATCH_DEMO") { "items=${demoBatch.items.size} pending=${demoBatch.hasPending} reset=${LaunchOptions.batchReset}" }
+    }
+
+    // 新照片的兜底边框：优先「热门」第一张，其次「常用」第一张，再其次任何一张。
+    // 这样全新项目里导入第一张照片就有边框可看，不会落到「点一下选择一个边框」的空态。
+    LaunchedEffect(libraryState) {
+        val cards = (libraryState as? LibraryLoadState.Ready)?.snapshot?.cards.orEmpty()
+        val fallback = cards.firstOrNull { it.badge == LibraryIndex.HOT_BADGE }
+            ?: cards.firstOrNull { it.category == LibraryIndex.CATEGORY_COMMON }
+            ?: cards.firstOrNull()
+        store.fallbackCard = fallback?.let { card -> { card.id to card.systemStyle } }
+        // 分享/相册入口可能在库加载完之前就导完了照片，这里补一次默认边框。
+        store.applyFallbackDesignToUndesigned()
     }
 
     // Evidence-only: open a workflow sheet once the editor model is ready (so the
@@ -942,7 +957,13 @@ fun PhoneShell() {
             PhonePage.Home -> PhoneHomeScreen(
                 recent = recentEdits,
                 presetCount = store.presets.size,
-                onPickPhoto = { WorkflowEnv.photoPicker?.invoke() },
+                onPickPhoto = {
+                    if (phoneGallerySupported()) {
+                        galleryOpen = true
+                    } else {
+                        WorkflowEnv.photoPicker?.invoke()
+                    }
+                },
                 onOpenSettings = {
                     page = PhonePage.Settings
                     FmLog.info("FM_PHONE_PAGE") { "Home->Settings viaGear" }
@@ -1103,6 +1124,15 @@ fun PhoneShell() {
                 )
             }
         }
+
+        PhoneGalleryOverlay(
+            visible = galleryOpen,
+            onCancel = { galleryOpen = false },
+            onImport = { uris ->
+                galleryOpen = false
+                WorkflowEnv.uriImporter?.invoke(uris)
+            },
+        )
 
         pendingUpdate?.let { manifest ->
             com.framemark.native.shell.UpdatePromptDialog(

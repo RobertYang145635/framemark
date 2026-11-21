@@ -480,13 +480,22 @@ class MainActivity : ComponentActivity() {
                         FmLog.warn("HEIF_EXIF_SIDECAR_FAIL") { "${it.message}" }
                     }
                 }
+                // HDR 源：HEIC 的增益图在辅助图里，转成 PNG 之后就没有了。保留原始文件
+                // 作为「HDR 源」放在同一目录（`<名字>.hdrsrc`），导出面板据此说明
+                // 「这是 HDR 照片，但当前版本只能导出 SDR」，也给以后真正的 HDR 导出留料。
+                if (hdr?.isHdr == true) {
+                    runCatching {
+                        File(dir, "${png.name}.hdrsrc").also { keepFile(tmp, it) }
+                    }.onFailure { FmLog.warn("HEIF_HDR_SOURCE_FAIL") { "${it.message}" } }
+                } else {
+                    tmp.delete()
+                }
                 FmLog.info("HEIF_IMPORT") {
                     "exif=${exif != null} orientation=$orientation hdr=${hdr?.isHdr == true} " +
                         "bitDepth=${hdr?.bitDepth ?: 0} transfer=${hdr?.transfer ?: -1} " +
                         "gainMap=${hdr?.gainMapUrn ?: "-"} toneMap=${hdr?.hasToneMap == true} " +
-                        "png=${png.length()}"
+                        "png=${png.length()} hdrSource=${hdr?.isHdr == true}"
                 }
-                tmp.delete()
                 png
             }
             else -> {
@@ -680,6 +689,16 @@ class MainActivity : ComponentActivity() {
         }
         WorkflowEnv.multiPhotoPicker = {
             pickDocuments.launch(arrayOf("image/*", "image/tiff"))
+        }
+        // 自建相册选完把 content:// 地址交回这里：走与系统选择器完全相同的导入链。
+        WorkflowEnv.uriImporter = import@ { uris ->
+            val parsed = uris.mapNotNull { runCatching { Uri.parse(it) }.getOrNull() }
+            if (parsed.isEmpty()) return@import
+            FmLog.info("FM_PHOTO_IMPORT") { "gallery count=${parsed.size}" }
+            Thread {
+                runCatching { importPickedPhotos(parsed) }
+                    .onFailure { FmLog.warn("FM_PHOTO_PICK_FAIL") { "gallery ${it.message}" } }
+            }.start()
         }
         WorkflowEnv.watermarkPicker = {
             pickWatermark.launch(arrayOf("image/*"))

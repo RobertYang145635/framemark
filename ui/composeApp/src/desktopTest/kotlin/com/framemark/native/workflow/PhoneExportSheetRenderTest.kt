@@ -133,6 +133,7 @@ class PhoneExportSheetRenderTest {
                             outputWidth = 0,
                             outputHeight = 0,
                             hdrGainMap = false,
+                            hdrHeifSource = false,
                             canApplyToAll = true,
                             onApplyToAll = {},
                             onPreserveHdr = {},

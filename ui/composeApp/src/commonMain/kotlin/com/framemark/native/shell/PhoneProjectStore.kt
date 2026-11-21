@@ -172,6 +172,14 @@ class PhoneProjectStore(
     private var dirty = false
     private var changeVersion = 0L
 
+    /**
+     * 还没有任何边框可沿用时的兜底（外壳在边框库加载后注入：优先「热门」第一张）。
+     *
+     * 为什么需要：全新项目里导入第一张照片时，既没有默认设计也没有在用边框，以前会落到
+     * 「点一下选择一个边框」的空态 —— 用户根本不知道要这么做（2026-11-21 用户反馈）。
+     */
+    var fallbackCard: (() -> Pair<String, String?>?)? = null
+
     /** Set by [dispose]; from then on nothing is scheduled and no save is written. */
     private var disposed = false
 
@@ -681,8 +689,19 @@ class PhoneProjectStore(
      * 不想继承的退路已经存在：把当前照片设成「未选边框」再导入（`activeDesign` 为 null
      * 时这里返回 null，新照片就是没有设计的），或者导入后用边框库里的「未选边框」清掉。
      */
-    private fun inheritFrom(current: Project): PhotoDesign? =
-        current.sharedDesign ?: current.activeDesign ?: current.selectedCardId?.let { PhotoDesign.base(it) }
+    /**
+     * 新照片拿到的设计：显式默认 → 当前照片的边框 → 兜底边框（[fallbackCard]）。
+     *
+     * 当前照片那一路只取边框，Project 侧会把改过的值剥掉；水印永远不继承。
+     */
+    private fun inheritFrom(current: Project): PhotoDesign? {
+        // 显式默认（目前只有演示数据会设）整套生效。
+        current.sharedDesign?.let { return it }
+        // 上一张照片只贡献边框：参数/文字/主题回到该边框的默认值（2026-11-21 用户反馈）。
+        current.activeDesign?.let { return PhotoDesign.base(it.cardId, it.styleId) }
+        current.selectedCardId?.let { return PhotoDesign.base(it) }
+        return fallbackCard?.invoke()?.let { PhotoDesign.base(it.first, it.second) }
+    }
 
     // ---- design writes -----------------------------------------------------
 
@@ -707,6 +726,25 @@ class PhoneProjectStore(
         }
         if (next == current) return
         commit(project.setDesign(photoId, next))
+    }
+
+    /**
+     * 把兜底边框补给**所有还没有设计**的照片，返回是否真的改了。
+     *
+     * 为什么需要：导入可能发生在边框库加载完之前（分享入口在 onCreate 就跑），那时
+     * [fallbackCard] 还没注入，照片会停在「未选边框」的空态。库一就绪就补一次，
+     * 顺序问题不再表现为空态。已有的设计一律不动。
+     */
+    fun applyFallbackDesignToUndesigned(): Boolean {
+        val card = fallbackCard?.invoke() ?: return false
+        val missing = project.photos.filter { project.designOf(it.id) == null }
+        if (missing.isEmpty()) return false
+        var next = project
+        missing.forEach { photo ->
+            next = next.setDesign(photo.id, PhotoDesign.base(card.first, card.second))
+        }
+        commit(next)
+        return true
     }
 
     /** Publishes the active photo's border + values as the default for later photos. */
