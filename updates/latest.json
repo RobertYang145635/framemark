@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc50",
-  "versionCode": 49,
+  "versionName": "0.9.0-rc51",
+  "versionCode": 50,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T07:20:00Z",
-  "notes": "HDR：现在能认出 OPPO ProXDR（Find 系列）的照片。这类文件把增益图、80 字节浮点参数和一个 JSON 目录挂在文件末尾（没有 MPF/APP2/XMP），之前读不到，导出面板会误说「没有 HDR 增益图」。现在会自动识别，导出面板默认开启「保留 HDR」，成片重新封装成标准 Ultra HDR（MPF + GContainer + 增益图），HDR 屏幕上仍能还原高光。其余与 rc49 相同：应用内相册（分相册浏览、按点选顺序多选 9 张，拒绝授权可回退系统选择器）；导入新照片只沿用边框、设置回到默认，首张自动给热门边框；HEIC 导入保留原始文件并明确提示当前只能导出 SDR。",
+  "publishedAt": "2026-11-21T08:40:00Z",
+  "notes": "相册按日期分组并加了导航：顶部固定显示当前日期与张数，网格里每天一条「今天 / 昨天 / M月D日」标题，右侧有可拖动的滑块（拖动时显示日期气泡），网格从 3 列改 4 列。相册本身折叠成一行标题「最近照片 ▾」：点开是竖向相册列表（封面 + 名称 + 张数 + 当前勾选），不再用横滑的标签行占一整行、也不用来回滑动找照片。其余与 rc50 相同：OPPO ProXDR 照片可保留 HDR；应用内相册；导入新照片只沿用边框、设置回默认；HEIC 保留原始文件并明确提示。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc50/FrameMark-0.9.0-rc50-arm64.apk",
-      "sha256": "a89a16feaec7e8e13274a2a6e5442dd5a819a7572324e6b3badee48410dd22dd",
-      "size": 144916842
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc51/FrameMark-0.9.0-rc51-arm64.apk",
+      "sha256": "d2c5ec4f54a24f06ded74d4048b3a33bc7bf899617a45308a88bf74f20165f21",
+      "size": 144933226
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc50/FrameMark-0.9.0-rc50-win64.msi",
-      "sha256": "155cde4806d7f06fe602fca4176c79a2bf56cc57cc01bde7f5ac06caa6336f4b",
-      "size": 247963700
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc51/FrameMark-0.9.0-rc51-win64.msi",
+      "sha256": "266d320412c4bb458ca53fe13a26386a4318ddacc6622ef0805ec6cf8c103276",
+      "size": 247976052
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc50"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc51"
 }
