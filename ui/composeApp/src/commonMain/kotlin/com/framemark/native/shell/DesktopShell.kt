@@ -506,7 +506,6 @@ fun DesktopShell(layout: DesktopLayoutState, projects: ProjectHolder) {
             ?: return@LaunchedEffect
         selectedCard = card
         restoredSelection = true
-        FmLog.info("FM_CARD_RESTORE") { "card=${card.id} photo=${projects.activePhotoId} source=project" }
     }
 
     // Legacy presets (pre-SessionStore `presets.json`, no watermark, session-keyed

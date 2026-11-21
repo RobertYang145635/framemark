@@ -267,9 +267,12 @@ class DesktopExportDialogTest {
             ExportFileName.previewName("{photo}-{date}-{time}", "边框", "IMG_1", 1, "2022:07:05 14:13:37"),
         )
         // 没有拍摄时间时界面明说用的是导出时间（而不是静默用时钟）。
-        assertNull(ExportCopy.captureTimeNote("2022:07:05 14:13:37"))
-        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote(null))
-        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote("0000:00:00 00:00:00"))
+        val dated = "{photo}-{date}-{time}"
+        assertNull(ExportCopy.captureTimeNote(dated, "2022:07:05 14:13:37"))
+        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote(dated, null))
+        assertEquals("这张照片没有拍摄时间，文件名用导出时间", ExportCopy.captureTimeNote(dated, "0000:00:00 00:00:00"))
+        // 文件名不用日期/时间时不说这一句。
+        assertNull(ExportCopy.captureTimeNote("{photo}-{index}", null))
     }
 
     // ---- 画布真值优先级（WP-Q2③） --------------------------------------------

@@ -797,7 +797,7 @@ internal fun ColumnScope.ExportFormContent(
                 minHeight = PhoneExportSheetLayout.NoteShelfHeight,
             )
             // 命名用照片自己的拍摄时间；没有时必须说清用的是导出那一刻。
-            com.framemark.native.shell.desktop.ExportCopy.captureTimeNote(capturedAt)
+            com.framemark.native.shell.desktop.ExportCopy.captureTimeNote(settings.filenamePattern, capturedAt)
                 ?.let { ExportNote(it) }
             if (!native) ExportNote("这张边框的渲染组件不可用，暂时无法导出。")
             if (canApplyToAll) {

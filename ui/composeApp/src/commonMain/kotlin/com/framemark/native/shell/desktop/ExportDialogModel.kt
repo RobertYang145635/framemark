@@ -173,7 +173,9 @@ object ExportCopy {
      * 有拍摄时间就返回 null（界面不多话）；没有时必须说清用的是导出那一刻，
      * 否则用户会以为文件名记的是拍摄日 —— 实际上归档会分错日期。
      */
-    fun captureTimeNote(capturedAt: String?): String? {
+    fun captureTimeNote(pattern: String, capturedAt: String?): String? {
+        // 文件名不用日期/时间时不多话：这一句只在它真的影响文件名时才出现。
+        if (!pattern.contains("{date}") && !pattern.contains("{time}")) return null
         if (capturedAt != null && com.framemark.native.product.ExifCaptureDate.normalize(capturedAt) != null) {
             return null
         }

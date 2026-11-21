@@ -850,7 +850,7 @@ private fun ExportFormColumn(
                     )
                 }
                 // 没有拍摄时间时必须说清命名用的是导出那一刻，否则用户会按文件名归档。
-                ExportCopy.captureTimeNote(capturedAt)?.let { DlgNote(it) }
+                ExportCopy.captureTimeNote(settings.filenamePattern, capturedAt)?.let { DlgNote(it) }
             }
         }
 
