@@ -3,6 +3,7 @@ package com.framemark.native
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.content.res.Configuration
@@ -329,6 +330,38 @@ class MainActivity : ComponentActivity() {
         Thread { runCatching { importPickedPhotos(uris) }.onFailure { FmLog.warn("FM_PHOTO_PICK_FAIL") { "${it.message}"} } }.start()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // singleTop：分享/快捷方式打到已经开着的实例上，换掉 intent 再走同一条处理。
+        setIntent(intent)
+        handleSharedImages(intent)
+        handleImportShortcut(intent)
+    }
+
+    /**
+     * 相册分享进来的图片：与 [importPickedPhotos] 完全同一条导入路径（落盘、归一化、
+     * 带 EXIF），导入完成后 shell 会自动进编辑器。
+     */
+    private fun handleSharedImages(intent: Intent?) {
+        val uris = ShareTarget.imageUris(intent)
+        if (uris.isEmpty()) return
+        FmLog.info("FM_PHOTO_IMPORT") { "share count=${uris.size}" }
+        Thread {
+            runCatching { importPickedPhotos(uris) }
+                .onFailure { FmLog.warn("FM_PHOTO_PICK_FAIL") { "share ${it.message}" } }
+        }.start()
+    }
+
+    /**
+     * 长按图标的「从相册导入」：首帧之后调起同一个选择器，不做第二套导入。
+     * 放在 `decorView.post` 里是因为选择器要在 Activity 走完 onCreate 之后才能 launch。
+     */
+    private fun handleImportShortcut(intent: Intent?) {
+        if (!ShareTarget.isImportShortcut(intent)) return
+        FmLog.info("FM_PHOTO_PICK") { "shortcut=import" }
+        window.decorView.post { WorkflowEnv.photoPicker?.invoke() }
+    }
+
     private fun importPickedPhotos(uris: List<Uri>) {
         importPhotos(uris.mapIndexed { index, uri ->
             val mime = contentResolver.getType(uri).orEmpty()
@@ -622,6 +655,12 @@ class MainActivity : ComponentActivity() {
         )
         projectStore = installed
         installed.load()
+        // 系统「分享」进来的图片（相册 → 分享 → FrameMark）：复用相册选择器的导入路径。
+        // 只在真正的冷启动里接一次：进程被回收后重建会把同一份 intent 再交一遍，重复导入。
+        if (savedInstanceState == null) {
+            handleSharedImages(intent)
+            handleImportShortcut(intent)
+        }
         // X1: prove the engine .so load path on the device. Rendering stays on the
         // placeholder workflow until the engine core is linked (X2).
         val engineStatus = NativeEngineProbe.load()

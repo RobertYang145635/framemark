@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 长按图标的静态快捷方式（res/xml/fm_shortcuts.xml）：shortcut 标签必须是字符串资源。 -->
+    <string name="shortcut_import_short">从相册导入</string>
+    <string name="shortcut_import_long">从相册导入照片</string>
+</resources>

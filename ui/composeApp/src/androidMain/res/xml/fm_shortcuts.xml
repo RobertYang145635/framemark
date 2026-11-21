@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  长按应用图标的静态快捷方式（2026-11-21）：直接打开系统相册选择器，跳过首页那一步。
+
+  `fmShortcut=import` 由 MainActivity 认领：冷启动时在首帧之后调起同一个
+  PickMultipleVisualMedia 选择器（和首页「选照片」是同一条路径），不做第二套导入。
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:shortcutId="import-from-gallery"
+        android:shortcutLongLabel="@string/shortcut_import_long"
+        android:shortcutShortLabel="@string/shortcut_import_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.framemark.native.MainActivity"
+            android:targetPackage="${applicationId}">
+            <extra
+                android:name="fmShortcut"
+                android:value="import" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>
