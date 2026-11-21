@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc48",
-  "versionCode": 47,
+  "versionName": "0.9.0-rc49",
+  "versionCode": 48,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-20T23:50:00Z",
-  "notes": "打开应用时自动检查新版本（清单优先、6 秒预算、每次请求绕开镜像缓存），有新版本弹一次窗：可直接下载安装，也能「跳过这个版本」。国内下载走镜像分流（实测直连 Release 资产约 18 KB/s，镜像 80–250 KB/s，逐个候选并校验 SHA-256）。边框库缩略图改成随包样张：照片缺 EXIF 时也看得出每套边框能画什么，打开即有、不再划到才渲染。照片没有拍摄参数时，舞台给那几行画两色虚线占位（白色卡面与深色舞台都看得见），进「文字」页后消失，换照片或换边框会重新提示。品牌字标补齐官方黑白对：44 个品牌 × 黑/白共 88 枚（保留品牌色，如富士那点红；官方稿缺对应底色且对比度不足的只有神牛一枚，按「自行染色」推黑），另有 121 条错误的字标尺寸声明按真实像素修正。关于页新增「反馈问题」入口（QQ 群）。",
+  "publishedAt": "2026-11-21T05:40:00Z",
+  "notes": "新增应用内相册：不用先跳系统选择器，进来就是缩略图网格，按相册分组浏览（最近 / 各目录），点选角标是挑选顺序，最多 9 张；拒绝授权可一键回退系统选择器。导入规则改了：新照片沿用边框，但参数、文字、主题、字号、Logo、比例都回到边框默认值，不再整套复制上一张改过的东西；全新工程的第一张照片自动用「热门」第一张边框，不再出现「选择一个边框」的空态。HDR：照片自带增益图时导出面板默认开启「保留 HDR」；HEIC 照片（含相册里显示 ProXDR 的那些）导入时保留原始文件，导出面板明确写出「这是 HDR（HEIC）照片，当前版本暂不支持从 HEIC 导出 HDR」，不再静默显示「没有增益图」。上一版的两个入口保持不变：相册里分享到 FrameMark、长按图标的「从相册导入」。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc48/FrameMark-0.9.0-rc48-arm64.apk",
-      "sha256": "dba5539d6014cffef6085aa61c201867440a0c2ce97762bfff80febdd57698d5",
-      "size": 144882214
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc49/FrameMark-0.9.0-rc49-arm64.apk",
+      "sha256": "fcc8656878640c854c6e3c59473316f9d1f45a165bf592e44f5a5f266253befe",
+      "size": 144916842
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc48/FrameMark-0.9.0-rc48-win64.msi",
-      "sha256": "8f89bb83caad240b87310eb7ee7edf9469359b3787e53a32877442394ab6aa45",
-      "size": 248111108
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc49/FrameMark-0.9.0-rc49-win64.msi",
+      "sha256": "a0f85cd679b1d90428a45fef6dd5bc597c8342695901ef42d764b510e7bcf8bb",
+      "size": 247963700
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc48"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc49"
 }
