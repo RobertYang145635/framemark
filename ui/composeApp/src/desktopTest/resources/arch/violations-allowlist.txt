@@ -366,7 +366,6 @@ ui/composeApp/src/desktopMain/kotlin/com/framemark/native/workflow/DesktopWorkfl
 ui/composeApp/src/desktopMain/kotlin/com/framemark/native/workflow/DesktopWorkflowPlatform.kt:evidence-hook-literal:281:FM_BATCH_AUTOSTART
 ui/composeApp/src/desktopMain/kotlin/com/framemark/native/workflow/DesktopWorkflowPlatform.kt:evidence-hook-literal:297:FM_DATA_DIR
 ui/composeApp/src/androidMain/kotlin/com/framemark/native/MainActivity.kt:evidence-hook-literal:775:FM_PROJECT_FLUSH_FAIL
-ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:evidence-hook-literal:261:FM_ULTRA_HDR_SKIP
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:evidence-hook-literal:264:FM_ULTRA_HDR_WRITE_FAIL
 ui/composeApp/src/commonMain/kotlin/com/framemark/native/workflow/NativeRender.kt:evidence-hook-literal:267:FM_ULTRA_HDR_READY
 

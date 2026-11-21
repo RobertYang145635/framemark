@@ -34,6 +34,23 @@ object UltraHdrExport {
     /** Gain map resolution relative to the canvas: half of each side, like OPPO's. */
     const val GAIN_MAP_DIVISOR = 2
 
+    /**
+     * 合成增益图时把画布缩小多少倍。默认 2 倍；**画布很大时继续放大**，让增益图长边不超过
+     * [MAX_GAIN_MAP_EDGE]。
+     *
+     * 为什么：200 MP 的手机照片（12288×17748）按 2 倍合成会得到 54 MP 的增益图，移动端
+     * 光栅化 + JPEG 编码会失败/爆内存，于是 HDR 被静默降级成 SDR（2026-11-21 用户报告：
+     * 保留 HDR 导出后相册看不到 HDR）。增益图是低频信号，规范允许任意分辨率，解码器会插值。
+     */
+    const val MAX_GAIN_MAP_EDGE = 2048
+
+    fun gainMapDivisor(canvasWidth: Int, canvasHeight: Int): Int {
+        val maxEdge = maxOf(canvasWidth, canvasHeight)
+        if (maxEdge <= 0) return GAIN_MAP_DIVISOR
+        val needed = (maxEdge + MAX_GAIN_MAP_EDGE - 1) / MAX_GAIN_MAP_EDGE
+        return maxOf(GAIN_MAP_DIVISOR, needed)
+    }
+
     /** Everything needed to wrap, when the source qualifies. */
     data class Eligible(
         val gainMap: UltraHdr.GainMap,
@@ -227,7 +244,7 @@ object UltraHdrExport {
                 sourceHeight = eligible.sourceHeight,
                 orientation = eligible.orientation,
                 sentinel = eligible.gainMap.sentinel,
-                divisor = GAIN_MAP_DIVISOR,
+                divisor = gainMapDivisor(canvasWidth, canvasHeight),
             ),
         ) ?: return null
 

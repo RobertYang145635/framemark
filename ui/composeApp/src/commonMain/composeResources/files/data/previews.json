@@ -8,8 +8,8 @@
   "consumerNote": "path = library card preview (VariantThumb: renderedPreview ?? preview). inspectorPath = Inspector preview (preview ?? renderedPreview); on hand cards these differ because a legacy screenshot is still declared.",
   "counts": {
     "cards": 183,
-    "mapped": 180,
-    "missing": 3,
+    "mapped": 187,
+    "missing": 0,
     "byLayer": {
       "system": 111,
       "rendered": 69
@@ -232,26 +232,26 @@
     },
     {
       "cardId": "stock-oppo-video_text_style_2",
-      "layer": "system",
-      "path": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_2.webp",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-video_text_style_2.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_2.webp",
       "declaredPreviewRaw": "../assets/previews/system/stock-oppo-video_text_style_2.webp",
       "inspectorPath": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_2.webp",
-      "sha256": "9f4d99e921cd43223eaf5d395d87243cfc38c492b6a58c397674317660bc734c",
-      "bytes": 8520,
+      "sha256": "85589b59daafba2e8b9c2c00520e7bc7fef3488630b46fbda5c41b02cc559380",
+      "bytes": 24884,
       "format": "webp",
       "width": 480,
       "height": 360
     },
     {
       "cardId": "stock-oppo-video_text_style_3",
-      "layer": "system",
-      "path": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_3.webp",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-video_text_style_3.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_3.webp",
       "declaredPreviewRaw": "../assets/previews/system/stock-oppo-video_text_style_3.webp",
       "inspectorPath": "src/renderer/src/assets/previews/system/stock-oppo-video_text_style_3.webp",
-      "sha256": "b172284fe108d35d0f56e33576665fad4265e79c0efc0ed3f7edd05d1162b2a6",
-      "bytes": 8890,
+      "sha256": "4937d5d28aa2df142c747e2b91c4816dfa5b2296508a4ac5369514af442923c3",
+      "bytes": 24536,
       "format": "webp",
       "width": 480,
       "height": 360
@@ -817,16 +817,16 @@
     },
     {
       "cardId": "stock-xiaomi-classic-72",
-      "layer": "system",
-      "path": "src/renderer/src/assets/previews/system/stock-xiaomi-classic-72.webp",
+      "layer": "rendered",
+      "path": "previews/stock-xiaomi-classic-72.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/system/stock-xiaomi-classic-72.webp",
       "declaredPreviewRaw": "../assets/previews/system/stock-xiaomi-classic-72.webp",
       "inspectorPath": "src/renderer/src/assets/previews/system/stock-xiaomi-classic-72.webp",
-      "sha256": "a3d3862c826ff03fb513806bcd2d783f10790d261f389ec1513ff43c518cbbf0",
-      "bytes": 8428,
+      "sha256": "d1d01f49b37215cc299af7dfde44491aee6a897255f96958095b757ca345df86",
+      "bytes": 25860,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 425
     },
     {
       "cardId": "stock-xiaomi-classic-95",
@@ -1377,15 +1377,15 @@
     {
       "cardId": "wm-classic",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/wm-classic.webp",
+      "path": "previews/wm-classic.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/new_watermark1.webp",
       "declaredPreviewRaw": "../assets/previews/new_watermark1.webp",
       "inspectorPath": "src/renderer/src/assets/previews/new_watermark1.webp",
-      "sha256": "cfcc9f3624bbd0aa9042fbb97c762f2993ef6a4a07f8f24b195bac1ea6acc053",
-      "bytes": 8762,
+      "sha256": "5d398215d2deab6090e3397ed907172ef98362c4bfa16fb4058cd4559904944d",
+      "bytes": 27012,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 413
     },
     {
       "cardId": "stock-oppo-personalize_masterSign_1",
@@ -2361,6 +2361,76 @@
       "format": "webp",
       "width": 480,
       "height": 360
+    },
+    {
+      "cardId": "stock-oppo-restrict_spring_1002",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-restrict_spring_1002.webp",
+      "sha256": "642128f765e976611675139f63379526c5e588341f5e057885b3c5280c3a7a1a",
+      "bytes": 23538,
+      "format": "webp",
+      "width": 467,
+      "height": 480
+    },
+    {
+      "cardId": "stock-oppo-restrict_spring_1005",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-restrict_spring_1005.webp",
+      "sha256": "2c3f0e28200cce1fde7726ab5b48e4c336ffa88e25afa82ecfaaadef472b9ae4",
+      "bytes": 28744,
+      "format": "webp",
+      "width": 480,
+      "height": 440
+    },
+    {
+      "cardId": "stock-oppo-restrict_valentine_2025_style_1001",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-restrict_valentine_2025_style_1001.webp",
+      "sha256": "075137e8b42b5c58bacda90d5d38145beab13f0a92e902a693c4c3818a2e70ae",
+      "bytes": 29460,
+      "format": "webp",
+      "width": 480,
+      "height": 440
+    },
+    {
+      "cardId": "stock-oppo-personalize_brand_3",
+      "layer": "rendered",
+      "path": "previews/stock-oppo-personalize_brand_3.webp",
+      "sha256": "f209a00c1304bde269445b5fe11006101406cf766bc0aa607ce85f6d7c08eb45",
+      "bytes": 21648,
+      "format": "webp",
+      "width": 480,
+      "height": 316
+    },
+    {
+      "cardId": "stock-xiaomi-leica-5",
+      "layer": "rendered",
+      "path": "previews/stock-xiaomi-leica-5.webp",
+      "sha256": "009dd4a982c84ba17e6c65642d1a2f403122b90e06b907250c16e6c8ade0c73a",
+      "bytes": 21910,
+      "format": "webp",
+      "width": 480,
+      "height": 326
+    },
+    {
+      "cardId": "stock-xiaomi-leica-88",
+      "layer": "rendered",
+      "path": "previews/stock-xiaomi-leica-88.webp",
+      "sha256": "f4c75185b38dbd1804e7d69e4cc22f12175abbc36047ae8754fc43c26148e6a8",
+      "bytes": 25140,
+      "format": "webp",
+      "width": 480,
+      "height": 439
+    },
+    {
+      "cardId": "stock-xiaomi-leica-89",
+      "layer": "rendered",
+      "path": "previews/stock-xiaomi-leica-89.webp",
+      "sha256": "552d45360aa1cabb6bfa66d3db4e3fb4837023dfefe06b640983557428c06787",
+      "bytes": 23494,
+      "format": "webp",
+      "width": 480,
+      "height": 327
     }
   ],
   "missing": [

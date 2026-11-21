@@ -379,6 +379,7 @@ object NativeEngine {
             // first (both platforms' `writeBytes` do), so a disk-full or short write
             // would leave a 32-byte "successful" export behind; the commit below must
             // therefore only ever see a fully written file.
+            var hdrNote: String? = null
             if (settings.preserveHdr &&
                 settings.format == com.framemark.native.product.ExportFormat.Jpeg
             ) {
@@ -427,8 +428,13 @@ object NativeEngine {
                             null
                         }
                         when {
-                            wrapped == null -> FmLog.info("FM_ULTRA_HDR_SKIP") {
-                                "card=$cardId reason=no-reusable-gain-map"
+                            wrapped == null -> {
+                                // 保留 HDR 请求了却没做成：不能静默降级，用户会以为成片是 HDR。
+                                hdrNote = "保留 HDR 未生效（增益图合成失败），成片按 SDR 保存"
+                                FmLog.warn("FM_ULTRA_HDR_WRITE_FAIL") {
+                                    "card=$cardId kept as SDR reason=no-reusable-gain-map " +
+                                        "canvas=${image.width}x${image.height}"
+                                }
                             }
                             // The wrapper must have appended the gain map: a payload no
                             // larger than the SDR bytes is not a wrapped file, whatever an
@@ -563,7 +569,7 @@ object NativeEngine {
             // Published either way: the local file is committed and the export is done;
             // a publication failure is a note, not a failed save.
             onStage?.invoke(ExportStage.Published)
-            val note = listOfNotNull(image.note, publishNote).filter { it.isNotBlank() }.joinToString("；").ifBlank { null }
+            val note = listOfNotNull(image.note, publishNote, hdrNote).filter { it.isNotBlank() }.joinToString("；").ifBlank { null }
             val outputBytes = withContext(Dispatchers.IO) { platform.fileSize(path) }
             FmLog.info("FM_NATIVE_EXPORT") {
                 "card=$cardId path=$path ${image.width}x${image.height} ms=${image.ms} " +
