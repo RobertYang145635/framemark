@@ -66,6 +66,31 @@ class TextSlotNavigatorTest {
 
     private fun rightColumn(key: String, y: Double) = slot("r-$key", key, x = 1500.0, y = y)
 
+    // ------------------------------------------- EXIF 残缺：缺值行必须能填
+
+    /**
+     * 照片缺拍摄参数时，引擎会声明这一行但这一帧没有可画的内容
+     * （[TextSlot.present] = false、`hidden` = false）。这种行以前被整条过滤掉，
+     * 用户既看不到「这里缺东西」，也无法补填 —— 2026-11-21 用户反馈
+     * 「exif 残缺的照片，不全的地方不能修改了，直接被关掉」。
+     */
+    @Test
+    fun a_rowWithNoContentThisFrameIsStillListedAndEditable() {
+        val missing = slot(
+            id = "r-exif",
+            key = "hand:card:exif",
+            x = 1500.0,
+            y = 1700.0,
+            text = "",
+            raw = "",
+            present = false,
+            hidden = false,
+        )
+        val entries = textSlotNavEntries(listOf(missing), canvasW, canvasH)
+        assertEquals(1, entries.size, "缺值行要留在列表里，不能被过滤掉")
+        assertFalse(entries.single().readonly, "缺值行要可编辑，用户才能把参数补上")
+    }
+
     // ------------------------------------------------------------ 列 + 行命名
 
     @Test

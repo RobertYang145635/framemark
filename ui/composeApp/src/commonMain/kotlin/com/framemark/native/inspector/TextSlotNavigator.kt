@@ -63,6 +63,7 @@ import com.framemark.native.workflow.ControlProbe
 import com.framemark.native.workflow.DesignSession
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.isCurrentTextSlot
+import com.framemark.native.workflow.isEditableTextSlot
 import com.framemark.native.workflow.probeBounds
 import com.framemark.native.workflow.textSlotControls
 import com.framemark.native.product.FmLog
@@ -240,8 +241,10 @@ internal fun textSlotNavEntries(
     semantics: Map<String, TextSlotSemantic>,
 ): List<TextSlotNavEntry> {
     // 与旧的声明行列表同一套「这一帧算不算一个文本框」判据：可写身份 or 画出来/显式隐藏。
+    // 可写身份优先：EXIF 残缺的行（present=false、hidden=false）以前会被整条过滤掉，
+    // 于是「这里缺内容」既看不到也填不了 —— 2026-11-21 用户反馈「不全的地方不能修改」。
     val eligible = slots
-        .filter { it.isCurrentTextSlot() || it.present || it.hidden }
+        .filter { it.isEditableTextSlot() || it.present || it.hidden }
         .distinctBy { it.key ?: it.id }
     if (eligible.isEmpty()) return emptyList()
     val axes = textSlotAxes(eligible, outputWidth, outputHeight)
@@ -265,7 +268,7 @@ internal fun textSlotNavEntries(
             positionLabel = textSlotAxisLabel(axis),
             role = semantic?.label,
             showParam = semantic?.showParam,
-            readonly = !slot.isCurrentTextSlot(),
+            readonly = !slot.isEditableTextSlot(),
             order = index + 1,
         )
     }
@@ -470,7 +473,7 @@ private fun editableTextControl(
     slot: TextSlot,
     controls: List<InspectorControl>,
 ): InspectorControl? {
-    val key = slot.key?.takeIf { slot.isCurrentTextSlot() } ?: return null
+    val key = slot.key?.takeIf { slot.isEditableTextSlot() } ?: return null
     val param = "params.slotText:$key"
     return controls.firstOrNull { it.param == param }
         ?: textSlotControls(cardId, slot).firstOrNull { it.param == param }
