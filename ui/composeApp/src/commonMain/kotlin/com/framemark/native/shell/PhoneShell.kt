@@ -75,6 +75,9 @@ import com.framemark.native.theme.FmRadii
 import com.framemark.native.theme.FmSpacing
 import com.framemark.native.theme.FmType
 import com.framemark.native.workflow.BatchCandidate
+import com.framemark.native.inspector.textSlotNavEntries
+import com.framemark.native.workflow.isEditableTextSlot
+import com.framemark.native.workflow.SlotGeometryProbe
 import com.framemark.native.workflow.BatchPreflight
 import com.framemark.native.workflow.batchPreflight
 import com.framemark.native.workflow.BatchRunner
@@ -676,6 +679,66 @@ fun PhoneShell() {
     }
     // The 文字 tab lists renderer-backed rows by canvas position, so the panel
     // model has to carry the per-row controls for the current render.
+    // 缺值的行：引擎这一帧没画它，也就没报矩形。量一次（示例文案离屏渲染），
+    // 之后的文字页定位、点选高亮、舞台淡灰示例都基于这次量出来的矩形。
+    var geometryVersion by remember { mutableStateOf(0) }
+    LaunchedEffect(selectedCard?.id, store.activePhotoId, textSlots.width, textSlots.height, textSlots.slots.size, geometryVersion) {
+        val activeCard = selectedCard ?: return@LaunchedEffect
+        val width = textSlots.width
+        val height = textSlots.height
+        if (width <= 0 || height <= 0) return@LaunchedEffect
+        if (SlotGeometryProbe.cached(activeCard.id, store.activePhoto?.path, width, height) != null) return@LaunchedEffect
+        val missing = textSlots.slots.filter {
+            it.isEditableTextSlot() && (!it.located || it.w <= 0.0 || it.h <= 0.0)
+        }
+        if (missing.isEmpty()) return@LaunchedEffect
+        val roles = textSlotNavEntries(textSlots.slots, width, height).associate { it.navKey to it.role }
+        val samples = missing.mapNotNull { slot ->
+            val key = slot.key ?: return@mapNotNull null
+            key to com.framemark.native.product.GhostSamples.forRole(roles[key])
+        }.toMap()
+        if (samples.isEmpty()) return@LaunchedEffect
+        val design = NativeEngine.designOf(activeCard, model, session)
+        val output = WorkflowEnv.platform?.exportDir?.trimEnd('/', '\\') ?: return@LaunchedEffect
+        val measured = SlotGeometryProbe.measure(
+            cardId = activeCard.id,
+            styleId = activeCard.systemStyle,
+            photoPath = store.activePhoto?.path,
+            design = design,
+            canvasWidth = width,
+            canvasHeight = height,
+            samples = samples,
+            outputDirectory = output,
+        )
+        if (measured.isNotEmpty()) geometryVersion++
+    }
+    // 给 UI 的 slots：缺矩形的行用探针量出来的矩形补上（其余字段仍用报告的）。
+    val uiSlots = remember(textSlots.slots, geometryVersion, selectedCard?.id, store.activePhotoId) {
+        val probed = SlotGeometryProbe.cached(
+            cardId = selectedCard?.id,
+            photoPath = store.activePhoto?.path,
+            width = textSlots.width,
+            height = textSlots.height,
+        )
+        if (probed.isNullOrEmpty()) {
+            textSlots.slots
+        } else {
+            textSlots.slots.map { slot ->
+                val rect = slot.key?.let(probed::get) ?: return@map slot
+                if (slot.located && slot.w > 0.0 && slot.h > 0.0) return@map slot
+                slot.copy(
+                    x = rect.x,
+                    y = rect.y,
+                    w = rect.w,
+                    h = rect.h,
+                    fontSize = rect.fontSize ?: slot.fontSize,
+                    baseline = rect.baseline ?: slot.baseline,
+                    located = true,
+                )
+            }
+        }
+    }
+
     val panelModel = remember(model, textSlots.slots) { model?.withNativeTextSlots(textSlots.slots) }
 
     // P4 write-through: the session is a view of the active photo's design. Every
@@ -1087,7 +1150,7 @@ fun PhoneShell() {
                 // 「把当前设计用到全部 N 张」的第二个入口在边框面板的当前边框那一行
                 // （UX 审查 P1-3）；两处都走同一个动作 + 同一个确认弹窗。
                 applyToAllCount = store.photos.size,
-                textSlots = textSlots.slots,
+                textSlots = uiSlots,
                 textOutputWidth = textSlots.width,
                 textOutputHeight = textSlots.height,
                 photoWidthPx = store.activePhoto?.widthPx ?: 0,

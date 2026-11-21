@@ -49,7 +49,23 @@ fun slotHighlightRect(
 ): FitRectPx? {
     if (!slot.located) return null
     if (!slot.x.isFinite() || !slot.y.isFinite() || !slot.w.isFinite() || !slot.h.isFinite()) return null
-    if (slot.w <= 0.0 || slot.h <= 0.0) return null
+    // 空内容的行（这一帧没画东西）量出来是 0 宽：按字高给一个最小框，用户才点得到、
+    // 也才看得见高亮（2026-11-21 用户反馈「点这个框为什么没有高亮框」）。
+    if (slot.w <= 0.0 || slot.h <= 0.0) {
+        val line = (slot.fontSize ?: 0.0).takeIf { it > 0.0 } ?: 24.0
+        val fit0 = fitImageRect(bitmapW, bitmapH, boxW, boxH)
+        if (fit0.w <= 0f || fit0.h <= 0f) return null
+        val scale0 = fit0.w / bitmapW.toFloat()
+        if (!scale0.isFinite() || scale0 <= 0f) return null
+        val minW = (line * 6.0).toFloat() * scale0
+        val minH = (line * 1.4).toFloat() * scale0
+        return FitRectPx(
+            x = fit0.x + slot.x.toFloat() * scale0,
+            y = fit0.y + slot.y.toFloat() * scale0,
+            w = minW,
+            h = minH,
+        )
+    }
     val fit = fitImageRect(bitmapW, bitmapH, boxW, boxH)
     if (fit.w <= 0f || fit.h <= 0f) return null
     val scale = fit.w / bitmapW.toFloat()

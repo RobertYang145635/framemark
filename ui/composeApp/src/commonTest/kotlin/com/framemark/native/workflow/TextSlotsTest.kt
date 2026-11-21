@@ -113,7 +113,7 @@ class TextSlotsTest {
 
         val groups = groupTextSlots(listOf(noGeometry, legacyId), 900, 600)
         assertEquals(1, groups.size, "only the writable row is listed")
-        assertEquals("待定位", groups.single().label)
+        assertEquals("", groups.single().label, "位置名不再写「待定位」；界面只显示角色名")
         assertEquals(listOf("a"), groups.single().rows.map { it.slot.id })
     }
 
@@ -152,11 +152,11 @@ class TextSlotsTest {
             900,
             600,
         )
-        assertEquals(listOf("左上", "右上", "左下", "待定位"), groups.map { it.label })
+        assertEquals(listOf("左上", "右上", "左下", ""), groups.map { it.label })
         val bottomLeft = groups.first { it.label == "左下" }
         assertEquals(listOf("bl2", "bl"), bottomLeft.rows.map { it.slot.id }, "sorted by y then x")
         assertEquals(listOf(1, 2), bottomLeft.rows.map { it.order })
-        assertEquals("待定位", groups.last().label)
+        assertEquals("", groups.last().label)
     }
 
     @Test

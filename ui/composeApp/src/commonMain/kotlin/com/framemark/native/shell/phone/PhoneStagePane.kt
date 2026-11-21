@@ -179,6 +179,8 @@ internal fun StageArea(
     showExifSlotHints: Boolean = false,
     /** 渲染报告里的文字行，用来定位缺口；与 `showExifSlotHints` 一起决定画不画。 */
     textSlots: List<com.framemark.native.workflow.TextSlot> = emptyList(),
+    /** 缺值行对应的示例文案（淡灰占位），键是 slot key。 */
+    exifSamples: Map<String, String> = emptyMap(),
     /**
      * 水印九宫格画不画在照片上（只有 水印 工具 + 真的有一层水印时为 true，
      * 见 `showsWatermarkAnchorLayer`）。它铺在照片矩形的九个格子上，点一格写回
@@ -318,6 +320,7 @@ internal fun StageArea(
                     previewGeo?.let { geo ->
                         ExifSlotHintLayer(
                             slots = textSlots,
+                            samples = exifSamples,
                             bitmapWidth = geo.w,
                             bitmapHeight = geo.h,
                             boxSize = stageSize,

@@ -177,9 +177,14 @@ internal fun textSlotAxes(
     return preliminary
 }
 
-/** 列 + 行的位置名；未定位的行叫「待定位」。 */
+/**
+ * 列 + 行的位置名。
+ *
+ * 没有可信矩形时返回**空串**（界面只显示角色名「拍摄参数」），不再写「待定位」：
+ * 位置由边框决定，只是这一张照片没有把这一行画出来（2026-11-21 用户口径）。
+ */
 internal fun textSlotAxisLabel(axis: TextSlotAxis): String {
-    if (!axis.located) return "待定位"
+    if (!axis.located) return ""
     val column = AxisColumnLabels[axis.column!!]
     val row = AxisRowLabels[axis.row!!]
     // 「中中」不是人话：同列单行又落在中部时用现有词表的「居中」。

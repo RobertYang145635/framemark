@@ -119,10 +119,12 @@ class SlotHighlightTest {
     }
 
     @Test
-    fun zeroOrNegativeSlotSizeHasNoRectangle() {
-        assertNull(slotHighlightRect(slot(10.0, 20.0, 0.0, 40.0), 100, 100, 300f, 100f))
-        assertNull(slotHighlightRect(slot(10.0, 20.0, 30.0, 0.0), 100, 100, 300f, 100f))
-        assertNull(slotHighlightRect(slot(10.0, 20.0, -30.0, 40.0), 100, 100, 300f, 100f))
+    fun aSlotWithNoMeasuredSizeStillGetsAMinimalBox() {
+        // 空内容的行量出来是 0 宽：给一个按字高的最小框，用户才点得到、也才看得见高亮
+        // （2026-11-21 用户反馈「点这个框为什么没有高亮框」）。
+        val collapsed = assertNotNull(slotHighlightRect(slot(10.0, 20.0, 0.0, 40.0), 100, 100, 300f, 100f))
+        assertTrue(collapsed.w > 0f && collapsed.h > 0f, "零宽也要有可点/可见的框")
+        assertNotNull(slotHighlightRect(slot(10.0, 20.0, 30.0, 0.0), 100, 100, 300f, 100f))
     }
 
     @Test

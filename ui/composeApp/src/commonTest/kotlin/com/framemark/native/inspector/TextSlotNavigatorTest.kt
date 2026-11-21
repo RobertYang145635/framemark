@@ -263,14 +263,16 @@ class TextSlotNavigatorTest {
     }
 
     @Test
-    fun a_text_box_without_a_trustworthy_rect_is_waiting_for_position() {
+    fun a_text_box_without_a_trustworthy_rect_keeps_its_role_instead_of_a_placeholder() {
+        // 位置由边框决定；这一帧没画出矩形时不写「待定位」（用户 2026-11-21 明确反感），
+        // 位置名留空，界面只显示角色名；探针量出矩形后会补上「右上 / 右下」。
         val unlocated = slot("hand:card:ghost", "hand:card:ghost", x = 0.0, y = 0.0, located = false)
         val entries = textSlotNavEntries(
             listOf(unlocated, leftColumn("hand:card:title", y = 100.0)),
             canvasW,
             canvasH,
         )
-        assertEquals(listOf("左上", "待定位"), entries.map { it.positionLabel })
+        assertEquals(listOf("左上", ""), entries.map { it.positionLabel })
         assertNull(entries.last().axis.column)
     }
 

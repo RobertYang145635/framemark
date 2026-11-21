@@ -3,6 +3,7 @@ package com.framemark.native.inspector
 import com.framemark.native.shell.shouldDrawExifHints
 import com.framemark.native.workflow.TextSlot
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -50,5 +51,23 @@ class ExifSlotHintTest {
     @Test
     fun aCardWithoutTextRowsDrawsNothing() {
         assertFalse(shouldDrawExifHints(emptyList(), cardSeen = false))
+    }
+
+    @Test
+    fun aRowWithNoRectangleKeepsTheRoleNameInsteadOfAPlaceholderWord() {
+        // 位置由边框决定；这一帧没画出来时不写「待定位」（用户 2026-11-21 明确反感），
+        // 只显示角色名，等探针量出矩形后再补上「右上 / 右下」。
+        assertEquals("", textSlotAxisLabel(TextSlotAxis(null, null)))
+        assertEquals("右上", textSlotAxisLabel(TextSlotAxis(column = 2, row = 0)))
+    }
+
+    @Test
+    fun ghostSamplesLookLikeRealWatermarkText() {
+        val exif = com.framemark.native.product.GhostSamples.forRole("拍摄参数")
+        assertTrue(exif.contains("mm") && exif.contains("ISO"), exif)
+        val date = com.framemark.native.product.GhostSamples.forRole("日期")
+        assertTrue(date.matches(Regex("""\d{4}-\d{2}-\d{2} \d{2}:\d{2}""")), date)
+        assertEquals("OPPO", com.framemark.native.product.GhostSamples.forRole("品牌"))
+        assertEquals("Sony", com.framemark.native.product.GhostSamples.forRole("品牌", make = "Sony"))
     }
 }

@@ -104,7 +104,7 @@ data class TextSlotGroup(
     val position: TextSlotPosition?,
     val rows: List<TextSlotRow>,
 ) {
-    val label: String get() = position?.label ?: "待定位"
+    val label: String get() = position?.label.orEmpty()
 }
 
 /** A renderer snapshot belongs to one selected card/photo pair only. */

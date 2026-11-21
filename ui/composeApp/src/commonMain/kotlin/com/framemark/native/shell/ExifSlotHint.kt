@@ -3,57 +3,60 @@ package com.framemark.native.shell
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.sp
 import com.framemark.native.inspector.ExifGapNotice
+import com.framemark.native.theme.FmPalette
 import com.framemark.native.workflow.TextSlot
 import com.framemark.native.workflow.slotHighlightRect
 
 /**
- * 舞台上给**缺拍摄参数的文字行**画一圈极淡的虚线框（2026-11-20 用户定的方案）。
- *
- * 为什么要有：照片没有 EXIF 时，边框上的参数行照实留空 —— 用户看不出「这里本来能填」，
- * 也不知道几张只差参数行的边框有什么区别。库里的缩略图已经改成随包样张（能看到完整
- * 设计），舞台上再给这几行一个可见的占位，用户一眼就知道缺口在哪。
- *
- * 三条边界（[ExifGapNotice] + 两端的 `exifHintsAcknowledged`）：
- *  1. **只在编辑器里画**：这是 Compose 覆盖层，引擎输出不含它，导出一定干净；
- *  2. 只画「有位置但没字」的行（[ExifGapNotice.isMissing]），已经填过的行不画；
- *  3. 用户**进过「文字」页**就撤掉，但这条「看过了」是**按照片**记、并且**换照片或
- *     换边框就重置**（用户 2026-11-20 定）：同一张照片换到别的边框再换回来，占位仍然
- *     出现 —— 那时面对的是一套新排版，缺口得重新看见。
- */
-/**
- * 该不该画这层占位：这套边框没被标记「看过」，且确实有「有位置但没字」的行。
- *
- * 单独抽出来给两端共用（也用来钉边界条件）：看过 → 不画；没有缺行 → 不画。
+ * 这层淡灰示例该不该画：这套照片/边框没被标记「看过」，且确实有「有位置但没字」的行。
+ * 单独抽出来方便测试，也把「看过就不画」这条边界放在一处。
  */
 internal fun shouldDrawExifHints(slots: List<TextSlot>, cardSeen: Boolean): Boolean =
     !cardSeen && ExifGapNotice.missingFields(slots).isNotEmpty()
 
+/**
+ * 舞台上给**缺拍摄参数的行**画淡灰的「标准参数档」示例（2026-11-21 用户口径）。
+ *
+ * 为什么：照片没有 EXIF 时，边框上那一行照实留空，用户看不出这里本来写什么，也不知道这张
+ * 照片能填什么。这里把该行的示例（`23mm F1.8 1/125s ISO250`、机型、日期…）用淡灰画在
+ * **这一行真实的位置**上：看一眼就知道「这里本来有字」。
+ *
+ * 三条边界（与 [ExifGapNotice] 一致）：
+ *  1. 只在编辑器里画：Compose 覆盖层，引擎输出与导出都不含它；
+ *  2. 只画「有位置但没字」的行，已经填过的不画；
+ *  3. 进过一次「文字」页就撤掉（`exifHintsAcknowledged`），换照片或换边框重新出现。
+ *
+ * 位置来自渲染报告；报告没有矩形时由 `SlotGeometryProbe` 用量出来的矩形补上
+ * （[slotHighlightRect] 也接受零宽矩形，按字高给最小框）。
+ */
 @Composable
 internal fun ExifSlotHintLayer(
     slots: List<TextSlot>,
     bitmapWidth: Int,
     bitmapHeight: Int,
     boxSize: IntSize,
+    samples: Map<String, String>,
     modifier: Modifier = Modifier,
 ) {
     val missing = ExifGapNotice.missingFields(slots)
-    if (missing.isEmpty() || bitmapWidth <= 0 || bitmapHeight <= 0) return
+    if (missing.isEmpty() || bitmapWidth <= 0 || bitmapHeight <= 0 || samples.isEmpty()) return
+    val measurer = rememberTextMeasurer()
+    val ink = FmPalette.stageInk
     Canvas(modifier = modifier) {
-        val dash = PathEffect.dashPathEffect(floatArrayOf(6f, 5f))
-        val stroke = Stroke(width = 1.5f, pathEffect = dash)
-        // 两色虚线：白的画在略偏左上、黑的画在略偏右下。这样在深色舞台和白色卡面上
-        // 都能看清 —— 单色描边总会在某一种底色上消失（白卡上的浅灰几乎看不见）。
-        val lightEdge = Color.White.copy(alpha = 0.34f)
-        val darkEdge = Color.Black.copy(alpha = 0.38f)
         for (slot in missing) {
+            val text = slot.key?.let(samples::get)?.takeIf { it.isNotBlank() } ?: continue
             val rect = slotHighlightRect(
                 slot = slot,
                 bitmapW = bitmapWidth,
@@ -61,15 +64,35 @@ internal fun ExifSlotHintLayer(
                 boxW = boxSize.width.toFloat(),
                 boxH = boxSize.height.toFloat(),
             ) ?: continue
-            for ((color, shift) in listOf(lightEdge to -0.7f, darkEdge to 0.7f)) {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(rect.x + shift, rect.y + shift),
-                    size = Size(rect.w, rect.h),
-                    cornerRadius = CornerRadius(4f, 4f),
-                    style = stroke,
-                )
-            }
+            // 字号按**屏幕上**这一行的高度换算：报告里的 fontSize 是画布像素，
+            // 直接当 sp 用会放大好几倍（第一版就出了这个错）。
+            val fontPx = (rect.h * 0.82f).coerceAtLeast(8f)
+            val style = TextStyle(fontSize = fontPx.toSp())
+            drawGhost(measurer, text, rect.x, rect.y, rect.h, rect.w, ink, style)
         }
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGhost(
+    measurer: TextMeasurer,
+    text: String,
+    x: Float,
+    y: Float,
+    height: Float,
+    width: Float,
+    ink: Color,
+    style: TextStyle,
+) {
+    val measured = measurer.measure(
+        text = text,
+        style = style.copy(color = ink.copy(alpha = 0.42f)),
+        maxLines = 1,
+        overflow = TextOverflow.Clip,
+        constraints = Constraints(maxWidth = width.toInt().coerceAtLeast(1)),
+    )
+    // 行内垂直居中，并按这一行的宽度裁掉超出部分（示例比真实文字长时不能溢出边框）。
+    val top = y + ((height - measured.size.height) / 2f).coerceAtLeast(0f)
+    clipRect(x, y, x + width, y + height) {
+        drawText(textLayoutResult = measured, topLeft = Offset(x, top))
     }
 }

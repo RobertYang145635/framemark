@@ -490,6 +490,7 @@ private fun DesktopNativeStage(
                     }
                     com.framemark.native.shell.ExifSlotHintLayer(
                         slots = textSlots.slots,
+                        samples = emptyMap(),
                         bitmapWidth = renderedSize.width,
                         bitmapHeight = renderedSize.height,
                         boxSize = box,

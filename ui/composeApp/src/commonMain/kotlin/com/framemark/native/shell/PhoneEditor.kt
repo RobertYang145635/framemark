@@ -252,6 +252,20 @@ fun PhoneEditorScreen(
     // `remember(photoId, cardId)` 正好就是这条语义：任一变化 → 回到「没看过」。
     var exifHintsAcknowledged by remember(tray.selectedId, card?.id) { mutableStateOf(false) }
     val exifHintsVisible = !exifHintsAcknowledged && textSlots.isNotEmpty()
+    // 缺值行的示例文案（标准参数档）：按文字页的角色取，与探针渲染用的是同一份。
+    val exifSamples = remember(textSlots, textOutputWidth, textOutputHeight) {
+        val roles = com.framemark.native.inspector.textSlotNavEntries(
+            textSlots,
+            textOutputWidth,
+            textOutputHeight,
+        ).associate { it.navKey to it.role }
+        com.framemark.native.inspector.ExifGapNotice.missingFields(textSlots)
+            .mapNotNull { slot ->
+                val key = slot.key ?: return@mapNotNull null
+                key to com.framemark.native.product.GhostSamples.forRole(roles[key])
+            }
+            .toMap()
+    }
     LaunchedEffect(tool) {
         if (tool == EditorTool.Text) exifHintsAcknowledged = true
     }
@@ -643,6 +657,7 @@ fun PhoneEditorScreen(
                             // 缺拍摄参数的行给一圈虚线占位；进过「文字」页就不再画。
                             showExifSlotHints = exifHintsVisible,
                             textSlots = textSlots,
+                            exifSamples = exifSamples,
                             onUndoRemove = {
                                 onUndoRemove()
                                 onRemoveNoticeExpired()
