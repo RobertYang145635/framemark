@@ -256,6 +256,14 @@ object UltraHdr {
         if (bytes.size < 4) return null
         val base = segments(bytes, 0, bytes.size)
         if (base.isEmpty()) return null
+        locateStandard(bytes, base)?.let { return it }
+        // OPPO 的 ProXDR 不用 MPF/APP2/XMP，而是把增益图 + 80 字节浮点参数 + JSON 目录
+        // 挂在文件末尾（`jxrs` 魔数）。2026-11-21 用户真机反馈「相册显示 ProXDR、软件
+        // 识别不到」的根因就是缺这条分支。
+        return locateOppoUhdr(bytes)
+    }
+
+    private fun locateStandard(bytes: ByteArray, base: List<Segment>): GainMap? {
         val entries = mpfEntries(bytes, base) ?: return null
         if (entries.size < 2) return null
 
@@ -286,6 +294,120 @@ object UltraHdr {
             channels = channels,
             version = versionOf(xmp),
         )
+    }
+
+    // ------------------------------------------------------- OPPO ProXDR (uhdr)
+
+    /**
+     * OPPO ProXDR 的尾挂布局（`local.uhdr.*`）：主图之后依次是
+     *
+     * ```
+     * [主图 JPEG][增益图 JPEG][80 字节浮点参数][hdr.transform.data][4 字节空闲]
+     * [JSON 目录][NUL][jxrs 01 00 00]
+     * ```
+     *
+     * JSON 目录里的 `offset` 是「这一段开头到目录开头的距离」，所以
+     * `start = 目录开头 - offset`。80 字节参数是 20 个 little-endian float；实测
+     * `[0..2]=1.0`（增益下限，线性）、`[4..6]=4.926`（上限，线性）、`[7..9]=1.0`（gamma）。
+     * hdrgm 用 log2 表述增益，所以上下限取 log2、gamma 原样。
+     */
+    private fun locateOppoUhdr(bytes: ByteArray): GainMap? {
+        if (bytes.size < 256) return null
+        val magic = "jxrs".encodeToByteArray()
+        val magicAt = indexOfLast(bytes, magic, bytes.size, bytes.size - 64)
+        if (magicAt < 0) return null
+        var dirStart = -1
+        var at = magicAt - 1
+        while (at >= 1) {
+            if (u8(bytes, at) == 0x7B && u8(bytes, at - 1) == 0x5B) { dirStart = at - 1; break }
+            at--
+            if (magicAt - at > 4096) break
+        }
+        if (dirStart < 0) return null
+        val dir = bytes.decodeToString(dirStart, bytes.size).trimEnd(' ')
+        val entries = OPPO_ENTRY.findAll(dir).associate { m ->
+            m.groupValues[2] to (m.groupValues[1].toInt() to m.groupValues[3].toInt())
+        }
+        val data = entries["local.uhdr.gainmap.data"] ?: return null
+        val info = entries["local.uhdr.gainmap.info"]
+        val dataStart = dirStart - data.second
+        val dataEnd = dataStart + data.first
+        if (dataStart < 2 || dataEnd > dirStart) return null
+        if (u8(bytes, dataStart) != 0xFF || u8(bytes, dataStart + 1) != 0xD8) return null
+
+        var gainMin = 1.0
+        var gainMax = 4.0
+        var gamma = 1.0
+        if (info != null) {
+            val infoStart = dirStart - info.second
+            if (infoStart >= 0 && infoStart + info.first <= dirStart && info.first >= 40) {
+                fun f(index: Int): Float = Float.fromBits(le32(bytes, infoStart + index * 4))
+                val minRaw = f(0)
+                val maxRaw = f(4)
+                val gammaRaw = f(7)
+                if (minRaw.isFinite() && minRaw > 0f) gainMin = minRaw.toDouble()
+                if (maxRaw.isFinite() && maxRaw > 0f) gainMax = maxRaw.toDouble()
+                if (gammaRaw.isFinite() && gammaRaw > 0f) gamma = gammaRaw.toDouble()
+            }
+        }
+        if (gainMax <= gainMin) gainMax = gainMin * 4.0
+        val channels = List(3) {
+            Channel(min = log2(gainMin).toFloat(), max = log2(gainMax).toFloat(), gamma = gamma.toFloat())
+        }
+        return GainMap(
+            offset = dataStart.toLong(),
+            size = (dataEnd - dataStart).toLong(),
+            sentinel = sentinelOf(channels),
+            channels = channels,
+            version = "oppo-uhdr",
+        )
+    }
+
+    private fun indexOfLast(bytes: ByteArray, needle: ByteArray, from: Int, lowerBound: Int): Int {
+        var i = (from - needle.size).coerceAtMost(bytes.size - needle.size)
+        val floor = lowerBound.coerceAtLeast(0)
+        while (i >= floor) {
+            var match = true
+            for (k in needle.indices) {
+                if (bytes[i + k] != needle[k]) { match = false; break }
+            }
+            if (match) return i
+            i--
+        }
+        return -1
+    }
+
+    /** 「0 dB」在各通道增益图里的编码值（0..255），公式与 [sentinel] 同源。 */
+    internal fun sentinelOf(channels: List<Channel>): List<Int> {
+        val out = ArrayList<Int>(3)
+        for (c in channels) {
+            val span = (c.max - c.min).toDouble()
+            if (!span.isFinite() || span <= 0.0) { out += 0; continue }
+            val normalized = ((0.0 - c.min) / span).coerceIn(0.0, 1.0)
+            val recovery = Math.pow(normalized, c.gamma.toDouble())
+            out += kotlin.math.floor(recovery * 255.0 + 0.5).toInt().coerceIn(0, 255)
+        }
+        return out
+    }
+
+    private fun log2(v: Double): Double = kotlin.math.ln(v) / kotlin.math.ln(2.0)
+
+    /** 用已解析出的 channels 生成一份与标准文件等价的 hdrgm XMP（OPPO 源没有 XMP）。 */
+    internal fun synthesizedXmp(channels: List<Channel>): String {
+        val min = channels.joinToString("") { "<rdf:li>${it.min}</rdf:li>" }
+        val max = channels.joinToString("") { "<rdf:li>${it.max}</rdf:li>" }
+        val gamma = channels.joinToString("") { "<rdf:li>${it.gamma}</rdf:li>" }
+        val capacity = channels.maxOf { it.max }
+        return "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">" +
+            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">" +
+            "<rdf:Description rdf:about=\"\" " +
+            "xmlns:hdrgm=\"http://ns.adobe.com/hdr-gain-map/1.0/\" " +
+            "hdrgm:Version=\"1.0\" hdrgm:HDRCapacityMin=\"0\" " +
+            "hdrgm:HDRCapacityMax=\"$capacity\">" +
+            "<hdrgm:GainMapMin>$min</hdrgm:GainMapMin>" +
+            "<hdrgm:GainMapMax>$max</hdrgm:GainMapMax>" +
+            "<hdrgm:Gamma>$gamma</hdrgm:Gamma>" +
+            "</rdf:Description></rdf:RDF></x:xmpmeta>"
     }
 
     /** `Item:Length` of the GContainer `GainMap` entry, when the primary declares one. */
@@ -329,7 +451,9 @@ object UltraHdr {
 
     fun metadata(bytes: ByteArray, gainMap: GainMap): Metadata? {
         val segs = segments(bytes, gainMap.offset.toInt(), (gainMap.offset + gainMap.size).toInt())
-        val xmp = xmpOf(bytes, segs) ?: return null
+        // OPPO ProXDR 的增益图里没有 XMP：按 channels 合成一份等价 hdrgm 包，让「重新封装」
+        // 这条现成链路继续可用（ISO 21496 的二进制 payload 留空，封装器自己写声明）。
+        val xmp = xmpOf(bytes, segs) ?: synthesizedXmp(gainMap.channels)
         val iso = segs.firstOrNull { it.marker == 0xE2 && hasPrefix(bytes, it, ISO_URN) }
             ?.let { bytes.copyOfRange(it.payloadStart, it.payloadEnd) }
         return Metadata(xmp, iso)
@@ -348,6 +472,8 @@ object UltraHdr {
     // Escaped (not raw) strings: a raw string cannot end with a quote.
     private val ATTRIBUTE = Regex("hdrgm:([A-Za-z0-9_]+)\\s*=\\s*\"([^\"]*)\"")
     private val LI = Regex("<rdf:li>([^<]*)</rdf:li>")
+    private val OPPO_ENTRY = Regex("\"length\":(\\d+),\"name\":\"([^\"]+)\",\"offset\":(\\d+)")
+
     private val GAINMAP_ITEM =
         Regex("Item:Semantic\\s*=\\s*\"GainMap\"[\\s\\S]{0,200}?Item:Length\\s*=\\s*\"(\\d+)\"")
 }
