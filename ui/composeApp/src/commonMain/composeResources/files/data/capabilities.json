@@ -8261,21 +8261,21 @@
           "param": "params.paletteGapPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 3.6
+          "currentValue": 4.0
         },
         {
           "controlId": "slider.params:palettePct",
           "param": "params.palettePct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 22
+          "currentValue": 18.5
         },
         {
           "controlId": "slider.params:paletteRowPct",
           "param": "params.paletteRowPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 120.5
+          "currentValue": 120
         },
         {
           "controlId": "slider.params:radiusPct",
@@ -8327,21 +8327,21 @@
           "param": "params.paletteGapPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 4.1
+          "currentValue": 4.0
         },
         {
           "controlId": "slider.params:palettePct",
           "param": "params.palettePct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 22
+          "currentValue": 18.5
         },
         {
           "controlId": "slider.params:paletteRowPct",
           "param": "params.paletteRowPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 120.4
+          "currentValue": 120
         },
         {
           "controlId": "slider.params:radiusPct",
@@ -8393,21 +8393,21 @@
           "param": "params.paletteGapPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 0
+          "currentValue": 4.0
         },
         {
           "controlId": "slider.params:palettePct",
           "param": "params.palettePct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 16.1
+          "currentValue": 21.4
         },
         {
           "controlId": "slider.params:paletteRowPct",
           "param": "params.paletteRowPct",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 115.4
+          "currentValue": 120
         },
         {
           "controlId": "slider.params:radiusPct",

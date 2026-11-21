@@ -2196,41 +2196,41 @@
     {
       "cardId": "color-1",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/color-1.webp",
+      "path": "previews/color-1.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/color1.webp",
       "declaredPreviewRaw": "../assets/previews/color1.webp",
       "inspectorPath": "src/renderer/src/assets/previews/color1.webp",
-      "sha256": "ac54d55ee80b5dca79343576408c4268b70c899d6c5dd5af8b3a29b026c07c9f",
-      "bytes": 8182,
+      "sha256": "f3fa5bf3815a515120cb5c97cb0ae6b8efdd71e6c9e3b1e8f7a7506e52313605",
+      "bytes": 25836,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 428
     },
     {
       "cardId": "color-2",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/color-2.webp",
+      "path": "previews/color-2.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/color2.webp",
       "declaredPreviewRaw": "../assets/previews/color2.webp",
       "inspectorPath": "src/renderer/src/assets/previews/color2.webp",
-      "sha256": "64de3cabb1aa7d51d3ca815b6e28ee762c170be5f776f22d05cf4b15f16f58c7",
-      "bytes": 8062,
+      "sha256": "2532d6cd91d791041ec4cbeea24868a0931978672bf4ceb85d7a295712905b94",
+      "bytes": 25876,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 428
     },
     {
       "cardId": "color-3",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/color-3.webp",
+      "path": "previews/color-3.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/color3.webp",
       "declaredPreviewRaw": "../assets/previews/color3.webp",
       "inspectorPath": "src/renderer/src/assets/previews/color3.webp",
-      "sha256": "97b3acb082aeefa9d3add355474af205cac58c7ed31981fd49733f2e099dd751",
-      "bytes": 8832,
+      "sha256": "4e2da6991a2960fcf7893d19a6e1007fedb5e03c6fad0eec8f41958fd22d9b13",
+      "bytes": 27296,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 437
     },
     {
       "cardId": "color-walk",

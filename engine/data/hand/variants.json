@@ -3201,9 +3201,10 @@
         "marginPct": 2,
         "radiusPct": 2,
         "shadow": 0.4,
-        "palettePct": 22,
-        "paletteRowPct": 120.5,
-        "paletteGapPct": 3.6
+        "palettePct": 18.5,
+        "paletteRowPct": 120,
+        "paletteGapPct": 4.0,
+        "swatchPct": 7.4
       },
       "preview": "../assets/previews/color1.webp",
       "renderedPreview": "../assets/previews/rendered/color-1.webp",
@@ -3216,9 +3217,10 @@
           "marginPct": 2,
           "radiusPct": 2,
           "shadow": 0.4,
-          "palettePct": 22,
-          "paletteRowPct": 120.5,
-          "paletteGapPct": 3.6
+          "palettePct": 18.5,
+          "paletteRowPct": 120,
+          "paletteGapPct": 4.0,
+          "swatchPct": 7.4
         },
         "declaredText": {
           "title": "",
@@ -3257,9 +3259,10 @@
         "marginPct": 2,
         "radiusPct": 0,
         "shadow": 0.4,
-        "palettePct": 22,
-        "paletteRowPct": 120.4,
-        "paletteGapPct": 4.1
+        "palettePct": 18.5,
+        "paletteRowPct": 120,
+        "paletteGapPct": 4.0,
+        "swatchPct": 7.4
       },
       "preview": "../assets/previews/color2.webp",
       "renderedPreview": "../assets/previews/rendered/color-2.webp",
@@ -3271,9 +3274,10 @@
           "marginPct": 2,
           "radiusPct": 0,
           "shadow": 0.4,
-          "palettePct": 22,
-          "paletteRowPct": 120.4,
-          "paletteGapPct": 4.1
+          "palettePct": 18.5,
+          "paletteRowPct": 120,
+          "paletteGapPct": 4.0,
+          "swatchPct": 7.4
         },
         "declaredText": {
           "title": "",
@@ -3312,9 +3316,10 @@
         "marginPct": 0,
         "radiusPct": 0,
         "shadow": 0,
-        "palettePct": 16.1,
-        "paletteRowPct": 115.4,
-        "paletteGapPct": 0
+        "palettePct": 21.4,
+        "paletteRowPct": 120,
+        "paletteGapPct": 4.0,
+        "swatchPct": 7.6
       },
       "preview": "../assets/previews/color3.webp",
       "renderedPreview": "../assets/previews/rendered/color-3.webp",
@@ -3326,9 +3331,10 @@
           "marginPct": 0,
           "radiusPct": 0,
           "shadow": 0,
-          "palettePct": 16.1,
-          "paletteRowPct": 115.4,
-          "paletteGapPct": 0
+          "palettePct": 21.4,
+          "paletteRowPct": 120,
+          "paletteGapPct": 4.0,
+          "swatchPct": 7.6
         },
         "declaredText": {
           "title": "",
