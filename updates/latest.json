@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc49",
-  "versionCode": 48,
+  "versionName": "0.9.0-rc50",
+  "versionCode": 49,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T05:40:00Z",
-  "notes": "新增应用内相册：不用先跳系统选择器，进来就是缩略图网格，按相册分组浏览（最近 / 各目录），点选角标是挑选顺序，最多 9 张；拒绝授权可一键回退系统选择器。导入规则改了：新照片沿用边框，但参数、文字、主题、字号、Logo、比例都回到边框默认值，不再整套复制上一张改过的东西；全新工程的第一张照片自动用「热门」第一张边框，不再出现「选择一个边框」的空态。HDR：照片自带增益图时导出面板默认开启「保留 HDR」；HEIC 照片（含相册里显示 ProXDR 的那些）导入时保留原始文件，导出面板明确写出「这是 HDR（HEIC）照片，当前版本暂不支持从 HEIC 导出 HDR」，不再静默显示「没有增益图」。上一版的两个入口保持不变：相册里分享到 FrameMark、长按图标的「从相册导入」。",
+  "publishedAt": "2026-11-21T07:20:00Z",
+  "notes": "HDR：现在能认出 OPPO ProXDR（Find 系列）的照片。这类文件把增益图、80 字节浮点参数和一个 JSON 目录挂在文件末尾（没有 MPF/APP2/XMP），之前读不到，导出面板会误说「没有 HDR 增益图」。现在会自动识别，导出面板默认开启「保留 HDR」，成片重新封装成标准 Ultra HDR（MPF + GContainer + 增益图），HDR 屏幕上仍能还原高光。其余与 rc49 相同：应用内相册（分相册浏览、按点选顺序多选 9 张，拒绝授权可回退系统选择器）；导入新照片只沿用边框、设置回到默认，首张自动给热门边框；HEIC 导入保留原始文件并明确提示当前只能导出 SDR。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc49/FrameMark-0.9.0-rc49-arm64.apk",
-      "sha256": "fcc8656878640c854c6e3c59473316f9d1f45a165bf592e44f5a5f266253befe",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc50/FrameMark-0.9.0-rc50-arm64.apk",
+      "sha256": "a89a16feaec7e8e13274a2a6e5442dd5a819a7572324e6b3badee48410dd22dd",
       "size": 144916842
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc49/FrameMark-0.9.0-rc49-win64.msi",
-      "sha256": "a0f85cd679b1d90428a45fef6dd5bc597c8342695901ef42d764b510e7bcf8bb",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc50/FrameMark-0.9.0-rc50-win64.msi",
+      "sha256": "155cde4806d7f06fe602fca4176c79a2bf56cc57cc01bde7f5ac06caa6336f4b",
       "size": 247963700
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc49"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc50"
 }
