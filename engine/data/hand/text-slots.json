@@ -961,8 +961,8 @@
       "templateId": "paramStack",
       "base": "paramStack",
       "source": "../_research/native/designs/simple-1.json",
-      "sourceSha256": "aa1ae8cb3d26ff8a7b3385e435216e3b6c05c080298c455ad6c8fea522c05fd7",
-      "sourceBytes": 10649,
+      "sourceSha256": "a581ab0e67679f1cc77ed8489c7de88335b645ea6311e5fce6ecdb0ddfa721bf",
+      "sourceBytes": 10639,
       "slotCount": 4,
       "textSlotsVia": "hook:TextSection",
       "slots": [
@@ -973,10 +973,10 @@
           "text": "366mm",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 39.77814467284679,
-          "w": 173.2103271484375,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 43.05,
+          "w": 186.75,
+          "h": 67.79
         },
         {
           "id": "simple-1#photo#1",
@@ -985,10 +985,10 @@
           "text": "F6.3",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 127.25814040038586,
-          "w": 102.93473815917969,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 130.52,
+          "w": 116.48,
+          "h": 67.79
         },
         {
           "id": "simple-1#photo#2",
@@ -997,10 +997,10 @@
           "text": "1/400",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 214.73815138671398,
-          "w": 152.2880096435547,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 217.98,
+          "w": 165.83,
+          "h": 67.79
         },
         {
           "id": "simple-1#photo#3",
@@ -1009,10 +1009,10 @@
           "text": "ISO 125",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 302.2181623730421,
-          "w": 179.62547302246094,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 305.45,
+          "w": 193.16,
+          "h": 67.79
         }
       ]
     },
@@ -1020,8 +1020,8 @@
       "templateId": "paramStack",
       "base": "paramStack",
       "source": "../_research/native/designs/simple-2.json",
-      "sourceSha256": "7d3cfae59bab2e6ff4b823e51aea688e586168da0f4fc6c1b5bde3e8c9ba6814",
-      "sourceBytes": 10660,
+      "sourceSha256": "ae2da78ce13ab937bd7b5949d216c059c648f0b49616ac553dc644218bc2e09a",
+      "sourceBytes": 10650,
       "slotCount": 4,
       "textSlotsVia": "hook:TextSection",
       "slots": [
@@ -1032,10 +1032,10 @@
           "text": "366mm",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 973.4381330761671,
-          "w": 173.2103271484375,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 976.59,
+          "w": 186.75,
+          "h": 67.79
         },
         {
           "id": "simple-2#photo#1",
@@ -1044,10 +1044,10 @@
           "text": "F6.3",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 1060.918113544917,
-          "w": 102.93473815917969,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 1064.06,
+          "w": 116.48,
+          "h": 67.79
         },
         {
           "id": "simple-2#photo#2",
@@ -1056,10 +1056,10 @@
           "text": "1/400",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 1148.398094013667,
-          "w": 152.2880096435547,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 1151.53,
+          "w": 165.83,
+          "h": 67.79
         },
         {
           "id": "simple-2#photo#3",
@@ -1068,10 +1068,10 @@
           "text": "ISO 125",
           "source": "photo",
           "hidden": false,
-          "x": 52.83000183105469,
-          "y": 1235.8781965527296,
-          "w": 179.62547302246094,
-          "h": 74.34370455079079
+          "x": 47.22,
+          "y": 1239.0,
+          "w": 193.16,
+          "h": 67.79
         }
       ]
     },
@@ -1138,8 +1138,8 @@
       "templateId": "paramStack",
       "base": "paramStack",
       "source": "../_research/native/designs/simple-4.json",
-      "sourceSha256": "075efd4e7d5d678f31d4c29ebe06a911e95cd97037973ed7bcbc3cc9caa6bc56",
-      "sourceBytes": 10667,
+      "sourceSha256": "fbb97a35b57137bdd01ae913fdfeadc39165595f3296377c3b4b19f567440789",
+      "sourceBytes": 10657,
       "slotCount": 4,
       "textSlotsVia": "hook:TextSection",
       "slots": [
@@ -1150,10 +1150,10 @@
           "text": "366mm",
           "source": "photo",
           "hidden": false,
-          "x": 1534.959716796875,
-          "y": 973.4381330761671,
-          "w": 173.2103271484375,
-          "h": 74.34370455079079
+          "x": 1566.03,
+          "y": 976.59,
+          "w": 186.75,
+          "h": 67.79
         },
         {
           "id": "simple-4#photo#1",
@@ -1162,10 +1162,10 @@
           "text": "F6.3",
           "source": "photo",
           "hidden": false,
-          "x": 1605.2353057861328,
-          "y": 1060.918113544917,
-          "w": 102.93473815917969,
-          "h": 74.34370455079079
+          "x": 1636.3,
+          "y": 1064.06,
+          "w": 116.48,
+          "h": 67.79
         },
         {
           "id": "simple-4#photo#2",
@@ -1174,10 +1174,10 @@
           "text": "1/400",
           "source": "photo",
           "hidden": false,
-          "x": 1555.8820343017578,
-          "y": 1148.398094013667,
-          "w": 152.2880096435547,
-          "h": 74.34370455079079
+          "x": 1586.95,
+          "y": 1151.53,
+          "w": 165.83,
+          "h": 67.79
         },
         {
           "id": "simple-4#photo#3",
@@ -1186,10 +1186,10 @@
           "text": "ISO 125",
           "source": "photo",
           "hidden": false,
-          "x": 1528.5445709228516,
-          "y": 1235.8781965527296,
-          "w": 179.62547302246094,
-          "h": 74.34370455079079
+          "x": 1559.62,
+          "y": 1239.0,
+          "w": 193.16,
+          "h": 67.79
         }
       ]
     },
@@ -1230,8 +1230,8 @@
       "templateId": "matteFooter",
       "base": "matteFooter",
       "source": "../_research/native/designs/card-3.json",
-      "sourceSha256": "6ac9b15bb281d17000bfdd5e73f96f3a0bb28aad0b4d6be6dfa46aa124ab5833",
-      "sourceBytes": 10065,
+      "sourceSha256": "6744bcdef68dca5e638ca4327f1482177c5282c29b3635664b73520e87d9f93e",
+      "sourceBytes": 10055,
       "slotCount": 1,
       "textSlotsVia": "hook:TextSection",
       "slots": [
@@ -1242,10 +1242,10 @@
           "text": "366mm  F6.3  ISO125  1/400s",
           "source": "photo",
           "hidden": false,
-          "x": 688.212646484375,
-          "y": 1130.0975341796875,
-          "w": 366.57470703125,
-          "h": 600
+          "x": 719.73,
+          "y": 1394.18,
+          "w": 360.54,
+          "h": 23.48
         }
       ]
     },

@@ -1481,12 +1481,12 @@
     {
       "cardId": "simple-1",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/simple-1.webp",
+      "path": "previews/simple-1.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/simple1.webp",
       "declaredPreviewRaw": "../assets/previews/simple1.webp",
       "inspectorPath": "src/renderer/src/assets/previews/simple1.webp",
-      "sha256": "4ceeabf512130e1db44ecbc19b872315fec2cf411ae65076b898456e7e988f04",
-      "bytes": 9338,
+      "sha256": "970a5cbeef11daeef3ac240eb4aa3fa67e114105ad3bdd6b8a8d229476e53b2f",
+      "bytes": 24598,
       "format": "webp",
       "width": 480,
       "height": 360
@@ -1546,12 +1546,12 @@
     {
       "cardId": "simple-2",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/simple-2.webp",
+      "path": "previews/simple-2.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/simple2.webp",
       "declaredPreviewRaw": "../assets/previews/simple2.webp",
       "inspectorPath": "src/renderer/src/assets/previews/simple2.webp",
-      "sha256": "4eff19f5a741fb104d0dd9a730af1fdec9df0edb12495cfc45a3cfa3eac17b5a",
-      "bytes": 9326,
+      "sha256": "a0e46258833abfe237e3f78e7798972ca892f854c01275134b4e0d890e7a7469",
+      "bytes": 24348,
       "format": "webp",
       "width": 480,
       "height": 360
@@ -1572,12 +1572,12 @@
     {
       "cardId": "simple-4",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/simple-4.webp",
+      "path": "previews/simple-4.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/simple4.webp",
       "declaredPreviewRaw": "../assets/previews/simple4.webp",
       "inspectorPath": "src/renderer/src/assets/previews/simple4.webp",
-      "sha256": "7abd49c775b41719d0b66103d989cd5108daf11d11ea9024f63606d6f5eecf01",
-      "bytes": 9326,
+      "sha256": "136b43be80f0300bd330a5ee50b672c49ad08ae2793665a759a6d4f05452199d",
+      "bytes": 24990,
       "format": "webp",
       "width": 480,
       "height": 360
@@ -2066,41 +2066,41 @@
     {
       "cardId": "card-2",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/card-2.webp",
+      "path": "previews/card-2.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/card2.webp",
       "declaredPreviewRaw": "../assets/previews/card2.webp",
       "inspectorPath": "src/renderer/src/assets/previews/card2.webp",
-      "sha256": "adbfff9e21d090e1cf50bf636757cf39dc425cebff2143fc9041bfcbf5aed7cb",
-      "bytes": 7156,
+      "sha256": "dde784b7ca3ff83fb738e1586444e89213f112ee8e0fb8a9db8d19f8b66ee1be",
+      "bytes": 24248,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 396
     },
     {
       "cardId": "card-3",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/card-3.webp",
+      "path": "previews/card-3.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/card3.webp",
       "declaredPreviewRaw": "../assets/previews/card3.webp",
       "inspectorPath": "src/renderer/src/assets/previews/card3.webp",
-      "sha256": "7eaca5c97ffb53a64edbcb6815fa13dde713902d997772bc7b776b34fe534591",
-      "bytes": 7306,
+      "sha256": "8d3537ed8ae990997a47e7e521ec4e720569bbf32222cd51f9abff74cbdf49b8",
+      "bytes": 23688,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 392
     },
     {
       "cardId": "card-4",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/card-4.webp",
+      "path": "previews/card-4.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/card4.webp",
       "declaredPreviewRaw": "../assets/previews/card4.webp",
       "inspectorPath": "src/renderer/src/assets/previews/card4.webp",
-      "sha256": "67ebb4f845d7338c3b354933b4b1d1008751ab952bd552bcb9a9081c59e847e4",
-      "bytes": 7422,
+      "sha256": "f90c5fd492e9c8ca77fed422634ada4552cd89570baf132d07b8fda5c5d89688",
+      "bytes": 23942,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 396
     },
     {
       "cardId": "grad-2",

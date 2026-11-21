@@ -1623,7 +1623,7 @@
       "params": {
         "theme": "ink",
         "corner": "tl",
-        "canvasAspect": 1.3045
+        "canvasAspect": 0
       },
       "text": {
         "showLogo": false,
@@ -1639,7 +1639,7 @@
         "declaredParams": {
           "theme": "ink",
           "corner": "tl",
-          "canvasAspect": 1.3045,
+          "canvasAspect": 0,
           "paramPadPct": 3,
           "paramSizePct": 5.4,
           "paramGapPct": 20,
@@ -1683,7 +1683,7 @@
       "params": {
         "theme": "ink",
         "corner": "bl",
-        "canvasAspect": 1.3045
+        "canvasAspect": 0
       },
       "text": {
         "showLogo": false,
@@ -1699,7 +1699,7 @@
         "declaredParams": {
           "theme": "ink",
           "corner": "bl",
-          "canvasAspect": 1.3045,
+          "canvasAspect": 0,
           "paramPadPct": 3,
           "paramSizePct": 5.4,
           "paramGapPct": 20,
@@ -1807,7 +1807,7 @@
       "params": {
         "theme": "ink",
         "corner": "br",
-        "canvasAspect": 1.3045
+        "canvasAspect": 0
       },
       "text": {
         "showLogo": false,
@@ -1823,7 +1823,7 @@
         "declaredParams": {
           "theme": "ink",
           "corner": "br",
-          "canvasAspect": 1.3045,
+          "canvasAspect": 0,
           "paramPadPct": 3,
           "paramSizePct": 5.4,
           "paramGapPct": 20,
@@ -1936,7 +1936,7 @@
         "insetPct": 1.1,
         "footerPct": 10.84,
         "logoPct": 5.36,
-        "photoAspect": 1.2832
+        "photoAspect": 0
       },
       "text": {
         "showLogo": true,
@@ -1961,7 +1961,7 @@
           "exifWidthPct": 29.5,
           "logoScale": 5,
           "logoPos": "center",
-          "photoAspect": 1.2832
+          "photoAspect": 0
         },
         "declaredText": {
           "title": "",
@@ -2004,7 +2004,7 @@
         "exifSizePct": 2.15,
         "exifWidthPct": 28.3,
         "overlayBrand": "",
-        "photoAspect": 1.2686
+        "photoAspect": 0
       },
       "text": {
         "showLogo": false,
@@ -2031,7 +2031,7 @@
           "logoScale": 5,
           "logoPos": "center",
           "overlayBrand": "",
-          "photoAspect": 1.2686
+          "photoAspect": 0
         },
         "declaredText": {
           "title": "",
@@ -2077,7 +2077,7 @@
         "logoPct": 5.5,
         "brandTextSizePct": 2.95,
         "overlayBrand": "Leica",
-        "photoAspect": 1.2846
+        "photoAspect": 0
       },
       "text": {
         "showLogo": true,
@@ -2105,7 +2105,7 @@
           "logoScale": 5,
           "logoPos": "center",
           "overlayBrand": "Leica",
-          "photoAspect": 1.2846
+          "photoAspect": 0
         },
         "declaredText": {
           "title": "",

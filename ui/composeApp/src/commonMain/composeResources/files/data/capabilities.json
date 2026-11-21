@@ -1619,7 +1619,7 @@
           "param": "params.canvasAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.3045
+          "currentValue": 0
         },
         {
           "controlId": "text.params:corner",
@@ -2213,7 +2213,7 @@
           "param": "params.canvasAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.3045
+          "currentValue": 0
         },
         {
           "controlId": "text.params:corner",
@@ -2361,7 +2361,7 @@
           "param": "params.canvasAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.3045
+          "currentValue": 0
         },
         {
           "controlId": "text.params:corner",
@@ -6894,7 +6894,7 @@
           "param": "params.photoAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.2832
+          "currentValue": 0
         },
         {
           "controlId": "slider.params:logoSizePct",
@@ -7003,7 +7003,7 @@
           "param": "params.photoAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.2686
+          "currentValue": 0
         },
         {
           "controlId": "slider.text:fontScale",
@@ -7119,7 +7119,7 @@
           "param": "params.photoAspect",
           "kind": "slider",
           "scope": "template-param",
-          "currentValue": 1.2846
+          "currentValue": 0
         },
         {
           "controlId": "slider.text:fontScale",
