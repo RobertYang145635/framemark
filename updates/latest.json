@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc53",
-  "versionCode": 52,
+  "versionName": "0.9.0-rc54",
+  "versionCode": 53,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T12:30:00Z",
-  "notes": "缺拍摄参数的照片现在会在那一行用**淡灰色标准参数档**占位（23mm F1.8 1/125s ISO250 / 机型 / 日期），一眼看出这里本来写什么、能填什么；进过「文字」页就自动消失，换照片或换边框会重新出现。占位的位置是按该边框量出来的真实位置：文字页的命名也从「待定位」改成准确的行列（右上·拍摄参数），点这一行舞台会出现高亮框，框就在刚才占位的地方，可以直接输入。其余同 rc52：相册按日期分组、相册折叠下拉、OPPO ProXDR 保留 HDR。",
+  "publishedAt": "2026-11-21T13:55:00Z",
+  "notes": "边框库预览补齐：187 套边框现在每套都有样张（此前 7 套缺预览，只能实时渲染），并且重出了 4 组「两张边框共用同一张图」的预览（OPPO 视频文字 2/3、小米经典 72、水印经典），库里不会再出现看起来一模一样的两张卡。缺拍摄参数时的淡灰标准参数档占位也核过一遍：按每套边框声明的行给示例（拍摄参数 118 套 / 日期 16 套 / 机型 1 套，没有文字行的 52 套不画），不会再在品牌行或日期行上画出拍摄参数。其余同 rc53。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc53/FrameMark-0.9.0-rc53-arm64.apk",
-      "sha256": "88a60092fb4188a67623db6d7c224eb9ec1bc695e90da36aeb127fb8163db3b6",
-      "size": 144933226
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc54/FrameMark-0.9.0-rc54-arm64.apk",
+      "sha256": "c28e2beb5825a7894f2f54ad18fa0d5b3e62006fba62158acca94c23c8caa210",
+      "size": 145193228
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc53/FrameMark-0.9.0-rc53-win64.msi",
-      "sha256": "e868570b2f1463418e14263551b84685b93971d05e59cf0046e02a0066b57a63",
-      "size": 248025300
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc54/FrameMark-0.9.0-rc54-win64.msi",
+      "sha256": "1fe396eab3e1ef0505739b55b325e196fc25740ec701c5f4a91c952ce1a11717",
+      "size": 248353108
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc53"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc54"
 }
