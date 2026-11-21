@@ -53,17 +53,6 @@ import kotlinx.coroutines.withContext
 data class LicenseEntry(val name: String, val license: String, val purpose: String)
 
 /**
- * 「关于 FrameMark」的内容：版本、隐私、权限、许可与版权（InkFrame 复盘第 9–10 条）。
- *
- * 手机设置页与桌面齿轮弹层共用这一支；两端只在**入口**和滚动容器上不同
- * （手机是一整页，桌面是 420 dp 宽的对话框）。文案集中在 [AboutText]，测试不用
- * 起模拟器就能核对。
- *
- * 这里刻意不写「我们承诺……」之类的空话，只写这个应用**实际**做了/没做什么：
- * Android 清单里没有任何相册、存储或网络权限；选照片走系统照片选择器；导出通过
- * 系统媒体库写入 —— 这几条都能在安装包和代码里核对。
- */
-/**
  * 「关于」里的一层二级页：打赏 / 支持与反馈 / 隐私与权限。
  *
  * 这些页过去是 `AboutContent` 内部的布尔量，手机端按系统返回键时外壳只看见
@@ -79,6 +68,18 @@ object AboutPolicy {
         if (subPage == AboutSubPage.None) null else AboutSubPage.None
 }
 
+/**
+ * 「关于 FrameMark」的内容：版本、更新、打赏、支持与反馈、隐私与权限入口、
+ * 许可与版权（InkFrame 复盘第 9–10 条）。
+ *
+ * 手机设置页与桌面齿轮弹层共用这一支；两端只在**入口**和滚动容器上不同
+ * （手机是一整页，桌面是 420 dp 宽的对话框）。文案集中在 [AboutText]，测试不用
+ * 起模拟器就能核对。隐私与权限的正文在 [PrivacyContent]，两端同源。
+ *
+ * 这里刻意不写「我们承诺……」之类的空话，只写这个应用**实际**做了/没做什么：
+ * Android 清单里没有任何相册、存储或网络权限；选照片走系统照片选择器；导出通过
+ * 系统媒体库写入 —— 这几条都能在安装包和代码里核对。
+ */
 @Composable
 fun AboutContent(
     version: String,
