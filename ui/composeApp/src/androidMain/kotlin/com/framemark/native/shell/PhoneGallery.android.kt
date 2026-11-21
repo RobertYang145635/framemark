@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -120,6 +123,7 @@ actual fun PhoneGalleryOverlay(
     var loading by remember { mutableStateOf(false) }
     var done by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var albumSheetOpen by remember { mutableStateOf(false) }
 
     val requestPermissions = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -202,7 +206,25 @@ actual fun PhoneGalleryOverlay(
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                 )
                 Spacer(Modifier.weight(1f))
-                Text(text = "选择照片", color = FmPalette.onSurface, fontSize = 15.sp)
+                // 相册（大文件夹）默认折叠成一行标题，点开才是竖向列表 —— 不再用横滑 chips
+                // 占掉一整行（用户 2026-11-21 对照酷安指出）。
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(FmRadii.chip))
+                        .clickable { albumSheetOpen = true }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        text = bucket?.name ?: "最近照片",
+                        color = FmPalette.onSurface,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(text = "▾", color = FmPalette.onSurfaceMuted, fontSize = 13.sp)
+                }
                 Spacer(Modifier.weight(1f))
                 Text(
                     text = if (selection.isEmpty) "系统选择器" else "添加 ${selection.size}",
@@ -241,28 +263,18 @@ actual fun PhoneGalleryOverlay(
                 GalleryPermission.Full -> Unit
             }
 
-            if (buckets.isNotEmpty()) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = FmSpacing.lg),
-                    horizontalArrangement = Arrangement.spacedBy(FmSpacing.sm),
-                ) {
-                    item {
-                        BucketChip(
-                            label = "最近",
-                            selected = bucket == null,
-                            onClick = { bucket = null },
-                        )
-                    }
-                    items(buckets.size) { index ->
-                        val entry = buckets[index]
-                        BucketChip(
-                            label = entry.name,
-                            selected = bucket?.id == entry.id,
-                            onClick = { bucket = entry },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(FmSpacing.sm))
+
+            if (albumSheetOpen) {
+                AlbumSheet(
+                    buckets = buckets,
+                    current = bucket,
+                    total = buckets.sumOf { it.count },
+                    onPick = { picked ->
+                        bucket = picked
+                        albumSheetOpen = false
+                    },
+                    onDismiss = { albumSheetOpen = false },
+                )
             }
 
             // 选中状态是普通对象，读一次 tick 才能让网格与页脚随勾选重组。
@@ -474,7 +486,7 @@ private const val THUMB_EDGE_PX = 320
 private enum class GalleryPermission { Full, Limited, Missing }
 
 private data class GalleryPhoto(val id: String, val uri: Uri, val bucket: String?, val dateSec: Long)
-private data class GalleryBucket(val id: Long, val name: String)
+private data class GalleryBucket(val id: Long, val name: String, val count: Int, val cover: Uri?)
 
 private fun requiredPermissions(): Array<String> = when {
     Build.VERSION.SDK_INT >= 34 -> arrayOf(
@@ -568,8 +580,10 @@ private object MediaGallery {
         }.getOrElse { emptyList() }
     }
 
+    /** 相册列表：名称、张数、封面（该相册最新一张）。按张数从多到少。 */
     fun buckets(context: Context): List<GalleryBucket> {
         val projection = arrayOf(
+            MediaStore.Images.Media._ID,
             MediaStore.Images.Media.BUCKET_ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
         )
@@ -581,21 +595,34 @@ private object MediaGallery {
                 null,
                 "${MediaStore.Images.Media.DATE_ADDED} DESC",
             )?.use { cursor ->
-                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID)
+                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                val bucketColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.BUCKET_ID)
                 val nameColumn = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
-                val seen = LinkedHashMap<Long, String>()
+                val names = LinkedHashMap<Long, String>()
+                val counts = HashMap<Long, Int>()
+                val covers = HashMap<Long, Uri>()
                 var scanned = 0
-                while (cursor.moveToNext() && scanned < 4000) {
+                while (cursor.moveToNext() && scanned < 8000) {
                     scanned++
-                    val id = cursor.getLong(idColumn)
+                    val bucketId = cursor.getLong(bucketColumn)
                     val name = if (nameColumn >= 0 && !cursor.isNull(nameColumn)) {
                         cursor.getString(nameColumn)
                     } else {
                         null
                     } ?: continue
-                    if (!seen.containsKey(id)) seen[id] = name
+                    names[bucketId] = name
+                    counts[bucketId] = (counts[bucketId] ?: 0) + 1
+                    if (covers[bucketId] == null) {
+                        val photoId = cursor.getLong(idColumn)
+                        covers[bucketId] = ContentUris.withAppendedId(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            photoId,
+                        )
+                    }
                 }
-                seen.map { GalleryBucket(it.key, it.value) }
+                names.map { (id, name) ->
+                    GalleryBucket(id, name, counts[id] ?: 0, covers[id])
+                }.sortedByDescending { it.count }
             }.orEmpty()
         }.getOrElse { emptyList() }
     }
@@ -626,6 +653,132 @@ private object ThumbnailCache {
 
     fun get(key: String): ImageBitmap? = cache.get(key)
     fun put(key: String, value: ImageBitmap) { cache.put(key, value) }
+}
+
+/**
+ * 相册（大文件夹）列表：底部弹出、竖向滚动。
+ *
+ * 用户 2026-11-21 对照酷安指出：相册应该是折叠的一行标题，点开再竖向选，而不是一直横滑。
+ * 每行给「封面 + 名称 + 张数 + 当前勾选」，第一行是「最近照片」（全部）。
+ */
+@Composable
+private fun AlbumSheet(
+    buckets: List<GalleryBucket>,
+    current: GalleryBucket?,
+    total: Int,
+    onPick: (GalleryBucket?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(FmPalette.scrim.copy(alpha = 0.45f))
+                .clickable(onClick = onDismiss),
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .heightIn(max = 520.dp)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .background(FmPalette.surface),
+        ) {
+            Text(
+                text = "选择相册",
+                color = FmPalette.onSurface,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = FmSpacing.lg, vertical = FmSpacing.md),
+            )
+            LazyColumn(contentPadding = PaddingValues(bottom = FmSpacing.md)) {
+                item {
+                    AlbumRow(
+                        name = "最近照片",
+                        count = total,
+                        selected = current == null,
+                        cover = buckets.firstOrNull()?.cover,
+                        onClick = { onPick(null) },
+                    )
+                }
+                items(buckets.size) { index ->
+                    val entry = buckets[index]
+                    AlbumRow(
+                        name = entry.name,
+                        count = entry.count,
+                        selected = current?.id == entry.id,
+                        cover = entry.cover,
+                        onClick = { onPick(entry) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumRow(
+    name: String,
+    count: Int,
+    selected: Boolean,
+    cover: Uri?,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = FmSpacing.lg, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AlbumCover(cover)
+        Spacer(Modifier.width(FmSpacing.md))
+        Text(
+            text = name,
+            color = if (selected) FmPalette.primary else FmPalette.onSurface,
+            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = "$count", color = FmPalette.onSurfaceMuted, fontSize = 12.sp)
+        if (selected) {
+            Spacer(Modifier.width(8.dp))
+            Text(text = "✓", color = FmPalette.primary, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+private fun AlbumCover(uri: Uri?) {
+    val context = LocalContext.current
+    var bitmap by remember(uri) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(uri) {
+        if (uri == null) return@LaunchedEffect
+        val key = "album:${uri}"
+        ThumbnailCache.get(key)?.let { bitmap = it; return@LaunchedEffect }
+        val loaded = withContext(Dispatchers.IO) {
+            runCatching {
+                if (Build.VERSION.SDK_INT >= 29) {
+                    context.contentResolver.loadThumbnail(uri, Size(96, 96), null)?.asImageBitmap()
+                } else {
+                    null
+                }
+            }.getOrNull()
+        }
+        if (loaded != null) {
+            ThumbnailCache.put(key, loaded)
+            bitmap = loaded
+        }
+    }
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(FmPalette.surfaceMuted),
+        contentAlignment = Alignment.Center,
+    ) {
+        bitmap?.let { Image(bitmap = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+    }
 }
 
 @Composable
