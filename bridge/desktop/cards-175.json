@@ -1,7 +1,7 @@
 {
  "schema": "framemark-cards-175/2",
  "generatedAt": "2026-11-18T18:55:40.000Z",
- "note": "175-card desktop manifest derived from the Android3 bundle (106 IR + 69 hand). All paths are package-relative POSIX; the data/ prefix is the bundle copied verbatim as the package data root. slots are node declarations: IR carries the e2b report nodePath (b<band>/g<child>…) for path binding, hand carries the frozen text-slot id plus sampleText (e4hand reports no path). No slot is removed for the sample photo; optionalSlotsAtSampleExif only records which nodes resolve empty for the bundle fixture. Kept alongside x1-cards.json (10 cards) for the caller to switch.",
+ "note": "187-card desktop manifest derived from the Android bundle (118 IR + 69 hand). All paths are package-relative POSIX; the data/ prefix is the bundle copied verbatim as the package data root. slots are node declarations: IR carries the e2b report nodePath (b<band>/g<child>…) for path binding, hand carries the frozen text-slot id plus sampleText (e4hand reports no path). No slot is removed for the sample photo; optionalSlotsAtSampleExif only records which nodes resolve empty for the bundle fixture. Kept alongside x1-cards.json (10 cards) for the caller to switch.",
  "sourceSha256": {
   "manifest": "4cc55a499f37bfed8c3fcde7f3c1baa3e23b9453bbb7b9d90040b323913def9e",
   "handCards": "5ba264f0db6329ca6bd174d6f62d265ccbf5d82437fbc55c90331cf4dacec75e",
@@ -102,11 +102,11 @@
   "note": "optionalSlotsAtSampleExif only records which declared nodes resolve empty for this fixture (photo + EXIF, no --location/--custom); it is evidence, never a cropping rule."
  },
  "counts": {
-  "total": 183,
-  "ir": 114,
+  "total": 187,
+  "ir": 118,
   "hand": 69,
   "slots": {
-   "ir": 449,
+   "ir": 457,
    "hand": 204,
    "irSkippedEmpty": 109
   }
@@ -2627,6 +2627,142 @@
      "slotId": "location",
      "nodePath": "b0/g0/g1/g0",
      "reason": "empty CLI env (location)"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-oppo-restrict_spring_1002",
+   "backend": "ir",
+   "engineId": "oppo-gallery:restrict_spring_1002",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "name": "新春限定 · 1002",
+   "nameEn": "restrict_spring_1002",
+   "placement": "with",
+   "style": "data/styles/oppo-gallery/restrict_spring_1002.json",
+   "assets": [
+    {
+     "key": "spring_2025_style1002_logo_v1",
+     "source": "data/assets/spring_2025_style1002_logo_v1.png",
+     "engineFile": "data/decoded/spring_2025_style1002_logo_v1.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "model",
+     "nodePath": "b0/g0/g1",
+     "optional": false,
+     "label": "model",
+     "token": "model"
+    },
+    {
+     "slotId": "literal:春回大地 福运连",
+     "nodePath": "b0/g0/g2",
+     "optional": false,
+     "label": "春回大地 福运连",
+     "token": "literal:春回大地 福运连"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-oppo-restrict_spring_1005",
+   "backend": "ir",
+   "engineId": "oppo-gallery:restrict_spring_1005",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "name": "新春限定 · 1005",
+   "nameEn": "restrict_spring_1005",
+   "placement": "out",
+   "style": "data/styles/oppo-gallery/restrict_spring_1005.json",
+   "assets": [
+    {
+     "key": "spring_2025_style1005_logo_v1",
+     "source": "data/assets/spring_2025_style1005_logo_v1.png",
+     "engineFile": "data/decoded/spring_2025_style1005_logo_v1.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "model",
+     "nodePath": "b0/g0/g0",
+     "optional": false,
+     "label": "model",
+     "token": "model"
+    },
+    {
+     "slotId": "literal:祥蛇纳福 吉庆有余",
+     "nodePath": "b0/g0/g1",
+     "optional": false,
+     "label": "祥蛇纳福 吉庆有余",
+     "token": "literal:祥蛇纳福 吉庆有余"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-oppo-restrict_valentine_2025_style_1001",
+   "backend": "ir",
+   "engineId": "oppo-gallery:restrict_valentine_2025_style_1001",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "name": "情人节限定 · 1001",
+   "nameEn": "restrict_valentine_2025_style_1001",
+   "placement": "out",
+   "style": "data/styles/oppo-gallery/restrict_valentine_2025_style_1001.json",
+   "assets": [
+    {
+     "key": "valentine_2025_style1001_logo_v1",
+     "source": "data/assets/valentine_2025_style1001_logo_v1.png",
+     "engineFile": "data/decoded/valentine_2025_style1001_logo_v1.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "model",
+     "nodePath": "b0/g0/g0",
+     "optional": false,
+     "label": "model",
+     "token": "model"
+    },
+    {
+     "slotId": "literal:你眼中 藏着我余生",
+     "nodePath": "b0/g0/g1",
+     "optional": false,
+     "label": "你眼中 藏着我余生",
+     "token": "literal:你眼中 藏着我余生"
+    }
+   ]
+  },
+  {
+   "cardId": "stock-oppo-personalize_brand_3",
+   "backend": "ir",
+   "engineId": "oppo-gallery:personalize_brand_3",
+   "vendor": "oppo",
+   "family": "OPPO 相册",
+   "name": "品牌 · 3",
+   "nameEn": "personalize_brand_3",
+   "placement": "with",
+   "style": "data/styles/oppo-gallery/personalize_brand_3.json",
+   "assets": [
+    {
+     "key": "brand_imagine_dark",
+     "source": "data/assets/brand_imagine_dark.png",
+     "engineFile": "data/decoded/brand_imagine_dark.png"
+    }
+   ],
+   "slots": [
+    {
+     "slotId": "model",
+     "nodePath": "b0/g0",
+     "optional": false,
+     "label": "model",
+     "token": "model"
+    },
+    {
+     "slotId": "params",
+     "nodePath": "b0/g1",
+     "optional": false,
+     "label": "params",
+     "token": "imageParams"
     }
    ]
   },
