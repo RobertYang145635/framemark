@@ -9,6 +9,16 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
  * normalised or guessed. `brand` is the vendor chip used for grouping (D-010),
  * `vendor`/`family`/`fidelity`/`badge`/`systemStyle` keep their original values.
  */
+/** 演示稿声明的四行文字开关（taxonomy `declaredText`）：决定缺值占位该显示哪种示例。 */
+data class DeclaredText(
+    val make: Boolean = false,
+    val model: Boolean = false,
+    val exif: Boolean = false,
+    val date: Boolean = false,
+) {
+    val any: Boolean get() = make || model || exif || date
+}
+
 data class LibraryCard(
     val id: String,
     val name: String,
@@ -42,6 +52,8 @@ data class LibraryCard(
     val previewSourcePath: String,
     /** File name inside `composeResources/files/previews/`; empty when unmapped. */
     val previewFile: String,
+    /** 这套边框声明了哪几行文字（taxonomy `declaredText`）；缺值占位按它挑示例。 */
+    val declaredText: DeclaredText = DeclaredText(),
 )
 
 data class LibraryCategory(
@@ -137,6 +149,14 @@ object LibraryDataSource {
                 styleFamilyLabelSource = c.jsonString("styleFamilyLabelSource"),
                 previewSourcePath = sourcePath,
                 previewFile = file,
+                declaredText = c.jsonMap("declaredText").let { dt ->
+                    DeclaredText(
+                        make = dt.jsonBool("showMake") == true,
+                        model = dt.jsonBool("showModel") == true,
+                        exif = dt.jsonBool("showExif") == true,
+                        date = dt.jsonBool("showDate") == true,
+                    )
+                },
             )
         }
 

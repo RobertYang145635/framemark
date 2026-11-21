@@ -134,6 +134,8 @@ internal fun Any?.jsonMap(): Map<String, Any?> = this as? Map<String, Any?> ?: e
 
 internal fun Any?.jsonList(): List<Any?> = this as? List<Any?> ?: emptyList()
 
+internal fun Map<String, Any?>.jsonMap(key: String): Map<String, Any?> = this[key].jsonMap()
+
 internal fun Map<String, Any?>.jsonString(key: String): String? = this[key] as? String
 
 internal fun Map<String, Any?>.jsonBool(key: String): Boolean? = this[key] as? Boolean

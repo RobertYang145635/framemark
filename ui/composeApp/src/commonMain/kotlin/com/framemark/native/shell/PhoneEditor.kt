@@ -259,10 +259,24 @@ fun PhoneEditorScreen(
             textOutputWidth,
             textOutputHeight,
         ).associate { it.navKey to it.role }
+        val declared = card?.declaredText
         com.framemark.native.inspector.ExifGapNotice.missingFields(textSlots)
             .mapNotNull { slot ->
                 val key = slot.key ?: return@mapNotNull null
-                key to com.framemark.native.product.GhostSamples.forRole(roles[key])
+                val sample = com.framemark.native.product.GhostSamples.forRole(roles[key])
+                    .ifEmpty {
+                        if (declared != null) {
+                            com.framemark.native.product.GhostSamples.forDeclaredRows(
+                                make = declared.make,
+                                model = declared.model,
+                                exif = declared.exif,
+                                date = declared.date,
+                            )
+                        } else {
+                            ""
+                        }
+                    }
+                if (sample.isEmpty()) null else key to sample
             }
             .toMap()
     }

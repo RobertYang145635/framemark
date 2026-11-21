@@ -25,16 +25,36 @@ object GhostSamples {
     const val DATE = "2026-11-21 11:56"
 
     /**
-     * 按文字页给出的角色名取示例；角色为空时给一个中性的参数串
-     * （宁可像参数，也不写「示例文字」这类说明）。
+     * 按文字页给出的角色名取示例。
+     *
+     * 角色为空（非经典四行的边框）时返回空串：宁可**不画**，也不能在「品牌行」上画一串
+     * 拍摄参数 —— 猜错比不提示更糟（2026-11-21 逐一核对边框时发现的口径）。
      */
     fun forRole(role: String?, make: String? = null): String = when (role?.trim()) {
         "品牌" -> brand(make)
         "机型" -> MODEL
         "拍摄参数" -> EXIF
         "日期" -> DATE
-        null, "" -> EXIF
+        null, "" -> ""
         else -> role
+    }
+
+    /**
+     * 边框不知道角色时按它声明的行挑：优先拍摄参数 → 日期 → 机型 → 品牌。
+     * 一行都没声明就返回空串（没有任何文字行，不需要占位）。
+     */
+    fun forDeclaredRows(
+        make: Boolean,
+        model: Boolean,
+        exif: Boolean,
+        date: Boolean,
+        makeValue: String? = null,
+    ): String = when {
+        exif -> EXIF
+        date -> DATE
+        model -> MODEL
+        make -> brand(makeValue)
+        else -> ""
     }
 
     /** 角色 → 示例（供探针渲染与舞台淡灰文字共用）。 */

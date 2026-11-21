@@ -695,7 +695,17 @@ fun PhoneShell() {
         val roles = textSlotNavEntries(textSlots.slots, width, height).associate { it.navKey to it.role }
         val samples = missing.mapNotNull { slot ->
             val key = slot.key ?: return@mapNotNull null
-            key to com.framemark.native.product.GhostSamples.forRole(roles[key])
+            val declared = activeCard.declaredText
+            val sample = com.framemark.native.product.GhostSamples.forRole(roles[key])
+                .ifEmpty {
+                    com.framemark.native.product.GhostSamples.forDeclaredRows(
+                        make = declared.make,
+                        model = declared.model,
+                        exif = declared.exif,
+                        date = declared.date,
+                    )
+                }
+            if (sample.isEmpty()) null else key to sample
         }.toMap()
         if (samples.isEmpty()) return@LaunchedEffect
         val design = NativeEngine.designOf(activeCard, model, session)
