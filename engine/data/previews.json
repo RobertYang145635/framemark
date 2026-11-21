@@ -1455,15 +1455,15 @@
     {
       "cardId": "wm-canon",
       "layer": "rendered",
-      "path": "src/renderer/src/assets/previews/rendered/wm-canon.webp",
+      "path": "previews/wm-canon.webp",
       "declaredPreviewPath": "src/renderer/src/assets/previews/watermark1.webp",
       "declaredPreviewRaw": "../assets/previews/watermark1.webp",
       "inspectorPath": "src/renderer/src/assets/previews/watermark1.webp",
-      "sha256": "cfcc9f3624bbd0aa9042fbb97c762f2993ef6a4a07f8f24b195bac1ea6acc053",
-      "bytes": 8762,
+      "sha256": "ac1360076f4172086e1c35e1ed258d1956e3b6a7cdabd91e9c271bc4678aefc6",
+      "bytes": 24912,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 413
     },
     {
       "cardId": "wm-simple",

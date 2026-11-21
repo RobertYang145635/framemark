@@ -116,7 +116,9 @@ class OutputSizeDataTest {
                 continue
             }
             val mode = declared["footerMode"] as? String ?: "classic"
-            if (mode != "simple" && mode != "classic" && mode != "overlay") continue
+            // `single` 是 brandFooter 的单行版式，画布与 classic 同高（引擎侧同一个
+            // footerPct 公式），所以这里与 classic 一样参与 footerAuto 的核对。
+            if (mode != "simple" && mode != "classic" && mode != "overlay" && mode != "single") continue
             footerModeCards++
             val declaredAuto = declared["footerAuto"] as? Boolean ?: false
             val built = model(card.cardId)

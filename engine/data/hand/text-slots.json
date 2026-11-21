@@ -11,7 +11,7 @@
     "cards": 69,
     "withSlots": 62,
     "empty": 7,
-    "lines": 204
+    "lines": 203
   },
   "cards": {
     "blur-classic": {
@@ -768,23 +768,11 @@
       "templateId": "brandFooter",
       "base": "brandFooter",
       "source": "../_research/native/designs/wm-canon.json",
-      "sourceSha256": "f043d4da483a4dd35af1b3ae05376560bd7d6d24a613cfb16d3fc80ca2b3b3ba",
-      "sourceBytes": 49175,
-      "slotCount": 4,
+      "sourceSha256": "70e74929058ffc216b8dba58c753f1fe6b44ce414171bb80036dff90af615336",
+      "sourceBytes": 48867,
+      "slotCount": 3,
       "textSlotsVia": "hook:TextSection",
       "slots": [
-        {
-          "id": "wm-canon#exif#0",
-          "key": "wm-canon#exif#0",
-          "anchor": "bottom-right",
-          "text": "366mm  F6.3  1/400s  ISO125",
-          "source": "exif",
-          "hidden": false,
-          "x": 1218.6000000000001,
-          "y": 954,
-          "w": 490.8399658203125,
-          "h": 600
-        },
         {
           "id": "wm-canon#make#0",
           "key": "wm-canon#make#0",
@@ -792,22 +780,10 @@
           "text": "PANASONIC",
           "source": "make",
           "hidden": false,
-          "x": 72,
-          "y": 1424.4,
-          "w": 266.75177001953125,
-          "h": 12
-        },
-        {
-          "id": "wm-canon#date#0",
-          "key": "wm-canon#date#0",
-          "anchor": "bottom-right",
-          "text": "2022-07-05 14:13:37",
-          "source": "date",
-          "hidden": false,
-          "x": 1218.6000000000001,
-          "y": 1467.32,
-          "w": 283.69818115234375,
-          "h": 28.35
+          "x": 72.0,
+          "y": 1434.65,
+          "w": 266.72,
+          "h": 38.92
         },
         {
           "id": "wm-canon#model#0",
@@ -816,10 +792,22 @@
           "text": "DC-S1",
           "source": "model",
           "hidden": false,
-          "x": 72,
-          "y": 1480.4,
-          "w": 129.038330078125,
-          "h": 12
+          "x": 354.92,
+          "y": 1436.6,
+          "w": 129.02,
+          "h": 36.4
+        },
+        {
+          "id": "wm-canon#exif#0",
+          "key": "wm-canon#exif#0",
+          "anchor": "bottom-right",
+          "text": "366mm  F6.3  1/400s  ISO125",
+          "source": "exif",
+          "hidden": false,
+          "x": 1218.6,
+          "y": 1440.6,
+          "w": 490.75,
+          "h": 31.23
         }
       ]
     },

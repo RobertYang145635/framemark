@@ -1057,7 +1057,7 @@
         "logoPos": "center",
         "footerPct": 11.1,
         "logoCenterX": 0.594,
-        "slots": "brand,model,logo,exif,date",
+        "slots": "brand,model,logo,exif",
         "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
       },
       "preview": "../assets/previews/watermark1.webp",
@@ -1073,11 +1073,11 @@
           "theme": "white",
           "logoScale": 5,
           "logoPos": "center",
-          "footerMode": "classic",
+          "footerMode": "single",
           "footerAuto": false,
           "footerTextScale": 1,
           "footerFont": "auto",
-          "slots": "brand,model,logo,exif,date",
+          "slots": "brand,model,logo,exif",
           "logoCenterX": 0.594,
           "frame": "{\"logoW\":0.12,\"ruleX\":0.659,\"rightX\":0.677,\"rightW\":0.282}"
         },

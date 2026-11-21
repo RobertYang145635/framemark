@@ -7,7 +7,7 @@ use serde_json::Value;
 use skia_safe::Rect;
 
 use crate::draw::{
-    draw_brand_logo, draw_fitted, draw_photo, exif_text, footer_title, logo_scale,
+    draw_brand_logo, draw_fitted, draw_photo, exif_text, footer_title, logo_scale, measure_fitted,
     resolve_text_slot, simple_footer_metrics, theme_of, Env, FittedOpts, LayoutEnv,
 };
 use crate::hand::{format_date_only, format_date_time, pct};
@@ -165,6 +165,9 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     if mode == "overlay" {
         return render_overlay(env);
     }
+    if mode == "single" {
+        return render_single(env);
+    }
     render_classic(env)
 }
 
@@ -276,6 +279,34 @@ mod slot_tests {
             size_scale(&params, scope, "brand", Some(&legacy_sizes)),
             1.25
         );
+    }
+
+    /// `footerMode=single` paints inside the classic band: same photo rect, same
+    /// footer height. A single-row card must not resize the canvas.
+    #[test]
+    fn single_footer_keeps_the_classic_band() {
+        use crate::draw::LayoutEnv;
+        let exif = crate::hand::Exif::default();
+        let text = crate::hand::TextSettings::default();
+        let crop = crate::hand::crop_full(2667.0, 2000.0);
+        let mut classic = Params::new();
+        classic.insert("footerMode".into(), serde_json::json!("classic"));
+        classic.insert("footerPct".into(), serde_json::json!(11.1));
+        let mut single = Params::new();
+        single.insert("footerMode".into(), serde_json::json!("single"));
+        single.insert("footerPct".into(), serde_json::json!(11.1));
+        let layout_with = |params: &Params| {
+            layout(&LayoutEnv {
+                pw: 2667.0,
+                ph: 2000.0,
+                crop: crop.clone(),
+                exif: &exif,
+                params,
+                text: &text,
+            })
+            .expect("footer layout")
+        };
+        assert_eq!(layout_with(&single), layout_with(&classic));
     }
 }
 
@@ -665,6 +696,101 @@ fn render_overlay(env: &mut Env) -> Result<Rect, String> {
     Ok(Rect::from_xywh(0.0, 0.0, pw, ph))
 }
 
+/// The classic/single footer type system: family (auto by brand), weights,
+/// sizes and tracking. Shared so the two-row and one-row footers cannot drift.
+struct FooterStyle {
+    brand_font: &'static str,
+    body_font: &'static str,
+    brand_weight: u16,
+    model_weight: u16,
+    body_weight: u16,
+    brand_size: f32,
+    model_size: f32,
+    brand_tracking: f32,
+    model_tracking: f32,
+}
+
+fn footer_style(env: &Env, s: f32, make: &str) -> FooterStyle {
+    let brand_key = format!("{} {}", make, env.exif.model).to_lowercase();
+    let auto_font = if brand_key.contains("xiaomi")
+        || brand_key.contains("redmi")
+        || brand_key.contains("poco")
+    {
+        "misans"
+    } else if brand_key.contains("vivo") || brand_key.contains("iqoo") {
+        "vivo"
+    } else {
+        "oppo"
+    };
+    let requested = env
+        .params
+        .get("footerFont")
+        .map(|v| crate::jsval::js_string(Some(v)))
+        .unwrap_or_else(|| "auto".into());
+    let font_style = if requested == "auto" || requested == "oppo" {
+        auto_font
+    } else {
+        requested.as_str()
+    };
+    let serif = font_style == "serif";
+    let vivo = font_style == "vivo";
+    let misans = font_style == "misans";
+    let modern = misans || vivo;
+    let (brand_font, body_font) = match font_style {
+        "serif" => ("StockButler", "StockButler"),
+        "vivo" => ("StockVivo", "StockVivo"),
+        "misans" => ("StockMiSans", "StockMiSans"),
+        _ => ("StockSysSans", "StockSysSans"),
+    };
+    FooterStyle {
+        brand_font,
+        body_font,
+        brand_weight: if serif || !modern { 700 } else { 600 },
+        model_weight: if serif {
+            500
+        } else if modern {
+            400
+        } else {
+            700
+        },
+        body_weight: if serif {
+            500
+        } else if modern {
+            400
+        } else {
+            600
+        },
+        brand_size: s * if serif {
+            0.03
+        } else if modern {
+            0.028
+        } else {
+            0.031
+        },
+        model_size: s * if serif {
+            0.027
+        } else if modern {
+            0.0255
+        } else {
+            0.029
+        },
+        brand_tracking: if serif {
+            0.01
+        } else if modern {
+            0.02
+        } else {
+            0.03
+        },
+        model_tracking: if serif {
+            0.005
+        } else if modern {
+            0.01
+        } else {
+            0.05
+        },
+    }
+}
+
 // ── classic ────────────────────────────────────────────────────────────────
 
 fn render_classic(env: &mut Env) -> Result<Rect, String> {
@@ -750,80 +876,17 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
     } else {
         model.clone()
     };
-    let brand_key = format!("{} {}", make, env.exif.model).to_lowercase();
-    let auto_font = if brand_key.contains("xiaomi")
-        || brand_key.contains("redmi")
-        || brand_key.contains("poco")
-    {
-        "misans"
-    } else if brand_key.contains("vivo") || brand_key.contains("iqoo") {
-        "vivo"
-    } else {
-        "oppo"
-    };
-    let requested = env
-        .params
-        .get("footerFont")
-        .map(|v| crate::jsval::js_string(Some(v)))
-        .unwrap_or_else(|| "auto".into());
-    let font_style = if requested == "auto" || requested == "oppo" {
-        auto_font
-    } else {
-        requested.as_str()
-    };
-    let serif = font_style == "serif";
-    let vivo = font_style == "vivo";
-    let misans = font_style == "misans";
-    let modern = misans || vivo;
-    let (brand_font, body_font) = match font_style {
-        "serif" => ("StockButler", "StockButler"),
-        "vivo" => ("StockVivo", "StockVivo"),
-        "misans" => ("StockMiSans", "StockMiSans"),
-        _ => ("StockSysSans", "StockSysSans"),
-    };
-    let brand_weight: u16 = if serif || !modern { 700 } else { 600 };
-    let model_weight: u16 = if serif {
-        500
-    } else if modern {
-        400
-    } else {
-        700
-    };
-    let body_weight: u16 = if serif {
-        500
-    } else if modern {
-        400
-    } else {
-        600
-    };
-    let brand_size = s * if serif {
-        0.03
-    } else if modern {
-        0.028
-    } else {
-        0.031
-    };
-    let model_size = s * if serif {
-        0.027
-    } else if modern {
-        0.0255
-    } else {
-        0.029
-    };
-    let brand_tracking = if serif {
-        0.01
-    } else if modern {
-        0.02
-    } else {
-        0.03
-    };
-    let model_tracking = if serif {
-        0.005
-    } else if modern {
-        0.01
-    } else {
-        0.05
-    };
+    let FooterStyle {
+        brand_font,
+        body_font,
+        brand_weight,
+        model_weight,
+        body_weight,
+        brand_size,
+        model_size,
+        brand_tracking,
+        model_tracking,
+    } = footer_style(env, s, &make);
     let brand_resolved = flat_resolution(env, "brand", &make_text);
     let model_resolved = flat_resolution(env, "model", &model_text);
     let show_brand = on("brand");
@@ -1013,6 +1076,233 @@ fn render_classic(env: &mut Env) -> Result<Rect, String> {
             &FittedOpts::new(body_font)
                 .weight(body_weight)
                 .min(s * 0.009),
+        );
+    }
+    Ok(Rect::from_xywh(border, top_inset, pw, ph))
+}
+
+// ── single (one-row footer) ────────────────────────────────────────────────
+
+/// `footerMode=single` — the vendor one-row footer (`watermark2.webp`): the
+/// left block is `品牌 机型` on a single baseline, the logo stays centred and
+/// the right block is one `参数` line. There is no date row, so the band can be
+/// the same height as the classic one and `layout()` needs no separate branch.
+fn render_single(env: &mut Env) -> Result<Rect, String> {
+    let (w, h, pw, ph) = (env.w, env.h, env.pw, env.ph);
+    let theme = theme_of(env.themes, env.params);
+    let s = pw.min(ph);
+    let f = frame_map(env);
+    let slots = slots_of(env);
+    let on = |k: &str| slot_on(&slots, k);
+    let border = (pw * frame_of(&f, "borderPct", 0.0)) / 100.0;
+    let top_inset = (pw * frame_of(&f, "borderTopPct", frame_of(&f, "borderPct", 0.0))) / 100.0;
+    let footer_top = top_inset + ph;
+    let footer = h - footer_top;
+    env.ctx.set_fill(&theme.bg);
+    env.ctx.fill_rect(0.0, 0.0, w, h);
+    draw_photo(
+        &mut env.ctx,
+        env.photo,
+        &env.crop,
+        border,
+        top_inset,
+        pw,
+        ph,
+        0.0,
+        0.0,
+        &theme,
+        s,
+    );
+    if frame_of(&f, "bandRule", 99.0) != 0.0 {
+        crate::draw::line(
+            &mut env.ctx,
+            border,
+            footer_top,
+            border + pw,
+            footer_top,
+            &theme.line,
+            (s * 0.0009).max(1.0),
+            None,
+        );
+    }
+    let left_x = w * frame_of(&f, "leftX", 0.04);
+    let left_w = w * frame_of(&f, "leftW", 0.28);
+    let make = if env.text.show_make {
+        let slot = slot_of(env, "brand");
+        if slot.is_empty() {
+            env.exif.make.clone()
+        } else {
+            slot
+        }
+    } else {
+        String::new()
+    };
+    let model = if env.text.show_model {
+        let slot = slot_of(env, "model");
+        if slot.is_empty() {
+            env.exif.model_without_make()
+        } else {
+            slot
+        }
+    } else {
+        String::new()
+    };
+    let title = footer_title(env);
+    let make_text = if make.is_empty() {
+        title.clone()
+    } else {
+        make.clone()
+    }
+    .to_uppercase();
+    let model_text = if model.is_empty() {
+        if env.text.show_lens {
+            env.exif.lens.trim().to_string()
+        } else {
+            String::new()
+        }
+    } else {
+        model.clone()
+    };
+    let st = footer_style(env, s, &make);
+    let brand_r = flat_resolution(env, "brand", &make_text);
+    let model_r = flat_resolution(env, "model", &model_text);
+    // One baseline for both left segments: the band centre, offset down by the
+    // ascender so the painted ink sits on the centre line.
+    let baseline = footer_top + footer * 0.5 + st.brand_size * 0.36;
+    let brand_shown = on("brand") && !brand_r.hidden && !brand_r.text.is_empty();
+    let model_shown = on("model") && !model_r.hidden && !model_r.text.is_empty();
+    let mut model_x = left_x;
+    if brand_shown {
+        let brand_px = st.brand_size * size_of(env, "brand");
+        let (_, measure) = measure_fitted(
+            env,
+            &brand_r.text,
+            left_w,
+            brand_px,
+            s * 0.013,
+            st.brand_font,
+            st.brand_weight,
+            st.brand_tracking as f64,
+        );
+        draw_fitted(
+            env,
+            &make_text,
+            left_x,
+            baseline,
+            left_w,
+            brand_px,
+            &theme.fg,
+            &FittedOpts::new(st.brand_font)
+                .weight(st.brand_weight)
+                .tracking(st.brand_tracking as f64)
+                .min(s * 0.013)
+                .declared_slot("brand"),
+        );
+        model_x = left_x + measure + s * 0.012;
+    }
+    if model_shown {
+        let model_px = st.model_size * size_of(env, "model");
+        let avail = (left_x + left_w - model_x).max(40.0);
+        draw_fitted(
+            env,
+            &model_text,
+            model_x,
+            baseline,
+            avail,
+            model_px,
+            &theme.sub,
+            &FittedOpts::new(st.body_font)
+                .weight(st.model_weight)
+                .tracking(st.model_tracking as f64)
+                .min(s * 0.01)
+                .declared_slot("model"),
+        );
+    }
+    let right_x = w * frame_of(&f, "rightX", 0.72);
+    let right_w = w * frame_of(&f, "rightW", 0.25);
+    let ex = if env.text.show_exif {
+        let slot = slot_of(env, "exif");
+        if slot.is_empty() {
+            exif_text(env)
+        } else {
+            slot
+        }
+    } else {
+        String::new()
+    };
+    let ex_resolved = flat_resolution(env, "exif", &ex);
+    let has_right = on("exif") && !ex_resolved.hidden && !ex_resolved.text.is_empty();
+    let logo_pos = env
+        .params
+        .get("logoPos")
+        .map(|v| crate::jsval::js_string(Some(v)))
+        .unwrap_or_else(|| "center".into());
+    if on("logo") && env.text.show_logo {
+        let grow = logo_scale(&LayoutEnv {
+            pw,
+            ph,
+            crop: env.crop,
+            exif: env.exif,
+            params: env.params,
+            text: env.text,
+        });
+        let base_w = w * frame_of(&f, "logoW", 0.17);
+        let base_h = footer * frame_of(&f, "logoH", 0.36);
+        let mut lw = base_w * grow;
+        let mut lh = (base_h * grow).min(footer * 0.9);
+        let center_x = w * (pct(env.params, "logoCenterX", 0.53) as f32);
+        let mut lx = center_x - lw / 2.0;
+        if logo_pos == "left" {
+            lx = left_x;
+        } else if logo_pos == "right" {
+            lx = w * 0.96 - lw;
+        }
+        if f.contains_key("logoCx") {
+            lx = w * frame_of(&f, "logoCx", 0.0) - lw / 2.0;
+        }
+        if grow > 1.0001 {
+            let gap = s * 0.008;
+            let left_bound = left_x + if brand_shown || model_shown { left_w } else { 0.0 } + gap;
+            let right_bound = (if has_right {
+                right_x
+            } else {
+                w * 0.96
+            }) - gap;
+            let max_w = (right_bound - left_bound).max(0.0);
+            lw = lw.min(max_w);
+            if logo_pos == "center" || f.contains_key("logoCx") {
+                let half = lw / 2.0;
+                let cx = (lx + half).max(left_bound + half).min(right_bound - half);
+                lx = cx - half;
+            } else if logo_pos == "left" {
+                lx = left_bound;
+            } else {
+                lx = right_bound - lw;
+            }
+        }
+        draw_brand_logo(
+            env,
+            lx,
+            footer_top + footer / 2.0 - lh / 2.0,
+            lw,
+            lh,
+            &theme.fg,
+        );
+    }
+    if on("exif") {
+        draw_fitted(
+            env,
+            &ex,
+            right_x,
+            baseline,
+            right_w,
+            s * 0.027 * size_of(env, "exif"),
+            &theme.fg,
+            &FittedOpts::new(st.body_font)
+                .weight(st.body_weight)
+                .tracking(0.01)
+                .min(s * 0.012)
+                .declared_slot("exif"),
         );
     }
     Ok(Rect::from_xywh(border, top_inset, pw, ph))

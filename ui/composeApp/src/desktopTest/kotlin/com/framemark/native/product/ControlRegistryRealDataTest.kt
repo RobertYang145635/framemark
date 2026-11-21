@@ -131,12 +131,14 @@ class ControlRegistryRealDataTest {
         assertEquals(187, stats.cards)
         assertEquals(69, stats.auditedCards)
         assertEquals(118, stats.unauditedCards)
-        assertEquals(1023, stats.capabilityRows)
-        assertEquals(779, stats.effectiveRows)
+        // wm-canon（经典单行）不暴露「版式」：它的单行页脚就是这张卡的定义，
+        // 引擎侧由设计文档的 footerMode=single 决定，所以审计行数比 1023 少 1。
+        assertEquals(1022, stats.capabilityRows)
+        assertEquals(778, stats.effectiveRows)
         assertEquals(244, stats.gatedRows)
         assertEquals(585, stats.platformRows)
         assertEquals(113, stats.platformStyles)
-        assertEquals(1023, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
+        assertEquals(1022, stats.metaRowsJoined, "capabilities ↔ inspector-meta 必须 100% 命中")
         assertEquals(585, stats.vendoredJoined, "controls.json ↔ vendored controls 必须 100% 命中")
         assertEquals(45, stats.handPanelRows)
         assertEquals(61, stats.handPanelCardPairs)
@@ -150,15 +152,15 @@ class ControlRegistryRealDataTest {
         assertEquals(182, stats.cardsWithVisible)
         assertEquals(5, stats.emptyCards, "5 张迪士尼装饰卡没有控件")
         assertEquals(182, stats.cardsWithVisible)
-        assertEquals(1364, stats.visibleControls)
+        assertEquals(1363, stats.visibleControls)
         assertEquals(244, stats.hiddenControls)
         assertEquals(244, stats.gatedControls)
-        assertEquals(1608, stats.routableControls)
-        assertEquals(781, stats.consumedControls)
+        assertEquals(1607, stats.routableControls)
+        assertEquals(780, stats.consumedControls)
         assertEquals(585, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { it.visibleCount })
-        assertEquals(779, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
+        assertEquals(778, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { it.visibleCount })
         assertEquals(41, registry.cards.filter { it.backend == ControlBackend.Ir }.sumOf { c -> c.controls.count { it.consumed } })
-        assertEquals(740, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
+        assertEquals(739, registry.cards.filter { it.backend == ControlBackend.Hand }.sumOf { c -> c.controls.count { it.consumed } })
         val hiddenReasons = registry.cards.flatMap { it.controls }.filter { !it.visible }
             .groupingBy { it.hiddenReason ?: "null" }.eachCount()
         assertEquals(mapOf("gated" to 244), hiddenReasons, "除门控外不应有被隐藏的控件")
@@ -396,7 +398,7 @@ class ControlRegistryRealDataTest {
     fun gated_controls_stay_hidden_and_visible_ones_are_routable() {
         val registry = RealData.registry()
         val all = registry.cards.flatMap { card -> card.controls.map { card to it } }
-        assertEquals(1023 + 585, all.size)
+        assertEquals(1022 + 585, all.size)
 
         var gated = 0
         all.forEach { (card, control) ->

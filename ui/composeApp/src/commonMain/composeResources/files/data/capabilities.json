@@ -30,16 +30,16 @@
     "pathNote": "Task book names framemark/_research/s7/control-audit.json; the repo has no _research/ (gitignored/local) and the file lives one level up at border&watermark/_research/s7/control-audit.json. This is the path that was hashed."
   },
   "counts": {
-    "auditRows": 1023,
-    "effective": 779,
+    "auditRows": 1022,
+    "effective": 778,
     "gated": 244,
     "verdicts": {
-      "live": 779,
+      "live": 778,
       "no-op": 244
     },
     "auditedCards": 69,
     "unauditedCards": 118,
-    "auditedEffectiveSum": 779,
+    "auditedEffectiveSum": 778,
     "auditedGatedSum": 244,
     "auditCardsOutsideTaxonomy": 0,
     "duplicateAuditRows": 0
@@ -1323,7 +1323,7 @@
     {
       "styleId": "wm-canon",
       "audited": true,
-      "effectiveCount": 15,
+      "effectiveCount": 14,
       "gatedCount": 4,
       "effective": [
         {
@@ -1374,13 +1374,6 @@
           "kind": "toggle",
           "scope": "design-text",
           "currentValue": true
-        },
-        {
-          "controlId": "gravity.params:footerMode",
-          "param": "params.footerMode",
-          "kind": "gravitySegment",
-          "scope": "template-param",
-          "currentValue": "classic"
         },
         {
           "controlId": "slider.params:footerPct",
