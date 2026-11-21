@@ -682,6 +682,8 @@ private fun AlbumSheet(
                 .fillMaxWidth()
                 .heightIn(max = 520.dp)
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                // 主题里的 surface 是半透明玻璃色：先铺一层画布色，否则网格会透上来。
+                .background(FmPalette.canvas)
                 .background(FmPalette.surface),
         ) {
             Text(
