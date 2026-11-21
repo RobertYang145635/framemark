@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc52",
-  "versionCode": 51,
+  "versionName": "0.9.0-rc53",
+  "versionCode": 52,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T09:55:00Z",
-  "notes": "相册导航：按日期分组（今天 / 昨天 / M月D日，标题带张数）、吸顶日期、右侧可拖动滑块（拖动时显示日期气泡）、网格 4 列；相册折叠成一行标题「最近照片 ▾」，点开是竖向列表（封面 + 名称 + 张数 + 当前勾选），不再用横滑标签行。修复：照片 EXIF 残缺时，缺内容的那几行以前会被过滤掉或变成只读，现在一律列出来并能直接输入（例如「拍摄参数」缺值时手填 24mm f/2.8）。其余同 rc51：OPPO ProXDR 保留 HDR、应用内相册、导入只沿用边框。",
+  "publishedAt": "2026-11-21T12:30:00Z",
+  "notes": "缺拍摄参数的照片现在会在那一行用**淡灰色标准参数档**占位（23mm F1.8 1/125s ISO250 / 机型 / 日期），一眼看出这里本来写什么、能填什么；进过「文字」页就自动消失，换照片或换边框会重新出现。占位的位置是按该边框量出来的真实位置：文字页的命名也从「待定位」改成准确的行列（右上·拍摄参数），点这一行舞台会出现高亮框，框就在刚才占位的地方，可以直接输入。其余同 rc52：相册按日期分组、相册折叠下拉、OPPO ProXDR 保留 HDR。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc52/FrameMark-0.9.0-rc52-arm64.apk",
-      "sha256": "282737c73efb24c8ebb5ba5bc4694df4e7416885f790e10d126a7fbd2860dc81",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc53/FrameMark-0.9.0-rc53-arm64.apk",
+      "sha256": "88a60092fb4188a67623db6d7c224eb9ec1bc695e90da36aeb127fb8163db3b6",
       "size": 144933226
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc52/FrameMark-0.9.0-rc52-win64.msi",
-      "sha256": "e7daefb93c7d48d0a9539462b20ad693251abb7ca2e005b7c9014d0a32bf03a9",
-      "size": 247976052
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc53/FrameMark-0.9.0-rc53-win64.msi",
+      "sha256": "e868570b2f1463418e14263551b84685b93971d05e59cf0046e02a0066b57a63",
+      "size": 248025300
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc52"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc53"
 }
