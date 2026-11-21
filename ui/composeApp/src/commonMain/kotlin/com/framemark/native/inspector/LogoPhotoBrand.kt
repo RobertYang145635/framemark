@@ -57,6 +57,19 @@ internal object LogoPhotoBrand {
         return null
     }
 
+    /**
+     * 说明行里的「照片品牌」：**只**认渲染器按片解析的结果
+     * （[com.framemark.native.product.PhotoBrandHint.brandKey]）。
+     *
+     * 引擎报告的品牌行文字不能拿来当照片品牌：没有 EXIF 的照片，那一行是卡片样张
+     * （「SONY」）或用户手填的署名（「QA54-ALPHA」），而引擎画的字标来自照片自己的
+     * Make —— 读文字就会写出「按照片品牌 Sony」，屏上却是边框自带的 Panasonic。
+     */
+    fun captionLabel(hintBrandKey: String?, brands: List<LogoBrand>): String? {
+        val key = hintBrandKey?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return brands.firstOrNull { it.key == key }?.label
+    }
+
     /** 那一行 slot 本身（供调用方判断「有没有这一行」）。 */
     fun makeSlot(slots: List<TextSlot>): TextSlot? = slots.firstOrNull { slot ->
         logicalName(slot) in BrandSlotNames

@@ -427,7 +427,9 @@ private fun BrandedCuratedLogo(
     val photoMake = LogoPhotoBrand.makeText(textSlots)
     val hintBrand = com.framemark.native.product.PhotoBrandHint.brandKey
         ?.let { key -> brands.firstOrNull { it.key == key } }
-    val summary = logoSummary(raw, brands, photoBrand?.brand?.label ?: hintBrand?.label)
+    // 说明行只用渲染器按片解析的品牌：没有 EXIF Make 就说「按边框自己的品牌」，
+    // 不能拿品牌行文字（卡片样张 / 用户手填署名）冒充照片品牌。
+    val summary = logoSummary(raw, brands, LogoPhotoBrand.captionLabel(com.framemark.native.product.PhotoBrandHint.brandKey, brands))
     // 画不出用户 Logo 的边框只拦「我的 Logo」这一下：引擎画不出来，进去选就是一次
     // 静默无效。原因（`USER_LOGO_UNSUPPORTED_ON_CARD`）就显示在按钮下面。
     val userAction = userLogoActionDecision(supportsUserLogo)

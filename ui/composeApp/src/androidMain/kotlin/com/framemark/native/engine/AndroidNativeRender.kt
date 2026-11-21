@@ -921,8 +921,16 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
 
     /** 按照片品牌解析字标；任何失败都只是「没有自动结果」，不是这次渲染的失败。 */
     private suspend fun autoHandLogo(design: DesignSnapshot, overridePhoto: String?): InlineHandLogo? {
-        if (!PhotoBrandKeys.isAuto(design.logoBrand)) return null
-        val photo = overridePhoto?.takeIf { File(it).isFile } ?: currentUserPhoto() ?: return null
+        // 说明行「按照片品牌 X」的唯一来源：换照片 / 换显式品牌时必须清掉上一次的厂商名。
+        if (!PhotoBrandKeys.isAuto(design.logoBrand)) {
+            PhotoBrandHint.mark(null, null)
+            return null
+        }
+        val photo = overridePhoto?.takeIf { File(it).isFile } ?: currentUserPhoto()
+        if (photo == null) {
+            PhotoBrandHint.mark(null, null)
+            return null
+        }
         return runCatching {
             val make = photoMake(File(photo))
             val brandKey = PhotoBrandKeys.brandKeyFor(make)

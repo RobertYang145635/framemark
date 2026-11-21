@@ -190,4 +190,30 @@ class LogoPhotoBrandTest {
         assertEquals("ver:hasu:h-wordmark", LogoPhotoBrand.autoCutKey(noAppLogo))
         assertEquals("panasionic_black", LogoPhotoBrand.autoCutKey(panasonic()))
     }
+
+    /**
+     * 说明行只认渲染器按片解析的品牌（WP-Q2 中项，真机 2026-11-21）：
+     * 没 EXIF 的照片 + 手填品牌「QA54-ALPHA」，旧逻辑读品牌行文字，写出
+     * 「按照片品牌 Sony」而屏上画的是边框自带的 Panasonic。品牌行文字不是照片品牌。
+     */
+    @Test
+    fun the_caption_never_takes_the_brand_row_text_as_the_photo_brand() {
+        val brands = listOf(
+            com.framemark.native.inspector.LogoBrand(
+                key = "sony",
+                label = "Sony",
+                cn = "索尼",
+                group = "相机",
+                canonicalVersion = null,
+                versions = emptyList(),
+            ),
+        )
+        // 没有渲染器报告（照片没有 EXIF Make）→ 不给标签，说明行说「按边框自己的品牌」。
+        assertEquals(null, LogoPhotoBrand.captionLabel(null, brands))
+        assertEquals(null, LogoPhotoBrand.captionLabel("  ", brands))
+        // 只有渲染器真的解析出品牌键时才报品牌名。
+        assertEquals("Sony", LogoPhotoBrand.captionLabel("sony", brands))
+        // 库里没有的键也不猜。
+        assertEquals(null, LogoPhotoBrand.captionLabel("unknown", brands))
+    }
 }

@@ -116,10 +116,12 @@ class DesktopNativeRender(
         } else {
             null
         }
-        if (autoLogo) {
-            // Logo 页的说明行读这里（与手机端同一个来源）：卡片把品牌画成图片时，
-            // 文字 slot 里没有厂商名，说明行不能凭空写「按边框自己的品牌」。
-            PhotoBrandHint.mark(autoMake, PhotoBrandKeys.brandKeyFor(autoMake))
+        // Logo 页的说明行读这里（与手机端同一个来源），**每帧都写**：换到没有 EXIF 的
+        // 照片、或用户改成显式品牌时，上一张照片的厂商名必须被清掉，否则说明行会
+        // 一直说「按照片品牌 X」，而引擎画的其实是边框自带的字标。
+        run {
+            val key = if (autoLogo) PhotoBrandKeys.brandKeyFor(autoMake) else null
+            PhotoBrandHint.mark(if (autoLogo) autoMake else null, key)
         }
         if (autoLogo) {
             FmLog.info("FM_LOGO") {
