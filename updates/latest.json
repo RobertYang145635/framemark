@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc55",
-  "versionCode": 54,
+  "versionName": "0.9.0-rc56",
+  "versionCode": 55,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T21:20:00Z",
-  "notes": "设置页与导航：两端设置图标统一为同一枚齿轮；关于页的「支持与反馈 / 打赏 / 隐私与权限」返回时先回关于页，不再一步跳回设置首页；隐私与权限从「隐私、权限与许可」里拆成设置页独立一行（手机独立一页，桌面弹层内同一份正文）。成像与边框：经典单行改成真正的单行（不再与经典双行同一套版式）；尺寸切换后预览、裁切提示与像素估算统一到引擎画布，原尺寸导出按预览裁切；导出命名的拍摄日期/时间改用 DateTimeOriginal；Windows 补齐 4 套 OPPO 卡（187 套全部可导出）；重开工程点亮当前照片已有边框，照片条展开定位到当前照片；不按版式设计的卡片不再偷偷裁照片；色卡 01/02/03 按厂商版式重排，边框库分类全量校正（色卡 01/02 归入色彩边框）。",
+  "publishedAt": "2026-11-22T14:40:00Z",
+  "notes": "升级安装不再复用旧解包：解包身份改为随包 zip 的 CRC/大小 + 构建标签，rc54→rc56 这种「manifest 没变、数据变了」的升级会重解一次——此前升级后编辑器还画旧版「经典单行」（缩略图已是新版），原因就在这里。Ultra HDR 封装不再把整张 JPEG 逐字节装箱（36.9 MB 主图在 128 MiB 堆上 OOM），改成分段复制，并修掉换 ICC 时偏移算错的问题。大幅 HEIC/WebP 导入先查尺寸、按内存预算降采样再解码，不再同时持有两张全尺寸位图。系统选择器缺失时给出可操作提示，不再闪退。双端一致性已实测：同一张 12288×17748 的 200MP 照片 + 经典单行，手机导出 12288×19112，桌面引擎 source_canvas 也是 12288×19112；桌面预览与手机成片缩放后平均像素差 2/255，页脚文字、字标、位置一致。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc55/FrameMark-0.9.0-rc55-arm64.apk",
-      "sha256": "68d0742ae87fbda127b5465ada497d76382a5f70fdd06ac58e02211b902f1d79",
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc56/FrameMark-0.9.0-rc56-arm64.apk",
+      "sha256": "d705254c1672af1acc27e9fa06bf698842602d089b3630629db871bdd440bb10",
       "size": 145626120
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc55/FrameMark-0.9.0-rc55-win64.msi",
-      "sha256": "b0c784dcd107293e43d1fe17e0af7dbec924d0de10dd24115ad463092de5e705",
-      "size": 249201252
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc56/FrameMark-0.9.0-rc56-win64.msi",
+      "sha256": "61843bd16ebbfeb984cea7a8dfa8ebf9e75cfc2eb02d7f762611ecbb531720f7",
+      "size": 249205396
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc55"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc56"
 }
