@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc54",
-  "versionCode": 53,
+  "versionName": "0.9.0-rc55",
+  "versionCode": 54,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-21T13:55:00Z",
-  "notes": "边框库预览补齐：187 套边框现在每套都有样张（此前 7 套缺预览，只能实时渲染），并且重出了 4 组「两张边框共用同一张图」的预览（OPPO 视频文字 2/3、小米经典 72、水印经典），库里不会再出现看起来一模一样的两张卡。缺拍摄参数时的淡灰标准参数档占位也核过一遍：按每套边框声明的行给示例（拍摄参数 118 套 / 日期 16 套 / 机型 1 套，没有文字行的 52 套不画），不会再在品牌行或日期行上画出拍摄参数。其余同 rc53。",
+  "publishedAt": "2026-11-21T21:20:00Z",
+  "notes": "设置页与导航：两端设置图标统一为同一枚齿轮；关于页的「支持与反馈 / 打赏 / 隐私与权限」返回时先回关于页，不再一步跳回设置首页；隐私与权限从「隐私、权限与许可」里拆成设置页独立一行（手机独立一页，桌面弹层内同一份正文）。成像与边框：经典单行改成真正的单行（不再与经典双行同一套版式）；尺寸切换后预览、裁切提示与像素估算统一到引擎画布，原尺寸导出按预览裁切；导出命名的拍摄日期/时间改用 DateTimeOriginal；Windows 补齐 4 套 OPPO 卡（187 套全部可导出）；重开工程点亮当前照片已有边框，照片条展开定位到当前照片；不按版式设计的卡片不再偷偷裁照片；色卡 01/02/03 按厂商版式重排，边框库分类全量校正（色卡 01/02 归入色彩边框）。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc54/FrameMark-0.9.0-rc54-arm64.apk",
-      "sha256": "c28e2beb5825a7894f2f54ad18fa0d5b3e62006fba62158acca94c23c8caa210",
-      "size": 145193228
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc55/FrameMark-0.9.0-rc55-arm64.apk",
+      "sha256": "68d0742ae87fbda127b5465ada497d76382a5f70fdd06ac58e02211b902f1d79",
+      "size": 145626120
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc54/FrameMark-0.9.0-rc54-win64.msi",
-      "sha256": "1fe396eab3e1ef0505739b55b325e196fc25740ec701c5f4a91c952ce1a11717",
-      "size": 248353108
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc55/FrameMark-0.9.0-rc55-win64.msi",
+      "sha256": "b0c784dcd107293e43d1fe17e0af7dbec924d0de10dd24115ad463092de5e705",
+      "size": 249201252
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc54"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc55"
 }
