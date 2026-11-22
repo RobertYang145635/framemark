@@ -61,11 +61,15 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let mut card_y = h - card_h - h * 0.065;
     let mut r = (card_h * 0.18).min(s * 0.028);
     let stack = crate::hand::str_param(env.params, "pillOrder", "") == "stack";
+    // 胶囊的「形」是设计的一部分：参考 4:3 画布上是 94%W × 17.5%H ≈ 7.2:1。
+    // 旧版按短边 s 取高、又按 s 取字号，竖图时 s 从高度变成宽度，胶囊被同一个
+    // 17.5%H 撑厚成 4.0:1，字却缩到短边尺度上 —— 「框显厚、字变小」就是这么来的。
+    // 现在高度只由宽度推出来（固定宽高比），字号也按胶囊高度缩放，任何画幅下
+    // 胶囊自身比例与字/框的比例都不变。
+    let pill_aspect = if stack { 7.1619 } else { 8.6914 };
     if layout_mode == "pill" {
         card_w = w * if stack { 0.94 } else { 0.88 };
-        // 参考实现的胶囊约占画面高度的 17%：够两行字呼吸，又不至于压住照片。
-        card_h = (s * if stack { 0.175 } else { 0.135 })
-            .max(h * if stack { 0.175 } else { 0.125 });
+        card_h = card_w / pill_aspect;
         card_x = (w - card_w) / 2.0;
         card_y = h - card_h - h * if stack { 0.028 } else { 0.06 };
         r = card_h / 2.0;
@@ -105,11 +109,13 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let pad_x = card_x + card_w * 0.045;
             let brand_y = card_y + card_h * 0.40;
             let date_y = card_y + card_h * 0.70;
+            // 字号一律按胶囊高度换算：参考 4:3（卡高 17.5%H）下 0.177·H_capsule
+            // 就是原来的 0.031·H，换到竖图只是等比例缩小，不会「框厚字小」。
             let topts = FittedOpts::new("Inter")
                 .weight(700)
                 .tracking(0.05)
                 .baseline("middle")
-                .min(s * 0.013)
+                .min(card_h * 0.074286)
                 .shadow(true)
                 .slot("glass.title");
             draw_fitted(
@@ -118,7 +124,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 pad_x,
                 brand_y,
                 card_w * 0.40,
-                s * 0.031,
+                card_h * 0.177143,
                 "#ffffff",
                 &topts,
             );
@@ -126,7 +132,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let dopts = FittedOpts::new("Inter")
                 .weight(400)
                 .baseline("middle")
-                .min(s * 0.010)
+                .min(card_h * 0.0571)
                 .shadow(true)
                 .slot("glass.date");
             draw_fitted(
@@ -135,7 +141,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 pad_x,
                 date_y,
                 card_w * 0.40,
-                s * 0.021,
+                card_h * 0.1200,
                 "rgba(255,255,255,0.94)",
                 &dopts,
             );
@@ -165,7 +171,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let eopts = FittedOpts::new("Inter")
                 .weight(600)
                 .baseline("middle")
-                .min(s * 0.011)
+                .min(card_h * 0.062857)
                 .shadow(true)
                 .slot("glass.exif");
             draw_fitted(
@@ -174,7 +180,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 card_x + card_w * 0.615,
                 brand_y,
                 card_w * 0.355,
-                s * 0.022,
+                card_h * 0.125714,
                 "#ffffff",
                 &eopts,
             );
@@ -182,7 +188,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             let lopts = FittedOpts::new("Inter")
                 .weight(400)
                 .baseline("middle")
-                .min(s * 0.010)
+                .min(card_h * 0.0571)
                 .shadow(true)
                 .slot("glass.location");
             draw_fitted(
@@ -191,7 +197,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 card_x + card_w * 0.615,
                 date_y,
                 card_w * 0.355,
-                s * 0.018,
+                card_h * 0.102857,
                 "rgba(255,255,255,0.85)",
                 &lopts,
             );
@@ -199,7 +205,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
         }
         let topts = FittedOpts::new("Inter")
             .weight(600)
-            .min(s * 0.012)
+            .min(card_h * 0.088889)
             .shadow(true)
             .slot("glass.title");
         draw_fitted(
@@ -208,13 +214,13 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             inner_x,
             card_y + card_h * 0.58,
             card_w * 0.30,
-            s * 0.023,
+            card_h * 0.170370,
             "#ffffff",
             &topts,
         );
         let ex = exif_text(env);
         let eopts = FittedOpts::new("JetBrains Mono")
-            .min(s * 0.008)
+            .min(card_h * 0.059259)
             .shadow(true)
             .slot("glass.exif");
         draw_fitted(
@@ -223,13 +229,13 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             card_x + card_w * 0.40,
             card_y + card_h * 0.58,
             card_w * 0.27,
-            s * 0.014,
+            card_h * 0.103704,
             "rgba(255,255,255,0.8)",
             &eopts,
         );
         let dt = date_text(env);
         let dopts = FittedOpts::new("JetBrains Mono")
-            .min(s * 0.007)
+            .min(card_h * 0.051852)
             .shadow(true)
             .slot("glass.date");
         draw_fitted(
@@ -238,7 +244,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             card_x + card_w * 0.70,
             card_y + card_h * 0.58,
             card_w * 0.16,
-            s * 0.012,
+            card_h * 0.088889,
             "rgba(255,255,255,0.65)",
             &dopts,
         );

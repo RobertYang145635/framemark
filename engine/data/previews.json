@@ -1654,8 +1654,8 @@
       "declaredPreviewPath": "src/renderer/src/assets/previews/glass_palette.webp",
       "declaredPreviewRaw": "../assets/previews/glass_palette.webp",
       "inspectorPath": "src/renderer/src/assets/previews/glass_palette.webp",
-      "sha256": "6fcc01aac20af21c5395ec5df8a3c124b5214b7426cd933302e9d88576a430d0",
-      "bytes": 13914,
+      "sha256": "c18babebd0f54c06cee5dc82367ce7af745839882b6156e0303fb0e1a7eb5058",
+      "bytes": 16222,
       "format": "webp",
       "width": 480,
       "height": 360
@@ -1693,11 +1693,11 @@
       "declaredPreviewPath": "src/renderer/src/assets/previews/glass5.webp",
       "declaredPreviewRaw": "../assets/previews/glass5.webp",
       "inspectorPath": "src/renderer/src/assets/previews/glass5.webp",
-      "sha256": "182d71030440741c07771fb37369eb0b8b9b892386373cac81613a1ac13b3468",
-      "bytes": 10578,
+      "sha256": "6a8c21d6a0b87e5f70ee084902246f39083b1d58511fbd9e91a4b94ed89fe32b",
+      "bytes": 6338,
       "format": "webp",
       "width": 480,
-      "height": 360
+      "height": 166
     },
     {
       "cardId": "glass-card",
@@ -1745,8 +1745,8 @@
       "declaredPreviewPath": "src/renderer/src/assets/previews/liquid_glass.webp",
       "declaredPreviewRaw": "../assets/previews/liquid_glass.webp",
       "inspectorPath": "src/renderer/src/assets/previews/liquid_glass.webp",
-      "sha256": "8f8b8076bad52191d2dc0def41a87c813b29addeb40286e6d2b2d529a916944e",
-      "bytes": 13518,
+      "sha256": "ccda4f629f14040c7fc97875b683724596a7969d2e02758a2a1b8febc6b36050",
+      "bytes": 13536,
       "format": "webp",
       "width": 480,
       "height": 360

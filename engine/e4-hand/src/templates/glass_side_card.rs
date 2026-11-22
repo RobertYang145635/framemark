@@ -1,6 +1,16 @@
 //! `const glassSideCard: TemplateDef` (templates.ts:3534) — blurred backdrop,
 //! an inset photo card on a frosted matte, and an F/ISO/S chip column.
 //! Batch-2 card: `glass-card` (explicitly re-runs the batch-1 blur F1 case).
+//!
+//! 画布规则（「任意比例适配」的落点）：
+//!  - `canvasAspect > 0`：画布按声明的比例（冻结卡 / 黄金图复现用）。
+//!  - 否则：画布由构图推出来。高度驱动的卡（玻璃 05）要保持「卡片 88.7%H、
+//!    照片从 45.9% 开始、上下 5.65% 留白」，卡片又跟照片同比例、不裁照片，
+//!    画布就必须比照片宽：`画布宽高比 = 卡片宽高比 × 0.887 / 0.4089`。
+//!    参考设计（卡片 0.6903）算出来正好是原来的 1.4971，所以同一套公式既复现
+//!    冻结构图，又能在 3:4 / 1:1 / 16:9 下把照片完整放进卡片。
+//!  - 宽度驱动的卡（玻璃卡片）不用这套：卡片本来就是画布的 56.25%W，画布跟
+//!    照片走即可，缩进来的空白由居中的卡片自己吸收。
 
 use skia_safe::Rect;
 
@@ -11,12 +21,45 @@ use crate::draw::{
 use crate::hand::{format_aperture, format_shutter, pct};
 use crate::jsval::{js_round, pct as js_pct};
 
+/// 照片卡最多占「可用宽度」的百分比。参考设计（1024×684 画布、419×607 卡片、
+/// inset 13.18%）里是 419 / (1024 - 2×135) = 55.53%，取它当缺省值，参考构图
+/// 就正好落在上限上（画布推导与卡片收口用同一个数，不会自相矛盾）。
+const DEFAULT_CARD_MAX_WIDTH_PCT: f64 = 55.53;
+
+fn card_follows_photo(params: &crate::hand::Params) -> bool {
+    params
+        .get("cardFit")
+        .map(|v| crate::jsval::js_string(Some(v)))
+        .unwrap_or_default()
+        == "photo"
+}
+
+/// 卡片的宽高比：`cardFit=photo` 时跟照片一致（不裁照片），否则用 `cardAspect`。
+fn card_aspect_of(params: &crate::hand::Params, pw: f32, ph: f32) -> f32 {
+    if card_follows_photo(params) {
+        (pw / ph.max(1.0)).max(0.05)
+    } else {
+        (pct(params, "cardAspect", 4.0 / 3.0) as f32).max(0.2)
+    }
+}
+
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
-    Ok(crate::draw::aspect_canvas(
-        env.pw,
-        env.ph,
-        pct(env.params, "canvasAspect", 0.0),
-    ))
+    let declared = pct(env.params, "canvasAspect", 0.0);
+    let height_pct = pct(env.params, "cardHeightPct", 0.0) as f32;
+    if height_pct > 0.0 && !(declared > 0.05) {
+        // 卡片高度占比 ÷ 卡片宽度占比 = 画布宽高比 ÷ 卡片宽高比。
+        let inset_pct = (pct(env.params, "cardInsetPct", 6.35) as f32).clamp(0.0, 45.0);
+        let max_pct = (pct(env.params, "cardMaxWidthPct", DEFAULT_CARD_MAX_WIDTH_PCT) as f32)
+            .clamp(20.0, 100.0);
+        let width_share = ((1.0 - 2.0 * inset_pct / 100.0) * max_pct / 100.0).max(0.05);
+        let k = (height_pct / 100.0) / width_share;
+        return Ok(crate::draw::aspect_canvas(
+            env.pw,
+            env.ph,
+            (card_aspect_of(env.params, env.pw, env.ph) * k) as f64,
+        ));
+    }
+    Ok(crate::draw::aspect_canvas(env.pw, env.ph, declared))
 }
 
 pub fn render(env: &mut Env) -> Result<Rect, String> {
@@ -40,28 +83,29 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
                 "left".into()
             }
         });
-    // 卡片画幅：cardFit=photo 时跟照片自身比例走（玻璃卡片/玻璃 05 要能放任意比例的
-    // 照片，旧版把照片 cover 裁进固定 4:3 / 0.69 的窗口里）；否则用声明的 cardAspect。
-    let card_fit = env
-        .params
-        .get("cardFit")
-        .map(|v| crate::jsval::js_string(Some(v)))
-        .unwrap_or_default();
-    let aspect = if card_fit == "photo" {
-        (env.pw / env.ph.max(1.0)).max(0.05)
-    } else {
-        (pct(env.params, "cardAspect", 4.0 / 3.0) as f32).max(0.2)
-    };
+    // 卡片画幅：`cardFit=photo` 时跟照片自身比例走（照片不裁；玻璃 05 靠 layout()
+    // 把画布加宽来容纳侧栏，玻璃卡片靠 `cardWidthPct` 收口）；否则用 `cardAspect`。
+    let aspect = card_aspect_of(env.params, env.pw, env.ph);
     let inset = (w * (pct(env.params, "cardInsetPct", 6.35) as f32)) / 100.0;
     let avail_w = (w - 2.0 * inset).max(1.0);
     let avail_h = (h - 2.0 * inset).max(1.0);
     let height_pct = pct(env.params, "cardHeightPct", 0.0) as f32;
+    // 照片卡最多占「可用宽度」的这么多，剩下的必须留给文字栏。
+    //
+    // 高度驱动的卡（玻璃 05）在「画布跟照片」模式下由 layout() 保证画布够宽，
+    // 这里只是兜住滑杆极值：卡片顶到 avail_w 时文字栏只剩一个 `cardInsetPct`，
+    // 而 F/MM/S 的字号、行距仍按 card_h 算，三个数值就会压到照片上（rc57 的
+    // 13.18% 就是这么来的）。参考设计的 55.53% 同时是 layout() 推导画布的系数，
+    // 两边用同一个数，正常构图不会被收口。
+    let max_card_w = avail_w
+        * (pct(env.params, "cardMaxWidthPct", DEFAULT_CARD_MAX_WIDTH_PCT) as f32).clamp(20.0, 100.0)
+        / 100.0;
     let (mut card_w, mut card_h);
     if height_pct > 0.0 {
         card_h = (h * height_pct) / 100.0;
         card_w = card_h * aspect;
-        if card_w > avail_w {
-            card_w = avail_w;
+        if card_w > max_card_w {
+            card_w = max_card_w;
             card_h = card_w / aspect;
         }
     } else {
@@ -169,12 +213,14 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             ("shutter", "S", shutter),
         ]
     };
-    let box_w = (card_h * (pct(env.params, "rowBoxWPct", 19.2) as f32)) / 100.0;
-    let box_h = (card_h * (pct(env.params, "rowBoxHPct", 9.95) as f32)) / 100.0;
-    let pitch = (card_h * (pct(env.params, "rowPitchPct", 16.67) as f32)) / 100.0;
-    let value_gap = (card_h * (pct(env.params, "rowValueGapPct", 6.48) as f32)) / 100.0;
-    let label_size = (card_h * (pct(env.params, "rowLabelPct", 4.4) as f32)) / 100.0;
-    let value_size = (card_h * (pct(env.params, "rowValuePct", 5.8) as f32)) / 100.0;
+    let (mut box_w, mut box_h, mut pitch, mut value_gap, mut label_size, mut value_size) = (
+        (card_h * (pct(env.params, "rowBoxWPct", 19.2) as f32)) / 100.0,
+        (card_h * (pct(env.params, "rowBoxHPct", 9.95) as f32)) / 100.0,
+        (card_h * (pct(env.params, "rowPitchPct", 16.67) as f32)) / 100.0,
+        (card_h * (pct(env.params, "rowValueGapPct", 6.48) as f32)) / 100.0,
+        (card_h * (pct(env.params, "rowLabelPct", 4.4) as f32)) / 100.0,
+        (card_h * (pct(env.params, "rowValuePct", 5.8) as f32)) / 100.0,
+    );
     let mut value_w: f32 = 0.0;
     for (field, _, value) in &rows {
         let value_slot = format!("glassSide.field.{field}.value");
@@ -188,8 +234,24 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
             0.0,
         ));
     }
-    let block_w = box_w + value_gap + value_w;
-    let block_x = anchor_x(pct(env.params, "textInsetPct", 30.5) as f32, block_w);
+    let text_inset = pct(env.params, "textInsetPct", 30.5) as f32;
+    // 整块字必须留在文字栏里：竖图 + 宽卡时面板只剩 37%，按 card_h 算出来的
+    // 标签框/行距/数值宽会比面板还宽，数值就压到照片上（玻璃卡片 3:4 就是这样）。
+    // 装不下时整组等比缩小，参考比例（4:3 的两张卡）本来就有余量，不受影响。
+    let panel_avail = (panel_w * (1.0 - text_inset / 100.0)).max(1.0);
+    let mut block_w = box_w + value_gap + value_w;
+    if block_w > panel_avail * 0.96 {
+        let k = (panel_avail * 0.96 / block_w).clamp(0.6, 1.0);
+        box_w *= k;
+        box_h *= k;
+        pitch *= k;
+        value_gap *= k;
+        label_size *= k;
+        value_size *= k;
+        value_w *= k;
+        block_w = box_w + value_gap + value_w;
+    }
+    let block_x = anchor_x(text_inset, block_w);
     let brand_w = (panel_w * (pct(env.params, "brandWidthPct", 28.7) as f32)) / 100.0;
     let brand_h = (card_h * (pct(env.params, "brandHeightPct", 17.8) as f32)) / 100.0;
     let brand_x = anchor_x(pct(env.params, "brandInsetPct", 36.8) as f32, brand_w);

@@ -19,16 +19,22 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let s = w.min(h);
     let cols = (pct(env.params, "swatchCols", 3.0) as f32).round().max(1.0) as i32;
     let rows = (pct(env.params, "swatchRows", 2.0) as f32).round().max(1.0) as i32;
-    // 面板尺寸：设计稿是「宽 89.2%、高 = 宽 × 0.444」的水晶条。
-    // 但横构图照片的画布很矮，如果照搬这个高度，面板会吃掉整张照片（盖住 70%），
-    // 所以高度再按画布高度封顶 32%，超出时同步收窄宽度，保持面板自身比例。
-    let mut panel_w = w * ((pct(env.params, "panelWidthPct", 89.2) as f32) / 100.0);
-    let mut panel_h = panel_w * 0.444;
-    let max_h = h * ((pct(env.params, "panelMaxHeightPct", 32.0) as f32) / 100.0);
-    if panel_h > max_h {
-        panel_h = max_h;
-        panel_w = panel_h / 0.444;
-    }
+    // 面板尺寸：设计稿是「宽 89.2%、高 29.7%（画布 3:4）」的通栏水晶条，换算成
+    // 面板自身比例就是 676:310（≈0.444）。两个百分比都参与换算，所以「面板高度」
+    // 滑杆不再是摆设；默认值算出来仍是 0.444，竖幅外观不变。
+    //
+    // 高度只在极端的宽画布上按画布高度封顶，且封顶后**宽度不动**：旧版把面板
+    // 收成 `panel_h / 0.444`，4:3 横图上面板从 89.2% 缩到 54%，通栏色卡变成
+    // 居中一小块（3:4 竖图不受影响，所以看着像「只有横图坏了」）。宽度保住之后
+    // 由下面的网格等比缩放兜底，六个色值始终在面板里。
+    let panel_w_pct = (pct(env.params, "panelWidthPct", 89.2) as f32).clamp(10.0, 100.0);
+    let panel_h_pct = (pct(env.params, "panelHeightPct", 29.7) as f32).clamp(4.0, 90.0);
+    // 设计画布是 3:4：把画布占比换算成面板自身的高宽比。
+    let panel_ratio = (panel_h_pct / panel_w_pct) * (4.0 / 3.0);
+    let panel_w = w * panel_w_pct / 100.0;
+    let natural_h = panel_w * panel_ratio;
+    let max_h = h * ((pct(env.params, "panelMaxHeightPct", 60.0) as f32) / 100.0);
+    let panel_h = natural_h.min(max_h);
     let panel_x = (w - panel_w) / 2.0;
     let panel_y = h - (s * ((pct(env.params, "panelBottomPct", 6.5) as f32) / 100.0)) - panel_h;
     let radius =
