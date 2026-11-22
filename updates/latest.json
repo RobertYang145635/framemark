@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc57",
-  "versionCode": 56,
+  "versionName": "0.9.0-rc58",
+  "versionCode": 57,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-22T17:10:00Z",
-  "notes": "边框库预览统一回山景样片：此前一半是旧批次的（山），一半是这几轮补的（随包荷花），同一屏两种照片。187 张全部按同一张山景样片重出，机型/参数行用随包 exif 的 Panasonic DC-S1 数据，色卡的十六进制码也按这张样片的取色重算。其余与 rc56 相同。",
+  "publishedAt": "2026-11-22T21:10:34Z",
+  "notes": "玻璃族的画幅适配：玻璃 05 的照片不再被竖幅卡窗裁掉、参数也不再压在照片上（4:3 / 3:4 / 1:1 / 16:9 都是照片从 45.9% 开始、留白 5.65%，画布比例随照片）；玻璃色卡在横图上也保持 89.2% 通栏，六个色值不会跑出面板；液态玻璃的底部胶囊在竖图下保持 7.2:1，不再显厚、字也不再缩小。另修好了玻璃卡片竖图下 1/400 压照片。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc57/FrameMark-0.9.0-rc57-arm64.apk",
-      "sha256": "abfe7caf2504256f0f76afcd2796be2aea8d4d42920f70251685edc7c4d52cce",
-      "size": 145972748
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc58/FrameMark-0.9.0-rc58-arm64.apk",
+      "sha256": "a8d258f128269f577811029ebdf9fdf89dcdad2df0965f891a860a85989e7f05",
+      "size": 145972312
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc57/FrameMark-0.9.0-rc57-win64.msi",
-      "sha256": "4271f53847873043acf3c7004e6705f44d7cd3d3ce052616a410c71ba916d0bb",
-      "size": 249496212
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc58/FrameMark-0.9.0-rc58-win64.msi",
+      "sha256": "6b3cc079d06ca8e20c7d4b19aafbd03fd9eba32ee44c78d2bf2506c209319d65",
+      "size": 249664148
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc57"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc58"
 }
