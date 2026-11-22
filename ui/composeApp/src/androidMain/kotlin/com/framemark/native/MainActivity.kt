@@ -3,6 +3,8 @@ package com.framemark.native
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.ColorDrawable
+import android.app.ActivityManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -84,6 +86,24 @@ class MainActivity : ComponentActivity() {
         val callback: (Result<Boolean>) -> Unit,
     )
     private var pendingPresetWrite: PendingPresetWrite? = null
+
+    /**
+     * 启动系统选择器；设备上没有能处理该请求的组件时给出可操作的提示。
+     *
+     * `launch()` 在点击回调里同步抛 `ActivityNotFoundException`（例如被裁掉
+     * DocumentsUI 的 ROM），不捕获就是一次闪退。提示里写清楚改走哪条路。
+     */
+    private fun launchPicker(fallbackHint: String, action: () -> Unit) {
+        try {
+            action()
+        } catch (missing: ActivityNotFoundException) {
+            FmLog.warn("PICKER_UNAVAILABLE") { "action missing: ${missing.message}" }
+            Toast.makeText(this, fallbackHint, Toast.LENGTH_LONG).show()
+        } catch (denied: SecurityException) {
+            FmLog.warn("PICKER_DENIED") { "security: ${denied.message}" }
+            Toast.makeText(this, fallbackHint, Toast.LENGTH_LONG).show()
+        }
+    }
 
     private val pickPresetDocument = registerForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -431,6 +451,43 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * 解码需要转成 PNG 的导入件（HEIC / WebP / AVIF 等），并把「源位图 + 旋转后的
+     * 位图」控制在内存预算内。
+     *
+     * 旋转必须同时持有两张全尺寸位图，所以预算按 `memoryClass` 的一半估算：
+     * 预算内的最大像素数 = heap × 55% ÷ (4 字节 × 2 张)。超出时按二次幂降采样
+     * （Android 只接受 2 的幂），并写一行 `HEIF_IMPORT_DOWNSCALE` 说明降了多少。
+     * 读不到尺寸或解码失败时退回原来的整张解码，行为与旧版一致。
+     */
+    private fun decodeImportWithinBudget(file: File, orientation: Int): Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        val width = bounds.outWidth
+        val height = bounds.outHeight
+        if (width <= 0 || height <= 0) return BitmapFactory.decodeFile(file.absolutePath)
+        val heapMb = runCatching {
+            (getSystemService(ACTIVITY_SERVICE) as ActivityManager).memoryClass
+        }.getOrDefault(256)
+        val budgetPx = (heapMb.toLong() * 1024L * 1024L * 55L / 100L) / (4L * 2L)
+        var sample = 1
+        while (width.toLong() / sample * (height.toLong() / sample) > budgetPx && sample < 8) {
+            sample *= 2
+        }
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sample
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath, options) ?: return null
+        if (sample > 1) {
+            FmLog.info("HEIF_IMPORT_DOWNSCALE") {
+                "bounds=${width}x$height sample=$sample decoded=${bitmap.width}x${bitmap.height} " +
+                    "memoryClass=${heapMb}MB budgetPx=$budgetPx orientation=$orientation"
+            }
+        }
+        return bitmap
+    }
+
     /** Normalizes one source into a readable file; null means "undecodable, skip it". */
     private fun normalizeInto(dir: File, stamp: Long, index: Int, source: ImportSource): String? {
         val tmp = File(dir, ".import-$stamp-$index")
@@ -462,7 +519,10 @@ class MainActivity : ComponentActivity() {
                 val bytes = runCatching { tmp.readBytes() }.getOrNull()
                 val exif = bytes?.let { Heif.exifBlock(it) }
                 val hdr = bytes?.let { Heif.hdrInfo(it) }
-                val bitmap = BitmapFactory.decodeFile(tmp.absolutePath) ?: run {
+                // 先看尺寸再解码：8192×6144 的 HEIC 每张 ARGB 位图约 192 MB，
+                // 旋转期间同时存在两张（源 + 目标），128 MiB 堆的设备会被系统杀掉。
+                // 超出内存预算时按二次幂降采样解码，至少让导入能完成。
+                val bitmap = decodeImportWithinBudget(tmp, exif?.orientation ?: 1) ?: run {
                     tmp.delete()
                     return null
                 }
@@ -501,7 +561,7 @@ class MainActivity : ComponentActivity() {
             else -> {
                 // WebP/HEIC/etc: BitmapFactory can decode them but ignores EXIF
                 // orientation, so bake the rotation into the PNG.
-                val bitmap = BitmapFactory.decodeFile(tmp.absolutePath) ?: run {
+                val bitmap = decodeImportWithinBudget(tmp, ExifProbe.orientation(tmp)) ?: run {
                     tmp.delete()
                     return null
                 }
@@ -685,10 +745,14 @@ class MainActivity : ComponentActivity() {
         WorkflowEnv.photoPicker = {
             // PickVisualMedia.ImageOnly is the media *type*; the multi-select
             // contract is PickMultipleVisualMedia above (max MAX_PICK).
-            pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            launchPicker("这台设备没有可用的照片选择器，请改用首页的相册导入") {
+                pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
         }
         WorkflowEnv.multiPhotoPicker = {
-            pickDocuments.launch(arrayOf("image/*", "image/tiff"))
+            launchPicker("这台设备没有可用的文件选择器，请改用首页的相册导入") {
+                pickDocuments.launch(arrayOf("image/*", "image/tiff"))
+            }
         }
         // 自建相册选完把 content:// 地址交回这里：走与系统选择器完全相同的导入链。
         WorkflowEnv.uriImporter = import@ { uris ->
@@ -701,15 +765,23 @@ class MainActivity : ComponentActivity() {
             }.start()
         }
         WorkflowEnv.watermarkPicker = {
-            pickWatermark.launch(arrayOf("image/*"))
+            launchPicker("这台设备没有可用的文件选择器，暂时无法导入这个文件") {
+                pickWatermark.launch(arrayOf("image/*"))
+            }
         }
         WorkflowEnv.presetDocumentPicker = { callback ->
             pendingPresetRead = callback
-            pickPresetDocument.launch(arrayOf("application/json", "text/*", "application/octet-stream"))
+            launchPicker("这台设备没有可用的文件选择器，暂时无法打开预设") {
+                pendingPresetRead = null
+                pickPresetDocument.launch(arrayOf("application/json", "text/*", "application/octet-stream"))
+            }
         }
         WorkflowEnv.presetDocumentWriter = { suggestedName, json, callback ->
             pendingPresetWrite = PendingPresetWrite(json, callback)
-            createPresetDocument.launch(suggestedName)
+            launchPicker("这台设备没有可用的文件选择器，暂时无法保存预设") {
+                pendingPresetWrite = null
+                createPresetDocument.launch(suggestedName)
+            }
         }
         // Evidence-only launch hooks are available in isolated debug QA builds only.
         // The launcher stays exported for normal Android entry, but release builds

@@ -47,11 +47,13 @@ object UltraHdrAssembler {
         // the SDR input, or a re-wrap of an export) would end up with two MPF
         // indexes and two XMP packets, and a decoder reads whichever comes first —
         // pointing at the previous gain map. Strip ours before inserting.
-        var base = stripHdrMetadata(sdrJpeg) ?: return null
-        val iccSegments = icc?.takeIf { it.isNotEmpty() }?.let { profile ->
-            stripIcc(base)?.also { base = it }
-            iccSegments(profile) ?: return null
-        } ?: emptyList()
+        //
+        // 这里**不再**先复制一份 base：旧实现把整张 JPEG 逐字节放进
+        // `ArrayList<Byte>`（每字节一个装箱对象），36.9 MB 的主图在 128 MiB 堆上直接
+        // OOM。现在只扫一遍段结构、记下丢弃区间与插入点，最后按段写进输出缓冲区。
+        val dropIcc = icc != null && icc.isNotEmpty()
+        val layout = layout(sdrJpeg, dropIcc) ?: return null
+        val iccSegments = if (dropIcc) iccSegments(icc) ?: return null else emptyList()
         val iccSize = iccSegments.sumOf { it.size }
 
         // Gain map first: its final length goes into both the primary's GContainer
@@ -72,11 +74,12 @@ object UltraHdrAssembler {
         // breaks the apparent circularity between "where does the gain map start"
         // and "how long is the primary (which contains the answer)".
         val mpfSize = 2 + 2 + 4 + TIFF_SIZE
-        val insertAt = insertPoint(base)
-        val primarySize = base.size + iccSize + primaryXmp.size + mpfSize + primaryIso.size
+        val insertAt = layout.insertAt
+        val primarySize = layout.keptSize + iccSize + primaryXmp.size + mpfSize + primaryIso.size
         val gainMapOffset = primarySize
         // marker(2) + length(2) + "MPF\0"(4) before the TIFF header.
-        val tiffStart = insertAt + iccSize + primaryXmp.size + 8
+        // 输出坐标：插入点之前若有被丢弃的段（换 ICC 时就是旧配置），长度要减掉。
+        val tiffStart = layout.keptBeforeInsert + iccSize + primaryXmp.size + 8
         val mpf = app2(
             "MPF".encodeToByteArray() + byteArrayOf(0) +
                 tiff(primarySize, gainMapOffset - tiffStart, gainMapSize),
@@ -84,13 +87,32 @@ object UltraHdrAssembler {
 
         val out = ByteArray(primarySize + gainMapSize)
         var at = 0
-        base.copyInto(out, at, 0, insertAt)
-        at += insertAt
+        var cursor = 0
+        // 头部（插入点之前）逐段复制，跳过那里的丢弃段（ICC / MPF / 旧 XMP）。
+        for (range in layout.drops) {
+            if (range.first >= insertAt) break
+            sdrJpeg.copyInto(out, at, cursor, range.first)
+            at += range.first - cursor
+            cursor = range.last + 1
+        }
+        sdrJpeg.copyInto(out, at, cursor, insertAt)
+        at += insertAt - cursor
+        cursor = insertAt
         iccSegments.forEach { segment -> segment.copyInto(out, at); at += segment.size }
         primaryXmp.copyInto(out, at); at += primaryXmp.size
         mpf.copyInto(out, at); at += mpf.size
         primaryIso.copyInto(out, at); at += primaryIso.size
-        base.copyInto(out, at, insertAt, base.size); at += base.size - insertAt
+        // 插入点之后：同样跳过要丢的段，其余原样搬过去。
+        for (range in layout.drops) {
+            if (range.last <= insertAt) continue
+            sdrJpeg.copyInto(out, at, cursor, range.first)
+            at += range.first - cursor
+            cursor = range.last + 1
+        }
+        sdrJpeg.copyInto(out, at, cursor, sdrJpeg.size)
+        at += sdrJpeg.size - cursor
+        // 主图的长度必须与写进 MPF/GContainer 的数字完全一致，否则不交付。
+        if (at != primarySize) return null
         // The gain map keeps its own SOI, then our metadata, then its encoded body.
         gainMapJpeg.copyInto(out, at, 0, 2); at += 2
         gainXmp.copyInto(out, at); at += gainXmp.size
@@ -232,69 +254,43 @@ object UltraHdrAssembler {
         return out
     }
 
-    /** The base without any ICC frame; the stored profile is the engine's sRGB one. */
-    private fun stripIcc(jpeg: ByteArray): ByteArray? {
-        if (!isJpeg(jpeg)) return null
-        val out = ArrayList<Byte>(jpeg.size)
-        out.add(jpeg[0])
-        out.add(jpeg[1])
-        var i = 2
-        while (i + 1 < jpeg.size) {
-            if (u8(jpeg, i) != 0xFF) {
-                for (k in i until jpeg.size) out.add(jpeg[k])
-                return out.toByteArray()
-            }
-            val marker = u8(jpeg, i + 1)
-            if (marker == 0xD8 || marker == 0xD9 || marker == 0xDA) {
-                for (k in i until jpeg.size) out.add(jpeg[k])
-                return out.toByteArray()
-            }
-            if (marker == 0x01 || marker in 0xD0..0xD7) {
-                out.add(jpeg[i]); out.add(jpeg[i + 1]); i += 2; continue
-            }
-            if (i + 3 >= jpeg.size) return null
-            val length = (u8(jpeg, i + 2) shl 8) or u8(jpeg, i + 3)
-            if (length < 2 || i + 2 + length > jpeg.size) return null
-            val payloadStart = i + 4
-            val payloadEnd = i + 2 + length
-            var isIcc = false
-            if (marker == 0xE2 && payloadStart + ICC_PREFIX.size <= payloadEnd) {
-                isIcc = true
-                for (k in ICC_PREFIX.indices) {
-                    if (jpeg[payloadStart + k] != ICC_PREFIX[k]) { isIcc = false; break }
-                }
-            }
-            if (!isIcc) for (k in i until payloadEnd) out.add(jpeg[k])
-            i = payloadEnd
-        }
-        return out.toByteArray()
-    }
+    /** 一次段扫描的结果，坐标都是**源 JPEG** 的字节偏移。 */
+    private class Layout(
+        /** 元数据插入点：所有保留的 APP/COM 段之后、第一个非 APP 段之前。 */
+        val insertAt: Int,
+        /** 要丢弃的整段区间（旧 MPF / ISO / 描述增益图的 XMP，替换时还有 ICC）。 */
+        val drops: List<IntRange>,
+        /** 去掉丢弃段之后主图的长度。 */
+        val keptSize: Int,
+        /** 插入点在输出里的偏移 = 源偏移减去它前面被丢弃的字节数。 */
+        val keptBeforeInsert: Int,
+    )
 
     /**
-     * The base without any Ultra HDR metadata it may already carry: an existing MPF
-     * index, our ISO 21496-1 declaration, and an XMP packet that describes a gain
-     * map. An unrelated XMP packet (camera description) is left alone.
+     * 走一遍 JPEG 的段结构，只记区间不做复制。
+     *
+     * [dropIcc] 为 true 时把现有的 ICC 段也列为丢弃（调用方会写进自己的配置）。
+     * 不改变任何字节的语义：与旧 `stripIcc` / `stripHdrMetadata` 的判定条件一致。
      */
-    private fun stripHdrMetadata(jpeg: ByteArray): ByteArray? {
+    private fun layout(jpeg: ByteArray, dropIcc: Boolean): Layout? {
         if (!isJpeg(jpeg)) return null
-        val out = ArrayList<Byte>(jpeg.size)
-        out.add(jpeg[0])
-        out.add(jpeg[1])
+        val drops = ArrayList<IntRange>()
+        var kept = jpeg.size
+        var insertAt = -1
         var i = 2
         while (i + 1 < jpeg.size) {
             if (u8(jpeg, i) != 0xFF) {
-                // Entropy-coded data or something unexpected: keep the rest verbatim.
-                for (k in i until jpeg.size) out.add(jpeg[k])
-                return out.toByteArray()
+                if (insertAt < 0) insertAt = i
+                break
             }
             val marker = u8(jpeg, i + 1)
-            if (marker == 0xD8 || marker == 0xD9 || marker == 0xDA) {
-                for (k in i until jpeg.size) out.add(jpeg[k])
-                return out.toByteArray()
+            val isApp = marker in 0xE0..0xEF || marker == 0xFE
+            if (insertAt < 0 && !isApp) insertAt = i
+            if (marker == 0xD8 || marker == 0x01 || marker in 0xD0..0xD7) {
+                i += 2
+                continue
             }
-            if (marker == 0x01 || marker in 0xD0..0xD7) {
-                out.add(jpeg[i]); out.add(jpeg[i + 1]); i += 2; continue
-            }
+            if (marker == 0xD9 || marker == 0xDA) break
             if (i + 3 >= jpeg.size) return null
             val length = (u8(jpeg, i + 2) shl 8) or u8(jpeg, i + 3)
             if (length < 2 || i + 2 + length > jpeg.size) return null
@@ -302,14 +298,23 @@ object UltraHdrAssembler {
             val to = i + 2 + length
             val drop = when (marker) {
                 0xE2 -> startsWith(jpeg, from, to, "MPF") ||
-                    startsWith(jpeg, from, to, UltraHdr.ISO_URN)
+                    startsWith(jpeg, from, to, UltraHdr.ISO_URN) ||
+                    (dropIcc && startsWith(jpeg, from, to, "ICC_PROFILE"))
                 0xE1 -> startsWith(jpeg, from, to, XMP_PREFIX) && describesGainMap(jpeg, from, to)
                 else -> false
             }
-            if (!drop) for (k in i until i + 2 + length) out.add(jpeg[k])
+            if (drop) {
+                drops += i until i + 2 + length
+                kept -= 2 + length
+            }
             i += 2 + length
         }
-        return out.toByteArray()
+        if (insertAt < 0) insertAt = i.coerceAtMost(jpeg.size)
+        val sorted = drops.sortedBy { it.first }
+        val droppedBefore = sorted
+            .filter { it.first < insertAt }
+            .sumOf { it.last - it.first + 1 }
+        return Layout(insertAt, sorted, kept, insertAt - droppedBefore)
     }
 
     private fun startsWith(b: ByteArray, from: Int, to: Int, prefix: String): Boolean {

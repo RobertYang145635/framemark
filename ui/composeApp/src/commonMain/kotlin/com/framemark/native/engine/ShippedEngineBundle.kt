@@ -30,20 +30,33 @@ internal object ShippedEngineBundle {
     const val MANIFEST_ENTRY = "manifest.json"
 
     /**
-     * Identity of a bundle manifest: `<schema> generatedAt=<generatedAt> styles=<count>`.
+     * 随包 zip 在 APK 中央目录里的指纹：**未压缩大小 + CRC32**，不读数据。
      *
-     * Both inputs come from the document itself, so an identical bundle is always identical
-     * here and never triggers a second unpack. Null when [manifestJson] is not a bundle
+     * 只靠 manifest 的 `generatedAt`/样式数做身份是不够的：数据侧改动（设计文档、
+     * 变体、槽位表）不会动这两个字段。2026-11 的 rc54→rc55 就是这么踩的——解包身份
+     * 一字不差，升级安装直接复用了旧解包，编辑器还画双行的「经典单行」，而缩略图
+     * （APK 资源）已经换成新的。
+     */
+    data class BundleStamp(val size: Long, val crc: Long)
+
+    /**
+     * Identity of a bundle manifest: `<schema> generatedAt=<generatedAt> styles=<count>`,
+     * 加上 zip 自身的 [stamp]（拿不到时写 `crc=- size=-`）。
+     *
+     * 同 manifest 同内容的 zip 必定同身份，绝不触发第二次解包；任何内容变化都会改变
+     * CRC32，因此升级安装一定重解一次。Null when [manifestJson] is not a bundle
      * manifest (unreadable, truncated or wrong document) — callers must not treat that as
      * "the bundle changed", only as "unknown".
      */
-    fun identityOf(manifestJson: String): String? {
+    fun identityOf(manifestJson: String, stamp: BundleStamp? = null): String? {
         val doc = runCatching { Json.parse(manifestJson).jsonMap() }.getOrNull() ?: return null
         val schema = doc.jsonString("schema")?.takeIf { it.isNotBlank() } ?: return null
         val generatedAt = doc.jsonString("generatedAt")?.takeIf { it.isNotBlank() } ?: return null
         val styles = doc["styles"].jsonList().size
         if (styles == 0) return null
-        return "$schema generatedAt=$generatedAt styles=$styles"
+        val crc = stamp?.crc?.toString(16) ?: "-"
+        val size = stamp?.size?.toString() ?: "-"
+        return "$schema generatedAt=$generatedAt styles=$styles crc=$crc size=$size"
     }
 
     /**

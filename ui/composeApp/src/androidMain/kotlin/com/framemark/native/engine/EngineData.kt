@@ -35,6 +35,9 @@ object EngineData {
     /** Identity cache (`<apk metadata>\n<identity>`) so the bundle is not re-read every launch. */
     private const val IDENTITY_CACHE = DIR + ".shipped"
 
+    /** 解包目录里的身份标记（含随包 zip 的 CRC/大小），与 [IDENTITY_CACHE] 不是一回事。 */
+    private const val IDENTITY_MARKER = ".fm-bundle-identity"
+
     /** Upper bound for the scan that looks for the zip's `manifest.json`. */
     private const val MAX_SCAN_BYTES = 256L * 1024 * 1024
 
@@ -153,6 +156,9 @@ object EngineData {
         val staged = runCatching {
             staging.mkdirs()
             extract(context, staging)
+            // 把「这次解的是哪一个 zip」写进解包目录：身份里含 zip 的 CRC/大小，
+            // 下次启动才能判断磁盘上的数据是不是同一份。
+            expected?.let { File(staging, IDENTITY_MARKER).writeText(it) }
             extractionIdentity(staging)?.takeIf { bundleComplete(staging) }
         }.getOrElse { error ->
             FmLog.info("FM_ANDROID_ENGINE_DATA") { "bundle extract failed: ${error.message}" }
@@ -213,7 +219,16 @@ object EngineData {
     }
 
     /** Identity of the extraction on disk; null when it has no readable manifest. */
+    /**
+     * 解包目录的身份：优先读解包时写进去的标记（含随包 zip 的 CRC/大小），
+     * 老解包没有标记时退回 manifest 身份 —— 那一定和带 CRC 的随包身份不同，
+     * 于是升级安装会重解一次，而不是继续用旧数据。
+     */
     private fun extractionIdentity(root: File): String? {
+        val marker = File(root, IDENTITY_MARKER)
+        if (marker.isFile) {
+            return runCatching { marker.readText().trim() }.getOrNull()?.takeIf { it.isNotBlank() }
+        }
         val manifest = File(root, ShippedEngineBundle.MANIFEST_ENTRY)
         if (!manifest.isFile) return null
         return runCatching { ShippedEngineBundle.identityOf(manifest.readText()) }.getOrNull()
@@ -257,17 +272,32 @@ object EngineData {
     }
 
     private fun scanShippedIdentity(context: Context): String? = runCatching {
+        val stamp = bundleStamp(context)
         context.assets.open(ASSET_ZIP).use { raw ->
-            ZipInputStream(raw.buffered()).use { zip -> readManifestEntry(zip) }
+            ZipInputStream(raw.buffered()).use { zip -> readManifestEntry(zip, stamp) }
         }
     }.getOrNull()
 
-    private fun readManifestEntry(zip: ZipInputStream): String? {
+    /**
+     * 随包 zip 在 APK 中央目录里的 `size + CRC32`：只读目录，不解压 70 MB。
+     * 拿不到（APK 结构异常）时返回 null，身份退化成 `crc=- size=-`。
+     */
+    private fun bundleStamp(context: Context): ShippedEngineBundle.BundleStamp? = runCatching {
+        java.util.zip.ZipFile(File(context.applicationInfo.sourceDir)).use { apk ->
+            val entry = apk.getEntry(ASSET_ZIP) ?: return@use null
+            ShippedEngineBundle.BundleStamp(size = entry.size, crc = entry.crc)
+        }
+    }.getOrNull()
+
+    private fun readManifestEntry(
+        zip: ZipInputStream,
+        stamp: ShippedEngineBundle.BundleStamp?,
+    ): String? {
         var scanned = 0L
         while (scanned <= MAX_SCAN_BYTES) {
             val entry = zip.nextEntry ?: return null
             if (entry.name == ShippedEngineBundle.MANIFEST_ENTRY) {
-                return ShippedEngineBundle.identityOf(zip.readBytes().decodeToString())
+                return ShippedEngineBundle.identityOf(zip.readBytes().decodeToString(), stamp)
             }
             scanned += entry.size.coerceAtLeast(0L)
             zip.closeEntry()

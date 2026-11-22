@@ -132,19 +132,34 @@ class ShippedEngineCoverageTest {
     }
 
     @Test
-    fun shipped_identity_is_derived_from_the_bundle_manifest() {
+    fun shipped_identity_covers_the_bundle_bytes_not_only_the_manifest() {
+        // 2026-11 rc54→rc55：manifest 的 generatedAt/样式数没变，只有 designs、variants、
+        // text-slots 变了。旧身份只看 manifest，升级安装被判成"同一个包"而继续用旧数据，
+        // 编辑器还画双行的「经典单行」。身份现在带随包 zip 的 CRC32 + 大小。
+        val stamp = ShippedEngineBundle.BundleStamp(size = 73_303_245L, crc = 0x1a2b3c4dL)
         val identity = assertNotNull(
-            ShippedEngineBundle.identityOf(manifestText),
+            ShippedEngineBundle.identityOf(manifestText, stamp),
             "随包 manifest.json 读不出身份：schema/generatedAt/styles 缺失",
         )
         assertEquals(
             "${manifest.jsonString("schema")} generatedAt=${manifest.jsonString("generatedAt")} " +
-                "styles=${shippedStyles.size}",
+                "styles=${shippedStyles.size} crc=1a2b3c4d size=73303245",
             identity,
-            "身份必须完全由 manifest 本身决定",
+            "身份必须由 manifest 与 zip 自身的内容指纹共同决定",
         )
-        // 同一份 manifest 永远得到同一串：这就是「没换包就不重解」的前提。
-        assertEquals(identity, ShippedEngineBundle.identityOf(manifestText))
+        // 同一份 manifest + 同一个 zip 永远得到同一串：这就是「没换包就不重解」的前提。
+        assertEquals(identity, ShippedEngineBundle.identityOf(manifestText, stamp))
+        // 内容变了（CRC 变）身份就必须变，哪怕 manifest 一字不动。
+        val changed = assertNotNull(
+            ShippedEngineBundle.identityOf(manifestText, stamp.copy(crc = 0x99999999L)),
+        )
+        assertNotEquals(identity, changed, "数据变了但身份不变，升级会复用旧解包")
+        // 读不到 zip 指纹时退化成占位符，仍然是稳定的字符串。
+        assertEquals(
+            "${manifest.jsonString("schema")} generatedAt=${manifest.jsonString("generatedAt")} " +
+                "styles=${shippedStyles.size} crc=- size=-",
+            ShippedEngineBundle.identityOf(manifestText),
+        )
 
         assertNull(ShippedEngineBundle.identityOf("not a manifest"))
         assertNull(ShippedEngineBundle.identityOf("{}"))

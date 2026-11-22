@@ -145,7 +145,79 @@ class UltraHdrTest {
         assertEquals(icc.toList(), UltraHdr.iccProfile(out)?.toList(), "source ICC must be copied")
     }
 
+    /**
+     * 2026-11 审查：36.9 MB 主图在 128 MiB 堆上 OOM —— 封装器把整张 JPEG 逐字节塞进
+     * `ArrayList<Byte>`（每字节一个装箱对象）。现在只扫段结构，再按段复制进输出缓冲区。
+     * 这条用例用一张多兆的主图走同一条路径，确认输出仍然正确。
+     */
+    @Test
+    fun a_large_primary_is_copied_segment_by_segment() {
+        val metadata = UltraHdr.Metadata(xmp = OPPO_GAIN_MAP_XMP, isoPayload = null)
+        val com = comSegment(0xFFFF - 2)
+        val sos = byteArrayOf(0xFF.toByte(), 0xDA.toByte(), 0x00, 0x08, 1, 1, 0, 0, 0x3F, 0x00)
+        val entropy = ByteArray(4 * 1024 * 1024) { (it * 31).toByte() }
+        val sdr = ByteArray(2 + 64 * com.size + sos.size + entropy.size + 2).also { out ->
+            out[0] = 0xFF.toByte(); out[1] = 0xD8.toByte()
+            var at = 2
+            repeat(64) { com.copyInto(out, at); at += com.size }
+            sos.copyInto(out, at); at += sos.size
+            entropy.copyInto(out, at); at += entropy.size
+            out[at] = 0xFF.toByte(); out[at + 1] = 0xD9.toByte()
+        }
+        assertTrue(sdr.size > 8 * 1024 * 1024, "构造出来的主图要够大")
+
+        val out = assertNotNull(UltraHdrAssembler.assemble(sdr, jpeg(emptyList()), metadata), "大图也必须能封装")
+        val located = assertNotNull(UltraHdr.locate(out))
+        assertEquals(out.size.toLong(), located.offset + located.size, "增益图必须落在文件尾")
+        // 熵数据原样保留：大图没有被截断。
+        val at = indexOfRange(out, entropy)
+        assertTrue(at > 0, "主图的熵数据必须完整复制")
+        assertTrue(entropy.contentEquals(out.copyOfRange(at, at + entropy.size)), "熵数据必须原样保留")
+    }
+
+    /**
+     * 源文件自带 ICC 时换用新配置：旧 ICC 段必须被丢弃，不能出现两份配置
+     * （两份会让解码器取到哪一个不确定）。
+     */
+    @Test
+    fun replacing_the_icc_profile_never_leaves_two_profiles_behind() {
+        val oldIcc = byteArrayOf(0x00, 0x01, 0x02, 0x03, 0x04)
+        val newIcc = byteArrayOf(0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16)
+        val metadata = UltraHdr.Metadata(xmp = OPPO_GAIN_MAP_XMP, isoPayload = null)
+        val sdr = jpeg(listOf(iccSegment(oldIcc)))
+        val out = assertNotNull(
+            UltraHdrAssembler.assemble(sdr, jpeg(emptyList()), metadata, newIcc),
+        )
+        assertEquals(newIcc.toList(), UltraHdr.iccProfile(out)?.toList(), "只有新配置")
+    }
+
     // ------------------------------------------------------------------ builders
+
+    /** `FFFE` + [size] bytes of 0x5A — a valid COM segment of a chosen size. */
+    private fun comSegment(size: Int): ByteArray {
+        val payload = ByteArray(size) { 0x5A }
+        val length = size + 2
+        return ByteArray(4 + size).also {
+            it[0] = 0xFF.toByte(); it[1] = 0xFE.toByte()
+            it[2] = (length ushr 8).toByte(); it[3] = length.toByte()
+            payload.copyInto(it, 4)
+        }
+    }
+
+    /** First index where [needle] appears in [haystack], or -1. */
+    private fun indexOfRange(haystack: ByteArray, needle: ByteArray): Int {
+        if (needle.isEmpty() || haystack.size < needle.size) return -1
+        var i = 0
+        while (i <= haystack.size - needle.size) {
+            var hit = true
+            for (k in needle.indices) {
+                if (haystack[i + k] != needle[k]) { hit = false; break }
+            }
+            if (hit) return i
+            i++
+        }
+        return -1
+    }
 
     /** APP2 ICC chunk with the standard `ICC_PROFILE\0` + sequence/count header. */
     private fun iccSegment(profile: ByteArray): ByteArray {
