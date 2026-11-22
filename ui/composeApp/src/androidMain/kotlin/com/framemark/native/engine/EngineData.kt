@@ -158,7 +158,18 @@ object EngineData {
             extract(context, staging)
             // 把「这次解的是哪一个 zip」写进解包目录：身份里含 zip 的 CRC/大小，
             // 下次启动才能判断磁盘上的数据是不是同一份。
-            expected?.let { File(staging, IDENTITY_MARKER).writeText(it) }
+            //
+            // 首次安装时 [expected] 是 null（完整解包之前不扫 zip），这时用刚解出的
+            // manifest + 当前 zip 指纹现算一次，否则下次启动会判成"身份不符"再解一遍。
+            val marker = expected ?: run {
+                val manifestFile = File(staging, ShippedEngineBundle.MANIFEST_ENTRY)
+                if (manifestFile.isFile) {
+                    ShippedEngineBundle.identityOf(manifestFile.readText(), bundleStamp(context))
+                } else {
+                    null
+                }
+            }
+            marker?.let { File(staging, IDENTITY_MARKER).writeText(it) }
             extractionIdentity(staging)?.takeIf { bundleComplete(staging) }
         }.getOrElse { error ->
             FmLog.info("FM_ANDROID_ENGINE_DATA") { "bundle extract failed: ${error.message}" }
