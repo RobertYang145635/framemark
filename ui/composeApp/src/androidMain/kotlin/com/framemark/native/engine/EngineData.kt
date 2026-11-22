@@ -164,7 +164,11 @@ object EngineData {
             val marker = expected ?: run {
                 val manifestFile = File(staging, ShippedEngineBundle.MANIFEST_ENTRY)
                 if (manifestFile.isFile) {
-                    ShippedEngineBundle.identityOf(manifestFile.readText(), bundleStamp(context))
+                    ShippedEngineBundle.identityOf(
+                        manifestFile.readText(),
+                        bundleStamp(context),
+                        com.framemark.native.appVersionLabel(),
+                    )
                 } else {
                     null
                 }
@@ -295,7 +299,8 @@ object EngineData {
      */
     private fun bundleStamp(context: Context): ShippedEngineBundle.BundleStamp? = runCatching {
         java.util.zip.ZipFile(File(context.applicationInfo.sourceDir)).use { apk ->
-            val entry = apk.getEntry(ASSET_ZIP) ?: return@use null
+            // APK 里资源条目带 `assets/` 前缀；不走 assets.open 的路径规则。
+            val entry = apk.getEntry("assets/" + ASSET_ZIP) ?: return@use null
             ShippedEngineBundle.BundleStamp(size = entry.size, crc = entry.crc)
         }
     }.getOrNull()
@@ -308,7 +313,11 @@ object EngineData {
         while (scanned <= MAX_SCAN_BYTES) {
             val entry = zip.nextEntry ?: return null
             if (entry.name == ShippedEngineBundle.MANIFEST_ENTRY) {
-                return ShippedEngineBundle.identityOf(zip.readBytes().decodeToString(), stamp)
+                return ShippedEngineBundle.identityOf(
+                    zip.readBytes().decodeToString(),
+                    stamp,
+                    com.framemark.native.appVersionLabel(),
+                )
             }
             scanned += entry.size.coerceAtLeast(0L)
             zip.closeEntry()

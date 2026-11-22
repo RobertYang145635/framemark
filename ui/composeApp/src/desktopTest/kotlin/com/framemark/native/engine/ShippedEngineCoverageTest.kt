@@ -143,7 +143,7 @@ class ShippedEngineCoverageTest {
         )
         assertEquals(
             "${manifest.jsonString("schema")} generatedAt=${manifest.jsonString("generatedAt")} " +
-                "styles=${shippedStyles.size} crc=1a2b3c4d size=73303245",
+                "styles=${shippedStyles.size} crc=1a2b3c4d size=73303245 build=-",
             identity,
             "身份必须由 manifest 与 zip 自身的内容指纹共同决定",
         )
@@ -154,10 +154,16 @@ class ShippedEngineCoverageTest {
             ShippedEngineBundle.identityOf(manifestText, stamp.copy(crc = 0x99999999L)),
         )
         assertNotEquals(identity, changed, "数据变了但身份不变，升级会复用旧解包")
+        // 读不到 zip 指纹时，构建标签兜底：每次发版身份都变，至少重解一次。
+        assertNotEquals(
+            ShippedEngineBundle.identityOf(manifestText, stamp, "0.9.0-rc56"),
+            ShippedEngineBundle.identityOf(manifestText, stamp, "0.9.0-rc57"),
+            "构建标签变了，身份必须跟着变",
+        )
         // 读不到 zip 指纹时退化成占位符，仍然是稳定的字符串。
         assertEquals(
             "${manifest.jsonString("schema")} generatedAt=${manifest.jsonString("generatedAt")} " +
-                "styles=${shippedStyles.size} crc=- size=-",
+                "styles=${shippedStyles.size} crc=- size=- build=-",
             ShippedEngineBundle.identityOf(manifestText),
         )
 

@@ -48,7 +48,15 @@ internal object ShippedEngineBundle {
      * manifest (unreadable, truncated or wrong document) — callers must not treat that as
      * "the bundle changed", only as "unknown".
      */
-    fun identityOf(manifestJson: String, stamp: BundleStamp? = null): String? {
+    fun identityOf(
+        manifestJson: String,
+        stamp: BundleStamp? = null,
+        /**
+         * 应用构建标签（`0.9.0-rc56`）。zip 指纹读不到时的兜底：每次发版至少重解一次，
+         * 不会是"数据变了、身份没变"的老问题。
+         */
+        buildLabel: String? = null,
+    ): String? {
         val doc = runCatching { Json.parse(manifestJson).jsonMap() }.getOrNull() ?: return null
         val schema = doc.jsonString("schema")?.takeIf { it.isNotBlank() } ?: return null
         val generatedAt = doc.jsonString("generatedAt")?.takeIf { it.isNotBlank() } ?: return null
@@ -56,7 +64,8 @@ internal object ShippedEngineBundle {
         if (styles == 0) return null
         val crc = stamp?.crc?.toString(16) ?: "-"
         val size = stamp?.size?.toString() ?: "-"
-        return "$schema generatedAt=$generatedAt styles=$styles crc=$crc size=$size"
+        val build = buildLabel?.trim()?.takeIf { it.isNotEmpty() } ?: "-"
+        return "$schema generatedAt=$generatedAt styles=$styles crc=$crc size=$size build=$build"
     }
 
     /**
