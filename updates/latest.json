@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc56",
-  "versionCode": 55,
+  "versionName": "0.9.0-rc57",
+  "versionCode": 56,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-22T14:40:00Z",
-  "notes": "升级安装不再复用旧解包：解包身份改为随包 zip 的 CRC/大小 + 构建标签，rc54→rc56 这种「manifest 没变、数据变了」的升级会重解一次——此前升级后编辑器还画旧版「经典单行」（缩略图已是新版），原因就在这里。Ultra HDR 封装不再把整张 JPEG 逐字节装箱（36.9 MB 主图在 128 MiB 堆上 OOM），改成分段复制，并修掉换 ICC 时偏移算错的问题。大幅 HEIC/WebP 导入先查尺寸、按内存预算降采样再解码，不再同时持有两张全尺寸位图。系统选择器缺失时给出可操作提示，不再闪退。双端一致性已实测：同一张 12288×17748 的 200MP 照片 + 经典单行，手机导出 12288×19112，桌面引擎 source_canvas 也是 12288×19112；桌面预览与手机成片缩放后平均像素差 2/255，页脚文字、字标、位置一致。",
+  "publishedAt": "2026-11-22T17:10:00Z",
+  "notes": "边框库预览统一回山景样片：此前一半是旧批次的（山），一半是这几轮补的（随包荷花），同一屏两种照片。187 张全部按同一张山景样片重出，机型/参数行用随包 exif 的 Panasonic DC-S1 数据，色卡的十六进制码也按这张样片的取色重算。其余与 rc56 相同。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc56/FrameMark-0.9.0-rc56-arm64.apk",
-      "sha256": "d705254c1672af1acc27e9fa06bf698842602d089b3630629db871bdd440bb10",
-      "size": 145626120
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc57/FrameMark-0.9.0-rc57-arm64.apk",
+      "sha256": "abfe7caf2504256f0f76afcd2796be2aea8d4d42920f70251685edc7c4d52cce",
+      "size": 145972748
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc56/FrameMark-0.9.0-rc56-win64.msi",
-      "sha256": "61843bd16ebbfeb984cea7a8dfa8ebf9e75cfc2eb02d7f762611ecbb531720f7",
-      "size": 249205396
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc57/FrameMark-0.9.0-rc57-win64.msi",
+      "sha256": "4271f53847873043acf3c7004e6705f44d7cd3d3ce052616a410c71ba916d0bb",
+      "size": 249496212
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc56"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc57"
 }
