@@ -1,21 +1,21 @@
 {
-  "versionName": "0.9.0-rc58",
-  "versionCode": 57,
+  "versionName": "0.9.0-rc59",
+  "versionCode": 58,
   "channel": "rc",
   "minSupportedVersionCode": 0,
-  "publishedAt": "2026-11-22T21:10:34Z",
-  "notes": "玻璃族的画幅适配：玻璃 05 的照片不再被竖幅卡窗裁掉、参数也不再压在照片上（4:3 / 3:4 / 1:1 / 16:9 都是照片从 45.9% 开始、留白 5.65%，画布比例随照片）；玻璃色卡在横图上也保持 89.2% 通栏，六个色值不会跑出面板；液态玻璃的底部胶囊在竖图下保持 7.2:1，不再显厚、字也不再缩小。另修好了玻璃卡片竖图下 1/400 压照片。",
+  "publishedAt": "2026-11-23T19:57:49Z",
+  "notes": "OPPO Polaroid · PLD 现在按照片比例取对应的框图（竖图不再把 4:3 横版拉伸变形）；缺失 EXIF 的照片也能改边框文字了；缺值行的预填示例改为按「这一格本该写什么」逐格给（焦距 23mm、光圈 f/1.8、快门 1/125s、ISO 250），位置也不再偏。",
   "assets": {
     "android": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc58/FrameMark-0.9.0-rc58-arm64.apk",
-      "sha256": "a8d258f128269f577811029ebdf9fdf89dcdad2df0965f891a860a85989e7f05",
-      "size": 145972312
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc59/FrameMark-0.9.0-rc59-arm64.apk",
+      "sha256": "7c6859c8d695f4d915caed5114756e2af05e3c2848a03f2e97985d03587bc461",
+      "size": 147459564
     },
     "windows": {
-      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc58/FrameMark-0.9.0-rc58-win64.msi",
-      "sha256": "6b3cc079d06ca8e20c7d4b19aafbd03fd9eba32ee44c78d2bf2506c209319d65",
-      "size": 249664148
+      "url": "https://github.com/RobertYang145635/framemark/releases/download/v0.9.0-rc59/FrameMark-0.9.0-rc59-win64.msi",
+      "sha256": "545711141772add2f12cba0547c02b92430ec297611f2f3d2ccd98c00ce318db",
+      "size": 251126532
     }
   },
-  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc58"
+  "releasePage": "https://github.com/RobertYang145635/framemark/releases/tag/v0.9.0-rc59"
 }
