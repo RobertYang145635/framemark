@@ -16,6 +16,34 @@ import kotlinx.coroutines.withContext
  *
  * 只读、只在编辑器里用：不写工程、不进导出。
  */
+/**
+ * 把探针渲染出来的矩形换算到**舞台预览**的像素空间。
+ *
+ * 探针那一次渲染的分辨率由 `maxEdge = min(画布长边, 1600)` 决定，而主预览的分辨率由
+ * 舞台决定，两者经常不同（例如主预览 2000 宽、探针封顶 1600 宽）。`TextSlot` 的坐标
+ * 是**各自渲染图**的像素，直接拿去按舞台尺寸映射，示例就会整体缩到左上、字也偏小
+ * ——真机上看着就是「占位位置偏了」。
+ */
+internal fun normaliseProbeSlots(
+    slots: List<TextSlot>,
+    probeWidth: Int,
+    targetWidth: Int,
+): List<TextSlot> {
+    if (probeWidth <= 0 || targetWidth <= 0 || probeWidth == targetWidth) return slots
+    val k = targetWidth.toDouble() / probeWidth
+    if (!k.isFinite() || k <= 0.0) return slots
+    return slots.map { slot ->
+        slot.copy(
+            x = slot.x * k,
+            y = slot.y * k,
+            w = slot.w * k,
+            h = slot.h * k,
+            fontSize = slot.fontSize?.times(k),
+            baseline = slot.baseline?.times(k),
+        )
+    }
+}
+
 object SlotGeometryProbe {
 
     private data class Key(val card: String, val photo: String, val width: Int, val height: Int)
@@ -70,7 +98,9 @@ object SlotGeometryProbe {
                 )
             }.getOrNull()
         } ?: return emptyMap()
-        val rects = image.textSlots
+        // 探针图的分辨率通常不等于舞台预览：先换算到舞台那一套像素，再交给示例层。
+        val normalised = normaliseProbeSlots(image.textSlots, image.width, canvasWidth)
+        val rects = normalised
             .filter { it.key != null && it.located && it.w > 0.0 && it.h > 0.0 }
             .associateBy { it.key!! }
             .filterKeys { key -> samples.containsKey(key) }

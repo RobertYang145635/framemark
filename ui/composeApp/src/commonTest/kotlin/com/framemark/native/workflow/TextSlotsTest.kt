@@ -268,4 +268,19 @@ class TextSlotsTest {
         assertFalse(slots.single().present)
     }
 
+    @Test
+    fun probeSlotsAreNormalisedToTheStagePreviewSpace() {
+        // 探针按 maxEdge 封顶（1600）渲染，舞台预览可能是 2000 宽：不换算就会整体偏左上。
+        val probed = slot("b0/g0/g1/g0", "b0/g0/g1/g0", x = 800.0, y = 700.0, w = 100.0, h = 20.0)
+
+        val scaled = normaliseProbeSlots(listOf(probed), probeWidth = 1600, targetWidth = 2000)
+
+        assertEquals(1000.0, scaled.single().x)
+        assertEquals(875.0, scaled.single().y)
+        assertEquals(125.0, scaled.single().w)
+        assertEquals(25.0, scaled.single().h)
+        // 探针本来就是舞台尺寸时原样返回
+        assertEquals(listOf(probed), normaliseProbeSlots(listOf(probed), 2000, 2000))
+    }
+
 }
