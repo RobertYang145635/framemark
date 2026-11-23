@@ -56,6 +56,8 @@ internal fun ExifSlotHintLayer(
     val ink = FmPalette.stageInk
     Canvas(modifier = modifier) {
         for (slot in missing) {
+            // 优先用引擎给的「这一格本来会写什么」（`@exif=@{focal}mm` → `23mm`），
+            // 引擎没给的（手写模板）才退回按角色取的示例。
             val text = slot.key?.let(samples::get)?.takeIf { it.isNotBlank() } ?: continue
             val rect = slotHighlightRect(
                 slot = slot,

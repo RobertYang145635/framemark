@@ -265,8 +265,10 @@ fun PhoneEditorScreen(
         com.framemark.native.inspector.ExifGapNotice.missingFields(textSlots)
             .mapNotNull { slot ->
                 val key = slot.key ?: return@mapNotNull null
-                val sample = com.framemark.native.product.GhostSamples.forRole(roles[key])
-                    .ifEmpty {
+                // 引擎给的「这一格会写什么」优先（IR 逐 token：23mm / f/1.8 / 1/125s …），
+                // 手写模板没有这一项，才退回按角色取的示例。
+                val sample = slot.sample.ifBlank {
+                    com.framemark.native.product.GhostSamples.forRole(roles[key]).ifEmpty {
                         if (declared != null) {
                             com.framemark.native.product.GhostSamples.forDeclaredRows(
                                 make = declared.make,
@@ -278,6 +280,7 @@ fun PhoneEditorScreen(
                             ""
                         }
                     }
+                }
                 if (sample.isEmpty()) null else key to sample
             }
             .toMap()

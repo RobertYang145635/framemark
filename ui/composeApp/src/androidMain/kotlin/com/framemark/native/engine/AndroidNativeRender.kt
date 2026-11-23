@@ -497,6 +497,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
                     present = t.optBoolean("present", true),
                     stable = t.optBoolean("stable", false),
                     hidden = t.optBoolean("hidden", false),
+                    sample = t.optString("sample", ""),
                 )
             }
         }
@@ -521,6 +522,7 @@ class AndroidNativeRender(context: Context) : NativeRenderApi {
                     present = slot.optBoolean("present", false),
                     stable = slot.optBoolean("stable", true),
                     hidden = slot.optBoolean("hidden", false),
+                    sample = slot.optString("sample", ""),
                 )
             }
         }

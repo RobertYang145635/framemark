@@ -701,15 +701,18 @@ fun PhoneShell() {
         val samples = missing.mapNotNull { slot ->
             val key = slot.key ?: return@mapNotNull null
             val declared = activeCard.declaredText
-            val sample = com.framemark.native.product.GhostSamples.forRole(roles[key])
-                .ifEmpty {
-                    com.framemark.native.product.GhostSamples.forDeclaredRows(
-                        make = declared.make,
-                        model = declared.model,
-                        exif = declared.exif,
-                        date = declared.date,
-                    )
-                }
+            // 引擎给的「这一格会写什么」优先（IR 逐 token），手写模板退回按角色取。
+            val sample = slot.sample.ifBlank {
+                com.framemark.native.product.GhostSamples.forRole(roles[key])
+                    .ifEmpty {
+                        com.framemark.native.product.GhostSamples.forDeclaredRows(
+                            make = declared.make,
+                            model = declared.model,
+                            exif = declared.exif,
+                            date = declared.date,
+                        )
+                    }
+            }
             if (sample.isEmpty()) null else key to sample
         }.toMap()
         if (samples.isEmpty()) return@LaunchedEffect

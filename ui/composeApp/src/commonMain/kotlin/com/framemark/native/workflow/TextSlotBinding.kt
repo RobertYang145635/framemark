@@ -24,6 +24,8 @@ data class ReportTextRow(
     /** The row's identity is an explicit renderer identity, not content-derived. */
     val stable: Boolean = false,
     val hidden: Boolean = false,
+    /** 引擎给的「正常照片下这一格会写什么」；手写模板没有。 */
+    val sample: String = "",
 )
 
 /**
@@ -59,6 +61,7 @@ fun bindReportTextSlots(
         nodePath = row.path,
         key = key,
         raw = row.raw,
+        sample = row.sample,
         hidden = row.hidden,
         stable = key != null,
         located = finite && row.w > 0.0 && row.h > 0.0,

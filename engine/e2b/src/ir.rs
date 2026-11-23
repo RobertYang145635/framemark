@@ -1087,6 +1087,64 @@ fn template_text(env: &Env, value: &str) -> String {
         .to_string()
 }
 
+/// 「正常照片」的样张 EXIF：只用来给**缺值的文字行**算「这一格本来会写什么」。
+///
+/// 示例按每家厂商自己的机型给（小米 / vivo / OPPO），格式与真实输出一致；不写进设计、
+/// 不进导出，只作为渲染报告里的 `textSlots[].sample` 交给编辑器。
+pub fn sample_exif(style_id: &str) -> crate::exif::Exif {
+    // 款式 id 是 `厂商-系列:序号`（xiaomi-leica:4 / vivo-zeiss:… / oppo-camerapro:…）。
+    let id = style_id.to_lowercase();
+    let (make, model) = if id.starts_with("xiaomi") {
+        ("Xiaomi", "Xiaomi 15 Ultra")
+    } else if id.starts_with("vivo") {
+        ("vivo", "vivo X200 Pro")
+    } else {
+        ("OPPO", "OPPO Find X6 Pro")
+    };
+    crate::exif::Exif {
+        make: make.to_string(),
+        model: model.to_string(),
+        date_time: "2026:11:21 11:56:00".to_string(),
+        focal: Some(23.0),
+        aperture: Some(1.8),
+        shutter: Some(1.0 / 125.0),
+        iso: Some(250),
+        focal_35mm: Some(23.0),
+    }
+}
+
+/// 一行缺字时「正常照片下这一格会写什么」。
+///
+/// 逐节点算，而不是整行：`@exif=@{focal}mm` → `23mm`、`@exif=f/@{aperture}` → `f/1.8`、
+/// `@exif=ISO@{iso}` → `ISO250`。**不能**给同一行的每个节点都塞一整行示例 —— 那样一行会
+/// 叠好几份（机身实测「小米徕卡 · 4」底栏铺了 6 份 `23mm F1.8 1/125s ISO250`）。
+///
+/// 地点 / 自定义文字这类**用户自己写**的行没有「正常值」，返回空串：宁可不出示例，
+/// 也不编一句不是这张照片的内容。
+fn sample_token_text(env: &Env, node: &TextNode, style_id: &str) -> String {
+    if node.token_kind == "literal" {
+        return node.token_value.clone().unwrap_or_default();
+    }
+    let mut gaps = Gaps::default();
+    let probe = Env {
+        pw: env.pw,
+        ph: env.ph,
+        exif: sample_exif(style_id),
+        location: String::new(),
+        custom: String::new(),
+        show_model: true,
+        show_exif: true,
+        show_date: true,
+        font_scale: env.font_scale,
+        te: env.te,
+        fonts: env.fonts,
+        theme_id: env.theme_id.clone(),
+        foreground: env.foreground.clone(),
+        ov: env.ov,
+    };
+    default_token_text(&probe, node, &mut gaps)
+}
+
 fn token_text(env: &Env, node: &TextNode, path: &str, gaps: &mut Gaps) -> String {
     // render-v1 slotText override (empty string = "not overridden").
     if let Some(s) = env.ov.text(path) {
@@ -1170,6 +1228,7 @@ pub fn text_slot_manifest(
         children: &[Node],
         parent: &str,
         env: &Env,
+        style_id: &str,
         drawn: &std::collections::HashSet<&str>,
         gaps: &mut Gaps,
         rows: &mut Vec<Value>,
@@ -1177,11 +1236,13 @@ pub fn text_slot_manifest(
         for (index, node) in children.iter().enumerate() {
             let path = format!("{parent}/g{index}");
             match node {
-                Node::Group(group) => visit(&group.children, &path, env, drawn, gaps, rows),
+                Node::Group(group) => visit(&group.children, &path, env, style_id, drawn, gaps, rows),
                 Node::Text(text) => rows.push(serde_json::json!({
                     "key": path, "path": path, "stable": true,
                     "raw": default_token_text(env, text, gaps),
                     "text": token_text(env, text, &path, gaps),
+                    // 「正常照片下这一格会写什么」：编辑器用它画淡灰示例。
+                    "sample": sample_token_text(env, text, style_id),
                     "hidden": env.ov.is_off(&path),
                     "present": drawn.contains(path.as_str()),
                 })),
@@ -1195,6 +1256,7 @@ pub fn text_slot_manifest(
             &band.children,
             &format!("b{index}"),
             env,
+            &style.id,
             &drawn,
             gaps,
             &mut rows,

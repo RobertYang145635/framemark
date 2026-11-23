@@ -523,6 +523,7 @@ class DesktopEngineBridge(
                 nodePath = nodePath,
                 key = key,
                 raw = draw.raw,
+                sample = draw.sample,
                 hidden = draw.hidden,
                 stable = key != null,
                 located = draw.located,
@@ -547,6 +548,8 @@ class DesktopEngineBridge(
                 nodePath = slot.nodePath,
                 key = key,
                 raw = "",
+                // 目录里声明的行（报告里没出现）：用目录自带的示例文案，没有就留空。
+                sample = slot.sampleText.orEmpty(),
                 hidden = false,
                 stable = key != null,
                 located = false,
@@ -733,6 +736,8 @@ class DesktopEngineBridge(
         val hidden: Boolean = false,
         val present: Boolean = true,
         val located: Boolean = false,
+        /** 引擎给的「正常照片下这一格会写什么」；手写模板没有。 */
+        val sample: String = "",
     )
 
     private class RawReport(
@@ -874,6 +879,7 @@ class DesktopEngineBridge(
                         hidden = m["hidden"] as? Boolean ?: false,
                         present = m["present"] as? Boolean ?: geometry?.present ?: false,
                         located = geometry?.located ?: false,
+                        sample = m["sample"] as? String ?: "",
                     )
                 }
                 val declaredPaths = declarations.mapNotNull { it.path }.toSet()

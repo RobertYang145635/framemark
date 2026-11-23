@@ -36,6 +36,14 @@ data class TextSlot(
     val key: String? = null,
     /** Unmodified source content, before any per-slot text override. */
     val raw: String = "",
+    /**
+     * 「这是一张正常照片时，这一格会写什么」（引擎按节点 token 算的标准示例）。
+     *
+     * IR 的一行参数常由多个节点拼成（`23mm` / `f/1.8` / `1/125s` / `ISO250`），缺 EXIF 时
+     * 每个节点各是一行空值；编辑器用它逐格画淡灰示例，而不是给每格塞同一整行。
+     * 手写模板不上报这一项，那边仍按文字页角色取示例。
+     */
+    val sample: String = "",
     /** The renderer reports the row hidden while retaining its stable identity. */
     val hidden: Boolean = false,
     /** True only when [key] is a supported, explicit renderer identity. */
