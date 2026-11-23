@@ -8,6 +8,7 @@ import com.framemark.native.inspector.InspectorSection
 import com.framemark.native.inspector.InspectorSectionModel
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -219,6 +220,32 @@ class TextSlotsTest {
 
         assertEquals(listOf("editable", "hidden"), recovered.map { it.id })
         assertTrue(recovered.all { !it.located && it.x == 0.0 && it.y == 0.0 && it.w == 0.0 && it.h == 0.0 })
+    }
+
+    @Test
+    fun absentRowsStillOfferTheirTextControl() {
+        // 缺 EXIF 的照片：引擎这一帧没画这一行（present=false、located=false），
+        // 但把 slotText 写上去它就会画出来，所以「替换文字」必须给；
+        // 「显示 / 字号」只对画出来的行有意义，absent 行不该出现。
+        val absent = slot("b0/g0/g0/g1", "b0/g0/g0/g1", 0.0, 0.0, w = 0.0, h = 0.0, located = false, present = false)
+
+        val controls = textSlotControls("stock-xiaomi-classic-17", absent)
+
+        assertNotNull(controls.firstOrNull { it.param == "params.slotText:b0/g0/g0/g1" })
+        assertNull(controls.firstOrNull { it.param?.startsWith("params.slotOff:") == true })
+        assertNull(controls.firstOrNull { it.param?.startsWith("params.slotScale:") == true })
+    }
+
+    @Test
+    fun absentRowsReachTheModelAsEditableTextControls() {
+        val absent = slot("b0/g0/g1/g0/g0", "b0/g0/g1/g0/g0", 0.0, 0.0, w = 0.0, h = 0.0, located = false, present = false)
+
+        val merged = model().withNativeTextSlots(listOf(absent))
+
+        val dynamic = merged.controls.filter { it.param.startsWith("params.slotText:") }
+        assertEquals(1, dynamic.size)
+        assertEquals("params.slotText:b0/g0/g1/g0/g0", dynamic.single().param)
+        assertTrue(merged.visibleIds.contains(dynamic.single().controlId))
     }
 
 }

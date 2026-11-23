@@ -235,7 +235,9 @@ fun InspectorCardModel.textFallbackControls(): List<InspectorControl> =
 
 
 fun textSlotControls(cardId: String, slot: TextSlot): List<InspectorControl> {
-    val key = slot.key?.takeIf { slot.isCurrentTextSlot() } ?: return emptyList()
+    // 可写身份就够：缺 EXIF 的行这一帧没画（present=false），但写 `slotText:` 就能把它
+    // 画出来，所以「替换文字」必须给。显示/大小开关只对画出来的行有意义（见下）。
+    val key = slot.key?.takeIf { slot.isEditableTextSlot() } ?: return emptyList()
     fun control(field: String, suffix: String, label: String, type: ControlType, initial: ControlValue, min: Float? = null, max: Float? = null, step: Float? = null) =
         InspectorControl(
             key = textControlKey(cardId, key, field),
@@ -257,12 +259,17 @@ fun textSlotControls(cardId: String, slot: TextSlot): List<InspectorControl> {
             unit = if (field == "scale") "×" else null,
             hidden = false,
         )
-    return listOf(
+    val controls = mutableListOf(
         control("text", "slotText", "替换文字", ControlType.Text, ControlValue.Str("")),
-        // Missing/true means visible; only explicit false hides a row.
-        control("visible", "slotOff", "显示文字", ControlType.Switch, ControlValue.Flag(!slot.hidden)),
-        control("scale", "slotScale", "文字大小", ControlType.Slider, ControlValue.Num(1f), 0.6f, 1.6f, 0.02f),
     )
+    // 这一帧画出来了（或者被显式隐藏）的行才谈得上「显示」和「字号」：对没画出来的行，
+    // 这两个开关只会看起来像坏的。
+    if (slot.isCurrentTextSlot()) {
+        // Missing/true means visible; only explicit false hides a row.
+        controls += control("visible", "slotOff", "显示文字", ControlType.Switch, ControlValue.Flag(!slot.hidden))
+        controls += control("scale", "slotScale", "文字大小", ControlType.Slider, ControlValue.Num(1f), 0.6f, 1.6f, 0.02f)
+    }
+    return controls
 }
 
 /** Adds current renderer-backed text controls without mutating the registry model. */
@@ -270,9 +277,10 @@ fun InspectorCardModel.withNativeTextSlots(slots: List<TextSlot>): InspectorCard
     // One edit control belongs to one renderer identity. If a backend reports
     // the same node twice, keep the first row instead of creating controls that
     // write the same key but can display different values.
+    // 缺 EXIF 的行也要进模型：`slotText:` 能让它重新画出来（见 textSlotControls）。
     val editableSlots = slots
         .asSequence()
-        .filter(TextSlot::isCurrentTextSlot)
+        .filter(TextSlot::isEditableTextSlot)
         .distinctBy { it.key }
         .toList()
     val replacedConsumers = editableSlots.flatMap { slot ->
