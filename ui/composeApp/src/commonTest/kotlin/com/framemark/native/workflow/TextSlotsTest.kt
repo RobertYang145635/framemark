@@ -248,4 +248,24 @@ class TextSlotsTest {
         assertTrue(merged.visibleIds.contains(dynamic.single().controlId))
     }
 
+    @Test
+    fun bindingCarriesTheEnginesPerNodeSample() {
+        // 引擎逐格给的「正常照片下这一格会写什么」要一路带到 TextSlot，
+        // 编辑器才画得出 23mm / f/1.8 / 1/125s / ISO250 而不是同一整行。
+        val slots = bindReportTextSlots(
+            listOf(
+                ReportTextRow(
+                    text = "", raw = "", key = "b0/g0/g1", path = "b0/g0/g1",
+                    x = 0.0, y = 0.0, w = 0.0, h = 0.0,
+                    present = false, stable = true, sample = "f/1.8",
+                ),
+            ),
+            scale = 1.0,
+            backend = "ir",
+        )
+
+        assertEquals("f/1.8", slots.single().sample)
+        assertFalse(slots.single().present)
+    }
+
 }
