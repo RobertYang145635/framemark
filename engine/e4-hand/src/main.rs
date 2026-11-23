@@ -891,7 +891,29 @@ fn render(args: &[String]) -> Result<(), String> {
     for extra in &card.extras {
         match extra.kind.as_str() {
             "graduation-sticker" => images.sticker = load_sticker(extra, &params)?,
-            "polaroid-frame" => images.frame = Some(load_image(&extra.png)?),
+            "polaroid-frame" => {
+                // 7 种画幅各一张框图，模板按照片比例挑一张：这里只解码会用到的那张
+                // （7 张全解等于每次渲染白解 6 次），按文件名 stem 登记，由
+                // `Images::frame_for` 取回。只带一张框图的老包仍然可用。
+                let stem = extra
+                    .png
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or_default()
+                    .to_string();
+                let wanted = crate::templates::frame_stem_for(&card.template_id, crop.pw, crop.ph);
+                let matches = wanted.is_none_or(|want| stem.ends_with(want));
+                // 老包（只带一张框图）里没有对应那一张时退回那张：宁可拉伸也不白屏。
+                let only_frame = card
+                    .extras
+                    .iter()
+                    .filter(|e| e.kind == "polaroid-frame")
+                    .count()
+                    == 1;
+                if matches || only_frame {
+                    images.frames.insert(stem, load_image(&extra.png)?);
+                }
+            }
             _ => {}
         }
     }

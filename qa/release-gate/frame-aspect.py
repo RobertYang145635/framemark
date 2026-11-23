@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Glass-family aspect gate: does every glass border survive every photo aspect?
+"""Frame-aspect gate: do the hand borders survive every photo aspect?
+
+Covers the glass family (2026-11-23 audit) and the OPPO Polaroid · PLD frames
+(7 frame arts, one per ratio bucket).
 
 This is the automatic version of the 2026-11-23 玻璃 05 / 玻璃色卡 / 液态玻璃 audit
 (evidence/glass-aspect-20261123). It renders the hand cards that use each glass
@@ -18,10 +21,15 @@ actually cares about:
                          its aspect stays 676:310 unless the height cap bites.
   glass                - the bottom capsule keeps one aspect across fixtures
                          (7.16:1 for the stacked pill) and the text stays in it.
+  polaroidFrame        - the canvas must match the frame art it draws (uniform
+                         scale, no stretch), the art must be present and the
+                         photo must stay inside the canvas. Regression: the
+                         bundle shipped only the 4:3 landscape art, so every
+                         other aspect rendered that art stretched.
 
 Usage (runtime = a packaged desktop runtime: bin/e4hand.exe + data/):
 
-  python qa/release-gate/glass-aspect.py --rt <runtime> [--exe <e4hand.exe>]
+  python qa/release-gate/frame-aspect.py --rt <runtime> [--exe <e4hand.exe>]
          [--fixtures <dir>] [--keep]
 
 Exit code 0 = every rule passed, 1 = at least one violation (details printed).
@@ -267,6 +275,32 @@ def check_pill(gate, exe, data_dir, work_dir, template, fixtures):
                    f"{min(values):.2f}..{max(values):.2f} (spread {100 * spread:.1f}%)")
 
 
+
+def check_polaroid_frames(gate, exe, data_dir, work_dir, fixtures):
+    """相框图必须和这一档的窗口同比例：画布 = 框图等比放大，照片在画布内，无 gap。"""
+    for name, photo in fixtures.items():
+        cards_path, cards = cards_for(data_dir, work_dir, "polaroidFrame", photo)
+        for card in cards:
+            cid = card["card"]
+            rep = render(exe, data_dir, work_dir, cid, cards_path, photo)
+            cw, ch = rep["canvas"]
+            frames = [i for i in rep["report"].get("images", []) if i.get("key") == "frame"]
+            if not gate.check(len(frames) == 1, cid, name, "frame art drawn", f"{len(frames)} frame image(s)"):
+                continue
+            art = frames[0]["src"]
+            aw, ah = art["w"], art["h"]
+            gate.check(abs(cw / ch - aw / ah) / (aw / ah) < 0.01, cid, name,
+                       "canvas matches frame art aspect", f"canvas {cw/ch:.4f} vs art {aw/ah:.4f}")
+            gate.check(abs(cw / aw - ch / ah) / (cw / aw) < 0.01, cid, name,
+                       "frame art scaled uniformly", f"x{cw/aw:.3f} y{ch/ah:.3f}")
+            gaps = rep["report"].get("gaps") or []
+            gate.check(not gaps, cid, name, "no frame gaps", "; ".join(gaps)[:120])
+            px, py, pw, ph = rep["photo_rect"]
+            gate.check(px >= -0.5 and py >= -0.5 and px + pw <= cw + 0.5 and py + ph <= ch + 0.5,
+                       cid, name, "photo inside canvas",
+                       f"card x{px:.0f} y{py:.0f} {pw:.0f}x{ph:.0f} in {cw}x{ch}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rt", default=os.environ.get("FM_RT", ""), help="packaged desktop runtime (bin + data)")
@@ -295,6 +329,7 @@ def main():
     check_side_card(gate, exe, data_dir, work_dir, "glassSideCard", fixtures)
     check_palette(gate, exe, data_dir, work_dir, "glassPalettePortrait", fixtures)
     check_pill(gate, exe, data_dir, work_dir, "glass", fixtures)
+    check_polaroid_frames(gate, exe, data_dir, work_dir, fixtures)
 
     cards = sorted({r["card"] for r in gate.rows})
     print()

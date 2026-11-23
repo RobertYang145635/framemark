@@ -89,6 +89,17 @@ pub fn layout(template_id: &str, env: &LayoutEnv) -> Result<(f32, f32), String> 
     }
 }
 
+/// 渲染前该解码哪张相框图。
+///
+/// `polaroidFrame` 按照片比例从 7 张框图里挑一张，框图之间的画布比例互不相同；
+/// 调用方（桌面 CLI / Android bridge）只解码这一张，不再把 7 张全解一遍。
+pub fn frame_stem_for(template_id: &str, pw: f32, ph: f32) -> Option<&'static str> {
+    match template_id {
+        "polaroidFrame" => Some(polaroid_frame::chosen_stem(pw, ph)),
+        _ => None,
+    }
+}
+
 pub fn render(env: &mut Env) -> RenderResult {
     let id = env.design.template_id.clone();
     match id.as_str() {

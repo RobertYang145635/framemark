@@ -9,6 +9,8 @@ use crate::draw::{
 use crate::hand::{format_date_only, model_without_make};
 
 struct FrameMeta {
+    /// 相框图在 bundle 里的文件名 stem（`extras/…_<file>.png`）。
+    file: &'static str,
     w: f32,
     h: f32,
     win: [f32; 4],
@@ -18,6 +20,7 @@ struct FrameMeta {
 
 const POLAROID_META: [FrameMeta; 7] = [
     FrameMeta {
+        file: "pld_frame_1_1_landscape",
         w: 960.0,
         h: 1256.0,
         win: [42.0, 87.0, 876.0, 875.0],
@@ -25,6 +28,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: true,
     },
     FrameMeta {
+        file: "pld_frame_4_3_landscape",
         w: 1248.0,
         h: 1256.0,
         win: [42.0, 87.0, 1164.0, 875.0],
@@ -32,6 +36,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: true,
     },
     FrameMeta {
+        file: "pld_frame_16_9_landscape",
         w: 1224.0,
         h: 942.0,
         win: [30.0, 64.0, 1164.0, 659.0],
@@ -39,6 +44,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: true,
     },
     FrameMeta {
+        file: "pld_frame_wide_landscape",
         w: 1200.0,
         h: 616.0,
         win: [17.0, 40.0, 1166.0, 435.0],
@@ -46,6 +52,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: true,
     },
     FrameMeta {
+        file: "pld_frame_4_3_portrait",
         w: 960.0,
         h: 1544.0,
         win: [42.0, 87.0, 876.0, 1163.0],
@@ -53,6 +60,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: false,
     },
     FrameMeta {
+        file: "pld_frame_16_9_portrait",
         w: 720.0,
         h: 1446.0,
         win: [30.0, 64.0, 660.0, 1163.0],
@@ -60,6 +68,7 @@ const POLAROID_META: [FrameMeta; 7] = [
         landscape: false,
     },
     FrameMeta {
+        file: "pld_frame_wide_portrait",
         w: 472.0,
         h: 1344.0,
         win: [18.0, 38.0, 436.0, 1170.0],
@@ -88,6 +97,11 @@ fn choose_frame(pw: f32, ph: f32) -> &'static FrameMeta {
     best.unwrap_or(&POLAROID_META[0])
 }
 
+/// 这张照片会用到哪张相框图（渲染前只解码这一张：7 张全解会白付 6 次解码）。
+pub fn chosen_stem(pw: f32, ph: f32) -> &'static str {
+    choose_frame(pw, ph).file
+}
+
 pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
     let meta = choose_frame(env.pw, env.ph);
     let scale = env.crop.sw / meta.win[2];
@@ -97,11 +111,23 @@ pub fn layout(env: &LayoutEnv) -> Result<(f32, f32), String> {
 pub fn render(env: &mut Env) -> Result<Rect, String> {
     let (w, h) = (env.w, env.h);
     let meta = choose_frame(env.pw, env.ph);
-    let Some(frame) = env.images.frame.clone() else {
-        env.ctx
-            .record_gap("polaroidFrame: frame image missing".into());
+    let Some(frame) = env.images.frame_for(meta.file) else {
+        env.ctx.record_gap(format!(
+            "polaroidFrame: frame '{}' missing (bundle carries: {})",
+            meta.file,
+            env.images.frames.keys().cloned().collect::<Vec<_>>().join(", ")
+        ));
         return Ok(Rect::from_xywh(0.0, 0.0, w, h));
     };
+    // 框图必须和这一档的窗口同比例，否则会被非等比拉伸（旧包只带 4:3 横版时就是这样）。
+    let art_aspect = frame.width() as f32 / frame.height().max(1) as f32;
+    let want = meta.w / meta.h;
+    if (art_aspect / want - 1.0).abs() > 0.01 {
+        env.ctx.record_gap(format!(
+            "polaroidFrame: frame '{}' art {:.3} vs layout {:.3} (stretched)",
+            meta.file, art_aspect, want
+        ));
+    }
     let k = w / meta.w;
     env.ctx.set_fill("#ffffff");
     env.ctx.fill_rect(0.0, 0.0, w, h);
@@ -109,7 +135,7 @@ pub fn render(env: &mut Env) -> Result<Rect, String> {
     let mut samp = skia_safe::SamplingOptions::default();
     samp.filter = skia_safe::FilterMode::Linear;
     env.ctx.draw_image(
-        &frame,
+        frame,
         Some(Rect::from_xywh(
             0.0,
             0.0,

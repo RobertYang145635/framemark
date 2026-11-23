@@ -7,6 +7,7 @@
 //! sprockets, palette, swatches, avatar chip) land with their cards.
 
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 
 use serde_json::Value;
 use skia_safe::{image_filters, Color, FilterMode, Image, Rect, SamplingOptions, TileMode};
@@ -28,7 +29,12 @@ pub struct Images {
     pub logo: Option<Image>,
     pub avatar: Option<Image>,
     pub sticker: Option<Image>,
-    pub frame: Option<Image>,
+    /// `polaroidFrame` 的相框图，按 PNG 文件名 stem 索引。
+    ///
+    /// 该模板按照片比例从 7 个窗口（1:1 / 4:3 / 16:9 / wide × 横竖）里挑一个，
+    /// 每张框图的画布比例都不同，所以必须贴**选中那一张**：早期包里只带了一张
+    /// 4:3 横版，其它比例下框图会被拉伸、透明窗口也对不齐。
+    pub frames: BTreeMap<String, Image>,
 }
 
 impl Images {
@@ -37,8 +43,19 @@ impl Images {
             logo: None,
             avatar: None,
             sticker: None,
-            frame: None,
+            frames: BTreeMap::new(),
         }
+    }
+
+    /// 按 stem 后缀取相框图（bundle 里的名字带 `system_oppo_camerapro_polaroid_` 前缀）。
+    ///
+    /// 老包里只有一张框图的兼容路径：只剩一张时直接用它，宁可拉伸也不要白屏。
+    pub fn frame_for(&self, stem: &str) -> Option<&Image> {
+        self.frames
+            .keys()
+            .find(|name| name.ends_with(stem))
+            .and_then(|name| self.frames.get(name))
+            .or_else(|| if self.frames.len() == 1 { self.frames.values().next() } else { None })
     }
 }
 
